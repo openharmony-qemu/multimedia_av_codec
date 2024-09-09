@@ -30,7 +30,7 @@ public:
     int32_t Flush() override;
     int32_t Stop() override;
     int32_t Reset() override;
-    OH_AVFormat *GetFormat() override;
+    std::shared_ptr<OH_AVFormat> GetFormat() override;
     
 protected:
     int32_t Configure(const SampleInfo &sampleInfo) override;

@@ -14,14 +14,12 @@
  */
 
 #include <fcntl.h>
-#include <gtest/gtest.h>
 #include <iostream>
 #include <memory>
 #include <vector>
 #include "avcodec_errors.h"
-#include "codec_server.h"
-#include "codecbase.h"
 #include "codeclist_core.h"
+#include "codec_server_coverage_unit_test.h"
 #include "meta/meta_key.h"
 #include "ui/rs_surface_node.h"
 #include "window_option.h"
@@ -37,58 +35,8 @@ using namespace OHOS::Media;
 using namespace testing;
 using namespace testing::ext;
 
-namespace {
-class CodecServerUnitTest : public testing::Test {
-public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp(void);
-    void TearDown(void);
-
-    void CreateFCodecByName();
-    void CreateFCodecByMime();
-    void CreateHCodecByName();
-    void CreateHCodecByMime();
-    std::shared_ptr<CodecBaseMock> codecBaseMock_ = nullptr;
-    std::shared_ptr<CodecServer> server_ = nullptr;
-
-private:
-    Format validFormat_;
-};
-
-class CodecParamCheckerTest : public testing::Test {
-public:
-    static void SetUpTestCase(void){};
-    static void TearDownTestCase(void){};
-    void SetUp(void){};
-    void TearDown(void){};
-};
-
-void CodecServerUnitTest::SetUpTestCase(void) {}
-
-void CodecServerUnitTest::TearDownTestCase(void) {}
-
-void CodecServerUnitTest::SetUp(void)
-{
-    codecBaseMock_ = std::make_shared<CodecBaseMock>();
-    CodecBase::RegisterMock(codecBaseMock_);
-
-    server_ = std::static_pointer_cast<CodecServer>(CodecServer::Create());
-    EXPECT_NE(server_, nullptr);
-
-    validFormat_.PutIntValue(Tag::VIDEO_WIDTH, 4096);  // 4096: valid parameter
-    validFormat_.PutIntValue(Tag::VIDEO_HEIGHT, 4096); // 4096: valid parameter
-    validFormat_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, 1);
-}
-
-void CodecServerUnitTest::TearDown(void)
-{
-    server_ = nullptr;
-    // mock object
-    codecBaseMock_ = nullptr;
-    validFormat_ = Format();
-}
-
+namespace OHOS {
+namespace MediaAVCodec {
 void CodecServerUnitTest::CreateFCodecByName()
 {
     std::string codecName = "video.F.Decoder.Name.00";
@@ -396,7 +344,7 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_004, TestSize.Lev
 
 /**
  * @tc.name: Codec_Server_Constructor_Invalid_005
- * @tc.desc: 1. invalid audio codecname
+ * @tc.desc: invalid audio codecname
  */
 HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_005, TestSize.Level1)
 {
@@ -409,7 +357,7 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_005, TestSize.Lev
 
 /**
  * @tc.name: Codec_Server_Constructor_Invalid_006
- * @tc.desc: 1. invalid mime type
+ * @tc.desc: invalid mime type
  */
 HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_006, TestSize.Level1)
 {
@@ -424,7 +372,7 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_006, TestSize.Lev
 
 /**
  * @tc.name: State_Test_Configure_001
- * @tc.desc: 1. codec Configure
+ * @tc.desc: codec Configure
  */
 HWTEST_F(CodecServerUnitTest, State_Test_Configure_001, TestSize.Level1)
 {
@@ -440,7 +388,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Configure_001, TestSize.Level1)
 
 /**
  * @tc.name: State_Test_Configure_Invalid_001
- * @tc.desc: 1. Configure in invalid state
+ * @tc.desc: Configure in invalid state
  */
 HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Configure_001, TestSize.Level1)
 {
@@ -460,7 +408,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Configure_001, TestSize.Level1)
 
 /**
  * @tc.name: State_Test_Configure_Invalid_002
- * @tc.desc: 1. Configure with codecBase is nullptr
+ * @tc.desc: Configure with codecBase is nullptr
  */
 HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Configure_002, TestSize.Level1)
 {
@@ -473,7 +421,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Configure_002, TestSize.Level1)
 
 /**
  * @tc.name: State_Test_Configure_Invalid_003
- * @tc.desc: 1. Configure return err
+ * @tc.desc: Configure return err
  */
 HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Configure_003, TestSize.Level1)
 {
@@ -490,7 +438,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Configure_003, TestSize.Level1)
 
 /**
  * @tc.name: State_Test_Start_001
- * @tc.desc: 1. codec Start
+ * @tc.desc: codec Start
  */
 HWTEST_F(CodecServerUnitTest, State_Test_Start_001, TestSize.Level1)
 {
@@ -511,7 +459,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Start_001, TestSize.Level1)
 
 /**
  * @tc.name: State_Test_Start_Invalid_001
- * @tc.desc: 1. Start in invalid state
+ * @tc.desc: Start in invalid state
  */
 HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Start_001, TestSize.Level1)
 {
@@ -530,7 +478,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Start_001, TestSize.Level1)
 
 /**
  * @tc.name: State_Test_Start_Invalid_002
- * @tc.desc: 1. Start with codecBase is nullptr
+ * @tc.desc: Start with codecBase is nullptr
  */
 HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Start_002, TestSize.Level1)
 {
@@ -544,7 +492,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Start_002, TestSize.Level1)
 
 /**
  * @tc.name: State_Test_Start_Invalid_003
- * @tc.desc: 1. Start return err
+ * @tc.desc: Start return err
  */
 HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Start_003, TestSize.Level1)
 {
@@ -576,7 +524,7 @@ sptr<Surface> CreateSurface()
 
 /**
  * @tc.name: CreateInputSurface_Valid_Test_001
- * @tc.desc: 1. codec CreateInputSurface in valid state
+ * @tc.desc: codec CreateInputSurface in valid state
  */
 HWTEST_F(CodecServerUnitTest, CreateInputSurface_Valid_Test_001, TestSize.Level1)
 {
@@ -592,7 +540,7 @@ HWTEST_F(CodecServerUnitTest, CreateInputSurface_Valid_Test_001, TestSize.Level1
 
 /**
  * @tc.name: CreateInputSurface_Invalid_Test_001
- * @tc.desc: 1. CreateInputSurface in invalid state
+ * @tc.desc: CreateInputSurface in invalid state
  */
 HWTEST_F(CodecServerUnitTest, CreateInputSurface_Invalid_Test_001, TestSize.Level1)
 {
@@ -612,7 +560,7 @@ HWTEST_F(CodecServerUnitTest, CreateInputSurface_Invalid_Test_001, TestSize.Leve
 
 /**
  * @tc.name: CreateInputSurface_Invalid_Test_002
- * @tc.desc: 2. CreateInputSurface with codecBase is nullptr
+ * @tc.desc: CreateInputSurface with codecBase is nullptr
  */
 HWTEST_F(CodecServerUnitTest, CreateInputSurface_Invalid_Test_002, TestSize.Level1)
 {
@@ -625,7 +573,7 @@ HWTEST_F(CodecServerUnitTest, CreateInputSurface_Invalid_Test_002, TestSize.Leve
 
 /**
  * @tc.name: SetInputSurface_Valid_Test_001
- * @tc.desc: 1. codec SetInputSurface
+ * @tc.desc: codec SetInputSurface
  */
 HWTEST_F(CodecServerUnitTest, SetInputSurface_Valid_Test_001, TestSize.Level1)
 {
@@ -640,10 +588,27 @@ HWTEST_F(CodecServerUnitTest, SetInputSurface_Valid_Test_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: SetInputSurface_Invalid_Test_S001
- * @tc.desc: 1. SetInputSurface in invalid state
+ * @tc.name: SetInputSurface_Valid_Test_002
+ * @tc.desc: codec SetInputSurface
  */
-HWTEST_F(CodecServerUnitTest, SetInputSurface_Invalid_Test_S001, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, SetInputSurface_Valid_Test_002, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isModeConfirmed_ = false;
+    server_->status_ = CodecServer::CodecStatus::CONFIGURED;
+    sptr<Surface> surface = CreateSurface();
+    if (surface != nullptr) {
+        EXPECT_CALL(*codecBaseMock_, SetInputSurface(surface)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+        int32_t ret = server_->SetInputSurface(surface);
+        EXPECT_EQ(ret, AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.name: SetInputSurface_Invalid_Test_001
+ * @tc.desc: SetInputSurface in invalid state
+ */
+HWTEST_F(CodecServerUnitTest, SetInputSurface_Invalid_Test_001, TestSize.Level1)
 {
     std::vector<CodecServer::CodecStatus> testList = {
         CodecServer::CodecStatus::INITIALIZED, CodecServer::CodecStatus::UNINITIALIZED,
@@ -664,7 +629,7 @@ HWTEST_F(CodecServerUnitTest, SetInputSurface_Invalid_Test_S001, TestSize.Level1
 
 /**
  * @tc.name: SetInputSurface_Invalid_Test_002
- * @tc.desc: 2. SetInputSurface with codecBase is nullptr
+ * @tc.desc: SetInputSurface with codecBase is nullptr
  */
 HWTEST_F(CodecServerUnitTest, SetInputSurface_Invalid_Test_002, TestSize.Level1)
 {
@@ -680,7 +645,7 @@ HWTEST_F(CodecServerUnitTest, SetInputSurface_Invalid_Test_002, TestSize.Level1)
 
 /**
  * @tc.name: SetOutputSurface_Valid_Test_001
- * @tc.desc: 1. codec SetOutputSurface
+ * @tc.desc: codec SetOutputSurface
  */
 HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_001, TestSize.Level1)
 {
@@ -708,7 +673,7 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_001, TestSize.Level1)
 
 /**
  * @tc.name: SetOutputSurface_Valid_Test_002
- * @tc.desc: 2. codec SetOutputSurface
+ * @tc.desc: codec SetOutputSurface
  */
 HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_002, TestSize.Level1)
 {
@@ -724,8 +689,26 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_002, TestSize.Level1)
 }
 
 /**
+ * @tc.name: SetOutputSurface_Valid_Test_003
+ * @tc.desc: codec SetOutputSurface
+ */
+HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_003, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->postProcessing_ = std::make_unique<CodecServer::PostProcessingType>(server_->codecBase_);
+    server_->isModeConfirmed_ = false;
+    server_->status_ = CodecServer::CodecStatus::CONFIGURED;
+    sptr<Surface> surface = CreateSurface();
+    if (surface != nullptr) {
+        EXPECT_CALL(*codecBaseMock_, SetOutputSurface(surface)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+        int32_t ret = server_->SetOutputSurface(surface);
+        EXPECT_EQ(ret, AVCS_ERR_OK);
+    }
+}
+
+/**
  * @tc.name: SetOutputSurface_Invalid_Test_001
- * @tc.desc: 1. SetOutputSurface in invalid mode
+ * @tc.desc: SetOutputSurface in invalid mode
  */
 HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_001, TestSize.Level1)
 {
@@ -741,7 +724,7 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_001, TestSize.Level1
 
 /**
  * @tc.name: SetOutputSurface_Invalid_Test_002
- * @tc.desc: 2. SetOutputSurface in invalid state
+ * @tc.desc: SetOutputSurface in invalid state
  */
 HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_002, TestSize.Level1)
 {
@@ -763,7 +746,7 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_002, TestSize.Level1
 
 /**
  * @tc.name: SetOutputSurface_Invalid_Test_003
- * @tc.desc: 3. SetOutputSurface in invalid state
+ * @tc.desc: SetOutputSurface in invalid state
  */
 HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_003, TestSize.Level1)
 {
@@ -787,7 +770,7 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_003, TestSize.Level1
 
 /**
  * @tc.name: SetOutputSurface_Invalid_Test_004
- * @tc.desc: 4. SetInputSurface with codecBase is nullptr
+ * @tc.desc: SetInputSurface with codecBase is nullptr
  */
 HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_004, TestSize.Level1)
 {
@@ -804,7 +787,7 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_004, TestSize.Level1
 
 /**
  * @tc.name: QueueInputBuffer_Invalid_Test_001
- * @tc.desc: 1. QueueInputBuffer in invalid state
+ * @tc.desc: QueueInputBuffer in invalid state
  */
 HWTEST_F(CodecServerUnitTest, QueueInputBuffer_Invalid_Test_001, TestSize.Level1)
 {
@@ -816,7 +799,7 @@ HWTEST_F(CodecServerUnitTest, QueueInputBuffer_Invalid_Test_001, TestSize.Level1
 
 /**
  * @tc.name: QueueInputParameter_Invalid_Test_001
- * @tc.desc: 1. QueueInputParameter in invalid state
+ * @tc.desc: QueueInputParameter in invalid state
  */
 HWTEST_F(CodecServerUnitTest, QueueInputParameter_Invalid_Test_001, TestSize.Level1)
 {
@@ -828,7 +811,7 @@ HWTEST_F(CodecServerUnitTest, QueueInputParameter_Invalid_Test_001, TestSize.Lev
 
 /**
  * @tc.name: GetOutputFormat_Valid_Test_001
- * @tc.desc: 1. codec GetOutputFormat
+ * @tc.desc: codec GetOutputFormat
  */
 HWTEST_F(CodecServerUnitTest, GetOutputFormat_Valid_Test_001, TestSize.Level1)
 {
@@ -840,7 +823,7 @@ HWTEST_F(CodecServerUnitTest, GetOutputFormat_Valid_Test_001, TestSize.Level1)
 
 /**
  * @tc.name: GetOutputFormat_Invalid_Test_001
- * @tc.desc: 1. GetOutputFormat in invalid state
+ * @tc.desc: GetOutputFormat in invalid state
  */
 HWTEST_F(CodecServerUnitTest, GetOutputFormat_Invalid_Test_001, TestSize.Level1)
 {
@@ -864,7 +847,7 @@ HWTEST_F(CodecServerUnitTest, GetOutputFormat_Invalid_Test_001, TestSize.Level1)
 
 /**
  * @tc.name: GetOutputFormat_Invalid_Test_002
- * @tc.desc: 2. GetOutputFormat with codecBase is nullptr
+ * @tc.desc: GetOutputFormat with codecBase is nullptr
  */
 HWTEST_F(CodecServerUnitTest, GetOutputFormat_Invalid_Test_002, TestSize.Level1)
 {
@@ -877,7 +860,7 @@ HWTEST_F(CodecServerUnitTest, GetOutputFormat_Invalid_Test_002, TestSize.Level1)
 
 /**
  * @tc.name: GetInputFormat_Valid_Test_001
- * @tc.desc: 1. codec GetInputFormat in valid state
+ * @tc.desc: codec GetInputFormat in valid state
  */
 HWTEST_F(CodecServerUnitTest, GetInputFormat_Valid_Test_001, TestSize.Level1)
 {
@@ -899,7 +882,7 @@ HWTEST_F(CodecServerUnitTest, GetInputFormat_Valid_Test_001, TestSize.Level1)
 
 /**
  * @tc.name: GetInputFormat_Invalid_Test_001
- * @tc.desc: 1. GetInputFormat in invalid state
+ * @tc.desc: GetInputFormat in invalid state
  */
 HWTEST_F(CodecServerUnitTest, GetInputFormat_Invalid_Test_001, TestSize.Level1)
 {
@@ -918,7 +901,7 @@ HWTEST_F(CodecServerUnitTest, GetInputFormat_Invalid_Test_001, TestSize.Level1)
 
 /**
  * @tc.name: GetInputFormat_Invalid_Test_002
- * @tc.desc: 2. GetInputFormat with codecBase is nullptr
+ * @tc.desc: GetInputFormat with codecBase is nullptr
  */
 HWTEST_F(CodecServerUnitTest, GetInputFormat_Invalid_Test_002, TestSize.Level1)
 {
@@ -939,7 +922,7 @@ HWTEST_F(CodecServerUnitTest, GetInputFormat_Invalid_Test_002, TestSize.Level1)
 
 /**
  * @tc.name: OnOutputFormatChanged_Valid_Test_001
- * @tc.desc: 1. OnOutputFormatChanged videoCb_ is not nullptr
+ * @tc.desc: OnOutputFormatChanged videoCb_ is not nullptr
  */
 HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_001, TestSize.Level1)
 {
@@ -952,7 +935,7 @@ HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_001, TestSize.Lev
 
 /**
  * @tc.name: OnOutputFormatChanged_Valid_Test_002
- * @tc.desc: 2. OnOutputFormatChanged codecCb_ is not nullptr, videoCb_ is nullptr
+ * @tc.desc: OnOutputFormatChanged codecCb_ is not nullptr, videoCb_ is nullptr
  */
 HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_002, TestSize.Level1)
 {
@@ -964,26 +947,182 @@ HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_002, TestSize.Lev
     server_->OnOutputFormatChanged(validFormat_);
 }
 
-/**
- * @tc.name: OnInputBufferAvailable_Valid_Test_001
- * @tc.desc: 1. OnInputBufferAvailable temporalScalability_ is not nullptr
- */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_001, TestSize.Level1)
+std::shared_ptr<AVSharedMemory> CreateAVSharedMemory(const int32_t size)
 {
-    CreateHCodecByMime();
-    server_->temporalScalability_ = std::make_shared<TemporalScalability>("video.F.Decoder.Name.00");
+    return AVSharedMemoryBase::CreateFromLocal(size,
+        AVSharedMemory::Flags::FLAGS_READ_WRITE,
+        "buffer_converter_test");
+}
+
+/**
+ * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_001
+ * @tc.desc: 1. OnInputBufferAvailable codecCb_ is not nullptr
+ *           2. isCreateSurface_ is false
+ *           3. isSetParameterCb_ is true
+ */
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
+    server_->isCreateSurface_ = false;
+    server_->isSetParameterCb_ = true;
     uint32_t index = 1;
-    uint8_t data[100];
-    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
+    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
 /**
- * @tc.name: OnInputBufferAvailable_Valid_Test_002
- * @tc.desc: 2. OnInputBufferAvailable temporalScalability_ and videoCb_ is nullptr
+ * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_002
+ * @tc.desc: 1. OnInputBufferAvailable codecCb_ is not nullptr
+ *           2. isCreateSurface_ is false
+ *           3. isSetParameterCb_ is false
  */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_002, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_002, TestSize.Level1)
 {
+    CreateHCodecByMime();
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
+    server_->isCreateSurface_ = false;
+    server_->isSetParameterCb_ = false;
+    uint32_t index = 1;
+    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
+    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    server_->OnInputBufferAvailable(index, buffer);
+}
+
+/**
+ * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_003
+ * @tc.desc: 1. OnInputBufferAvailable codecCb_ is not nullptr
+ *           2. isCreateSurface_ is true
+ *           3. isSetParameterCb_ is false
+ */
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_003, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
+    server_->isCreateSurface_ = true;
+    server_->isSetParameterCb_ = false;
+    uint32_t index = 1;
+    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
+    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    server_->OnInputBufferAvailable(index, buffer);
+}
+
+/**
+ * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_004
+ * @tc.desc: 1. OnInputBufferAvailable codecCb_ is not nullptr
+ *           2. isCreateSurface_ is true
+ *           3. isSetParameterCb_ is true
+ */
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_004, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
+    server_->isCreateSurface_ = true;
+    server_->isSetParameterCb_ = true;
+    uint32_t index = 1;
+    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
+    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    server_->OnInputBufferAvailable(index, buffer);
+}
+
+/**
+ * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_005
+ * @tc.desc: 1. OnInputBufferAvailable codecCb_ is nullptr
+ *           2. isCreateSurface_ is true
+ *           3. isSetParameterCb_ is false
+ */
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_005, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->videoCb_ = nullptr;
+    server_->isCreateSurface_ = true;
+    server_->isSetParameterCb_ = false;
+    uint32_t index = 1;
+    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
+    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    server_->OnInputBufferAvailable(index, buffer);
+}
+
+/**
+ * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_006
+ * @tc.desc: 1. OnInputBufferAvailable codecCb_ is nullptr
+ *           2. isCreateSurface_ is true
+ *           3. isSetParameterCb_ is true
+ */
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_006, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->videoCb_ = nullptr;
+    server_->isCreateSurface_ = true;
+    server_->isSetParameterCb_ = true;
+    uint32_t index = 1;
+    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
+    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    server_->OnInputBufferAvailable(index, buffer);
+}
+
+/* @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_007
+ * @tc.desc: 1. OnInputBufferAvailable codecCb_ is nullptr
+ *           2. isCreateSurface_ is false
+ *           3. isSetParameterCb_ is true
+ */
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_007, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->videoCb_ = nullptr;
+    server_->isCreateSurface_ = false;
+    server_->isSetParameterCb_ = true;
+    uint32_t index = 1;
+    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
+    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    server_->OnInputBufferAvailable(index, buffer);
+}
+
+/**
+ * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_008
+ * @tc.desc: 1. OnInputBufferAvailable codecCb_ is nullptr
+ *           2. isCreateSurface_ is false
+ *           3. isSetParameterCb_ is false
+ */
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_008, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->videoCb_ = nullptr;
+    server_->isCreateSurface_ = false;
+    server_->isSetParameterCb_ = false;
+    uint32_t index = 1;
+    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
+    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    server_->OnInputBufferAvailable(index, buffer);
+}
+
+/**
+ * @tc.name: OnInputBufferAvailable_AVBuffer_Test_001
+ * @tc.desc: OnInputBufferAvailable temporalScalability_ is not nullptr
+ */
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_001, TestSize.Level1)
+{
+    constexpr int32_t defaultIndex = 1;
+    CreateHCodecByMime();
+    server_->temporalScalability_ = std::make_shared<TemporalScalability>("video.F.Decoder.Name.00");
+    uint32_t index = defaultIndex;
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    server_->OnInputBufferAvailable(index, buffer);
+    EXPECT_EQ(index, defaultIndex);
+}
+
+/**
+ * @tc.name: OnInputBufferAvailable_AVBuffer_Test_002
+ * @tc.desc: OnInputBufferAvailable temporalScalability_ and videoCb_ is nullptr
+ */
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_002, TestSize.Level1)
+{
+    constexpr int32_t defaultIndex = 1;
     CreateHCodecByMime();
     server_->temporalScalability_ = nullptr;
     server_->videoCb_ = nullptr;
@@ -991,15 +1130,17 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_002, TestSize.Le
     uint8_t data[100];
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     server_->OnInputBufferAvailable(index, buffer);
+    EXPECT_EQ(index, defaultIndex);
 }
 
 /**
- * @tc.name: OnInputBufferAvailable_Valid_Test_003
- * @tc.desc: 3. OnInputBufferAvailable temporalScalability_ and drmDecryptor_ is nullptr,
+ * @tc.name: OnInputBufferAvailable_AVBuffer_Test_003
+ * @tc.desc: OnInputBufferAvailable temporalScalability_ and drmDecryptor_ is nullptr,
  * isCreateSurface_ is false, videoCb_ is not nullptr
  */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_003, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_003, TestSize.Level1)
 {
+    constexpr int32_t defaultIndex = 1;
     CreateHCodecByMime();
     auto mock = std::make_shared<MediaCodecCallbackMock>();
     server_->temporalScalability_ = nullptr;
@@ -1012,15 +1153,17 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_003, TestSize.Le
     uint8_t data[100];
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     server_->OnInputBufferAvailable(index, buffer);
+    EXPECT_EQ(index, defaultIndex);
 }
 
 /**
- * @tc.name: OnInputBufferAvailable_Valid_Test_004
- * @tc.desc: 4. OnInputBufferAvailable temporalScalability_ is nullptr,
+ * @tc.name: OnInputBufferAvailable_AVBuffer_Test_004
+ * @tc.desc: OnInputBufferAvailable temporalScalability_ is nullptr,
  * isCreateSurface_ is false, drmDecryptor_ and videoCb_ is not nullptr
  */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_004, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_004, TestSize.Level1)
 {
+    constexpr int32_t defaultIndex = 1;
     CreateHCodecByMime();
     auto mock = std::make_shared<MediaCodecCallbackMock>();
     server_->temporalScalability_ = nullptr;
@@ -1034,6 +1177,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_004, TestSize.Le
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     auto codecBaseCallback = std::make_shared<VCodecBaseCallback>(server_);
     codecBaseCallback->OnInputBufferAvailable(index, buffer);
+    EXPECT_EQ(index, defaultIndex);
 }
 
 /**
@@ -1047,11 +1191,12 @@ HWTEST_F(CodecServerUnitTest, OnError_Valid_Test_001, TestSize.Level1)
     AVCodecErrorType errorType = AVCODEC_ERROR_INTERNAL;
     int32_t errorCode = AVCS_ERR_OK;
     codecBaseCallback->OnError(errorType, errorCode);
+    EXPECT_EQ(errorCode, AVCS_ERR_OK);
 }
 
 /**
  * @tc.name: DumpInfo_Valid_Test_001
- * @tc.desc: 1. DumpInfo codec type is video
+ * @tc.desc: DumpInfo codec type is video
  */
 HWTEST_F(CodecServerUnitTest, DumpInfo_Valid_Test_001, TestSize.Level1)
 {
@@ -1067,17 +1212,22 @@ HWTEST_F(CodecServerUnitTest, DumpInfo_Valid_Test_001, TestSize.Level1)
 
 /**
  * @tc.name: MergeFormat_Valid_Test_001
- * @tc.desc: 1. MergeFormat format key type FORMAT_TYPE_INT32
+ * @tc.desc: MergeFormat format key type FORMAT_TYPE_INT32
  */
 HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_001, TestSize.Level1)
 {
     Format format;
     Format oldFormat;
-    uint32_t quality = 10;
+    constexpr int32_t quality = 10;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
 
     CodecParamChecker codecParamChecker;
     codecParamChecker.MergeFormat(format, oldFormat);
+
+    int32_t oldFormatQuality = 0;
+    bool ret = oldFormat.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, oldFormatQuality);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(oldFormatQuality, quality);
 
     format = Format();
     oldFormat = Format();
@@ -1085,17 +1235,22 @@ HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_001, TestSize.Level1)
 
 /**
  * @tc.name: MergeFormat_Valid_Test_002
- * @tc.desc: 2. MergeFormat format key type FORMAT_TYPE_INT64
+ * @tc.desc: MergeFormat format key type FORMAT_TYPE_INT64
  */
 HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_002, TestSize.Level1)
 {
     Format format;
     Format oldFormat;
-    uint64_t bitrate = 300000;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
+    constexpr int64_t bitrate = 300000;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
 
     CodecParamChecker codecParamChecker;
     codecParamChecker.MergeFormat(format, oldFormat);
+
+    int64_t oldFormatBitrate = 0;
+    bool ret = oldFormat.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, oldFormatBitrate);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(oldFormatBitrate, bitrate);
 
     format = Format();
     oldFormat = Format();
@@ -1103,20 +1258,25 @@ HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_002, TestSize.Level1)
 
 /**
  * @tc.name: MergeFormat_Valid_Test_003
- * @tc.desc: 3. MergeFormat format key type FORMAT_TYPE_DOUBLE
+ * @tc.desc: MergeFormat format key type FORMAT_TYPE_DOUBLE
  */
 HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_003, TestSize.Level1)
 {
     Format format;
     Format oldFormat;
-    double framRate = 30.0;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, framRate);
+    constexpr double framRate = 30.0;
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, framRate);
 
     CodecParamChecker codecParamChecker;
     codecParamChecker.MergeFormat(format, oldFormat);
 
+    double oldFormatFramRate = 0;
+    bool ret = oldFormat.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, oldFormatFramRate);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(oldFormatFramRate, framRate);
+
     format = Format();;
     oldFormat = Format();
 }
-
+} // MediaAVCodec
 } // namespace

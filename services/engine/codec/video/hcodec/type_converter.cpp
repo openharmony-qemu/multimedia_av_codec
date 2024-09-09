@@ -36,6 +36,11 @@ vector<Protocol> g_protocolTable = {
         CodecHDI::AvCodecRole::MEDIA_ROLETYPE_VIDEO_HEVC,
         string(CodecMimeType::VIDEO_HEVC),
     },
+    {
+        static_cast<OMX_VIDEO_CODINGTYPE>(CODEC_OMX_VIDEO_CodingVVC),
+        OHOS::HDI::Codec::V3_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_VVC,
+        string("video/vvc"),
+    },
 };
 
 vector<PixelFmt> g_pixelFmtTable = {
@@ -131,6 +136,16 @@ vector<HEVCLevelMapping> g_hevcLevelTable = {
     { CODEC_HEVC_HIGH_TIER_LEVEL61, HEVC_LEVEL_61 },
     { CODEC_HEVC_MAIN_TIER_LEVEL62, HEVC_LEVEL_62 },
     { CODEC_HEVC_HIGH_TIER_LEVEL62, HEVC_LEVEL_62 },
+};
+
+struct BitrateModeMapping {
+    VideoEncodeBitrateMode innerMode;
+    OMX_VIDEO_CONTROLRATETYPE omxMode;
+};
+vector<BitrateModeMapping> g_bitrateModeTable {
+    {CBR, OMX_Video_ControlRateConstant},
+    {VBR, OMX_Video_ControlRateVariable},
+    {CBR_VIDEOCALL, static_cast<OMX_VIDEO_CONTROLRATETYPE>(OMX_Video_ControlRateConstantWithRlambda)},
 };
 
 optional<AVCodecType> TypeConverter::HdiCodecTypeToInnerCodecType(CodecHDI::CodecType type)
@@ -313,6 +328,7 @@ std::optional<VideoEncodeBitrateMode> TypeConverter::HdiBitrateModeToInnerMode(B
         {BIT_RATE_MODE_VBR, VBR},
         {BIT_RATE_MODE_CBR, CBR},
         {BIT_RATE_MODE_CQ,  CQ},
+        {BIT_RATE_MODE_CBR_Rlambda,  CBR_VIDEOCALL},
     };
     auto it = table.find(mode);
     if (it == table.end()) {
@@ -320,5 +336,29 @@ std::optional<VideoEncodeBitrateMode> TypeConverter::HdiBitrateModeToInnerMode(B
         return std::nullopt;
     }
     return it->second;
+}
+
+std::optional<OMX_VIDEO_CONTROLRATETYPE> TypeConverter::InnerModeToOmxBitrateMode(VideoEncodeBitrateMode mode)
+{
+    auto it = std::find_if(g_bitrateModeTable.begin(), g_bitrateModeTable.end(), [mode](const BitrateModeMapping& p) {
+        return p.innerMode == mode;
+    });
+    if (it == g_bitrateModeTable.end()) {
+        LOGW("unknown BitRateMode %d", mode);
+        return std::nullopt;
+    }
+    return it->omxMode;
+}
+
+std::optional<VideoEncodeBitrateMode> TypeConverter::OmxBitrateModeToInnerMode(OMX_VIDEO_CONTROLRATETYPE mode)
+{
+    auto it = std::find_if(g_bitrateModeTable.begin(), g_bitrateModeTable.end(), [mode](const BitrateModeMapping& p) {
+        return p.omxMode == mode;
+    });
+    if (it == g_bitrateModeTable.end()) {
+        LOGW("unknown BitRateMode %d", mode);
+        return std::nullopt;
+    }
+    return it->innerMode;
 }
 }

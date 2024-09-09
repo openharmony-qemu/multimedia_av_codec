@@ -21,7 +21,7 @@
 #include "buffer/avsharedmemory.h"
 #include "meta/format.h"
 #include "surface.h"
-#include "i_keysession_service.h"
+#include "drm_i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -30,7 +30,7 @@ public:
     virtual ~AVCodecVideoDecoder() = default;
 
     /**
-     * @brief Configure the decoder.
+     * @brief Configure the decoder. This interface must be called before {@link Prepare} is called.
      *
      * @param format The format of the input data and the desired format of the output data.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
@@ -112,7 +112,12 @@ public:
     /**
      * @brief Submits input buffer to decoder.
      *
-     * This function must be called during running
+     * This function must be called during running. The {@link AVCodecCallback} callback
+     * will report the available input buffer and the corresponding index value. Once the buffer with the specified
+     * index is submitted to the video decoder, the buffer cannot be accessed again until the {@link
+     * AVCodecCallback} callback is received again reporting that the buffer with the same index is available.
+     * In addition, for some decoders, it is required to input Codec-Specific-Data to the decoder at the beginning to
+     * initialize the decoding process of the decoder, such as PPS/SPS data in H264 format.
      *
      * @param index The index of the input buffer.
      * @param info The info of the input buffer. For details, see {@link AVCodecBufferInfo}
@@ -126,7 +131,12 @@ public:
     /**
      * @brief Submits input buffer to decoder.
      *
-     * This function must be called during running
+     * This function must be called during running. The {@link MediaCodecCallback} callback
+     * will report the available input buffer and the corresponding index value. Once the buffer with the specified
+     * index is submitted to the video decoder, the buffer cannot be accessed again until the {@link
+     * MediaCodecCallback} callback is received again reporting that the buffer with the same index is available.
+     * In addition, for some decoders, it is required to input Codec-Specific-Data to the decoder at the beginning to
+     * initialize the decoding process of the decoder, such as PPS/SPS data in H264 format.
      *
      * @param index The index of the input buffer.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
@@ -149,7 +159,9 @@ public:
     /**
      * @brief Returns the output buffer to the decoder.
      *
-     * This function must be called during running
+     * This function must be called during running, and notify the decoder to finish rendering the
+     * decoded data contained in the Buffer on the output Surface. If the output surface is not configured before,
+     * calling this interface only returns the output buffer corresponding to the specified index to the decoder.
      *
      * @param index The index of the output buffer.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
@@ -177,7 +189,8 @@ public:
     /**
      * @brief Sets the parameters to the decoder.
      *
-     * This function must be called after {@link Configure}
+     * This interface can only be called after the decoder is started.
+     * At the same time, incorrect parameter settings may cause decoding failure.
      *
      * @param format The parameters.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.

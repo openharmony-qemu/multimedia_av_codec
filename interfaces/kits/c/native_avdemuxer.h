@@ -192,6 +192,7 @@ OH_AVErrCode OH_AVDemuxer_SetDemuxerMediaKeySystemInfoCallback(OH_AVDemuxer *dem
  * @param mediaKeySystemInfo Indicates the media key system info which ram space allocated by callee and
  * released by caller.
  * @return {@link AV_ERR_OK} 0 - Success
+ *         {@link AV_ERR_OPERATE_NOT_PERMIT} 2 - If the demuxer engine is not inited or init failed.
  *         {@link AV_ERR_INVALID_VAL} 3 - If the demuxer instance is nullptr or invalid
  *          or the mediaKeySystemInfo is nullptr.
  * @since 11

@@ -19,8 +19,10 @@
 #include <string>
 
 #include "common/log.h"
+#include "common/media_core.h"
 #include "filter/filter_factory.h"
 #include "surface_encoder_adapter.h"
+#include "muxer_filter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
@@ -41,6 +43,7 @@ public:
         : surfaceEncoderFilter_(std::move(surfaceEncoderFilter))
     {
     }
+
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -49,6 +52,7 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
+
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -57,6 +61,7 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
+
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -65,23 +70,55 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
+
 private:
     std::weak_ptr<SurfaceEncoderFilter> surfaceEncoderFilter_;
 };
 
 class SurfaceEncoderAdapterCallback : public EncoderAdapterCallback {
 public:
-    SurfaceEncoderAdapterCallback()
+    explicit SurfaceEncoderAdapterCallback(std::shared_ptr<SurfaceEncoderFilter> surfaceEncoderFilter)
+        : surfaceEncoderFilter_(std::move(surfaceEncoderFilter))
     {
     }
 
     void OnError(MediaAVCodec::AVCodecErrorType type, int32_t errorCode)
     {
+        if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
+            surfaceEncoderFilter->OnError(type, errorCode);
+        } else {
+            MEDIA_LOG_D("invalid surfaceEncoderFilter");
+        }
     }
 
     void OnOutputFormatChanged(const std::shared_ptr<Meta> &format)
     {
     }
+
+private:
+    std::weak_ptr<SurfaceEncoderFilter> surfaceEncoderFilter_;
+};
+
+class SurfaceEncoderAdapterKeyFramePtsCallback : public EncoderAdapterKeyFramePtsCallback {
+public:
+    explicit SurfaceEncoderAdapterKeyFramePtsCallback(std::shared_ptr<SurfaceEncoderFilter> surfaceEncoderFilter)
+        : surfaceEncoderFilter_(std::move(surfaceEncoderFilter))
+    {
+    }
+    
+    void OnReportKeyFramePts(std::string KeyFramePts) override
+    {
+        if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
+            MEDIA_LOG_D("SurfaceEncoderAdapterKeyFramePtsCallback OnReportKeyFramePts start");
+            surfaceEncoderFilter->OnReportKeyFramePts(KeyFramePts);
+            MEDIA_LOG_D("SurfaceEncoderAdapterKeyFramePtsCallback OnReportKeyFramePts end");
+        } else {
+            MEDIA_LOG_I("invalid surfaceEncoderFilter");
+        }
+    }
+
+private:
+    std::weak_ptr<SurfaceEncoderFilter> surfaceEncoderFilter_;
 };
 
 SurfaceEncoderFilter::SurfaceEncoderFilter(std::string name, FilterType type): Filter(name, type)
@@ -92,6 +129,15 @@ SurfaceEncoderFilter::SurfaceEncoderFilter(std::string name, FilterType type): F
 SurfaceEncoderFilter::~SurfaceEncoderFilter()
 {
     MEDIA_LOG_I("encoder filter destroy");
+}
+
+void SurfaceEncoderFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
+{
+    MEDIA_LOG_E("AVCodec error happened. ErrorType: %{public}d, errorCode: %{public}d",
+        static_cast<int32_t>(errorType), errorCode);
+    if (eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, MSERR_VID_ENC_FAILED});
+    }
 }
 
 Status SurfaceEncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
@@ -121,8 +167,11 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
         Status ret = mediaCodec_->Init(codecMimeType_, true);
         if (ret == Status::OK) {
             std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
-                std::make_shared<SurfaceEncoderAdapterCallback>();
+                std::make_shared<SurfaceEncoderAdapterCallback>(shared_from_this());
             mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
+            std::shared_ptr<EncoderAdapterKeyFramePtsCallback> encoderAdapterKeyFramePtsCallback =
+                std::make_shared<SurfaceEncoderAdapterKeyFramePtsCallback>(shared_from_this());
+            mediaCodec_->SetEncoderAdapterKeyFramePtsCallback(encoderAdapterKeyFramePtsCallback);
         } else {
             MEDIA_LOG_I("Init mediaCodec fail");
             eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
@@ -140,6 +189,16 @@ Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     }
     configureParameter_ = parameter;
     return mediaCodec_->Configure(parameter);
+}
+
+Status SurfaceEncoderFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer)
+{
+    MEDIA_LOG_I("SetWatermark");
+    if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
+        return Status::ERROR_UNKNOWN;
+    }
+    return mediaCodec_->SetWatermark(waterMarkBuffer);
 }
 
 Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
@@ -162,7 +221,9 @@ sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
     if (surface_) {
         return surface_;
     }
-    surface_ = mediaCodec_->GetInputSurface();
+    if (mediaCodec_ != nullptr) {
+        surface_ = mediaCodec_->GetInputSurface();
+    }
     return surface_;
 }
 
@@ -236,10 +297,10 @@ Status SurfaceEncoderFilter::DoRelease()
     return mediaCodec_->Reset();
 }
 
-Status SurfaceEncoderFilter::NotifyEos()
+Status SurfaceEncoderFilter::NotifyEos(int64_t pts)
 {
     MEDIA_LOG_I("NotifyEos");
-    return mediaCodec_->NotifyEos();
+    return mediaCodec_->NotifyEos(pts);
 }
 
 void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
@@ -249,10 +310,13 @@ void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         return;
     }
     bool isEos = false;
+    int64_t eosPts = UINT32_MAX;
     if (parameter->Find(Tag::MEDIA_END_OF_STREAM) != parameter->end() &&
-        parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos)) {
+        parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos) &&
+        parameter->Get<Tag::USER_FRAME_PTS>(eosPts)) {
         if (isEos) {
-            NotifyEos();
+            MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64, eosPts);
+            NotifyEos(eosPts);
             return;
         }
     }
@@ -342,6 +406,20 @@ void SurfaceEncoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     instanceId_ = instanceId;
     if (mediaCodec_) {
         mediaCodec_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    }
+}
+
+void SurfaceEncoderFilter::OnReportKeyFramePts(std::string KeyFramePts)
+{
+    MEDIA_LOG_I("OnReportKeyFramePts %{public}s enter", KeyFramePts.c_str());
+    const std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
+    userMeta->SetData("com.openharmony.recorder.timestamp", KeyFramePts);
+    std::shared_ptr<MuxerFilter> muxerFilter = std::static_pointer_cast<MuxerFilter>(nextFilter_);
+    if (muxerFilter != nullptr) {
+        muxerFilter->SetUserMeta(userMeta);
+        MEDIA_LOG_I("SetUserMeta %{public}s", KeyFramePts.c_str());
+    } else {
+        MEDIA_LOG_E("muxerFilter is null");
     }
 }
 } // namespace Pipeline

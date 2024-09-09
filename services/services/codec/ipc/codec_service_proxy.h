@@ -32,6 +32,7 @@ public:
 
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Media::Meta &callerInfo) override;
     int32_t Configure(const Format &format) override;
+    int32_t Prepare() override;
     int32_t Start() override;
     int32_t Stop() override;
     int32_t Flush() override;
@@ -56,6 +57,7 @@ public:
 #endif
     void SetListener(const sptr<CodecListenerStub> &listener);
     void InitLabel(const uint64_t uid);
+    int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
 
 private:
     static inline BrokerDelegator<CodecServiceProxy> delegator_;

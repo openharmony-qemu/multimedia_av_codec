@@ -179,7 +179,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Create_002, TestSize.Level0)
     fd_ = open(outputFile.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
-    ASSERT_FALSE(isCreated);
+    ASSERT_TRUE(isCreated);
 }
 
 /**

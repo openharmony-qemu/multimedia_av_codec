@@ -105,6 +105,7 @@ public:
 private:
     void ClearQueue();
     int32_t CreateDec();
+    int32_t CreateDecByMime();
     int32_t Configure(OH_AVFormat* format);
     int32_t Start();
     int32_t Stop();

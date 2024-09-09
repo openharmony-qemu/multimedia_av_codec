@@ -63,6 +63,7 @@ private:
 
     int32_t channels;
     int32_t sampleRate;
+    void *handle = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

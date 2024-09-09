@@ -24,7 +24,7 @@ auto GopInfoStdpHevc = R"([
 ])"_json;
 
 auto FrameLayerInfoStdpHevc = R"([
-    {"frameId": 0, "dts": -66666, "layer": 1, "discardable": false},
+    {"frameId": 0, "dts": -66666, "layer": 2, "discardable": false},
 	{"frameId": 1, "dts": -33333, "layer": 1, "discardable": false},
 	{"frameId": 2, "dts": 0, "layer": 1, "discardable": false},
 	{"frameId": 3, "dts": 33333, "layer": 0, "discardable": true},
@@ -270,7 +270,7 @@ auto FrameLayerInfoStdpHevc = R"([
 	{"frameId": 243, "dts": 8033333, "layer": 1, "discardable": false},
 	{"frameId": 244, "dts": 8066666, "layer": 0, "discardable": true},
 	{"frameId": 245, "dts": 8100000, "layer": 1, "discardable": false},
-	{"frameId": 246, "dts": 8133333, "layer": 1, "discardable": false},
+	{"frameId": 246, "dts": 8133333, "layer": 2, "discardable": false},
 	{"frameId": 247, "dts": 8166666, "layer": 1, "discardable": false},
 	{"frameId": 248, "dts": 8200000, "layer": 0, "discardable": true},
 	{"frameId": 249, "dts": 8233333, "layer": 0, "discardable": true},

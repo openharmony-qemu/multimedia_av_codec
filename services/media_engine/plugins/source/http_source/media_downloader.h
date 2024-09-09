@@ -18,6 +18,7 @@
 
 #include <string>
 #include "plugin/plugin_base.h"
+#include "meta/media_types.h"
 #include "plugin/source_plugin.h"
 #include "download/downloader.h"
 #include "common/media_source.h"
@@ -29,6 +30,7 @@ namespace HttpPlugin {
 struct ReadDataInfo {
     int32_t streamId_ = 0;
     int32_t nextStreamId_ = 0; // streamId will change after switch in dash
+    uint64_t ffmpegOffset = 0;
     unsigned int wantReadLength_ = 0;
     unsigned int realReadLength_ = 0;
     bool isEos_ = false;
@@ -58,6 +60,15 @@ public:
     {
         MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
     }
+    virtual std::pair<int32_t, int32_t> GetDownloadInfo()
+    {
+        MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
+        return std::make_pair(0, 0);
+    }
+    virtual void GetPlaybackInfo(PlaybackInfo& playbackInfo)
+    {
+        MEDIA_LOG_E("GetPlaybackInfo is unimplemented.");
+    }
     virtual bool SeekToTime(int64_t seekTime, SeekMode mode)
     {
         MEDIA_LOG_E("SeekToTime is unimplemented.");
@@ -81,7 +92,7 @@ public:
     {
         MEDIA_LOG_W("SetReadBlockingFlag is unimplemented.");
     }
-    virtual void SetDemuxerState()
+    virtual void SetDemuxerState(int32_t streamId)
     {
         MEDIA_LOG_W("SetDemuxerState is unimplemented.");
     }
@@ -89,7 +100,12 @@ public:
     {
         MEDIA_LOG_W("SetDownloadErrorState is unimplemented.");
     }
-    virtual void SetPlayStrategy(PlayStrategy* playStrategy)
+    virtual Status SetCurrentBitRate(int32_t bitRate, int32_t streamID)
+    {
+        MEDIA_LOG_W("SetCurrentBitRate is unimplemented.");
+        return Status::OK;
+    }
+    virtual void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy)
     {
         MEDIA_LOG_W("SetPlayStrategy is unimplemented.");
     }
@@ -99,6 +115,13 @@ public:
         MEDIA_LOG_W("GetStreamInfo is unimplemented.");
         return Status::OK;
     }
+    virtual Status SelectStream(int32_t streamId)
+    {
+        MEDIA_LOG_W("SelectStream is unimplemented.");
+        return Status::OK;
+    }
+
+    virtual void SetAppUid(int32_t appUid) = 0;
 };
 }
 }

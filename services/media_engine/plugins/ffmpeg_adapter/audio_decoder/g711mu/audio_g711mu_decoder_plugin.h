@@ -79,6 +79,7 @@ private:
     std::vector<int16_t> decodeResult_;
     int32_t channels_;
     int32_t sampleRate_;
+    int64_t pts_;
     int32_t maxInputSize_;
     int32_t maxOutputSize_;
 };

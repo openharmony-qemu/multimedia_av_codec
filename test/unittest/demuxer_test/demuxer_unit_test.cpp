@@ -67,6 +67,8 @@ string g_fmp4m4vPath = TEST_FILE_PATH + string("h264_fmp4.m4v");
 string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 string g_srt = TEST_FILE_PATH + string("subtitle.srt");
 string g_drmSm4cPath = TEST_FILE_PATH + string("drm/sm4c.ts");
+string g_vttPath = TEST_FILE_PATH + string("webvtt_test.vtt");
+string g_vttPath2 = TEST_FILE_PATH + string("webvtt_test2.vtt");
 string g_ptsConversionPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
 } // namespace
@@ -117,6 +119,7 @@ void DemuxerUnitTest::TearDown(void)
     info_.presentationTimeUs = 0;
     info_.offset = 0;
     info_.size = 0;
+    initStatus_ = false;
     selectedTrackIds_.clear();
 }
 
@@ -260,7 +263,7 @@ namespace {
 HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1000, TestSize.Level1)
 {
     InitResource(g_mp4Path, LOCAL);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
@@ -292,7 +295,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1010, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1020, TestSize.Level1)
 {
     InitResource(g_mp4Path, LOCAL);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
 }
@@ -305,7 +308,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1020, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1030, TestSize.Level1)
 {
     InitResource(g_tsPath, LOCAL);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
@@ -324,8 +327,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1030, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1040, TestSize.Level1)
 {
     InitResource(g_mp4Path4, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
 }
 
 /**
@@ -336,8 +337,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1040, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1000, TestSize.Level1)
 {
     InitResource(g_mp4Path4, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_NE(demuxer_->SelectTrackByID(0), AV_ERR_OK);
 }
 
@@ -349,8 +349,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1000, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1010, TestSize.Level1)
 {
     InitResource(g_aacPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -369,8 +368,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1010, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1020, TestSize.Level1)
 {
     InitResource(g_flacPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -389,8 +387,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1020, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1030, TestSize.Level1)
 {
     InitResource(g_m4aPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -409,8 +406,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1030, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1060, TestSize.Level1)
 {
     InitResource(g_mp3Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -429,8 +425,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1060, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1070, TestSize.Level1)
 {
     InitResource(g_oggPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -449,8 +444,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1070, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1080, TestSize.Level1)
 {
     InitResource(g_wavPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -469,8 +463,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1080, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1090, TestSize.Level1)
 {
     InitResource(g_mkvPath2, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -489,8 +482,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1090, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1100, TestSize.Level1)
 {
     InitResource(g_amrPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -509,9 +501,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1100, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1000, TestSize.Level1)
 {
     InitResource(g_mp4Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -540,9 +530,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1000, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1050, TestSize.Level1)
 {
     InitResource(g_mp4Path5, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -571,8 +559,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1050, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1010, TestSize.Level1)
 {
     InitResource(g_mp4Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -589,8 +576,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1010, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1020, TestSize.Level1)
 {
     InitResource(g_mp4Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -607,8 +593,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1020, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1030, TestSize.Level1)
 {
     InitResource(g_mp4Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -640,9 +625,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1030, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1040, TestSize.Level1)
 {
     InitResource(g_mp4Path2, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -671,9 +654,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1040, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1070, TestSize.Level1)
 {
     InitResource(g_mkvPath2, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -702,9 +683,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1070, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1090, TestSize.Level1)
 {
     InitResource(g_tsPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -733,9 +712,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1090, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1100, TestSize.Level1)
 {
     InitResource(g_aacPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -759,9 +736,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1100, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1110, TestSize.Level1)
 {
     InitResource(g_flacPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -785,9 +760,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1110, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1120, TestSize.Level1)
 {
     InitResource(g_m4aPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -811,9 +784,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1120, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1130, TestSize.Level1)
 {
     InitResource(g_mp3Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -837,9 +808,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1130, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1140, TestSize.Level1)
 {
     InitResource(g_oggPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -863,9 +832,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1140, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1150, TestSize.Level1)
 {
     InitResource(g_wavPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -889,9 +856,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1150, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1160, TestSize.Level1)
 {
     InitResource(g_amrPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -915,9 +880,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1160, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1170, TestSize.Level1)
 {
     InitResource(g_amrPath2, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -941,9 +904,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1170, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1180, TestSize.Level1)
 {
     InitResource(g_audioVividPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -968,9 +929,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1180, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1000, TestSize.Level1)
 {
     InitResource(g_mp4Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 2000, 1920, 2160, 2200, 2440, 2600, 2700, 4080, 4100}; // ms
@@ -1007,9 +966,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1000, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1001, TestSize.Level1)
 {
     InitResource(g_mp4Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     list<int64_t> toPtsList = {-100, 1000000}; // ms
@@ -1033,9 +990,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1001, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1002, TestSize.Level1)
 {
     InitResource(g_mp4Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -1057,9 +1012,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1002, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1010, TestSize.Level1)
 {
     InitResource(g_mp4Path2, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 3000, 2040, 1880, 1960, 2400, 2720, 2830, 4040, 4100}; // ms
@@ -1096,9 +1049,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1010, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1040, TestSize.Level1)
 {
     InitResource(g_mkvPath2, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 1000, 1017, 1500, 1700, 1940, 3983, 1983, 3990}; // ms
@@ -1135,9 +1086,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1040, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1060, TestSize.Level1)
 {
     InitResource(g_tsPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 3480, 3640, 3320, 3000, 3100, 4120, 5520}; // ms
@@ -1169,9 +1118,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1060, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1070, TestSize.Level1)
 {
     InitResource(g_aacPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 10240, 10230, 10220, 30000, 30010}; // ms
     vector<int32_t> audioVals = {1293, 1293, 1293, 852, 852, 852, 853, 853, 853, 853, 853, 853, 2, 2, 2, 1, 1, 1};
@@ -1202,9 +1149,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1070, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1080, TestSize.Level1)
 {
     InitResource(g_flacPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 3072, 4031, 4035, 29952, 29953}; // ms
     vector<int32_t> audioVals = {313, 313, 313, 281, 281, 281, 272, 272, 272, 271, 271, 271, 1, 1, 1, 2, 2, 2};
@@ -1235,9 +1180,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1080, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1090, TestSize.Level1)
 {
     InitResource(g_m4aPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 14592, 15297, 15290, 29994, 29998}; // ms
     vector<int32_t> audioVals = {1407, 1407, 1407, 723, 723, 723, 690, 690, 690, 691, 691, 691, 2, 2, 2, 1, 1, 1};
@@ -1268,9 +1211,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1090, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1100, TestSize.Level1)
 {
     InitResource(g_mp3Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 4128, 11980, 11990, 30000, 30010}; // ms
     vector<int32_t> audioVals = {1251, 1251, 1251, 1079, 1079, 1079, 752, 752, 752, 752, 752, 752, 1, 1, 1, 1, 1, 1};
@@ -1301,9 +1242,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1100, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1110, TestSize.Level1)
 {
     InitResource(g_oggPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 5868, 5548, 5292, 29992, 29999}; // ms
     vector<int32_t> audioVals = {1598, 1598, 1598, 1357, 1357, 1357, 1357, 1357, 1357, 1357, 1357, 1357, 46, 46,
@@ -1335,9 +1274,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1110, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1120, TestSize.Level1)
 {
     InitResource(g_wavPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 8576, 8566, 8578, 29994, 30000}; // ms
     vector<int32_t> audioVals = {704, 704, 704, 503, 503, 503, 504, 504, 504, 503, 503, 503, 2, 2, 2, 1, 1, 1};
@@ -1368,9 +1305,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1120, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1130, TestSize.Level1)
 {
     InitResource(g_amrPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 8560, 8550, 8570, 30000, 30900}; // ms
     vector<int32_t> audioVals = {1501, 1501, 1501, 1073, 1073, 1073, 1074, 1074, 1074, 1073, 1073, 1073,
@@ -1402,9 +1337,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1130, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1140, TestSize.Level1)
 {
     InitResource(g_amrPath2, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 11920, 11910, 11930, 29980, 30800}; // ms
     vector<int32_t> audioVals = {1500, 1500, 1500, 904, 904, 904, 905, 905, 905, 904, 904, 904,
@@ -1436,9 +1369,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1140, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1150, TestSize.Level1)
 {
     InitResource(g_audioVividPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 10000, 8000, 12300, 25000, 29000, 30800, 33000}; // ms
     vector<int32_t> audioVals = {1380, 1380, 1380, 950, 950, 950, 1036, 1036, 1036, 851, 851, 851, 304, 304, 304,
@@ -1475,9 +1406,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1150, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1160, TestSize.Level1)
 {
     InitResource(g_audioVividPath2, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 10000, 8000, 12300, 25000, 29000, 30800, 32000}; // ms
     vector<int32_t> audioVals = {92, 92, 92, 68, 68, 68, 74, 74, 74, 61, 61, 61, 25, 25, 25, 13, 13, 13, 8, 8, 8};
@@ -1513,9 +1442,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1160, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1200, TestSize.Level1)
 {
     InitResource(g_mp4Path2, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -1541,9 +1468,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1200, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1219, TestSize.Level1)
 {
     InitResource(g_multiSoundTrackMp4Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(2), AV_ERR_OK);
@@ -1576,9 +1501,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1219, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1228, TestSize.Level1)
 {
     InitResource(g_fmp4AvcPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -1607,9 +1530,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1228, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1234, TestSize.Level1)
 {
     InitResource(g_fmp4m4vPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -1634,9 +1555,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1234, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1236, TestSize.Level1)
 {
     InitResource(g_fmp4m4aPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -1661,9 +1580,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1236, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1194, TestSize.Level1)
 {
     InitResource(g_multiSoundTrackMp4Path, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(2), AV_ERR_OK);
@@ -1704,9 +1621,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1194, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1222, TestSize.Level1)
 {
     InitResource(g_apePath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -1730,9 +1645,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1222, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1224, TestSize.Level1)
 {
     InitResource(g_apePath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 4500, 7000, 2000, 10000}; // ms
     vector<int32_t> audioVals = {7, 7, 7, 5, 5, 5, 3, 3, 3, 6, 6, 6, 2, 2, 2};
@@ -1766,9 +1679,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1224, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1400, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -1797,6 +1708,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1400, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1206, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1835,6 +1747,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1206, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1229, TestSize.Level1)
 {
     InitResource(g_fmp4AvcPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1873,6 +1786,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1229, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1238, TestSize.Level1)
 {
     InitResource(g_fmp4m4vPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1908,6 +1822,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1238, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1239, TestSize.Level1)
 {
     InitResource(g_fmp4m4aPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1943,9 +1858,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1239, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3000, TestSize.Level1)
 {
     InitResource(g_srt, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
 
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -1962,6 +1875,119 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3000, TestSize.Level1)
     RemoveValue();
 }
 
+#ifndef DEMUXER_CAPI_BUFFER_UNIT_TEST
+/**
+ * @tc.name: Demuxer_ReadSample_3002
+ * @tc.desc: copy current sample to buffer(vtt, en)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3002, TestSize.Level1)
+{
+    InitResource(g_vttPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    int32_t vttIndex = 0;
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            char *vttStr = static_cast<char *>(malloc(info_.size * sizeof(char) + 1));
+            memcpy_s(vttStr, info_.size, sharedMem_->GetAddr(), info_.size);
+            *(vttStr + info_.size) = '\0';
+            switch (vttIndex) {
+                case 0:
+                    ASSERT_EQ(strcmp(vttStr, "testA"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 500000);
+                    ASSERT_EQ(info_.size, 5);
+                    break;
+                case 1:
+                    ASSERT_EQ(strcmp(vttStr, "testBB"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 1001000);
+                    ASSERT_EQ(info_.size, 6);
+                    break;
+                case 2:
+                    ASSERT_EQ(strcmp(vttStr, "testCCC"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 2003000);
+                    ASSERT_EQ(info_.size, 7);
+                    break;
+                case 3:
+                    ASSERT_EQ(strcmp(vttStr, "testDDDD"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 2100000);
+                    ASSERT_EQ(info_.size, 8);
+                    break;
+                default:
+                    break;
+            }
+            CountFrames(idx);
+            free(vttStr);
+        }
+        vttIndex++;
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 4);
+    RemoveValue();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_3003
+ * @tc.desc: copy current sample to buffer(vtt, zh)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3003, TestSize.Level1)
+{
+    InitResource(g_vttPath2, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    int32_t vttIndex = 0;
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            char *vttStr = static_cast<char *>(malloc(info_.size * sizeof(char) + 1));
+            memcpy_s(vttStr, info_.size, sharedMem_->GetAddr(), info_.size);
+            *(vttStr + info_.size) = '\0';
+            switch (vttIndex) {
+                case 0:
+                    ASSERT_EQ(strcmp(vttStr, "第1帧"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 30000);
+                    ASSERT_EQ(info_.size, 7);
+                    break;
+                case 1:
+                    ASSERT_EQ(strcmp(vttStr, "第2帧"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 2030000);
+                    ASSERT_EQ(info_.size, 7);
+                    break;
+                case 2:
+                    ASSERT_EQ(strcmp(vttStr, "第3帧"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 2900000);
+                    ASSERT_EQ(info_.size, 7);
+                    break;
+                case 3:
+                    ASSERT_EQ(strcmp(vttStr, "第4帧"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 3000000);
+                    ASSERT_EQ(info_.size, 7);
+                    break;
+                default:
+                    break;
+            }
+            CountFrames(idx);
+            free(vttStr);
+        }
+        vttIndex++;
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+
+    ASSERT_EQ(frames_[0], 10);
+    RemoveValue();
+}
+#endif
+
 /**
  * @tc.name: Demuxer_SeekToTime_3000
  * @tc.desc: seek to the specified time(srt)
@@ -1970,12 +1996,48 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3000, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3000, TestSize.Level1)
 {
     InitResource(g_srt, LOCAL);
+    ASSERT_TRUE(initStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
-    list<int64_t> toPtsList = {160, 2000, 4000, 7000}; // ms
-    vector<int32_t> subVals = {5, 5, 5, 5, 5, 5, 4, 4, 4, 2, 2, 2};
+    list<int64_t> toPtsList = {0, 160, 2000, 4000, 7000}; // ms
+    vector<int32_t> subVals = {5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 2, 2, 2};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            ASSERT_EQ(frames_[0], subVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+#ifndef DEMUXER_CAPI_BUFFER_UNIT_TEST
+/**
+ * @tc.name: Demuxer_SeekToTime_3002
+ * @tc.desc: seek to the specified time(vtt, en)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3002, TestSize.Level1)
+{
+    InitResource(g_vttPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {500, 1000, 2000, 3000}; // ms
+    vector<int32_t> subVals = {4, 4, 4, 4, 4, 4, 3, 3, 3, 1, 1, 1};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1996,6 +2058,41 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3000, TestSize.Level1)
 }
 
 /**
+ * @tc.name: Demuxer_SeekToTime_3003
+ * @tc.desc: seek to the specified time(vtt, zh)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3003, TestSize.Level1)
+{
+    InitResource(TEST_FILE_PATH + string("webvtt_test2.vtt"), LOCAL);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {100, 1000, 1200, 61000, 65000}; // ms
+    vector<int32_t> subVals = {10, 10, 10, 10, 10, 10, 9, 9, 9, 1, 1, 1, 1, 1, 1};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            ASSERT_EQ(frames_[0], subVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+#endif
+
+/**
  * @tc.name: Demuxer_SetMediaKeySystemInfoCallback_4000
  * @tc.desc: set normal drm callback
  * @tc.type: FUNC
@@ -2003,8 +2100,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3000, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SetMediaKeySystemInfoCallback_4000, TestSize.Level1)
 {
     InitResource(g_drmSm4cPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     bool isNullCallback = false;
     int32_t ret = demuxer_->SetMediaKeySystemInfoCallback(isNullCallback);
@@ -2019,8 +2115,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SetMediaKeySystemInfoCallback_4000, TestSize.L
 HWTEST_F(DemuxerUnitTest, Demuxer_SetMediaKeySystemInfoCallback_4001, TestSize.Level1)
 {
     InitResource(g_drmSm4cPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     bool isNullCallback = true;
     int32_t ret = demuxer_->SetMediaKeySystemInfoCallback(isNullCallback);
@@ -2035,8 +2130,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SetMediaKeySystemInfoCallback_4001, TestSize.L
 HWTEST_F(DemuxerUnitTest, Demuxer_SetDemuxerMediaKeySystemInfoCallback_4002, TestSize.Level1)
 {
     InitResource(g_drmSm4cPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
+
     bool isNullCallback = false;
     int32_t ret = demuxer_->SetDemuxerMediaKeySystemInfoCallback(isNullCallback);
     ASSERT_EQ(ret, AV_ERR_OK);
@@ -2050,8 +2145,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SetDemuxerMediaKeySystemInfoCallback_4002, Tes
 HWTEST_F(DemuxerUnitTest, Demuxer_SetDemuxerMediaKeySystemInfoCallback_4003, TestSize.Level1)
 {
     InitResource(g_drmSm4cPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     bool isNullCallback = true;
     int32_t ret = demuxer_->SetDemuxerMediaKeySystemInfoCallback(isNullCallback);
@@ -2066,8 +2160,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SetDemuxerMediaKeySystemInfoCallback_4003, Tes
 HWTEST_F(DemuxerUnitTest, Demuxer_GetMediaKeySystemInfo_4004, TestSize.Level1)
 {
     InitResource(g_drmSm4cPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     int32_t ret = demuxer_->GetMediaKeySystemInfo();
     ASSERT_EQ(ret, AV_ERR_OK);
@@ -2075,164 +2168,142 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetMediaKeySystemInfo_4004, TestSize.Level1)
 
 #ifndef DEMUXER_CAPI_UNIT_TEST
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1000
- * @tc.desc: Get frameIndex by pts(audio track)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1000
+ * @tc.desc: Get index by pts(audio track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1000, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1000, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 69659;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 69659;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(frameIndex, 3);
+    ASSERT_EQ(index, 3);
 }
 
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1001
- * @tc.desc: Get frameIndex by pts(video track)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1001
+ * @tc.desc: Get index by pts(video track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1001, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1001, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     uint32_t trackIndex = 1;
-    int64_t presentationTimeUs = 66666;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 66666;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(frameIndex, 4);
+    ASSERT_EQ(index, 4);
 }
 
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1002
- * @tc.desc: Get frameIndex by pts(not MP4)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1002
+ * @tc.desc: Get index by pts(not MP4)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1002, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1002, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 69659;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 69659;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_NE(ret, AV_ERR_OK);
 
-    ASSERT_EQ(frameIndex, 0);
+    ASSERT_EQ(index, 0);
 }
 
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1003
- * @tc.desc: Get frameIndex by pts(non-standard pts & different track)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1003
+ * @tc.desc: Get index by pts(non-standard pts & different track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1003, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1003, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     // standard pts & video track
     uint32_t trackIndex = 1;
-    int64_t presentationTimeUs = 166666;
-    uint32_t frameIndex = 0;
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    uint64_t relativePresentationTimeUs = 166666;
+    uint32_t index = 0;
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex, 10);
-
-    // non-standard pts & video track
-    trackIndex = 1;
-    presentationTimeUs = 166667;
-    frameIndex = 0;
-    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
-    ASSERT_NE(ret, AV_ERR_OK);
-
-    // standard pts & audio track
-    trackIndex = 0;
-    presentationTimeUs = 232199;
-    frameIndex = 0;
-    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex, 10);
+    ASSERT_EQ(index, 10);
 }
 
 /**
- * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1000
+ * @tc.name: Demuxer_GetRelativePresentationTimeUsByIndex_1000
  * @tc.desc: get pts by frameIndex(audio track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1000, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetRelativePresentationTimeUsByIndex_1000, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 2;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 2;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(presentationTimeUs, 46439);
+    ASSERT_EQ(relativePresentationTimeUs, 46439);
 }
 
 /**
- * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1001
+ * @tc.name: Demuxer_GetRelativePresentationTimeUsByIndex_1001
  * @tc.desc: get pts by frameIndex(video track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1001, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetRelativePresentationTimeUsByIndex_1001, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     uint32_t trackIndex = 1;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 2;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 2;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(presentationTimeUs, 33333);
+    ASSERT_EQ(relativePresentationTimeUs, 33333);
 }
 
 /**
- * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1002
+ * @tc.name: Demuxer_GetRelativePresentationTimeUsByIndex_1002
  * @tc.desc: get pts by frameIndex(not MP4)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1002, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetRelativePresentationTimeUsByIndex_1002, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 10;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 10;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_NE(ret, AV_ERR_OK);
 
-    ASSERT_EQ(presentationTimeUs, 0);
+    ASSERT_EQ(relativePresentationTimeUs, 0);
 }
 
 /**
@@ -2243,22 +2314,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1002, TestSi
 HWTEST_F(DemuxerUnitTest, Demuxer_PtsAndFrameIndexConversion_1000, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 92879;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 92879;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex, 4);
+    ASSERT_EQ(index, 4);
 
-    int64_t presentationTimeUs1 = 0;
+    uint64_t relativePresentationTimeUs1 = 0;
 
-    ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs1);
+    ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs1);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(presentationTimeUs1, 92879);
+    ASSERT_EQ(relativePresentationTimeUs1, 92879);
 }
 
 /**
@@ -2269,23 +2339,74 @@ HWTEST_F(DemuxerUnitTest, Demuxer_PtsAndFrameIndexConversion_1000, TestSize.Leve
 HWTEST_F(DemuxerUnitTest, Demuxer_PtsAndFrameIndexConversion_1001, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
+    ASSERT_TRUE(initStatus_);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 4;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 4;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(presentationTimeUs, 92879);
+    ASSERT_EQ(relativePresentationTimeUs, 92879);
 
-    uint32_t frameIndex1 = 0;
+    uint32_t index1 = 0;
 
-    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex1);
+    ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index1);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex1, 4);
+    ASSERT_EQ(index1, 4);
 }
+
+/**
+ * @tc.name: Demuxer_PTSOutOfRange_1000
+ * @tc.desc: pts out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_PTSOutOfRange_1000, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
+
+    uint32_t trackIndex = 0;
+    uint64_t relativePresentationTimeUs = 999999999;
+    uint32_t index = 0;
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
+    ASSERT_NE(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_IndexOutOfRange_1000
+ * @tc.desc: Index out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_IndexOutOfRange_1000, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
+
+    uint32_t trackIndex = 0;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 9999999;
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
+    ASSERT_NE(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_TrackOutOfRange_1000
+ * @tc.desc: Track out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_TrackOutOfRange_1000, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
+
+    uint32_t trackIndex = 99;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 0;
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
+    ASSERT_NE(ret, AV_ERR_OK);
+}
+
 #endif
 
 /**
@@ -2299,9 +2420,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1601, TestSize.Level1)
         return;
     }
     InitResource(g_mp4VvcPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
@@ -2328,6 +2447,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1601, TestSize.Level1)
         return;
     }
     InitResource(g_mp4VvcPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);

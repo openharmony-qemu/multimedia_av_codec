@@ -24,6 +24,9 @@ namespace Sample {
 class RawdataReader : public DataProducerBase {
 private:
     int32_t FillBuffer(CodecBufferInfo &info) override;
+    void ReadInputBufferWithStrideRGBA(uint8_t *bufferAddr);
+    void ReadInputBufferWithStrideYUVI420(uint8_t *bufferAddr);
+    void ReadInputBufferWithStrideYUV420(uint8_t *bufferAddr);
     int32_t GetBufferSize();
     bool IsEOS() override;
 };

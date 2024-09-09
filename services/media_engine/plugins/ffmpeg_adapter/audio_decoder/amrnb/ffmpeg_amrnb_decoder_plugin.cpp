@@ -44,9 +44,10 @@ FFmpegAmrnbDecoderPlugin::FFmpegAmrnbDecoderPlugin(const std::string& name)
 
 FFmpegAmrnbDecoderPlugin::~FFmpegAmrnbDecoderPlugin()
 {
-    basePlugin->Release();
-    basePlugin.reset();
-    basePlugin = nullptr;
+    if (basePlugin != nullptr) {
+        basePlugin->Release();
+        basePlugin.reset();
+    }
 }
 
 Status FFmpegAmrnbDecoderPlugin::Init()
@@ -93,9 +94,7 @@ Status FFmpegAmrnbDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
     auto format = basePlugin->GetFormat();
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
-    ret = basePlugin->OpenContext();
-    basePlugin->DisableNeedResample();
-    return ret;
+    return basePlugin->OpenContext();
 }
 
 Status FFmpegAmrnbDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
@@ -151,9 +150,9 @@ Status FFmpegAmrnbDecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
             return Status::ERROR_INVALID_PARAMETER;
         }
     }
-    if (!basePlugin->CheckSampleFormat(format, channels)) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+
+    CHECK_AND_RETURN_RET_LOG(basePlugin->CheckSampleFormat(format, channels),
+        Status::ERROR_INVALID_PARAMETER, "CheckSampleFormat error");
     return Status::OK;
 }
 

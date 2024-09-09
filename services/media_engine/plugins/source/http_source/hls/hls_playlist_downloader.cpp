@@ -48,6 +48,18 @@ void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::str
     }
 }
 
+HlsPlayListDownloader::~HlsPlayListDownloader()
+{
+    MEDIA_LOG_I("~HlsPlayListDownloader in");
+    if (updateTask_ != nullptr) {
+        updateTask_->Stop();
+    }
+    if (downloader_ != nullptr) {
+        downloader_ = nullptr;
+    }
+    MEDIA_LOG_I("~HlsPlayListDownloader out");
+}
+
 void HlsPlayListDownloader::UpdateManifest()
 {
     if (currentVariant_ && currentVariant_->m3u8_ && !currentVariant_->m3u8_->uri_.empty()) {
@@ -95,9 +107,6 @@ Seekable HlsPlayListDownloader::GetSeekable() const
     if (times >= RETRY_TIMES || isInterruptNeeded_) {
         return Seekable::INVALID;
     }
-    if (master_->bLive_ && !updateTask_->IsTaskRunning()) {
-        updateTask_->Start();
-    }
     return master_->bLive_ ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;
 }
 
@@ -113,7 +122,7 @@ void HlsPlayListDownloader::NotifyListChange()
     auto playList = std::vector<PlayInfo>();
     if (currentVariant_->m3u8_->isDecryptAble_) {
         while (!currentVariant_->m3u8_->isDecryptKeyReady_) {
-            Task::SleepInTask(10); // 10 ms
+            Task::SleepInTask(10); // sleep 10ms
         }
         callback_->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
             currentVariant_->m3u8_->iv_);
@@ -138,13 +147,16 @@ void HlsPlayListDownloader::NotifyListChange()
     callback_->OnPlayListChanged(playList);
     if (isParseFinished_) {
         isNotifyPlayListFinished_ = true;
+        if (master_->bLive_ && !updateTask_->IsTaskRunning() && !isLiveUpdateTaskStarted_) {
+            isLiveUpdateTaskStarted_ = true;
+            updateTask_->Start();
+        }
     }
 }
 
 void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPreParse)
 {
     if (!location.empty()) {
-        MEDIA_LOG_I("old url " PUBLIC_LOG_S " new url " PUBLIC_LOG_S, url_.c_str(), location.c_str());
         url_ = location;
     }
     if (!master_) {
@@ -160,6 +172,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
     } else {
         if (master_->isSimple_) {
             bool ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
+            master_->isParseSuccess_ = ret;
             if (ret) {
                 UpdateMasterInfo(isPreParse);
                 NotifyListChange();
@@ -173,6 +186,11 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
                 NotifyListChange();
             }
         }
+    }
+    if (!master_->isParseSuccess_ && eventCallback_ != nullptr) {
+        MEDIA_LOG_E("ParseManifest parse failed.");
+        eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
+                                {NetworkClientErrorCode::ERROR_TIME_OUT}, "parse m3u8"});
     }
 }
 
@@ -197,8 +215,9 @@ void HlsPlayListDownloader::PreParseManifest(const std::string& location)
     int firstTsTagIndex = 0;
     int lastTsTagIndex = 0;
     std::string tsTag = M3U8_TS_TAG;
-    int tsTagSize = tsTag.size();
-    while ((tsIndex = playList_.find(tsTag, tsIndex)) < playList_.length()) {
+    int tsTagSize = static_cast<int>(tsTag.size());
+    while ((tsIndex = static_cast<int>(playList_.find(tsTag, tsIndex))) <
+            static_cast<int>(playList_.length()) && tsIndex != -1) { // -1
         if (tsNum == 0) {
             firstTsTagIndex = tsIndex;
         }
@@ -240,7 +259,7 @@ bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
             newVariant_ = item;
         }
     }
-    if (newVariant_->bandWidth_ == currentVariant_->bandWidth_) {
+    if (currentVariant_ != nullptr && newVariant_->bandWidth_ == currentVariant_->bandWidth_) {
         return true;
     }
     return false;
@@ -319,11 +338,6 @@ std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetCurrentVariant()
 std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetNewVariant()
 {
     return newVariant_;
-}
-
-void HlsPlayListDownloader::SetInterruptState(bool isInterruptNeeded)
-{
-    isInterruptNeeded_ = isInterruptNeeded;
 }
 
 void HlsPlayListDownloader::SetMimeType(const std::string& mimeType)

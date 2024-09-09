@@ -80,6 +80,14 @@ namespace MediaAVCodec {
         }                                                                   \
     } while (0)
 
+#define CHECK_AND_RETURN_RET_LOGW(cond, ret, fmt, ...)                      \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGW(fmt, ##__VA_ARGS__);                               \
+            return ret;                                                     \
+        }                                                                   \
+    } while (0)
+
 #define CHECK_AND_RETURN_RET_LOG_LIMIT(cond, ret, frequency, fmt, ...)      \
     do {                                                                    \
         if (!(cond)) {                                                      \

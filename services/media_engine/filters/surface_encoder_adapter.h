@@ -50,6 +50,12 @@ public:
     virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
 };
 
+class EncoderAdapterKeyFramePtsCallback {
+public:
+    virtual ~EncoderAdapterKeyFramePtsCallback() = default;
+    virtual void OnReportKeyFramePts(std::string KeyFramePts) = 0;
+};
+
 class SurfaceEncoderAdapter : public std::enable_shared_from_this<SurfaceEncoderAdapter>  {
 public:
     explicit SurfaceEncoderAdapter();
@@ -57,8 +63,11 @@ public:
 public:
     Status Init(const std::string &mime, bool isEncoder);
     Status Configure(const std::shared_ptr<Meta> &meta);
+    Status SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer);
     Status SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
     Status SetEncoderAdapterCallback(const std::shared_ptr<EncoderAdapterCallback> &encoderAdapterCallback);
+    Status SetEncoderAdapterKeyFramePtsCallback(
+        const std::shared_ptr<EncoderAdapterKeyFramePtsCallback> &encoderAdapterKeyFramePtsCallback);
     Status SetInputSurface(sptr<Surface> surface);
     Status SetTransCoderMode();
     sptr<Surface> GetInputSurface();
@@ -69,9 +78,10 @@ public:
     Status Flush();
     Status Reset();
     Status Release();
-    Status NotifyEos();
+    Status NotifyEos(int64_t pts);
     Status SetParameter(const std::shared_ptr<Meta> &parameter);
     std::shared_ptr<Meta> GetOutputFormat();
+    void TransCoderOnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
@@ -80,14 +90,19 @@ public:
         std::shared_ptr<Format> &parameter);
 
     std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback_;
+    std::shared_ptr<EncoderAdapterKeyFramePtsCallback> encoderAdapterKeyFramePtsCallback_;
 
 private:
     void ReleaseBuffer();
     void ConfigureGeneralFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
+    void ConfigureEnableFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
-    bool CheckFrames(int64_t currentPts);
+    bool CheckFrames(int64_t currentPts, int64_t &checkFramesPauseTime);
     void GetCurrentTime(int64_t &currentTime);
+    void AddStartPts(int64_t currentPts);
+    void AddStopPts();
+    bool AddPauseResumePts(int64_t currentPts);
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
@@ -106,17 +121,26 @@ private:
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
     int64_t stopTime_{-1};
-
+    std::atomic<int64_t> eosPts_{UINT32_MAX};
+    std::atomic<int64_t> currentPts_{-1};
     int64_t totalPauseTime_{0};
 
     int64_t startBufferTime_{-1};
     int64_t lastBufferTime_{-1};
     bool isStart_ = false;
+    bool isResume_ = false;
     std::string codecMimeType_;
     std::string bundleName_;
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
     int32_t appPid_ {0};
+
+    std::string keyFramePts_;
+    bool isStartKeyFramePts_ = false;
+    bool isStopKeyFramePts_ = false;
+    int64_t currentKeyFramePts_{-1};
+    int64_t preKeyFramePts_{-1};
+    std::deque<std::pair<int64_t, StateCode>> pauseResumePts_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

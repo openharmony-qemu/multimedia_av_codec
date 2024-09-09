@@ -20,6 +20,7 @@
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
 #include "demo_log.h"
+#include "avcodec_mime_type.h"
 #include "media_description.h"
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
@@ -286,33 +287,6 @@ bool ADecDemoAuto::InitFormat(OH_AVFormat *format)
     return true;
 }
 
-bool ADecDemoAuto::RunCase(const uint8_t *data, size_t size)
-{
-    std::string codecdata(reinterpret_cast<const char*>(data), size);
-    inputdata = codecdata;
-    inputdatasize = size;
-    DEMO_CHECK_AND_RETURN_RET_LOG(CreateDec() == AVCS_ERR_OK, false, "Fatal: CreateDec fail");
-
-    OH_AVFormat* format = OH_AVFormat_Create();
-    auto res = InitFormat(format);
-    if (res == false) {
-        return false;
-    }
-    DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-    auto start = chrono::steady_clock::now();
-
-    unique_lock<mutex> lock(signal_->startMutex_);
-    signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-
-    auto end = chrono::steady_clock::now();
-    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
-        << " ms" << std::endl;
-    DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
-    DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
-    sleep(1);
-    return true;
-}
-
 ADecDemoAuto::ADecDemoAuto() : audioDec_(nullptr), signal_(nullptr), audioType_(TYPE_AAC)
 {
     signal_ = new ADecSignal();
@@ -354,6 +328,31 @@ int32_t ADecDemoAuto::CreateDec()
     int32_t ret = OH_AudioDecoder_SetCallback(audioDec_, cb_, signal_);
     DEMO_CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Fatal: SetCallback fail");
 
+    return AVCS_ERR_OK;
+}
+
+int32_t ADecDemoAuto::CreateDecByMime()
+{
+    if (audioType_ == TYPE_AAC) {
+        audioDec_ = OH_AudioDecoder_CreateByMime((AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC).data());
+    } else if (audioType_ == TYPE_FLAC) {
+        audioDec_ = OH_AudioDecoder_CreateByMime((AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC).data());
+    } else if (audioType_ == TYPE_MP3) {
+        audioDec_ = OH_AudioDecoder_CreateByMime((AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_MPEG).data());
+    } else if (audioType_ == TYPE_VORBIS) {
+        audioDec_ = OH_AudioDecoder_CreateByMime((AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VORBIS).data());
+    } else if (audioType_ == TYPE_AMRNB) {
+        audioDec_ = OH_AudioDecoder_CreateByMime((AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB).data());
+    } else if (audioType_ == TYPE_AMRWB) {
+        audioDec_ = OH_AudioDecoder_CreateByMime((AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB).data());
+    } else if (audioType_ == TYPE_OPUS) {
+        audioDec_ = OH_AudioDecoder_CreateByMime((AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS).data());
+    } else if (audioType_ == TYPE_G711MU) {
+        audioDec_ = OH_AudioDecoder_CreateByMime((AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU).data());
+    } else {
+        return AVCS_ERR_INVALID_VAL;
+    }
+    DEMO_CHECK_AND_RETURN_RET_LOG(audioDec_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: CreateByName fail");
     return AVCS_ERR_OK;
 }
 
@@ -567,4 +566,35 @@ void ADecDemoAuto::OutputFunc()
         }
     }
     signal_->startCond_.notify_all();
+}
+
+bool ADecDemoAuto::RunCase(const uint8_t *data, size_t size)
+{
+    std::string codecdata(reinterpret_cast<const char*>(data), size);
+    inputdata = codecdata;
+    inputdatasize = size;
+    DEMO_CHECK_AND_RETURN_RET_LOG(CreateDec() == AVCS_ERR_OK, false, "Fatal: CreateDec fail");
+
+    OH_AVFormat* format = OH_AVFormat_Create();
+    auto res = InitFormat(format);
+    if (res == false) {
+        return false;
+    }
+    DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
+    auto start = chrono::steady_clock::now();
+
+    unique_lock<mutex> lock(signal_->startMutex_);
+    signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+
+    auto end = chrono::steady_clock::now();
+    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
+        << " ms" << std::endl;
+    DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
+    DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
+    if (format != nullptr) {
+        OH_AVFormat_Destroy(format);
+        format = nullptr;
+    }
+    sleep(1);
+    return true;
 }

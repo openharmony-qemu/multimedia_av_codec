@@ -48,14 +48,16 @@ public:
     Status SeekTo(uint64_t offset) override;
     Status Reset() override;
     Status Stop() override;
-    void SetDemuxerState() override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetBundleName(const std::string& bundleName) override;
-    Status SetCurrentBitRate(int32_t bitRate) override;
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
+    Status SetReadBlockingFlag(bool isAllowed) override;
     void SetInterruptState(bool isInterruptNeeded) override;
     void NotifyBufferingStart();
     void NotifyBufferingPercent();
     void NotifyBufferingEnd();
     void NotifyReadFail();
+    void SetEnableOnlineFdCache(bool isEnableFdCache) override;
 private:
     Status ParseUriInfo(const std::string& uri);
     Status ReadOfflineFile(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
@@ -63,7 +65,7 @@ private:
     Status SeekToOfflineFile(uint64_t offset);
     Status SeekToOnlineFile(uint64_t offset);
     void CacheDataLoop();
-    void HasCacheData(size_t bufferSize);
+    bool HasCacheData(size_t bufferSize, uint64_t offset);
     void HandleReadResult(size_t bufferSize, int size);
     std::shared_ptr<Memory> GetBufferPtr(std::shared_ptr<Buffer>& buffer, size_t expectedLen);
 
@@ -75,24 +77,26 @@ private:
     void GetCurrentSpeed(int64_t curTime);
     float GetCacheTime(float num);
     void UpdateWaterLineAbove();
-    void DeleteCacheBuffer(char* buffer);
+    void DeleteCacheBuffer(char* buffer, size_t bufferSize);
     void CheckReadTime();
+    bool IsValidTime(int64_t curTime, int64_t lastTime);
     
     int32_t fd_ {-1};
     int64_t offset_ {0};
     uint64_t size_ {0};
     uint64_t fileSize_ {0};
     Seekable seekable_ {Seekable::SEEKABLE};
-    uint64_t position_ {0};
+    std::atomic<uint64_t> position_ {0};
     Callback* callback_ {nullptr};
     std::atomic<bool> isBuffering_ {false};
     std::atomic<bool> isInterrupted_ {false};
+    std::atomic<bool> isReadBlocking_ {true};
     std::atomic<bool> inSeek_ {false};
     std::shared_ptr<Task> downloadTask_;
     std::shared_mutex mutex_;
     bool isReadFrame_ {false};
     bool isSeekHit_ {false};
-    uint64_t cachePosition_ {0};
+    std::atomic<uint64_t> cachePosition_ {0};
     int64_t waterLineAbove_ {0};
     bool isCloudFile_ {false};
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -107,6 +111,7 @@ private:
     int64_t curReadTime_ {0};
     int64_t retryTimes_ {0};
     int64_t lastReadTime_ {0};
+    bool isEnableFdCache_{ true };
 };
 } // namespace FileSource
 } // namespace Plugins

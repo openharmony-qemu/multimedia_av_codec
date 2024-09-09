@@ -60,10 +60,11 @@ public:
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
     {
         if (auto surfaceDecoderAdapter = surfaceDecoderAdapter_.lock()) {
-            MEDIA_LOG_I("OnOutputBuffer flag   "  PUBLIC_LOG_D32, buffer->flag_);
+            MEDIA_LOG_D("OnOutputBuffer flag   "  PUBLIC_LOG_D32, buffer->flag_);
             surfaceDecoderAdapter->OnOutputBufferAvailable(index, buffer);
             if (buffer->flag_ == 1) {
-                surfaceDecoderAdapter->decoderAdapterCallback_->OnBufferEos();
+                MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64, surfaceDecoderAdapter->lastBufferPts_);
+                surfaceDecoderAdapter->decoderAdapterCallback_->OnBufferEos(surfaceDecoderAdapter->lastBufferPts_);
             }
         } else {
             MEDIA_LOG_I("invalid surfaceDecoderAdapter");
@@ -321,7 +322,15 @@ void SurfaceDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
 {
     {
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
-        indexs_.push_back(index);
+        if (buffer->flag_ == 1) {
+            dropIndexs_.push_back(index);
+        } else if (buffer->pts_ > lastBufferPts_) {
+            lastBufferPts_ = buffer->pts_;
+            indexs_.push_back(index);
+        } else {
+            MEDIA_LOG_D("OnOutputBufferAvailable drop index: %{public}u" PRIu32, index);
+            dropIndexs_.push_back(index);
+        }
     }
     releaseBufferCondition_.notify_all();
     MEDIA_LOG_D("OnOutputBufferAvailable end");
@@ -355,14 +364,20 @@ void SurfaceDecoderAdapter::ReleaseBuffer()
     MEDIA_LOG_I("ReleaseBuffer");
     while (!isThreadExit_) {
         std::vector<uint32_t> indexs;
+        std::vector<uint32_t> dropIndexs;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
             releaseBufferCondition_.wait(lock);
             indexs = indexs_;
             indexs_.clear();
+            dropIndexs = dropIndexs_;
+            dropIndexs_.clear();
         }
         for (auto &index : indexs) {
             codecServer_->ReleaseOutputBuffer(index, true);
+        }
+        for (auto &dropIndex : dropIndexs) {
+            codecServer_->ReleaseOutputBuffer(dropIndex, false);
         }
     }
     MEDIA_LOG_I("ReleaseBuffer end");

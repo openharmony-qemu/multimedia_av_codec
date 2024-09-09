@@ -55,7 +55,7 @@ config("av_codec_media_engine_filters_config") {
 }
 
 ohos_shared_library("av_codec_media_engine_filters") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   install_enable = true
 
   sanitize = av_codec_sanitize
@@ -74,6 +74,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "codec_capability_adapter.cpp",
     "decoder_surface_filter.cpp",
     "demuxer_filter.cpp",
+    "metadata_filter.cpp",
     "muxer_filter.cpp",
     "subtitle_sink_filter.cpp",
     "surface_decoder_adapter.cpp",

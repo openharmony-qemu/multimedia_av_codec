@@ -206,8 +206,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_5000, TestSize.Level2)
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
-    string widthStr = "width";
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(NULL, format));
 }
 
@@ -221,12 +220,9 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_5100, TestSize.Level2)
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetDoubleValue(format, frameRateStr.c_str(), DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(NULL, format));
 }
 
@@ -313,12 +309,9 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1500, TestSize.Level2)
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetDoubleValue(format, frameRateStr.c_str(), DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_SetParameter(NULL, format));
 }
 
@@ -503,12 +496,9 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_API_0200, TestSize.Level2)
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetDoubleValue(format, frameRateStr.c_str(), DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(vdec_, format));
@@ -527,12 +517,9 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_API_0300, TestSize.Level2)
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetDoubleValue(format, frameRateStr.c_str(), DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
@@ -552,12 +539,9 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_API_0400, TestSize.Level2)
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetDoubleValue(format, frameRateStr.c_str(), DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
@@ -578,12 +562,9 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_API_0500, TestSize.Level2)
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetDoubleValue(format, frameRateStr.c_str(), DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
@@ -605,12 +586,9 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_API_0600, TestSize.Level2)
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetDoubleValue(format, frameRateStr.c_str(), DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
@@ -638,12 +616,9 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_API_0700, TestSize.Level2)
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetDoubleValue(format, frameRateStr.c_str(), DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
@@ -664,12 +639,9 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_API_0800, TestSize.Level2)
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetDoubleValue(format, frameRateStr.c_str(), DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
@@ -738,12 +710,9 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_API_1200, TestSize.Level2)
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetDoubleValue(format, frameRateStr.c_str(), DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_SetParameter(vdec_, format));
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_SetParameter(vdec_, format));

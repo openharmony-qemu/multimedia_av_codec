@@ -41,6 +41,8 @@ av_codec_unittest_cflags = [
   "-Wimplicit-fallthrough",
   "-Wsign-compare",
   "-Wunused-parameter",
+  "-Dprivate=public",
+  "-Dprotected=public",
 ]
 
 ##################################################################################################################

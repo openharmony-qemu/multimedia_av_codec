@@ -31,10 +31,10 @@ public:
 
 private:
     int32_t Init() override;
-    int32_t StartThread() override;
+    int32_t Prepare() override;
     void InputThread();
     void OutputThread();
-    int32_t CreateWindow(OHNativeWindow *&window);
+    int32_t CreateWindow(std::shared_ptr<NativeWindow> &window);
     void OnBufferAvailable() override;
 
     OHOS::sptr<OHOS::Surface> surfaceConsumer_ = nullptr;

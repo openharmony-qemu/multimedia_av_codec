@@ -29,7 +29,7 @@
 #include "buffer/avbuffer_queue_consumer.h"
 #include "buffer/avbuffer_queue_define.h"
 #include "buffer/avbuffer_queue_producer.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#include "drm_i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -40,6 +40,7 @@ public:
     virtual int32_t Init(AVCodecType type, bool isMimeType,
         const std::string &name, Media::Meta &callerInfo, API_VERSION apiVersion = API_VERSION::API_VERSION_10) = 0;
     virtual int32_t Configure(const Format &format) = 0;
+    virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;
     virtual int32_t Flush() = 0;

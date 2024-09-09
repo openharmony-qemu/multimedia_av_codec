@@ -190,6 +190,11 @@ int32_t VideoDecCapiMock::Configure(std::shared_ptr<FormatMock> format)
     return AV_ERR_UNKNOWN;
 }
 
+int32_t VideoDecCapiMock::Prepare()
+{
+    return OH_VideoDecoder_Prepare(codec_);
+}
+
 int32_t VideoDecCapiMock::Start()
 {
     return OH_VideoDecoder_Start(codec_);

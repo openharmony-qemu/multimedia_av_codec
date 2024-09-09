@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_SAMPLE_BUFFER_MANAGER_H
-#define AVCODEC_SAMPLE_BUFFER_MANAGER_H
+#ifndef AVCODEC_SAMPLE_SAMPLE_BUFFER_QUEUE_H
+#define AVCODEC_SAMPLE_SAMPLE_BUFFER_QUEUE_H
 
 #include <optional>
 #include <condition_variable>
@@ -27,7 +27,7 @@ namespace Sample {
 class SampleBufferQueue {
 public:
     virtual int32_t QueueBuffer(const CodecBufferInfo& bufferInfo);
-    virtual std::optional<CodecBufferInfo> DequeueBuffer();
+    virtual std::optional<CodecBufferInfo> DequeueBuffer(int32_t timeoutMs = 5000);
     virtual int32_t Clear();
     virtual uint32_t GetFrameCount();
     virtual uint32_t IncFrameCount();
@@ -41,4 +41,4 @@ protected:
 } // Sample
 } // MediaAVCodec
 } // OHOS
-#endif // AVCODEC_SAMPLE_BUFFER_MANAGER_H
+#endif // AVCODEC_SAMPLE_SAMPLE_BUFFER_QUEUE_H

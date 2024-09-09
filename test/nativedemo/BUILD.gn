@@ -113,7 +113,6 @@ ohos_executable("av_codec_demo") {
 
   external_deps = [
     "c_utils:utils",
-    "drm_framework:native_drm",
     "ffmpeg:libohosffmpeg",
     "graphic_2d:libgraphic_utils",
     "graphic_2d:librender_service_client",

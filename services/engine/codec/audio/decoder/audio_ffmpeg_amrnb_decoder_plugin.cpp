@@ -68,9 +68,7 @@ int32_t AudioFFMpegAmrnbDecoderPlugin::Init(const Format &format)
         AVCODEC_LOGE("amrwb init error.");
         return ret;
     }
-    ret = basePlugin->OpenContext();
-    basePlugin->DisableNeedResample();
-    return ret;
+    return basePlugin->OpenContext();
 }
 
 int32_t AudioFFMpegAmrnbDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
@@ -153,10 +151,6 @@ bool AudioFFMpegAmrnbDecoderPlugin::CheckSampleFormat(const Format &format)
         return true;
     }
     auto destFmt = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
-    if (destFmt == AV_SAMPLE_FMT_NONE) {
-        AVCODEC_LOGE("Convert format failed, avSampleFormat not found");
-        return false;
-    }
     basePlugin->EnableResample(destFmt);
     return true;
 }

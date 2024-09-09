@@ -20,6 +20,7 @@
 #include "meta/media_types.h"
 #include "meta/audio_types.h"
 #include "meta/video_types.h"
+#include "buffer/avbuffer.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -34,6 +35,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
+const uint32_t MS_TO_SEC = 1000;
 bool Mime2CodecId(const std::string &mime, AVCodecID &codecId);
 bool Raw2CodecId(AudioSampleFormat sampleFormat, AVCodecID &codecId);
 std::string AVStrError(int errnum);
@@ -55,6 +57,11 @@ std::pair<bool, AVColorTransferCharacteristic> ColorTransfer2AVColorTransfer(Tra
 std::pair<bool, AVColorSpace> ColorMatrix2AVColorSpace(MatrixCoefficient matrix);
 
 std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate, int32_t channels);
+uint32_t TimeStampUs2FrameId(int64_t timeUs, double fps);
+void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl);
+void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
+bool IsInputFormatSupported(const char* name);
+int64_t AvTime2Us(int64_t hTime);
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

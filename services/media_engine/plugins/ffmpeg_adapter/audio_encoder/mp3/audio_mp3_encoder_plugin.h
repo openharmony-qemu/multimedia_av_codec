@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -76,7 +76,7 @@ private:
     AudioSampleFormat audioSampleFormat_;
 
     struct LameInfo;
-    LameInfo* lameInfo;
+    std::unique_ptr<LameInfo> lameInfo;
 
     int32_t lameInitFlag;
     int32_t channels_;
@@ -87,7 +87,7 @@ private:
     int32_t maxInputSize_;
     int32_t maxOutputSize_;
     int32_t outputSize_;
-    unsigned char* lameMp3Buffer;
+    std::unique_ptr<unsigned char[]> lameMp3Buffer;
 };
 } // namespace Mp3
 } // namespace Plugins

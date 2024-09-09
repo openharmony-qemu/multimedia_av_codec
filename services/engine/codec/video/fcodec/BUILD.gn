@@ -24,7 +24,7 @@ config("fcodec_public_cfg") {
 }
 
 ohos_shared_library("fcodec") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sanitize = av_codec_sanitize
   public_configs = [ ":fcodec_public_cfg" ]
@@ -64,6 +64,10 @@ ohos_shared_library("fcodec") {
     "init:libbegetutil",
     "media_foundation:media_foundation",
   ]
+
+  if (build_variant != "user") {
+    defines += [ "BUILD_ENG_VERSION" ]
+  }
 
   subsystem_name = "multimedia"
   part_name = "av_codec"

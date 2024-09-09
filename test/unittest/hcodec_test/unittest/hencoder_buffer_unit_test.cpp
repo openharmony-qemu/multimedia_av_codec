@@ -205,6 +205,8 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_264_codecbase_setparam, TestSize.
         .setParameterParamsMap = {{2, SetParameterParams{
             .requestIdr = true,
             .qpRange = QPRange{13, 42},
+            .bitRate = 15000000, // target bitrate : 15M
+            .frameRate = 60, // 60: target framerate
         }}},
     };
     bool ret = TesterCommon::Run(opt);
@@ -225,6 +227,29 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi_new, TestSize.Level1)
         .frameRate = 30,
         .timeout = 100,
         .isBufferMode = true,
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_codecbase_ebr, TestSize.Level1)
+{
+    OHOS::system::SetParameter("hcodec.dump", "0011");
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_CODEC_BASE,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H265,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = true,
+        .paramsFeedback = true,
+        .perFrameParamsMap = {
+            {10, PerFrameParams{ .ebrParam = EBRParam{16, 30, 25, 0}, }},
+        },
     };
     bool ret = TesterCommon::Run(opt);
     ASSERT_TRUE(ret);

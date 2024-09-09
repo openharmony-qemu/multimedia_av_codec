@@ -61,10 +61,25 @@ public:
     void SetThreadGroupId(const std::string& groupId);
     Status SetIsTransitent(bool isTransitent);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    Status SetMuted(bool isMuted);
+    float GetMaxAmplitude();
+    int32_t SetMaxAmplitudeCbStatus(bool status);
 
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
     static const int64_t kMaxAllowedAudioSinkDelayUs = 1500 * HST_MSECOND;
+
+    bool HasPlugin() const
+    {
+        return plugin_ != nullptr;
+    }
+
+    bool IsInitialized() const
+    {
+        return state_ == Pipeline::FilterState::INITIALIZED;
+    }
+    Status SetSeekTime(int64_t seekTime);
+
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
 private:
@@ -74,8 +89,28 @@ private:
     int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     void UpdateAudioWriteTimeMayWait();
+    bool UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void DrainAndReportEosEvent();
     void HandleEosInner(bool drain);
+    void CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer);
+    void CheckUpdateState(char *frame, uint64_t replyBytes, int32_t format);
+    bool DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer);
+
+    class UnderrunDetector {
+    public:
+        void DetectAudioUnderrun(int64_t clkTime, int64_t latency);
+        void SetEventReceiver(std::weak_ptr<Pipeline::EventReceiver> eventReceiver);
+        void UpdateBufferTimeNoLock(int64_t clkTime, int64_t latency);
+        void SetLastAudioBufferDuration(int64_t durationUs);
+        void Reset();
+    private:
+        std::weak_ptr<Pipeline::EventReceiver> eventReceiver_;
+        Mutex mutex_ {};
+        int64_t lastClkTime_ {HST_TIME_NONE};
+        int64_t lastLatency_ {HST_TIME_NONE};
+        int64_t lastBufferDuration_ {HST_TIME_NONE};
+    };
+
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
@@ -83,10 +118,11 @@ private:
     int64_t numFramesWritten_ {0};
     int64_t firstAudioAnchorTimeMediaUs_ {HST_TIME_NONE};
     int64_t nextAudioClockUpdateTimeUs_ {HST_TIME_NONE};
-    int64_t lastReportedClockTime_ {HST_TIME_NONE};
+    int64_t lastAnchorClockTime_  {HST_TIME_NONE};
     int64_t latestBufferPts_ {HST_TIME_NONE};
     int64_t latestBufferDuration_ {0};
-    bool forceUpdateTimeAnchorNextTime_ {false};
+    int64_t bufferDurationSinceLastAnchor_ {0};
+    std::atomic<bool> forceUpdateTimeAnchorNextTime_ {true};
     const std::string INPUT_BUFFER_QUEUE_NAME = "AudioSinkInputBufferQueue";
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
@@ -119,6 +155,13 @@ private:
     int64_t playingBufferDurationUs_ {0};
     int64_t lastBufferWriteTime_ {0};
     bool lastBufferWriteSuccess_ {true};
+    bool isMuted_ = false;
+    Mutex amplitudeMutex_ {};
+    float maxAmplitude_ = 0;
+
+    bool calMaxAmplitudeCbStatus_ = false;
+    UnderrunDetector underrunDetector_;
+    std::atomic<int64_t> seekTimeUs_ {HST_TIME_NONE};
 };
 }
 }

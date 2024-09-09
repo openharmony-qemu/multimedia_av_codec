@@ -108,6 +108,14 @@ int32_t HCodec::Configure(const Format &format)
     return DoSyncCall(MsgWhat::CONFIGURE, proc);
 }
 
+int32_t HCodec::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
+{
+    std::function<void(ParamSP)> proc = [&](ParamSP msg) {
+        msg->SetValue("buffer", buffer);
+    };
+    return DoSyncCall(MsgWhat::CONFIGURE_BUFFER, proc);
+}
+
 int32_t HCodec::SetOutputSurface(sptr<Surface> surface)
 {
     HLOGI(">>");
@@ -287,6 +295,9 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
         case CODEC_OMX_VIDEO_CodingHEVC:
             shortName_ = isEncoderStr + "hevc";
             break;
+        case CODEC_OMX_VIDEO_CodingVVC:
+            shortName_ = isEncoderStr + "vvc";
+            break;
         default:
             shortName_ = isEncoderStr;
             break;
@@ -458,6 +469,18 @@ std::optional<double> HCodec::GetFrameRateFromUser(const Format &format)
         return static_cast<double>(frameRateInt);
     }
     return nullopt;
+}
+
+bool HCodec::CheckBufPixFmt(const sptr<SurfaceBuffer>& buffer)
+{
+    int32_t dispFmt = buffer->GetFormat();
+    const std::vector<int32_t>& supportFmts = caps_.port.video.supportPixFmts;
+    if (std::find(supportFmts.begin(), supportFmts.end(), dispFmt) == supportFmts.end()) {
+        LOGE("unsupported buffer pixel format %d", dispFmt);
+        callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INPUT_DATA_ERROR);
+        return false;
+    }
+    return true;
 }
 
 int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
@@ -868,7 +891,7 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         return;
     }
     if (!gotFirstInput_) {
-        LOGI("got first input");
+        HLOGI("got first input");
         gotFirstInput_ = true;
     }
     bufferInfo->omxBuffer->filledLen = static_cast<uint32_t>
@@ -878,38 +901,37 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     bufferInfo->omxBuffer->flag = UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_));
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
-    OnQueueInputBuffer(mode, bufferInfo);
+    int32_t ret = OnQueueInputBuffer(mode, bufferInfo);
+    if (ret != AVCS_ERR_OK) {
+        SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
+    }
 }
 
-void HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
+int32_t HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
 {
     switch (mode) {
         case KEEP_BUFFER: {
-            return;
+            return AVCS_ERR_OK;
         }
         case RESUBMIT_BUFFER: {
             if (inputPortEos_) {
                 HLOGI("input already eos, keep this buffer");
-                return;
+                return AVCS_ERR_OK;
             }
             bool eos = (info->omxBuffer->flag & OMX_BUFFERFLAG_EOS);
             if (!eos && info->omxBuffer->filledLen == 0) {
                 HLOGI("this is not a eos buffer but not filled, ask user to re-fill it");
                 NotifyUserToFillThisInBuffer(*info);
-                return;
+                return AVCS_ERR_OK;
             }
             if (eos) {
                 inputPortEos_ = true;
             }
-            int32_t ret = NotifyOmxToEmptyThisInBuffer(*info);
-            if (ret != AVCS_ERR_OK) {
-                SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
-            }
-            return;
+            return NotifyOmxToEmptyThisInBuffer(*info);
         }
         default: {
             HLOGE("SHOULD NEVER BE HERE");
-            return;
+            return AVCS_ERR_UNKNOWN;
         }
     }
 }
@@ -934,7 +956,9 @@ void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
 int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
 {
     SCOPED_TRACE_WITH_ID(info.bufferId);
-    info.Dump(compUniqueStr_, dumpMode_, isEncoder_);
+#ifdef BUILD_ENG_VERSION
+    info.Dump(compUniqueStr_, inTotalCnt_, dumpMode_, isEncoder_);
+#endif
     info.EndCpuAccess();
     int32_t ret = compNode_->EmptyThisBuffer(*(info.omxBuffer));
     if (ret != HDF_SUCCESS) {
@@ -1014,12 +1038,14 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     SCOPED_TRACE_WITH_ID(info.bufferId);
     if (!gotFirstOutput_) {
-        LOGI("got first output");
+        HLOGI("got first output");
         OHOS::QOS::ResetThreadQos();
         gotFirstOutput_ = true;
     }
     info.BeginCpuAccess();
-    info.Dump(compUniqueStr_, dumpMode_, isEncoder_);
+#ifdef BUILD_ENG_VERSION
+    info.Dump(compUniqueStr_, outRecord_.totalCnt, dumpMode_, isEncoder_);
+#endif
     shared_ptr<OmxCodecBuffer> omxBuffer = info.omxBuffer;
     info.avBuffer->pts_ = omxBuffer->pts;
     info.avBuffer->flag_ = OmxFlagToUserFlag(omxBuffer->flag);
@@ -1187,7 +1213,10 @@ int32_t HCodec::DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamS
         oper(msg);
     }
     bool ret = MsgHandleLoop::SendSyncMsg(msgType, msg, reply, FIVE_SECONDS_IN_MS);
-    IF_TRUE_RETURN_VAL_WITH_MSG(!ret, AVCS_ERR_UNKNOWN, "wait msg %d time out", msgType);
+    if (!ret) {
+        HLOGE("wait msg %d(%s) time out", msgType, ToString(msgType));
+        return AVCS_ERR_UNKNOWN;
+    }
     int32_t err;
     IF_TRUE_RETURN_VAL_WITH_MSG(reply == nullptr || !reply->GetValue("err", err),
         AVCS_ERR_UNKNOWN, "error code of msg %d not replied", msgType);
@@ -1318,6 +1347,10 @@ int32_t HCodec::OnAllocateComponent()
         return AVCS_ERR_UNKNOWN;
     }
     compUniqueStr_ = "[" + to_string(componentId_) + "][" + shortName_ + "]";
+    inputOwnerStr_ = { compUniqueStr_ + "in_us", compUniqueStr_ + "in_user",
+                       compUniqueStr_ + "in_omx", compUniqueStr_ + "in_surface"};
+    outputOwnerStr_ = { compUniqueStr_ + "out_us", compUniqueStr_ + "out_user",
+                        compUniqueStr_ + "out_omx", compUniqueStr_ + "out_surface"};
     HLOGI("create omx node %s succ", caps_.compName.c_str());
     PrintCaller();
     return AVCS_ERR_OK;

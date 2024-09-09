@@ -25,6 +25,8 @@
 
 #define FUZZ_PROJECT_NAME "demuxer_fuzzer"
 namespace OHOS {
+static int32_t g_width = 3840;
+static int32_t g_height = 2160;
 static int64_t GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
@@ -60,21 +62,20 @@ void RunNormalDemuxer()
     int64_t size = GetFileSize(file);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!source) {
+        close(fd);
         return;
     }
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
     if (!demuxer) {
+        close(fd);
         return;
     }
-
     OH_AVFormat *sourceFormat = OH_AVSource_GetSourceFormat(source);
     OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount);
     for (int32_t index = 0; index < trackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    static int32_t width = 3840;
-    static int32_t height = 2160;
-    OH_AVMemory *memory = OH_AVMemory_Create(width * height);
+    OH_AVMemory *memory = OH_AVMemory_Create(g_width * g_height);
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < trackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
@@ -82,12 +83,21 @@ void RunNormalDemuxer()
             if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
+            if (trackFormat) {
+                OH_AVFormat_Destroy(trackFormat);
+            }
             OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr);
             SetVarValue(attr, tarckType, audioIsEnd, videoIsEnd);
         }
     }
     OH_AVDemuxer_Destroy(demuxer);
     OH_AVSource_Destroy(source);
+    if (sourceFormat) {
+        OH_AVFormat_Destroy(sourceFormat);
+    }
+    if (memory) {
+        OH_AVMemory_Destroy(memory);
+    }
     close(fd);
 }
 
@@ -103,27 +113,29 @@ void RunNormalDemuxerApi11()
     int64_t size = GetFileSize(file);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!source) {
+        close(fd);
         return;
     }
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
     if (!demuxer) {
+        close(fd);
         return;
     }
-
     OH_AVFormat *sourceFormat = OH_AVSource_GetSourceFormat(source);
     OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount);
     for (int32_t index = 0; index < trackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    static int32_t width = 3840;
-    static int32_t height = 2160;
-    OH_AVBuffer *buffer = OH_AVBuffer_Create(width * height);
+    OH_AVBuffer *buffer = OH_AVBuffer_Create(g_width * g_height);
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < trackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType);
             if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
+            }
+            if (trackFormat) {
+                OH_AVFormat_Destroy(trackFormat);
             }
             OH_AVDemuxer_ReadSampleBuffer(demuxer, index, buffer);
             OH_AVBuffer_GetBufferAttr(buffer, &attr);
@@ -132,6 +144,12 @@ void RunNormalDemuxerApi11()
     }
     OH_AVDemuxer_Destroy(demuxer);
     OH_AVSource_Destroy(source);
+    if (sourceFormat) {
+        OH_AVFormat_Destroy(sourceFormat);
+    }
+    if (buffer) {
+        OH_AVBuffer_Destroy(buffer);
+    }
     close(fd);
 }
 

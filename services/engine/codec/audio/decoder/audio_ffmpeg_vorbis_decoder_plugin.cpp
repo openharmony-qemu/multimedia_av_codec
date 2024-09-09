@@ -53,9 +53,10 @@ AudioFFMpegVorbisDecoderPlugin::AudioFFMpegVorbisDecoderPlugin()
 
 AudioFFMpegVorbisDecoderPlugin::~AudioFFMpegVorbisDecoderPlugin()
 {
-    basePlugin->Release();
-    basePlugin.reset();
-    basePlugin = nullptr;
+    if (basePlugin != nullptr) {
+        basePlugin->Release();
+        basePlugin.reset();
+    }
 }
 
 bool AudioFFMpegVorbisDecoderPlugin::CheckSampleFormat(const Format &format)
@@ -76,10 +77,6 @@ bool AudioFFMpegVorbisDecoderPlugin::CheckSampleFormat(const Format &format)
         return true;
     }
     auto destFmt = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
-    if (destFmt == AV_SAMPLE_FMT_NONE) {
-        AVCODEC_LOGE("Convert format failed, avSampleFormat not found");
-        return false;
-    }
     basePlugin->EnableResample(destFmt);
     return true;
 }

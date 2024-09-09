@@ -19,8 +19,6 @@
 #include "media_downloader.h"
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
-#include "meta/media_types.h"
-#include "download/http_curl_client.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,6 +34,8 @@ public:
     Status Reset() override;
     Status Start() override;
     Status Stop() override;
+    Status Pause() override;
+    Status Resume() override;
     Status GetParameter(std::shared_ptr<Meta> &meta) override;
     Status SetParameter(const std::shared_ptr<Meta> &meta) override;
     Status SetCallback(Callback* cb) override;
@@ -52,12 +52,16 @@ public:
     Status SelectBitRate(uint32_t bitRate) override;
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
-    void SetDemuxerState() override;
+    Status SelectStream(int32_t streamID) override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
+    Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+
 private:
-    void CloseUri();
+    void CloseUri(bool isAsync = false);
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
 
     uint32_t bufferSize_;

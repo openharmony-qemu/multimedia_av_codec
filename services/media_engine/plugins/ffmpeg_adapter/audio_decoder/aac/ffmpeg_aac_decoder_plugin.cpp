@@ -87,6 +87,9 @@ Status FFmpegAACDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
         AVCODEC_LOGE("AllocateContext failed, ret=%{public}d", ret);
         return ret;
     }
+    if (!CheckSampleFormat(parameter)) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     ret = basePlugin->InitContext(parameter);
     if (ret != Status::OK) {
         AVCODEC_LOGE("InitContext failed, ret=%{public}d", ret);
@@ -159,7 +162,7 @@ bool FFmpegAACDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &form
 
 bool FFmpegAACDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 {
-    if (!CheckAdts(format) || !CheckChannelCount(format) || !CheckSampleFormat(format) || !CheckSampleRate(format)) {
+    if (!CheckAdts(format) || !CheckChannelCount(format) || !CheckSampleRate(format)) {
         return false;
     }
     return true;

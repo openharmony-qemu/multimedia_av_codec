@@ -37,7 +37,7 @@ constexpr int32_t DEFAULT_OUT_SURFACE_CNT = 4;
 constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_MIN_BUFFER_CNT = 2;
 constexpr uint32_t VIDEO_PIX_DEPTH_YUV = 3;
-constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 1024;
+constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 1474560;
 constexpr int32_t VIDEO_MIN_SIZE = 2;
 constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
 constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 4096;
@@ -53,8 +53,10 @@ constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
+#ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
+#endif // BUILD_ENG_VERSION
 constexpr struct {
     const std::string_view codecName;
     const std::string_view mimeType;
@@ -76,22 +78,25 @@ FCodec::~FCodec()
 {
     ReleaseResource();
     callback_ = nullptr;
+#ifdef BUILD_ENG_VERSION
     if (dumpInFile_ != nullptr) {
         dumpInFile_->close();
     }
     if (dumpOutFile_ != nullptr) {
         dumpOutFile_->close();
     }
+#endif // BUILD_ENG_VERSION
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
 
+#ifdef BUILD_ENG_VERSION
 void FCodec::OpenDumpFile()
 {
     std::string dumpModeStr = OHOS::system::GetParameter("fcodec.dump", "0");
     AVCODEC_LOGI("dumpModeStr %{public}s", dumpModeStr.c_str());
     CHECK_AND_RETURN_LOG(dumpModeStr.length() == 2, "dumpModeStr length should equal 2"); // 2
     char fileName[PATH_MAX_LEN] = {0};
-    int ret = 0;
+    int ret;
     if (dumpModeStr[0] == '1') {
         ret = sprintf_s(fileName, sizeof(fileName), "%s/input_%p.h264", DUMP_PATH, this);
         CHECK_AND_RETURN_LOG(ret > 0, "Fail to sprintf input fileName");
@@ -114,6 +119,7 @@ void FCodec::OpenDumpFile()
         }
     }
 }
+#endif // BUILD_ENG_VERSION
 
 int32_t FCodec::Initialize()
 {
@@ -140,7 +146,9 @@ int32_t FCodec::Initialize()
     sendTask_->RegisterHandler([this] { SendFrame(); });
     receiveTask_ = std::make_shared<TaskThread>("ReceiveFrame");
     receiveTask_->RegisterHandler([this] { ReceiveFrame(); });
+#ifdef BUILD_ENG_VERSION
     OpenDumpFile();
+#endif // BUILD_ENG_VERSION
     state_ = State::INITIALIZED;
     AVCODEC_LOGI("Init codec successful,  state: Uninitialized -> Initialized");
     return AVCS_ERR_OK;
@@ -786,6 +794,7 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
                      height_, height);
         width_ = width;
         height_ = height;
+        ResetData();
         scale_ = nullptr;
         CalculateBufferSize();
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
@@ -841,6 +850,7 @@ void FCodec::ReleaseBuffers()
         }
     }
     buffers_[INDEX_OUTPUT].clear();
+    outAVBuffer4Surface_.clear();
     oLock.unlock();
     isBufferAllocated_ = false;
 }
@@ -899,9 +909,8 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
 
 void FCodec::SendFrame()
 {
-    if (state_ == State::STOPPING || state_ == State::FLUSHING) {
-        return;
-    } else if (state_ != State::RUNNING || isSendEos_) {
+    CHECK_AND_RETURN_LOG(state_ != State::STOPPING && state_ != State::FLUSHING, "Invalid state");
+    if (state_ != State::RUNNING || isSendEos_) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
@@ -932,10 +941,12 @@ void FCodec::SendFrame()
         recvLock.unlock();
         inputAvailQue_->Pop();
         inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
+#ifdef BUILD_ENG_VERSION
         if (dumpInFile_ && dumpInFile_->is_open()) {
             dumpInFile_->write(reinterpret_cast<char *>(inputAVBuffer->memory_->GetAddr()),
                                static_cast<int32_t>(inputAVBuffer->memory_->GetSize()));
         }
+#endif // BUILD_ENG_VERSION
         callback_->OnInputBufferAvailable(index, inputAVBuffer);
     } else if (ret == AVERROR(EAGAIN)) {
         std::unique_lock<std::mutex> sendLock(sendMutex_);
@@ -1025,6 +1036,7 @@ void FCodec::DumpOutputBuffer()
         callback_->OnOutputFormatChanged(format_);
     }
     decNum_++;
+#ifdef BUILD_ENG_VERSION
     if (!dumpOutFile_ || !dumpOutFile_->is_open()) {
         return;
     }
@@ -1040,6 +1052,7 @@ void FCodec::DumpOutputBuffer()
         dumpOutFile_->write(reinterpret_cast<char *>(cachedFrame_->data[2] + i * cachedFrame_->linesize[2]),
                             static_cast<int32_t>(cachedFrame_->width / 2)); // 2
     }
+#endif // BUILD_ENG_VERSION
 }
 
 void FCodec::ReceiveFrame()
@@ -1093,6 +1106,19 @@ void FCodec::ReceiveFrame()
     FramePostProcess(frameBuffer, index, status, ret);
 }
 
+void FCodec::FindAvailIndex(uint32_t index)
+{
+    uint32_t curQueSize = renderAvailQue_->Size();
+    for (uint32_t i = 0u; i < curQueSize; i++) {
+        uint32_t num = renderAvailQue_->Pop();
+        if (num == index) {
+            break;
+        } else {
+            renderAvailQue_->Push(num);
+        }
+    }
+}
+
 void FCodec::RenderFrame()
 {
     if (state_ == State::STOPPING || state_ == State::FLUSHING) {
@@ -1134,7 +1160,7 @@ void FCodec::RenderFrame()
             outputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(surfaceMemory->GetBase(), surfaceMemory->GetSize());
             outputBuffer->width_ = width_;
             outputBuffer->height_ = height_;
-            renderAvailQue_->Pop();
+            FindAvailIndex(curIndex);
         }
         buffers_[INDEX_OUTPUT][curIndex]->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
         codecAvailQue_->Push(curIndex);
@@ -1208,14 +1234,92 @@ int32_t FCodec::RenderOutputBuffer(uint32_t index)
     }
 }
 
+int32_t FCodec::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
+{
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AV_ERR_OPERATE_NOT_PERMIT,
+                             "Not support convert from AVBuffer Mode to Surface Mode");
+    sptr<Surface> curSurface = sInfo_.surface;
+    uint64_t oldId = curSurface->GetUniqueId();
+    uint64_t newId = newSurface->GetUniqueId();
+    AVCODEC_LOGI("surface %{public}" PRIu64 " -> %{public}" PRIu64 "", oldId, newId);
+    if (oldId == newId) {
+        return AVCS_ERR_OK;
+    }
+    int32_t outputBufferCnt = 0;
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt);
+    int32_t ret = SetQueueSize(newSurface, outputBufferCnt);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    std::unique_lock<std::mutex> sLock(surfaceMutex_);
+    curSurface->CleanCache(true); // make sure old surface is empty and go black
+    newSurface->Connect(); // cleancache will work only if the surface is connected by us
+    newSurface->CleanCache(); // make sure new surface is empty
+    ret = AttachToNewSurface(newSurface);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    
+    int32_t videoRotation = 0;
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, videoRotation);
+    newSurface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(videoRotation)));
+    sInfo_.surface = newSurface;
+    sLock.unlock();
+    return AVCS_ERR_OK;
+}
+
+int32_t FCodec::SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize)
+{
+    int32_t err = surface->SetQueueSize(targetSize);
+    if (err != 0) {
+        AVCODEC_LOGE("surface %{public}" PRIu64 ", SetQueueSize to %{public}u failed, GSError=%{public}d",
+            surface->GetUniqueId(), targetSize, err);
+        return AVCS_ERR_UNKNOWN;
+    }
+    AVCODEC_LOGI("surface %{public}" PRIu64 ", SetQueueSize to %{public}u succ", surface->GetUniqueId(), targetSize);
+    return AVCS_ERR_OK;
+}
+
+int32_t FCodec::AttachToNewSurface(const sptr<Surface> &newSurface)
+{
+    uint64_t newId = newSurface->GetUniqueId();
+    for (uint32_t index = 0; index < buffers_[INDEX_OUTPUT].size(); index++) {
+        if (buffers_[INDEX_OUTPUT][index]->sMemory_ == nullptr) {
+            continue;
+        }
+        sptr<SurfaceBuffer> surfaceBuffer = buffers_[INDEX_OUTPUT][index]->sMemory_->GetSurfaceBuffer();
+        if (surfaceBuffer == nullptr) {
+            continue;
+        }
+        int32_t err = newSurface->AttachBufferToQueue(surfaceBuffer);
+        if (err != 0) {
+            AVCODEC_LOGE("surface %{public}" PRIu64 ", AttachBufferToQueue(seq=%{public}u) failed, GSError=%{public}d",
+                newId, surfaceBuffer->GetSeqNum(), err);
+            return AVCS_ERR_UNKNOWN;
+        }
+        
+        if (buffers_[INDEX_OUTPUT][index]->owner_ == FBuffer::Owner::OWNED_BY_SURFACE) {
+            buffers_[INDEX_OUTPUT][index]->owner_ = FBuffer::Owner::OWNED_BY_US;
+        }
+    }
+    return AVCS_ERR_OK;
+}
+
 int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED || state_ == State::CONFIGURED), AVCS_ERR_INVALID_STATE,
-                             "set output surface fail:  not in Initialized or Configured state");
+    CHECK_AND_RETURN_RET_LOG(state_ != State::UNINITIALIZED, AV_ERR_INVALID_VAL,
+                             "set output surface fail: not initialized or configured");
+    CHECK_AND_RETURN_RET_LOG((state_ == State::CONFIGURED || state_ == State::FLUSHED ||
+        state_ == State::RUNNING || state_ == State::EOS), AVCS_ERR_INVALID_STATE,
+        "set output surface fail: state %{public}d not support set output surface",
+        static_cast<int32_t>(state_.load()));
     if (surface == nullptr || surface->IsConsumer()) {
         AVCODEC_LOGE("Set surface fail");
         return AVCS_ERR_INVALID_VAL;
+    }
+    if (state_ == State::FLUSHED || state_ == State::RUNNING || state_ == State::EOS) {
+        return ReplaceOutputSurfaceWhenRunning(surface);
     }
     sInfo_.surface = surface;
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {

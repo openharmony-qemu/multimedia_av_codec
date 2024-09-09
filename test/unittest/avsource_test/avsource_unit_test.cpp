@@ -75,7 +75,12 @@ string g_fmp4m4vPath = TEST_FILE_PATH + string("h264_fmp4.m4v");
 string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 string g_srt = TEST_FILE_PATH + string("subtitle.srt");
 string g_nonStandardBomPath = TEST_FILE_PATH + string("nonstandard_bom.mp3");
+string g_vttPath = TEST_FILE_PATH + string("webvtt_test.vtt");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
+string g_mp4RotationNone = TEST_FILE_PATH + string("ROTATE_NONE.mp4");
+string g_mp4Rotation270 = TEST_FILE_PATH + string("ROTATE_270.mp4");
+string g_mp4FLIPV = TEST_FILE_PATH + string("FLIP_V.mp4");
+string g_mp4FLIPV90 = TEST_FILE_PATH + string("FLIP_V_90.mp4");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -109,6 +114,7 @@ void AVSourceUnitTest::TearDown(void)
     size_ = 0;
     addr_ = nullptr;
     buffSize_ = 0;
+    initStatus_ = false;
     ResetFormatValue();
 }
 
@@ -161,6 +167,7 @@ void AVSourceUnitTest::ResetFormatValue()
     formatVal_.audioSampleFormat = 0;
     formatVal_.frameRate = 0;
     formatVal_.rotationAngle = 0;
+    formatVal_.orientationType = 0;
     formatVal_.channelLayout = 0;
     formatVal_.hdrType = 0;
     formatVal_.codecProfile = 0;
@@ -1608,7 +1615,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1309, TestSize.Level1)
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1310, TestSize.Level1)
 {
     InitResource(g_apeUri, URI);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
@@ -1985,6 +1992,44 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: AVSource_GetFormat_3002
+ * @tc.desc: get format when the file is vtt
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3002, TestSize.Level1)
+{
+    fd_ = OpenFile(g_vttPath);
+    size_ = GetFileSize(g_vttPath);
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_SUBTITLE, formatVal_.hasSubtitle));
+    ASSERT_EQ(formatVal_.fileType, 302);
+    ASSERT_EQ(formatVal_.hasVideo, 0);
+    ASSERT_EQ(formatVal_.hasAudio, 0);
+    ASSERT_EQ(formatVal_.hasSubtitle, 1);
+#endif
+
+    printf("---- %s ----\n", g_vttPath.c_str());
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_SUBTITLE);
+    ASSERT_EQ(formatVal_.codecMime, "text/vtt");
+}
+
+/**
  * @tc.name: AVSource_GetFormat_4000
  * @tc.desc: get format when the file is nonstandard BOM
  * @tc.type: FUNC
@@ -2007,35 +2052,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_4000, TestSize.Level1)
     ASSERT_EQ(formatVal_.title, "bom");
     ASSERT_EQ(formatVal_.artist, "张三");
     ASSERT_EQ(formatVal_.album, "a");
-}
-
-/**
- * @tc.name: AVSource_ValidateMimeType_1000
- * @tc.desc: validate MimeType when av_codec Type is mulaw
- * @tc.type: FUNC
- */
-HWTEST_F(AVSourceUnitTest, AVSource_ValidateMimeType_1000, TestSize.Level1)
-{
-    fd_ = OpenFile(g_wavPath2);
-    size_ = GetFileSize(g_wavPath2);
-    printf("----%s----\n", g_wavPath2.c_str());
-    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
-    ASSERT_EQ(formatVal_.codecMime, "audio/g711mu");
-    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.channelLayout, 3);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
-    ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 705600);
 }
 
 /**
@@ -2084,5 +2100,123 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1601, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     ASSERT_EQ(formatVal_.width, 640);
     ASSERT_EQ(formatVal_.height, 360);
+}
+
+/**
+ * @tc.name: AVSource_ValidateMimeType_1000
+ * @tc.desc: validate MimeType when av_codec Type is mulaw
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_ValidateMimeType_1000, TestSize.Level1)
+{
+    fd_ = OpenFile(g_wavPath2);
+    size_ = GetFileSize(g_wavPath2);
+    printf("----%s----\n", g_wavPath2.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_EQ(formatVal_.codecMime, "audio/g711mu");
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.bitRate, 705600);
+}
+
+/**
+ * @tc.name: AVSourse_OrientationType_1000
+ * @tc.desc: determine the orientation type of the video ROTATE_NONE.mp4
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1000, TestSize.Level1)
+{
+    fd_ = OpenFile(g_mp4RotationNone);
+    size_ = GetFileSize(g_mp4RotationNone);
+    printf("----%s----\n", g_mp4RotationNone.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_ORIENTATION_TYPE, formatVal_.orientationType));
+    ASSERT_EQ(formatVal_.orientationType, 0);
+}
+
+/**
+ * @tc.name: AVSourse_OrientationType_1001
+ * @tc.desc: determine the orientation type of the video ROTATE_270.mp4
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1001, TestSize.Level1)
+{
+    fd_ = OpenFile(g_mp4Rotation270);
+    size_ = GetFileSize(g_mp4Rotation270);
+    printf("----%s----\n", g_mp4Rotation270.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_ORIENTATION_TYPE, formatVal_.orientationType));
+    ASSERT_EQ(formatVal_.orientationType, 3);
+}
+
+/**
+ * @tc.name: AVSourse_OrientationType_1002
+ * @tc.desc: determine the orientation type of the video FLIP_V.mp4
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1002, TestSize.Level1)
+{
+    fd_ = OpenFile(g_mp4FLIPV);
+    size_ = GetFileSize(g_mp4FLIPV);
+    printf("----%s----\n", g_mp4FLIPV.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_ORIENTATION_TYPE, formatVal_.orientationType));
+    ASSERT_EQ(formatVal_.orientationType, 5);
+}
+
+/**
+ * @tc.name: AVSourse_OrientationType_1003
+ * @tc.desc: determine the orientation type of the video FLIP_V_90.mp4
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1003, TestSize.Level1)
+{
+    fd_ = OpenFile(g_mp4FLIPV90);
+    size_ = GetFileSize(g_mp4FLIPV90);
+    printf("----%s----\n", g_mp4FLIPV90.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_ORIENTATION_TYPE, formatVal_.orientationType));
+    ASSERT_EQ(formatVal_.orientationType, 7);
+}
+
+/**
+ * @tc.name: AVSourse_OrientationType_1004
+ * @tc.desc: determine the orientation type of the video flv
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1004, TestSize.Level1)
+{
+    fd_ = OpenFile(g_flvPath);
+    size_ = GetFileSize(g_flvPath);
+    printf("----%s----\n", g_flvPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_ORIENTATION_TYPE, formatVal_.orientationType));
 }
 } // namespace

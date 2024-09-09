@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -783,6 +783,845 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_4200, TestSize.Level1)
     vDecSample->SF_OUTPUT = true;
     vDecSample->outputCallbackStop = true;
     int32_t ret = vDecSample->StartVideoDecoder();
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_4300
+ * @tc.name      : create-configure-start-EOS-stop-start-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_4300, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(0, vDecSample->errCount);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_4400
+ * @tc.name      : create-configure-start-EOS-stop-release-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_4400, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(0, vDecSample->errCount);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Release();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_4500
+ * @tc.name      : create-configure-start-EOS-stop-reset-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_4500, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(0, vDecSample->errCount);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_4600
+ * @tc.name      : create-configure-start-EOS-flush-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_4600, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(0, vDecSample->errCount);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_4700
+ * @tc.name      : create-configure-start-EOS-flush-start-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_4700, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(0, vDecSample->errCount);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_4800
+ * @tc.name      : create-configure-start-EOS-flush-stop-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_4800, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(0, vDecSample->errCount);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_4900
+ * @tc.name      : create-configure-start-EOS-flush-reset-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_4900, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(0, vDecSample->errCount);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_5000
+ * @tc.name      : create-configure-start-EOS-flush-error-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5000, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(0, vDecSample->errCount);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Release();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->ConfigureVideoDecoder();
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_5100
+ * @tc.name      : create-configure-start-EOS-reset-configure-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5100, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(0, vDecSample->errCount);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->ConfigureVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_5200
+ * @tc.name      : create-configure-start-EOS-reset-release-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5200, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(0, vDecSample->errCount);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Release();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_5300
+ * @tc.name      : create-configure-start-EOS-reset-error-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5300, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(0, vDecSample->errCount);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_5400
+ * @tc.name      : create-configure-error-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5400, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_5500
+ * @tc.name      : create-configure-start-stop-start-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5500, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_5600
+ * @tc.name      : create-configure-start-stop-release-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5600, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Release();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_5700
+ * @tc.name      : create-configure-start-stop-reset-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5700, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_5800
+ * @tc.name      : create-configure-start-stop-error-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5800, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_5900
+ * @tc.name      : create-configure-start-flush-start-flush-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5900, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_6000
+ * @tc.name      : create-configure-start-flush-start-eos-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_6000, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->state_EOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_6100
+ * @tc.name      : create-configure-start-flush-start-stop-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_6100, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_6200
+ * @tc.name      : create-configure-start-flush-start-reset-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_6200, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_6300
+ * @tc.name      : create-configure-start-flush-start-error-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_6300, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->ConfigureVideoDecoder();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Release();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_6400
+ * @tc.name      : create-configure-start-flush-start-error-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_6400, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    cout << "set callback" << endl;
+    ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_6500
+ * @tc.name      : create-configure-start-flush-stop-start-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_6500, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Release();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_6600
+ * @tc.name      : create-configure-start-flush-stop-reset-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_6600, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_6700
+ * @tc.name      : create-configure-start-flush-stop-error-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_6700, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_6800
+ * @tc.name      : create-configure-start-flush-reset-configure-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_6800, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->ConfigureVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_6900
+ * @tc.name      : create-configure-start-flush-reset-release-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_6900, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Release();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_7000
+ * @tc.name      : create-configure-start-flush-reset-error-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_7000, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_7100
+ * @tc.name      : create-configure-start-reset-configure-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_7100, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->ConfigureVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_7200
+ * @tc.name      : create-configure-start-reset-release-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_7200, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Release();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_7300
+ * @tc.name      : create-configure-start-reset-error-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_7300, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->Stop();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->Flush();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_7400
+ * @tc.name      : create-configure-start-error-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_7400, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Start();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->ConfigureVideoDecoder();
+    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Release();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_7500
+ * @tc.name      : create-configure-reset-configure-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_7500, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Reset();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->ConfigureVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_7600
+ * @tc.name      : create-configure-release-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_7600, TestSize.Level2)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample->Release();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_7700
+ * @tc.name      : Flush or stop in buffe decoder callback function surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_7700, TestSize.Level1)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->inputCallbackFlush = true;
+    ret = vDecSample->StartVideoDecoder();
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_7800
+ * @tc.name      : Flush or stop in buffe decoder callback function surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_7800, TestSize.Level1)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->inputCallbackStop = true;
+    ret = vDecSample->StartVideoDecoder();
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_7900
+ * @tc.name      : Flush or stop in buffe decoder callback function surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_7900, TestSize.Level1)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->outputCallbackFlush = true;
+    ret = vDecSample->StartVideoDecoder();
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_8000
+ * @tc.name      : Flush or stop in buffe decoder callback function surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_8000, TestSize.Level1)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->outputCallbackStop = true;
+    ret = vDecSample->StartVideoDecoder();
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_8100
+ * @tc.name      : Flush or stop in surf decoder callback function surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_8100, TestSize.Level1)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->inputCallbackFlush = true;
+    ret = vDecSample->StartVideoDecoder();
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_8200
+ * @tc.name      : Flush or stop in buffe decoder callback function surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_8200, TestSize.Level1)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->inputCallbackStop = true;
+    ret = vDecSample->StartVideoDecoder();
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_8300
+ * @tc.name      : Flush or stop in buffe decoder callback function surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_8300, TestSize.Level1)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->outputCallbackFlush = true;
+    ret = vDecSample->StartVideoDecoder();
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_8400
+ * @tc.name      : Flush or stop in buffe decoder callback function surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_8400, TestSize.Level1)
+{
+    vDecSample->SF_OUTPUT = true;
+    int32_t ret = vDecSample->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vDecSample->outputCallbackStop = true;
+    ret = vDecSample->StartVideoDecoder();
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
     ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample->WaitForEOS();

@@ -261,6 +261,14 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC;
 extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
 
 /**
+ * @brief Enumerates the mime type of subtitle webvtt.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT;
+
+/**
  * @brief The extra data's key of surface Buffer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -281,7 +289,7 @@ extern const char *OH_ED_KEY_EOS;
 extern const char *OH_MD_KEY_TRACK_TYPE;
 /* Key for codec mime type, value type is string. */
 extern const char *OH_MD_KEY_CODEC_MIME;
-/* Key for duration, value type is int64_t. */
+/* Key for file duration, value type is int64_t. */
 extern const char *OH_MD_KEY_DURATION;
 /* Key for bitrate, value type is int64_t. */
 extern const char *OH_MD_KEY_BITRATE;
@@ -618,6 +626,27 @@ extern const char *OH_MD_KEY_VIDEO_SAR;
  * @since 12
  */
 extern const char *OH_MD_KEY_START_TIME;
+/**
+ * @brief Key for start time of track, value type is int64_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_TRACK_START_TIME;
+/**
+ * @brief Key for setting the output color space of video decoder. The value type is int32_t.
+ * The supported value is {@link OH_COLORSPACE_BT709_LIMIT}, see {@link OH_NativeBuffer_ColorSpace}. It is used in
+ * {@link OH_VideoDecoder_Configure}. If the color space conversion capability is supported and this key is configured,
+ * the video decoder will automatically transcode an HDR Vivid video to an SDR video with color space BT709.
+ * If color space conversion capability is not supported, {@link OH_VideoDecoder_Configure} returns
+ * {@link AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION}.
+ * If the input video is not an HDR vivid video, an error {@link AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION} will
+ * be reported by callback function {@link OH_AVCodecOnError}.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE;
 
 /**
  * @brief Media type.
@@ -630,6 +659,10 @@ typedef enum OH_MediaType {
     MEDIA_TYPE_AUD = 0,
     /* track is video. */
     MEDIA_TYPE_VID = 1,
+    /** track is subtitle.
+     * @since 12
+     */
+    MEDIA_TYPE_SUBTITLE = 2,
 } OH_MediaType;
 
 /**

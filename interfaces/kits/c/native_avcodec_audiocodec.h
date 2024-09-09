@@ -269,6 +269,7 @@ OH_AVErrCode OH_AudioCodec_IsValid(OH_AVCodec *codec, bool *isValid);
  *         {@link AV_ERR_INVALID_VAL} 3 - If the codec instance is nullptr or invalid,
  *         the mediaKeySession is nullptr or invalid.
  *         {@link AV_ERR_INVALID_STATE} 8 - If the codec service is invalid.
+ *         {@link AV_ERR_NO_MEMORY}, failed to request memory.
  * @since 12
  * @version 1.0
 */

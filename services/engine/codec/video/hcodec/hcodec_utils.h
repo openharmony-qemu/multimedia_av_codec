@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <algorithm>
+#include "meta/meta.h"
 
 namespace OHOS::MediaAVCodec {
 inline constexpr int TIME_RATIO_S_TO_MS = 1000;
@@ -73,5 +74,6 @@ private:
     size_t mCurrPos = 0;
 };
 
+std::string StringifyMeta(std::shared_ptr<Media::Meta> &meta);
 }
 #endif // HCODEC_UTILS_H

@@ -28,7 +28,7 @@ config("hcodec_cfg") {
 }
 
 ohos_shared_library("hcodec") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   install_enable = true
   subsystem_name = "multimedia"
   part_name = "av_codec"
@@ -41,6 +41,7 @@ ohos_shared_library("hcodec") {
     "hcodec_dfx.cpp",
     "hcodec_list.cpp",
     "hcodec_state.cpp",
+    "hcodec_utils.cpp",
     "hdecoder.cpp",
     "hencoder.cpp",
     "msg_handle_loop.cpp",

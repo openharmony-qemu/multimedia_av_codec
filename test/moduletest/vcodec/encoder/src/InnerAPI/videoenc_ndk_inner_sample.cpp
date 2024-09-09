@@ -21,6 +21,10 @@
 #include "display_type.h"
 #include "iconsumer_surface.h"
 #include "videoenc_inner_sample.h"
+#include "meta/meta_key.h"
+#include <random>
+#include "avcodec_list.h"
+#include "native_avcodec_base.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -33,6 +37,14 @@ constexpr int64_t NANOS_IN_MICRO = 1000L;
 constexpr uint32_t FRAME_INTERVAL = 16666;
 constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
+std::random_device rd;
+constexpr uint8_t RGBA_SIZE = 4;
+constexpr uint8_t FILE_END = -1;
+constexpr uint8_t LOOP_END = 0;
+int32_t g_picWidth;
+int32_t g_picHeight;
+int32_t g_keyWidth;
+int32_t g_keyHeight;
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -53,6 +65,11 @@ void clearFlagqueue(std::queue<AVCodecBufferFlag> &q)
 }
 } // namespace
 
+VEncNdkInnerSample::VEncNdkInnerSample(std::shared_ptr<VEncInnerSignal> signal)
+    : signal_(signal)
+{
+}
+
 VEncInnerCallback::VEncInnerCallback(std::shared_ptr<VEncInnerSignal> signal) : innersignal_(signal) {}
 
 void VEncInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
@@ -63,16 +80,21 @@ void VEncInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 void VEncInnerCallback::OnOutputFormatChanged(const Format& format)
 {
     cout << "Format Changed" << endl;
+    format.GetIntValue(OH_MD_KEY_VIDEO_PIC_WIDTH, g_picWidth);
+    format.GetIntValue(OH_MD_KEY_VIDEO_PIC_HEIGHT, g_picHeight);
+    format.GetIntValue(OH_MD_KEY_WIDTH, g_keyWidth);
+    format.GetIntValue(OH_MD_KEY_HEIGHT, g_keyHeight);
+    cout << "format info: " << format.Stringify() << ", OH_MD_KEY_VIDEO_PIC_WIDTH: " << g_picWidth
+    << ", OH_MD_KEY_VIDEO_PIC_HEIGHT: "<< g_picHeight << ", OH_MD_KEY_WIDTH: " << g_keyWidth
+    << ", OH_MD_KEY_HEIGHT: " << g_keyHeight << endl;
 }
 
 void VEncInnerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
-    cout << "OnInputBufferAvailable index:" << index << endl;
     if (innersignal_ == nullptr) {
         std::cout << "buffer is null 1" << endl;
         return;
     }
-
     unique_lock<mutex> lock(innersignal_->inMutex_);
     innersignal_->inIdxQueue_.push(index);
     innersignal_->inBufferQueue_.push(buffer);
@@ -82,14 +104,35 @@ void VEncInnerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<A
 void VEncInnerCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info,
     AVCodecBufferFlag flag, std::shared_ptr<AVSharedMemory> buffer)
 {
-    cout << "OnOutputBufferAvailable index:" << index << endl;
     unique_lock<mutex> lock(innersignal_->outMutex_);
     innersignal_->outIdxQueue_.push(index);
     innersignal_->infoQueue_.push(info);
     innersignal_->flagQueue_.push(flag);
     innersignal_->outBufferQueue_.push(buffer);
-    cout << "**********out info size = " << info.size << endl;
     innersignal_->outCond_.notify_all();
+}
+
+VEncParamWithAttrCallbackTest::VEncParamWithAttrCallbackTest(
+    std::shared_ptr<VEncInnerSignal> signal) : signal_(signal) {}
+
+VEncParamWithAttrCallbackTest::~VEncParamWithAttrCallbackTest()
+{
+    signal_ = nullptr;
+}
+
+void VEncParamWithAttrCallbackTest::OnInputParameterWithAttrAvailable(uint32_t index,
+                                                                      std::shared_ptr<Format> attribute,
+                                                                      std::shared_ptr<Format> parameter)
+{
+    if (signal_ == nullptr) {
+        return;
+    }
+    unique_lock<mutex> lock(signal_->inMutex_);
+    cout << "OnInputParameterWithAttrAvailable" <<endl;
+    signal_->inIdxQueue_.push(index);
+    signal_->inAttrQueue_.push(attribute);
+    signal_->inFormatQueue_.push(parameter);
+    signal_->inCond_.notify_all();
 }
 
 VEncNdkInnerSample::~VEncNdkInnerSample()
@@ -126,7 +169,21 @@ int32_t VEncNdkInnerSample::Configure()
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
-
+    if (configMain10) {
+        format.PutIntValue(OH_MD_KEY_PROFILE, HEVC_PROFILE_MAIN_10);
+    } else if (configMain) {
+        format.PutIntValue(OH_MD_KEY_PROFILE, HEVC_PROFILE_MAIN);
+    }
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
+    if (enableRepeat) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, DEFAULT_FRAME_AFTER);
+        if (setMaxCount) {
+            format.PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, DEFAULT_MAX_COUNT);
+        }
+    }
+    if (isDiscardFrame) {
+        format.PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_KEY_I_FRAME_INTERVAL);
+    }
     return venc_->Configure(format);
 }
 
@@ -208,8 +265,11 @@ int32_t VEncNdkInnerSample::Reset()
 
 int32_t VEncNdkInnerSample::Release()
 {
-    int32_t ret = venc_->Release();
-    venc_ = nullptr;
+    int32_t ret = 0;
+    if (venc_) {
+        ret = venc_->Release();
+        venc_ = nullptr;
+    }
     if (signal_ != nullptr) {
         signal_ = nullptr;
     }
@@ -241,7 +301,6 @@ int32_t VEncNdkInnerSample::CreateInputSurface()
         cout << "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail" << endl;
         return ret;
     }
-
     return AVCS_ERR_OK;
 }
 
@@ -267,7 +326,9 @@ int32_t VEncNdkInnerSample::SetParameter(const Format &format)
 
 int32_t VEncNdkInnerSample::SetCallback()
 {
-    signal_ = make_shared<VEncInnerSignal>();
+    if (signal_ == nullptr) {
+        signal_ = make_shared<VEncInnerSignal>();
+    }
     if (signal_ == nullptr) {
         cout << "Failed to new VEncInnerSignal" << endl;
         return AVCS_ERR_UNKNOWN;
@@ -276,6 +337,17 @@ int32_t VEncNdkInnerSample::SetCallback()
     cb_ = make_shared<VEncInnerCallback>(signal_);
     return venc_->SetCallback(cb_);
 }
+
+int32_t VEncNdkInnerSample::SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallback> cb)
+{
+    if (venc_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    int32_t ret = venc_->SetCallback(cb);
+    isSetParamCallback_ = ret == AV_ERR_OK;
+    return ret;
+}
+
 
 int32_t VEncNdkInnerSample::GetInputFormat(Format &format)
 {
@@ -286,15 +358,14 @@ int32_t VEncNdkInnerSample::StartVideoEncoder()
 {
     isRunning_.store(true);
     int32_t ret = 0;
-
     if (surfaceInput) {
         ret = CreateInputSurface();
-        return ret;
+        if (ret != AVCS_ERR_OK) {
+            return ret;
+        }
     }
-
     ret = venc_->Start();
     if (ret != AVCS_ERR_OK) {
-        cout << "Failed to start codec" << endl;
         isRunning_.store(false);
         signal_->inCond_.notify_all();
         signal_->outCond_.notify_all();
@@ -307,20 +378,16 @@ int32_t VEncNdkInnerSample::StartVideoEncoder()
         venc_->Stop();
         return AVCS_ERR_UNKNOWN;
     }
-
-    inFile_->open(INP_DIR, ios::in | ios::binary);
-    if (!inFile_->is_open()) {
-        OpenFileFail();
-    }
-
+    readMultiFilesFunc();
     if (surfaceInput) {
         inputLoop_ = make_unique<thread>(&VEncNdkInnerSample::InputFuncSurface, this);
+        inputParamLoop_ = isSetParamCallback_ ? make_unique<thread>(&VEncNdkInnerSample::InputParamLoopFunc,
+         this):nullptr;
     } else {
         inputLoop_ = make_unique<thread>(&VEncNdkInnerSample::InputFunc, this);
     }
 
     if (inputLoop_ == nullptr) {
-        cout << "Failed to create input loop" << endl;
         isRunning_.store(false);
         venc_->Stop();
         ReleaseInFile();
@@ -329,7 +396,6 @@ int32_t VEncNdkInnerSample::StartVideoEncoder()
     
     outputLoop_ = make_unique<thread>(&VEncNdkInnerSample::OutputFunc, this);
     if (outputLoop_ == nullptr) {
-        cout << "Failed to create output loop" << endl;
         isRunning_.store(false);
         venc_->Stop();
         ReleaseInFile();
@@ -338,6 +404,16 @@ int32_t VEncNdkInnerSample::StartVideoEncoder()
         return AVCS_ERR_UNKNOWN;
     }
     return AVCS_ERR_OK;
+}
+
+void VEncNdkInnerSample::readMultiFilesFunc()
+{
+    if (!readMultiFiles) {
+        inFile_->open(INP_DIR, ios::in | ios::binary);
+        if (!inFile_->is_open()) {
+            OpenFileFail();
+        }
+    }
 }
 
 int32_t VEncNdkInnerSample::testApi()
@@ -453,8 +529,9 @@ int32_t VEncNdkInnerSample::CheckFlag(AVCodecBufferFlag flag)
 
     if (flag == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         cout << "enc AVCODEC_BUFFER_FLAG_CODEC_DATA" << endl;
+    } else {
+        outCount = outCount + 1;
     }
-    outCount = outCount + 1;
     return 0;
 }
 
@@ -532,6 +609,117 @@ uint32_t VEncNdkInnerSample::ReadOneFrameYUV420SP(uint8_t *dst)
     return dst - start;
 }
 
+uint32_t VEncNdkInnerSample::ReadOneFrameYUVP010(uint8_t *dst)
+{
+    uint8_t *start = dst;
+    int32_t num = 2;
+    // copy Y
+    for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH*num);
+        if (!ReturnZeroIfEOS(DEFAULT_WIDTH*num))
+            return 0;
+        dst += stride_;
+    }
+    // copy UV
+    for (uint32_t i = 0; i < DEFAULT_HEIGHT / SAMPLE_RATIO; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH*num);
+        if (!ReturnZeroIfEOS(DEFAULT_WIDTH*num))
+            return 0;
+        dst += stride_;
+    }
+    return dst - start;
+}
+
+uint32_t VEncNdkInnerSample::ReadOneFrameFromList(uint8_t *dst, int32_t &index)
+{
+    int32_t ret = 0;
+    if (index >= fileInfos.size()) {
+        ret = venc_->NotifyEos();
+        if (ret != 0) {
+            cout << "OH_VideoEncoder_NotifyEndOfStream failed" << endl;
+        }
+        return LOOP_END;
+    }
+    if (!inFile_->is_open()) {
+        inFile_->open(fileInfos[index].fileDir);
+        if (!inFile_->is_open()) {
+            return OpenFileFail();
+        }
+        DEFAULT_WIDTH = fileInfos[index].width;
+        DEFAULT_HEIGHT = fileInfos[index].height;
+        if (setFormatRbgx) {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_FORMAT, GRAPHIC_PIXEL_FMT_RGBX_8888);
+        } else if (setFormat8Bit) {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+        } else if (setFormat10Bit) {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_P010);
+        } else {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_FORMAT, fileInfos[index].format);
+        }
+        if (ret != AVCS_ERR_OK) {
+            return ret;
+        }
+        ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        if (ret != AVCS_ERR_OK) {
+            return ret;
+        }
+        cout << fileInfos[index].fileDir << endl;
+        cout << "set width:" << fileInfos[index].width << "height: " << fileInfos[index].height << endl;
+        return FILE_END;
+    }
+    ret = ReadOneFrameByType(dst, fileInfos[index].format);
+    if (!ret) {
+        if (inFile_->is_open()) {
+            inFile_->close();
+        }
+        index++;
+        if (index >= fileInfos.size()) {
+            venc_->NotifyEos();
+            return LOOP_END;
+        }
+        return FILE_END;
+    }
+    return ret;
+}
+
+uint32_t VEncNdkInnerSample::ReadOneFrameByType(uint8_t *dst, std::string &fileType)
+{
+    if (fileType == "rgba") {
+        return ReadOneFrameRGBA8888(dst);
+    } else if (fileType == "nv12" || fileType == "nv21") {
+        return ReadOneFrameYUV420SP(dst);
+    } else {
+        cout << "error fileType" << endl;
+        return 0;
+    }
+}
+
+uint32_t VEncNdkInnerSample::ReadOneFrameByType(uint8_t *dst, GraphicPixelFormat format)
+{
+    if (format == GRAPHIC_PIXEL_FMT_RGBA_8888) {
+        return ReadOneFrameRGBA8888(dst);
+    } else if (format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+        return ReadOneFrameYUV420SP(dst);
+    } else if (format == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        return ReadOneFrameYUVP010(dst);
+    } else {
+        cout << "error fileType" << endl;
+        return 0;
+    }
+}
+
+uint32_t VEncNdkInnerSample::ReadOneFrameRGBA8888(uint8_t *dst)
+{
+    uint8_t *start = dst;
+    for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH * RGBA_SIZE);
+        if (inFile_->eof())
+            return 0;
+        dst += stride_;
+    }
+    return dst - start;
+}
+
 bool VEncNdkInnerSample::RandomEOS(uint32_t index)
 {
     uint32_t random_eos = rand() % 25;
@@ -591,59 +779,141 @@ void VEncNdkInnerSample::WaitForEOS()
         inputLoop_->join();
     if (outputLoop_)
         outputLoop_->join();
+    if (inputParamLoop_)
+        inputParamLoop_->join();
     inputLoop_ = nullptr;
     outputLoop_ = nullptr;
+    inputParamLoop_ = nullptr;
 }
 
 void VEncNdkInnerSample::InputFuncSurface()
 {
+    int32_t readFileIndex = 0;
     while (true) {
-        OHNativeWindowBuffer *ohNativeWindowBuffer;
-        int fenceFd = -1;
-        if (nativeWindow == nullptr) {
-            cout << "nativeWindow == nullptr" << endl;
+        OHNativeWindowBuffer *ohNativeWindowBuffer = nullptr;
+        OH_NativeBuffer *nativeBuffer = nullptr;
+        uint8_t *dst = nullptr;
+        int err = InitBuffer(ohNativeWindowBuffer, nativeBuffer, dst);
+        if (err == 0) {
             break;
-        }
-
-        int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow, &ohNativeWindowBuffer, &fenceFd);
-        if (err != 0) {
-            cout << "RequestBuffer failed, GSError=" << err << endl;
+        } else if (err == -1) {
             continue;
         }
-        if (fenceFd > 0) {
-            close(fenceFd);
-        }
-        OH_NativeBuffer *nativeBuffer = OH_NativeBufferFromNativeWindowBuffer(ohNativeWindowBuffer);
-        void *virAddr = nullptr;
-        err = OH_NativeBuffer_Map(nativeBuffer, &virAddr);
-        if (err != 0) {
-            cout << "OH_NativeBuffer_Map failed, GSError=" << err << endl;
-            isRunning_.store(false);
-            break;
-        }
-        uint8_t *dst = (uint8_t *)virAddr;
-        const SurfaceBuffer *sbuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
-        int32_t stride = sbuffer->GetStride();
-        if (dst == nullptr || stride < (int32_t)DEFAULT_WIDTH) {
-            cout << "invalid va or stride=" << stride << endl;
-            err = NativeWindowCancelBuffer(nativeWindow, ohNativeWindowBuffer);
-            isRunning_.store(false);
-            break;
-        }
-        stride_ = stride;
-        if (!ReadOneFrameYUV420SP(dst)) {
+        if (readMultiFiles) {
+            err = ReadOneFrameFromList(dst, readFileIndex);
+            if (err == LOOP_END) {
+                break;
+            } else if (err == FILE_END) {
+                OH_NativeWindow_NativeWindowAbortBuffer(nativeWindow, ohNativeWindowBuffer);
+                continue;
+            }
+        } else if (!ReadOneFrameYUV420SP(dst)) {
             err = venc_->NotifyEos();
             if (err != 0) {
                 cout << "OH_VideoEncoder_NotifyEndOfStream failed" << endl;
             }
             break;
         }
-
+        inputFrameCount++;
         err = InputProcess(nativeBuffer, ohNativeWindowBuffer);
         if (err != 0) {
             break;
         }
         usleep(FRAME_INTERVAL);
+        InputEnableRepeatSleep();
+    }
+}
+
+int32_t VEncNdkInnerSample::InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuffer,
+    OH_NativeBuffer *&nativeBuffer, uint8_t *&dst)
+{
+    int fenceFd = -1;
+    if (nativeWindow == nullptr) {
+        return 0;
+    }
+    int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow, &ohNativeWindowBuffer, &fenceFd);
+    if (err != 0) {
+        cout << "RequestBuffer failed, GSError=" << err << endl;
+        return -1;
+    }
+    if (fenceFd > 0) {
+        close(fenceFd);
+    }
+    nativeBuffer = OH_NativeBufferFromNativeWindowBuffer(ohNativeWindowBuffer);
+    void *virAddr = nullptr;
+    err = OH_NativeBuffer_Map(nativeBuffer, &virAddr);
+    if (err != 0) {
+        cout << "OH_NativeBuffer_Map failed, GSError=" << err << endl;
+        isRunning_.store(false);
+        return 0;
+    }
+    dst = (uint8_t *)virAddr;
+    const SurfaceBuffer *sbuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
+    int32_t stride = sbuffer->GetStride();
+    if (dst == nullptr || stride < (int32_t)DEFAULT_WIDTH) {
+        cout << "invalid va or stride=" << stride << endl;
+        err = NativeWindowCancelBuffer(nativeWindow, ohNativeWindowBuffer);
+        isRunning_.store(false);
+        return 0;
+    }
+    stride_ = stride;
+    return 1;
+}
+
+void VEncNdkInnerSample::InputEnableRepeatSleep()
+{
+    inCount = inCount + 1;
+    int32_t inCountNum = 15;
+    if (enableRepeat && inCount == inCountNum) {
+        if (setMaxCount) {
+            int32_t sleepTimeMaxCount = 730000;
+            usleep(sleepTimeMaxCount);
+        } else {
+            int32_t sleepTime = 1000000;
+            usleep(sleepTime);
+        }
+        if (enableSeekEos) {
+            inFile_->clear();
+            inFile_->seekg(-1, ios::beg);
+        }
+    }
+}
+
+void VEncNdkInnerSample::InputParamLoopFunc()
+{
+    if (signal_ == nullptr || venc_ == nullptr) {
+        cout << "signal or venc is null" << endl;
+        return;
+    }
+    cout<< "InputParamLoopFunc" <<endl;
+    while (isRunning_.load()) {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inCond_.wait(
+            lock, [this]() { return (signal_->inIdxQueue_.size() > 0) || (!isRunning_.load()); });
+        if (!isRunning_.load()) {
+            cout << "InputLoopFunc stop running" << endl;
+            break;
+        }
+        int32_t index = signal_->inIdxQueue_.front();
+        auto format = signal_->inFormatQueue_.front();
+        auto attr = signal_->inAttrQueue_.front();
+        signal_->inIdxQueue_.pop();
+        signal_->inFormatQueue_.pop();
+        signal_->inAttrQueue_.pop();
+        if (attr != nullptr) {
+            int64_t pts = 0;
+            if (true != attr->GetLongValue(Media::Tag::MEDIA_TIME_STAMP, pts)) {
+                return;
+            }
+        }
+        if (IsFrameDiscard(inputFrameCount)) {
+            discardFrameCount++;
+            format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
+        }
+        int32_t ret = PushInputParameter(index);
+        if (ret != AV_ERR_OK) {
+            cout << "Fatal: PushInputData fail, exit" << endl;
+        }
     }
 }
 
@@ -811,5 +1081,136 @@ void VEncNdkInnerSample::ReleaseInFile()
         }
         inFile_.reset();
         inFile_ = nullptr;
+    }
+}
+
+void VEncNdkInnerSample::PushRandomDiscardIndex(uint32_t count, uint32_t max, uint32_t min)
+{
+    cout << "random farame index :";
+    while (discardFrameIndex.size() < count) {
+        uint32_t num = 0;
+        if (max != 0) {
+            num = rd() % max + min;
+        }
+        if (find(discardFrameIndex.begin(), discardFrameIndex.end(), num) == discardFrameIndex.end()) {
+            cout << num << ",";
+            discardFrameIndex.push_back(num);
+        }
+        cout << endl;
+    }
+}
+
+bool VEncNdkInnerSample::IsFrameDiscard(uint32_t index)
+{
+    if (!isDiscardFrame) {
+        return false;
+    }
+    if (discardMinIndex > -1 && discardMaxIndex >= discardMinIndex) {
+        if (index >= discardMinIndex && index <= discardMaxIndex) {
+            return true;
+        }
+    }
+    if (find(discardFrameIndex.begin(), discardFrameIndex.end(), index) != discardFrameIndex.end()) {
+        return true;
+    }
+    if (discardInterval > 0 && index % discardInterval == 0) {
+        return true;
+    }
+    return false;
+}
+
+bool VEncNdkInnerSample::CheckOutputFrameCount()
+{
+    cout << "checooutpuframecount" << inputFrameCount << ", " << discardFrameCount<< ", " << outCount << endl;
+    if (inputFrameCount - discardFrameCount == outCount) {
+        return true;
+    }
+    return false;
+}
+
+int32_t VEncNdkInnerSample::PushInputParameter(uint32_t index)
+{
+    if (venc_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    return venc_->QueueInputParameter(index);
+}
+
+int32_t VEncNdkInnerSample::SetCustomBuffer(BufferRequestConfig bufferConfig)
+{
+    int32_t waterMarkFlag = enableWaterMark ? 1 : 0;
+    auto allocator = Media::AVAllocatorFactory::CreateSurfaceAllocator(bufferConfig);
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
+    if (avbuffer == nullptr) {
+        cout << "avbuffer is nullptr" << endl;
+        return AVCS_ERR_INVALID_VAL;
+    }
+    cout << WATER_MARK_DIR << endl;
+    ReadCustomDataToAVBuffer(WATER_MARK_DIR, avbuffer);
+    Format format;
+    format.SetMeta(avbuffer->meta_);
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_WATERMARK, waterMarkFlag);
+    format.PutIntValue(Media::Tag::VIDEO_COORDINATE_X, videoCoordinateX);
+    format.PutIntValue(Media::Tag::VIDEO_COORDINATE_Y, videoCoordinateY);
+    format.PutIntValue(Media::Tag::VIDEO_COORDINATE_W, videoCoordinateWidth);
+    format.PutIntValue(Media::Tag::VIDEO_COORDINATE_H, videoCoordinateHeight);
+    *(avbuffer->meta_) = *(format.GetMeta());
+    int32_t ret = venc_->SetCustomBuffer(avbuffer);
+    return ret;
+}
+
+bool VEncNdkInnerSample::ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer)
+{
+    std::unique_ptr<std::ifstream> inFile = std::make_unique<std::ifstream>();
+    inFile->open(fileName.c_str(), std::ios::in | std::ios::binary);
+    if (!inFile->is_open()) {
+        cout << "open file filed,filename:" << fileName.c_str() << endl;
+    }
+    sptr<SurfaceBuffer> surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
+    if (surfaceBuffer == nullptr) {
+        cout << "in is nullptr" << endl;
+        return false;
+    }
+    int32_t width = surfaceBuffer->GetWidth();
+    int32_t height = surfaceBuffer->GetHeight();
+    int32_t bufferSize = width * height * 4;
+    uint8_t *in = (uint8_t *)malloc(bufferSize);
+    if (in == nullptr) {
+        cout << "in is nullptr" <<endl;
+    }
+    inFile->read(reinterpret_cast<char *>(in), bufferSize);
+    int32_t dstWidthStride = surfaceBuffer->GetStride();
+    uint8_t *dstAddr = (uint8_t *)surfaceBuffer->GetVirAddr();
+    if (dstAddr == nullptr) {
+        cout << "dst is nullptr" << endl;
+    }
+    const int32_t srcWidthStride = width << 2;
+    uint8_t *inStream = in;
+    for (uint32_t i = 0; i < height; ++i) {
+        if (memcpy_s(dstAddr, dstWidthStride, inStream, srcWidthStride)) {
+            cout << "memcpy_s failed" <<endl;
+        };
+        dstAddr += dstWidthStride;
+        inStream += srcWidthStride;
+    }
+    inFile->close();
+    if (in) {
+        free(in);
+        in = nullptr;
+    }
+    return true;
+}
+
+bool VEncNdkInnerSample::GetWaterMarkCapability(std::string codecMimeType)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    capabilityData = codecCapability->GetCapability(codecMimeType, true, AVCodecCategory::AVCODEC_HARDWARE);
+    if (capabilityData->featuresMap.count(static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK))) {
+        std::cout << "Support watermark" << std::endl;
+        return true;
+    } else {
+        std::cout << " Not support watermark" << std::endl;
+        return false;
     }
 }

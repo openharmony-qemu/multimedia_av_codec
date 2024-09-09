@@ -126,7 +126,8 @@ int32_t HCodecList::GetCapabilityList(std::vector<CapabilityData>& caps)
 
 bool HCodecList::IsSupportedVideoCodec(const CodecCompCapability &hdiCap)
 {
-    if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_AVC || hdiCap.role == MEDIA_ROLETYPE_VIDEO_HEVC) {
+    if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_AVC || hdiCap.role == MEDIA_ROLETYPE_VIDEO_HEVC ||
+        hdiCap.role == MEDIA_ROLETYPE_VIDEO_VVC) {
         return true;
     }
     return false;
@@ -263,6 +264,9 @@ void HCodecList::GetSupportedFeatureParam(const CodecVideoPortCap& hdiVideoCap,
             format.PutIntValue(OHOS::Media::Tag::FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, maxLTRFrameNum);
             userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE)] = format;
         }
+    }
+    if (hdiVideoCap.isSupportWaterMark) {
+        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK)] = Format();
     }
 }
 } // namespace OHOS::MediaAVCodec

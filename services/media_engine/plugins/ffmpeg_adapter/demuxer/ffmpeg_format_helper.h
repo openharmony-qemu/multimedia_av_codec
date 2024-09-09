@@ -62,7 +62,7 @@ struct HevcParseFormat {
 class FFmpegFormatHelper {
 public:
     static void ParseMediaInfo(const AVFormatContext& avFormatContext, Meta& format);
-    static void ParseTrackInfo(const AVStream& avStream, Meta& format);
+    static void ParseTrackInfo(const AVStream& avStream, Meta& format, const AVFormatContext& avFormatContext);
     static void ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format);
     static void ParseHevcInfo(const AVFormatContext& avFormatContext, HevcParseFormat parse, Meta &format);
     static FileType GetFileTypeByName(const AVFormatContext& avFormatContext);
@@ -72,7 +72,7 @@ private:
 
     static void ParseBaseTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseAVTrackInfo(const AVStream& avStream, Meta &format);
-    static void ParseVideoTrackInfo(const AVStream& avStream, Meta &format);
+    static void ParseVideoTrackInfo(const AVStream& avStream, Meta &format, const AVFormatContext& avFormatContext);
     static void ParseAudioTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseImageTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format);
@@ -89,8 +89,10 @@ private:
     static void PutInfoToFormat(const Tag key, const std::string_view &value, Meta &format);
     static void PutBufferToFormat(const Tag key, const uint8_t *addr, size_t size, Meta &format);
     static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
+    static void ParseOrientationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseTrackType(const AVFormatContext& avFormatContext, Meta& format);
 };
+extern std::vector<TagType> g_supportSourceFormat;
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

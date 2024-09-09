@@ -41,6 +41,7 @@ config("av_codec_packege_include") {
     "$av_codec_root_dir/services/services/source/ipc",
     "$av_codec_root_dir/services/engine/base/include",
     "$av_codec_root_dir/services/services/codec/server",
+    "$av_codec_root_dir/services/services/codec/server/post_processing",
     "$av_codec_root_dir/services/engine/codec/include/audio",
     "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/engine/common/include",
@@ -164,7 +165,7 @@ config("av_codec_client_drm_config") {
 }
 
 ohos_shared_library("av_codec_client") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   install_enable = true
   public_configs = [
     ":av_codec_client_local_config",
@@ -232,6 +233,9 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",
+      "$av_codec_root_dir/services/services/codec/server/post_processing/dynamic_controller.cpp",
+      "$av_codec_root_dir/services/services/codec/server/post_processing/dynamic_interface.cpp",
+      "$av_codec_root_dir/services/services/codec/server/post_processing/state_machine.cpp",
       "$av_codec_root_dir/services/services/codec/server/temporal_scalability.cpp",
     ]
   }

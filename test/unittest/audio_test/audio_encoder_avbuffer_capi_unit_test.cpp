@@ -83,7 +83,7 @@ constexpr string_view G711MU_INPUT_FILE_PATH = "/data/test/media/g711mu_8kHz_10s
 constexpr string_view G711MU_OUTPUT_FILE_PATH = "/data/test/media/g711mu_8kHz_10s_afterEncode.raw";
 constexpr string_view OPUS_INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
 constexpr string_view OPUS_OUTPUT_FILE_PATH = "/data/test/media/encoderTest.opus";
-constexpr string_view OPUS_SO_FILE_PATH = "/system/lib64/libav_codec_ext_base.z.so";
+const string OPUS_SO_FILE_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_ext_base.z.so";
 constexpr string_view MP3_INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
 constexpr string_view MP3_OUTPUT_FILE_PATH = "/data/test/media/mp3_2c_44100hz_afterEncode.mp3";
 } // namespace
@@ -1459,6 +1459,29 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, opusGetOutputDescription_01, TestSize.L
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format)); // channel mismatch channel_layout
     
     EXPECT_NE(nullptr, OH_AudioCodec_GetOutputDescription(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_normalcase_g711mu, TestSize.Level1)
+{
+    frameBytes_ = G711MU_DEFAULT_FRAME_BYTES;
+    InitFile(AudioBufferFormatType::TYPE_G711MU);
+    CreateCodecFunc(AudioBufferFormatType::TYPE_G711MU);
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_1CHAN_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8K);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    OH_AVFormat_Destroy(format);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
 }
 }

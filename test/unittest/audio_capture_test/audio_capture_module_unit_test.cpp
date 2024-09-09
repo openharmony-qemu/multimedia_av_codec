@@ -245,7 +245,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0200, TestSize.Level1)
         AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator);
     size_t bufferSize = 1024;
-    audioCaptureModule_->Read(buffer, bufferSize);
+    Status ret = audioCaptureModule_->Read(buffer, bufferSize);
+    EXPECT_NE(ret, Status::OK);
 }
 HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0300, TestSize.Level1)
 {
@@ -254,7 +255,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0300, TestSize.Level1)
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator);
     buffer->meta_ = nullptr;
     size_t bufferSize = 1024;
-    audioCaptureModule_->Read(buffer, bufferSize);
+    Status ret = audioCaptureModule_->Read(buffer, bufferSize);
+    EXPECT_NE(ret, Status::OK);
 }
 HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0400, TestSize.Level1)
 {
@@ -340,8 +342,10 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureGetMaxAmplitude_0100, TestSize.
     uint64_t bufferSize = 0;
     ret = audioCaptureModule_->GetSize(bufferSize);
     ASSERT_TRUE(ret == Status::OK);
+    audioCaptureModule_->isTrackMaxAmplitude = false;
     audioCaptureModule_->GetMaxAmplitude();
-    audioCaptureModule_->GetMaxAmplitude();
+    audioCaptureModule_->isTrackMaxAmplitude = true;
+    EXPECT_EQ(audioCaptureModule_->maxAmplitude_, audioCaptureModule_->GetMaxAmplitude());
     std::shared_ptr<AVAllocator> avAllocator =
         AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     int32_t capacity = 1024;
@@ -437,7 +441,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioSetParameter_0100, TestSize.Level1)
     audioCaptureFormat->Set<Tag::AUDIO_CHANNEL_COUNT>(channel_);
     audioCaptureModule_->SetParameter(audioCaptureFormat);
     audioCaptureFormat->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
-    audioCaptureModule_->SetParameter(audioCaptureFormat);
+    Status ret = audioCaptureModule_->SetParameter(audioCaptureFormat);
+    EXPECT_EQ(ret, Status::OK);
 }
 /**
  * @tc.name: AudioSetParameter_0200
@@ -448,7 +453,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioSetParameter_0200, TestSize.Level1)
 {
     std::shared_ptr<Meta> audioCaptureFormat = std::make_shared<Meta>();
     audioCaptureFormat->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_F32P);
-    audioCaptureModule_->SetParameter(audioCaptureFormat);
+    Status ret = audioCaptureModule_->SetParameter(audioCaptureFormat);
+    EXPECT_NE(ret, Status::OK);
 }
 /**
  * @tc.name: AudioSetParameter_0300
@@ -459,7 +465,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioSetParameter_0300, TestSize.Level1)
 {
     int32_t channel = 3;
     audioCaptureParameter_->Set<Tag::AUDIO_CHANNEL_COUNT>(channel);
-    audioCaptureModule_->SetParameter(audioCaptureParameter_);
+    Status ret = audioCaptureModule_->SetParameter(audioCaptureParameter_);
+    EXPECT_NE(ret, Status::OK);
 }
 /**
  * @tc.name: AudioGetParameter_0100
@@ -572,5 +579,29 @@ HWTEST_F(AudioCaptureModuleUnitTest, Audioinit_0200, TestSize.Level1)
     EXPECT_NE(Status::OK, audioCaptureModule_->Init());
     Status ret = audioCaptureModule_->Deinit();
     ASSERT_TRUE(ret == Status::OK);
+}
+/**
+ * @tc.name: AudioTrackMaxAmplitude_0200
+ * @tc.desc: test TrackMaxAmplitude
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureModuleUnitTest, AudioTrackMaxAmplitude_0200, TestSize.Level1)
+{
+    int16_t data[5] = {1, 2, 3, 4, 5};
+    audioCaptureModule_->TrackMaxAmplitude(data, 5);
+    EXPECT_EQ(audioCaptureModule_->maxAmplitude_, 5);
+    int16_t number[5] = {1, -2, 3, -4, 5};
+    audioCaptureModule_->TrackMaxAmplitude(number, 5);
+    EXPECT_EQ(audioCaptureModule_->maxAmplitude_, 5);
+}
+/**
+ * @tc.name: AudioGetMaxAmplitude_0200
+ * @tc.desc: test GetMaxAmplitude
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureModuleUnitTest, AudioGetMaxAmplitude_0200, TestSize.Level1)
+{
+    audioCaptureModule_->isTrackMaxAmplitude = true;
+    EXPECT_EQ(audioCaptureModule_->GetMaxAmplitude(), 0);
 }
 } // namespace OHOS

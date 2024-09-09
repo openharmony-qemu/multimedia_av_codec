@@ -26,6 +26,7 @@ config("video_sample_config") {
     "./capbilities/sample_buffer_queue",
     "./common/include",
     "./sample/base",
+    "./sample/yuv_viewer",
     "./sample/decoder",
     "./sample/encoder",
     "./sample/helper/include",
@@ -49,12 +50,14 @@ ohos_source_set("video_sample") {
     "./capbilities/video_codec/video_encoder/video_encoder.cpp",
     "./common/av_codec_sample_log.cpp",
     "./common/sample_utils.cpp",
+    "./sample/base/sample_base.cpp",
     "./sample/base/video_sample_base.cpp",
     "./sample/decoder/video_decoder_sample.cpp",
     "./sample/encoder/video_encoder_sample.cpp",
     "./sample/helper/arg_checker.cpp",
     "./sample/helper/arg_parser.cpp",
     "./sample/helper/sample_helper.cpp",
+    "./sample/yuv_viewer/yuv_viewer.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/interfaces/kits/c:capi_packages" ]

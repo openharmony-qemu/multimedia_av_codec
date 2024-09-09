@@ -40,6 +40,7 @@ namespace Pipeline {
 using namespace OHOS::MediaAVCodec;
 constexpr int64_t WAIT_TIME_OUT_NS = 3000000000;
 constexpr int64_t US_TO_MS = 1000;
+constexpr uint32_t BUFFER_IS_EOS = 1;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
     [](const std::string& name, const FilterType type) {
         return std::make_shared<MuxerFilter>(name, FilterType::FILTERTYPE_MUXER);
@@ -251,6 +252,14 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
         audioCodecMimeType_ = mimeType;
     } else if (mimeType.find("video/") == 0) {
         videoCodecMimeType_ = mimeType;
+    } else if (mimeType.find("meta/") == 0) {
+        metaDataCodecMimeType_ = mimeType;
+        std::string srcMimeType;
+        meta->Get<Tag::TIMED_METADATA_SRC_TRACK_MIME>(srcMimeType);
+        if (trackIndexMap_.find(srcMimeType) != trackIndexMap_.end()) {
+            auto sourceTrackIndex = trackIndexMap_.at(videoCodecMimeType_);
+            meta->Set<Tag::TIMED_METADATA_SRC_TRACK>(sourceTrackIndex);
+        }
     }
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
     if (ret != Status::OK) {
@@ -258,6 +267,7 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
         SetFaultEvent("MuxerFilter::OnLinked error", (int32_t)ret);
         return ret;
     }
+    trackIndexMap_.emplace(std::make_pair(mimeType, trackIndex));
     sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
     callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
     sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex,
@@ -310,7 +320,7 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
     StreamType streamType, sptr<AVBufferQueueProducer> inputBufferQueue)
 {
     MEDIA_LOG_D("OnTransCoderBufferFilled");
-    if (inputBuffer->flag_ == 1) {
+    if ((inputBuffer->flag_ & BUFFER_IS_EOS) == 1) {
         eosCount_++;
         if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {
             MEDIA_LOG_I("video is eos");
@@ -357,6 +367,7 @@ void MuxerFilter::SetFaultEvent(const std::string &errMsg)
     muxerFaultInfo.callerType = "player_framework";
     muxerFaultInfo.videoCodec = videoCodecMimeType_;
     muxerFaultInfo.audioCodec = audioCodecMimeType_;
+    muxerFaultInfo.metaCodec = metaDataCodecMimeType_;
     muxerFaultInfo.containerFormat = GetContainerFormat(outputFormat_);
     muxerFaultInfo.errMsg = errMsg;
     FaultMuxerEventWrite(muxerFaultInfo);

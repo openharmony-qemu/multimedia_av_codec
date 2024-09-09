@@ -52,7 +52,7 @@ config("ffmpeg_adapter_config") {
 }
 
 ohos_shared_library("media_plugin_FFmpegAudioEncoders") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sanitize = av_codec_sanitize
   configs = [
@@ -73,7 +73,6 @@ ohos_shared_library("media_plugin_FFmpegAudioEncoders") {
 
   external_deps = [
     "c_utils:utils",
-    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",

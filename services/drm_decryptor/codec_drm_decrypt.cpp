@@ -215,6 +215,7 @@ void CodecDrmDecrypt::DrmModifyCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_
     if (isAmbiguity == 1) {
         DrmRemoveAmbiguityBytes(data, posEndIndex, posStartIndex, dataSize);
     }
+    CHECK_AND_RETURN_LOG((posEndIndex >= 1), "posEndIndex err"); // 1:index
     for (i = posEndIndex - 1; i > 0; i--) {
         if (data[i] != 0) {
             break;
@@ -308,7 +309,7 @@ int CodecDrmDecrypt::DrmFindHevcCeiNalUnit(const uint8_t *data, uint32_t dataSiz
         /* sei is not after frame data. */
         AVCODEC_LOGD("h265 frame found");
         return 0;
-    } else if (nalType == 39) { // 39: SEI nal unit
+    } else if ((nalType == 39) && (i + DRM_H265_PAYLOAD_TYPE_OFFSET < dataSize)) { // 39: SEI nal unit
         if (data[i + DRM_H265_PAYLOAD_TYPE_OFFSET] == DRM_USER_DATA_UNREGISTERED_TAG) {
             ceiStartPos = i;
         }
@@ -432,20 +433,14 @@ void CodecDrmDecrypt::DrmFindEncryptionFlagPos(const uint8_t *data, uint32_t dat
 int CodecDrmDecrypt::DrmGetKeyId(uint8_t *data, uint32_t &dataSize, uint32_t &pos, MetaDrmCencInfo *cencInfo)
 {
     uint32_t offset = pos;
-    if (offset >= dataSize) {
-        AVCODEC_LOGE("cei data too short");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_LOG((offset < dataSize), -1, "cei data too short");
     uint8_t encryptionFlag = (data[offset] & 0x80) >> 7; // 0x80 get encryptionFlag & 7 get bits
     uint8_t nextKeyIdFlag = (data[offset] & 0x40) >> 6; // 0x40 get nextKeyIdFlag & 6 get bits
     offset += 1; // 1 skip flag
     DrmRemoveAmbiguityBytes(data, dataSize, offset, dataSize);
 
     if (encryptionFlag != 0) {
-        if ((offset + META_DRM_KEY_ID_SIZE) > dataSize) {
-            AVCODEC_LOGE("cei data too short");
-            return -1;
-        }
+        CHECK_AND_RETURN_RET_LOG(((offset + META_DRM_KEY_ID_SIZE) <= dataSize), -1, "cei data too short");
         errno_t res = memcpy_s(cencInfo->keyId, META_DRM_KEY_ID_SIZE, data + offset, META_DRM_KEY_ID_SIZE);
         if (res != EOK) {
             AVCODEC_LOGE("copy keyid err");
@@ -466,10 +461,7 @@ int CodecDrmDecrypt::DrmGetKeyId(uint8_t *data, uint32_t &dataSize, uint32_t &po
 int CodecDrmDecrypt::DrmGetKeyIv(const uint8_t *data, uint32_t dataSize, uint32_t &pos, MetaDrmCencInfo *cencInfo)
 {
     uint32_t offset = pos;
-    if (offset >= dataSize) {
-        AVCODEC_LOGE("cei data too short");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_LOG((offset < dataSize), -1, "cei data too short");
     uint32_t ivLen = data[offset];
     offset += 1; // 1 skip iv len
     if (offset + ivLen > dataSize) {
@@ -495,10 +487,7 @@ int CodecDrmDecrypt::DrmParseDrmDescriptor(const uint8_t *data, uint32_t dataSiz
     if (drmDescriptorFlag == 0) {
         return 0;
     }
-    if (offset + DRM_MIN_DRM_INFO_LEN >= dataSize) {
-        AVCODEC_LOGE("cei data too short");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_LOG((offset + DRM_MIN_DRM_INFO_LEN < dataSize), -1, "cei data too short");
     uint8_t videoAlgo = data[offset + DRM_MIN_DRM_INFO_LEN] & 0x0f; // video algo offset
     SetDrmAlgoAndBlocks(videoAlgo, cencInfo);
     offset = offset + DRM_MIN_DRM_INFO_LEN;
@@ -515,6 +504,7 @@ void CodecDrmDecrypt::DrmSetKeyInfo(const uint8_t *data, uint32_t dataSize, uint
     uint8_t drmDescriptorFlag = 0;
     uint8_t drmNotAmbiguityFlag = 0;
     CHECK_AND_RETURN_LOG((dataSize != 0), "DrmSetKeyInfo dataSize is 0");
+    CHECK_AND_RETURN_LOG((pos + DRM_LEGACY_LEN < totalSize), "cei data too short");
     ceiBuf = reinterpret_cast<uint8_t *>(malloc(dataSize));
     if (ceiBuf == nullptr) {
         AVCODEC_LOGE("malloc cei data failed");
@@ -522,10 +512,6 @@ void CodecDrmDecrypt::DrmSetKeyInfo(const uint8_t *data, uint32_t dataSize, uint
     }
     errno_t res = memcpy_s(ceiBuf, dataSize, data, dataSize);
     if (res != EOK) {
-        free(ceiBuf);
-        return;
-    }
-    if (pos + DRM_LEGACY_LEN >= totalSize) {
         free(ceiBuf);
         return;
     }
@@ -539,19 +525,11 @@ void CodecDrmDecrypt::DrmSetKeyInfo(const uint8_t *data, uint32_t dataSize, uint
     }
 
     int ret = DrmGetKeyId(ceiBuf, totalSize, pos, cencInfo);
-    if (ret != 0) {
-        free(ceiBuf);
-        return;
-    }
-    ret = DrmGetKeyIv(ceiBuf, totalSize, pos, cencInfo);
-    if (ret != 0) {
-        free(ceiBuf);
-        return;
-    }
-    ret = DrmParseDrmDescriptor(ceiBuf, totalSize, pos, drmDescriptorFlag, cencInfo);
-    if (ret != 0) {
-        free(ceiBuf);
-        return;
+    if (ret == 0) {
+        ret = DrmGetKeyIv(ceiBuf, totalSize, pos, cencInfo);
+        if (ret == 0) {
+            (void)DrmParseDrmDescriptor(ceiBuf, totalSize, pos, drmDescriptorFlag, cencInfo);
+        }
     }
     free(ceiBuf);
     return;
@@ -563,11 +541,8 @@ void CodecDrmDecrypt::DrmGetCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_t d
     int ret;
     uint32_t ceiStartPos = DRM_INVALID_START_POS;
     uint32_t ceiEndPos = DRM_INVALID_START_POS;
-    if (inBuf->memory_ == nullptr || inBuf->memory_->GetAddr() == nullptr || dataSize == 0 ||
-        dataSize > DRM_MAX_STREAM_DATA_SIZE) {
-        AVCODEC_LOGE("DrmGetCencInfo parameter err");
-        return;
-    }
+    CHECK_AND_RETURN_LOG((inBuf->memory_ != nullptr && inBuf->memory_->GetAddr() != nullptr && dataSize != 0 &&
+        dataSize <= DRM_MAX_STREAM_DATA_SIZE), "DrmGetCencInfo parameter err");
     uint8_t *data = inBuf->memory_->GetAddr();
 
     ret = DrmFindCeiPos(data, dataSize, ceiStartPos, ceiEndPos);
@@ -591,10 +566,9 @@ int32_t CodecDrmDecrypt::DrmVideoCencDecrypt(std::shared_ptr<AVBuffer> &inBuf, s
         bool res = inBuf->meta_->GetData(Media::Tag::DRM_CENC_INFO, drmCencVec);
         if (res) {
             cencInfo = reinterpret_cast<MetaDrmCencInfo *>(&drmCencVec[0]);
-            if (cencInfo->encryptBlocks > DRM_CRYPT_BYTE_BLOCK || cencInfo->skipBlocks > DRM_SKIP_BYTE_BLOCK) {
-                AVCODEC_LOGE("DrmVideoCencDecrypt parameter err");
-                return ret;
-            }
+            CHECK_AND_RETURN_RET_LOG(
+                (cencInfo->encryptBlocks <= DRM_CRYPT_BYTE_BLOCK && cencInfo->skipBlocks <= DRM_SKIP_BYTE_BLOCK),
+                ret, "DrmVideoCencDecrypt parameter err");
             if (cencInfo->algo == MetaDrmCencAlgorithm::META_DRM_ALG_CENC_UNENCRYPTED) {
                 cencInfo->subSampleNum = 1;
                 cencInfo->subSamples[0].clearHeaderLen = dataSize;
@@ -699,13 +673,18 @@ void CodecDrmDecrypt::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessi
         svpFlag_ = SVP_FALSE;
     }
     mode_ = MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET;
-    CHECK_AND_RETURN_LOG((keySession != nullptr), "SetDecryptConfig keySession nullptr");
+#ifdef SUPPORT_DRM
     keySessionServiceProxy_ = keySession;
     CHECK_AND_RETURN_LOG((keySessionServiceProxy_ != nullptr), "SetDecryptConfig keySessionServiceProxy nullptr");
     keySessionServiceProxy_->GetMediaDecryptModule(decryptModuleProxy_);
     CHECK_AND_RETURN_LOG((decryptModuleProxy_ != nullptr), "SetDecryptConfig decryptModuleProxy_ nullptr");
+#else
+    (void)keySession;
+    (void)svpFlag;
+#endif
 }
 
+#ifdef SUPPORT_DRM
 int32_t CodecDrmDecrypt::SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf,
     const std::shared_ptr<AVBuffer> &outBuf, DrmBuffer &inDrmBuffer, DrmBuffer &outDrmBuffer)
 {
@@ -733,6 +712,7 @@ int32_t CodecDrmDecrypt::SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf,
     outDrmBuffer.sharedMemType = static_cast<uint32_t>(outBuf->memory_->GetMemoryFlag());
     return AVCS_ERR_OK;
 }
+#endif
 
 int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> &inBuf,
     std::shared_ptr<AVBuffer> &outBuf)

@@ -28,9 +28,10 @@
 #include "video_decoder_adapter.h"
 #include "osal/utils/util.h"
 #include "parameters.h"
+#include "scope_guard.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "DecoderSurfaceFilter" };
 }
 
 namespace OHOS {
@@ -58,7 +59,7 @@ public:
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
-        MEDIA_LOG_I("OnLinkedResult enter.");
+        MEDIA_LOG_I("OnLinkedResult");
         decoderSurfaceFilter_->OnLinkedResult(queue, meta);
     }
 
@@ -89,20 +90,16 @@ public:
 
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
-        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
-            decoderSurfaceFilter->OnError(errorType, errorCode);
-        } else {
-            MEDIA_LOG_I("invalid decoderSurfaceFilter");
-        }
+        auto decoderSurfaceFilter = decoderSurfaceFilter_.lock();
+        FALSE_RETURN_MSG(decoderSurfaceFilter != nullptr, "invalid decoderSurfaceFilter");
+        decoderSurfaceFilter->OnError(errorType, errorCode);
     }
 
     void OnOutputFormatChanged(const MediaAVCodec::Format &format) override
     {
-        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
-            decoderSurfaceFilter->OnOutputFormatChanged(format);
-        } else {
-            MEDIA_LOG_I("invalid decoderSurfaceFilter");
-        }
+        auto decoderSurfaceFilter = decoderSurfaceFilter_.lock();
+        FALSE_RETURN_MSG(decoderSurfaceFilter != nullptr, "invalid decoderSurfaceFilter");
+        decoderSurfaceFilter->OnOutputFormatChanged(format);
     }
 
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
@@ -111,11 +108,9 @@ public:
 
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
     {
-        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
-            decoderSurfaceFilter->DrainOutputBuffer(index, buffer);
-        } else {
-            MEDIA_LOG_I("invalid decoderSurfaceFilter");
-        }
+        auto decoderSurfaceFilter = decoderSurfaceFilter_.lock();
+        FALSE_RETURN_MSG(decoderSurfaceFilter != nullptr, "invalid decoderSurfaceFilter");
+        decoderSurfaceFilter->DrainOutputBuffer(index, buffer);
     }
 
 private:
@@ -133,11 +128,9 @@ public:
 
     void OnBufferAvailable()
     {
-        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
-            decoderSurfaceFilter->HandleInputBuffer();
-        } else {
-            MEDIA_LOG_I("invalid videoDecoder");
-        }
+        auto decoderSurfaceFilter = decoderSurfaceFilter_.lock();
+        FALSE_RETURN_MSG(decoderSurfaceFilter != nullptr, "invalid decoderSurfaceFilter");
+        decoderSurfaceFilter->HandleInputBuffer();
     }
 
 private:
@@ -154,32 +147,31 @@ DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType t
 
 DecoderSurfaceFilter::~DecoderSurfaceFilter()
 {
-    MEDIA_LOG_I("~DecoderSurfaceFilter() enter.");
-    if (!IS_FILTER_ASYNC && !isThreadExit_) {
-        isThreadExit_ = true;
-        condBufferAvailable_.notify_all();
-        if (readThread_ != nullptr && readThread_->joinable()) {
-            readThread_->join();
-            readThread_ = nullptr;
-        }
-    }
-    videoDecoder_->Release();
-    MEDIA_LOG_I("~DecoderSurfaceFilter() exit.");
+    MEDIA_LOG_I("~DecoderSurfaceFilter()");
+    ON_SCOPE_EXIT(0) {
+        videoDecoder_->Release();
+        MEDIA_LOG_I("~DecoderSurfaceFilter() exit.");
+    };
+    FALSE_RETURN(!IS_FILTER_ASYNC && !isThreadExit_);
+    isThreadExit_ = true;
+    condBufferAvailable_.notify_all();
+    FALSE_RETURN(readThread_ != nullptr && readThread_->joinable());
+    readThread_->join();
+    readThread_ = nullptr;
 }
 
 void DecoderSurfaceFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
 {
     MEDIA_LOG_E("AVCodec error happened. ErrorType: %{public}d, errorCode: %{public}d",
         static_cast<int32_t>(errorType), errorCode);
-    if (eventReceiver_ != nullptr) {
-        eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
-    }
+    FALSE_RETURN(eventReceiver_ != nullptr);
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
 }
 
 void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
-    MEDIA_LOG_I("Init enter.");
+    MEDIA_LOG_I("Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
     videoSink_->SetEventReceiver(eventReceiver_);
@@ -189,7 +181,7 @@ void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 
 Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_I("Configure enter.");
+    MEDIA_LOG_I("Configure");
     configureParameter_ = parameter;
     configFormat_.SetMeta(configureParameter_);
     Status ret = videoDecoder_->Configure(configFormat_);
@@ -204,9 +196,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     Status ret;
     // create secure decoder for drm.
     MEDIA_LOG_I("DoInit enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
-    if (videoDecoder_ != nullptr) {
-        videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
-    }
+    videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
     if (isDrmProtected_ && svpFlag_) {
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder for drm-protected videos");
         std::string baseName = GetCodecName(codecMimeType_);
@@ -233,7 +223,9 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     ParseDecodeRateLimit();
     videoDecoder_->SetOutputSurface(videoSurface_);
     if (isDrmProtected_) {
+#ifdef SUPPORT_DRM
         videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
+#endif
     }
     videoSink_->SetParameter(meta_);
     return Status::OK;
@@ -241,7 +233,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
 
 Status DecoderSurfaceFilter::DoPrepare()
 {
-    MEDIA_LOG_I("Prepare enter.");
+    MEDIA_LOG_I("Prepare");
     if (onLinkedResultCallback_ != nullptr) {
         videoDecoder_->PrepareInputBufferQueue();
         sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
@@ -249,13 +241,13 @@ Status DecoderSurfaceFilter::DoPrepare()
         inputBufferQueueConsumer->SetBufferAvailableListener(listener);
         onLinkedResultCallback_->OnLinkedResult(videoDecoder_->GetBufferQueueProducer(), meta_);
     }
-    videoSink_->ResetRenderStarted();
+    isRenderStarted_ = false;
     return Status::OK;
 }
 
 Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
 {
-    MEDIA_LOG_I("PrepareFrame enter.");
+    MEDIA_LOG_I("PrepareFrame");
     doPrepareFrame_ = true;
     renderFirstFrame_ = renderFirstFrame;
     Status ret = Status::OK;
@@ -264,16 +256,15 @@ Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
     } else {
         ret = DoStart();
     }
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("PrepareFrame decoder fail ret = %{public}d", ret);
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
-    }
+    FALSE_RETURN_V(ret != Status::OK, ret);
+    MEDIA_LOG_E("PrepareFrame decoder fail ret = %{public}d", ret);
+    eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
     return ret;
 }
 
 Status DecoderSurfaceFilter::WaitPrepareFrame()
 {
-    MEDIA_LOG_D("WaitPrepareFrame enter.");
+    MEDIA_LOG_D("WaitPrepareFrame");
     AutoLock lock(firstFrameMutex_);
     bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
          return !doPrepareFrame_;
@@ -287,7 +278,7 @@ Status DecoderSurfaceFilter::WaitPrepareFrame()
 Status DecoderSurfaceFilter::HandleInputBuffer()
 {
     if (doPrepareFrame_) {
-        MEDIA_LOG_I("doPrepareFrame enter.");
+        MEDIA_LOG_I("doPrepareFrame");
         DoProcessInputBuffer(0, false);
     } else {
         ProcessInputBuffer();
@@ -297,7 +288,7 @@ Status DecoderSurfaceFilter::HandleInputBuffer()
 
 Status DecoderSurfaceFilter::DoStart()
 {
-    MEDIA_LOG_I("Start enter.");
+    MEDIA_LOG_I("Start");
     if (isPaused_.load()) {
         MEDIA_LOG_I("DoStart after pause to execute resume.");
         return DoResume();
@@ -313,22 +304,33 @@ Status DecoderSurfaceFilter::DoStart()
 
 Status DecoderSurfaceFilter::DoPause()
 {
-    MEDIA_LOG_I("Pause enter.");
+    MEDIA_LOG_I("Pause");
     isPaused_ = true;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
     videoSink_->ResetSyncInfo();
     latestPausedTime_ = latestBufferTime_;
-    if (videoDecoder_ != nullptr) {
-        videoDecoder_->ResetRenderTime();
-    }
+    FALSE_RETURN_V(videoDecoder_ != nullptr, Status::OK);
+    videoDecoder_->ResetRenderTime();
     return Status::OK;
 }
 
 Status DecoderSurfaceFilter::DoResume()
 {
-    MEDIA_LOG_I("Resume enter.");
+    MEDIA_LOG_I("Resume");
+    refreshTotalPauseTime_ = true;
+    isPaused_ = false;
+    if (!IS_FILTER_ASYNC) {
+        condBufferAvailable_.notify_all();
+    }
+    videoDecoder_->Start();
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::DoResumeDragging()
+{
+    MEDIA_LOG_I("DoResumeDragging enter.");
     refreshTotalPauseTime_ = true;
     isPaused_ = false;
     if (!IS_FILTER_ASYNC) {
@@ -340,7 +342,7 @@ Status DecoderSurfaceFilter::DoResume()
 
 Status DecoderSurfaceFilter::DoStop()
 {
-    MEDIA_LOG_I("Stop enter.");
+    MEDIA_LOG_I("Stop");
     latestBufferTime_ = HST_TIME_NONE;
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
@@ -357,21 +359,20 @@ Status DecoderSurfaceFilter::DoStop()
     if (!IS_FILTER_ASYNC && !isThreadExit_.load()) {
         isThreadExit_ = true;
         condBufferAvailable_.notify_all();
-        if (readThread_ != nullptr && readThread_->joinable()) {
-            readThread_->join();
-            readThread_ = nullptr;
-        }
+        FALSE_RETURN_V(readThread_ != nullptr && readThread_->joinable(), ret);
+        readThread_->join();
+        readThread_ = nullptr;
     }
     return ret;
 }
 
 Status DecoderSurfaceFilter::DoFlush()
 {
-    MEDIA_LOG_I("Flush enter.");
+    MEDIA_LOG_I("Flush");
     videoDecoder_->Flush();
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        MEDIA_LOG_I("Flush enter.");
+        MEDIA_LOG_I("Flush");
         outputBuffers_.clear();
         outputBufferMap_.clear();
     }
@@ -381,14 +382,14 @@ Status DecoderSurfaceFilter::DoFlush()
 
 Status DecoderSurfaceFilter::DoRelease()
 {
-    MEDIA_LOG_I("Release enter.");
+    MEDIA_LOG_I("Release");
     videoDecoder_->Release();
     return Status::OK;
 }
 
 Status DecoderSurfaceFilter::DoSetPlayRange(int64_t start, int64_t end)
 {
-    MEDIA_LOG_I("DoSetPlayRange enter.");
+    MEDIA_LOG_I("DoSetPlayRange");
     playRangeStartTime_ = start;
     playRangeEndTime_ = end;
     return Status::OK;
@@ -404,7 +405,7 @@ static OHOS::ScalingMode ConvertMediaScaleType(VideoScaleType scaleType)
 
 void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_I("SetParameter enter parameter is valid: %{public}i", parameter != nullptr);
+    MEDIA_LOG_I("SetParameter %{public}i", parameter != nullptr);
     Format format;
     if (parameter->Find(Tag::VIDEO_SCALE_TYPE) != parameter->end()) {
         int32_t scaleType;
@@ -437,7 +438,9 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         videoDecoder_->Configure(configFormat_);
         videoDecoder_->SetOutputSurface(videoSurface_);
         if (isDrmProtected_) {
+#ifdef SUPPORT_DRM
             videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
+#endif
         }
     }
     videoDecoder_->SetParameter(format);
@@ -445,9 +448,7 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 
 Status DecoderSurfaceFilter::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
 {
-    if (videoDecoder_ == nullptr) {
-        return Status::ERROR_INVALID_OPERATION;
-    }
+    FALSE_RETURN_V(videoDecoder_ != nullptr, Status::ERROR_INVALID_OPERATION);
     return videoDecoder_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
 }
 
@@ -504,7 +505,7 @@ std::string DecoderSurfaceFilter::GetCodecName(std::string mimeType)
 Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
-    MEDIA_LOG_I("OnLinked enter.");
+    MEDIA_LOG_I("OnLinked");
     meta_ = meta;
     FALSE_RETURN_V_MSG(meta->GetData(Tag::MIME_TYPE, codecMimeType_),
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
@@ -527,7 +528,7 @@ Status DecoderSurfaceFilter::OnUnLinked(StreamType inType, const std::shared_ptr
 void DecoderSurfaceFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
     std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I("OnLinkedResult enter.");
+    MEDIA_LOG_I("OnLinkedResult");
 }
 
 void DecoderSurfaceFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
@@ -541,6 +542,7 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame, bool byIdx, uint32_t idx,
                                                    int64_t renderTime)
 {
+    MEDIA_LOG_D("DoProcessOutputBuffer idx " PUBLIC_LOG_U32 " renderTime " PUBLIC_LOG_D64, idx, renderTime);
     FALSE_RETURN_V(!dropFrame, Status::OK);
     uint32_t index = idx;
     std::shared_ptr<AVBuffer> outputBuffer = nullptr;
@@ -561,7 +563,8 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
             std::pair<int, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
             RenderNextOutput(nextTask.first, nextTask.second);
         }
-        index = static_cast<int32_t>(task.first);
+        FALSE_RETURN_V(task.first >= 0, false);
+        index = static_cast<uint32_t>(task.first);
         outBuffer = task.second;
         return true;
     }
@@ -574,23 +577,28 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
 Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer,
                                                  int64_t renderTime)
 {
+    if (render && !isRenderStarted_.load() && !isInSeekContinous_) {
+        isRenderStarted_ = true;
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
+        }
+    }
     if ((playRangeEndTime_ != PLAY_RANGE_DEFAULT_VALUE) &&
         (outBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
-        MEDIA_LOG_I("ReleaseBuffer for eos, SetPlayRange start: " PUBLIC_LOG_D64 ", end: " PUBLIC_LOG_D32,
+        MEDIA_LOG_I("ReleaseBuffer for eos, SetPlayRange start: " PUBLIC_LOG_D64 ", end: " PUBLIC_LOG_D64,
                     playRangeStartTime_, playRangeEndTime_);
-        if (eventReceiver_ != nullptr) {
-            Event event {
-                .srcFilter = "VideoSink",
-                .type = EventType::EVENT_COMPLETE,
-            };
-            eventReceiver_->OnEvent(event);
-        }
+        FALSE_RETURN_V(eventReceiver_ != nullptr, Status::OK);
+        Event event {
+            .srcFilter = "VideoSink",
+            .type = EventType::EVENT_COMPLETE,
+        };
+        eventReceiver_->OnEvent(event);
         return Status::OK;
     }
     if (renderTime > 0L && render) {
         videoDecoder_->RenderOutputBufferAtTime(index, renderTime);
     } else if (outBuffer->pts_ < 0) {
-        MEDIA_LOG_W("Avoid render video frame with pts=%{public}" PUBLIC_LOG_D64, outBuffer->pts_);
+        MEDIA_LOG_W("Avoid render video frame with pts=" PUBLIC_LOG_D64, outBuffer->pts_);
         videoDecoder_->ReleaseOutputBuffer(index, false);
     } else {
         videoDecoder_->ReleaseOutputBuffer(index, render);
@@ -603,13 +611,12 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
                 outBuffer->pts_, outBuffer->flag_);
-        if (eventReceiver_ != nullptr) {
-            Event event {
-                .srcFilter = "VideoSink",
-                .type = EventType::EVENT_COMPLETE,
-            };
-            eventReceiver_->OnEvent(event);
-        }
+        FALSE_RETURN_V(eventReceiver_ != nullptr, Status::OK);
+        Event event {
+            .srcFilter = "VideoSink",
+            .type = EventType::EVENT_COMPLETE,
+        };
+        eventReceiver_->OnEvent(event);
     }
     return Status::OK;
 }
@@ -645,31 +652,37 @@ int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_pt
 // async filter should call this function
 void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    if (isInSeekContinous_) {
+        Filter::ProcessOutputBuffer(false, 0);
+    }
     int64_t waitTime = CalculateNextRender(index, outputBuffer);
-    MEDIA_LOG_D("RenderNextOutput enter. pts: " PUBLIC_LOG_D64"  waitTime: " PUBLIC_LOG_D64,
+    MEDIA_LOG_D("RenderNextOutput pts: " PUBLIC_LOG_D64"  waitTime: " PUBLIC_LOG_D64,
         outputBuffer->pts_, waitTime);
     Filter::ProcessOutputBuffer(waitTime >= 0, waitTime);
 }
 
 void DecoderSurfaceFilter::ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs)
 {
+    MEDIA_LOG_D("ConsumeVideoFrame idx " PUBLIC_LOG_U32 " renderTimeNs " PUBLIC_LOG_D64, index, renderTimeNs);
     Filter::ProcessOutputBuffer(isRender, 0, true, index, renderTimeNs);
 }
 
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     std::unique_lock<std::mutex> lock(mutex_);
-    MEDIA_LOG_D("DrainOutputBuffer enter. pts: " PUBLIC_LOG_D64"  outputSize:%{public}d",
+    MEDIA_LOG_D("DrainOutputBuffer pts: " PUBLIC_LOG_D64"  outputSize:%{public}zu",
         outputBuffer->pts_, outputBuffers_.size());
     if (isInSeekContinous_) {
-        // 解析输出buffer，计算是否送显、目标送显时间
+        outputBufferMap_.insert(std::make_pair(index, outputBuffer));
+        std::unique_lock<std::mutex> draggingLock(draggingMutex_);
         if (videoFrameReadyCallback_ != nullptr) {
-            MEDIA_LOG_I("[drag_debug]DrainOutputBuffer2 enter. dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
+            MEDIA_LOG_D("[drag_debug]DrainOutputBuffer2 dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
                         " bufferIdx: " PUBLIC_LOG_D32,
                         outputBuffer->dts_, outputBuffer->pts_, index);
-            videoFrameReadyCallback_->ConsumeVideoFrame(outputBuffer, index);
+            std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback = videoFrameReadyCallback_;
+            draggingLock.unlock();
+            videoFrameReadyCallback->ConsumeVideoFrame(outputBuffer, index);
         }
-        outputBufferMap_.insert(std::make_pair(index, outputBuffer));
         return;
     }
     if (doPrepareFrame_.load()) {
@@ -712,7 +725,7 @@ void DecoderSurfaceFilter::RenderLoop()
             outputBuffers_.pop_front();
         }
         int64_t waitTime = CalculateNextRender(nextTask.first, nextTask.second);
-        MEDIA_LOG_D("RenderLoop enter. pts: " PUBLIC_LOG_D64"  waitTime:" PUBLIC_LOG_D64,
+        MEDIA_LOG_D("RenderLoop pts: " PUBLIC_LOG_D64"  waitTime:" PUBLIC_LOG_D64,
             nextTask.second->pts_, waitTime);
         if (waitTime > 0) {
             OSAL::SleepFor(waitTime / 1000); // 1000 convert to ms
@@ -750,27 +763,29 @@ void DecoderSurfaceFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncC
 Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
     bool svp)
 {
-    MEDIA_LOG_I("SetDecryptConfig enter.");
+    MEDIA_LOG_I("SetDecryptConfig");
     if (keySessionProxy == nullptr) {
         MEDIA_LOG_E("SetDecryptConfig keySessionProxy is nullptr.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     isDrmProtected_ = true;
-    keySessionServiceProxy_ = keySessionProxy;
     svpFlag_ = svp;
+#ifdef SUPPORT_DRM
+    keySessionServiceProxy_ = keySessionProxy;
+#endif
     return Status::OK;
 }
 
 void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
 {
-    MEDIA_LOG_I("SetSeekTime enter.");
+    MEDIA_LOG_I("SetSeekTime");
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
 }
 
 void DecoderSurfaceFilter::ResetSeekInfo()
 {
-    MEDIA_LOG_I("ResetSeekInfo enter.");
+    MEDIA_LOG_I("ResetSeekInfo");
     isSeek_ = false;
     seekTimeUs_ = 0;
 }
@@ -809,9 +824,8 @@ int32_t DecoderSurfaceFilter::GetDecRateUpperLimit()
 void DecoderSurfaceFilter::OnDumpInfo(int32_t fd)
 {
     MEDIA_LOG_D("DecoderSurfaceFilter::OnDumpInfo called.");
-    if (videoDecoder_ != nullptr) {
-        videoDecoder_->OnDumpInfo(fd);
-    }
+    FALSE_RETURN(videoDecoder_ != nullptr);
+    videoDecoder_->OnDumpInfo(fd);
 }
 
 void DecoderSurfaceFilter::SetBitrateStart()
@@ -826,8 +840,6 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
     format.GetIntValue("video_picture_width", width);
     int32_t height = 0;
     format.GetIntValue("video_picture_height", height);
-    MEDIA_LOG_I("OnOutputFormatChanged curW=" PUBLIC_LOG_D32 " curH=" PUBLIC_LOG_D32 " nextW=" PUBLIC_LOG_D32
-        " nextH=" PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_, width, height);
     if (width <= 0 || height <= 0) {
         MEDIA_LOG_W("invaild video size");
         return;
@@ -841,6 +853,9 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
     if (surfaceWidth_ == width && surfaceHeight_ == height) {
         MEDIA_LOG_W("receive the same output Format");
         return;
+    } else {
+        MEDIA_LOG_I("OnOutputFormatChanged curW=" PUBLIC_LOG_D32 " curH=" PUBLIC_LOG_D32 " nextW=" PUBLIC_LOG_D32
+            " nextH=" PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_, width, height);
     }
     surfaceWidth_ = width;
     surfaceHeight_ = height;
@@ -853,15 +868,15 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
 
 void DecoderSurfaceFilter::RegisterVideoFrameReadyCallback(std::shared_ptr<VideoFrameReadyCallback> &callback)
 {
-    Filter::Resume();
+    std::unique_lock<std::mutex> draggingLock(draggingMutex_);
     isInSeekContinous_ = true;
-    if (callback != nullptr) {
-        videoFrameReadyCallback_ = callback;
-    }
+    FALSE_RETURN(callback != nullptr);
+    videoFrameReadyCallback_ = callback;
 }
 
 void DecoderSurfaceFilter::DeregisterVideoFrameReadyCallback()
 {
+    std::unique_lock<std::mutex> draggingLock(draggingMutex_);
     isInSeekContinous_ = false;
     videoFrameReadyCallback_ = nullptr;
 }

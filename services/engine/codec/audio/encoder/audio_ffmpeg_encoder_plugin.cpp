@@ -40,7 +40,6 @@ AudioFfmpegEncoderPlugin::AudioFfmpegEncoderPlugin()
 AudioFfmpegEncoderPlugin::~AudioFfmpegEncoderPlugin()
 {
     CloseCtxLocked();
-    avCodecContext_.reset();
 }
 
 int32_t AudioFfmpegEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
@@ -73,10 +72,6 @@ int32_t AudioFfmpegEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBuffer
 
 int32_t AudioFfmpegEncoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
-    if (!inputBuffer) {
-        AVCODEC_LOGE("inputBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     int ret = av_frame_make_writable(cachedFrame_.get());
     if (ret != 0) {
         AVCODEC_LOGE("Frame make writable failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
@@ -125,10 +120,6 @@ int32_t AudioFfmpegEncoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferIn
 
 int32_t AudioFfmpegEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
-    if (!outBuffer) {
-        AVCODEC_LOGE("outBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     int32_t status;
     {
         std::lock_guard<std::mutex> lock(avMutext_);
@@ -194,7 +185,6 @@ int32_t AudioFfmpegEncoderPlugin::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     prevPts_ = 0;
     return ret;
 }
@@ -203,7 +193,6 @@ int32_t AudioFfmpegEncoderPlugin::Release()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     return ret;
 }
 
@@ -226,17 +215,18 @@ int32_t AudioFfmpegEncoderPlugin::AllocateContext(const std::string &name)
         cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
         avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *ptr) { av_packet_free(&ptr); });
     }
-    if (avCodec_ == nullptr) {
-        return AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_PROTOCOL_TYPE;
-    }
+    CHECK_AND_RETURN_RET_LOG(avCodec_ != nullptr,
+        AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_PROTOCOL_TYPE, "AllocateContext failed %{public}s", name.c_str());
 
     AVCodecContext *context = nullptr;
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         context = avcodec_alloc_context3(avCodec_.get());
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
-            avcodec_free_context(&ptr);
-            avcodec_close(ptr);
+            if (ptr) {
+                avcodec_free_context(&ptr);
+                ptr = nullptr;
+            }
         });
         av_log_set_level(AV_LOG_ERROR);
     }
@@ -292,8 +282,10 @@ int32_t AudioFfmpegEncoderPlugin::ReAllocateContext()
 
     AVCodecContext *context = avcodec_alloc_context3(avCodec_.get());
     auto tmpContext = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
-        avcodec_free_context(&ptr);
-        avcodec_close(ptr);
+        if (ptr) {
+            avcodec_free_context(&ptr);
+            ptr = nullptr;
+        }
     });
 
     tmpContext->channels = avCodecContext_->channels;
@@ -319,10 +311,9 @@ int32_t AudioFfmpegEncoderPlugin::InitFrame()
     cachedFrame_->channel_layout = avCodecContext_->channel_layout;
     cachedFrame_->channels = avCodecContext_->channels;
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
-    if (ret < 0) {
-        AVCODEC_LOGE("Get frame buffer failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
-        return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >=  0, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
+        "Get frame buffer failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
+
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
@@ -339,11 +330,7 @@ int32_t AudioFfmpegEncoderPlugin::GetMaxInputSize() const noexcept
 int32_t AudioFfmpegEncoderPlugin::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
-        auto res = avcodec_close(avCodecContext_.get());
-        if (res != 0) {
-            AVCODEC_LOGE("avcodec close failed: %{public}s", FFMpegConverter::AVStrError(res).c_str());
-            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-        }
+        avCodecContext_.reset();
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }

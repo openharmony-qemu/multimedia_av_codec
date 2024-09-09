@@ -25,9 +25,8 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "BufferConverter"};
 using AVCodecRect = OHOS::MediaAVCodec::BufferConverter::AVCodecRect;
-using namespace OHOS;
-using namespace OHOS::Media;
-using namespace OHOS::MediaAVCodec;
+using GraphicPixelFormat = OHOS::GraphicPixelFormat;
+using VideoPixelFormat = OHOS::MediaAVCodec::VideoPixelFormat;
 constexpr int32_t OFFSET_2 = 0x02;
 constexpr int32_t OFFSET_3 = 0x03;
 constexpr int32_t OFFSET_15 = 0x0F;
@@ -151,8 +150,11 @@ int32_t ConverteRGBA8888(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t
 
 namespace OHOS {
 namespace MediaAVCodec {
-using namespace OHOS;
-using namespace OHOS::Media;
+using AVBuffer = Media::AVBuffer;
+using AVSharedMemory = Media::AVSharedMemory;
+using Format = Media::Format;
+using MemoryType = Media::MemoryType;
+using Tag = Media::Tag;
 std::shared_ptr<BufferConverter> BufferConverter::Create(AVCodecType type)
 {
     if (type == AVCODEC_TYPE_VIDEO_ENCODER) {
@@ -281,7 +283,7 @@ void BufferConverter::SetFormat(const Format &format)
         AVCODEC_LOGW("Invalid format:%{public}s", format.Stringify().c_str());
         return;
     }
-    AVCODEC_LOGI(
+    AVCODEC_LOGD(
         "Actual:(%{public}d x %{public}d), Converter:(%{public}d x %{public}d), Hardware:(%{public}d x %{public}d).",
         width, rect_.hStride, usrRect_.wStride, usrRect_.hStride, hwRect_.wStride, hwRect_.hStride);
 }
@@ -366,6 +368,7 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 {
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "buffer is nullptr");
     if (buffer->memory_ == nullptr) {
+        isSharedMemory_ = true;
         AVCODEC_LOGW("memory is nullptr");
         return true;
     }
@@ -417,7 +420,7 @@ inline int32_t BufferConverter::CalculateUserStride(const int32_t widthHeight)
     return modVal ? (widthHeight + OFFSET_16 - modVal) : widthHeight;
 }
 
-int32_t BufferConverter::GetSliceHeightFromSurfaceBuffer(sptr<SurfaceBuffer> &surfaceBuffer)
+int32_t BufferConverter::GetSliceHeightFromSurfaceBuffer(sptr<SurfaceBuffer> &surfaceBuffer) const
 {
     int32_t height = surfaceBuffer->GetHeight();
     if (isEncoder_) {
@@ -429,9 +432,9 @@ int32_t BufferConverter::GetSliceHeightFromSurfaceBuffer(sptr<SurfaceBuffer> &su
         AVCODEC_LOGW("get plane info failed, GSError=%{public}d", err);
         return height;
     }
-    int32_t count = planes->planeCount;
+    uint32_t count = planes->planeCount;
     if (count <= 1) {
-        AVCODEC_LOGW("planes count is %{public}d", count);
+        AVCODEC_LOGW("planes count is %{public}u", count);
         return height;
     }
     return static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / surfaceBuffer->GetStride());

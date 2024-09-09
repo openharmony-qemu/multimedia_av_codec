@@ -52,7 +52,7 @@ config("mp3_encoder_config") {
 
 ohos_shared_library("media_plugin_Mp3AudioEncoder") {
   install_enable = true
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   sanitize = av_codec_sanitize
 
   configs = [

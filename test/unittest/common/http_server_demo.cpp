@@ -14,6 +14,7 @@
  */
 
 #include "http_server_demo.h"
+#include <chrono>
 #include "unittest_log.h"
 
 namespace OHOS {
@@ -37,6 +38,11 @@ HttpServerDemo::~HttpServerDemo()
 
 void HttpServerDemo::StartServer()
 {
+    StartServer(SERVERPORT);
+}
+
+void HttpServerDemo::StartServer(int32_t port)
+{
     threadPool_ = std::make_unique<ThreadPool>("httpServerThreadPool");
     threadPool_->SetMaxTaskNum(THREAD_POOL_MAX_TASKS);
     listenFd_ = socket(AF_INET, SOCK_STREAM, 0);
@@ -48,7 +54,7 @@ void HttpServerDemo::StartServer()
     (void)memset_s(&servaddr, sizeof(servaddr), 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     inet_pton(AF_INET, "127.0.0.1", &servaddr.sin_addr);
-    servaddr.sin_port = htons(SERVERPORT);
+    servaddr.sin_port = htons(port);
     int32_t reuseAddr = 1;
     setsockopt(listenFd_, SOL_SOCKET, SO_REUSEADDR, static_cast<void *>(&reuseAddr), sizeof(int32_t));
     setsockopt(listenFd_, SOL_SOCKET, SO_REUSEPORT, static_cast<void *>(&reuseAddr), sizeof(int32_t));
@@ -63,6 +69,7 @@ void HttpServerDemo::StartServer()
     listen(listenFd_, DEFAULT_LISTEN);
     isRunning_.store(true);
     serverLoop_ = std::make_unique<std::thread>(&HttpServerDemo::ServerLoopFunc, this);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
 void HttpServerDemo::StopServer()
@@ -202,8 +209,10 @@ void HttpServerDemo::FileReadFunc(int32_t connFd)
     int32_t keepAlive = 1;
     int32_t keepIdle = 10;
     std::string recvStr = std::string(recvBuff);
+    std::cout << "recv recvStr=" << recvStr << std::endl;
     std::string path = "";
     if (ret <= 0) {
+        std::cout << "recv error, ret=" << ret << std::endl;
         CloseFd(connFd, fileFd, true, false);
         return;
     }
@@ -229,12 +238,16 @@ void HttpServerDemo::FileReadFunc(int32_t connFd)
         UNITTEST_CHECK_AND_BREAK_LOG(ret > 0, "read file failed, ret=%d", ret);
         size -= ret;
         ret = send(connFd, fileBuff.data(), std::min(ret, sendSize), MSG_NOSIGNAL);
-        if (ret <= 0) { // send file buffer failed
+        if (ret <= 0) {
+            std::cout << "send file buffer failed, ret=" << ret << std::endl;
             break;
         }
     }
     if (ret > 0) {
         std::string httpContext = "HTTP/2 200 OK\r\nServer:demohttp\r\n";
+        send(connFd, httpContext.c_str(), httpContext.size(), MSG_NOSIGNAL);
+    } else {
+        std::string httpContext = "HTTP/2 500 Internal Server Error\r\nServer:demohttp\r\n";
         send(connFd, httpContext.c_str(), httpContext.size(), MSG_NOSIGNAL);
     }
     CloseFd(connFd, fileFd, true, true);

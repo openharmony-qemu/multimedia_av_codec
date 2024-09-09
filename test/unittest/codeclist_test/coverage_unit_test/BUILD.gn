@@ -42,7 +42,10 @@ codeclist_unittest_cflags = [
 
 group("codeclist_coverage_unit_test") {
   testonly = true
-  deps = [ ":codeclist_core_coverage_unit_test" ]
+  deps = [
+    ":avcodec_info_coverage_unit_test",
+    ":codeclist_core_coverage_unit_test",
+  ]
 }
 
 ##################################################################################################################
@@ -106,6 +109,35 @@ ohos_unittest("codeclist_core_coverage_unit_test") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
+}
+
+##################################################################################################################
+ohos_unittest("avcodec_info_coverage_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  cflags = codeclist_unittest_cflags
+  cflags_cc = cflags
+  include_dirs = []
+  defines = av_codec_defines
+  if (av_codec_enable_special_codec) {
+    defines += [ "AV_CODEC_AUDIO_VIVID_CAPACITY" ]
+  }
+
+  sources = [ "./avcodec_info_coverage_unit_test.cpp" ]
+
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "hilog:libhilog",
+    "media_foundation:media_foundation",
+  ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
 # 目的：反复mock单例模式的初始化方法

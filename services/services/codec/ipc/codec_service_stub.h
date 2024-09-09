@@ -36,6 +36,7 @@ public:
 
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo) override;
     int32_t Configure(const Format &format) override;
+    int32_t Prepare() override;
     int32_t Start() override;
     int32_t Stop() override;
     int32_t Flush() override;
@@ -59,6 +60,7 @@ public:
         const bool svpFlag) override;
 #endif
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args) override;
+    int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
 
 private:
     CodecServiceStub();
@@ -66,6 +68,7 @@ private:
     int32_t SetListenerObject(MessageParcel &data, MessageParcel &reply);
     int32_t Init(MessageParcel &data, MessageParcel &reply);
     int32_t Configure(MessageParcel &data, MessageParcel &reply);
+    int32_t Prepare(MessageParcel &data, MessageParcel &reply);
     int32_t Start(MessageParcel &data, MessageParcel &reply);
     int32_t Stop(MessageParcel &data, MessageParcel &reply);
     int32_t Flush(MessageParcel &data, MessageParcel &reply);
@@ -84,6 +87,7 @@ private:
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(MessageParcel &data, MessageParcel &reply);
 #endif
+    int32_t SetCustomBuffer(MessageParcel &data, MessageParcel &reply);
     int32_t InnerRelease();
 
     std::shared_ptr<ICodecService> codecServer_ = nullptr;

@@ -24,7 +24,7 @@
 #include "buffer/avbuffer_queue_consumer.h"
 #include "buffer/avbuffer_queue_define.h"
 #include "buffer/avbuffer_queue_producer.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#include "drm_i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -53,6 +53,7 @@ public:
     virtual int32_t RenderOutputBuffer(uint32_t index);
     virtual int32_t SignalRequestIDRFrame();
     virtual int32_t GetInputFormat(Format& format);
+    virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer);
 
     virtual std::string GetHidumperInfo()
     {

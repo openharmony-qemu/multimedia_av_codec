@@ -465,8 +465,8 @@ public:
 
 private:
     CapabilityData *data_;
-    int32_t blockWidth_;
-    int32_t blockHeight_;
+    int32_t blockWidth_ = 0;
+    int32_t blockHeight_ = 0;
     Range horizontalBlockRange_;
     Range verticalBlockRange_;
     Range blockPerFrameRange_;
@@ -794,6 +794,10 @@ enum VideoEncodeBitrateMode : int32_t {
      * constant quality mode.
      */
     CQ = 2,
+    /**
+     * constant bit rate mode for video call or meeting scene
+     */
+    CBR_VIDEOCALL = 3,
 };
 
 /**

@@ -110,10 +110,12 @@ private:
         BIT_DEPTH8BIT = 8,
         BIT_DEPTH10BIT = 10,
     };
-    
+
+#ifdef BUILD_ENG_VERSION
     void OpenDumpFile();
     void DumpOutputBuffer(int32_t bitDepth);
     void DumpConvertOut(struct SurfaceInfo &surfaceInfo);
+#endif
     bool IsActive() const;
     void CalculateBufferSize();
     int32_t AllocateBuffers();
@@ -130,34 +132,39 @@ private:
     void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
+    void FindAvailIndex(uint32_t index);
     void FramePostProcess(std::shared_ptr<HBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
     int32_t AllocateOutputBuffer(int32_t bufferCnt);
     int32_t FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height, int bitDepth);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
+    int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
+    int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
+    int32_t AttachToNewSurface(const sptr<Surface> &newSurface);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
     int32_t GetSurfaceBufferStride(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t SetSurfaceCfg(int32_t bufferCnt);
     int32_t DecodeFrameOnce();
     void HevcFuncMatch();
     void ReleaseHandle();
+    void InitHevcParams();
     void ConvertDecOutToAVFrame(int32_t bitDepth);
     static int32_t CheckHevcDecLibStatus();
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
 
-    void* handle_;
+    void* handle_ = nullptr;
     uint32_t decInstanceID_;
     HEVC_DEC_INIT_PARAM initParams_;
     HEVC_DEC_INARGS hevcDecoderInputArgs_;
     HEVC_DEC_OUTARGS hevcDecoderOutpusArgs_;
-    HEVC_DEC_HANDLE hevcSDecoder_;
-    CreateHevcDecoderFuncType hevcDecoderCreateFunc_;
-    DecodeFuncType hevcDecoderDecodecFrameFunc_;
-    FlushFuncType hevcDecoderFlushFrameFunc_;
-    DeleteFuncType hevcDecoderDeleteFunc_;
+    HEVC_DEC_HANDLE hevcSDecoder_ = nullptr;
+    CreateHevcDecoderFuncType hevcDecoderCreateFunc_ = nullptr;
+    DecodeFuncType hevcDecoderDecodecFrameFunc_ = nullptr;
+    FlushFuncType hevcDecoderFlushFrameFunc_ = nullptr;
+    DeleteFuncType hevcDecoderDeleteFunc_ = nullptr;
 
     static std::mutex decoderCountMutex_;
     static std::vector<uint32_t> decInstanceIDSet_;
@@ -193,9 +200,11 @@ private:
     std::shared_ptr<MediaCodecCallback> callback_;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
+#ifdef BUILD_ENG_VERSION
     std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpConvertFile_ = nullptr;
+#endif
 };
 
 void HevcDecLog(UINT32 channelId, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...);

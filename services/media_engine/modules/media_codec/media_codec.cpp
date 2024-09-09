@@ -16,10 +16,17 @@
 #include <shared_mutex>
 #include "common/log.h"
 #include "osal/task/autolock.h"
-#include "avcodec_codec_name.h"
-#include "avcodec_trace.h"
 #include "plugin/plugin_manager_v2.h"
 #include "osal/utils/dump_buffer.h"
+#include "avcodec_trace.h"
+#include "plugin/plugin_manager_v2.h"
+#include "avcodec_log.h"
+#include "common/event.h"
+#include "avcodec_errors.h"
+#include "common/media_core.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "MediaCodec" };
@@ -66,14 +73,29 @@ MediaCodec::MediaCodec()
 
 MediaCodec::~MediaCodec()
 {
-    codecPlugin_ = nullptr;
-    inputBufferQueue_ = nullptr;
-    inputBufferQueueProducer_ = nullptr;
-    inputBufferQueueConsumer_ = nullptr;
-    outputBufferQueueProducer_ = nullptr;
-    codecCallback_ = nullptr;
-    mediaCodecCallback_ = nullptr;
+    state_ = CodecState::UNINITIALIZED;
     outputBufferCapacity_ = 0;
+    if (codecPlugin_) {
+        codecPlugin_ = nullptr;
+    }
+    if (inputBufferQueue_) {
+        inputBufferQueue_ = nullptr;
+    }
+    if (inputBufferQueueProducer_) {
+        inputBufferQueueProducer_ = nullptr;
+    }
+    if (inputBufferQueueConsumer_) {
+        inputBufferQueueConsumer_ = nullptr;
+    }
+    if (outputBufferQueueProducer_) {
+        outputBufferQueueProducer_ = nullptr;
+    }
+    if (codecCallback_) {
+        codecCallback_ = nullptr;
+    }
+    if (mediaCodecCallback_) {
+        mediaCodecCallback_ = nullptr;
+    }
 }
 
 int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
@@ -110,7 +132,6 @@ int32_t MediaCodec::Init(const std::string &name)
 {
     AutoLock lock(stateMutex_);
     MEDIA_LOG_I("Init enter, name: " PUBLIC_LOG_S, name.c_str());
-    MEDIA_LOG_I("MediaCodec::Init");
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Init");
     if (state_ != CodecState::UNINITIALIZED) {
         MEDIA_LOG_E("Init failed, state = %{public}s .", StateToString(state_).data());
@@ -199,8 +220,10 @@ int32_t MediaCodec::Prepare()
     MEDIA_LOG_I("Prepare enter");
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Prepare");
+    FALSE_RETURN_V_MSG_W(state_ != CodecState::FLUSHED, (int32_t)Status::ERROR_AGAIN,
+        "state is flushed, no need prepare");
     FALSE_RETURN_V(state_ != CodecState::PREPARED, (int32_t)Status::OK);
-    FALSE_RETURN_V(state_ == CodecState::CONFIGURED || state_ == CodecState::FLUSHED,
+    FALSE_RETURN_V(state_ == CodecState::CONFIGURED,
         (int32_t)Status::ERROR_INVALID_STATE);
     if (isBufferMode_ && isSurfaceMode_) {
         MEDIA_LOG_E("state error");
@@ -208,15 +231,9 @@ int32_t MediaCodec::Prepare()
     }
     outputBufferCapacity_ = 0;
     auto ret = (int32_t)PrepareInputBufferQueue();
-    if (ret != (int32_t)Status::OK) {
-        MEDIA_LOG_E("PrepareInputBufferQueue failed");
-        return (int32_t)ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == (int32_t)Status::OK, (int32_t)ret, "PrepareInputBufferQueue failed");
     ret = (int32_t)PrepareOutputBufferQueue();
-    if (ret != (int32_t)Status::OK) {
-        MEDIA_LOG_E("PrepareOutputBufferQueue failed");
-        return (int32_t)ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == (int32_t)Status::OK, (int32_t)ret, "PrepareOutputBufferQueue failed");
     state_ = CodecState::PREPARED;
     MEDIA_LOG_I("Prepare, ret = %{public}d", (int32_t)ret);
     return (int32_t)Status::OK;
@@ -226,9 +243,7 @@ sptr<AVBufferQueueProducer> MediaCodec::GetInputBufferQueue()
 {
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ == CodecState::PREPARED, sptr<AVBufferQueueProducer>());
-    if (isSurfaceMode_) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(!isSurfaceMode_, nullptr, "GetInputBufferQueue isSurfaceMode_");
     isBufferMode_ = true;
     return inputBufferQueueProducer_;
 }
@@ -237,9 +252,7 @@ sptr<Surface> MediaCodec::GetInputSurface()
 {
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ == CodecState::PREPARED, nullptr);
-    if (isBufferMode_) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(!isBufferMode_, nullptr, "GetInputBufferQueue isBufferMode_");
     isSurfaceMode_ = true;
     return nullptr;
 }
@@ -487,13 +500,22 @@ Status MediaCodec::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuf
     }
     // 4. decrypt
     drmRes = drmDecryptor_->DrmAudioCencDecrypt(drmInBuf, drmOutBuf, bufSize);
-    FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_UNKNOWN, "DrmAudioCencDecrypt return error");
+    FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_DRM_DECRYPT_FAILED, "DrmAudioCencDecrypt return error");
 
     // 5. copy decrypted data from drm output buffer back
     drmRes = memcpy_s(filledInputBuffer->memory_->GetAddr(), bufSize,
         drmOutBuf->memory_->GetAddr(), bufSize);
     FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_UNKNOWN, "memcpy_s drmOutBuf failed");
     return Status::OK;
+}
+
+void MediaCodec::HandleAudioCencDecryptError()
+{
+    MEDIA_LOG_E("MediaCodec DrmAudioCencDecrypt failed.");
+    if (mediaCodecCallback_ != nullptr) {
+        mediaCodecCallback_->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED,
+            static_cast<int32_t>(Status::ERROR_DRM_DECRYPT_FAILED));
+    }
 }
 
 int32_t MediaCodec::PrepareInputBufferQueue()
@@ -602,7 +624,7 @@ void MediaCodec::ProcessInputBuffer()
         if (drmDecryptor_ != nullptr) {
             ret = DrmAudioCencDecrypt(filledInputBuffer);
             if (ret != Status::OK) {
-                MEDIA_LOG_E("MediaCodec DrmAudioCencDecrypt failed.");
+                HandleAudioCencDecryptError();
                 break;
             }
         }
@@ -662,23 +684,21 @@ Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const s
         codecPlugin_ = nullptr;
     }
     codecPlugin_ = CreatePlugin(mime, type);
-    if (codecPlugin_ != nullptr) {
-        ret = codecPlugin_->SetParameter(meta);
-        MEDIA_LOG_I("codecPlugin SetParameter ret %{public}d", ret);
-        ret = codecPlugin_->Init();
-        MEDIA_LOG_I("codecPlugin Init ret %{public}d", ret);
-        ret = codecPlugin_->SetDataCallback(this);
-        MEDIA_LOG_I("codecPlugin SetDataCallback ret %{public}d", ret);
-        PrepareInputBufferQueue();
-        PrepareOutputBufferQueue();
-        if (state_ == CodecState::RUNNING) {
-            ret = codecPlugin_->Start();
-            MEDIA_LOG_I("codecPlugin Start ret %{public}d", ret);
-        }
-    } else {
-        MEDIA_LOG_I("createPlugin failed");
-        return Status::ERROR_INVALID_PARAMETER;
+
+    CHECK_AND_RETURN_RET_LOG(codecPlugin_ != nullptr, Status::ERROR_INVALID_PARAMETER, "createPlugin failed");
+    ret = codecPlugin_->SetParameter(meta);
+    MEDIA_LOG_I("codecPlugin SetParameter ret %{public}d", ret);
+    ret = codecPlugin_->Init();
+    MEDIA_LOG_I("codecPlugin Init ret %{public}d", ret);
+    ret = codecPlugin_->SetDataCallback(this);
+    MEDIA_LOG_I("codecPlugin SetDataCallback ret %{public}d", ret);
+    PrepareInputBufferQueue();
+    PrepareOutputBufferQueue();
+    if (state_ == CodecState::RUNNING) {
+        ret = codecPlugin_->Start();
+        MEDIA_LOG_I("codecPlugin Start ret %{public}d", ret);
     }
+
     return ret;
 }
 
@@ -710,6 +730,10 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     } else if (ret != Status::OK) {
         MEDIA_LOG_E("QueueOutputBuffer error");
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
+        state_ = CodecState::ERROR;
+        if (mediaCodecCallback_ != nullptr) {
+            mediaCodecCallback_->OnError(CodecErrorType::CODEC_ERROR_INTERNAL, MSERR_AUD_DEC_FAILED);
+        }
     }
     return ret;
 }
@@ -742,14 +766,14 @@ void MediaCodec::ClearBufferQueue()
 {
     MEDIA_LOG_I("ClearBufferQueue called.");
     if (inputBufferQueueProducer_ != nullptr) {
-        for (auto &buffer : inputBufferVector_) {
+        for (const auto &buffer : inputBufferVector_) {
             inputBufferQueueProducer_->DetachBuffer(buffer);
         }
         inputBufferVector_.clear();
         inputBufferQueueProducer_->SetQueueSize(0);
     }
     if (outputBufferQueueProducer_ != nullptr) {
-        for (auto &buffer : outputBufferVector_) {
+        for (const auto &buffer : outputBufferVector_) {
             outputBufferQueueProducer_->DetachBuffer(buffer);
         }
         outputBufferVector_.clear();

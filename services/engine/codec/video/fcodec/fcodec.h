@@ -97,7 +97,6 @@ private:
         EOS,
         ERROR,
     };
-    void OpenDumpFile();
     void DumpOutputBuffer();
     bool IsActive() const;
     void ResetContext(bool isFlush = false);
@@ -113,6 +112,7 @@ private:
     int32_t UpdateSurfaceMemory(uint32_t index);
     void SendFrame();
     void ReceiveFrame();
+    void FindAvailIndex(uint32_t index);
     void RenderFrame();
     void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
@@ -124,6 +124,9 @@ private:
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
+    int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
+    int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
+    int32_t AttachToNewSurface(const sptr<Surface> &newSurface);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
     int32_t SetSurfaceCfg(int32_t bufferCnt);
 
@@ -172,8 +175,12 @@ private:
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
     uint32_t decNum_ = 0;
+    // dump
+#ifdef BUILD_ENG_VERSION
+    void OpenDumpFile();
     std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;
+#endif // BUILD_ENG_VERSION
 };
 } // namespace Codec
 } // namespace MediaAVCodec

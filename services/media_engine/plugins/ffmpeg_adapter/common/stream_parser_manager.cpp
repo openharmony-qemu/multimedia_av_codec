@@ -28,16 +28,20 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "H
 namespace OHOS {
 namespace Media {
 namespace Plugins {
-void *StreamParserManager::handler_ = nullptr;
-StreamParserManager::CreateFunc StreamParserManager::createFunc_ = nullptr;
-StreamParserManager::DestroyFunc StreamParserManager::destroyFunc_ = nullptr;
 std::mutex StreamParserManager::mtx_;
 std::map<StreamType, void *> StreamParserManager::handlerMap_ {};
+std::map<StreamType, CreateFunc> StreamParserManager::createFuncMap_ {};
+std::map<StreamType, DestroyFunc> StreamParserManager::destroyFuncMap_ {};
+
+StreamParserManager::StreamParserManager()
+{
+    streamType_ = StreamType::HEVC;
+}
 
 StreamParserManager::~StreamParserManager()
 {
     if (streamParser_) {
-        destroyFunc_(streamParser_);
+        destroyFuncMap_[streamType_](streamParser_);
         streamParser_ = nullptr;
     }
 }
@@ -45,24 +49,25 @@ StreamParserManager::~StreamParserManager()
 bool StreamParserManager::Init(StreamType streamType)
 {
     std::lock_guard<std::mutex> lock(mtx_);
-    if (handlerMap_.count(streamType) > 0 && handlerMap_[streamType] != nullptr) {
-        handler_ = handlerMap_[streamType];
+    if (handlerMap_.count(streamType) && createFuncMap_.count(streamType) && destroyFuncMap_.count(streamType)) {
+        return true;
+    }
+
+    std::string streamParserPath;
+    if (streamType == StreamType::HEVC) {
+        streamParserPath = HEVC_LIB_PATH;
+    } else if (streamType == StreamType::VVC) {
+        streamParserPath = VVC_LIB_PATH;
     } else {
-        std::string streamParserPath;
-        if (streamType == StreamType::HEVC) {
-            streamParserPath = HEVC_LIB_PATH;
-        } else if (streamType == StreamType::VVC) {
-            streamParserPath = VVC_LIB_PATH;
-        } else {
-            MEDIA_LOG_E("Unsupport stream parser type");
-            return false;
-        }
-        handler_ = LoadPluginFile(streamParserPath);
-        if (!CheckSymbol(handler_)) {
-            MEDIA_LOG_E("Load stream parser so fail");
-            return false;
-        }
-        handlerMap_[streamType] = handler_;
+        MEDIA_LOG_E("Unsupport stream parser type");
+        return false;
+    }
+    if (handlerMap_.count(streamType) == 0) {
+        handlerMap_[streamType] = LoadPluginFile(streamParserPath);
+    }
+    if (!CheckSymbol(handlerMap_[streamType], streamType)) {
+        MEDIA_LOG_E("Load stream parser so fail");
+        return false;
     }
     return true;
 }
@@ -74,11 +79,12 @@ std::shared_ptr<StreamParserManager> StreamParserManager::Create(StreamType stre
     if (!loader->Init(streamType)) {
         return nullptr;
     }
-    loader->streamParser_ = loader->createFunc_();
+    loader->streamParser_ = loader->createFuncMap_[streamType]();
     if (!loader->streamParser_) {
         MEDIA_LOG_E("createFunc_ fail");
         return nullptr;
     }
+    loader->streamType_ = streamType;
     return loader;
 }
 
@@ -189,7 +195,7 @@ void *StreamParserManager::LoadPluginFile(const std::string &path)
     return ptr;
 }
 
-bool StreamParserManager::CheckSymbol(void *handler)
+bool StreamParserManager::CheckSymbol(void *handler, StreamType streamType)
 {
     if (handler) {
         std::string createFuncName = "CreateStreamParser";
@@ -201,8 +207,8 @@ bool StreamParserManager::CheckSymbol(void *handler)
         if (createFunc && destroyFunc) {
             MEDIA_LOG_D("CheckSymbol:  createFuncName %{public}s", createFuncName.c_str());
             MEDIA_LOG_D("CheckSymbol:  destroyFuncName %{public}s", destroyFuncName.c_str());
-            createFunc_ = createFunc;
-            destroyFunc_ = destroyFunc;
+            createFuncMap_[streamType] = createFunc;
+            destroyFuncMap_[streamType] = destroyFunc;
             return true;
         }
     }

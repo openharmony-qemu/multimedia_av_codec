@@ -41,6 +41,7 @@ enum ShortOption {
     OPT_IS_HIGH_PERF_MODE,
     OPT_SET_PARAMETER,
     OPT_SET_PER_FRAME,
+    OPT_SET_RESOURCE,
     // encoder only
     OPT_MOCK_FRAME_CNT,
     OPT_COLOR_RANGE,
@@ -57,11 +58,14 @@ enum ShortOption {
     OPT_REPEAT_AFTER,
     OPT_REPEAT_MAX_CNT,
     OPT_LAYER_COUNT,
+    OPT_WATERMARK,
+    OPT_ENABLE_PARAMS_FEEDBACK,
     // decoder only
     OPT_RENDER,
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
     OPT_FLUSH_CNT,
+    OPT_SCALE_MODE,
 };
 
 static struct option g_longOptions[] = {
@@ -81,6 +85,7 @@ static struct option g_longOptions[] = {
     {"isHighPerfMode",  required_argument,  nullptr, OPT_IS_HIGH_PERF_MODE},
     {"setParameter",    required_argument,  nullptr, OPT_SET_PARAMETER},
     {"setPerFrame",     required_argument,  nullptr, OPT_SET_PER_FRAME},
+    {"setResource",     required_argument,  nullptr, OPT_SET_RESOURCE},
     // encoder only
     {"mockFrameCnt",    required_argument,  nullptr, OPT_MOCK_FRAME_CNT},
     {"colorRange",      required_argument,  nullptr, OPT_COLOR_RANGE},
@@ -97,11 +102,14 @@ static struct option g_longOptions[] = {
     {"repeatAfter",     required_argument,  nullptr, OPT_REPEAT_AFTER},
     {"repeatMaxCnt",    required_argument,  nullptr, OPT_REPEAT_MAX_CNT},
     {"layerCnt",        required_argument,  nullptr, OPT_LAYER_COUNT},
+    {"waterMark",       required_argument,  nullptr, OPT_WATERMARK},
+    {"paramsFeedback",  required_argument,  nullptr, OPT_ENABLE_PARAMS_FEEDBACK},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"render",          required_argument,  nullptr, OPT_RENDER},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
     {"flushCnt",        required_argument,  nullptr, OPT_FLUSH_CNT},
+    {"scaleMode",       required_argument,  nullptr, OPT_SCALE_MODE},
     {nullptr,           no_argument,        nullptr, OPT_UNKONWN},
 };
 
@@ -123,7 +131,9 @@ void ShowUsage()
     std::cout << " --timeout            thread timeout(ms). -1 means wait forever" << std::endl;
     std::cout << " --isHighPerfMode     0 is normal mode, 1 is high perf mode" << std::endl;
     std::cout << " --setParameter       eg. 11:frameRate,60 or 24:requestIdr,1" << std::endl;
-    std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40 or 25:discard,1" << std::endl;
+    std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40 or 25:discard,1 or 30:ebr,16,30,25,0"
+              << std::endl;
+    std::cout << " --setResource        eg. 11:/data/test/a.yuv,1280,720,2" << std::endl;
     std::cout << " [encoder only]" << std::endl;
     std::cout << " --mockFrameCnt       when read up to maxReadFrameCnt, just send old frames" << std::endl;
     std::cout << " --colorRange         color range. 1 is full range, 0 is limited range." << std::endl;
@@ -135,7 +145,8 @@ void ShowUsage()
     std::cout << " --profile            video profile, for 264: 0(baseline), 1(constrained baseline), " << std::endl;
     std::cout << "                      2(constrained high), 3(extended), 4(high), 8(main)" << std::endl;
     std::cout << "                      for 265: 0(main), 1(main 10)" << std::endl;
-    std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ)" << std::endl;
+    std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ), 3(CBR_VIDEOCALL)"
+              << std::endl;
     std::cout << " --bitRate            target encode bit rate (bps)" << std::endl;
     std::cout << " --quality            target encode quality" << std::endl;
     std::cout << " --qpRange            target encode qpRange, eg. 13,42" << std::endl;
@@ -143,11 +154,14 @@ void ShowUsage()
     std::cout << " --repeatAfter        repeat previous frame after target ms" << std::endl;
     std::cout << " --repeatMaxCnt       repeat previous frame up to target times" << std::endl;
     std::cout << " --layerCnt           target encode layerCnt, H264:2, H265:2 and 3" << std::endl;
+    std::cout << " --waterMark          eg. /data/test/a.rgba,1280,720,2:16,16,1280,720" << std::endl;
     std::cout << " [decoder only]" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --render             0 means don't render, 1 means render to window" << std::endl;
+    std::cout << " --paramsFeedback     0 means don't feedback, 1 means feedback" << std::endl;
     std::cout << " --decThenEnc         do surface encode after surface decode" << std::endl;
     std::cout << " --flushCnt           total flush count during decoding" << std::endl;
+    std::cout << " --scaleMode          target scale mode after decode, see @OH_ScalingMode" << std::endl;
 }
 
 CommandOpt Parse(int argc, char *argv[])
@@ -199,10 +213,13 @@ CommandOpt Parse(int argc, char *argv[])
                 opt.isHighPerfMode = stol(optarg);
                 break;
             case OPT_SET_PARAMETER:
-                opt.ParseParamFromCmdLine(false, optarg);
+                opt.ParseParamFromCmdLine(SET_PARAM, optarg);
                 break;
             case OPT_SET_PER_FRAME:
-                opt.ParseParamFromCmdLine(true, optarg);
+                opt.ParseParamFromCmdLine(PER_FRAME_PARAM, optarg);
+                break;
+            case OPT_SET_RESOURCE:
+                opt.ParseParamFromCmdLine(RESOURCE_PARAM, optarg);
                 break;
             // encoder only
             case OPT_MOCK_FRAME_CNT:
@@ -255,6 +272,12 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_LAYER_COUNT:
                 opt.layerCnt = stol(optarg);
                 break;
+            case OPT_WATERMARK:
+                opt.ParseWaterMark(optarg);
+                break;
+            case OPT_ENABLE_PARAMS_FEEDBACK:
+                opt.paramsFeedback = stol(optarg);
+                break;
             // decoder only
             case OPT_RENDER:
                 opt.render = stol(optarg);
@@ -268,6 +291,8 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_FLUSH_CNT:
                 opt.flushCnt = stol(optarg);
                 break;
+            case OPT_SCALE_MODE:
+                opt.scaleMode = static_cast<OH_ScalingMode>(stol(optarg));
             default:
                 break;
         }
@@ -275,7 +300,7 @@ CommandOpt Parse(int argc, char *argv[])
     return opt;
 }
 
-void CommandOpt::ParseParamFromCmdLine(bool isPerFrame, const char *cmd)
+void CommandOpt::ParseParamFromCmdLine(ParamType paramType, const char *cmd)
 {
     string s(cmd);
     auto pos = s.find(':');
@@ -284,7 +309,25 @@ void CommandOpt::ParseParamFromCmdLine(bool isPerFrame, const char *cmd)
     }
     auto frameNo = stoul(s.substr(0, pos));
     string paramList = s.substr(pos + 1);
-    isPerFrame ? ParsePerFrameParam(frameNo, paramList) : ParseSetParameter(frameNo, paramList);
+    switch (paramType) {
+        case SET_PARAM: {
+            ParseSetParameter(frameNo, paramList);
+            break;
+        }
+        case PER_FRAME_PARAM: {
+            ParsePerFrameParam(frameNo, paramList);
+            break;
+        }
+        case RESOURCE_PARAM: {
+            ResourceParams dst;
+            ParseResourceParam(paramList, dst);
+            resourceParamsMap[frameNo] = dst;
+            break;
+        }
+        default: {
+            break;
+        }
+    }
 }
 
 void CommandOpt::ParseSetParameter(uint32_t frameNo, const string &s)
@@ -347,6 +390,40 @@ void CommandOpt::ParsePerFrameParam(uint32_t frameNo, const string &s)
         value >> discard;
         perFrameParamsMap[frameNo].discard = discard;
     }
+    if (key == "ebr") {
+        EBRParam ebrParam;
+        value >> ebrParam.minQp >> c >> ebrParam.maxQp >> c >> ebrParam.startQp >> c >> ebrParam.isSkip;
+        perFrameParamsMap[frameNo].ebrParam = ebrParam;
+    }
+}
+
+void CommandOpt::ParseResourceParam(const std::string &src, ResourceParams& dst)
+{
+    auto pos = src.find(',');
+    if (pos == string::npos) {
+        return;
+    }
+    dst.inputFile = src.substr(0, pos);
+    istringstream value(src.substr(pos + 1));
+    int pixelFmt;
+    char c;
+    value >> dst.dispW >> c >> dst.dispH >> c >> pixelFmt;
+    dst.pixFmt = static_cast<VideoPixelFormat>(pixelFmt);
+}
+
+void CommandOpt::ParseWaterMark(const char *cmd) // "/data/test/a.rgba,1280,720,2:16,16,1280,720"
+{
+    string s(cmd);
+    auto pos = s.find(':');
+    if (pos == string::npos) {
+        return;
+    }
+    waterMark.isSet = true;
+    string resource = s.substr(0, pos);           // "/data/test/a.rgba,1280,720,2"
+    ParseResourceParam(resource, waterMark.waterMarkFile);
+    istringstream coordinate(s.substr(pos + 1));  // "16,16,1280,720"
+    char c;
+    coordinate >> waterMark.dstX >> c >> waterMark.dstY >> c >> waterMark.dstW >> c >> waterMark.dstH;
 }
 
 void CommandOpt::Print() const
@@ -394,6 +471,10 @@ void CommandOpt::Print() const
     if (qpRange.has_value()) {
         TLOGI("qpRange %u~%u", qpRange->qpMin, qpRange->qpMax);
     }
+    if (waterMark.isSet) {
+        TLOGI("dstX %d, dstY %d, dstW %d, dstH %d",
+              waterMark.dstX, waterMark.dstY, waterMark.dstW, waterMark.dstH);
+    }
     TLOGI("rotation angle %u", rotation);
     TLOGI("flush cnt %d", flushCnt);
     for (const auto &[frameNo, setparam] : setParameterParamsMap) {
@@ -423,6 +504,10 @@ void CommandOpt::Print() const
             TLOGI("    LTR, markAsLTR %d, useLTR %d, useLTRPoc %u",
                   perFrame.ltrParam->markAsLTR, perFrame.ltrParam->useLTR, perFrame.ltrParam->useLTRPoc);
         }
+    }
+    for (const auto &[frameNo, resourceParam] : resourceParamsMap) {
+        TLOGI("frameNo = %u, filePath = %s, %u x %u, pixFmt = %d", frameNo,
+              resourceParam.inputFile.c_str(), resourceParam.dispW, resourceParam.dispH, resourceParam.pixFmt);
     }
     TLOGI("-----------------------------");
 }

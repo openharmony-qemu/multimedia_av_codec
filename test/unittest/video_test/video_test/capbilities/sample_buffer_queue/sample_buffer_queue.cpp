@@ -18,10 +18,6 @@
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "SampleBufferQueue"};
-}
-
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
@@ -33,14 +29,12 @@ int32_t SampleBufferQueue::QueueBuffer(const CodecBufferInfo& bufferInfo)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-std::optional<CodecBufferInfo> SampleBufferQueue::DequeueBuffer()
+std::optional<CodecBufferInfo> SampleBufferQueue::DequeueBuffer(int32_t timeoutMs)
 {
     std::unique_lock<std::mutex> lock(mutex_);
-    using namespace std::chrono_literals;
 
-    bool condRet = cond_.wait_for(lock, 5s, [this]() { return !bufferQueue_.empty(); });
-    CHECK_AND_RETURN_RET_LOG(!bufferQueue_.empty(), std::nullopt,
-        "Buffer queue is empty, continue, cond ret: %{public}d", condRet);
+    (void)cond_.wait_for(lock, std::chrono::milliseconds(timeoutMs), [this]() { return !bufferQueue_.empty(); });
+    CHECK_AND_RETURN_RET(!bufferQueue_.empty(), std::nullopt);
 
     CodecBufferInfo bufferInfo = bufferQueue_.front();
     bufferQueue_.pop();

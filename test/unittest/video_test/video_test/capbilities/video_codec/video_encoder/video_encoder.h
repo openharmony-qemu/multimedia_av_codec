@@ -30,7 +30,7 @@ public:
     int32_t Flush() override;
     int32_t Stop() override;
     int32_t Reset() override;
-    OH_AVFormat *GetFormat() override;
+    std::shared_ptr<OH_AVFormat> GetFormat() override;
 
 private:
     int32_t NotifyEndOfStream();
@@ -60,7 +60,6 @@ public:
 /********************* API11 *********************/
 class VideoEncoderAPI11 : public VideoEncoder {
 public:
-    int32_t PushInput(CodecBufferInfo &info) override;
     int32_t FreeOutput(uint32_t bufferIndex) override;
 
 protected:

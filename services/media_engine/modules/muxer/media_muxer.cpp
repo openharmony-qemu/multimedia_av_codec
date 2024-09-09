@@ -41,7 +41,7 @@ using namespace Plugins;
 constexpr int32_t ERR_TRACK_INDEX = -1;
 constexpr uint32_t MAX_BUFFER_COUNT = 10;
 
-const std::map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = {
+const std::unordered_map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = {
     {OutputFormat::MPEG_4, {MimeType::AUDIO_MPEG, MimeType::AUDIO_AAC,
                             MimeType::VIDEO_AVC, MimeType::VIDEO_MPEG4,
                             MimeType::VIDEO_HEVC,
@@ -157,8 +157,16 @@ Status MediaMuxer::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
     MEDIA_LOG_I("SetUserMeta");
     std::lock_guard<std::mutex> lock(mutex_);
+    std::vector<std::string> keys;
+    userMeta->GetKeys(keys);
+    for (auto& k: keys) {
+        if (k.compare("com.openharmony.recorder.timestamp") == 0) {
+            MEDIA_LOG_I("set com.openharmony.recorder.timestamp");
+            return muxer_->SetUserMeta(userMeta);
+        }
+    }
     FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED || state_ == State::STARTED, Status::ERROR_WRONG_STATE,
-        "The state is not INITIALIZED, the interface must be called after constructor and before Start(). "
+        "The state is not INITIALIZED, the interface must be called at initialized or started state. "
         "The current state is %{public}s.", StateConvert(state_).c_str());
     return muxer_->SetUserMeta(userMeta);
 }

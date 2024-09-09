@@ -26,6 +26,8 @@
 #include "timer.h"
 #include "utils/media_cached_buffer.h"
 #include <unistd.h>
+#include "common/media_core.h"
+#include "utils/write_bitrate_caculator.h"
 
 namespace OHOS {
 namespace Media {
@@ -49,19 +51,28 @@ public:
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
-    void SetDemuxerState() override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    std::pair<int32_t, int32_t> GetDownloadInfo() override;
+    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     int GetBufferSize();
     RingBuffer& GetBuffer();
     bool GetReadFrame();
     bool GetDownloadErrorState();
     StatusCallbackFunc GetStatusCallbackFunc();
-    void OnWriteRingBuffer(uint32_t len);
-    void DownloadReportLoop();
+    std::pair<int32_t, int32_t> GetDownloadRateAndSpeed();
+    void OnWriteBuffer(uint32_t len);
+    void DownloadReport();
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
+    void UpdateCachedPercent(BufferingInfoType infoType);
+    void SetAppUid(int32_t appUid) override;
+
 private:
     bool SaveData(uint8_t* data, uint32_t len);
+    bool SaveCacheBufferData(uint8_t* data, uint32_t len);
+    Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SaveRingBufferData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -76,10 +87,15 @@ private:
     void InitCacheBuffer(uint32_t expectBufferDuration);
 
     bool HandleBuffering();
-    bool StartBuffering();
+    bool StartBuffering(int32_t wantReadLength);
     size_t GetCurrentBufferSize();
-    bool HandleBreak(int32_t& sleepTime);
+    bool HandleBreak();
     void ChangeDownloadPos();
+    void UpdateWaterLineAbove();
+    void HandleCachedDuration();
+    bool CheckBufferingOneSeconds();
+    double CalculateCurrentDownloadSpeed();
+    float GetCacheDuration(float ratio);
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -93,7 +109,6 @@ private:
     bool aboveWaterline_ {false};
     bool startedPlayStatus_ {false};
     uint64_t readTime_ {0};
-    bool isReadFrame_ {false};
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
     std::atomic<bool> isInterruptNeeded_{false};
@@ -112,7 +127,7 @@ private:
     uint32_t recordSpeedCount_ {0};
     int64_t lastReportUsageTime_ {0};
     uint64_t dataUsage_ {0};
-    bool isFlv_ {false};
+    bool isRingBuffer_ {false};
     size_t readOffset_ {0};
     size_t writeOffset_ {0};
     std::atomic<bool> canWrite_ {true};
@@ -121,13 +136,27 @@ private:
     std::atomic<bool> isNeedDropData_ {false};
     std::atomic<bool> isServerAcceptRange_ {false};
 
-    size_t wantReadLength_ {0};
+    size_t waterLineAbove_ {0};
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
-    bool isBufferEnough_ {false};
-    bool isErrorBreak_ {false};
-    unsigned int bufferingTimes_ {0};
+
+    struct RecordData {
+        double downloadRate {0};
+        uint64_t bufferDuring {0};
+    };
+    std::shared_ptr<RecordData> recordData_;
+    uint64_t currentBitrate_ {1 * 1024 * 1024};         //bps
+    uint64_t lastReadCheckTime_ {0};
+    uint64_t readTotalBytes_ {0};
+    uint64_t readRecordDuringTime_ {0};
+    uint64_t downloadDuringTime_ {0}; // 有效下载时长 ms
+    uint64_t totalDownloadDuringTime_ {0};
+    int32_t currentBitRate_ {0};
+    uint64_t lastDurationReacord_ {0};
+    int32_t lastCachedSize_ {0};
+
+    std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 };
 }
 }

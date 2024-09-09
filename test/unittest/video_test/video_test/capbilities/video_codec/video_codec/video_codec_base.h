@@ -30,7 +30,7 @@ public:
     virtual int32_t Flush() = 0;
     virtual int32_t Stop() = 0;
     virtual int32_t Reset() = 0;
-    virtual OH_AVFormat *GetFormat() = 0;
+    virtual std::shared_ptr<OH_AVFormat> GetFormat() = 0;
     virtual int32_t PushInput(CodecBufferInfo &info) = 0;
     virtual int32_t FreeOutput(uint32_t bufferIndex) = 0;
 

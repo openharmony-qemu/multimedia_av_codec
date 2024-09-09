@@ -65,12 +65,15 @@ ohos_unittest("swdecoder_native_module_test") {
       "./src/api_test.cpp",
       "./src/func_test.cpp",
 
+      #"./src/reli_test.cpp",
+
       #"./src/NativeAPI/perf_test.cpp",
       #"./src/NativeAPI/reli_test.cpp",
       "./src/state_test.cpp",
 
       #"./src/compatibility_test.cpp",
       "./src/videodec_ndk_sample.cpp",
+      "./src/videodec_api11_sample.cpp",
     ]
   }
 

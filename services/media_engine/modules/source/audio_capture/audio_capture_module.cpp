@@ -78,7 +78,7 @@ Status AudioCaptureModule::Init()
     AutoLock lock(captureMutex_);
     if (audioCapturer_ == nullptr) {
         AudioStandard::AppInfo appInfo;
-        appInfo.appTokenId = appTokenId_;
+        appInfo.appTokenId = static_cast<uint32_t>(appTokenId_);
         appInfo.appUid = appUid_;
         appInfo.appPid = appPid_;
         appInfo.appFullTokenId = static_cast<uint64_t>(appFullTokenId_);
@@ -99,13 +99,9 @@ Status AudioCaptureModule::DoDeinit()
     AutoLock lock(captureMutex_);
     if (audioCapturer_) {
         if (audioCapturer_->GetStatus() == AudioStandard::CapturerState::CAPTURER_RUNNING) {
-            if (!audioCapturer_->Stop()) {
-                MEDIA_LOG_E("Stop audioCapturer fail");
-            }
+            FALSE_LOG_MSG(audioCapturer_->Stop(), "stop audioCapturer fail");
         }
-        if (!audioCapturer_->Release()) {
-            MEDIA_LOG_E("Release audioCapturer fail");
-        }
+        FALSE_LOG_MSG(audioCapturer_->Release(), "Release audioCapturer fail");
         audioCapturer_->RemoveAudioCapturerInfoChangeCallback(audioCapturerInfoChangeCallback_);
         audioCapturer_ = nullptr;
     }
@@ -127,10 +123,8 @@ Status AudioCaptureModule::Prepare()
         FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "no available audio capture");
         FAIL_LOG_RETURN(audioCapturer_->GetBufferSize(size), "audioCapturer GetBufferSize");
     }
-    if (size >= MAX_CAPTURE_BUFFER_SIZE) {
-        MEDIA_LOG_E("bufferSize is too big: " PUBLIC_LOG_ZU, size);
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    FALSE_RETURN_V_MSG_E(size < MAX_CAPTURE_BUFFER_SIZE, Status::ERROR_INVALID_PARAMETER,
+        "bufferSize is too big: " PUBLIC_LOG_ZU, size);
     bufferSize_ = size;
     MEDIA_LOG_E("bufferSize is: " PUBLIC_LOG_ZU, bufferSize_);
     return Status::OK;
@@ -143,9 +137,7 @@ Status AudioCaptureModule::Reset()
         AutoLock lock (captureMutex_);
         FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "no available audio capture");
         if (audioCapturer_->GetStatus() == AudioStandard::CapturerState::CAPTURER_RUNNING) {
-            if (!audioCapturer_->Stop()) {
-                MEDIA_LOG_E("Stop audioCapturer fail");
-            }
+            FALSE_LOG_MSG(audioCapturer_->Stop(), "Stop audioCapturer fail");
         }
     }
     bufferSize_ = 0;
@@ -327,15 +319,16 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
     Status ret = Status::OK;
     {
         AutoLock lock(captureMutex_);
+        if (audioCapturer_ == nullptr) {
+            MEDIA_LOG_E("Audio capture is null");
+            return Status::ERROR_WRONG_STATE;
+        }
         if (audioCapturer_->GetStatus() != AudioStandard::CAPTURER_RUNNING) {
             return Status::ERROR_AGAIN;
         }
         size = audioCapturer_->Read(*bufData->GetAddr(), expectedLen, true);
     }
-    if (size < 0) {
-        MEDIA_LOG_E("audioCapturer Read() fail");
-        return Status::ERROR_NOT_ENOUGH_DATA;
-    }
+    FALSE_RETURN_V_MSG_E(size >= 0, Status::ERROR_NOT_ENOUGH_DATA, "audioCapturer Read() fail");
 
     if (isTrackMaxAmplitude) {
         TrackMaxAmplitude((int16_t *)bufData->GetAddr(),

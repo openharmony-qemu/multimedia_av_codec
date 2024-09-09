@@ -16,7 +16,6 @@
 
 #include "monitor/download_monitor.h"
 #include "cpp_ext/algorithm_ext.h"
-#include <set>
 
 namespace OHOS {
 namespace Media {
@@ -26,16 +25,39 @@ namespace {
     constexpr int RETRY_TIMES_TO_REPORT_ERROR = 10;
     constexpr int RETRY_THRESHOLD = 1;
     constexpr int SERVER_ERROR_THRESHOLD = 500;
+    constexpr int32_t READ_LOG_FEQUENCE = 50;
+    constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
+    constexpr int64_t RETRY_SEG = 50;
+    const std::set<int32_t> CLIENT_RETRY_ERROR_CODES = {
+        25, // Upload faild.
+        26, // Faild to open/read local data from file/application.
+        28, // Timeout was reached.
+    };
+
+    const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        400,
+        401,
+    };
 }
 DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept
     : downloader_(std::move(downloader))
 {
     auto statusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
+        if (isClosed_) {
+            MEDIA_LOG_W("Downloader monitor is already closed.");
+            return;
+        }
         OnDownloadStatus(std::forward<decltype(downloader)>(downloader), std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
-    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"), "", TaskType::SINGLETON);
+    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"));
     task_->RegisterJob([this] { return HttpMonitorLoop(); });
     task_->Start();
 }
@@ -53,34 +75,47 @@ int64_t DownloadMonitor::HttpMonitorLoop()
     if (task.request && task.function) {
         task.function();
     }
-    return 50 * 1000; // retry after 50ms
+    return RETRY_SEG * MICROSECONDS_TO_MILLISECOND; // retry after 50ms
 }
 
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     isPlaying_ = true;
-    retryTasks_.clear();
+    {
+        AutoLock lock(taskMutex_);
+        retryTasks_.clear();
+    }
     return downloader_->Open(url, httpHeader);
 }
 
 void DownloadMonitor::Pause()
 {
-    downloader_->Pause();
-    isPlaying_ = false;
-    lastReadTime_ = 0;
+    if (downloader_ != nullptr) {
+        downloader_->Pause();
+    }
 }
 
 void DownloadMonitor::Resume()
 {
-    downloader_->Resume();
-    isPlaying_ = true;
+    if (downloader_ != nullptr) {
+        downloader_->Resume();
+    }
 }
 
 void DownloadMonitor::Close(bool isAsync)
 {
-    retryTasks_.clear();
-    downloader_->Close(isAsync);
-    task_->Stop();
+    isClosed_ = true;
+    {
+        AutoLock lock(taskMutex_);
+        retryTasks_.clear();
+    }
+    if (isAsync) {
+        downloader_->Close(true);
+        task_->Stop();
+    } else {
+        task_->Stop();
+        downloader_->Close(false);
+    }
     isPlaying_ = false;
 }
 
@@ -88,6 +123,13 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     auto ret = downloader_->Read(buff, readDataInfo);
     time(&lastReadTime_);
+    if (ULLONG_MAX - haveReadData_ > readDataInfo.realReadLength_) {
+        haveReadData_ += readDataInfo.realReadLength_;
+    }
+    MEDIA_LOGI_LIMIT(READ_LOG_FEQUENCE, "DownloadMonitor: haveReadData " PUBLIC_LOG_U64, haveReadData_);
+    if (readDataInfo.isEos_ && ret == Status::END_OF_STREAM) {
+        MEDIA_LOG_I("buffer is empty, read eos." PUBLIC_LOG_U64, haveReadData_);
+    }
     return ret;
 }
 
@@ -151,50 +193,63 @@ bool DownloadMonitor::GetStartedStatus()
     return downloader_->GetStartedStatus();
 }
 
+void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCode)
+{
+    if (callback_ == nullptr) {
+        MEDIA_LOG_E("callback_ is nullptr, notify error failed.");
+        return;
+    }
+    if (serverErrorCode != 0) {
+        int32_t errorCode = MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR;
+        GetServerMediaServiceErrorCode(serverErrorCode, errorCode);
+        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "server error"});
+        MEDIA_LOG_I("Notify http server error, code " PUBLIC_LOG_D32, serverErrorCode);
+    }
+    if (clientErrorCode != 0) {
+        int32_t errorCode = MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR;
+        GetClientMediaServiceErrorCode(clientErrorCode, errorCode);
+        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "client error"});
+        MEDIA_LOG_I("Notify http client error, code " PUBLIC_LOG_D32, clientErrorCode);
+    }
+}
+
 bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 {
-    auto clientError = request->GetClientError();
-    int serverError = static_cast<int>(request->GetServerError());
     auto retryTimes = request->GetRetryTimes();
-    std::set<int> notRetryErrorSet = {400, 401, 403};
+    int32_t clientError = request->GetClientError();
+    int32_t serverError = request->GetServerError();
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
-    if (clientError == NetworkClientErrorCode::ERROR_NOT_RETRY ||
-        notRetryErrorSet.find(serverError) != notRetryErrorSet.end() ||
+
+    if (clientError == 0 && serverError == 0) {
+        return false;
+    }
+    if (retryTimes <= RETRY_THRESHOLD) {
+        return true;
+    }
+
+    if (CLIENT_RETRY_ERROR_CODES.find(clientError) == CLIENT_RETRY_ERROR_CODES.end() ||
+        SERVER_RETRY_ERROR_CODES.find(serverError) == SERVER_RETRY_ERROR_CODES.end() ||
         serverError >= SERVER_ERROR_THRESHOLD) {
-        if (retryTimes > RETRY_THRESHOLD) {
-            if (callback_ != nullptr) {
-                MEDIA_LOG_I("Send http client error, code " PUBLIC_LOG_D32, static_cast<int32_t>(clientError));
-                downloader_->SetDownloadErrorState();
-            }
-            request->Close();
-            return false;
-        }
-        return true;
+        MEDIA_LOG_I("error code dont't need to retry.");
+        downloader_->SetDownloadErrorState();
+        NotifyError(clientError, serverError);
+        request->Close();
+        return false;
     }
-    if ((clientError != NetworkClientErrorCode::ERROR_OK && clientError != NetworkClientErrorCode::ERROR_NOT_RETRY)
-        || serverError != 0) {
-        if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR) { // Report error to upper layer
-            if (clientError != NetworkClientErrorCode::ERROR_OK && callback_ != nullptr) {
-                MEDIA_LOG_I("Send http client error, code " PUBLIC_LOG_D32, static_cast<int32_t>(clientError));
-                downloader_->SetDownloadErrorState();
-            }
-            if (serverError != 0 && callback_ != nullptr) {
-                MEDIA_LOG_I("Send http server error, code " PUBLIC_LOG_D32, serverError);
-                downloader_->SetDownloadErrorState();
-            }
-            request->Close();
-            return false;
-        }
-        return true;
+    if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR) { // Report error to upper layer
+        MEDIA_LOG_I("Retry times readches the upper limit.");
+        downloader_->SetDownloadErrorState();
+        NotifyError(clientError, serverError);
+        return false;
     }
-    return false;
+    return true;
 }
 
 void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
                                        std::shared_ptr<DownloadRequest>& request)
 {
-    FALSE_RETURN_MSG(downloader != nullptr, "downloader is null, url is " PUBLIC_LOG_S, request->GetUrl().c_str());
+    FALSE_RETURN_MSG(downloader != nullptr, "downloader is nullptr.");
     if (NeedRetry(request)) {
         AutoLock lock(taskMutex_);
         bool exists = CppExt::AnyOf(retryTasks_.begin(), retryTasks_.end(), [&](const RetryRequest& item) {
@@ -212,9 +267,9 @@ void DownloadMonitor::SetIsTriggerAutoMode(bool isAuto)
     downloader_->SetIsTriggerAutoMode(isAuto);
 }
 
-void DownloadMonitor::SetDemuxerState()
+void DownloadMonitor::SetDemuxerState(int32_t streamId)
 {
-    downloader_->SetDemuxerState();
+    downloader_->SetDemuxerState(streamId);
 }
 
 void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
@@ -223,7 +278,7 @@ void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
 
-void DownloadMonitor::SetPlayStrategy(PlayStrategy* playStrategy)
+void DownloadMonitor::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy)
 {
     if (downloader_ != nullptr) {
         downloader_->SetPlayStrategy(playStrategy);
@@ -242,6 +297,11 @@ Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams)
     return downloader_->GetStreamInfo(streams);
 }
 
+Status DownloadMonitor::SelectStream(int32_t streamId)
+{
+    return downloader_->SelectStream(streamId);
+}
+
 void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     if (downloader_ != nullptr) {
@@ -249,6 +309,61 @@ void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
         downloader_->GetDownloadInfo(downloadInfo);
     }
 }
+
+std::pair<int32_t, int32_t> DownloadMonitor::GetDownloadInfo()
+{
+    MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
+    if (downloader_ == nullptr) {
+        return std::make_pair(0, 0);
+    }
+    return downloader_->GetDownloadInfo();
+}
+
+void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    if (downloader_ != nullptr) {
+        MEDIA_LOG_I("DownloadMonitor GetPlaybackInfo");
+        downloader_->GetPlaybackInfo(playbackInfo);
+    }
+}
+
+Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
+{
+    MEDIA_LOG_I("SetCurrentBitRate");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("SetCurrentBitRate failed, downloader_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return downloader_->SetCurrentBitRate(bitRate, streamID);
+}
+
+void DownloadMonitor::GetServerMediaServiceErrorCode(int32_t errorCode, int32_t& serverCode)
+{
+    if (serverErrorCodeMap_.find(errorCode) == serverErrorCodeMap_.end()) {
+        MEDIA_LOG_W("Unknown server error code.");
+    } else {
+        serverCode = serverErrorCodeMap_[errorCode];
+        MEDIA_LOG_D("serverCode: " PUBLIC_LOG_D32, static_cast<int32_t>(serverCode));
+    }
+}
+
+void DownloadMonitor::GetClientMediaServiceErrorCode(int32_t errorCode, int32_t& clientCode)
+{
+    if (clientErrorCodeMap_.find(errorCode) == clientErrorCodeMap_.end()) {
+        MEDIA_LOG_W("Unknown client error code.");
+    } else {
+        clientCode = clientErrorCodeMap_[errorCode];
+        MEDIA_LOG_D("clientCode: " PUBLIC_LOG_D32, static_cast<int32_t>(clientCode));
+    }
+}
+
+void DownloadMonitor::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+}
+
 }
 }
 }

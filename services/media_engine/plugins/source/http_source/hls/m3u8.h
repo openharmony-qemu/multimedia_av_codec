@@ -68,6 +68,7 @@ struct M3U8Info {
 struct M3U8 {
     M3U8(std::string uri, std::string name);
     ~M3U8();
+    void InitTagUpdaters();
     void InitTagUpdatersMap();
     bool Update(const std::string& playList, bool isNeedCleanFiles);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
@@ -111,6 +112,7 @@ struct M3U8 {
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
+    std::atomic<bool> isPlayTypeFound_ {false};
 };
 
 struct M3U8Media {
@@ -146,7 +148,6 @@ struct M3U8MasterPlaylist {
     void DownloadSessionKey(std::shared_ptr<Tag>& tag);
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
-    std::shared_ptr<M3U8VariantStream> minimumVariant_;
     std::string uri_;
     std::string playList_;
     double duration_ {0};
@@ -157,6 +158,7 @@ struct M3U8MasterPlaylist {
     uint8_t iv_[16] { 0 };
     uint8_t key_[16] { 0 };
     size_t keyLen_ { 0 };
+    std::atomic<bool> isParseSuccess_ {true};
 };
 }
 }

@@ -26,7 +26,7 @@ namespace HttpPlugin {
 class HlsPlayListDownloader : public PlayListDownloader {
 public:
     using PlayListDownloader::PlayListDownloader;
-    ~HlsPlayListDownloader() override = default;
+    ~HlsPlayListDownloader() override;
 
     void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void UpdateManifest() override;
@@ -43,7 +43,6 @@ public:
     uint32_t GetCurBitrate() override;
     bool IsLive() const override;
     void NotifyListChange();
-    void SetInterruptState(bool isInterruptNeeded) override;
     void SetMimeType(const std::string& mimeType) override;
     void PreParseManifest(const std::string& location) override;
     bool IsParseAndNotifyFinished() override;
@@ -56,7 +55,6 @@ private:
     void UpdateMasterInfo(bool isPreParse);
 private:
     std::string url_ {};
-    std::atomic<bool> isInterruptNeeded_{false};
     PlayListChangeCallback* callback_ {nullptr};
     std::shared_ptr<M3U8MasterPlaylist> master_;
     std::shared_ptr<M3U8VariantStream> currentVariant_;
@@ -64,6 +62,7 @@ private:
     std::string mimeType_;
     std::atomic<bool> isParseFinished_ {false};
     std::atomic<bool> isNotifyPlayListFinished_ {false};
+    std::atomic<bool> isLiveUpdateTaskStarted_ {false};
 };
 }
 }
