@@ -713,7 +713,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_027, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_028, TestSize.Level1)
 {
-    ConfigureHdrVivid2Sdr(testCode, false);
+    ConfigureHdrVivid2Sdr(VCodecTestCode::HW_HDR, false);
     for (int i = 0; i < 3 ; i++) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
