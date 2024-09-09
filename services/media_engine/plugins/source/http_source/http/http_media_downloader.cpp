@@ -255,6 +255,16 @@ bool HttpMediaDownloader::HandleBuffering()
         return false;
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
+
+    size_t fileRemain = 0;
+    if (downloadRequest_ != nullptr) {
+        size_t fileContenLen = downloadRequest_->GetFileContentLength();
+        if (fileContenLen > readOffset_) {
+            fileRemain = fileContenLen - readOffset_;
+            waterLineAbove_ = std::min(fileRemain, waterLineAbove_);
+        }
+    }
+
     UpdateWaterLineAbove();
     if (!canWrite_) {
         MEDIA_LOG_I("HTTP canWrite_ false");
