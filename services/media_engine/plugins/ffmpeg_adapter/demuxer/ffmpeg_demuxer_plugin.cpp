@@ -15,7 +15,6 @@
 
 #define MEDIA_PLUGIN
 #define HST_LOG_TAG "FfmpegDemuxerPlugin"
-
 #include <unistd.h>
 #include <algorithm>
 #include <malloc.h>
@@ -358,7 +357,7 @@ void FFmpegDemuxerPlugin::Dump(const DumpParam &dumpParam)
     path = "/data/ff_dump/" + path;
     ofs.open(path, std::ios::out); //  | std::ios::app
     if (ofs.is_open()) {
-        ofs.write((char*)dumpParam.buf, dumpParam.size);
+        ofs.write(reinterpret_cast<char*>(dumpParam.buf), dumpParam.size);
         ofs.close();
     }
     MEDIA_LOG_D("Dump path:" PUBLIC_LOG_S, path.c_str());
@@ -1104,6 +1103,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 {
     int ret = CheckContextIsValid(opaque, bufSize);
     FALSE_RETURN_V(ret == 0, ret);
+
     ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "ioContext is nullptr");
@@ -1142,6 +1142,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
             break;
     }
+
     if (!ioContext->initCompleted) {
         if (ioContext->initDownloadDataSize <= UINT32_MAX - static_cast<uint32_t>(dataSize)) {
             ioContext->initDownloadDataSize += static_cast<uint32_t>(dataSize);
@@ -1149,6 +1150,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             MEDIA_LOG_W("dataSize " PUBLIC_LOG_U32 " is invalid", static_cast<uint32_t>(dataSize));
         }
     }
+
     return ret;
 }
 
@@ -1369,7 +1371,7 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
             auto avStream = formatContext_->streams[trackIndex];
             if (HaveValidParser(avStream->codecpar->codec_id)) {
                 ret = GetVideoFirstKeyFrame(trackIndex);
-                FALSE_RETURN_V_MSG_E(ret == Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY,
+                FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY,
                     "Get first frame failed is due to error no memory");
                 FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
                     Status::ERROR_WRONG_STATE, "Get first frame failed. Get sei info may failed.");
@@ -1691,7 +1693,6 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     }
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Seek failed due to av_seek_frame failed, err: " PUBLIC_LOG_S ".", AVStrError(ret).c_str());
-
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
@@ -1701,17 +1702,18 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 
 Status FFmpegDemuxerPlugin::Flush()
 {
+    Status ret = Status::OK;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("Flush enter.");
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
-        cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
-        cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
+        ret = cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
+        ret = cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
     }
     if (formatContext_) {
         avio_flush(formatContext_.get()->pb);
         avformat_flush(formatContext_.get());
     }
-    return Status::OK;
+    return ret;
 }
 
 void FFmpegDemuxerPlugin::ResetEosStatus()
