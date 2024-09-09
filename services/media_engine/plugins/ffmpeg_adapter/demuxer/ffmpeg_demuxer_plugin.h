@@ -113,10 +113,10 @@ private:
     static int CheckContextIsValid(void* opaque, int &bufSize);
     void NotifyInitializationCompleted();
 
+    void InitParser();
     void InitBitStreamContext(const AVStream& avStream);
     void ConvertAvcToAnnexb(AVPacket& pkt);
     Status PushEOSToAllCache();
-    void ShowSelectedTracks();
     bool TrackIsSelected(const uint32_t trackId);
     Status ReadPacketToCacheQueue(const uint32_t readId);
     Status AddPacketToCacheQueue(AVPacket *pkt);
@@ -197,6 +197,9 @@ private:
     bool updatePosIsForward_ = true;
     bool isInit_ = false;
     uint32_t cachelimitSize_ = 0;
+    bool outOfLimit_ = false;
+    bool setLimitByUser = false;
+
     // dfx
     struct TrackDfxInfo {
         int frameIndex = 0; // for each track
