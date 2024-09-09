@@ -52,6 +52,7 @@ public:
     }
     virtual size_t GetBufferSize() const = 0;
     virtual bool GetPlayable() = 0;
+    virtual bool GetBufferingTimeOut() = 0;
     virtual size_t GetContentLength() const = 0;
     virtual int64_t GetDuration() const = 0;
     virtual Seekable GetSeekable() const = 0;

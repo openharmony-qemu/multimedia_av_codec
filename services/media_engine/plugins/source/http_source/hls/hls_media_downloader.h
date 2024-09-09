@@ -143,6 +143,7 @@ private:
     bool CheckDataIntegrity();
     void HlsInit();
     bool SaveCacheBufferData(uint8_t* data, uint32_t len);
+    bool GetBufferingTimeOut() override;
 
 private:
     size_t totalBufferSize_ {0};
@@ -256,7 +257,6 @@ private:
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
-    uint32_t errorAgainTime_ {0};
     std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     size_t readOffset_ {0};
     size_t writeOffset_ {0};
@@ -265,6 +265,7 @@ private:
     std::atomic<bool> canWrite_ {true};
     uint64_t ffmpegOffset_ = 0;
     volatile size_t wantedReadLength_ {0};
+    volatile size_t bufferingTime_ {0};
 };
 }
 }

@@ -1077,6 +1077,11 @@ bool DashMediaDownloader::GetPlayable()
     return GetBufferSize() >= 0;
 }
 
+bool DashMediaDownloader::GetBufferingTimeOut()
+{
+    return false;
+}
+
 }
 }
 }

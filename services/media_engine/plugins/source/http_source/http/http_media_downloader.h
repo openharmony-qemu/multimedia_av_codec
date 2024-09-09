@@ -69,6 +69,7 @@ public:
     size_t GetBufferSize() const override;
     void SetAppUid(int32_t appUid) override;
     bool GetPlayable() override;
+    bool GetBufferingTimeOut() override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -79,7 +80,6 @@ private:
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool HandleSeekHit(int64_t offest);
-    Status HandleDownloadErrorState(unsigned int& realReadLength);
     Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadTimeOut(ReadDataInfo& readDataInfo);
     Status ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -160,6 +160,7 @@ private:
     int32_t lastCachedSize_ {0};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
     volatile size_t wantedReadLength_ {0};
+    volatile size_t bufferingTime_ {0};
 };
 }
 }

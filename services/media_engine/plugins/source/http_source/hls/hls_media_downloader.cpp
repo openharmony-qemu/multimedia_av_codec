@@ -66,6 +66,7 @@ constexpr int TRANSFER_SIZE_RATE_2 = 2;
 constexpr int TRANSFER_SIZE_RATE_3 = 3;
 constexpr int TRANSFER_SIZE_RATE_4 = 4;
 constexpr int SLEEP_TIME_100 = 100;
+constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -311,6 +312,7 @@ bool HlsMediaDownloader::HandleCache()
         isBuffering_ = true;
         UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
         callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+        bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
         return true;
     }
     return false;
@@ -1006,7 +1008,11 @@ void HlsMediaDownloader::SetDemuxerState(int32_t streamId)
 void HlsMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("HLS SetDownloadErrorState");
+    if (callback_ != nullptr) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+    }
     downloadErrorState_ = true;
+    Close(true);
 }
 
 void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
@@ -1350,6 +1356,7 @@ void HlsMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
     }
     if (infoType == BufferingInfoType::BUFFERING_END) {
         callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {100}, "buffer percent"}); // 100
+        bufferingTime_ = 0;
         lastCachedSize_ = 0;
         return;
     }
@@ -1434,6 +1441,16 @@ bool HlsMediaDownloader::GetPlayable()
     size_t wantedLength = wantedReadLength_;
     size_t waterLine = wantedLength > 0 ? std::max(PLAY_WATER_LINE, wantedLength) : 0;
     return GetBufferSize() >= waterLine;
+}
+
+bool HlsMediaDownloader::GetBufferingTimeOut()
+{
+    if (bufferingTime_ == 0) {
+        return false;
+    } else {
+        size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+        return now >= bufferingTime_ ? now - bufferingTime_ >= MAX_BUFFERING_TIME_OUT : false;
+    }
 }
 
 }

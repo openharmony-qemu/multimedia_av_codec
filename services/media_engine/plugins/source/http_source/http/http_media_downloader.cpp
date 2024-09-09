@@ -44,7 +44,6 @@ constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 48 * 10 * 1024;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
-constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 constexpr int32_t SAVE_DATA_LOG_FEQUENCE = 10;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
@@ -56,6 +55,7 @@ constexpr int32_t TEN_MILLISECONDS = 10;
 constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.9;
 constexpr float CACHE_LEVEL_1 = 0.3;
 constexpr int32_t DEFAULT_CACHE_TIME = 10;
+constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -286,6 +286,7 @@ bool HttpMediaDownloader::HandleBuffering()
             GetCurrentBufferSize(), waterLineAbove_, isBuffering_, canWrite_.load());
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        bufferingTime_ = 0;
     }
     MEDIA_LOG_D("HTTP HandleBuffering bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: " PUBLIC_LOG_ZU
         ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32,
@@ -320,26 +321,11 @@ bool HttpMediaDownloader::StartBuffering(int32_t wantReadLength)
                 PUBLIC_LOG_ZU, waterLineAbove_, GetCurrentBufferSize());
             UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
             callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+            bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
             return true;
         }
     }
     return false;
-}
-
-Status HttpMediaDownloader::ReadTimeOut(ReadDataInfo& readDataInfo)
-{
-    isTimeOut_ = true;
-    if (downloader_ != nullptr) {
-        buffer_->SetActive(false); // avoid deadlock caused by ringbuffer write stall
-        downloader_->Pause(true); // the downloader is unavailable after this
-    }
-    if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
-        downloadRequest_->Close();
-    }
-    OnClientErrorEvent();
-    readDataInfo.realReadLength_ = 0;
-    MEDIA_LOG_I("HttpMediaDownloader: read time out, error angain");
-    return Status::ERROR_AGAIN;
 }
 
 Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
@@ -361,9 +347,6 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
         }
         if (readDataInfo.isEos_) {
             return CheckIsEosRingBuffer(buff, readDataInfo);
-        }
-        if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_ || isTimeOut_) {
-            return ReadTimeOut(readDataInfo);
         }
         bool isClosed = downloadRequest_->IsClosed();
         if (isClosed && buffer_->GetSize() == 0) {
@@ -392,9 +375,6 @@ Status HttpMediaDownloader::ReadCacheBufferLoop(unsigned char* buff, ReadDataInf
     }
     if (readDataInfo.isEos_) {
         return CheckIsEosCacheBuffer(buff, readDataInfo);
-    }
-    if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_) {
-        return HandleDownloadErrorState(readDataInfo.realReadLength_);
     }
     bool isClosed = downloadRequest_->IsClosed();
     if (isClosed && cacheMediaBuffer_->GetBufferSize(readOffset_) == 0) {
@@ -499,20 +479,6 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     }
     
     return ret;
-}
-
-Status HttpMediaDownloader::HandleDownloadErrorState(unsigned int& realReadLength)
-{
-    if (downloader_ != nullptr) {
-        downloader_->Pause(true); // the downloader is unavailable after this
-    }
-    if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
-        downloadRequest_->Close();
-    }
-    OnClientErrorEvent();
-    realReadLength = 0;
-    MEDIA_LOG_I("HttpMediaDownloader: read time out, error angain");
-    return Status::ERROR_AGAIN;
 }
 
 Status HttpMediaDownloader::CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
@@ -867,6 +833,9 @@ void HttpMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("HTTP SetDownloadErrorState");
     downloadErrorState_ = true;
+    if (callback_ != nullptr) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+    }
     if (isRingBuffer_) {
         if (buffer_ != nullptr && buffer_->GetSize() == 0) {
             Close(true);
@@ -1151,6 +1120,16 @@ bool HttpMediaDownloader::GetPlayable()
     size_t wantedLength = wantedReadLength_;
     size_t waterLine = wantedLength > 0 ? std::max(PLAY_WATER_LINE, wantedLength) : 0;
     return GetBufferSize() >= waterLine;
+}
+
+bool HttpMediaDownloader::GetBufferingTimeOut()
+{
+    if (bufferingTime_ == 0) {
+        return false;
+    } else {
+        size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+        return now >= bufferingTime_ ? now - bufferingTime_ >= MAX_BUFFERING_TIME_OUT : false;
+    }
 }
 
 }

@@ -377,6 +377,15 @@ bool DownloadMonitor::GetPlayable()
     return false;
 }
 
+bool DownloadMonitor::GetBufferingTimeOut()
+{
+    if (downloader_) {
+        return downloader_->GetBufferingTimeOut();
+    } else {
+        return false;
+    }
+}
+
 }
 }
 }
