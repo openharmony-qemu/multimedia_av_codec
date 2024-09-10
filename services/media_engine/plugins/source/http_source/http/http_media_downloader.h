@@ -159,6 +159,11 @@ private:
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
+
+    SteadyClock cachedDurationClock_;
+    SteadyClock freezeClock_;
+    bool isNearSeek_ {false};
+    bool isFreeze_ {false};
     volatile size_t wantedReadLength_ {0};
     volatile size_t bufferingTime_ {0};
 };

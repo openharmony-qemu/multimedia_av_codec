@@ -269,7 +269,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, HandleBuffering, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
 {
-    EXPECT_EQ(hlsMediaDownloader->totalBufferSize_, RING_BUFFER_SIZE);
+    EXPECT_EQ(hlsMediaDownloader->totalBufferSize_, MAX_CACHE_BUFFER_SIZE);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, SAVE_HEADER_001, TestSize.Level1)
@@ -380,8 +380,8 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK, TestSize.Level1)
     downloader->SetReadBlockingFlag(true);
     downloader->SetReadBlockingFlag(false);
     downloader->ReportBitrateStart(100);
-    downloader->CaculateBitRate(0, 0);
-    downloader->CaculateBitRate(1, 0);
+    downloader->CalculateBitRate(0, 0);
+    downloader->CalculateBitRate(1, 0);
     std::multimap<std::string, std::vector<uint8_t>> drmInfos;
     downloader->OnDrmInfoChanged(drmInfos);
     downloader->Close(true);
