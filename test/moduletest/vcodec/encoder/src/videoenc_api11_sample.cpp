@@ -399,7 +399,7 @@ void VEncAPI11Sample::GetStride()
 {
     OH_AVFormat *format = OH_VideoEncoder_GetInputDescription(venc_);
     int32_t inputStride = 0;
-    OH_AVFormat_GetIntValue(format, "stride", &inputStride);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &inputStride);
     stride_ = inputStride;
     OH_AVFormat_Destroy(format);
 }
@@ -884,10 +884,8 @@ void VEncAPI11Sample::SetLTRParameter(OH_AVBuffer *buffer)
         if (!ltrParam.useLtrOnce) {
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex);
         } else {
-            if (!ltrParam.useLtrOnce) {
-                OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex);
-                ltrParam.useLtrOnce = true;
-            }
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex);
+            ltrParam.useLtrOnce = true;
         }
     } else if (frameCount == useLtrIndex && frameCount > 0) {
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex - ltrParam.ltrInterval);
@@ -1048,6 +1046,7 @@ int32_t VEncAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
     }
     if (attr.flags == AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
         cout << "enc AVCODEC_BUFFER_FLAGS_CODEC_DATA" << attr.pts << endl;
+        return 0;
     }
     outCount = outCount + 1;
     return 0;
