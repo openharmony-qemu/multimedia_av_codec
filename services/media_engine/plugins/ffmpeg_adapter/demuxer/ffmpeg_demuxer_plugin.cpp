@@ -662,6 +662,10 @@ Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId, bool off
             frameId += dtsOffset_;
         }
     } else if (dts >= firstDts_) {
+        if (formatContext_->streams[parserRefVideoStreamIdx_]->nb_frames < 1) {
+            MEDIA_LOG_E("frameId sub overflow");
+            return Status::ERROR_UNKNOWN;
+        }
         frameId = static_cast<uint32_t>(formatContext_->streams[parserRefVideoStreamIdx_]->nb_frames) - 1;
     } else {
         frameId = 0;
