@@ -43,7 +43,6 @@ public:
     uint32_t GetCurBitrate() override;
     bool IsLive() const override;
     void NotifyListChange();
-    void SetInterruptState(bool isInterruptNeeded) override;
     void SetMimeType(const std::string& mimeType) override;
     void PreParseManifest(const std::string& location) override;
     bool IsParseAndNotifyFinished() override;
@@ -56,7 +55,6 @@ private:
     void UpdateMasterInfo(bool isPreParse);
 private:
     std::string url_ {};
-    std::atomic<bool> isInterruptNeeded_{false};
     PlayListChangeCallback* callback_ {nullptr};
     std::shared_ptr<M3U8MasterPlaylist> master_;
     std::shared_ptr<M3U8VariantStream> currentVariant_;

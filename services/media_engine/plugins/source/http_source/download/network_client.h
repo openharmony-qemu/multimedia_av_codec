@@ -35,7 +35,7 @@ public:
                         int32_t timeoutMs) = 0;
     virtual Status RequestData(long startPos, int len, NetworkServerErrorCode& serverCode,
                                NetworkClientErrorCode& clientCode) = 0;
-    virtual Status Close() = 0;
+    virtual Status Close(bool isAsync) = 0;
     virtual Status Deinit() = 0;
     virtual Status GetIp(std::string &ip) = 0;
 };

@@ -233,6 +233,7 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
 Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader,
                             int32_t timeoutMs)
 {
+    MEDIA_LOG_I("Open client in");
     if (easyHandle_ == nullptr) {
         MEDIA_LOG_E("EasyHandle is nullptr, init easyHandle.");
         easyHandle_ = curl_easy_init();
@@ -244,6 +245,7 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
         isFirstOpen_ = false;
     }
     InitCurlEnvironment(url, timeoutMs);
+    MEDIA_LOG_I("Open client out");
     return Status::OK;
 }
 

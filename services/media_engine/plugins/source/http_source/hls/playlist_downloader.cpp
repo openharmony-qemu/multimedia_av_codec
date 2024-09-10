@@ -290,6 +290,15 @@ std::map<std::string, std::string> PlayListDownloader::GetHttpHeader()
 {
     return httpHeader_;
 }
+
+void PlayListDownloader::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
+    }
+}
+
 }
 }
 }

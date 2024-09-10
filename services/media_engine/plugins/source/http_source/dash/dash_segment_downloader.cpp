@@ -1075,6 +1075,13 @@ std::shared_ptr<DashInitSegment> DashSegmentDownloader::GetDashInitSegment(int32
     return segment;
 }
 
+void DashSegmentDownloader::SetInterruptState(bool isInterruptNeeded)
+{
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
+    }
+}
+
 }
 }
 }

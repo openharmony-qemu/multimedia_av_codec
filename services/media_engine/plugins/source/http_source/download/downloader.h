@@ -171,6 +171,7 @@ public:
     void SetRequestSize(size_t downloadRequestSize);
     void GetIp(std::string &ip);
     const std::shared_ptr<DownloadRequest>& GetCurrentRequest();
+    void SetInterruptState(bool isInterruptNeeded);
 private:
     bool BeginDownload();
 
@@ -191,6 +192,8 @@ private:
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
     static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
     void PauseLoop(bool isAsync = false);
+    void WaitLoopPause();
+    void NotifyLoopPause();
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;
@@ -202,6 +205,17 @@ private:
     size_t downloadRequestSize_ {0};
     std::shared_ptr<Task> task_;
     std::atomic<bool> isDestructor_ {false};
+    std::atomic<bool> isClientClose_ {false};
+    std::atomic<bool> isInterruptNeeded_{false};
+
+    enum struct LoopStatus {
+        NORMAL,
+        PAUSE,
+        PAUSEDONE,
+    };
+    std::atomic<LoopStatus> loopStatus_ {LoopStatus::NORMAL};
+    FairMutex loopPauseMutex_ {};
+    ConditionVariable loopPauseCond_;
 };
 }
 }
