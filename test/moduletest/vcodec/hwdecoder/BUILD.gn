@@ -24,6 +24,7 @@ hwdecoder_moduletest_native_include_dirs = [
   "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
   "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
+  "$MEDIA_ROOT_DIR/../../../third_party/json/include",
 ]
 
 hwdecoder_moduletest_cflags = [
