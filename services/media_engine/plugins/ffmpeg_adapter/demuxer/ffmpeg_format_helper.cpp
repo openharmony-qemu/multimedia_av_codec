@@ -243,7 +243,7 @@ static const std::map<std::string, VideoOrientationType> matrixTypes = {
     {"0 -1 -1 0", VideoOrientationType::FLIP_V_ROT90},
 };
 
-VideoOrientationType GetMatrixType(std::string value)
+VideoOrientationType GetMatrixType(const std::string& value)
 {
     auto it = matrixTypes.find(value);
     if (it!= matrixTypes.end()) {
