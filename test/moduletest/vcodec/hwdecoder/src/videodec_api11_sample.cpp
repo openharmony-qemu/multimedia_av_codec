@@ -781,6 +781,10 @@ void VDecAPI11Sample::AutoSwitchSurface()
 
 int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
 {
+    if (IS_FIRST_FRAME) {
+        GetStride();
+        IS_FIRST_FRAME = false;
+    }
     if (needCheckOutputDesc) {
         CheckOutputDescription();
         needCheckOutputDesc = false;
@@ -864,10 +868,6 @@ void VDecAPI11Sample::OutputFuncTest()
         if (CheckAttrFlag(attr) == -1) {
             flag = false;
             break;
-        }
-        if (IS_FIRST_FRAME) {
-            GetStride();
-            IS_FIRST_FRAME = false;
         }
         ProcessOutputData(buffer, index);
         if (outFile != nullptr) {
