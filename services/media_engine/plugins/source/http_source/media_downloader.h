@@ -125,6 +125,11 @@ public:
     }
 
     virtual void SetAppUid(int32_t appUid) = 0;
+    virtual Status StopBufferring(bool isAppBackground)
+    {
+        MEDIA_LOG_W("StopBufferring is unimplemented.");
+        return Status::OK;
+    }
 };
 }
 }

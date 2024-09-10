@@ -74,6 +74,7 @@ public:
     std::map<std::string, std::string> GetHttpHeader();
     void SetAppUid(int32_t appUid);
     void SetCallback(Callback* cb);
+    void StopBufferring(bool isAppBackground);
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -104,6 +105,7 @@ protected:
     int64_t retryStartTime_ {0};
     Callback* eventCallback_ {nullptr};
     std::atomic<bool> isInterruptNeeded_{false};
+    std::atomic<bool> isAppBackground_ {false};
 };
 }
 }

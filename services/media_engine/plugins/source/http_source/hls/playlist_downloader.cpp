@@ -222,6 +222,9 @@ void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const st
     ParseManifest(location);
     playList_.clear();
     retryStartTime_ = 0;
+    if (isAppBackground_) {
+        downloader_->Pause(true);
+    }
 }
 
 void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
@@ -328,6 +331,17 @@ void PlayListDownloader::SetInterruptState(bool isInterruptNeeded)
     }
 }
 
+void PlayListDownloader::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("PlayListDownloader::StopBufferring.");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("PlayListDownloader:StopBufferring error.");
+        return;
+    }
+    isAppBackground_ = isAppBackground;
+    downloader_->SetAppState(isAppBackground);
+    downloader_->StopBufferring();
+}
 }
 }
 }

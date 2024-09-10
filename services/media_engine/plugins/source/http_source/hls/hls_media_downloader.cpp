@@ -1453,6 +1453,24 @@ bool HlsMediaDownloader::GetBufferingTimeOut()
     }
 }
 
+Status HlsMediaDownloader::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("HlsMediaDownloader:StopBufferring enter");
+    if (cacheMediaBuffer_ == nullptr || downloader_ == nullptr || playlistDownloader_ == nullptr) {
+        MEDIA_LOG_E("StopBufferring error.");
+        return Status::ERROR_NULL_POINTER;
+    }
+    downloader_->SetAppState(isAppBackground);
+    if (isAppBackground) {
+        isInterrupt_ = true;
+    } else {
+        isInterrupt_ = false;
+    }
+    downloader_->StopBufferring();
+    playlistDownloader_->StopBufferring(isAppBackground);
+    MEDIA_LOG_I("HlsMediaDownloader:StopBufferring out");
+    return Status::OK;
+}
 }
 }
 }
