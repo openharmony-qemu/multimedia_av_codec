@@ -575,13 +575,6 @@ void HCodec::RunningState::OnFlush(const MsgInfo &info)
         ReplyErrorCode(info.id, AVCS_ERR_UNKNOWN);
     }
 }
-
-void HCodec::RunningState::OnSetParameters(const MsgInfo &info)
-{
-    Format params;
-    (void)info.param->GetValue("params", params);
-    ReplyErrorCode(info.id, codec_->OnSetParameters(params));
-}
 /**************************** RunningState End ********************************/
 
 
