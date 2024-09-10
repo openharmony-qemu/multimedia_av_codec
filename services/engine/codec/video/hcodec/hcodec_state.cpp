@@ -125,6 +125,13 @@ void HCodec::BaseState::OnGetFormat(const MsgInfo &info)
     }
 }
 
+void HCodec::BaseState::OnSetParameters(const MsgInfo &info)
+{
+    Format params;
+    (void)info.param->GetValue("params", params);
+    ReplyErrorCode(info.id, codec_->OnSetParameters(params));
+}
+
 void HCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
 {
     int32_t generation = 0;
@@ -592,12 +599,12 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
         case MsgWhat::FLUSH: {
             OnFlush(info);
             return;
-        }
         case MsgWhat::START:
-        case MsgWhat::SET_PARAMETERS: {
             codec_->DeferMessage(info);
             return;
-        }
+        case MsgWhat::SET_PARAMETERS:
+            OnSetParameters(info);
+            return;
         case MsgWhat::QUEUE_INPUT_BUFFER: {
             codec_->OnQueueInputBuffer(info, inputMode_);
             return;

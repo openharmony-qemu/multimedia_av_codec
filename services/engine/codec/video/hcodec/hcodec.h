@@ -395,6 +395,7 @@ private:
         virtual void OnCheckIfStuck(const MsgInfo &info);
         void OnForceShutDown(const MsgInfo &info);
         void OnStateExited() override { codec_->stateGeneration_++; }
+        void OnSetParameters(const MsgInfo &info);
 
     protected:
         HCodec *codec_;
@@ -443,7 +444,6 @@ private:
         void OnCodecEvent(CodecHDI::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void OnFlush(const MsgInfo &info);
-        void OnSetParameters(const MsgInfo &info);
     };
 
     struct OutputPortChangedState : BaseState {
