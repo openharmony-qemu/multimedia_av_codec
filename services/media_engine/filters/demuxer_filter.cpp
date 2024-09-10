@@ -540,7 +540,7 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
 
 Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates)
 {
-    if (mediaSource_ == nullptr) {
+    if (demuxer_ == nullptr) {
         MEDIA_LOG_E_SHORT("GetBitRates failed, mediaSource = nullptr");
     }
     return demuxer_->GetBitRates(bitRates);
@@ -564,16 +564,16 @@ Status DemuxerFilter::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 Status DemuxerFilter::StopBufferring(bool flag)
 {
-    if (mediaSource_ == nullptr) {
-        MEDIA_LOG_E_SHORT("StopBufferring failed, mediaSource = nullptr");
+    if (mediaSdemuxer_ource_ == nullptr) {
+        MEDIA_LOG_E_SHORT("StopBufferring failed, demuxer_ = nullptr");
     }
     return demuxer_->StopBufferring(flag);
 }
 
 Status DemuxerFilter::SelectBitRate(uint32_t bitRate)
 {
-    if (mediaSource_ == nullptr) {
-        MEDIA_LOG_E_SHORT("SelectBitRate failed, mediaSource = nullptr");
+    if (demuxer_ == nullptr) {
+        MEDIA_LOG_E_SHORT("SelectBitRate failed, demuxer_ = nullptr");
     }
     return demuxer_->SelectBitRate(bitRate);
 }
