@@ -414,6 +414,11 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
     FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
         "not Retry, client null or isDestructor or isInterruptNeeded");
+    if (isAppBackground_) {
+        Pause(true);
+        MEDIA_LOG_I("Retry avoid, forground to background.");
+        return true;
+    }
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("Retry Begin");
@@ -957,6 +962,34 @@ void Downloader::WaitLoopPause()
     loopStatus_ = LoopStatus::NORMAL;
 }
 
+void Downloader::SetAppState(bool isAppBackground)
+{
+    isAppBackground_ = isAppBackground;
+}
+
+void Downloader::StopBufferring()
+{
+    MediaAVCodec::AVCodecTrace trace("Downloader::StopBufferring");
+    if (isAppBackground_) {
+        if (!task_->IsTaskRunning() && client_ != nullptr) {
+            MEDIA_LOG_I("StopBufferring: is task not running.");
+            client_->Close(false);
+        }
+        MEDIA_LOG_I("StopBufferring: now pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
+    } else {
+        if (currentRequest_ != nullptr && !shouldStartNextRequest) {
+            int64_t lastStartPos = currentRequest_->startPos_; // downlaod from last pos
+            BeginDownload();
+            currentRequest_->startPos_ = lastStartPos;
+            if (currentRequest_->startPos_ > 0) {
+                currentRequest_->retryOnGoing_ = true;
+                currentRequest_->dropedDataLen_ = 0;
+            }
+            MEDIA_LOG_I("StopBufferring: begin pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
+        }
+        Start();
+    }
+}
 }
 }
 }

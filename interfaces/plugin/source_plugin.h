@@ -236,6 +236,11 @@ public:
     {
         (void)isEnableFdCache;
     }
+
+    virtual Status StopBufferring(bool isAppBackground)
+    {
+        return Status::OK;
+    }
 };
 
 /// Source plugin api major number.

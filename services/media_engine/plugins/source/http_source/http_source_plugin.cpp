@@ -429,6 +429,15 @@ Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     }
     return downloader_->SetCurrentBitRate(bitRate, streamID);
 }
+
+Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
+{
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("StopBufferring failed, downloader_ is nullptr");
+        return Status::ERROR_NULL_POINTER;
+    }
+    return downloader_->StopBufferring(isAppBackground);
+}
 }
 }
 }

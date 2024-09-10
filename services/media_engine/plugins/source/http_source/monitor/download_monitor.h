@@ -74,6 +74,7 @@ public:
     void SetAppUid(int32_t appUid) override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
+    Status StopBufferring(bool isAppBackground) override;
 
 private:
     int64_t HttpMonitorLoop();

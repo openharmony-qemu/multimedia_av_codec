@@ -94,6 +94,7 @@ public:
     void SetAppUid(int32_t appUid) override;
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
+    Status StopBufferring(bool isAppBackground) override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
