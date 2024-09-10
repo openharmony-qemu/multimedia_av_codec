@@ -596,7 +596,7 @@ void HCodec::OutputPortChangedState::OnStateEntered()
 void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
-        case MsgWhat::FLUSH: {
+        case MsgWhat::FLUSH:
             OnFlush(info);
             return;
         case MsgWhat::START:
