@@ -564,7 +564,7 @@ Status DemuxerFilter::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 Status DemuxerFilter::StopBufferring(bool flag)
 {
-    if (mediaSdemuxer_ource_ == nullptr) {
+    if (demuxer_ == nullptr) {
         MEDIA_LOG_E_SHORT("StopBufferring failed, demuxer_ = nullptr");
     }
     return demuxer_->StopBufferring(flag);
