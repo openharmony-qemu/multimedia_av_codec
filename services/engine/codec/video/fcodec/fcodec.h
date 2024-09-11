@@ -114,7 +114,6 @@ private:
     void SendFrame();
     void ReceiveFrame();
     void FindAvailIndex(uint32_t index);
-    void RenderFrame();
     void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
@@ -130,6 +129,10 @@ private:
     int32_t AttachToNewSurface(const sptr<Surface> &newSurface);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
     int32_t SetSurfaceCfg(int32_t bufferCnt);
+    // surface listener callback
+    void RequestBufferFromConsumer();
+    GSError BufferReleasedByConsumer(uint64_t surfaceId);
+    GSError RegisterListenerToSurface(const sptr<Surface> &surface);
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
@@ -162,7 +165,6 @@ private:
     SurfaceControl sInfo_;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
     std::shared_ptr<TaskThread> receiveTask_ = nullptr;
-    std::shared_ptr<TaskThread> renderTask_ = nullptr;
     std::mutex inputMutex_;
     std::mutex outputMutex_;
     std::mutex sendMutex_;
