@@ -157,12 +157,9 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct Surface
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt);
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
-
-    sptr<SyncFence> autoFence = new (std::nothrow) SyncFence(surfaceInfo.surfaceFence);
-    if (autoFence != nullptr) {
-        autoFence->Wait(100); // 100ms
+    if (surfaceInfo.surfaceFence != nullptr) {
+        surfaceInfo.surfaceFence->Wait(100); // 100ms
     }
-
     uint32_t yScaleLineSize = static_cast<uint32_t>(surfaceInfo.scaleLineSize[0]);
     if (IsYuvFormat(pixFmt)) {
         if (surfaceInfo.surfaceStride % yScaleLineSize) {

@@ -50,7 +50,7 @@ public:
     void ReleaseSurfaceBuffer();
     sptr<SurfaceBuffer> GetSurfaceBuffer();
     int32_t GetSurfaceBufferStride();
-    int32_t GetFence();
+    sptr<SyncFence> GetFence();
     void UpdateSurfaceBufferScaleMode();
     void SetNeedRender(bool needRender);
     uint8_t *GetBase() const;
@@ -58,7 +58,7 @@ public:
 
 private:
     sptr<SurfaceBuffer> surfaceBuffer_ = nullptr;
-    int32_t fence_ = -1;
+    sptr<SyncFence> fence_ = nullptr;
     int32_t stride_ = 0;
     bool needRender_ = false;
     SurfaceControl *sInfo_ = nullptr;

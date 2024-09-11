@@ -55,7 +55,7 @@ private:
 };
 struct SurfaceInfo {
     uint32_t surfaceStride = 0;
-    int32_t surfaceFence = 0;
+    sptr<SyncFence> surfaceFence = nullptr;
     uint8_t **scaleData = nullptr;
     int32_t *scaleLineSize = nullptr;
 };
