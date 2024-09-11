@@ -686,7 +686,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         return;
     }
     if (doPrepareFrame_.load()) {
-        if (renderFirstFrame_) {
+        if (renderFirstFrame_ && !(outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS))) {
             videoDecoder_->ReleaseOutputBuffer(index, true);
         } else {
             outputBuffers_.push_back(make_pair(index, outputBuffer));
