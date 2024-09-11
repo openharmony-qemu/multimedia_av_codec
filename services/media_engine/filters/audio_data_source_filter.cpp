@@ -19,6 +19,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+static constexpr uint8_t LOG_LIMIT_HUNDRED = 100;
 }
  
 namespace OHOS {
@@ -45,7 +46,7 @@ public:
         if (auto dataSourceFilter = audioDataSourceFilter_.lock()) {
             dataSourceFilter->OnLinkedResult(queue, meta);
         } else {
-            MEDIA_LOG_I("invalid dataSourceFilter");
+            MEDIA_LOG_I("OnLinkedResult invalid dataSourceFilter");
         }
     }
  
@@ -54,7 +55,7 @@ public:
         if (auto dataSourceFilter = audioDataSourceFilter_.lock()) {
             dataSourceFilter->OnUnlinkedResult(meta);
         } else {
-            MEDIA_LOG_I("invalid dataSourceFilter");
+            MEDIA_LOG_I("OnUnlinkedResult invalid dataSourceFilter");
         }
     }
  
@@ -63,7 +64,7 @@ public:
         if (auto dataSourceFilter = audioDataSourceFilter_.lock()) {
             dataSourceFilter->OnUpdatedResult(meta);
         } else {
-            MEDIA_LOG_I("invalid dataSourceFilter");
+            MEDIA_LOG_I("OnUpdatedResult invalid dataSourceFilter");
         }
     }
  
@@ -215,7 +216,7 @@ Status AudioDataSourceFilter::SendEos()
  
 void AudioDataSourceFilter::ReadLoop()
 {
-    MEDIA_LOG_D("AudioDataSourceFilter ReadLoop");
+    MEDIA_LOG_D("AudioDataSourceFilter ReadLoop In");
     if (eos_.load()) {
         return;
     }
@@ -234,18 +235,18 @@ void AudioDataSourceFilter::ReadLoop()
     }
     Status status = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
     if (status != Status::OK) {
-        MEDIA_LOG_E("RequestBuffer fail");
+        MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioDataSourceFilter RequestBuffer fail");
         return;
     }
     if (audioDataSource_->ReadAt(buffer, bufferSize) != 0) {
-        MEDIA_LOG_E("RequestBuffer fail");
+        MEDIA_LOG_E("AudioDataSourceFilter ReadAt fail");
         outputBufferQueue_->PushBuffer(buffer, false);
         return;
     }
     buffer->memory_->SetSize(bufferSize);
     status = outputBufferQueue_->PushBuffer(buffer, true);
     if (status != Status::OK) {
-        MEDIA_LOG_E("PushBuffer fail");
+        MEDIA_LOG_E("AudioDataSourceFilter PushBuffer fail");
     }
 }
  
