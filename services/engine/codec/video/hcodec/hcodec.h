@@ -187,7 +187,7 @@ protected:
     int32_t SetProcessName();
     int32_t SetLowLatency(const Format &format);
 
-    virtual int32_t OnSetOutputSurface(const sptr<Surface> &surface, bool cfg) { return AVCS_ERR_UNSUPPORT; }
+    virtual void OnSetOutputSurface(const MsgInfo &msg, BufferOperationMode mode);
     virtual int32_t OnSetParameters(const Format &format) { return AVCS_ERR_OK; }
     virtual sptr<Surface> OnCreateInputSurface() { return nullptr; }
     virtual int32_t OnSetInputSurface(sptr<Surface> &inputSurface) { return AVCS_ERR_UNSUPPORT; }

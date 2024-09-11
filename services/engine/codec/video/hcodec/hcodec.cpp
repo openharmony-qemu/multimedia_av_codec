@@ -1174,6 +1174,13 @@ void HCodec::EraseOutBuffersOwnedByUsOrSurface()
     }
 }
 
+void HCodec::OnSetOutputSurface(const MsgInfo &msg, BufferOperationMode mode)
+{
+    (void)msg;
+    (void)mode;
+    ReplyErrorCode(msg.id, AVCS_ERR_UNSUPPORT);
+}
+
 int32_t HCodec::ForceShutdown(int32_t generation, bool isNeedNotifyCaller)
 {
     if (generation != stateGeneration_) {
