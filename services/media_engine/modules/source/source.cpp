@@ -180,7 +180,8 @@ Status Source::SelectBitRate(uint32_t bitRate)
 
 Status Source::StopBufferring(bool flag)
 {
-    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "StopBufferring failed, plugin_ is nullptr!");
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "StopBufferring failed, plugin_ is nullptr!");
     std::string ret = (flag) ? "true" : "false";
     MEDIA_LOG_I("StopBufferring begin, flag = " PUBLIC_LOG_S, ret.c_str());
     return Status::OK;
