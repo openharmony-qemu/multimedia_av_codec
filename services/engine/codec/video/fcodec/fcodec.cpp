@@ -1300,9 +1300,8 @@ GSError FCodec::BufferReleasedByConsumer(uint64_t surfaceId)
 GSError FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
 {
     uint64_t surfaceId = surface->GetUniqueId();
-    GSError err = surface->RegisterReleaseListener([this, surfaceId](sptr<SurfaceBuffer> &){
-        return BufferReleasedByConsumer(surfaceId);
-    });
+    GSError err = surface->RegisterReleaseListener(
+        [this, surfaceId](sptr<SurfaceBuffer> &) { return BufferReleasedByConsumer(surfaceId); });
     return err;
 }
 
