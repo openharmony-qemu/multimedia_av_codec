@@ -282,8 +282,8 @@ int64_t GetDefaultTrackStartTime(const AVFormatContext& avFormatContext)
     int64_t dafaultTime = 0;
     for (uint32_t trackIndex = 0; trackIndex < avFormatContext.nb_streams; ++trackIndex) {
         auto avStream = avFormatContext.streams[trackIndex];
-        if (avStream != nullptr && avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-            avStream->start_time != AV_NOPTS_VALUE) {
+        if (avStream != nullptr && avStream->codecpar != nullptr &&
+            avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && avStream->start_time != AV_NOPTS_VALUE) {
             dafaultTime = AvTime2Us(ConvertTimeFromFFmpeg(avStream->start_time, avStream->time_base));
         }
     }
