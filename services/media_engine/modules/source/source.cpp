@@ -179,6 +179,15 @@ Status Source::SelectBitRate(uint32_t bitRate)
     return plugin_->SelectBitRate(bitRate);
 }
 
+Status Source::StopBufferring(bool flag)
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "StopBufferring failed, plugin_ is nullptr!");
+    std::string ret = (flag) ? "true" : "false";
+    MEDIA_LOG_I("StopBufferring begin, flag = " PUBLIC_LOG_S, ret.c_str());
+    return Status::OK;
+}
+
 Status Source::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate");
