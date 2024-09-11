@@ -277,6 +277,19 @@ bool IsPCMStream(AVCodecID codecID)
     return StartWith(avcodec_get_name(codecID), "pcm_");
 }
 
+int64_t GetDefaultTrackStartTime(const AVFormatContext& avFormatContext)
+{
+    int64_t dafaultTime = 0;
+    for (uint32_t trackIndex = 0; trackIndex < avFormatContext.nb_streams; ++trackIndex) {
+        auto avStream = avFormatContext.streams[trackIndex];
+        if (avStream != nullptr && avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+            avStream->start_time != AV_NOPTS_VALUE) {
+            dafaultTime = AvTime2Us(ConvertTimeFromFFmpeg(avStream->start_time, avStream->time_base));
+        }
+    }
+    return dafaultTime;
+}
+
 void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, Meta& format)
 {
     format.Set<Tag::MEDIA_TRACK_COUNT>(static_cast<int32_t>(avFormatContext.nb_streams));
@@ -328,6 +341,9 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     }
     if (avFormatContext.start_time != AV_NOPTS_VALUE) {
         format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t>(avFormatContext.start_time));
+    } else {
+        format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t>(0));
+        MEDIA_LOG_W("Parse container start time failed.");
     }
     ParseLocationInfo(avFormatContext, format);
     for (TagType key: g_supportSourceFormat) {
@@ -392,7 +408,7 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
 void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, const AVFormatContext& avFormatContext)
 {
     FALSE_RETURN_MSG(avStream.codecpar != nullptr, "Parse track info failed due to codec par is nullptr.");
-    ParseBaseTrackInfo(avStream, format);
+    ParseBaseTrackInfo(avStream, format, avFormatContext);
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         if ((static_cast<uint32_t>(avStream.disposition) & static_cast<uint32_t>(AV_DISPOSITION_ATTACHED_PIC)) ||
             (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)) {
@@ -410,7 +426,8 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, 
     }
 }
 
-void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &format)
+void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &format,
+                                            const AVFormatContext& avFormatContext)
 {
     if (g_codecIdToMime.count(avStream.codecpar->codec_id) != 0) {
         format.Set<Tag::MIME_TYPE>(std::string(g_codecIdToMime[avStream.codecpar->codec_id]));
@@ -433,7 +450,8 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         format.SetData(Tag::MEDIA_START_TIME,
             AvTime2Us(ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base)));
     } else {
-        MEDIA_LOG_D("Parse track start time info failed.");
+        format.SetData(Tag::MEDIA_START_TIME, GetDefaultTrackStartTime(avFormatContext));
+        MEDIA_LOG_W("Parse track start time failed.");
     }
 }
 
