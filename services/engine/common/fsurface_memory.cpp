@@ -31,7 +31,6 @@ FSurfaceMemory::~FSurfaceMemory()
 void FSurfaceMemory::AllocSurfaceBuffer()
 {
     CHECK_AND_RETURN_LOG(sInfo_->surface != nullptr, "surface info is nullptr");
-    fence_ = -1;
     sptr<SurfaceBuffer> surfaceBuffer = nullptr;
     auto ret = sInfo_->surface->RequestBuffer(surfaceBuffer, fence_, sInfo_->requestConfig);
     if (ret != OHOS::SurfaceError::SURFACE_ERROR_OK || surfaceBuffer == nullptr) {
@@ -40,9 +39,7 @@ void FSurfaceMemory::AllocSurfaceBuffer()
         }
         return;
     }
-
     surfaceBuffer_ = surfaceBuffer;
-    AVCODEC_LOGD("request surface buffer success, releaseFence: %{public}d", fence_);
 }
 
 void FSurfaceMemory::ReleaseSurfaceBuffer()
@@ -74,7 +71,7 @@ int32_t FSurfaceMemory::GetSurfaceBufferStride()
     return stride_;
 }
 
-int32_t FSurfaceMemory::GetFence()
+sptr<SyncFence> FSurfaceMemory::GetFence()
 {
     return fence_;
 }
