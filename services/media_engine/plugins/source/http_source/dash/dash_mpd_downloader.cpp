@@ -190,7 +190,6 @@ void DashMpdDownloader::Open(const std::string &url)
 
 void DashMpdDownloader::Close(bool isAsync)
 {
-    downloader_->Cancel();
     downloader_->Stop(isAsync);
 
     if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
@@ -510,6 +509,9 @@ void DashMpdDownloader::SetDefaultLang(const std::string &lang, MediaAVCodec::Me
 void DashMpdDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
+    }
 }
 
 std::string DashMpdDownloader::GetUrl() const

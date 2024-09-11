@@ -1009,6 +1009,9 @@ void DashMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
     mpdDownloader_->SetInterruptState(isInterruptNeeded);
+    for (unsigned int index = 0; index < segmentDownloaders_.size(); index++) {
+        segmentDownloaders_[index]->SetInterruptState(isInterruptNeeded);
+    }
 }
 
 Status DashMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)

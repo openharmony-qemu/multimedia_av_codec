@@ -140,7 +140,6 @@ void DashSegmentDownloader::Close(bool isAsync, bool isClean)
 {
     MEDIA_LOG_I("Close enter");
     buffer_->SetActive(false, isClean);
-    downloader_->Cancel();
     downloader_->Stop(isAsync);
 
     if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
@@ -1074,6 +1073,13 @@ std::shared_ptr<DashInitSegment> DashSegmentDownloader::GetDashInitSegment(int32
         segment = *it;
     }
     return segment;
+}
+
+void DashSegmentDownloader::SetInterruptState(bool isInterruptNeeded)
+{
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
+    }
 }
 
 }
