@@ -355,6 +355,7 @@ void Downloader::Stop(bool isAsync)
         requestQue_->SetActive(false);
     }
     if (currentRequest_ != nullptr) {
+        currentRequest_->isInterruptNeeded_ = true;
         currentRequest_->Close();
     }
     if (client_ != nullptr) {
