@@ -394,6 +394,9 @@ bool Downloader::Seek(int64_t offset)
     }
     currentRequest_->isEos_ = false;
     shouldStartNextRequest = false; // Reuse last request when seek
+    if (currentRequest_->retryTimes_ > 0) {
+        currentRequest_->retryTimes_ = 0;
+    }
     return true;
 }
 
