@@ -19,6 +19,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+static constexpr uint8_t LOG_LIMIT_HUNDRED = 100;
 }
  
 namespace OHOS {
@@ -224,7 +225,7 @@ void AudioDataSourceFilter::ReadLoop()
         MEDIA_LOG_E("Get audioCaptureModule buffer size fail");
         return;
     }
-    MEDIA_LOG_D("AudioDataSourceFilter GetSize : " PUBLIC_LOG_D64, bufferSize);
+    MEDIA_LOG_D("AudioDataSourceFilter GetSize : %{public}zu", bufferSize);
     std::shared_ptr<AVBuffer> buffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = bufferSize;
@@ -234,7 +235,7 @@ void AudioDataSourceFilter::ReadLoop()
     }
     Status status = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
     if (status != Status::OK) {
-        MEDIA_LOG_E("AudioDataSourceFilter RequestBuffer fail");
+        MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioDataSourceFilter RequestBuffer fail");
         return;
     }
     if (audioDataSource_->ReadAt(buffer, bufferSize) != 0) {
