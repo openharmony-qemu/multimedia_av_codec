@@ -450,7 +450,9 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         format.SetData(Tag::MEDIA_START_TIME,
             AvTime2Us(ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base)));
     } else {
-        format.SetData(Tag::MEDIA_START_TIME, GetDefaultTrackStartTime(avFormatContext));
+        if (mediaType == AVMEDIA_TYPE_AUDIO) {
+            format.SetData(Tag::MEDIA_START_TIME, GetDefaultTrackStartTime(avFormatContext));
+        }
         MEDIA_LOG_W("Parse track start time failed.");
     }
 }
