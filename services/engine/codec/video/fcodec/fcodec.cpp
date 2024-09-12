@@ -1230,7 +1230,7 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
                 ownedBySurfaceBufferIndex.push_back(index);
             }
         } else {
-            surfaceBuffer = buffers_[INDEX_OUTPUT][index]->sMemory->GetSurfaceBuffer();
+            surfaceBuffer = buffers_[INDEX_OUTPUT][index]->sMemory_->GetSurfaceBuffer();
         }
         if (surfaceBuffer == nullptr) {
             AVCODEC_LOGE("Get old surface buffer error!");
@@ -1264,7 +1264,7 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
 
 int32_t FCodec::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index)
 {
-    std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory;
+    std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory_;
     sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index];
     OHOS::BufferFlushConfig flushConfig = {{0, 0, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight()},
         outAVBuffer4Surface_[index]->pts_};
