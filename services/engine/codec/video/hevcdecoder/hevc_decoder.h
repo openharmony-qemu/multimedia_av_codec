@@ -128,7 +128,6 @@ private:
     int32_t UpdateOutputBuffer(uint32_t index);
     int32_t UpdateSurfaceMemory(uint32_t index);
     void SendFrame();
-    void RenderFrame();
     void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
@@ -152,6 +151,10 @@ private:
     void InitHevcParams();
     void ConvertDecOutToAVFrame(int32_t bitDepth);
     static int32_t CheckHevcDecLibStatus();
+    // surface listener callback
+    void RequestBufferFromConsumer();
+    GSError BufferReleasedByConsumer(uint64_t surfaceId);
+    GSError RegisterListenerToSurface(const sptr<Surface> &surface);
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
@@ -194,7 +197,6 @@ private:
     std::map<uint32_t, sptr<SurfaceBuffer>> renderSurfaceBufferMap_;
     sptr<Surface> surface_ = nullptr;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
-    std::shared_ptr<TaskThread> renderTask_ = nullptr;
     std::mutex inputMutex_;
     std::mutex outputMutex_;
     std::mutex decRunMutex_;
