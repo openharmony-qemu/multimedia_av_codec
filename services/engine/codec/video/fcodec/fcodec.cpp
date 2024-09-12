@@ -1225,7 +1225,7 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
             continue;
         }
         sptr<SurfaceBuffer> surfaceBuffer = nullptr;
-        if (buffers_[INDEX_OUTPUT][index]->owner_ == HBuffer::Owner::OWNED_BY_SURFACE) {
+        if (buffers_[INDEX_OUTPUT][index]->owner_ == FBuffer::Owner::OWNED_BY_SURFACE) {
             if (renderSurfaceBufferMap_.count(index)) {
                 surfaceBuffer = renderSurfaceBufferMap_[index];
                 ownedBySurfaceBufferIndex.push_back(index);
