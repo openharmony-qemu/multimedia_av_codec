@@ -46,7 +46,7 @@ constexpr int32_t DEFAULT_VIDEO_WIDTH = 1920;
 constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t DEFAULT_TRY_REQ_TIME = 10;
-constexpr uint32_t DEFAULT_DECODE_WAIT_TIME = 33;
+constexpr uint32_t DEFAULT_DECODE_WAIT_TIME = 200;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
 constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
@@ -914,6 +914,8 @@ void FCodec::SendFrame()
     std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
     if (inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
         avPacket_->data = nullptr;
+        avPacket_->size = 0;
+        avPacket_->pts = 0;
         std::unique_lock<std::mutex> sendLock(sendMutex_);
         isSendEos_ = true;
         sendCv_.wait_for(sendLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
@@ -927,9 +929,7 @@ void FCodec::SendFrame()
     int ret = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
     sLock.unlock();
     if (ret == 0 || ret == AVERROR_INVALIDDATA) {
-        if (ret == AVERROR_INVALIDDATA) {
-            AVCODEC_LOGW("ffmpeg ret = %{public}s", AVStrError(ret).c_str());
-        }
+        EXPECT_AND_LOGW(ret == AVERROR_INVALIDDATA, "ffmpeg ret = %{public}s", AVStrError(ret).c_str());
         std::unique_lock<std::mutex> recvLock(recvMutex_);
         recvCv_.notify_one();
         recvLock.unlock();
@@ -1080,6 +1080,7 @@ void FCodec::ReceiveFrame()
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGI("Receive eos");
         frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_EOS;
+        frameBuffer->avBuffer_->memory_->SetSize(0);
         state_ = State::EOS;
     } else if (ret == AVERROR(EAGAIN)) {
         std::unique_lock<std::mutex> sendLock(sendMutex_);
