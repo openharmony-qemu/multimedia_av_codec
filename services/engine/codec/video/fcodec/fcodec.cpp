@@ -1205,7 +1205,6 @@ int32_t FCodec::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
     std::unique_lock<std::mutex> sLock(surfaceMutex_);
     ret = SwitchBetweenSurface(newSurface);
     if (ret != AVCS_ERR_OK) {
-        sInfo_.surface = oldSurface;
         return ret;
     }
     sLock.unlock();
@@ -1264,21 +1263,30 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
     sInfo_.surface = newSurface;
 
     for (uint32_t index: ownedBySurfaceBufferIndex) {
-        std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory;
-        sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index];
-        OHOS::BufferFlushConfig flushConfig = {{0, 0, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight()},
-            outAVBuffer4Surface_[index]->pts_};
-        surfaceMemory->SetNeedRender(true);
-        newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), sInfo_.scalingMode);
-        auto res = newSurface->FlushBuffer(surfaceBuffer, -1, flushConfig);
-        if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
-            AVCODEC_LOGE("Failed to update surface memory: %{public}d", res);
-            surfaceMemory->SetNeedRender(false);
-            return AVCS_ERR_UNKNOWN;
+        int32_t ret = RenderNewSurfaceWithOldBuffer(newSurface, index);
+        if (ret != AVCS_ERR_OK) {
+            return ret;
         }
     }
 
     curSurface->CleanCache(true); // make sure old surface is empty and go black
+    return AVCS_ERR_OK;
+}
+
+int32_t FCodec::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index)
+{
+    std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory;
+    sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index];
+    OHOS::BufferFlushConfig flushConfig = {{0, 0, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight()},
+        outAVBuffer4Surface_[index]->pts_};
+    surfaceMemory->SetNeedRender(true);
+    newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), sInfo_.scalingMode);
+    auto res = newSurface->FlushBuffer(surfaceBuffer, -1, flushConfig);
+    if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
+        AVCODEC_LOGE("Failed to update surface memory: %{public}d", res);
+        surfaceMemory->SetNeedRender(false);
+        return AVCS_ERR_UNKNOWN;
+    }
     return AVCS_ERR_OK;
 }
 
