@@ -253,9 +253,7 @@ void HCodec::InitializedState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::SET_OUTPUT_SURFACE: {
-            sptr<Surface> surface;
-            (void)info.param->GetValue("surface", surface);
-            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, true));
+            codec_->OnSetOutputSurface(info, outputMode_);
             return;
         }
         case MsgWhat::START: {
@@ -489,9 +487,7 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             codec_->OnReleaseOutputBuffer(info, outputMode_);
             break;
         case MsgWhat::SET_OUTPUT_SURFACE: {
-            sptr<Surface> surface;
-            (void)info.param->GetValue("surface", surface);
-            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
+            codec_->OnSetOutputSurface(info, outputMode_);
             return;
         }
         case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
@@ -623,9 +619,7 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::SET_OUTPUT_SURFACE: {
-            sptr<Surface> surface;
-            (void)info.param->GetValue("surface", surface);
-            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
+            codec_->OnSetOutputSurface(info, outputMode_);
             return;
         }
         case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
