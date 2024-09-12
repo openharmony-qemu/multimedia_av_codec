@@ -510,7 +510,12 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     isNearSeek_ = true;
     seekTime_ = static_cast<uint64_t>(seekTime);
     PrepareToSeek();
-    SeekToTs(seekTime, mode);
+    if (seekTime_ < playlistDownloader_->GetDuration()) {
+        SeekToTs(seekTime, mode);
+    } else {
+        readTsIndex_ = backPlayList_.size() > 0 ? backPlayList_.size() - 1 : 0; // 0
+        tsStorageInfo_[readTsIndex_].second = true;
+    }
     MEDIA_LOG_I("HLS SeekToTime end\n");
     isSeekingFlag = false;
     return true;
@@ -557,7 +562,9 @@ void HlsMediaDownloader::PlaylistBackup(const PlayInfo& fragment)
         }
         return;
     }
-    backPlayList_.push_back(fragment);
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsParseFinished()) {
+        backPlayList_.push_back(fragment);
+    }
 }
 
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
