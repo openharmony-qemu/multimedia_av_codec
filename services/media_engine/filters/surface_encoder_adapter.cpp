@@ -466,9 +466,10 @@ Status SurfaceEncoderAdapter::NotifyEos(int64_t pts)
         return Status::ERROR_UNKNOWN;
     }
     int32_t ret = 0;
-    MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64, pts);
+    MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 "current PTS: " PUBLIC_LOG_D64, pts, currentPts_.load());
     eosPts_ = pts;
     if (!isTransCoderMode || currentPts_.load() >= eosPts_.load()) {
+        MEDIA_LOG_I("Notify encoder eos");
         ret = codecServer_->NotifyEos();
     }
     if (ret == 0) {
@@ -506,6 +507,7 @@ std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
 void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     if (buffer->pts_ >= eosPts_.load() && codecServer_) {
+        MEDIA_LOG_I("Notify encoder eos");
         codecServer_->NotifyEos();
     }
     if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
