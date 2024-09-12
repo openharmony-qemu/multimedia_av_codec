@@ -330,7 +330,6 @@ Status SurfaceEncoderAdapter::Stop()
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Stop");
     GetCurrentTime(stopTime_);
     isStopKeyFramePts_ = true;
-    isStartKeyFramePts_ = false;
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
     if (isStart_ && !isTransCoderMode) {
