@@ -78,7 +78,7 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     MEDIA_LOG_I("Get startTime from track meta, " PUBLIC_LOG_D64, startTime);
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
-        syncCenter->SetMediaStartPts(Plugins::HstTime2Us(startTime));
+        syncCenter->SetMediaStartPts(startTime);
     }
     std::string mime;
     bool mimeGetRes = meta->Get<Tag::MIME_TYPE>(mime);
