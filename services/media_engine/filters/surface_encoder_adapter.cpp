@@ -466,7 +466,7 @@ Status SurfaceEncoderAdapter::NotifyEos(int64_t pts)
         return Status::ERROR_UNKNOWN;
     }
     int32_t ret = 0;
-    MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 "current PTS: " PUBLIC_LOG_D64, pts, currentPts_.load());
+    MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 " current PTS: " PUBLIC_LOG_D64, pts, currentPts_.load());
     eosPts_ = pts;
     if (!isTransCoderMode || currentPts_.load() >= eosPts_.load()) {
         MEDIA_LOG_I("Notify encoder eos");
