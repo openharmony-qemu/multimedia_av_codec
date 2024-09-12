@@ -141,7 +141,7 @@ private:
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
-    int32_t AttachToNewSurface(const sptr<Surface> &newSurface);
+    int32_t SwitchBetweenSurface(const sptr<Surface> &newSurface);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index);
     int32_t GetSurfaceBufferStride(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t SetSurfaceCfg(int32_t bufferCnt);
