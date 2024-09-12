@@ -142,7 +142,7 @@ private:
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
     int32_t AttachToNewSurface(const sptr<Surface> &newSurface);
-    int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
+    int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index);
     int32_t GetSurfaceBufferStride(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t SetSurfaceCfg(int32_t bufferCnt);
     int32_t DecodeFrameOnce();
@@ -190,6 +190,7 @@ private:
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
+    std::map<uint32_t, sptr<SurfaceBuffer>> renderSurfaceBufferMap_;
     sptr<Surface> surface_ = nullptr;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
     std::shared_ptr<TaskThread> renderTask_ = nullptr;
