@@ -38,6 +38,7 @@ constexpr double NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR = 0.25;
 constexpr double CACHE_RELEASE_FACTOR_DEFAULT = 10;
 constexpr double TO_PERCENT = 100;
 constexpr int64_t MAX_TOTAL_READ_SIZE = 2000000;
+constexpr int64_t UP_LIMIT_MAX_TOTAL_READ_SIZE = 3000000;
 constexpr int64_t ACCESS_OFFSET_MAX_LENGTH = 2 * 1024;
 
 inline constexpr bool BoundedIntervalComp(int64_t mid, int64_t start, int64_t end)
@@ -369,9 +370,10 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, int64_t inOffset, size_t inWr
 bool CacheMediaChunkBufferImpl::Seek(int64_t offset)
 {
     std::lock_guard lock(mutex_);
-    auto readPos = GetOffsetFragmentCache(readPos_, offset, LeftBoundedRightOpenComp);
+    auto readPos = GetOffsetFragmentCache(readPos_, offset, BoundedIntervalComp);
     if (readPos != fragmentCacheBuffer_.end()) {
         readPos_ = readPos;
+        bool isSeekHit = false;
         auto chunkPos = GetOffsetChunkCache(readPos->chunks, offset, LeftBoundedRightOpenComp);
         if (chunkPos != readPos->chunks.end()) {
             auto readOffset = offset - readPos->offsetBegin;
@@ -386,8 +388,13 @@ bool CacheMediaChunkBufferImpl::Seek(int64_t offset)
             (*readPos).accessPos = chunkPos;
             (*readPos).accessLength = offset - (*readPos).offsetBegin;
             readPos->readTime = Clock::now();
-            return true;
+            isSeekHit = true;
         }
+        ResetReadSizeAlloc();
+        uint64_t newReadSizeInit = static_cast<uint64_t>(1 + initReadSizeFactor_ * static_cast<double>(totalReadSize_));
+        readPos->totalReadSize += newReadSizeInit;
+        totalReadSize_ += newReadSizeInit;
+        return isSeekHit;
     }
     return false;
 }
@@ -767,7 +774,7 @@ void CacheMediaChunkBufferImpl::ResetReadSizeAlloc()
 {
     size_t chunkNum = chunkMaxNum_ + 1 >= freeChunks_.size() ?
                         chunkMaxNum_ + 1 - freeChunks_.size() : 0;
-    if (totalReadSize_ > static_cast<size_t>(MAX_TOTAL_READ_SIZE) && chunkNum > 0) {
+    if (totalReadSize_ > static_cast<size_t>(UP_LIMIT_MAX_TOTAL_READ_SIZE) && chunkNum > 0) {
         size_t preChunkSize = static_cast<size_t>(MAX_TOTAL_READ_SIZE - 1) / chunkNum;
         for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end(); ++iter) {
             iter->totalReadSize = preChunkSize * iter->chunks.size();
