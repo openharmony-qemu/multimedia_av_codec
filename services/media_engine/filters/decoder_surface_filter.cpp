@@ -669,6 +669,9 @@ void DecoderSurfaceFilter::ConsumeVideoFrame(uint32_t index, bool isRender, int6
 
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    if (outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
+        MEDIA_LOG_I("Decoder output EOS");
+    }
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_D("DrainOutputBuffer pts: " PUBLIC_LOG_D64"  outputSize:%{public}zu",
         outputBuffer->pts_, outputBuffers_.size());
