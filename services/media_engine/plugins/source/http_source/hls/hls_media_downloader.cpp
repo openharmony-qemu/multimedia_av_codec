@@ -326,7 +326,7 @@ bool HlsMediaDownloader::HandleCache()
 
 void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
 {
-    if (ffmpegOffset_ <= ffmpegOffset) {
+    if (ffmpegOffset_ <= ffmpegOffset || readTsIndex_ == 0) {
         return;
     }
     MEDIA_LOG_I("HLS Read back, ffmpegOffset: " PUBLIC_LOG_U64 " ffmpegOffset: " PUBLIC_LOG_U64,

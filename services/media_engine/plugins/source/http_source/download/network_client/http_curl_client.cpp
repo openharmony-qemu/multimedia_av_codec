@@ -242,14 +242,14 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
 Status HttpCurlClient::Close(bool isAsync)
 {
     MEDIA_LOG_I("Close client in");
-    if (easyHandle_) {
-        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
-    }
     if (isAsync) {
         MEDIA_LOG_I("Close client Async out");
         return Status::OK;
     }
     AutoLock lock(mutex_);
+    if (easyHandle_) {
+        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
+    }
     if (easyHandle_) {
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
@@ -265,10 +265,10 @@ Status HttpCurlClient::Close(bool isAsync)
 Status HttpCurlClient::Deinit()
 {
     MEDIA_LOG_I("Deinit in");
+    AutoLock lock(mutex_);
     if (easyHandle_) {
         curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
     }
-    AutoLock lock(mutex_);
     if (easyHandle_) {
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
