@@ -38,6 +38,8 @@ HWTEST_F(XCollieTestSuilt, INTERFACE_TEST, TestSize.Level1)
 {
     COLLIE_LISTEN(usleep(SLEEP_TIME), "CollieTest", true, false, 5);
     CLIENT_COLLIE_LISTEN(usleep(SLEEP_TIME), "CollieTest");
+    int32_t ret = AVCodecXCollie::GetInstance().Dump(0);
+    ASSERT_EQ(ret, AVCS_ERR_OK);
 }
 
 HWTEST_F(XCollieTestSuilt, DUMP_TEST, TestSize.Level1)
