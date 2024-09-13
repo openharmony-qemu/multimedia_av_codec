@@ -36,7 +36,7 @@
 #include "source/source.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 }
 
 namespace OHOS {
@@ -52,7 +52,7 @@ StreamDemuxer::StreamDemuxer() : position_(0)
 
 StreamDemuxer::~StreamDemuxer()
 {
-    MEDIA_LOG_D("~VodStreamDemuxer called");
+    MEDIA_LOG_I("~VodStreamDemuxer called");
     ResetAllCache();
 }
 
@@ -123,7 +123,6 @@ Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_
     FALSE_RETURN_V_MSG_E(bufferPtr->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "bufferPtr invalid");
     auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
     FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "memory invalid");
-
     MEDIA_LOG_D("PullDataWithCache, Read data from cache data.");
     uint64_t offsetInCache = offset - cacheDataMap_[streamID].GetOffset();
     if (size <= memory->GetSize() - offsetInCache) {

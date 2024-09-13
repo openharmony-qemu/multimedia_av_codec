@@ -150,7 +150,7 @@ Status FileSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     MEDIA_LOG_D("IN");
     auto err = ParseFileName(source->GetSourceUri());
     if (err != Status::OK) {
-        MEDIA_LOG_E("Parse file name from uri fail, uri: %{private}s", source->GetSourceUri().c_str());
+        MEDIA_LOG_E("Parse file name from uri fail, uri: " PUBLIC_LOG_S, source->GetSourceUri().c_str());
         return err;
     }
     return OpenFile();

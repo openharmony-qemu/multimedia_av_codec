@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+* Copyright (C) 2023 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -19,7 +19,7 @@
 #include "plugin/plugin_time.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "MediaSynchronousSink" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "Histreamer" };
 }
 
 namespace OHOS {
@@ -91,7 +91,7 @@ void MediaSynchronousSink::UpdateMediaTimeRange(const std::shared_ptr<Meta>& met
     int64_t trackStartTime = 0;
     meta->GetData(Tag::MEDIA_START_TIME, trackStartTime);
     uint32_t trackId = 0;
-    (void)(meta->GetData(Tag::REGULAR_TRACK_ID, trackId));
+    FALSE_LOG(meta->GetData(Tag::REGULAR_TRACK_ID, trackId));
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
         syncCenter->SetMediaTimeRangeStart(trackStartTime, trackId, this);
@@ -102,7 +102,7 @@ void MediaSynchronousSink::UpdateMediaTimeRange(const std::shared_ptr<Meta>& met
             syncCenter->SetMediaTimeRangeEnd(trackDuration + trackStartTime, trackId, this);
         }
     } else {
-        MEDIA_LOG_D_SHORT("Get duration failed");
+        MEDIA_LOG_W("Get duration failed");
         if (syncCenter) {
             syncCenter->SetMediaTimeRangeEnd(INT64_MAX, trackId, this);
         }

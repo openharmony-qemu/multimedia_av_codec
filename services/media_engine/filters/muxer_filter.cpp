@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
+#include "muxer_filter.h"
 #include <sys/timeb.h>
 #include <unordered_map>
-#include "muxer_filter.h"
 #include "common/log.h"
 #include "filter/filter_factory.h"
 #include "muxer/media_muxer.h"
@@ -40,6 +40,7 @@ namespace Pipeline {
 using namespace OHOS::MediaAVCodec;
 constexpr int64_t WAIT_TIME_OUT_NS = 3000000000;
 constexpr int64_t US_TO_MS = 1000;
+constexpr uint32_t BUFFER_IS_EOS = 1;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
     [](const std::string& name, const FilterType type) {
         return std::make_shared<MuxerFilter>(name, FilterType::FILTERTYPE_MUXER);
@@ -89,9 +90,8 @@ MuxerFilter::~MuxerFilter()
 
 Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format)
 {
-    MEDIA_LOG_I("SetOutputParameter, appUid:" PUBLIC_LOG_D32 ", appPid:" PUBLIC_LOG_D32 ", format:"
-    PUBLIC_LOG_D32, static_cast<int32_t>(appUid), static_cast<int32_t>(appPid),
-    static_cast<int32_t>(format));
+    MEDIA_LOG_I("SetOutputParameter, appUid:" PUBLIC_LOG_D32 ", appPid:" PUBLIC_LOG_D32 ", format:" PUBLIC_LOG_D32,
+        static_cast<int32_t>(appUid), static_cast<int32_t>(appPid), static_cast<int32_t>(format));
     mediaMuxer_ = std::make_shared<MediaMuxer>(appUid, appPid);
     Status ret = mediaMuxer_->Init(fd, (Plugins::OutputFormat)format);
     outputFormat_ = (Plugins::OutputFormat)format;
@@ -319,7 +319,7 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
     StreamType streamType, sptr<AVBufferQueueProducer> inputBufferQueue)
 {
     MEDIA_LOG_D("OnTransCoderBufferFilled");
-    if (inputBuffer->flag_ == 1) {
+    if ((inputBuffer->flag_ & BUFFER_IS_EOS) == 1) {
         eosCount_++;
         if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {
             MEDIA_LOG_I("video is eos");
