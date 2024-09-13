@@ -82,14 +82,6 @@
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/720_1280_25_avcc.h265 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/720_1280_25_avcc.hdr.h265 -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/AMVPIpred_avcc.h265 -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/DblckSkip_avcc.h265 -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/MaxBinsOPflag_avcc.h265 -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/PicsizeInitQP_avcc.h265 -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/SAOCAINIT_avcc.h265 -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/SLIST_avcc.h265 -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/SmallResolution_avcc.h265 -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/TILES_avcc.h265 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
