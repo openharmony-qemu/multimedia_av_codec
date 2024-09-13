@@ -40,6 +40,14 @@
 #include "osal/utils/dump_buffer.h"
 #include "demuxer_plugin_manager.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+const std::string DUMP_PARAM = "a";
+const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
+const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
+static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
+} // namespace
+
 namespace OHOS {
 namespace Media {
 constexpr int64_t MAX_PTS_DIFFER_THRESHOLD_US = 10000000; // The maximum difference between Segment 10s.
