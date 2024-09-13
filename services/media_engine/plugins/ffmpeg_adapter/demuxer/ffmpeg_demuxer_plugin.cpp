@@ -54,7 +54,7 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 const uint32_t DEFAULT_READ_SIZE = 4096;
-const uint32_t MP3_PROBE_SIZE = DEFAULT_READ_SIZE * 2;
+const uint32_t MP3_PROBE_SIZE = DEFAULT_READ_SIZE * 4; // sniff mp3 format need more data, 16k
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
