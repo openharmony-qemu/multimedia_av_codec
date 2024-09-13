@@ -449,10 +449,10 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetCallingInfo_0100, Test
     uint64_t instanceId = 1002;
     std::string bundleName = "bundleName";
     audioEncoderFilter_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
-    ASSERT_EQ(audioEncoderFilter_->appUid_, appUid);
-    ASSERT_EQ(audioEncoderFilter_->appPid_, appPid);
-    ASSERT_EQ(audioEncoderFilter_->bundleName_, bundleName);
-    ASSERT_EQ(audioEncoderFilter_->instanceId_, instanceId);
+    EXPECT_EQ(audioEncoderFilter_->appUid_, appUid);
+    EXPECT_EQ(audioEncoderFilter_->appPid_, appPid);
+    EXPECT_EQ(audioEncoderFilter_->bundleName_, bundleName);
+    EXPECT_EQ(audioEncoderFilter_->instanceId_, instanceId);
 }
 
 }
