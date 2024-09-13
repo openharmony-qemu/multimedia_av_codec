@@ -357,7 +357,7 @@ size_t HlsPlayListDownloader::GetSegmentOffset(int tsIndex)
 bool HlsPlayListDownloader::GetHLSDiscontinuity()
 {
     if (master_) {
-        return master_->discontinuity_;
+        return master_->discontinuity;
     }
     return false;
 }

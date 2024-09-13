@@ -205,7 +205,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 
         if (hlsTag == HlsTag::EXTXDISCONTINUITY) {
             segmentTimeOffset = duration;
-            discontinuity_ = true;
+            discontinuity = true;
             MEDIA_LOG_I("segmentTimeOffset here is: " PUBLIC_LOG_ZU, segmentTimeOffset);
             continue;
         }
@@ -497,7 +497,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
         m3u8->keyLen_ = keyLen_;
     }
     segmentOffsets_ = m3u8->segmentOffsets_;
-    discontinuity_ = m3u8->discontinuity_;
+    discontinuity = m3u8->discontinuity;
     isParseSuccess_ = m3u8->Update(playList_, false);
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();

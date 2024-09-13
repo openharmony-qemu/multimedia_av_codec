@@ -113,7 +113,7 @@ struct M3U8 {
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
     std::atomic<bool> isPlayTypeFound_ {false};
-    bool discontinuity_ { false };
+    bool discontinuity { false };
     std::vector<size_t> segmentOffsets_;
 };
 
@@ -162,7 +162,7 @@ struct M3U8MasterPlaylist {
     size_t keyLen_ { 0 };
     std::atomic<bool> isParseSuccess_ {true};
     std::vector<size_t> segmentOffsets_;
-    bool discontinuity_ { false };
+    bool discontinuity { false };
 };
 }
 }
