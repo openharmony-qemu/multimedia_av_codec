@@ -86,6 +86,7 @@ public:
     size_t GetNextBufferOffset(int64_t offset);
     void Dump(uint64_t param);
     bool Check();
+    void Clear();
 
 protected:
     CacheChunk* GetFreeCacheChunk(int64_t offset, bool checkAllowFailContinue = false);

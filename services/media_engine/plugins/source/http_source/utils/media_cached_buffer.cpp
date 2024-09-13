@@ -793,6 +793,18 @@ bool CacheMediaChunkBufferImpl::Check()
     return CheckInner();
 }
 
+void CacheMediaChunkBufferImpl::Clear()
+{
+    std::lock_guard lock(mutex_);
+    auto iter = fragmentCacheBuffer_.begin();
+    while (iter != fragmentCacheBuffer_.end()) {
+        freeChunks_.splice(freeChunks_.end(), iter->chunks);
+        iter = EraseFragmentCache(iter);
+    }
+    lruCache_.Reset();
+    totalReadSize_ = 0;
+}
+
 bool CacheMediaChunkBufferImpl::DumpAndCheckInner()
 {
     DumpInner(0);
@@ -900,6 +912,7 @@ size_t CacheMediaChunkBuffer::GetNextBufferOffset(int64_t offset)
 
 void CacheMediaChunkBuffer::Clear()
 {
+    impl_->Clear();
 }
 
 void CacheMediaChunkBuffer::SetReadBlocking(bool isReadBlockingAllowed)

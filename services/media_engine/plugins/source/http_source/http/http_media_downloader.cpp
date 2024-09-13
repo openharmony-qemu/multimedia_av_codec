@@ -371,7 +371,7 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
     size_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
     // This prevents the read operation from failing to read data when the seek operation is not triggered.
     if (remain < readDataInfo.wantReadLength_ && isServerAcceptRange_ &&
-        (writeOffset_ < readOffset_ || writeOffset_ > readOffset_ + remain)) {
+        (writeOffset_ < readOffset_ || writeOffset_ >= readOffset_ + remain)) {
         ChangeDownloadPos();
     }
     size_t hasReadSize = 0;
@@ -509,6 +509,12 @@ Status HttpMediaDownloader::CheckIsEosCacheBuffer(unsigned char* buff, ReadDataI
 void HttpMediaDownloader::ChangeDownloadPos()
 {
     MEDIA_LOG_D("ChangeDownloadPos in.");
+
+    if (writeOffset_ >= readOffset_ + GetCurrentBufferSize()) {
+        MEDIA_LOG_I("CacheMediaBuffer clear.");
+        cacheMediaBuffer_->Clear();
+    }
+
     isNeedDropData_ = true;
     downloader_->Pause();
     isNeedDropData_ = false;
