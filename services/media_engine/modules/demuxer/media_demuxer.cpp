@@ -41,6 +41,13 @@
 #include "demuxer_plugin_manager.h"
 #include "media_demuxer_back.cpp"
 
+namespace {
+const std::string DUMP_PARAM = "a";
+const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
+const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
+static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
+} // namespace
+
 namespace OHOS {
 namespace Media {
 constexpr uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes 0ms means no retry
