@@ -1440,16 +1440,16 @@ Status MediaDemuxer::Start()
 
 Status MediaDemuxer::InitPtsInfo()
 {
-    FALSE_RETURN_V(source_ != nullptr && source_->GetHLSDisContinuity(), Status::OK);
+    FALSE_RETURN_V(source_ != nullptr && source_->GetHLSDiscontinuity(), Status::OK);
     MEDIA_LOG_I("Enable hls disContinuity auto maintain pts");
     isAutoMaintainPts_ = true;
     for (auto it = bufferQueueMap_.begin(); it != bufferQueueMap_.end(); it++) {
         uint32_t trackId = it->first;
-        if (maintainBaseInfos_[trackInfo] == nullptr) {
-            maintainBaseInfos_[trackInfo] = std::make_shared<MaintainBaseInfo>();
+        if (maintainBaseInfos_[trackId] == nullptr) {
+            maintainBaseInfos_[trackId] = std::make_shared<MaintainBaseInfo>();
         }
-        maintainBaseInfos_[trackInfo]->segmentOffset = INVALID_PTS_DATA;
-        maintainBaseInfos_[trackInfo]->basePts = INVALID_PTS_DATA;
+        maintainBaseInfos_[trackId]->segmentOffset = INVALID_PTS_DATA;
+        maintainBaseInfos_[trackId]->basePts = INVALID_PTS_DATA;
     }
     return Status::OK;
 }
@@ -1683,7 +1683,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
             shouldCheckSubtitleFramePts_ = true;
         }
 
-        if (newTrackId == selectTrackTrackID_) {
+        if (static_cast<uint32_t>(newTrackId) == selectTrackTrackID_) {
             isSelectTrack_.store(false);
         }
 
@@ -1903,10 +1903,10 @@ Status MediaDemuxer::HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVB
     }
     int64_t offsetUs = 0;
     Plugins::Us2HstTime(baseInfo->segmentOffset, offsetUs);
-    sample->pts = offsetUs + curPacketPts - baseInfo->basePts;
-    MEDIA_LOG_I("HandleAutoMaintainPts success, trackId: " PUBLIC_LOG_U32 ", orginal pts: " PUBLI_LOG_D64
-        ", pts: " PUBILC_LOG_D64 ", Offset: " PUBLIC_LOG_D64 ", basePts: " PUBLIC_LOG_D64, trackId,
-        curPacketPts, sample->pts_, offsetUs, baseInfo->basePts);
+    sample->pts_ = offsetUs + curPacketPts - baseInfo->basePts;
+    MEDIA_LOG_I("HandleAutoMaintainPts success, trackId: " PUBLIC_LOG_U32 ", orginal pts: "
+    PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64 ", Offset: " PUBLIC_LOG_D64 ", basePts: "
+    PUBLIC_LOG_D64, trackId, curPacketPts, sample->pts_, offsetUs, baseInfo->basePts);
     return Status::OK;    
 }
 

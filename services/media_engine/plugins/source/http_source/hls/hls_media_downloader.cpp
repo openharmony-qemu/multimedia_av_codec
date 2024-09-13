@@ -348,7 +348,7 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
         uint64_t lastTsReadBack = readBack - curTsHaveRead;
         readOffset_ = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first - lastTsReadBack);
         MEDIA_LOG_I("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
-            PUBLIC_LOG_U64, readTsIndex_, readOffset_);
+            PUBLIC_LOG_U64, readTsIndex_.load(), readOffset_);
     }
 }
 
@@ -382,7 +382,7 @@ Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& read
         OnReadCacheBuffer(readDataInfo.realReadLength_);
         MEDIA_LOG_D("HLS Read Success: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
             PUBLIC_LOG_D32 " readOffset_ " PUBLIC_LOG_U64 " readTsIndex_ " PUBLIC_LOG_U32, readDataInfo.wantReadLength_,
-            readDataInfo.realReadLength_, readDataInfo.isEos_, readOffset_, readTsIndex_);
+            readDataInfo.realReadLength_, readDataInfo.isEos_, readOffset_, readTsIndex_.load());
         return Status::OK;
     }
     if (isFinishedPlay && GetCacheBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&

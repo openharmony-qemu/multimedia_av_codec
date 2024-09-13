@@ -278,7 +278,7 @@ private:
     std::atomic<bool> isDemuxerLoopExecuting_ {false};
     std::atomic<bool> isFirstFrameAfterSeek_ {false};
     std::atomic<bool> isInterruptNeeded_ {false};
-    bool isAutoMaintainPts = false;
+    bool isAutoMaintainPts_ = false;
     std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
 };
 } // namespace Media
