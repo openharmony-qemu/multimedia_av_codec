@@ -1117,9 +1117,12 @@ void HttpMediaDownloader::UpdateWaterLineAbove()
 
 bool HttpMediaDownloader::GetPlayable()
 {
+    if (!isFirstFrameArrived_) {
+        return false;
+    }
     size_t wantedLength = wantedReadLength_;
     size_t waterLine = wantedLength > 0 ? std::max(PLAY_WATER_LINE, wantedLength) : 0;
-    return GetBufferSize() >= waterLine;
+    return waterLine == 0 ? GetBufferSize() > waterLine : GetBufferSize() >= waterLine;
 }
 
 bool HttpMediaDownloader::GetBufferingTimeOut()

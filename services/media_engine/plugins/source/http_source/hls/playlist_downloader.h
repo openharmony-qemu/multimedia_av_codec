@@ -74,6 +74,15 @@ public:
     std::map<std::string, std::string> GetHttpHeader();
     void SetAppUid(int32_t appUid);
     void SetCallback(Callback* cb);
+    virtual size_t GetSegmentOffset(int tsIndex)
+    {
+        return 0;
+    }
+
+    virtual bool GetHLSDiscontinuity()
+    {
+        return false;
+    }
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);

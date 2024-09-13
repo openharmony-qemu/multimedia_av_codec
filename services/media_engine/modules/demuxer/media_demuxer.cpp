@@ -58,6 +58,8 @@ constexpr uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wa
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
 constexpr uint32_t DEFAULT_PREPARE_FRAME_COUNT = 1; // Default prepare frame count 1.
+constexpr int64_t MAX_PTS_DIFFER_THRESHOLD_US = 10000000; // The maximum difference between Segment 10s.
+constexpr int64_t INVALID_PTS_DATA = -1; // The invalid pts data -1.
 
 enum SceneCode : int32_t {
     /**
@@ -1178,6 +1180,7 @@ Status MediaDemuxer::Flush()
         demuxerPluginManager_->Flush();
     }
 
+    InitPtsInfo();
     return Status::OK;
 }
 
@@ -1396,6 +1399,7 @@ Status MediaDemuxer::Start()
     for (auto it = requestBufferErrorCountMap_.begin(); it != requestBufferErrorCountMap_.end(); it++) {
         it->second = 0;
     }
+    InitPtsInfo();
     isThreadExit_ = false;
     isStopped_ = false;
     isDemuxerLoopExecuting_ = true;
@@ -1418,6 +1422,22 @@ Status MediaDemuxer::Start()
     MEDIA_LOG_I("Demuxer thread started.");
     source_->Start();
     return demuxerPluginManager_->Start();
+}
+
+Status MediaDemuxer::InitPtsInfo()
+{
+    FALSE_RETURN_V(source_ != nullptr && source_->GetHLSDisContinuity(), Status::OK);
+    MEDIA_LOG_I("Enable hls disContinuity auto maintain pts");
+    isAutoMaintainPts_ = true;
+    for (auto it = bufferQueueMap_.begin(); it != bufferQueueMap_.end(); it++) {
+        uint32_t trackId = it->first;
+        if (maintainBaseInfos_[trackInfo] == nullptr) {
+            maintainBaseInfos_[trackInfo] = std::make_shared<MaintainBaseInfo>();
+        }
+        maintainBaseInfos_[trackInfo]->segmentOffset = INVALID_PTS_DATA;
+        maintainBaseInfos_[trackInfo]->basePts = INVALID_PTS_DATA;
+    }
+    return Status::OK;
 }
 
 Status MediaDemuxer::Stop()
@@ -1847,6 +1867,33 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
     // to get DrmInfo
     ProcessDrmInfos();
     return ret;
+}
+
+Status MediaDemuxer::HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
+{
+    FALSE_RETURN_V(isAutoMaintainPts_, Status::OK);
+    int64_t curPacketPts = sample->pts_;
+    std::shared_ptr<MaintainBaseInfo> baseInfo = maintainBaseInfos_[trackId];
+    int64_t diff = 0;
+    diff = curPacketPts - baseInfo->lastPts;
+    baseInfo->lastPts = curPacketPts;
+    if (diff < 0) {
+        diff = 0 - diff;
+    }
+    if (baseInfo->segmentOffset == INVALID_PTS_DATA || diff > MAX_PTS_DIFFER_THRESHOLD_US) {
+        int64_t offset = static_cast<int64_t>(source_->GetSegmentOffset());
+        if (baseInfo->segmentOffset != offset) {
+            baseInfo->segmentOffset = offset;
+            baseInfo->basePts = curPacketPts;
+        }
+    }
+    int64_t offsetUs = 0;
+    Plugins::Us2HstTime(baseInfo->segmentOffset, offsetUs);
+    sample->pts = offsetUs + curPacketPts - baseInfo->basePts;
+    MEDIA_LOG_I("HandleAutoMaintainPts success, trackId: " PUBLIC_LOG_U32 ", orginal pts: " PUBLI_LOG_D64
+        ", pts: " PUBILC_LOG_D64 ", Offset: " PUBLIC_LOG_D64 ", basePts: " PUBLIC_LOG_D64, trackId,
+        curPacketPts, sample->pts_, offsetUs, baseInfo->basePts);
+    return Status::OK;    
 }
 
 int64_t MediaDemuxer::ReadLoop(uint32_t trackId)

@@ -59,6 +59,8 @@ public:
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+    size_t GetSegmentOffset() override;
+    bool GetHLSDiscontinuity() override;
 
 private:
     void CloseUri(bool isAsync = false);

@@ -390,6 +390,21 @@ bool DownloadMonitor::GetBufferingTimeOut()
     }
 }
 
+size_t DownloadMonitor::GetSegmentOffset()
+{
+    if (downloader_) {
+        return downloader_->GetSegmentOffset();
+    }
+    return 0;
+}
+
+bool DownloadMonitor::GetHLSDiscontinuity()
+{
+    if (downloader_) {
+        return downloader_->GetHLSDiscontinuity();
+    }
+    return false;
+}
 }
 }
 }

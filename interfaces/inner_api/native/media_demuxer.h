@@ -133,6 +133,11 @@ private:
         std::shared_ptr<Meta> globalMeta;
     };
 
+    struct MaintainBaseInfo {
+        int64_t segmentOffset = -1;
+        int64_t basePts = -1;
+        int64_t lastPts = 0;
+    };
     bool isHttpSource_ = false;
     std::string videoMime_{};
 
@@ -199,6 +204,8 @@ private:
     void HandleStopPlugin(int32_t trackId);
     void HandleStartPlugin(int32_t trackId);
     bool IsSubtitleMime(const std::string& mime);
+    Status HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
+    Status InitPtsInfo();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -270,6 +277,8 @@ private:
     std::atomic<bool> isDemuxerLoopExecuting_ {false};
     std::atomic<bool> isFirstFrameAfterSeek_ {false};
     std::atomic<bool> isInterruptNeeded_ {false};
+    bool isAutoMaintainPts = false;
+    std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
 };
 } // namespace Media
 } // namespace OHOS

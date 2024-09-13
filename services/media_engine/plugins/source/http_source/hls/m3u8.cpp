@@ -32,7 +32,7 @@ constexpr uint32_t DRM_PSSH_TITLE_LEN = 16;
 constexpr uint32_t WAIT_KEY_SLEEP_TIME = 10;
 constexpr uint32_t MAX_DOWNLOAD_TIME = 500;
 constexpr uint64_t BAND_WIDTH_LIMIT = 3 * 1024 * 1024;
-
+constexpr uint32_t SECOND_TO_MILLIONSECOND = 1000;
 const char DRM_PSSH_TITLE[] = "data:text/plain;";
 
 /**
@@ -192,6 +192,9 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 {
     M3U8Info info;
     bLive_ = !info.bVod;
+    segmentOffsets_.clear();
+    size_t segmentTimeOffset = 0;
+    size_t duration = 0;
     for (auto& tag : tags) {
         HlsTag hlsTag = tag->GetType();
         if (hlsTag == HlsTag::EXTXENDLIST && !isPlayTypeFound_) {
@@ -199,6 +202,14 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
             bLive_ = !info.bVod;
             MEDIA_LOG_I("UpdateFromTags not live.");
         }
+
+        if (hlsTag == HlsTag::EXTXDISCONTINUITY) {
+            segmentTimeOffset = duration;
+            discontinuity_ = true;
+            MEDIA_LOG_I("segmentTimeOffset here is: " PUBLIC_LOG_ZU, segmentTimeOffset);
+            continue;
+        }
+
         auto iter = tagUpdatersMap_.find(hlsTag);
         if (iter != tagUpdatersMap_.end()) {
             auto updater = iter->second;
@@ -214,10 +225,14 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
             if (isDecryptAble_) {
                 auto m3u8 = M3U8Fragment(info.uri, info.duration, sequence_++, info.discontinuity);
                 auto fragment = std::make_shared<M3U8Fragment>(m3u8, key_, iv_);
+                segmentOffsets_.emplace_back(duration);
+                duration += static_cast<size_t>(info.duration * SECOND_TO_MILLIONSECOND);
                 files_.emplace_back(fragment);
             } else {
                 auto fragment = std::make_shared<M3U8Fragment>(info.uri, info.duration, sequence_++,
                     info.discontinuity);
+                segmentOffsets_.emplace_back(duration);
+                duration += static_cast<size_t>(info.duration * SECOND_TO_MILLIONSECOND);
                 files_.emplace_back(fragment);
             }
             info.uri = "", info.duration = 0, info.discontinuity = false;
@@ -481,6 +496,8 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
         std::copy(std::begin(iv_), std::end(iv_), std::begin(m3u8->iv_));
         m3u8->keyLen_ = keyLen_;
     }
+    segmentOffsets_ = m3u8->segmentOffsets_;
+    discontinuity_ = m3u8->discontinuity_;
     isParseSuccess_ = m3u8->Update(playList_, false);
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();

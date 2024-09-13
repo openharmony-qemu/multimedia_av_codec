@@ -94,6 +94,8 @@ public:
     void SetAppUid(int32_t appUid) override;
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
+    size_t GetSegmentOffset() override;
+    bool GetHLSDiscontinuity() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -261,7 +263,7 @@ private:
     size_t readOffset_ {0};
     size_t writeOffset_ {0};
     std::map<uint32_t, std::pair<uint32_t, bool>> tsStorageInfo_ {};
-    uint32_t readTsIndex_ {0};
+    std::atomic<uint32_t> readTsIndex_ {0};
     std::atomic<bool> canWrite_ {true};
     uint64_t ffmpegOffset_ = 0;
     volatile size_t wantedReadLength_ {0};
