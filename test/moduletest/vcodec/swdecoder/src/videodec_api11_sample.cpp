@@ -889,10 +889,9 @@ int32_t VDecAPI11Sample::SwitchSurface()
 
 int32_t VDecAPI11Sample::RepeatCallSetSurface()
 {
-    int32_t ret;
     for (int i = 0; i < REPEAT_CALL_TIME; i++) {
         switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
-        ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
+        int32_t ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
         if (ret != AV_ERR_OK && ret != AV_ERR_OPERATE_NOT_PERMIT && ret != AV_ERR_INVALID_STATE) {
             return AV_ERR_OPERATE_NOT_PERMIT;
         }

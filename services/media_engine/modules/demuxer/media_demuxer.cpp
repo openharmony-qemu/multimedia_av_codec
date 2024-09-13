@@ -1135,6 +1135,20 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
     return ret;
 }
 
+Status MediaDemuxer::StopBufferring(bool flag)
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "StopBufferring failed, source_ is nullptr.");
+    MEDIA_LOG_I("StopBufferring begin");
+    Status ret = source_->StopBufferring(flag);
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("MediaDemuxer StopBufferring failed");
+        return ret;
+    }
+    MEDIA_LOG_I("StopBufferring success");
+    return ret;
+}
+
 std::vector<std::shared_ptr<Meta>> MediaDemuxer::GetStreamMetaInfo() const
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
@@ -1752,7 +1766,7 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
             eosMap_[trackId] = true;
             taskMap_[trackId]->StopAsync();
             MEDIA_LOG_I("CopyFrameToUserQueue track eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
-                ", pts: " PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
+                ", pts: " PUBLIC_LOG_D64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
             return Status::OK;
@@ -2069,11 +2083,11 @@ void MediaDemuxer::CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_
     if (trackId == audioTrackId_) {
         if (shouldCheckAudioFramePts_ == false) {
             lastAudioPts_ = sample->pts_;
-            MEDIA_LOG_I("set lastAudioPts_ = " PUBLIC_LOG_U64, lastAudioPts_);
+            MEDIA_LOG_I("set lastAudioPts_ = " PUBLIC_LOG_D64, lastAudioPts_);
             return;
         }
         if (sample->pts_ < lastAudioPts_) {
-            MEDIA_LOG_I("drop audio buffer, pts = " PUBLIC_LOG_U64, sample->pts_);
+            MEDIA_LOG_I("drop audio buffer, pts = " PUBLIC_LOG_D64, sample->pts_);
             return;
         }
         if (shouldCheckAudioFramePts_) {
@@ -2083,11 +2097,11 @@ void MediaDemuxer::CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_
     if (trackId == subtitleTrackId_) {
         if (shouldCheckSubtitleFramePts_ == false) {
             lastSubtitlePts_ = sample->pts_;
-            MEDIA_LOG_I("set lastSubtitlePts_ = " PUBLIC_LOG_U64, lastSubtitlePts_);
+            MEDIA_LOG_I("set lastSubtitlePts_ = " PUBLIC_LOG_D64, lastSubtitlePts_);
             return;
         }
         if (sample->pts_ < lastSubtitlePts_) {
-            MEDIA_LOG_I("drop subtitle buffer, pts = " PUBLIC_LOG_U64, sample->pts_);
+            MEDIA_LOG_I("drop subtitle buffer, pts = " PUBLIC_LOG_D64, sample->pts_);
             return;
         }
         if (shouldCheckSubtitleFramePts_) {
@@ -2125,7 +2139,7 @@ bool MediaDemuxer::IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t 
     }
 
     MEDIA_LOG_D("drop buffer, framerate = " PUBLIC_LOG_F " speed = " PUBLIC_LOG_F " decodeUpLimit = "
-        PUBLIC_LOG_D32 " pts = " PUBLIC_LOG_U64, framerate_.load(), speed_.load(),
+        PUBLIC_LOG_D32 " pts = " PUBLIC_LOG_D64, framerate_.load(), speed_.load(),
         decoderFramerateUpperLimit_.load(), sample->pts_);
     return true;
 }

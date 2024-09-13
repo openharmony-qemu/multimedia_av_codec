@@ -187,7 +187,7 @@ protected:
     int32_t SetProcessName();
     int32_t SetLowLatency(const Format &format);
 
-    virtual int32_t OnSetOutputSurface(const sptr<Surface> &surface, bool cfg) { return AVCS_ERR_UNSUPPORT; }
+    virtual void OnSetOutputSurface(const MsgInfo &msg, BufferOperationMode mode);
     virtual int32_t OnSetParameters(const Format &format) { return AVCS_ERR_OK; }
     virtual sptr<Surface> OnCreateInputSurface() { return nullptr; }
     virtual int32_t OnSetInputSurface(sptr<Surface> &inputSurface) { return AVCS_ERR_UNSUPPORT; }
@@ -395,6 +395,7 @@ private:
         virtual void OnCheckIfStuck(const MsgInfo &info);
         void OnForceShutDown(const MsgInfo &info);
         void OnStateExited() override { codec_->stateGeneration_++; }
+        void OnSetParameters(const MsgInfo &info);
 
     protected:
         HCodec *codec_;
@@ -443,7 +444,6 @@ private:
         void OnCodecEvent(CodecHDI::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void OnFlush(const MsgInfo &info);
-        void OnSetParameters(const MsgInfo &info);
     };
 
     struct OutputPortChangedState : BaseState {

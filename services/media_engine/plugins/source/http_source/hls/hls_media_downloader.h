@@ -28,6 +28,7 @@
 #include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
+#include "utils/write_bitrate_caculator.h"
 #include "utils/media_cached_buffer.h"
 #include <utility>
 
@@ -96,6 +97,7 @@ public:
     bool GetPlayable() override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
+    Status StopBufferring(bool isAppBackground) override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -131,7 +133,7 @@ private:
     void PlaylistBackup(const PlayInfo& fragment);
     void HandleCachedDuration();
     void UpdateWaterLineAbove();
-    void CaculateBitRate(size_t fragmentSize, double duration);
+    void CalculateBitRate(size_t fragmentSize, double duration);
     double CalculateCurrentDownloadSpeed();
     void UpdateCachedPercent(BufferingInfoType infoType);
     bool CheckBufferingOneSeconds();
@@ -260,12 +262,18 @@ private:
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
     std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
-    size_t readOffset_ {0};
-    size_t writeOffset_ {0};
+    uint64_t readOffset_ {0};
+    uint64_t writeOffset_ {0};
     std::map<uint32_t, std::pair<uint32_t, bool>> tsStorageInfo_ {};
     std::atomic<uint32_t> readTsIndex_ {0};
     std::atomic<bool> canWrite_ {true};
     uint64_t ffmpegOffset_ = 0;
+    std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
+
+    SteadyClock cachedDurationClock_;
+    SteadyClock freezeClock_;
+    bool isNearSeek_ {false};
+    bool isFreeze_ {false};
     volatile size_t wantedReadLength_ {0};
     volatile size_t bufferingTime_ {0};
 };

@@ -30,7 +30,7 @@ namespace HttpPlugin {
 namespace {
 constexpr int PER_REQUEST_SIZE = 48 * 1024 * 10;
 constexpr unsigned int SLEEP_TIME = 5;    // Sleep 5ms
-constexpr size_t RETRY_TIMES = 200;  // Retry 200 times
+constexpr size_t RETRY_TIMES = 6000;  // Retry 6000 times
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
 constexpr long LIVE_CONTENT_LENGTH = 2147483646;
 constexpr int32_t DOWNLOAD_LOG_FEQUENCE = 10;
@@ -355,6 +355,7 @@ void Downloader::Stop(bool isAsync)
         requestQue_->SetActive(false);
     }
     if (currentRequest_ != nullptr) {
+        currentRequest_->isInterruptNeeded_ = true;
         currentRequest_->Close();
     }
     if (client_ != nullptr) {
@@ -394,6 +395,9 @@ bool Downloader::Seek(int64_t offset)
     }
     currentRequest_->isEos_ = false;
     shouldStartNextRequest = false; // Reuse last request when seek
+    if (currentRequest_->retryTimes_ > 0) {
+        currentRequest_->retryTimes_ = 0;
+    }
     return true;
 }
 
@@ -414,6 +418,11 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
     FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
         "not Retry, client null or isDestructor or isInterruptNeeded");
+    if (isAppBackground_) {
+        Pause(true);
+        MEDIA_LOG_I("Retry avoid, forground to background.");
+        return true;
+    }
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("Retry Begin");
@@ -957,6 +966,34 @@ void Downloader::WaitLoopPause()
     loopStatus_ = LoopStatus::NORMAL;
 }
 
+void Downloader::SetAppState(bool isAppBackground)
+{
+    isAppBackground_ = isAppBackground;
+}
+
+void Downloader::StopBufferring()
+{
+    MediaAVCodec::AVCodecTrace trace("Downloader::StopBufferring");
+    if (isAppBackground_) {
+        if (!task_->IsTaskRunning() && client_ != nullptr) {
+            MEDIA_LOG_I("StopBufferring: is task not running.");
+            client_->Close(false);
+        }
+        MEDIA_LOG_I("StopBufferring: now pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
+    } else {
+        if (currentRequest_ != nullptr && !shouldStartNextRequest) {
+            int64_t lastStartPos = currentRequest_->startPos_; // downlaod from last pos
+            BeginDownload();
+            currentRequest_->startPos_ = lastStartPos;
+            if (currentRequest_->startPos_ > 0) {
+                currentRequest_->retryOnGoing_ = true;
+                currentRequest_->dropedDataLen_ = 0;
+            }
+            MEDIA_LOG_I("StopBufferring: begin pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
+        }
+        Start();
+    }
+}
 }
 }
 }

@@ -20,6 +20,9 @@
 #include "native_avformat.h"
 #include "native_avsource.h"
 #include "native_avmemory.h"
+#include "meta/meta_key.h"
+#include "meta/meta.h"
+#include "av_common.h"
 
 #include <iostream>
 #include <cstdio>
@@ -27,6 +30,11 @@
 #include <fcntl.h>
 #include <cmath>
 #include <thread>
+
+using namespace std;
+using namespace OHOS;
+using namespace OHOS::Media;
+using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
@@ -49,7 +57,6 @@ static OH_AVFormat *sourceFormat = nullptr;
 static OH_AVFormat *trackFormat = nullptr;
 static OH_AVBuffer *avBuffer = nullptr;
 static OH_AVFormat *format = nullptr;
-
 static int32_t g_trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
@@ -99,12 +106,6 @@ void DemuxerFunc2NdkTest::TearDown()
 }
 } // namespace Media
 } // namespace OHOS
-
-using namespace std;
-using namespace OHOS;
-using namespace OHOS::Media;
-using namespace testing::ext;
-
 static int64_t GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
@@ -542,5 +543,665 @@ HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_6100, TestSize.Level2)
         uint8_t *data = OH_AVMemory_GetAddr(memory);
         cout << "subtitle"<< "----------------" << data << "-----------------" << endl;
     }
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1000
+ * @tc.name     : determine the orientation type of the video ROTATE_NONE.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1000, TestSize.Level0)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/ROTATE_NONE.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_NONE);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1001
+ * @tc.name     : determine the orientation type of the video ROTATE_90.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1001, TestSize.Level1)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/ROTATE_90.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_90);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1002
+ * @tc.name     : determine the orientation type of the video ROTATE_180.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1002, TestSize.Level1)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/ROTATE_180.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_180);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1003
+ * @tc.name     : determine the orientation type of the video ROTATE_270.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1003, TestSize.Level1)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/ROTATE_270.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_270);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1004
+ * @tc.name     : determine the orientation type of the video FLIP_H.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1004, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/FLIP_H.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::FLIP_H);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1005
+ * @tc.name     : determine the orientation type of the video FLIP_V.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1005, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/FLIP_V.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::FLIP_V);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1006
+ * @tc.name     : determine the orientation type of the video FLIP_H_90.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1006, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/FLIP_H_90.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::FLIP_H_ROT90);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1007
+ * @tc.name     : determine the orientation type of the video FLIP_V_90.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1007, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/FLIP_V_90.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::FLIP_V_ROT90);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1008
+ * @tc.name     : determine the orientation type of the video FLIP_H_180.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1008, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/FLIP_H_180.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_TRUE(rotation == OHOS::MediaAVCodec::FLIP_V || rotation == OHOS::MediaAVCodec::FLIP_H_ROT180);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1009
+ * @tc.name     : determine the orientation type of the video FLIP_V_180.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1009, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/FLIP_V_180.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_TRUE(rotation == OHOS::MediaAVCodec::FLIP_H || rotation == OHOS::MediaAVCodec::FLIP_V_ROT180);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1010
+ * @tc.name     : determine the orientation type of the video FLIP_H_270.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1010, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/FLIP_H_270.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_TRUE(rotation == OHOS::MediaAVCodec::FLIP_V_ROT90 || rotation == OHOS::MediaAVCodec::FLIP_H_ROT270);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1011
+ * @tc.name     : determine the orientation type of the video FLIP_V_270.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1011, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/FLIP_V_270.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_TRUE(rotation == OHOS::MediaAVCodec::FLIP_H_ROT90 || rotation == OHOS::MediaAVCodec::FLIP_V_ROT270);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1012
+ * @tc.name     : determine the orientation type of the video INVALID.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1012, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/INVALID.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_NONE);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1013
+ * @tc.name     : determine the orientation type of the video AV_ROTATE_NONE.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1013, TestSize.Level0)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_ROTATE_NONE.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_NONE);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1014
+ * @tc.name     : determine the orientation type of the video AV_ROTATE_90.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1014, TestSize.Level1)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_ROTATE_90.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_90);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1015
+ * @tc.name     : determine the orientation type of the video AV_ROTATE_180.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1015, TestSize.Level1)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_ROTATE_180.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_180);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1016
+ * @tc.name     : determine the orientation type of the video AV_ROTATE_270.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1016, TestSize.Level1)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_ROTATE_270.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_270);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1017
+ * @tc.name     : determine the orientation type of the video AV_FLIP_H.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1017, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_FLIP_H.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::FLIP_H);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1018
+ * @tc.name     : determine the orientation type of the video AV_FLIP_V.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1018, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_FLIP_V.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::FLIP_V);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1019
+ * @tc.name     : determine the orientation type of the video AV_FLIP_H_90.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1019, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_FLIP_H_90.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::FLIP_H_ROT90);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1020
+ * @tc.name     : determine the orientation type of the video AV_FLIP_V_90.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1020, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_FLIP_V_90.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::FLIP_V_ROT90);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1021
+ * @tc.name     : determine the orientation type of the video AV_FLIP_H_180.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1021, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_FLIP_H_180.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_TRUE(rotation == OHOS::MediaAVCodec::FLIP_V || rotation == OHOS::MediaAVCodec::FLIP_H_ROT180);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1022
+ * @tc.name     : determine the orientation type of the video AV_FLIP_V_180.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1022, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_FLIP_V_180.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_TRUE(rotation == OHOS::MediaAVCodec::FLIP_H || rotation == OHOS::MediaAVCodec::FLIP_V_ROT180);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1023
+ * @tc.name     : determine the orientation type of the video AV_FLIP_H_270.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1023, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_FLIP_H_270.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_TRUE(rotation == OHOS::MediaAVCodec::FLIP_V_ROT90 || rotation == OHOS::MediaAVCodec::FLIP_H_ROT270);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1024
+ * @tc.name     : determine the orientation type of the video AV_FLIP_V_270.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1024, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_FLIP_V_270.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_TRUE(rotation == OHOS::MediaAVCodec::FLIP_H_ROT90 || rotation == OHOS::MediaAVCodec::FLIP_V_ROT270);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1025
+ * @tc.name     : determine the orientation type of the video AV_INVALID.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1025, TestSize.Level2)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = -1;
+    const char *file = "/data/test/media/rotation/AV_INVALID.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_NONE);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1026
+ * @tc.name     : determine the orientation type of the video UNDEFINED_FLV.flv
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1026, TestSize.Level3)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = 0;
+    const char *file = "/data/test/media/rotation/UNDEFINED_FLV.flv";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_NONE);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1027
+ * @tc.name     : determine the orientation type of the video UNDEFINED_fmp4.mp4
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1027, TestSize.Level3)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = 0;
+    const char *file = "/data/test/media/rotation/UNDEFINED_FMP4.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_NONE);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1028
+ * @tc.name     : determine the orientation type of the video UNDEFINED_MKV.mkv
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1028, TestSize.Level3)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = 0;
+    const char *file = "/data/test/media/rotation/UNDEFINED_MKV.mkv";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_NONE);
+    OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number   : DEMUXER_ORIENTATIONTYPE_1029
+ * @tc.name     : determine the orientation type of the video UNDEFINED_TS.ts
+ * @tc.desc     : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1029, TestSize.Level3)
+{
+    static OH_AVFormat *trackFormat = nullptr;
+    int32_t rotation = 0;
+    const char *file = "/data/test/media/rotation/UNDEFINED_TS.ts";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
+    ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_NONE);
+    OH_AVFormat_Destroy(trackFormat);
     close(fd);
 }

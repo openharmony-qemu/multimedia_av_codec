@@ -170,6 +170,9 @@ public:
     void SetAppUid(int32_t appUid);
     const std::shared_ptr<DownloadRequest>& GetCurrentRequest();
     void SetInterruptState(bool isInterruptNeeded);
+    void SetAppState(bool isAppBackground);
+    void StopBufferring();
+
 private:
     bool BeginDownload();
 
@@ -213,6 +216,7 @@ private:
     std::atomic<LoopStatus> loopStatus_ {LoopStatus::NORMAL};
     FairMutex loopPauseMutex_ {};
     ConditionVariable loopPauseCond_;
+    std::atomic<bool> isAppBackground_ {false};
 };
 }
 }

@@ -15,12 +15,18 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <utility>
+#include <vector>
+#include <string>
+#include <sstream>
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
 #include "videodec_api11_sample.h"
+#include "nlohmann/json.hpp"
+
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
+using namespace nlohmann;
 namespace {
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t MICRO_IN_SECOND = 1000000L;
@@ -43,8 +49,9 @@ constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
+
 SHA512_CTX g_c;
-unsigned char g_md[SHA512_DIGEST_LENGTH];
+uint8_t g_md[SHA512_DIGEST_LENGTH];
 VDecAPI11Sample *dec_sample = nullptr;
 
 void clearIntqueue(std::queue<uint32_t> &q)
@@ -104,20 +111,28 @@ void VdecAPI11FormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userDa
 {
     int32_t currentWidth = 0;
     int32_t currentHeight = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
+    int32_t picWidth = 0;
+    int32_t picHeight = 0;
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &currentWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &currentHeight);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &stride);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &sliceHeight);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_WIDTH, &picWidth);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_HEIGHT, &picHeight);
     dec_sample->DEFAULT_WIDTH = currentWidth;
     dec_sample->DEFAULT_HEIGHT = currentHeight;
+    dec_sample->stride_ = stride;
+    dec_sample->sliceHeight_ = sliceHeight;
+    dec_sample->picWidth_ = picWidth;
+    dec_sample->picHeight_ = picHeight;
     if (dec_sample->isResChangeStream) {
         static int32_t resCount = 0;
         int32_t cropBottom = 0;
         int32_t cropRight = 0;
-        int32_t stride = 0;
-        int32_t sliceHeight = 0;
         OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_CROP_BOTTOM, &cropBottom);
         OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_CROP_RIGHT, &cropRight);
-        OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &stride);
-        OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &sliceHeight);
         if (cropBottom != CROP_INFO[resCount][CROP_BOTTOM] || cropRight != CROP_INFO[resCount][CROP_RIGHT]) {
             dec_sample->errCount++;
         }
@@ -199,12 +214,60 @@ void VDecAPI11Sample::Flush_buffer()
     outLock.unlock();
 }
 
-bool VDecAPI11Sample::MdCompare(unsigned char buffer[], int len, const char *source[])
+std::vector<uint8_t> VDecAPI11Sample::LoadHashFile()
 {
-    bool result = true;
-    for (int i = 0; i < len; i++) {
+    std::ifstream f("/data/test/media/hash_val.json", ios::in);
+    std::vector<uint8_t> ret;
+    if (f) {
+        json data = json::parse(f);
+        filesystem::path filePath = INP_DIR;
+        std::string pixFmt = defualtPixelFormat == AV_PIXEL_FORMAT_NV12 ? "nv12" : "nv21";
+        std::string fileName = filePath.filename();
+        std::string hashValue = data[fileName.c_str()][pixFmt];
+        std::stringstream ss(hashValue);
+        std::string item;
+        while (getline(ss, item, ',')) {
+            if (!item.empty()) {
+                ret.push_back(stol(item, nullptr, SIXTEEN));
+            }
+        }
     }
-    return result;
+    return ret;
+}
+
+static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVal[])
+{
+    printf("-----------output hash value-----------\n");
+    for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
+        printf("%02x,", outputHashVal[i - 1]);
+        if (i % SIXTEEN == 0) {
+            printf("\n");
+        }
+    }
+    printf("-----------standard hash value-----------\n");
+    for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
+        printf("%02x,", srcHashVal[i - 1]);
+        if (i % SIXTEEN == 0) {
+            printf("\n");
+        }
+    }
+}
+
+bool VDecAPI11Sample::MdCompare(uint8_t source[])
+{
+    std::vector<uint8_t> srcHashVal = LoadHashFile();
+    DumpHashValue(srcHashVal, source);
+    if (srcHashVal.size() != SHA512_DIGEST_LENGTH) {
+        cout << "get hash value failed, size " << srcHashVal.size() << endl;
+        return false;
+    }
+    for (int32_t i = 0; i < SHA512_DIGEST_LENGTH; i++) {
+        if (source[i] != srcHashVal[i]) {
+            cout << "decoded hash value mismatch" << endl;
+            return false;
+        }
+    }
+    return true;
 }
 
 int64_t VDecAPI11Sample::GetSystemTimeUs()
@@ -235,7 +298,7 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     originalHeight = DEFAULT_HEIGHT;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, defualtPixelFormat);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     if (useHDRSource) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
@@ -500,6 +563,24 @@ void VDecAPI11Sample::WaitForEOS()
     }
 }
 
+void VDecAPI11Sample::InFuncTest()
+{
+    if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
+        REPEAT_START_FLUSH_BEFORE_EOS--;
+        OH_VideoDecoder_Flush(vdec_);
+        Flush_buffer();
+        OH_VideoDecoder_Start(vdec_);
+    }
+    if (REPEAT_START_STOP_BEFORE_EOS > 0) {
+        REPEAT_START_STOP_BEFORE_EOS--;
+        OH_VideoDecoder_Stop(vdec_);
+        Flush_buffer();
+        inFile_->clear();
+        inFile_->seekg(0, ios::beg);
+        OH_VideoDecoder_Start(vdec_);
+    }
+}
+
 void VDecAPI11Sample::InputFuncTest()
 {
     bool flag = true;
@@ -508,18 +589,7 @@ void VDecAPI11Sample::InputFuncTest()
             flag = false;
             break;
         }
-        if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
-            REPEAT_START_FLUSH_BEFORE_EOS--;
-            OH_VideoDecoder_Flush(vdec_);
-            Flush_buffer();
-            OH_VideoDecoder_Start(vdec_);
-        }
-        if (REPEAT_START_STOP_BEFORE_EOS > 0) {
-            REPEAT_START_STOP_BEFORE_EOS--;
-            OH_VideoDecoder_Stop(vdec_);
-            Flush_buffer();
-            OH_VideoDecoder_Start(vdec_);
-        }
+        InFuncTest();
         uint32_t index;
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() {
@@ -708,8 +778,13 @@ void VDecAPI11Sample::AutoSwitchSurface()
         OH_AVFormat_Destroy(format);
     }
 }
+
 int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
 {
+    if (IS_FIRST_FRAME) {
+        GetStride();
+        IS_FIRST_FRAME = false;
+    }
     if (needCheckOutputDesc) {
         CheckOutputDescription();
         needCheckOutputDesc = false;
@@ -719,7 +794,11 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
         AutoSwitchSurface();
         SHA512_Final(g_md, &g_c);
         OPENSSL_cleanse(&g_c, sizeof(g_c));
-        MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+        if (!SF_OUTPUT) {
+            if (!MdCompare(g_md)) {
+                errCount++;
+            }
+        }
         return -1;
     }
     if (attr.flags == AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
@@ -729,6 +808,31 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
     outFrameCount = outFrameCount + 1;
     return 0;
 }
+
+void VDecAPI11Sample::GetStride()
+{
+    OH_AVFormat *format = OH_VideoDecoder_GetOutputDescription(vdec_);
+    int32_t currentWidth = 0;
+    int32_t currentHeight = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
+    int32_t picWidth = 0;
+    int32_t picHeight = 0;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &currentWidth);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &currentHeight);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &stride);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &sliceHeight);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_WIDTH, &picWidth);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_HEIGHT, &picHeight);
+    dec_sample->DEFAULT_WIDTH = currentWidth;
+    dec_sample->DEFAULT_HEIGHT = currentHeight;
+    dec_sample->stride_ = stride;
+    dec_sample->sliceHeight_ = sliceHeight;
+    dec_sample->picWidth_ = picWidth;
+    dec_sample->picHeight_ = picHeight;
+    OH_AVFormat_Destroy(format);
+}
+
 void VDecAPI11Sample::OutputFuncTest()
 {
     FILE *outFile = nullptr;
@@ -765,7 +869,7 @@ void VDecAPI11Sample::OutputFuncTest()
             flag = false;
             break;
         }
-        ProcessOutputData(buffer, index, attr.size);
+        ProcessOutputData(buffer, index);
         if (outFile != nullptr) {
             fwrite(OH_AVBuffer_GetAddr(buffer), 1, attr.size, outFile);
         }
@@ -780,24 +884,28 @@ void VDecAPI11Sample::OutputFuncTest()
     }
 }
 
-void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index, int32_t size)
+void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
 {
     if (!SF_OUTPUT) {
-        if (size >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
-            uint8_t *cropBuffer = new uint8_t[size];
-            if (memcpy_s(cropBuffer, size, OH_AVBuffer_GetAddr(buffer),
-                         DEFAULT_WIDTH * DEFAULT_HEIGHT) != EOK) {
-                cout << "Fatal: memory copy failed Y" << endl;
-            }
-            // copy UV
-            uint32_t uvSize = size - DEFAULT_WIDTH * DEFAULT_HEIGHT;
-            if (memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize,
-                         OH_AVBuffer_GetAddr(buffer) + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize) != EOK) {
-                cout << "Fatal: memory copy failed UV" << endl;
-            }
-            SHA512_Update(&g_c, cropBuffer, size);
-            delete[] cropBuffer;
+        uint8_t *bufferAddr = OH_AVBuffer_GetAddr(buffer);
+        uint32_t cropSize = (picWidth_ * picHeight_ * THREE) >> 1;
+        uint8_t *cropBuffer = new uint8_t[cropSize];
+        uint8_t *copyPos = cropBuffer;
+        //copy y
+        for (int32_t i = 0; i < picHeight_; i++) {
+            memcpy_s(copyPos, picWidth_, bufferAddr, picWidth_);
+            bufferAddr += stride_;
+            copyPos += picWidth_;
         }
+        bufferAddr += (sliceHeight_ - picHeight_) * stride_;
+        //copy uv
+        for (int32_t i = 0; i < picHeight_ >> 1; i++) {
+            memcpy_s(copyPos, picWidth_, bufferAddr, picWidth_);
+            bufferAddr += stride_;
+            copyPos += picWidth_;
+        }
+        SHA512_Update(&g_c, cropBuffer, cropSize);
+        delete[] cropBuffer;
         if (OH_VideoDecoder_FreeOutputBuffer(vdec_, index) != AV_ERR_OK) {
             cout << "Fatal: ReleaseOutputBuffer fail" << endl;
             errCount = errCount + 1;
@@ -951,10 +1059,9 @@ int32_t VDecAPI11Sample::SwitchSurface()
 
 int32_t VDecAPI11Sample::RepeatCallSetSurface()
 {
-    int32_t ret;
     for (int i = 0; i < REPEAT_CALL_TIME; i++) {
         switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
-        ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
+        int32_t ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
         if (ret != AV_ERR_OK && ret != AV_ERR_OPERATE_NOT_PERMIT && ret != AV_ERR_INVALID_STATE) {
             return AV_ERR_OPERATE_NOT_PERMIT;
         }

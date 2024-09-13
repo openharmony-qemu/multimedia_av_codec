@@ -94,6 +94,7 @@ public:
     Status SeekToTime(int64_t seekTime, SeekMode mode);
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
+    Status StopBufferring(bool flag);
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID);
     void SetCallback(Callback* callback);
     bool IsNeedPreDownload();

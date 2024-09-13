@@ -38,7 +38,7 @@ constexpr uint32_t DECRYPT_COPY_LEN = 128;
 constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
-constexpr uint64_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
+constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 constexpr uint32_t SAMPLE_INTERVAL = 1000; // Sampling time interval: ms
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
@@ -46,11 +46,8 @@ constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
-constexpr int32_t BYTES_TO_BIT = 8;
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
-constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
-constexpr int64_t SECOND_TO_MILLIONSECOND = 1000;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 constexpr int SEEK_STATUS_RETRY_TIMES = 100;
 constexpr int SEEK_STATUS_SLEEP_TIME = 50;
@@ -59,13 +56,14 @@ constexpr int32_t ONE_SECONDS = 1000;
 constexpr int32_t TEN_MILLISECONDS = 10;
 constexpr size_t MIN_WATER_LINE_ABOVE = 10 * 1024;
 constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.9;
-constexpr float CACHE_LEVEL_1 = 1;
-constexpr float CACHE_LEVEL_2 = 5;
-constexpr float CACHE_LEVEL_3 = 10;
+constexpr float CACHE_LEVEL_1                   = 0.3;
+constexpr float DEFAULT_CACHE_TIME              = 5;
 constexpr int TRANSFER_SIZE_RATE_2 = 2;
 constexpr int TRANSFER_SIZE_RATE_3 = 3;
 constexpr int TRANSFER_SIZE_RATE_4 = 4;
 constexpr int SLEEP_TIME_100 = 100;
+constexpr uint32_t CACHED_DURATION_NOTIFY_TIME = 500; // ms
+constexpr int32_t SAVE_DATA_LOG_FEQUENCE = 10;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 }
 
@@ -74,10 +72,10 @@ constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 HlsMediaDownloader::HlsMediaDownloader() noexcept
 {
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
-    cacheMediaBuffer_->Init(MIN_BUFFER_SIZE, CHUNK_SIZE);
+    cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
     isBuffering_ = true;
-    totalBufferSize_ = MIN_BUFFER_SIZE;
-    MEDIA_LOG_I("setting buffer size: " PUBLIC_LOG_ZU, MIN_BUFFER_SIZE);
+    totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
+    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
     HlsInit();
 }
 
@@ -86,8 +84,8 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
     expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
     userDefinedBufferDuration_ = true;
     totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
-    MEDIA_LOG_I("user define buffer duration.");
-    MEDIA_LOG_I("setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
+    MEDIA_LOG_I("HLS user define buffer duration.");
+    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
     HlsInit();
 }
 
@@ -95,9 +93,9 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType)
 {
     mimeType_ = mimeType;
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
-    cacheMediaBuffer_->Init(MIN_BUFFER_SIZE, CHUNK_SIZE);
-    totalBufferSize_ = MIN_BUFFER_SIZE;
-    MEDIA_LOG_I("setting buffer size: " PUBLIC_LOG_ZU, MIN_BUFFER_SIZE);
+    cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
+    totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
+    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
     HlsInit();
 }
 
@@ -110,8 +108,10 @@ void HlsMediaDownloader::HlsInit()
     };
     playlistDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playlistDownloader_->SetPlayListCallback(this);
+    writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     waterLineAbove_ = PLAY_WATER_LINE;
     steadyClock_.Reset();
+    cachedDurationClock_.Reset();
     aesKey_.rounds = 0;
     for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
         aesKey_.rd_key[i] = 0;
@@ -161,12 +161,16 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
     curUrl_ = playInfo.url_;
     if (writeTsIndex_ == 0) {
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
-        MEDIA_LOG_I("readOffset, PutRequestIntoDownloader init readOffset." PUBLIC_LOG_ZU, readOffset_);
+        MEDIA_LOG_I("HLS PutRequestIntoDownloader init readOffset." PUBLIC_LOG_U64, readOffset_);
         readTsIndex_ = writeTsIndex_;
+<<<<<<< HEAD
         MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32, readTsIndex_.load());
+=======
+        MEDIA_LOG_I("HLS PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32, readTsIndex_);
+>>>>>>> 9d9c6b0c6f1ec4568b6765c5a100df37ba1229b2
     }
     writeOffset_ = SpliceOffset(writeTsIndex_, 0);
-    MEDIA_LOG_I("writeOffset_, PutRequestIntoDwonloader update writeOffset_." PUBLIC_LOG_ZU, writeOffset_);
+    MEDIA_LOG_I("HLS PutRequestIntoDwonloader update writeOffset_." PUBLIC_LOG_U64, writeOffset_);
 
     if (tsStorageInfo_.count(writeTsIndex_) <= 0) {
         tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
@@ -186,22 +190,23 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
 {
     isDownloadFinish_ = false;
     SaveHttpHeader(httpHeader);
+    writeBitrateCaculator_->StartClock();
     playlistDownloader_->SetMimeType(mimeType_);
     playlistDownloader_->Open(url, httpHeader);
     steadyClock_.Reset();
     openTime_ = steadyClock_.ElapsedMilliseconds();
     if (userDefinedBufferDuration_) {
-        MEDIA_LOG_I("User seeting buffer duration playListDownloader_ opened.");
+        MEDIA_LOG_I("HLS User seeting buffer duration playListDownloader_ opened.");
         totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
         if (totalBufferSize_ < MIN_BUFFER_SIZE) {
-            MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_ZU ". already lower than the min buffer size: "
+            MEDIA_LOG_I("HLS Failed setting buffer size: " PUBLIC_LOG_ZU ". already lower than the min buffer size: "
             PUBLIC_LOG_ZU ", setting buffer size: " PUBLIC_LOG_ZU ". ",
             totalBufferSize_, MIN_BUFFER_SIZE, MIN_BUFFER_SIZE);
             cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
             cacheMediaBuffer_->Init(MIN_BUFFER_SIZE, CHUNK_SIZE);
             totalBufferSize_ = MIN_BUFFER_SIZE;
         } else if (totalBufferSize_ > MAX_CACHE_BUFFER_SIZE) {
-            MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_ZU ". already exceed the max buffer size: "
+            MEDIA_LOG_I("HLS Failed setting buffer size: " PUBLIC_LOG_ZU ". already exceed the max buffer size: "
             PUBLIC_LOG_U64 ", setting buffer size: " PUBLIC_LOG_U64 ". ",
             totalBufferSize_, MAX_CACHE_BUFFER_SIZE, MAX_CACHE_BUFFER_SIZE);
             cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
@@ -210,7 +215,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
         } else {
             cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
             cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
-            MEDIA_LOG_I("Success setted buffer size: " PUBLIC_LOG_ZU ". ", totalBufferSize_);
+            MEDIA_LOG_I("HLS Success setted buffer size: " PUBLIC_LOG_ZU ". ", totalBufferSize_);
         }
     }
     return true;
@@ -275,7 +280,7 @@ bool HlsMediaDownloader::CheckBreakCondition()
         return true;
     }
     if (tsStorageInfo_[readTsIndex_].second == true) {
-        MEDIA_LOG_I("readTS download complete.");
+        MEDIA_LOG_I("HLS readTS download complete.");
         return true;
     }
     return false;
@@ -289,11 +294,11 @@ bool HlsMediaDownloader::HandleBuffering()
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
     UpdateWaterLineAbove();
     if (!canWrite_) {
-        MEDIA_LOG_I("canWrite false");
+        MEDIA_LOG_I("HLS canWrite false");
         isBuffering_ = false;
     }
     if (GetCacheBufferSize() >= waterLineAbove_ || CheckBreakCondition()) {
-        MEDIA_LOG_I("CheckBreakCondition true, waterLineAbove_: " PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_ZU,
+        MEDIA_LOG_I("HLS CheckBreakCondition true, waterLineAbove_: " PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_ZU,
             waterLineAbove_, GetCacheBufferSize());
         isBuffering_ = false;
     }
@@ -308,14 +313,19 @@ bool HlsMediaDownloader::HandleBuffering()
 
 bool HlsMediaDownloader::HandleCache()
 {
-    if (!isBuffering_ && callback_ != nullptr && canWrite_) {
-        isBuffering_ = true;
-        UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
-        callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
-        bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
-        return true;
+    if (isBuffering_ || callback_ == nullptr || !canWrite_) {
+        return false;
     }
-    return false;
+    isBuffering_ = true;
+    if (!isNearSeek_) {
+        isFreeze_ = true;
+        freezeClock_.Reset();
+    } else {
+        isFreeze_ = false;
+    }
+    UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
+    callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+    return true;
 }
 
 void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
@@ -323,26 +333,26 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
     if (ffmpegOffset_ <= ffmpegOffset) {
         return;
     }
-    MEDIA_LOG_I("Read back, ffmpegOffset: " PUBLIC_LOG_U64 " ffmpegOffset: " PUBLIC_LOG_U64,
+    MEDIA_LOG_I("HLS Read back, ffmpegOffset: " PUBLIC_LOG_U64 " ffmpegOffset: " PUBLIC_LOG_U64,
         ffmpegOffset_, ffmpegOffset);
     uint64_t readBack = ffmpegOffset_ - ffmpegOffset;
     uint64_t curTsHaveRead = readOffset_ > SpliceOffset(readTsIndex_, 0) ?
         readOffset_ - SpliceOffset(readTsIndex_, 0) : 0;
     if (curTsHaveRead >= readBack) {
         readOffset_ -= readBack;
-        MEDIA_LOG_I("Read back, current ts, update readOffset: " PUBLIC_LOG_ZU, readOffset_);
+        MEDIA_LOG_I("HLS Read back, current ts, update readOffset: " PUBLIC_LOG_U64, readOffset_);
     } else {
         if (tsStorageInfo_.count(readTsIndex_ - 1) <= 0) {
-            readOffset_ -= curTsHaveRead;
-            MEDIA_LOG_E("Read back, last ts is not ready, update readOffset to readTsIndex head: "
-                PUBLIC_LOG_ZU, readOffset_);
+            readOffset_ = readOffset_ > curTsHaveRead ? readOffset_ - curTsHaveRead : 0;
+            MEDIA_LOG_E("HLS Read back, last ts is not ready, update readOffset to readTsIndex head: "
+                PUBLIC_LOG_U64, readOffset_);
             return;
         }
         readTsIndex_--;
         uint64_t lastTsReadBack = readBack - curTsHaveRead;
         readOffset_ = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first - lastTsReadBack);
-        MEDIA_LOG_I("Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
-            PUBLIC_LOG_ZU, readTsIndex_, readOffset_);
+        MEDIA_LOG_I("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
+            PUBLIC_LOG_U64, readTsIndex_, readOffset_);
     }
 }
 
@@ -355,22 +365,49 @@ bool HlsMediaDownloader::CheckDataIntegrity()
         uint64_t hasRead = readOffset_ > head ? readOffset_ - head : 0;
         size_t bufferSize = tsStorageInfo_[readTsIndex_].first > hasRead ?
             tsStorageInfo_[readTsIndex_].first - hasRead : 0;
-        MEDIA_LOG_I("CheckDataIntegrity, bufferSize " PUBLIC_LOG_ZU " GetCacheBufferSize "
+        MEDIA_LOG_I("HLS CheckDataIntegrity, bufferSize " PUBLIC_LOG_ZU " GetCacheBufferSize "
             PUBLIC_LOG_ZU, bufferSize, GetCacheBufferSize());
         return bufferSize == GetCacheBufferSize();
     }
+}
+
+Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo)
+{
+    bool isFinishedPlay = CheckReadStatus() || isStopped;
+    if (downloadRequest_ != nullptr) {
+        readDataInfo.isEos_ = downloadRequest_->IsEos();
+    }
+    if (isFinishedPlay && GetCacheBufferSize() > 0) {
+        size_t readLen = std::min(GetCacheBufferSize(), static_cast<size_t>(readDataInfo.wantReadLength_));
+        readDataInfo.realReadLength_ = cacheMediaBuffer_->Read(buff, readOffset_, readLen);
+        readOffset_ += readDataInfo.realReadLength_;
+        ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
+        canWrite_ = true;
+        OnReadCacheBuffer(readDataInfo.realReadLength_);
+        MEDIA_LOG_D("HLS Read Success: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
+            PUBLIC_LOG_D32 " readOffset_ " PUBLIC_LOG_U64 " readTsIndex_ " PUBLIC_LOG_U32, readDataInfo.wantReadLength_,
+            readDataInfo.realReadLength_, readDataInfo.isEos_, readOffset_, readTsIndex_);
+        return Status::OK;
+    }
+    if (isFinishedPlay && GetCacheBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
+        tsStorageInfo_[writeOffset_].second == true) {
+        readDataInfo.realReadLength_ = 0;
+        MEDIA_LOG_I("HLS CheckPlaylist, eos.");
+        return Status::END_OF_STREAM;
+    }
+    return Status::ERROR_UNKNOWN;
 }
 
 Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V_MSG(cacheMediaBuffer_ != nullptr, Status::END_OF_STREAM, "eos, cacheMediaBuffer_ is nullptr");
     FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "eos, isInterruptNeeded");
-    MediaAVCodec::AVCodecTrace trace("HlsMediaDownloader::ReadDelegate, expectedLen: " +
+    MediaAVCodec::AVCodecTrace trace("HLS ReadDelegate, expectedLen: " +
         std::to_string(readDataInfo.wantReadLength_) + ", bufferSize: " + std::to_string(GetCacheBufferSize()));
     readDataInfo.isEos_ = CheckReadStatus();
     if (readDataInfo.isEos_ && GetCacheBufferSize() == 0 && readTsIndex_ == backPlayList_.size() - 1) {
         readDataInfo.realReadLength_ = 0;
-        MEDIA_LOG_I("eos, HlsMediaDownloader: buffer is empty, eos.");
+        MEDIA_LOG_I("HLS HlsMediaDownloader: buffer is empty, eos.");
         return Status::END_OF_STREAM;
     }
 
@@ -386,6 +423,12 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
             return Status::ERROR_AGAIN;
         }
     }
+
+    Status tmpRes = CheckPlaylist(buff, readDataInfo);
+    if (tmpRes != Status::ERROR_UNKNOWN) {
+        return tmpRes;
+    }
+
     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "eos, wantReadLength_ <= 0");
     readDataInfo.realReadLength_ = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
     readOffset_ += readDataInfo.realReadLength_;
@@ -408,7 +451,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
 
     if (!CheckDataIntegrity()) {
-        MEDIA_LOG_W("Read in, fix download.");
+        MEDIA_LOG_W("HLS Read in, fix download.");
         SeekToTsForRead(readTsIndex_);
         return Status::ERROR_AGAIN;
     }
@@ -432,6 +475,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         lastReadCheckTime_ = now;
         readRecordDuringTime_ = 0;
     }
+    isNearSeek_ = false;
     return ret;
 }
 
@@ -467,9 +511,15 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     FALSE_RETURN_V(cacheMediaBuffer_ != nullptr, false);
     AutoLock lock(switchMutex_);
     isSeekingFlag = true;
+    isNearSeek_ = true;
     seekTime_ = static_cast<uint64_t>(seekTime);
     PrepareToSeek();
-    SeekToTs(seekTime, mode);
+    if (seekTime_ < playlistDownloader_->GetDuration()) {
+        SeekToTs(seekTime, mode);
+    } else {
+        readTsIndex_ = backPlayList_.size() > 0 ? backPlayList_.size() - 1 : 0; // 0
+        tsStorageInfo_[readTsIndex_].second = true;
+    }
     MEDIA_LOG_I("HLS SeekToTime end\n");
     isSeekingFlag = false;
     return true;
@@ -516,7 +566,9 @@ void HlsMediaDownloader::PlaylistBackup(const PlayInfo& fragment)
         }
         return;
     }
-    backPlayList_.push_back(fragment);
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsParseFinished()) {
+        backPlayList_.push_back(fragment);
+    }
 }
 
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
@@ -563,20 +615,35 @@ bool HlsMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         writeOffset_ += res;
         hasWriteSize += res;
         tsStorageInfo_[writeTsIndex_].first += res;
+        writeBitrateCaculator_->UpdateWriteBytes(res);
+        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "writeOffset " PUBLIC_LOG_U64 " res "
+            PUBLIC_LOG_ZU, writeOffset_, res);
         if (res > 0 || hasWriteSize == len) {
+            HandleCachedDuration();
+            writeBitrateCaculator_->StartClock();
+            uint64_t writeTime = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLIONSECOND;
+            if (writeTime > ONE_SECONDS) {
+                writeBitrateCaculator_->ResetClock();
+            }
             continue;
         }
-        MEDIA_LOG_W("CacheMediaBuffer full.");
+        writeBitrateCaculator_->StopClock();
+        MEDIA_LOG_W("HLS CacheMediaBuffer full.");
         canWrite_ = false;
+        HandleBuffering();
         while (!isInterrupt_ && !canWrite_.load() && !isInterruptNeeded_.load()) {
-            MEDIA_LOG_I("CacheMediaBuffer full, waiting seek or read");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "HLS CacheMediaBuffer full, waiting seek or read");
             if (isSeekingFlag.load()) {
-                MEDIA_LOG_I("CacheMediaBuffer full, isSeeking, return false.");
+                MEDIA_LOG_I("HLS CacheMediaBuffer full, isSeeking, return false.");
                 break;
             }
             OSAL::SleepFor(SLEEP_TIME_100);
         }
         canWrite_ = true;
+    }
+    if (isInterruptNeeded_.load() || isInterrupt_) {
+        MEDIA_LOG_I("HLS isInterruptNeeded true, return false.");
+        return false;
     }
     return hasWriteSize > 0;
 }
@@ -593,6 +660,7 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     } else {
         SaveEncryptData(data, len);
     }
+
     HandleCachedDuration();
     HandleBuffering();
     return isSeekingFlag.load() == false;
@@ -951,7 +1019,7 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const st
     if (!playList_->Empty()) {
         size_t fragmentSize = downloadRequest_->GetFileContentLength();
         double duration = downloadRequest_->GetDuration();
-        CaculateBitRate(fragmentSize, duration);
+        CalculateBitRate(fragmentSize, duration);
         auto playInfo = playList_->Pop();
         PutRequestIntoDownloader(playInfo);
     } else {
@@ -1095,9 +1163,9 @@ bool HlsMediaDownloader::CheckPulldownBufferSize()
 
 void HlsMediaDownloader::RiseBufferSize()
 {
-    if (totalBufferSize_ >= MAX_BUFFER_SIZE) {
+    if (totalBufferSize_ >= MAX_CACHE_BUFFER_SIZE) {
         MEDIA_LOG_I("HLS increasing buffer size failed, already reach the max buffer size: "
-        PUBLIC_LOG_D64 ", current buffer size: " PUBLIC_LOG_ZU, MAX_BUFFER_SIZE, totalBufferSize_);
+        PUBLIC_LOG_D64 ", current buffer size: " PUBLIC_LOG_ZU, MAX_CACHE_BUFFER_SIZE, totalBufferSize_);
         return;
     }
     size_t tmpBufferSize = totalBufferSize_ + 1 * 1024 * 1024;
@@ -1286,18 +1354,23 @@ Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     if (bitRate <= 0) {
         currentBitRate_ = -1; // -1
     } else {
-        currentBitRate_ = std::max(currentBitRate_, bitRate);
+        int32_t playlistBitrate = static_cast<int32_t>(playlistDownloader_->GetCurBitrate());
+        currentBitRate_ = std::max(playlistBitrate, bitRate);
+        MEDIA_LOG_I("HLS playlistBitrate: " PUBLIC_LOG_D32 " currentBitRate: " PUBLIC_LOG_D32,
+            playlistBitrate, currentBitRate_);
     }
     return Status::OK;
 }
 
-void HlsMediaDownloader::CaculateBitRate(size_t fragmentSize, double duration)
+void HlsMediaDownloader::CalculateBitRate(size_t fragmentSize, double duration)
 {
     if (fragmentSize == 0 || duration == 0) {
         return;
     }
-    currentBitRate_ = static_cast<int32_t>(static_cast<int32_t>(fragmentSize * BYTES_TO_BIT) / duration);
-    MEDIA_LOG_I("HLS CaculateBitRate: " PUBLIC_LOG_D32, currentBitRate_);
+    int32_t calculateBitRate = static_cast<int32_t>(static_cast<int32_t>(fragmentSize * BYTES_TO_BIT) / duration);
+
+    currentBitRate_ = (calculateBitRate >> 1) + (currentBitRate_ >> 1) + ((calculateBitRate | currentBitRate_) & 1);
+    MEDIA_LOG_I("HLS Calculate avgBitRate: " PUBLIC_LOG_D32, currentBitRate_);
 }
 
 void HlsMediaDownloader::UpdateWaterLineAbove()
@@ -1305,11 +1378,16 @@ void HlsMediaDownloader::UpdateWaterLineAbove()
     if (!isFirstFrameArrived_) {
         return;
     }
+    if (currentBitRate_ == 0) {
+        currentBitRate_ = static_cast<int32_t>(playlistDownloader_->GetCurBitrate());
+        MEDIA_LOG_I("HLS use playlist bitrate: " PUBLIC_LOG_D32, currentBitRate_);
+    }
     size_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
     if (currentBitRate_ > 0) {
         float cacheTime = 0;
-        if (avgDownloadSpeed_ > 0) {
-            float ratio = static_cast<float>(avgDownloadSpeed_) /
+        uint64_t writeBitrate = writeBitrateCaculator_->GetWriteBitrate();
+        if (writeBitrate > 0) {
+            float ratio = static_cast<float>(writeBitrate) /
                           static_cast<float>(currentBitRate_);
             cacheTime = GetCacheDuration(ratio);
         } else {
@@ -1318,11 +1396,12 @@ void HlsMediaDownloader::UpdateWaterLineAbove()
         waterLineAbove = static_cast<size_t>(cacheTime * currentBitRate_ / BYTES_TO_BIT);
         waterLineAbove = std::max(MIN_WATER_LINE_ABOVE, waterLineAbove);
     } else {
-        MEDIA_LOG_D("UpdateWaterLineAbove default: " PUBLIC_LOG_ZU, waterLineAbove);
+        MEDIA_LOG_D("HLS UpdateWaterLineAbove default: " PUBLIC_LOG_ZU, waterLineAbove);
     }
     waterLineAbove_ = std::min(waterLineAbove, static_cast<size_t>(MIN_BUFFER_SIZE *
         WATER_LINE_ABOVE_LIMIT_RATIO));
-    MEDIA_LOG_D("UpdateWaterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
+    MEDIA_LOG_D("HLS UpdateWaterLineAbove: " PUBLIC_LOG_ZU " writeBitrate: " PUBLIC_LOG_U64,
+        waterLineAbove_, writeBitrateCaculator_->GetWriteBitrate());
 }
 
 void HlsMediaDownloader::HandleCachedDuration()
@@ -1330,13 +1409,18 @@ void HlsMediaDownloader::HandleCachedDuration()
     if (currentBitRate_ <= 0 || callback_ == nullptr) {
         return;
     }
-
+    uint64_t onEventDuration = cachedDurationClock_.ElapsedMilliseconds();
+    if (onEventDuration < CACHED_DURATION_NOTIFY_TIME) {
+        return;
+    }
+    cachedDurationClock_.Reset();
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetCacheBufferSize()) *
         BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<int64_t>(currentBitRate_));
+    // Subtraction of unsigned integers requires size comparison first.
     if ((cachedDuration > lastDurationReacord_ &&
         cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationReacord_ > cachedDuration &&
-        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) { // 无符号整数需要先判断大小再相减
+        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
         MEDIA_LOG_I("HLS OnEvet cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
         callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         lastDurationReacord_ = cachedDuration;
@@ -1346,7 +1430,7 @@ void HlsMediaDownloader::HandleCachedDuration()
 void HlsMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
 {
     if (waterLineAbove_ == 0 || callback_ == nullptr) {
-        MEDIA_LOG_E("UpdateCachedPercent: ERROR");
+        MEDIA_LOG_E("HLS UpdateCachedPercent: ERROR");
         return;
     }
     if (infoType == BufferingInfoType::BUFFERING_START) {
@@ -1408,14 +1492,13 @@ void HlsMediaDownloader::SetAppUid(int32_t appUid)
 
 float HlsMediaDownloader::GetCacheDuration(float ratio)
 {
-    if (0 < ratio && ratio < 0.5) { // (0, 0.5)
-        return CACHE_LEVEL_3;
-    } else if (0.5 <= ratio && ratio < 1) { // [0.5, 1)
-        return CACHE_LEVEL_2;
-    } else if (1 <= ratio && ratio < 2) { // [1, 2)
+    if (isFreeze_) {
+        return DEFAULT_CACHE_TIME;
+    }
+    if (ratio >= 1) {
         return CACHE_LEVEL_1;
     }
-    return DEFAULT_CACHE_TIME; // (, 0] || [2, )
+    return DEFAULT_CACHE_TIME;
 }
 
 size_t HlsMediaDownloader::GetBufferSize() const
@@ -1470,6 +1553,25 @@ bool HlsMediaDownloader::GetHLSDiscontinuity()
         return playlistDownloader_->GetHLSDiscontinuity();
     }
     return false;
+}
+
+Status HlsMediaDownloader::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("HlsMediaDownloader:StopBufferring enter");
+    if (cacheMediaBuffer_ == nullptr || downloader_ == nullptr || playlistDownloader_ == nullptr) {
+        MEDIA_LOG_E("StopBufferring error.");
+        return Status::ERROR_NULL_POINTER;
+    }
+    downloader_->SetAppState(isAppBackground);
+    if (isAppBackground) {
+        isInterrupt_ = true;
+    } else {
+        isInterrupt_ = false;
+    }
+    downloader_->StopBufferring();
+    playlistDownloader_->StopBufferring(isAppBackground);
+    MEDIA_LOG_I("HlsMediaDownloader:StopBufferring out");
+    return Status::OK;
 }
 
 }

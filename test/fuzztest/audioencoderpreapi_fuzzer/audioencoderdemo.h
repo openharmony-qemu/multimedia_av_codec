@@ -99,7 +99,8 @@ public:
     bool InitFile(std::string inputFile);
 private:
     void ClearQueue();
-    int32_t CreateEnd();
+    int32_t CreateEnc();
+    int32_t CreateEncByMime();
     int32_t Configure(OH_AVFormat* format);
     int32_t Start();
     int32_t Stop();
@@ -109,7 +110,7 @@ private:
     void InputFunc();
     void OutputFunc();
     void HandleInputEOS(const uint32_t index);
-    void Setformat(OH_AVFormat *format);
+    void SetFormat(OH_AVFormat *format);
     int32_t HandleNormalInput(const uint32_t& index, const int64_t pts, const size_t size);
 
     std::atomic<bool> isRunning_ = false;
@@ -120,7 +121,6 @@ private:
     AEncSignal* signal_;
     struct OH_AVCodecAsyncCallback cb_;
     bool isFirstFrame_ = true;
-    uint32_t frameCount_ = 0;
     size_t inputdatasize;
     std::string inputdata;
     AudioFormatType audioType_;

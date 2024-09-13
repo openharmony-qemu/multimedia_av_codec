@@ -405,6 +405,17 @@ bool DownloadMonitor::GetHLSDiscontinuity()
     }
     return false;
 }
+
+Status DownloadMonitor::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("DownloadMonitor::StopBufferring");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("StopBufferring failed, downloader_ is nullptr");
+        return Status::ERROR_NULL_POINTER;
+    }
+    return downloader_->StopBufferring(isAppBackground);
+}
+
 }
 }
 }

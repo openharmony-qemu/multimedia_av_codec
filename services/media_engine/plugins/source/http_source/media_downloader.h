@@ -135,6 +135,12 @@ public:
     {
         return false;
     }
+
+    virtual Status StopBufferring(bool isAppBackground)
+    {
+        MEDIA_LOG_W("StopBufferring is unimplemented.");
+        return Status::OK;
+    }
 };
 }
 }
