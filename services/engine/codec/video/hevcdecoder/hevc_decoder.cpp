@@ -522,6 +522,12 @@ void HevcDecoder::ReleaseResource()
     format_ = Format();
     if (sInfo_.surface != nullptr) {
         sInfo_.surface->CleanCache();
+        int ret = sInfo_.surface->UnRegisterReleaseListener();
+        if (ret != 0) {
+            AVCODEC_LOGE("Error: hevcDecoder surface UnRegisterReleaseListener error: %{public}d", ret);
+            callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+            state_ = State::ERROR;
+        }
         AVCODEC_LOGI("surface cleancache success");
     }
     sInfo_.surface = nullptr;
@@ -1337,11 +1343,13 @@ int32_t HevcDecoder::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt);
     int32_t ret = SetQueueSize(newSurface, outputBufferCnt);
     if (ret != AVCS_ERR_OK) {
+        newSurface->UnRegisterReleaseListener();
         return ret;
     }
     std::unique_lock<std::mutex> sLock(surfaceMutex_);
     ret = SwitchBetweenSurface(newSurface);
     if (ret != AVCS_ERR_OK) {
+        newSurface->UnRegisterReleaseListener();
         return ret;
     }
     sLock.unlock();
@@ -1403,6 +1411,10 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         }
     }
 
+    GSError err = curSurface->UnRegisterReleaseListener();
+    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN,
+                             "surface %{public}" PRIu64 ", UnRegisterReleaseListener failed, GSError=%{public}d",
+                             curSurface->GetUniqueId(), err);
     curSurface->CleanCache(true); // make sure old surface is empty and go black
     return AVCS_ERR_OK;
 }
