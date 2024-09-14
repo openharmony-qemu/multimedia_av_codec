@@ -899,7 +899,7 @@ HWTEST_F(DemuxerNet2NdkTest, DEMUXER_VVC_NET_0200, TestSize.Level0)
     bool audioIsEnd = false;
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
-            trackFormat = OH_AVSource_GetTrackFormat(source, index );
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
             if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {

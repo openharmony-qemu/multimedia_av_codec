@@ -197,7 +197,7 @@ static void CheckVideoKey()
     int currentWidthResult = 1920;
     ASSERT_EQ(currentWidthResult, currentWidth);
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_LANGUAGE, &language));
-    ASSERT_EQ(expectNum, strcmp(language, "und"));    
+    ASSERT_EQ(expectNum, strcmp(language, "und"));
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation));
     int rotationResult = 0;
     ASSERT_EQ(rotationResult, rotation);
@@ -285,7 +285,6 @@ static void CheckAudioKeyVvc()
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
     int tarckTypeResult = 1;
     ASSERT_EQ(tarckTypeResult, tarckType);
-    
 }
 
 static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
@@ -2096,7 +2095,7 @@ HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0200, TestSize.Level0)
     bool audioIsEnd = false;
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
-            trackFormat = OH_AVSource_GetTrackFormat(source, index );
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
             if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
