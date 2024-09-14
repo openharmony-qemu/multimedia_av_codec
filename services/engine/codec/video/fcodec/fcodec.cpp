@@ -496,9 +496,8 @@ void FCodec::ReleaseResource()
     if (sInfo_.surface != nullptr) {
         sInfo_.surface->CleanCache();
         AVCODEC_LOGI("surface cleancache success");
-        int ret = sInfo_.surface->UnRegisterReleaseListener();
+        int ret = UnRegisterListenerToSurface(sInfo_.surface);
         if (ret != 0) {
-            AVCODEC_LOGE("Error: FCodec surface UnRegisterReleaseListener error: %{public}d", ret);
             callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
             state_ = State::ERROR;
         }
@@ -1195,13 +1194,13 @@ int32_t FCodec::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt);
     int32_t ret = SetQueueSize(newSurface, outputBufferCnt);
     if (ret != AVCS_ERR_OK) {
-        newSurface->UnRegisterReleaseListener();
+        UnRegisterListenerToSurface(newSurface);
         return ret;
     }
     std::unique_lock<std::mutex> sLock(surfaceMutex_);
     ret = SwitchBetweenSurface(newSurface);
     if (ret != AVCS_ERR_OK) {
-        newSurface->UnRegisterReleaseListener();
+        UnRegisterListenerToSurface(newSurface);
         return ret;
     }
     sLock.unlock();
@@ -1266,10 +1265,11 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         }
     }
 
-    GSError err = curSurface->UnRegisterReleaseListener();
-    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN,
-                             "surface %{public}" PRIu64 ", UnRegisterReleaseListener failed, GSError=%{public}d",
-                             curSurface->GetUniqueId(), err);
+    int32_t ret = UnRegisterListenerToSurface(curSurface);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+
     curSurface->CleanCache(true); // make sure old surface is empty and go black
     return AVCS_ERR_OK;
 }
@@ -1340,6 +1340,15 @@ GSError FCodec::BufferReleasedByConsumer(uint64_t surfaceId)
                              "Ignore callback from old surface");
     RequestBufferFromConsumer();
     return GSERROR_OK;
+}
+
+int32_t FCodec::UnRegisterListenerToSurface(const sptr<Surface> &surface)
+{
+    GSError err = surface->UnRegisterReleaseListener();
+    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN,
+                             "surface %{public}" PRIu64 ", UnRegisterReleaseListener failed, GSError=%{public}d",
+                             surface->GetUniqueId(), err);
+    return AVCS_ERR_OK;
 }
 
 GSError FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
