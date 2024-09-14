@@ -179,21 +179,28 @@ static void CheckVideoKey()
     const char* language = nullptr;
     int32_t rotation;
     ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
-    ASSERT_EQ(1660852, bitrate);
+    int bitrateResult = 1660852;
+    ASSERT_EQ(bitrateResult, bitrate);
     ASSERT_TRUE(OH_AVFormat_GetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize));
-    ASSERT_EQ(255, bufferSize);
+    size_t bufferSizeResult = 255;
+    ASSERT_EQ(bufferSizeResult, bufferSize);
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-    ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_VIDEO_VVC));
+    int expectNum = 0;
+    ASSERT_EQ(expectNum, strcmp(mimeType, OH_AVCODEC_MIMETYPE_VIDEO_VVC));
     ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &frameRate));
-    ASSERT_EQ(50.000000, frameRate);
+    int frameRateResult = 50.000000;
+    ASSERT_EQ(frameRateResult, frameRate);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_HEIGHT, &currentHeight));
-    ASSERT_EQ(1080, currentHeight);
+    int currentHeightResult = 1080;
+    ASSERT_EQ(currentHeightResult, currentHeight);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_WIDTH, &currentWidth));
-    ASSERT_EQ(1920, currentWidth);
+    int currentWidthResult = 1920;
+    ASSERT_EQ(currentWidthResult, currentWidth);
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_LANGUAGE, &language));
-    ASSERT_EQ(0, strcmp(language, "und"));    
+    ASSERT_EQ(expectNum, strcmp(language, "und"));    
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation));
-    ASSERT_EQ(0, rotation);
+    int rotationResult = 0;
+    ASSERT_EQ(rotationResult, rotation);
 }
 
 static void CheckAudioKey()
@@ -210,26 +217,75 @@ static void CheckAudioKey()
     int32_t sampleRate = 0;
     const char* language = nullptr;
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AAC_IS_ADTS, &aacisAdts));
-    ASSERT_EQ(1, aacisAdts);
+    int aacisAdtsResult = 1;
+    ASSERT_EQ(aacisAdtsResult, aacisAdts);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_CHANNEL_LAYOUT, &channelLayout));
-    ASSERT_EQ(3, channelLayout);
+    int channelLayoutResult = 3;
+    ASSERT_EQ(channelLayoutResult, channelLayout);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &audioCount));
-    ASSERT_EQ(2, audioCount);
+    int audioCountResult = 2;
+    ASSERT_EQ(audioCountResult, audioCount);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, &sampleFormat));
-    ASSERT_EQ(0, sampleFormat);
+    int sampleFormatResult = 0;
+    ASSERT_EQ(sampleFormatResult, sampleFormat);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
-    ASSERT_EQ(127881, bitrate);
+    int bitrateResult = 127881;
+    ASSERT_EQ(bitrateResult, bitrate);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bitsPreCodedSample));
-    ASSERT_EQ(16, bitsPreCodedSample);
+    int bitsPreCodedSampleResult = 16;
+    ASSERT_EQ(bitsPreCodedSampleResult, bitsPreCodedSample);
     ASSERT_TRUE(OH_AVFormat_GetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize));
-    ASSERT_EQ(5, bufferSize);
+    int bufferSizeResult = 5;
+    ASSERT_EQ(bufferSizeResult, bufferSize);
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-    ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_AAC));
+    int expectNum = 0;
+    ASSERT_EQ(expectNum, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_AAC));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_LANGUAGE, &language));
-    ASSERT_EQ(0, strcmp(language, "eng"));
+    ASSERT_EQ(expectNum, strcmp(language, "eng"));
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sampleRate));
-    ASSERT_EQ(48000, sampleRate);
+    int sampleRateResult = 48000;
+    ASSERT_EQ(sampleRateResult, sampleRate);
+}
 
+static void CheckAudioKeyVvc()
+{
+    uint8_t *codecConfig = nullptr;
+    size_t bufferSize;
+    const char* language = nullptr;
+    int64_t bitrate = 0;
+    double frameRate;
+    int32_t currentWidth = 0;
+    int32_t currentHeight = 0;
+    int tarckType = 0;
+    const char* mimeType = nullptr;
+    int32_t rotation;
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
+    int bitrateResult = 10014008;
+    ASSERT_EQ(bitrateResult, bitrate);
+    ASSERT_TRUE(OH_AVFormat_GetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize));
+    int bufferSizeResult = 247;
+    ASSERT_EQ(bufferSizeResult, bufferSize);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    int expectNum = 0;
+    ASSERT_EQ(expectNum, strcmp(mimeType, OH_AVCODEC_MIMETYPE_VIDEO_VVC));
+    ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &frameRate));
+    int frameRateResult = 60.000000;
+    ASSERT_EQ(frameRateResult, frameRate);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_HEIGHT, &currentHeight));
+    int currentHeightResult = 2160;
+    ASSERT_EQ(currentHeightResult, currentHeight);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_WIDTH, &currentWidth));
+    int currentWidthResult = 3840;
+    ASSERT_EQ(currentWidthResult, currentWidth);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_LANGUAGE, &language));
+    ASSERT_EQ(expectNum, strcmp(language, "und"));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation));
+    int rotationResult = 0;
+    ASSERT_EQ(rotationResult, rotation);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+    int tarckTypeResult = 1;
+    ASSERT_EQ(tarckTypeResult, tarckType);
+    
 }
 
 static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
@@ -2141,18 +2197,8 @@ HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0500, TestSize.Level0)
     if (access(g_mp4Vvc8bitPath.c_str(), F_OK) != 0) {
         return;
     }
-    uint8_t *codecConfig = nullptr;
-    size_t bufferSize;
-    const char* language = nullptr;
     int64_t duration = 0;
-    int64_t bitrate = 0;
-    double frameRate;
-    int32_t currentWidth = 0;
-    int32_t currentHeight = 0;
     int64_t startTime;
-    int tarckType = 0;
-    const char* mimeType = nullptr;
-    int32_t rotation;
     int fd = open(g_mp4Vvc8bitPath.c_str(), O_RDONLY);
     int64_t size = GetFileSize(g_mp4Vvc8bitPath.c_str());
     cout << g_mp4Vvc8bitPath.c_str() << "---------" << fd << "----------" << size <<endl;
@@ -2168,24 +2214,7 @@ HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0500, TestSize.Level0)
     ASSERT_EQ(0, startTime);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
-    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
-    ASSERT_EQ(10014008, bitrate);
-    ASSERT_TRUE(OH_AVFormat_GetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize));
-    ASSERT_EQ(247, bufferSize);
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-    ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_VIDEO_VVC));
-    ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &frameRate));
-    ASSERT_EQ(60.000000, frameRate);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_HEIGHT, &currentHeight));
-    ASSERT_EQ(2160, currentHeight);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_WIDTH, &currentWidth));
-    ASSERT_EQ(3840, currentWidth);
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_LANGUAGE, &language));
-    ASSERT_EQ(0, strcmp(language, "und"));
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation));
-    ASSERT_EQ(0, rotation);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-    ASSERT_EQ(1, tarckType);
+    CheckAudioKeyVvc();
     close(fd);
 }
 
