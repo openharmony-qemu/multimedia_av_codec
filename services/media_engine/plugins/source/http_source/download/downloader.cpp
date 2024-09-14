@@ -225,6 +225,9 @@ bool DownloadRequest::IsM3u8Request() const
 
 bool DownloadRequest::IsServerAcceptRange() const
 {
+    if (headerInfo_.isChunked) {
+        return false;
+    }
     return headerInfo_.isServerAcceptRange;
 }
 
