@@ -35,6 +35,7 @@ using namespace OHOS::MediaAVCodec::VCodecTestParam;
 using namespace OHOS::Media;
 
 namespace {
+constexpr int32_t DEFAULT_LTR_COUNT = 4;
 class TEST_SUIT : public testing::TestWithParam<int32_t> {
 public:
     static void SetUpTestCase(void);
@@ -47,7 +48,7 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
-    bool GetTemporalScalabilityCapability(int32_t param);
+    bool GetTemporalScalabilityCapability(int32_t param, bool isTemporalScalability);
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
@@ -161,7 +162,7 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
 }
 
-bool TEST_SUIT::GetTemporalScalabilityCapability(int32_t param)
+bool TEST_SUIT::GetTemporalScalabilityCapability(int32_t param, bool isTemporalScalability)
 {
     std::string codecName = "";
     std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
@@ -184,9 +185,24 @@ bool TEST_SUIT::GetTemporalScalabilityCapability(int32_t param)
         std::cout << "capabilityData is nullptr" << std::endl;
         return false;
     }
-    if (capabilityData->featuresMap.count(
+    if (isTemporalScalability && capabilityData->featuresMap.count(
         static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY))) {
         std::cout << "Support TemporalScalability" << std::endl;
+        return true;
+    } else if (!isTemporalScalability) {
+        auto ltrCap =
+        capabilityData->featuresMap.find(
+            static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
+        if (ltrCap == capabilityData->featuresMap.end()) {
+            return false;
+        }
+        int32_t maxLTRFrameCount = 0;
+        bool maxLTRFrameCountExist =
+            ltrCap->second.GetIntValue(Tag::FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, maxLTRFrameCount);
+        if (!maxLTRFrameCountExist || maxLTRFrameCount < DEFAULT_LTR_COUNT) {
+            return false;
+        }
+        std::cout << "Support LongTermReference" << std::endl;
         return true;
     } else {
         std::cout << "Not support TemporalScalability" << std::endl;
@@ -203,7 +219,7 @@ INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_001, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -222,7 +238,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_002, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -243,7 +259,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_002, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_003, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     videoEnc_->isAVBufferMode_ = true;
@@ -267,7 +283,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_003, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_004, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     videoEnc_->isAVBufferMode_ = true;
@@ -290,7 +306,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_004, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_005, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -310,7 +326,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_005, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_006, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -329,7 +345,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_006, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_007, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -348,7 +364,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_007, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_008, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -371,7 +387,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_008, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_009, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     videoEnc_->isAVBufferMode_ = true;
@@ -393,7 +409,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_009, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_010, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -413,7 +429,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_010, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_011, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -435,7 +451,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_011, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_012, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -455,7 +471,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_012, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_013, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -477,7 +493,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_013, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_014, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -498,7 +514,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_014, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_015, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -522,7 +538,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_015, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_016, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     videoEnc_->isAVBufferMode_ = true;
@@ -544,7 +560,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_016, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_017, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     videoEnc_->isTemporalScalabilitySyncIdr_ = true;
@@ -563,7 +579,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_017, TestSize.Level1)
 
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_01, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -578,7 +594,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_01, TestSize.Leve
 
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_02, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -593,7 +609,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_02, TestSize.Leve
 
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_03, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -611,7 +627,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_03, TestSize.Leve
 
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_04, TestSize.Level1)
 {
-    if (!GetTemporalScalabilityCapability(GetParam())) {
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
         return;
     };
     CreateByNameWithParam(GetParam());
@@ -621,6 +637,24 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_04, TestSize.Leve
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
                          static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_Feature_Long_Term_Reference_001
+ * @tc.desc: enable feature long term reference
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_Feature_Long_Term_Reference_001, TestSize.Level1)
+{
+    if (!GetTemporalScalabilityCapability(GetParam(), false)) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
