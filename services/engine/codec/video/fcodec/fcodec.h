@@ -134,6 +134,7 @@ private:
     void RequestBufferFromConsumer();
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     GSError RegisterListenerToSurface(const sptr<Surface> &surface);
+    int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
