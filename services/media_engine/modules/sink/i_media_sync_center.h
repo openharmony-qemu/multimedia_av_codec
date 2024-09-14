@@ -50,7 +50,7 @@ struct IMediaSyncCenter {
      * @param maxMediaTime duration of resource
      * @retval current frame Whether rendering is required
      */
-    virtual bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime, int64_t mediaAbsTime,
+    virtual bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime, int64_t absMediaTime,
         int64_t maxMediaTime, IMediaSynchronizer* supplier);
 
     /**
