@@ -479,7 +479,7 @@ void HlsMediaDownloader::PlaylistBackup(const PlayInfo& fragment)
         }
         return;
     }
-    if (playListDownloader_ != nullptr && playListDownloader_->IsParseAndNotifyFinished()) {
+    if (playListDownloader_ != nullptr && playListDownloader_->IsParseFinished()) {
         backPlayList_.push_back(fragment);
     }
 }
