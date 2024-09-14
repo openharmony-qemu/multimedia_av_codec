@@ -51,6 +51,9 @@ public:
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();
     std::shared_ptr<M3U8VariantStream> GetCurrentVariant();
     std::shared_ptr<M3U8VariantStream> GetNewVariant();
+    size_t GetSegmentOffset(int tsIndex) override;
+    bool GetHLSDiscontinuity() override;
+
 private:
     void UpdateMasterInfo(bool isPreParse);
 private:

@@ -237,6 +237,16 @@ public:
         (void)isEnableFdCache;
     }
 
+    virtual size_t GetSegmentOffset()
+    {
+        return 0;
+    }
+
+    virtual bool GetHLSDiscontinuity()
+    {
+        return false;
+    }
+
     virtual Status StopBufferring(bool isAppBackground)
     {
         return Status::OK;

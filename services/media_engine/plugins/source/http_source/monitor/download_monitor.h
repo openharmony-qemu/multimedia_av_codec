@@ -74,6 +74,8 @@ public:
     void SetAppUid(int32_t appUid) override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
+    size_t GetSegmentOffset() override;
+    bool GetHLSDiscontinuity() override;
     Status StopBufferring(bool isAppBackground) override;
 
 private:

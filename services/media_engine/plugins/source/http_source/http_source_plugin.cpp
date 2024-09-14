@@ -430,6 +430,22 @@ Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     return downloader_->SetCurrentBitRate(bitRate, streamID);
 }
 
+size_t HttpSourcePlugin::GetSegmentOffset()
+{
+    if (downloader_) {
+        return downloader_->GetSegmentOffset();
+    }
+    return 0;
+}
+
+bool HttpSourcePlugin::GetHLSDiscontinuity()
+{
+    if (downloader_) {
+        return downloader_->GetHLSDiscontinuity();
+    }
+    return false;
+}
+
 Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
 {
     if (downloader_ == nullptr) {
@@ -438,6 +454,7 @@ Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
     }
     return downloader_->StopBufferring(isAppBackground);
 }
+
 }
 }
 }

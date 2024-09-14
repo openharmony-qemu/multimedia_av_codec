@@ -95,6 +95,8 @@ public:
     void SetAppUid(int32_t appUid) override;
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
+    size_t GetSegmentOffset() override;
+    bool GetHLSDiscontinuity() override;
     Status StopBufferring(bool isAppBackground) override;
 
 private:
@@ -263,7 +265,7 @@ private:
     uint64_t readOffset_ {0};
     uint64_t writeOffset_ {0};
     std::map<uint32_t, std::pair<uint32_t, bool>> tsStorageInfo_ {};
-    uint32_t readTsIndex_ {0};
+    std::atomic<uint32_t> readTsIndex_ {0};
     std::atomic<bool> canWrite_ {true};
     uint64_t ffmpegOffset_ = 0;
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;

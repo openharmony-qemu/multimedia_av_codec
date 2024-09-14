@@ -198,6 +198,7 @@ void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
 {
     master_->bLive_ = currentVariant_->m3u8_->IsLive();
     master_->duration_ = currentVariant_->m3u8_->GetDuration();
+    master_->segmentOffsets_ = currentVariant_->m3u8_->segmentOffsets_;
     isParseFinished_ = isPreParse ? false : true;
 }
 
@@ -344,6 +345,23 @@ void HlsPlayListDownloader::SetMimeType(const std::string& mimeType)
 {
     mimeType_ = mimeType;
 }
+
+size_t HlsPlayListDownloader::GetSegmentOffset(int tsIndex)
+{
+    if (master_ && master_->segmentOffsets_.size() > tsIndex) {
+        return master_->segmentOffsets_[tsIndex];
+    }
+    return 0;
+}
+
+bool HlsPlayListDownloader::GetHLSDiscontinuity()
+{
+    if (master_) {
+        return master_->discontinuity;
+    }
+    return false;
+}
+
 }
 }
 }

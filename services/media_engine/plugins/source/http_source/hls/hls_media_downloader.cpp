@@ -163,7 +163,7 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
         MEDIA_LOG_I("HLS PutRequestIntoDownloader init readOffset." PUBLIC_LOG_U64, readOffset_);
         readTsIndex_ = writeTsIndex_;
-        MEDIA_LOG_I("HLS PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32, readTsIndex_);
+        MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32, readTsIndex_.load());
     }
     writeOffset_ = SpliceOffset(writeTsIndex_, 0);
     MEDIA_LOG_I("HLS PutRequestIntoDwonloader update writeOffset_." PUBLIC_LOG_U64, writeOffset_);
@@ -348,7 +348,7 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
         uint64_t lastTsReadBack = readBack - curTsHaveRead;
         readOffset_ = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first - lastTsReadBack);
         MEDIA_LOG_I("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
-            PUBLIC_LOG_U64, readTsIndex_, readOffset_);
+            PUBLIC_LOG_U64, readTsIndex_.load(), readOffset_);
     }
 }
 
@@ -382,7 +382,7 @@ Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& read
         OnReadCacheBuffer(readDataInfo.realReadLength_);
         MEDIA_LOG_D("HLS Read Success: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
             PUBLIC_LOG_D32 " readOffset_ " PUBLIC_LOG_U64 " readTsIndex_ " PUBLIC_LOG_U32, readDataInfo.wantReadLength_,
-            readDataInfo.realReadLength_, readDataInfo.isEos_, readOffset_, readTsIndex_);
+            readDataInfo.realReadLength_, readDataInfo.isEos_, readOffset_, readTsIndex_.load());
         return Status::OK;
     }
     if (isFinishedPlay && GetCacheBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
@@ -1517,9 +1517,12 @@ size_t HlsMediaDownloader::GetCacheBufferSize()
 
 bool HlsMediaDownloader::GetPlayable()
 {
+    if (!isFirstFrameArrived_) {
+        return false;
+    }
     size_t wantedLength = wantedReadLength_;
     size_t waterLine = wantedLength > 0 ? std::max(PLAY_WATER_LINE, wantedLength) : 0;
-    return GetBufferSize() >= waterLine;
+    return waterLine == 0 ? GetBufferSize() > waterLine : GetBufferSize() >= waterLine;
 }
 
 bool HlsMediaDownloader::GetBufferingTimeOut()
@@ -1530,6 +1533,22 @@ bool HlsMediaDownloader::GetBufferingTimeOut()
         size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
         return now >= bufferingTime_ ? now - bufferingTime_ >= MAX_BUFFERING_TIME_OUT : false;
     }
+}
+
+size_t HlsMediaDownloader::GetSegmentOffset()
+{
+    if (playlistDownloader_) {
+        return playlistDownloader_->GetSegmentOffset(readTsIndex_);
+    }
+    return 0;
+}
+
+bool HlsMediaDownloader::GetHLSDiscontinuity()
+{
+    if (playlistDownloader_) {
+        return playlistDownloader_->GetHLSDiscontinuity();
+    }
+    return false;
 }
 
 Status HlsMediaDownloader::StopBufferring(bool isAppBackground)
@@ -1550,6 +1569,7 @@ Status HlsMediaDownloader::StopBufferring(bool isAppBackground)
     MEDIA_LOG_I("HlsMediaDownloader:StopBufferring out");
     return Status::OK;
 }
+
 }
 }
 }

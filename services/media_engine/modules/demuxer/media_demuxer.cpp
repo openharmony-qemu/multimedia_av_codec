@@ -39,9 +39,9 @@
 #include "media_core.h"
 #include "osal/utils/dump_buffer.h"
 #include "demuxer_plugin_manager.h"
+#include "media_demuxer_back.cpp"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
 const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
@@ -1192,6 +1192,7 @@ Status MediaDemuxer::Flush()
         demuxerPluginManager_->Flush();
     }
 
+    InitPtsInfo();
     return Status::OK;
 }
 
@@ -1410,6 +1411,7 @@ Status MediaDemuxer::Start()
     for (auto it = requestBufferErrorCountMap_.begin(); it != requestBufferErrorCountMap_.end(); it++) {
         it->second = 0;
     }
+    InitPtsInfo();
     isThreadExit_ = false;
     isStopped_ = false;
     isDemuxerLoopExecuting_ = true;
@@ -1663,7 +1665,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
             shouldCheckSubtitleFramePts_ = true;
         }
 
-        if (newTrackId == selectTrackTrackID_) {
+        if (static_cast<uint32_t>(newTrackId) == selectTrackTrackID_) {
             isSelectTrack_.store(false);
         }
 
