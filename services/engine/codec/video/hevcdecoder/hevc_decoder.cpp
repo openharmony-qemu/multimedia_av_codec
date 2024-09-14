@@ -1354,6 +1354,7 @@ int32_t HevcDecoder::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
     ret = SwitchBetweenSurface(newSurface);
     if (ret != AVCS_ERR_OK) {
         UnRegisterListenerToSurface(newSurface);
+        sInfo_.surface = curSurface;
         return ret;
     }
     sLock.unlock();
