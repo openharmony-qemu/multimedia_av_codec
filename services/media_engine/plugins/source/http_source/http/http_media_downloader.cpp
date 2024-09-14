@@ -510,13 +510,16 @@ void HttpMediaDownloader::ChangeDownloadPos()
 {
     MEDIA_LOG_D("ChangeDownloadPos in.");
 
-    if (writeOffset_ >= readOffset_ + GetCurrentBufferSize()) {
-        MEDIA_LOG_I("CacheMediaBuffer clear.");
+    if (!canWrite_) {
+        MEDIA_LOG_I("HTTP CacheMediaBuffer clear.");
+        isNeedDropData_ = true;
+        downloader_->Pause();
         cacheMediaBuffer_->Clear();
+    } else {
+        isNeedDropData_ = true;
+        downloader_->Pause();
     }
-
-    isNeedDropData_ = true;
-    downloader_->Pause();
+    
     isNeedDropData_ = false;
     size_t downloadOffset = static_cast<size_t>(readOffset_) + cacheMediaBuffer_->GetBufferSize(readOffset_);
     isHitSeeking_ = true;
