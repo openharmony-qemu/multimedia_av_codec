@@ -541,7 +541,7 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
 Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates)
 {
     if (demuxer_ == nullptr) {
-        MEDIA_LOG_E_SHORT("GetBitRates failed, mediaSource = nullptr");
+        MEDIA_LOG_E_SHORT("GetBitRates failed, demuxer_ = nullptr");
     }
     return demuxer_->GetBitRates(bitRates);
 }
