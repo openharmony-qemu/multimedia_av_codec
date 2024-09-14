@@ -1181,7 +1181,8 @@ int32_t FCodec::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AV_ERR_OPERATE_NOT_PERMIT,
                              "Not support convert from AVBuffer Mode to Surface Mode");
-    uint64_t oldId = sInfo_.surface->GetUniqueId();
+    sptr<Surface> oldSurface = sInfo_.surface;
+    uint64_t oldId = oldSurface->GetUniqueId();
     uint64_t newId = newSurface->GetUniqueId();
     AVCODEC_LOGI("surface %{public}" PRIu64 " -> %{public}" PRIu64 "", oldId, newId);
     if (oldId == newId) {
@@ -1201,6 +1202,7 @@ int32_t FCodec::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
     ret = SwitchBetweenSurface(newSurface);
     if (ret != AVCS_ERR_OK) {
         UnRegisterListenerToSurface(newSurface);
+        sInfo_.surface = oldSurface;
         return ret;
     }
     sLock.unlock();
