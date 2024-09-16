@@ -328,7 +328,11 @@ Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
 
 Status FfmpegBaseDecoder::OpenContext()
 {
-    avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *ptr) { av_packet_free(&ptr); });
+    avPacket_ = std::unique_ptr<AVPacket, std::function<void(AVPacket *)>>(av_packet_alloc(), [](AVPacket *ptr) {
+        if (ptr) {
+            av_packet_free(&ptr);
+        }
+    });
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         auto res = avcodec_open2(avCodecContext_.get(), avCodec_.get(), nullptr);
