@@ -166,6 +166,24 @@ public:
 protected:
     Status onLinked_;
 };
+
+class MockConsumerSurface : public ConsumerSurface {
+public:
+    MockConsumerSurface(const std::string &name, bool isShared=false)
+        : ConsumerSurface(name, isShared) {}
+    static sptr<MockConsumerSurface> CreateSurfaceAsConsumer(std::string name, bool isShared=false);
+    MOCK_METHOD(GSError, AcquireBuffer,
+        (sptr<SurfaceBuffer> &buffer, sptr<SyncFence> &fence, int64_t &timestamp, Rect &damage), (override));
+private:
+    std::map<std::string, std::string> userData_;
+    sptr<BufferQueueProducer> producer_ = nullptr;
+    sptr<BufferQueueConsumer> consumer_ = nullptr;
+    std::string name_ = "not init";
+    bool isShared_ = false;
+    std::map<std::string, OnUserDataChangeFunc> onUserDataChange_;
+    std::mutex lockMutex_;
+    uint64_t uniqueId_= 0;
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
