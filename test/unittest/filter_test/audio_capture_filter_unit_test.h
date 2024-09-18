@@ -17,6 +17,9 @@
 
 #include "gtest/gtest.h"
 #include "audio_capture_filter.h"
+#include "filter.h"
+#include "audio_capture_module.h"
+#include "avbuffer_queue_producer.h"
 
 namespace OHOS {
 namespace Media {
@@ -35,6 +38,118 @@ public:
 protected:
     std::shared_ptr<AudioCaptureFilter> audioCaptureFilter_{ nullptr };
 };
+
+class TestEventReceiver : public Pipeline::EventReceiver {
+public:
+    ~TestEventReceiver() = default;
+
+    void OnEvent(const Event &event)
+    {
+        return;
+    }
+};
+
+class TestFilterCallback : public FilterCallback {
+public:
+    explicit TestFilterCallback()
+    {
+        std::cout << "filter back constructor" << std::endl;
+    }
+
+    Status OnCallback(const std::shared_ptr<Filter>& filter,
+        FilterCallBackCommand cmd, StreamType outType)
+    {
+        return Status::OK;
+    }
+};
+
+class MockAudioCapturerInfoChangeCallback : public OHOS::AudioStandard::AudioCapturerInfoChangeCallback {
+public:
+    void OnStateChange(const OHOS::AudioStandard::AudioCapturerChangeInfo &captureChangeInfo) override
+    {
+        std::cout << "Mock OnstateChange called" << std::endl;
+    }
+};
+
+class MockAudioCaptureModule : public AudioCaptureModule::AudioCaptureModule {
+public:
+    Status Start()
+    {
+        return Status::OK;
+    }
+
+    Status Prepare()
+    {
+        return Status::ERROR_UNKNOWN;
+    }
+};
+
+class MockOutputBufferQueue : public OHOS::Media::AVBufferQueueProducer {
+public:
+
+    uint32_t GetQueueSize() override
+    {
+        return 0;
+    }
+
+    Status SetQueueSize(uint32_t size) override
+    {
+        return Status::OK;
+    }
+
+    Status RequestBuffer(std::shared_ptr<AVBuffer>& outBuffer,
+                         const AVBufferConfig& config, int32_t timeoutMs) override
+    {
+        outBuffer = std::make_shared<AVBuffer>();
+        return Status::OK;
+    }
+
+    Status PushBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available) override
+    {
+        return Status::OK;
+    }
+
+    Status ReturnBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available) override
+    {
+        return Status::OK;
+    }
+
+    Status AttachBuffer(std::shared_ptr<AVBuffer>& inBuffer, bool isFilled) override
+    {
+        return Status::OK;
+    }
+
+    Status DetachBuffer(const std::shared_ptr<AVBuffer>& outBuffer) override
+    {
+        return Status::OK;
+    }
+
+    Status SetBufferFilledListener(sptr<IBrokerListener>& listener) override
+    {
+        return Status::OK;
+    }
+
+    Status RemoveBufferFilledListener(sptr<IBrokerListener>& listener) override
+    {
+        return Status::OK;
+    }
+
+    Status SetBufferAvailableListener(sptr<IProducerListener>& listener) override
+    {
+        return Status::OK;
+    }
+
+    Status Clear() override
+    {
+        return Status::OK;
+    }
+
+    sptr<IRemoteObject> AsObject() override
+    {
+        return nullptr;
+    }
+};
+
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
