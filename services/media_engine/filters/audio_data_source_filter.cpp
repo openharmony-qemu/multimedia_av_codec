@@ -18,7 +18,7 @@
 #include "filter/filter_factory.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioDataSourceFilter" };
 static constexpr uint8_t LOG_LIMIT_HUNDRED = 100;
 }
  
