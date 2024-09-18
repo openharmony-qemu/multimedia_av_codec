@@ -18,7 +18,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "FfmpegConvert" };
-constexpr uint8_t LOGD_FREQUENCY = 10;
 }
 
 namespace OHOS {
@@ -156,10 +155,20 @@ Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
         MEDIA_LOG_E("Frame null pointer");
         return Status::ERROR_NO_MEMORY;
     }
-    for (uint32_t i = 0; i < resamplePara_.channels; i++) {
-        if (inputFrame->extended_data[i] == nullptr) {
-            MEDIA_LOGD_LIMIT(LOGD_FREQUENCY, "channels:%{public}u, extended_data[%{public}u] is nullptr",
-                resamplePara_.channels, i);
+
+    int planar = av_sample_fmt_is_planar(static_cast<AVSampleFormat>(inputFrame->format));
+    if (planar) {
+        for (auto i = 0; i < inputFrame->channels; i++) {
+            if (inputFrame->extended_data[i] == nullptr) {
+                MEDIA_LOG_E("this is a planar audio, inputFrame->channels: %{public}d, "
+                            "but inputFrame->extended_data[%{public}d] is nullptr", inputFrame->channels, i);
+                return Status::ERROR_NO_MEMORY;
+            }
+        }
+    } else {
+        if (inputFrame->extended_data[0] == nullptr) {
+            MEDIA_LOG_E("inputFrame->extended_data[0] is nullptr");
+            return Status::ERROR_NO_MEMORY;
         }
     }
 
