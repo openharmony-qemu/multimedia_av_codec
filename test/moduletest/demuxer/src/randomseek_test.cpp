@@ -135,8 +135,10 @@ static void CheckSeekResult(const char *fileName, uint32_t seekCount)
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
         for (int32_t i = 0; i < seekCount; i++) {
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, (rd() % duration) / THOUSAND,
-            (OH_AVSeekMode)((rd() % 1) +1)));
+            if (duration != 0) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, (rd() % duration) / THOUSAND,
+                (OH_AVSeekMode)((rd() % 1) +1)));
+            }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
         }
     }
