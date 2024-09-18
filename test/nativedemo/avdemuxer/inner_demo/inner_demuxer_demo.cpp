@@ -48,6 +48,7 @@ int32_t InnerDemuxerDemo::SelectTrackByID(uint32_t trackIndex)
 {
     if (this->demuxer_ == nullptr) {
         printf("SelectTrackByID is failed\n");
+        return -1;
     }
     int32_t ret = this->demuxer_->SelectTrackByID(trackIndex);
     if (ret != 0) {
@@ -60,6 +61,7 @@ int32_t InnerDemuxerDemo::UnselectTrackByID(uint32_t trackIndex)
 {
     if (this->demuxer_ == nullptr) {
         printf("UnselectTrackByID is failed\n");
+        return -1;
     }
     int32_t ret = this->demuxer_->UnselectTrackByID(trackIndex);
     if (ret != 0) {
@@ -91,6 +93,7 @@ int32_t InnerDemuxerDemo::StartReferenceParser(int64_t startTimeMs)
 {
     if (this->demuxer_ == nullptr) {
         printf("StartReferenceParser is failed\n");
+        return -1;
     }
     return this->demuxer_->StartReferenceParser(startTimeMs);
 }
@@ -99,6 +102,7 @@ int32_t InnerDemuxerDemo::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSampl
 {
     if (this->demuxer_ == nullptr) {
         printf("GetFrameLayerInfo is failed\n");
+        return -1;
     }
     return this->demuxer_->GetFrameLayerInfo(videoSample, frameLayerInfo);
 }
@@ -107,6 +111,7 @@ int32_t InnerDemuxerDemo::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayer
 {
     if (this->demuxer_ == nullptr) {
         printf("GetGopLayerInfo is failed\n");
+        return -1;
     }
     return this->demuxer_->GetGopLayerInfo(gopId, gopLayerInfo);
 }
@@ -149,6 +154,7 @@ int32_t InnerDemuxerDemo::ReadSample(uint32_t trackIndex, std::shared_ptr<AVShar
 {
     if (this->demuxer_ == nullptr) {
         printf("ReadSample is failed\n");
+        return -1;
     }
     int32_t ret = this->demuxer_->ReadSample(trackIndex, mem, bufInfo, bufferFlag);
     if (ret != 0) {
@@ -161,6 +167,7 @@ int32_t InnerDemuxerDemo::ReadSampleBuffer(uint32_t trackIndex, std::shared_ptr<
 {
     if (this->demuxer_ == nullptr) {
         printf("ReadSampleBuffer is failed\n");
+        return -1;
     }
     int32_t ret = this->demuxer_->ReadSampleBuffer(trackIndex, sample);
     if (ret != 0) {
@@ -173,6 +180,7 @@ int32_t InnerDemuxerDemo::SeekToTime(int64_t millisecond, Media::SeekMode mode)
 {
     if (demuxer_ == nullptr) {
         printf("SeekToTime is failed\n");
+        return -1;
     }
     int32_t ret = demuxer_->SeekToTime(millisecond, mode);
     if (ret != 0) {
@@ -186,6 +194,7 @@ int32_t InnerDemuxerDemo::GetIndexByRelativePresentationTimeUs(const uint32_t tr
 {
     if (demuxer_ == nullptr) {
         printf("GetIndexByRelativePresentationTimeUs is failed\n");
+        return -1;
     }
     int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     if (ret != 0) {
@@ -199,6 +208,7 @@ int32_t InnerDemuxerDemo::GetRelativePresentationTimeUsByIndex(const uint32_t tr
 {
     if (demuxer_ == nullptr) {
         printf("GetRelativePresentationTimeUsByIndex is failed\n");
+        return -1;
     }
     int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     if (ret != 0) {

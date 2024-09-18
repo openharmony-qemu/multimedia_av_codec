@@ -69,6 +69,7 @@ Format InnerSourceDemo::GetSourceFormat()
 {
     if (this->avsource_ == nullptr) {
         printf("GetSourceFormat is failed\n");
+        return -1;
     }
     int32_t ret = this->avsource_->GetSourceFormat(source_format_);
     if (ret != 0) {
@@ -81,6 +82,7 @@ Format InnerSourceDemo::GetTrackFormat(uint32_t trackIndex)
 {
     if (this->avsource_ == nullptr) {
         printf("GetSourceFormat is failed\n");
+        return -1;
     }
     int32_t ret = this->avsource_->GetTrackFormat(track_format_, trackIndex);
     if (ret != 0) {
