@@ -74,7 +74,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo2, TestSize.Level1)
     hlsMediaDownloader->avgSpeedSum_ = 25;
     DownloadInfo downloadInfo;
     hlsMediaDownloader->GetDownloadInfo(downloadInfo);
-    EXPECT_EQ(downloadInfo.avgDownloadRate, 5)
+    EXPECT_EQ(downloadInfo.avgDownloadRate, 5);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo3, TestSize.Level1)

@@ -75,7 +75,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_INIT, TestSize.Level1)
         std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 4);
     std::shared_ptr<HttpMediaDownloader> httpMediaDownloader_5 =
         std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5);
-    EXPECT_TRUEE(httpMediaDownloader4);
+    EXPECT_TRUE(httpMediaDownloader4);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RINGBUFFER, TestSize.Level1)
