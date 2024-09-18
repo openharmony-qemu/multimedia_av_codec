@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -53,6 +53,7 @@ static int32_t g_trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
 constexpr int32_t THOUSAND = 1000.0;
+constexpr int32_t SEEKTIMES = 10;
 void DemuxerRandomSeekNdkTest::SetUpTestCase() {}
 void DemuxerRandomSeekNdkTest::TearDownTestCase() {}
 void DemuxerRandomSeekNdkTest::SetUp()
@@ -152,7 +153,7 @@ static void CheckSeekResult(const char *fileName, uint32_t seekCount)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0001, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/01_video_audio.mp4", 10);
+    CheckSeekResult("/data/test/media/01_video_audio.mp4", SEEKTIMES);
 }
 
 /**
@@ -162,7 +163,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0001, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0002, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/avc_mp3.flv", 10);
+    CheckSeekResult("/data/test/media/avc_mp3.flv", SEEKTIMES);
 }
 
 /**
@@ -172,7 +173,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0002, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0003, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/avc_mp3_error.flv", 10);
+    CheckSeekResult("/data/test/media/avc_mp3_error.flv", SEEKTIMES);
 }
 
 /**
@@ -182,7 +183,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0003, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0004, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/avcc_10sec.mp4", 10);
+    CheckSeekResult("/data/test/media/avcc_10sec.mp4", SEEKTIMES);
 }
 
 /**
@@ -192,7 +193,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0004, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0005, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEKTIMES);
 }
 
 /**
@@ -202,7 +203,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0005, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0006, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEKTIMES);
 }
 
 /**
@@ -212,7 +213,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0006, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0007, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEKTIMES);
 }
 
 /**
@@ -222,7 +223,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0007, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0008, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEKTIMES);
 }
 
 /**
@@ -232,7 +233,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0008, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0009, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEKTIMES);
 }
 
 /**
@@ -242,7 +243,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0009, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0010, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEKTIMES);
 }
 
 /**
@@ -252,7 +253,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0010, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0011, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_all_i_frame_avc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEKTIMES);
 }
 
 /**
@@ -262,7 +263,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0011, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0012, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEKTIMES);
 }
 
 /**
@@ -272,7 +273,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0012, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0013, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_ipb_frame_avc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_ipb_frame_avc.mp4", SEEKTIMES);
 }
 
 /**
@@ -282,7 +283,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0013, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0014, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", SEEKTIMES);
 }
 
 /**
@@ -292,7 +293,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0014, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0015, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_ltr_frame_avc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_ltr_frame_avc.mp4", SEEKTIMES);
 }
 
 /**
@@ -302,7 +303,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0015, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0016, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", SEEKTIMES);
 }
 
 /**
@@ -312,7 +313,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0016, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0017, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_one_i_frame_avc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_one_i_frame_avc.mp4", SEEKTIMES);
 }
 
 /**
@@ -322,7 +323,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0017, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0018, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", SEEKTIMES);
 }
 
 /**
@@ -332,7 +333,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0018, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0019, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEKTIMES);
 }
 
 /**
@@ -342,7 +343,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0019, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0020, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEKTIMES);
 }
 
 /**
@@ -352,7 +353,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0020, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0021, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", SEEKTIMES);
 }
 
 /**
@@ -362,7 +363,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0021, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0022, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", 10);
+    CheckSeekResult("/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEKTIMES);
 }
 
 /**
@@ -372,7 +373,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0022, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0023, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/double_hevc.mp4", 10);
+    CheckSeekResult("/data/test/media/double_hevc.mp4", SEEKTIMES);
 }
 
 /**
@@ -382,7 +383,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0023, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0024, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/double_vivid.mp4", 10);
+    CheckSeekResult("/data/test/media/double_vivid.mp4", SEEKTIMES);
 }
 
 /**
@@ -392,7 +393,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0024, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0026, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/h264_aac_640.ts", 10);
+    CheckSeekResult("/data/test/media/h264_aac_640.ts", SEEKTIMES);
 }
 
 /**
@@ -402,7 +403,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0026, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0027, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/h264_aac_1280.ts", 10);
+    CheckSeekResult("/data/test/media/h264_aac_1280.ts", SEEKTIMES);
 }
 
 /**
@@ -412,7 +413,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0027, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0028, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/h264_aac_1920.ts", 10);
+    CheckSeekResult("/data/test/media/h264_aac_1920.ts", SEEKTIMES);
 }
 
 /**
@@ -422,7 +423,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0028, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0029, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/h264_mp3_3mevx_fmp4.mp4", 10);
+    CheckSeekResult("/data/test/media/h264_mp3_3mevx_fmp4.mp4", SEEKTIMES);
 }
 
 /**
@@ -432,7 +433,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0029, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0030, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/h265_aac_1mvex_fmp4.mp4", 10);
+    CheckSeekResult("/data/test/media/h265_aac_1mvex_fmp4.mp4", SEEKTIMES);
 }
 
 /**
@@ -442,7 +443,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0030, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0032, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/h265_mp3_640.ts", 10);
+    CheckSeekResult("/data/test/media/h265_mp3_640.ts", SEEKTIMES);
 }
 
 /**
@@ -452,7 +453,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0032, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0033, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/h265_mp3_1280.ts", 10);
+    CheckSeekResult("/data/test/media/h265_mp3_1280.ts", SEEKTIMES);
 }
 
 /**
@@ -462,7 +463,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0033, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0034, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/h265_mp3_1920.ts", 10);
+    CheckSeekResult("/data/test/media/h265_mp3_1920.ts", SEEKTIMES);
 }
 
 /**
@@ -472,7 +473,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0034, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0035, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/hevc_pcm_a.flv", 10);
+    CheckSeekResult("/data/test/media/hevc_pcm_a.flv", SEEKTIMES);
 }
 
 /**
@@ -482,7 +483,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0035, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0036, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/hevc_v.ts", 10);
+    CheckSeekResult("/data/test/media/hevc_v.ts", SEEKTIMES);
 }
 
 /**
@@ -492,7 +493,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0036, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0037, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/hevc_v_a.ts", 10);
+    CheckSeekResult("/data/test/media/hevc_v_a.ts", SEEKTIMES);
 }
 
 /**
@@ -502,7 +503,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0037, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0038, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/hvcc.mp4", 10);
+    CheckSeekResult("/data/test/media/hvcc.mp4", SEEKTIMES);
 }
 
 /**
@@ -512,7 +513,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0038, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0039, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/m4a_fmp4.mp4", 10);
+    CheckSeekResult("/data/test/media/m4a_fmp4.mp4", SEEKTIMES);
 }
 
 /**
@@ -522,7 +523,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0039, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0040, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/m4v_fmp4.mp4", 10);
+    CheckSeekResult("/data/test/media/m4v_fmp4.mp4", SEEKTIMES);
 }
 
 /**
@@ -532,7 +533,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0040, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0041, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/mkv.mkv", 10);
+    CheckSeekResult("/data/test/media/mkv.mkv", SEEKTIMES);
 }
 
 /**
@@ -542,7 +543,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0041, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0042, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/MP3_avcc_10sec.bin", 10);
+    CheckSeekResult("/data/test/media/MP3_avcc_10sec.bin", SEEKTIMES);
 }
 
 /**
@@ -552,7 +553,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0042, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0043, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/MP3_OGG_48000_1.bin", 10);
+    CheckSeekResult("/data/test/media/MP3_OGG_48000_1.bin", SEEKTIMES);
 }
 
 /**
@@ -562,7 +563,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0043, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0044, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/mpeg2.mp4", 10);
+    CheckSeekResult("/data/test/media/mpeg2.mp4", SEEKTIMES);
 }
 
 /**
@@ -572,7 +573,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0044, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0045, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/noPermission.mp4", 10);
+    CheckSeekResult("/data/test/media/noPermission.mp4", SEEKTIMES);
 }
 
 /**
@@ -582,7 +583,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0045, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0046, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/NoTimedmetadataAudio.mp4", 10);
+    CheckSeekResult("/data/test/media/NoTimedmetadataAudio.mp4", SEEKTIMES);
 }
 
 /**
@@ -592,7 +593,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0046, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0047, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/single_60.mp4", 10);
+    CheckSeekResult("/data/test/media/single_60.mp4", SEEKTIMES);
 }
 
 /**
@@ -602,7 +603,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0047, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0048, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/single_rk.mp4", 10);
+    CheckSeekResult("/data/test/media/single_rk.mp4", SEEKTIMES);
 }
 
 /**
@@ -612,7 +613,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0048, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0054, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/test_264_B_Gop25_4sec.mp4", 10);
+    CheckSeekResult("/data/test/media/test_264_B_Gop25_4sec.mp4", SEEKTIMES);
 }
 
 /**
@@ -622,7 +623,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0054, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0055, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/test_265_B_Gop25_4sec.mp4", 10);
+    CheckSeekResult("/data/test/media/test_265_B_Gop25_4sec.mp4", SEEKTIMES);
 }
 
 /**
@@ -632,7 +633,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0055, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0056, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/test_video_avcc_10sec.bin", 10);
+    CheckSeekResult("/data/test/media/test_video_avcc_10sec.bin", SEEKTIMES);
 }
 
 /**
@@ -642,7 +643,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0056, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0057, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/Timedmetadata1Track0.mp4", 10);
+    CheckSeekResult("/data/test/media/Timedmetadata1Track0.mp4", SEEKTIMES);
 }
 
 /**
@@ -652,7 +653,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0057, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0058, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/Timedmetadata1Track1.mp4", 10);
+    CheckSeekResult("/data/test/media/Timedmetadata1Track1.mp4", SEEKTIMES);
 }
 
 /**
@@ -662,7 +663,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0058, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0059, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/Timedmetadata1Track2.mp4", 10);
+    CheckSeekResult("/data/test/media/Timedmetadata1Track2.mp4", SEEKTIMES);
 }
 
 /**
@@ -672,7 +673,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0059, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0060, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/Timedmetadata2Track2.mp4", 10);
+    CheckSeekResult("/data/test/media/Timedmetadata2Track2.mp4", SEEKTIMES);
 }
 
 /**
@@ -682,7 +683,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0060, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0061, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/TimedmetadataAudio.mp4", 10);
+    CheckSeekResult("/data/test/media/TimedmetadataAudio.mp4", SEEKTIMES);
 }
 
 /**
@@ -692,7 +693,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0061, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0062, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/TimedmetadataVideo.mp4", 10);
+    CheckSeekResult("/data/test/media/TimedmetadataVideo.mp4", SEEKTIMES);
 }
 
 /**
@@ -702,7 +703,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0062, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0063, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/ts_video.ts", 10);
+    CheckSeekResult("/data/test/media/ts_video.ts", SEEKTIMES);
 }
 
 /**
@@ -712,7 +713,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0063, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0064, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/video_2audio.mp4", 10);
+    CheckSeekResult("/data/test/media/video_2audio.mp4", SEEKTIMES);
 }
 
 /**
@@ -722,7 +723,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0064, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0065, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/video_9audio.mp4", 10);
+    CheckSeekResult("/data/test/media/video_9audio.mp4", SEEKTIMES);
 }
 
 /**
@@ -732,7 +733,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0065, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0071, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/xm.mp4", 10);
+    CheckSeekResult("/data/test/media/xm.mp4", SEEKTIMES);
 }
 
 /**
@@ -742,7 +743,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0071, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0072, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/AAC_48000_1.aac", 10);
+    CheckSeekResult("/data/test/media/audio/AAC_48000_1.aac", SEEKTIMES);
 }
 
 /**
@@ -752,7 +753,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0072, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0073, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/amr_nb_8000_1.amr", 10);
+    CheckSeekResult("/data/test/media/audio/amr_nb_8000_1.amr", SEEKTIMES);
 }
 
 /**
@@ -762,7 +763,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0073, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0074, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/amr_wb_16000_1.amr", 10);
+    CheckSeekResult("/data/test/media/audio/amr_wb_16000_1.amr", SEEKTIMES);
 }
 
 /**
@@ -772,7 +773,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0074, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0075, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/ape.ape", 10);
+    CheckSeekResult("/data/test/media/audio/ape.ape", SEEKTIMES);
 }
 
 /**
@@ -782,7 +783,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0075, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0076, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/feff_bom.mp3", 10);
+    CheckSeekResult("/data/test/media/audio/feff_bom.mp3", SEEKTIMES);
 }
 
 /**
@@ -792,7 +793,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0076, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0077, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/fffe_bom.mp3", 10);
+    CheckSeekResult("/data/test/media/audio/fffe_bom.mp3", SEEKTIMES);
 }
 
 /**
@@ -802,7 +803,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0077, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0078, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/FLAC_48000_1.flac", 10);
+    CheckSeekResult("/data/test/media/audio/FLAC_48000_1.flac", SEEKTIMES);
 }
 
 /**
@@ -812,7 +813,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0078, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0079, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/M4A_48000_1.m4a", 10);
+    CheckSeekResult("/data/test/media/audio/M4A_48000_1.m4a", SEEKTIMES);
 }
 
 /**
@@ -822,7 +823,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0079, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0080, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/MP3_48000_1.mp3", 10);
+    CheckSeekResult("/data/test/media/audio/MP3_48000_1.mp3", SEEKTIMES);
 }
 
 /**
@@ -832,7 +833,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0080, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0081, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/nonstandard_bom.mp3", 10);
+    CheckSeekResult("/data/test/media/audio/nonstandard_bom.mp3", SEEKTIMES);
 }
 
 /**
@@ -842,7 +843,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0081, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0082, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/OGG_48000_1.ogg", 10);
+    CheckSeekResult("/data/test/media/audio/OGG_48000_1.ogg", SEEKTIMES);
 }
 
 /**
@@ -852,7 +853,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0082, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0083, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/wav_48000_1.wav", 10);
+    CheckSeekResult("/data/test/media/audio/wav_48000_1.wav", SEEKTIMES);
 }
 
 /**
@@ -862,7 +863,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0083, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0084, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/wav_audio_test_1562.wav", 10);
+    CheckSeekResult("/data/test/media/audio/wav_audio_test_1562.wav", SEEKTIMES);
 }
 
 /**
@@ -872,5 +873,5 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0084, TestSize.Level0)
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0085, TestSize.Level0)
 {
-    CheckSeekResult("/data/test/media/audio/wav_audio_test_202406290859.wav", 10);
+    CheckSeekResult("/data/test/media/audio/wav_audio_test_202406290859.wav", SEEKTIMES);
 }
