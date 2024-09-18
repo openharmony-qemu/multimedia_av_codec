@@ -79,7 +79,7 @@ void FileServerDemo::StopServer()
     }
     threadPool_->Stop();
     close(listenFd_);
-    listenFd_ = 0;
+    listenFd_ = -1;
 }
 
 void FileServerDemo::CloseFd(int32_t &connFd, int32_t &fileFd, bool connCond, bool fileCond)

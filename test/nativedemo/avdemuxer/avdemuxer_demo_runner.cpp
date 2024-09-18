@@ -379,6 +379,7 @@ static void RunRefParserDemuxer(const std::string &filePath, const std::string &
     innerDemuxerDemo->Destroy();
     if (fileMode == "0" && fd > 0) {
         close(fd);
+        fd = -1;
     }
 }
 
