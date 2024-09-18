@@ -205,8 +205,6 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_264_codecbase_setparam, TestSize.
         .setParameterParamsMap = {{2, SetParameterParams{
             .requestIdr = true,
             .qpRange = QPRange{13, 42},
-            .bitRate = 15000000, // target bitrate : 15M
-            .frameRate = 60, // 60: target framerate
         }}},
     };
     bool ret = TesterCommon::Run(opt);

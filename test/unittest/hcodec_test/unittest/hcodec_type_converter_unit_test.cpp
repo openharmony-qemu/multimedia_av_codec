@@ -126,6 +126,54 @@ HWTEST(HCodecTypeConverterUnitTest, inner_rotate_to_display_rotate_not_find, Tes
     ASSERT_FALSE(ret.has_value());
 }
 
+HWTEST(HCodecTypeConverterUnitTest, range_flag_to_omx_range_type_full, TestSize.Level1)
+{
+    RangeType ret = TypeConverter::RangeFlagToOmxRangeType(true);
+    EXPECT_EQ(ret, RANGE_FULL);
+}
+
+HWTEST(HCodecTypeConverterUnitTest, range_flag_to_omx_range_type_limited, TestSize.Level1)
+{
+    RangeType ret = TypeConverter::RangeFlagToOmxRangeType(false);
+    EXPECT_EQ(ret, RANGE_LIMITED);
+}
+
+HWTEST(HCodecTypeConverterUnitTest, inner_primary_to_omx_primary_find, TestSize.Level1)
+{
+    Primaries ret = TypeConverter::InnerPrimaryToOmxPrimary(COLOR_PRIMARY_BT709);
+    EXPECT_EQ(ret, PRIMARIES_BT709);
+}
+
+HWTEST(HCodecTypeConverterUnitTest, inner_primary_to_omx_primary_not_finddefault, TestSize.Level1)
+{
+    Primaries ret = TypeConverter::InnerPrimaryToOmxPrimary(static_cast<ColorPrimary>(100));
+    EXPECT_EQ(ret, PRIMARIES_UNSPECIFIED);
+}
+
+HWTEST(HCodecTypeConverterUnitTest, inner_transfer_to_omx_transfer_find, TestSize.Level1)
+{
+    Transfer ret = TypeConverter::InnerTransferToOmxTransfer(TRANSFER_CHARACTERISTIC_GAMMA_2_2);
+    EXPECT_EQ(ret, TRANSFER_GAMMA22);
+}
+
+HWTEST(HCodecTypeConverterUnitTest, inner_transfer_to_omx_transfer_default, TestSize.Level1)
+{
+    Transfer ret = TypeConverter::InnerTransferToOmxTransfer(static_cast<TransferCharacteristic>(100));
+    EXPECT_EQ(ret, TRANSFER_UNSPECIFIED);
+}
+
+HWTEST(HCodecTypeConverterUnitTest, inner_matrix_to_omx_matrix_find, TestSize.Level1)
+{
+    MatrixCoeffs ret = TypeConverter::InnerMatrixToOmxMatrix(MATRIX_COEFFICIENT_BT2020_NCL);
+    EXPECT_EQ(ret, MATRIX_BT2020);
+}
+
+HWTEST(HCodecTypeConverterUnitTest, inner_matrix_to_omx_matrix_default, TestSize.Level1)
+{
+    MatrixCoeffs ret = TypeConverter::InnerMatrixToOmxMatrix(static_cast<MatrixCoefficient>(100));
+    EXPECT_EQ(ret, MATRIX_UNSPECIFED);
+}
+
 HWTEST(HCodecTypeConverterUnitTest, omx_avc_profile_to_inner_profile_find, TestSize.Level1)
 {
     optional<AVCProfile> ret = TypeConverter::OmxAvcProfileToInnerProfile(OMX_VIDEO_AVCProfileBaseline);

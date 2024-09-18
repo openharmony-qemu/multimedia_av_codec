@@ -251,15 +251,6 @@ bool TesterCodecBase::ConfigureEncoder()
         return false;
     }
     CostRecorder::Instance().Update(begin, "Configure");
-
-    if (opt_.waterMark.isSet) {
-        shared_ptr<AVBuffer> buffer = CreateWaterMarkBuffer();
-        err = codec_->SetCustomBuffer(buffer);
-        if (err != AVCS_ERR_OK) {
-            TLOGE("SetCustomBuffer failed");
-            return false;
-        }
-    }
     return true;
 }
 
@@ -275,9 +266,6 @@ bool TesterCodecBase::SetEncoderParameter(const SetParameterParams& param)
     if (param.qpRange.has_value()) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, static_cast<int32_t>(param.qpRange->qpMin));
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, static_cast<int32_t>(param.qpRange->qpMax));
-    }
-    if (opt_.scaleMode.has_value()) {
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, static_cast<int32_t>(opt_.scaleMode.value()));
     }
     int32_t err = codec_->SetParameter(fmt);
     if (err != AVCS_ERR_OK) {
@@ -305,7 +293,7 @@ bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams
     }
     if (param.ltrParam.has_value()) {
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR,
-            static_cast<bool>(param.ltrParam->markAsLTR));
+            static_cast<int32_t>(param.ltrParam->markAsLTR));
         if (param.ltrParam->useLTR > 0) {
             meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR,
                 static_cast<int32_t>(param.ltrParam->useLTRPoc));
@@ -533,9 +521,6 @@ bool TesterCodecBase::ConfigureDecoder()
     fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, opt_.frameRate);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, opt_.rotation);
     EnableHighPerf(fmt);
-    if (opt_.scaleMode.has_value()) {
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, static_cast<int32_t>(opt_.scaleMode.value()));
-    }
 
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);

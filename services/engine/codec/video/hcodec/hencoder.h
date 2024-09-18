@@ -46,7 +46,6 @@ private:
 private:
     // configure
     int32_t OnConfigure(const Format &format) override;
-    int32_t OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t ConfigureBufferType();
     int32_t SetupPort(const Format &format, std::optional<double> frameRate);
     void ConfigureProtocol(const Format &format, std::optional<double> frameRate);
@@ -55,7 +54,6 @@ private:
     int32_t UpdateOutPortFormat() override;
     int32_t ConfigureOutputBitrate(const Format &format);
     static std::optional<uint32_t> GetBitRateFromUser(const Format &format);
-    static std::optional<VideoEncodeBitrateMode> GetBitRateModeFromUser(const Format &format);
     int32_t SetupAVCEncoderParameters(const Format &format, std::optional<double> frameRate);
     void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, int32_t iFrameInterval, double frameRate);
     int32_t SetupHEVCEncoderParameters(const Format &format, std::optional<double> frameRate);
@@ -69,7 +67,6 @@ private:
     int32_t EnableEncoderParamsFeedback(const Format &format);
     int32_t SetQpRange(const Format &format, bool isCfg);
     int32_t SetRepeat(const Format &format);
-    int32_t SetConstantQualityMode(int32_t quality);
     int32_t SetTemperalLayer(const Format &format);
 
     // start
