@@ -168,7 +168,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0002, TestSize.Level0)
 
 /**
  * @tc.number    : DEMUXER_SEEK_0003
- * @tc.name      : demuxer random seek, 
+ * @tc.name      : demuxer random seek, avc_mp3_error.flv
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_SEEK_0003, TestSize.Level2)
