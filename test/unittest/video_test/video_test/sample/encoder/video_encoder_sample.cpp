@@ -60,7 +60,8 @@ int32_t VideoEncoderSample::Prepare()
         info.videoWidth, info.videoHeight, info.videoStrideWidth, info.videoSliceHeight);
 
     outputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::OutputThread, this);
-    CHECK_AND_RETURN_RET_LOG(inputThread_ && outputThread_, AVCODEC_SAMPLE_ERR_ERROR, "Create thread failed");
+    CHECK_AND_RETURN_RET_LOG(inputThread_->joinable() && outputThread_->joinable(),
+        AVCODEC_SAMPLE_ERR_ERROR, "Create thread failed");
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
