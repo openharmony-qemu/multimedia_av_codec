@@ -22,7 +22,7 @@
 namespace {
 const std::string HEVC_LIB_PATH = "libav_codec_hevc_parser.z.so";
 const std::string VVC_LIB_PATH = "libav_codec_vvc_parser.z.so";
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "StreamParserManager" };
 }
 
 namespace OHOS {
