@@ -649,7 +649,8 @@ bool HlsMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         MEDIA_LOG_I("HLS isInterruptNeeded true, return false.");
         return false;
     }
-    return hasWriteSize > 0;
+    auto ret = hasWriteSize > 0 && (hasWriteSize == len);
+    return ret;
 }
 
 bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
@@ -659,15 +660,16 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
         return false;
     }
     startedPlayStatus_ = true;
+    bool res = true;
     if (keyLen_ == 0) {
-        SaveCacheBufferData(data, len);
+        res = SaveCacheBufferData(data, len);
     } else {
-        SaveEncryptData(data, len);
+        res = SaveEncryptData(data, len);
     }
 
     HandleCachedDuration();
     HandleBuffering();
-    return isSeekingFlag.load() == false;
+    return isSeekingFlag.load() == false && res;
 }
 
 uint32_t HlsMediaDownloader::GetDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen)
