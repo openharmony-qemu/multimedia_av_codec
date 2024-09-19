@@ -70,8 +70,8 @@ private:
     int32_t EnableEncoderParamsFeedback(const Format &format);
     int32_t SetQpRange(const Format &format, bool isCfg);
     int32_t SetRepeat(const Format &format);
-    int32_t SetConstantQualityMode(int32_t quality);
     int32_t SetTemperalLayer(const Format &format);
+    int32_t SetConstantQualityMode(int32_t quality);
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;

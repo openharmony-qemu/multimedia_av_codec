@@ -75,6 +75,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_INIT, TestSize.Level1)
         std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 4);
     std::shared_ptr<HttpMediaDownloader> httpMediaDownloader_5 =
         std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5);
+    EXPECT_TRUE(httpMediaDownloader4);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RINGBUFFER, TestSize.Level1)
@@ -97,6 +98,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RINGBUFFER, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport, TestSize.Level1)
@@ -121,6 +123,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport_MP4, TestSize.Level1)
@@ -145,6 +148,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport_MP4, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport_MP4_default, TestSize.Level1)
@@ -157,11 +161,11 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport_MP4_default, TestSize.
     std::map<std::string, std::string> httpHeader;
     httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();
+    ReadDataInfo readDataInfo;
     for (int i = 0; i < 800; i++) {
         OSAL::SleepFor(10);
         httpMediaDownloader->DownloadReport();
         unsigned char buff[10 * 1024];
-        ReadDataInfo readDataInfo;
         readDataInfo.streamId_ = 0;
         readDataInfo.wantReadLength_ = 10 * 1024;
         readDataInfo.isEos_ = false;
@@ -172,6 +176,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport_MP4_default, TestSize.
     }
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_mp4_read_all, TestSize.Level1)
@@ -184,10 +189,10 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_mp4_read_all, TestSize.Level1)
     std::map<std::string, std::string> httpHeader;
     httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();
+    ReadDataInfo readDataInfo;
     for (int i = 0; i < 800; i++) {
         OSAL::SleepFor(10);
         unsigned char buff[100 * 1024];
-        ReadDataInfo readDataInfo;
         readDataInfo.streamId_ = 0;
         readDataInfo.wantReadLength_ = 100 * 1024;
         readDataInfo.isEos_ = false;
@@ -198,6 +203,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_mp4_read_all, TestSize.Level1)
     }
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 
@@ -299,6 +305,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_MP4_DUA, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_MP4_DOWNLOADINFO, TestSize.Level1)
@@ -311,6 +318,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_MP4_DOWNLOADINFO, TestSize.L
     std::map<std::string, std::string> httpHeader;
     httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();
+    EXPECT_TRUE(httpMediaDownloader);
     DownloadInfo downloadInfo;
     httpMediaDownloader->GetDownloadInfo(downloadInfo);
     httpMediaDownloader->recordSpeedCount_ = 10;
@@ -355,6 +363,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4, TestSize.Level1)
     httpMediaDownloader->ChangeDownloadPos();
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4_ERROR, TestSize.Level1)
@@ -378,6 +387,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4_ERROR, TestSize.Level1)
     httpMediaDownloader->CheckIsEosCacheBuffer(buff, readDataInfo);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_FLV_ERROR, TestSize.Level1)
@@ -403,6 +413,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_FLV_ERROR, TestSize.Level1)
     httpMediaDownloader->OnClientErrorEvent();
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4_NULL, TestSize.Level1)
@@ -432,6 +443,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4_NULL, TestSize.Level1)
     httpMediaDownloader->HandleCachedDuration();
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_FLC_SEEK, TestSize.Level1)
@@ -455,13 +467,14 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_FLC_SEEK, TestSize.Level1)
     httpMediaDownloader->SeekToPos(100 * 1024 * 1024);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 
 HWTEST_F(HttpMediaDownloaderUnitTest, GetContentLength, TestSize.Level1)
 {
-    MP4httpMediaDownloader->GetContentLength();
-    FLVhttpMediaDownloader->GetContentLength();
+    EXPECT_GE(MP4httpMediaDownloader->GetContentLength(), 0);
+    EXPECT_GE(FLVhttpMediaDownloader->GetContentLength(), 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, GetStartedStatus, TestSize.Level1)

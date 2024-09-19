@@ -41,7 +41,7 @@
 #include "demuxer_plugin_manager.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "MediaDemuxer" };
 } // namespace
 
 namespace OHOS {

@@ -209,7 +209,6 @@ void HttpServerDemo::FileReadFunc(int32_t connFd)
     int32_t keepAlive = 1;
     int32_t keepIdle = 10;
     std::string recvStr = std::string(recvBuff);
-    std::cout << "recv recvStr=" << recvStr << std::endl;
     std::string path = "";
     if (ret <= 0) {
         std::cout << "recv error, ret=" << ret << std::endl;

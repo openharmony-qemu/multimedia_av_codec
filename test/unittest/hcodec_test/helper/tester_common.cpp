@@ -21,11 +21,9 @@
 #include "tester_capi.h"
 #include "tester_codecbase.h"
 #include "type_converter.h"
-#include "ui/rs_surface_node.h" // foundation/graphic/graphic_2d/rosen/modules/render_service_client/core/
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::Rosen;
 using namespace Media;
 
 std::mutex TesterCommon::vividMtx_;
@@ -580,7 +578,7 @@ bool TesterCommon::RunDecoder()
     ret = ConfigureDecoder();
     IF_TRUE_RETURN_VAL(!ret, false);
     if (!opt_.isBufferMode) {
-        sptr<Surface> surface = opt_.render ? CreateSurfaceFromWindow() : CreateSurfaceNormal();
+        sptr<Surface> surface = CreateSurfaceNormal();
         if (surface == nullptr) {
             return false;
         }
@@ -602,36 +600,7 @@ bool TesterCommon::RunDecoder()
     IF_TRUE_RETURN_VAL(!ret, false);
     ret = Release();
     IF_TRUE_RETURN_VAL(!ret, false);
-    if (window_ != nullptr) {
-        window_->Destroy();
-        window_ = nullptr;
-    }
     return true;
-}
-
-sptr<Surface> TesterCommon::CreateSurfaceFromWindow()
-{
-    sptr<WindowOption> option = new WindowOption();
-    option->SetWindowType(WindowType::WINDOW_TYPE_FLOAT);
-    option->SetWindowMode(WindowMode::WINDOW_MODE_FULLSCREEN);
-    sptr<Window> window = Window::Create("DemoWindow", option);
-    if (window == nullptr) {
-        TLOGE("Create Window failed");
-        return nullptr;
-    }
-    shared_ptr<RSSurfaceNode> node = window->GetSurfaceNode();
-    if (node == nullptr) {
-        TLOGE("GetSurfaceNode failed");
-        return nullptr;
-    }
-    sptr<Surface> surface = node->GetSurface();
-    if (surface == nullptr) {
-        TLOGE("GetSurface failed");
-        return nullptr;
-    }
-    window->Show();
-    window_ = window;
-    return surface;
 }
 
 sptr<Surface> TesterCommon::CreateSurfaceNormal()

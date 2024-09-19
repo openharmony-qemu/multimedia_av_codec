@@ -85,3 +85,10 @@ ohos_shared_library("hcodec") {
     defines = [ "BUILD_ENG_VERSION" ]
   }
 }
+
+group("hcodec_group") {
+  deps = [ ":hcodec" ]
+  if (build_variant != "user") {
+    deps += [ "$av_codec_root_dir/test/unittest/hcodec_test/demo:hcodec_demo" ]
+  }
+}

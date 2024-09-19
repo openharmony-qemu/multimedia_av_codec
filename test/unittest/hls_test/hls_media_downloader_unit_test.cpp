@@ -74,6 +74,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo2, TestSize.Level1)
     hlsMediaDownloader->avgSpeedSum_ = 25;
     DownloadInfo downloadInfo;
     hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(downloadInfo.avgDownloadRate, 5);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo3, TestSize.Level1)
@@ -300,6 +301,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_PAUSE, TestSize.Level1)
     HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
+    EXPECT_TRUE(downloader);
     downloader->isInterrupt_ = false;
     downloader->Pause();
     downloader->Resume();
@@ -365,6 +367,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK, TestSize.Level1)
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
     OSAL::SleepFor(1 * 1000);
 
     downloader->SetCurrentBitRate(-1, 0);
@@ -410,6 +413,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK1, TestSize.Level1)
     downloader->HandleCache();
     downloader->Close(true);
     downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport, TestSize.Level1)
@@ -423,12 +427,12 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport, TestSize.Level1)
     Plugins::Callback* sourceCallback = new SourceCallback();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
+    ReadDataInfo readDataInfo;
     for (int i = 0; i < 80; i++) {
         OSAL::SleepFor(100);
         downloader->DownloadReport();
 
         unsigned char buff[100 * 1024];
-        ReadDataInfo readDataInfo;
         readDataInfo.streamId_ = 0;
         readDataInfo.wantReadLength_ = 100 * 1024;
         readDataInfo.isEos_ = false;
@@ -437,6 +441,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport, TestSize.Level1)
     downloader->CheckBufferingOneSeconds();
     downloader->Close(true);
     downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M, TestSize.Level1)
@@ -464,6 +469,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M, TestSize.Level1)
     downloader->CheckBufferingOneSeconds();
     downloader->Close(true);
     downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M_default, TestSize.Level1)
@@ -478,12 +484,12 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M_default, TestSize.Le
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
+    ReadDataInfo readDataInfo;
     for (int i = 0; i < 800; i++) {
         OSAL::SleepFor(10);
         downloader->DownloadReport();
 
         unsigned char buff[10 * 1024];
-        ReadDataInfo readDataInfo;
         readDataInfo.streamId_ = 0;
         readDataInfo.wantReadLength_ = 10 * 1024;
         readDataInfo.isEos_ = false;
@@ -495,6 +501,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M_default, TestSize.Le
     downloader->CheckBufferingOneSeconds();
     downloader->Close(true);
     downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_read_all, TestSize.Level1)
@@ -509,10 +516,10 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_read_all, TestSize.Level1)
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
+    ReadDataInfo readDataInfo;
     for (int i = 0; i < 800; i++) {
         OSAL::SleepFor(10);
         unsigned char buff[10 * 1024];
-        ReadDataInfo readDataInfo;
         readDataInfo.streamId_ = 0;
         readDataInfo.wantReadLength_ = 10 * 1024;
         readDataInfo.isEos_ = false;
@@ -520,6 +527,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_read_all, TestSize.Level1)
     }
     downloader->Close(true);
     downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_Read_Live, TestSize.Level1)
@@ -545,6 +553,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_Read_Live, TestSize.Level1)
     downloader->CheckBufferingOneSeconds();
     downloader->Close(true);
     downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_Encrypted, TestSize.Level1)
@@ -604,6 +613,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level1)
     };
     downloader->SetStatusCallback(statusCallback);
     downloader->Open(testUrl, httpHeader);
+    EXPECT_TRUE(downloader);
     downloader->Close(true);
     testUrl = "fd://-1?offset=0&size=1024";
     downloader->Open(testUrl, httpHeader);
@@ -653,6 +663,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_null, TestSize.Level1)
     OSAL::SleepFor(4 * 1000);
     downloader->Close(true);
     downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_MAX_M3U8, TestSize.Level1)

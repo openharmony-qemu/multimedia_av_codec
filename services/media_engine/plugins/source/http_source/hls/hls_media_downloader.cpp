@@ -429,8 +429,6 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
     readDataInfo.realReadLength_ = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
     readOffset_ += readDataInfo.realReadLength_;
     ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
-    canWrite_ = true;
-    OnReadCacheBuffer(readDataInfo.realReadLength_);
 
     if (tsStorageInfo_[readTsIndex_].second == true) {
         size_t tsOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
@@ -438,7 +436,17 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
             readTsIndex_++;
             readOffset_ = SpliceOffset(readTsIndex_, 0);
         }
+        if (readDataInfo.realReadLength_ < readDataInfo.wantReadLength_ && readTsIndex_ != backPlayList_.size()) {
+            uint32_t crossFragLen = readDataInfo.wantReadLength_ - readDataInfo.realReadLength_;
+            uint32_t crossReadLen = cacheMediaBuffer_->Read(buff + readDataInfo.realReadLength_, readOffset_,
+                                                            crossFragLen);
+            readDataInfo.realReadLength_ = readDataInfo.realReadLength_ + crossReadLen;
+            ffmpegOffset_ += crossReadLen;
+            readOffset_ += crossReadLen;
+        }
     }
+    canWrite_ = true;
+    OnReadCacheBuffer(readDataInfo.realReadLength_);
     return Status::OK;
 }
 
@@ -641,7 +649,8 @@ bool HlsMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         MEDIA_LOG_I("HLS isInterruptNeeded true, return false.");
         return false;
     }
-    return hasWriteSize > 0;
+    auto ret = hasWriteSize > 0 && (hasWriteSize == len);
+    return ret;
 }
 
 bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
@@ -651,15 +660,16 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
         return false;
     }
     startedPlayStatus_ = true;
+    bool res = true;
     if (keyLen_ == 0) {
-        SaveCacheBufferData(data, len);
+        res = SaveCacheBufferData(data, len);
     } else {
-        SaveEncryptData(data, len);
+        res = SaveEncryptData(data, len);
     }
 
     HandleCachedDuration();
     HandleBuffering();
-    return isSeekingFlag.load() == false;
+    return isSeekingFlag.load() == false && res;
 }
 
 uint32_t HlsMediaDownloader::GetDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen)

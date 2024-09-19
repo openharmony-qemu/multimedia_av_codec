@@ -198,7 +198,6 @@ private:
     std::map<uint32_t, sptr<SurfaceBuffer>> renderSurfaceBufferMap_;
     sptr<Surface> surface_ = nullptr;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
-    std::mutex inputMutex_;
     std::mutex outputMutex_;
     std::mutex decRunMutex_;
     std::mutex surfaceMutex_;

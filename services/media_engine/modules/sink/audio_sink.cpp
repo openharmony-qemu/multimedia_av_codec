@@ -20,7 +20,7 @@
 #include "calc_max_amplitude.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSink" };
 constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
 constexpr int64_t US_TO_MS = 1000; // 1000 us per ms
 constexpr int64_t ANCHOR_UPDATE_PERIOD_US = 200000; // Update time anchor every 200 ms
@@ -403,8 +403,9 @@ void AudioSink::CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer)
 
 bool AudioSink::DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
 {
-    FALSE_RETURN_V(isApe_, false);
-    FALSE_RETURN_V(seekTimeUs_ != HST_TIME_NONE, false);
+    if (!isApe_ || seekTimeUs_ == HST_TIME_NONE) {
+        return false;
+    }
     if (filledOutputBuffer->pts_ < seekTimeUs_) {
         MEDIA_LOG_D("Drop ape buffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
