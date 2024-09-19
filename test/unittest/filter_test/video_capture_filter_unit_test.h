@@ -17,6 +17,8 @@
 
 #include "gtest/gtest.h"
 #include "video_capture_filter.h"
+#include <gmock/gmock.h>
+#include "consumer_surface.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,60 +38,20 @@ protected:
     std::shared_ptr<VideoCaptureFilter> videoCaptureFilter_{ nullptr };
 };
 
-class MyAVBufferQueueProducer : public IRemoteStub<AVBufferQueueProducer> {
+class MockAVBufferQueueProducer : public IRemoteStub<AVBufferQueueProducer> {
 public:
-    uint32_t GetQueueSize()
-    {
-        return 0;
-    }
-    Status SetQueueSize(uint32_t size)
-    {
-        return  Status::OK;
-    }
-
-    Status RequestBuffer(std::shared_ptr<AVBuffer>& outBuffer,
-                                 const AVBufferConfig& config, int32_t timeoutMs)
-    {
-        if (outBuffer == nullptr) {
-            return  Status::ERROR_NULL_POINTER;
-        } else {
-            return  Status::OK;
-        }
-    }
-    Status PushBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available)
-    {
-        return  Status::OK;
-    }
-    Status ReturnBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available)
-    {
-        return  Status::OK;
-    }
-
-    Status AttachBuffer(std::shared_ptr<AVBuffer>& inBuffer, bool isFilled)
-    {
-        return  Status::OK;
-    }
-    Status DetachBuffer(const std::shared_ptr<AVBuffer>& outBuffer)
-    {
-        return  Status::OK;
-    }
-
-    Status SetBufferFilledListener(sptr<IBrokerListener>& listener)
-    {
-        return  Status::OK;
-    }
-    Status RemoveBufferFilledListener(sptr<IBrokerListener>& listener)
-    {
-        return  Status::OK;
-    }
-    Status SetBufferAvailableListener(sptr<IProducerListener>& listener)
-    {
-        return  Status::OK;
-    }
-    Status Clear()
-    {
-        return  Status::OK;
-    }
+    MOCK_METHOD(uint32_t, GetQueueSize, (),(override));
+    MOCK_METHOD(Status, SetQueueSize, (uint32_t size), (override));
+    MOCK_METHOD(Status, RequestBuffer, 
+        (std::shared_ptr<AVBuffer>& outBuffer, const AVBufferConfig& config, int32_t timeoutMs), (override));
+    MOCK_METHOD(Status, PushBuffer, (const std::shared_ptr<AVBuffer>& inBuffer, bool available), (override)); 
+    MOCK_METHOD(Status, ReturnBuffer, (const std::shared_ptr<AVBuffer>& inBuffer, bool available), (override)); 
+    MOCK_METHOD(Status, AttachBuffer, (std::shared_ptr<AVBuffer>& inBuffer, bool isFilled), (override)); 
+    MOCK_METHOD(Status, DetachBuffer, (const std::shared_ptr<AVBuffer>& outBuffer), (override)); 
+    MOCK_METHOD(Status, SetBufferFilledListener, (sptr<IBrokerListener>& listener), (override)); 
+    MOCK_METHOD(Status, RemoveBufferFilledListener, (sptr<IBrokerListener>& listener), (override)); 
+    MOCK_METHOD(Status, SetBufferAvailableListener, (sptr<IProducerListener>& listener), (override)); 
+    MOCK_METHOD(Status, Clear, (), (override)); 
     DECLARE_INTERFACE_DESCRIPTOR(u"Media.MyAVBufferQueueProducer");
 
 protected:
@@ -174,6 +136,7 @@ public:
     static sptr<MockConsumerSurface> CreateSurfaceAsConsumer(std::string name, bool isShared=false);
     MOCK_METHOD(GSError, AcquireBuffer,
         (sptr<SurfaceBuffer> &buffer, sptr<SyncFence> &fence, int64_t &timestamp, Rect &damage), (override));
+    MOCK_METHOD(GSError, ReleaseBuffer, (sptr<SurfaceBuffer> &buffer, int32_t fence), (override)); 
 private:
     std::map<std::string, std::string> userData_;
     sptr<BufferQueueProducer> producer_ = nullptr;
