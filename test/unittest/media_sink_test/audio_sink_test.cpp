@@ -886,14 +886,14 @@ HWTEST(TestAudioSink, audio_sink_ResetSyncInfo, TestSize.Level1)
     ASSERT_TRUE(!audioSink->syncCenter_.expired());
 }
 
-// lastReportedClockTime_ != HST_TIME_NONE || forceUpdateTimeAnchorNextTime_ != true
+// lastAnchorClockTime_ != HST_TIME_NONE || forceUpdateTimeAnchorNextTime_ != true
 HWTEST(TestAudioSink, audio_sink_DoSyncWrite_001, TestSize.Level1)
 {
     auto audioSink = AudioSinkCreate();
     ASSERT_TRUE(audioSink != nullptr);
 
     audioSink->firstPts_  = 0;
-    audioSink->lastReportedClockTime_ = 0;
+    audioSink->lastAnchorClockTime_ = 0;
     audioSink->forceUpdateTimeAnchorNextTime_ = false;
     audioSink->playingBufferDurationUs_  = 1;
     AVBufferConfig config;
@@ -904,14 +904,14 @@ HWTEST(TestAudioSink, audio_sink_DoSyncWrite_001, TestSize.Level1)
     ASSERT_EQ(0, audioSink->DoSyncWrite(buffer));
 }
 
-// lastReportedClockTime_ != HST_TIME_NONE || forceUpdateTimeAnchorNextTime_ == true
+// lastAnchorClockTime_ != HST_TIME_NONE || forceUpdateTimeAnchorNextTime_ == true
 HWTEST(TestAudioSink, audio_sink_DoSyncWrite_002, TestSize.Level1)
 {
     auto audioSink = AudioSinkCreate();
     ASSERT_TRUE(audioSink != nullptr);
 
     audioSink->firstPts_  = 0;
-    audioSink->lastReportedClockTime_ = 0;
+    audioSink->lastAnchorClockTime_ = 0;
     audioSink->forceUpdateTimeAnchorNextTime_ = true;
     audioSink->playingBufferDurationUs_  = 1;
     AVBufferConfig config;
