@@ -1015,7 +1015,7 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
             }
             bool eos = (info.omxBuffer->flag & OMX_BUFFERFLAG_EOS);
             if (!eos && info.omxBuffer->filledLen == 0) {
-                HLOGI("it's not a eos buffer but not filled, ask omx to re-fill it");
+                HLOGW("it's not a eos buffer but not filled, ask omx to re-fill it");
                 NotifyOmxToFillThisOutBuffer(info);
                 return;
             }
@@ -1340,7 +1340,7 @@ void HCodec::CleanUpOmxNode()
 int32_t HCodec::OnAllocateComponent()
 {
     HitraceScoped trace(HITRACE_TAG_ZMEDIA, "hcodec_AllocateComponent_" + caps_.compName);
-    compMgr_ = GetManager(false, caps_.port.video.isSupportPassthrough);
+    compMgr_ = GetManager(false, caps_.port.video.isSupportPassthrough, isSecure_);
     if (compMgr_ == nullptr) {
         HLOGE("GetCodecComponentManager failed");
         return AVCS_ERR_UNKNOWN;

@@ -61,7 +61,6 @@ enum ShortOption {
     OPT_WATERMARK,
     OPT_ENABLE_PARAMS_FEEDBACK,
     // decoder only
-    OPT_RENDER,
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
     OPT_FLUSH_CNT,
@@ -106,7 +105,6 @@ static struct option g_longOptions[] = {
     {"paramsFeedback",  required_argument,  nullptr, OPT_ENABLE_PARAMS_FEEDBACK},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
-    {"render",          required_argument,  nullptr, OPT_RENDER},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
     {"flushCnt",        required_argument,  nullptr, OPT_FLUSH_CNT},
     {"scaleMode",       required_argument,  nullptr, OPT_SCALE_MODE},
@@ -157,7 +155,6 @@ void ShowUsage()
     std::cout << " --waterMark          eg. /data/test/a.rgba,1280,720,2:16,16,1280,720" << std::endl;
     std::cout << " [decoder only]" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
-    std::cout << " --render             0 means don't render, 1 means render to window" << std::endl;
     std::cout << " --paramsFeedback     0 means don't feedback, 1 means feedback" << std::endl;
     std::cout << " --decThenEnc         do surface encode after surface decode" << std::endl;
     std::cout << " --flushCnt           total flush count during decoding" << std::endl;
@@ -279,9 +276,6 @@ CommandOpt Parse(int argc, char *argv[])
                 opt.paramsFeedback = stol(optarg);
                 break;
             // decoder only
-            case OPT_RENDER:
-                opt.render = stol(optarg);
-                break;
             case OPT_DEC_THEN_ENC:
                 opt.decThenEnc = stol(optarg);
                 break;
@@ -293,6 +287,7 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_SCALE_MODE:
                 opt.scaleMode = static_cast<OH_ScalingMode>(stol(optarg));
+                break;
             default:
                 break;
         }
@@ -429,9 +424,9 @@ void CommandOpt::ParseWaterMark(const char *cmd) // "/data/test/a.rgba,1280,720,
 void CommandOpt::Print() const
 {
     TLOGI("-----------------------------");
-    TLOGI("api type=%d, %s, %s mode, render = %d", apiType,
+    TLOGI("api type=%d, %s, %s mode", apiType,
         (isEncoder ? "encoder" : (decThenEnc ? "dec + enc" : "decoder")),
-        isBufferMode ? "buffer" : "surface", render);
+        isBufferMode ? "buffer" : "surface");
     TLOGI("read inputFile %s up to %u frames", inputFile.c_str(), maxReadFrameCnt);
     TLOGI("%u x %u @ %u fps", dispW, dispH, frameRate);
     TLOGI("protocol = %d, pixFmt = %d", protocol, pixFmt);

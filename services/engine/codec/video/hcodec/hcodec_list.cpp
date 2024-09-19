@@ -45,31 +45,36 @@ public:
     }
 };
 
-static std::optional<bool> IsPassthroughFromParam()
+static bool DecideMode(bool supportPassthrough, bool isSecure)
 {
 #ifdef BUILD_ENG_VERSION
-    string para = OHOS::system::GetParameter("hcodec.usePassthrough", "-1");
-    if (para == "1") {
+    string mode = OHOS::system::GetParameter("hcodec.usePassthrough", "");
+    if (mode == "1") {
+        LOGI("force passthrough");
         return true;
-    }
-    if (para == "0") {
+    } else if (mode == "0") {
+        LOGI("force ipc");
         return false;
+    } else if (mode == "-1") {
+        if (isSecure) {
+            LOGI("secure, supportPassthrough = %d", supportPassthrough);
+            return supportPassthrough;
+        } else {
+            static int g_cnt = 0;
+            bool passthrough = (g_cnt++ % 3 == 0);
+            LOGI("g_cnt=%d, %s mode", g_cnt, passthrough ? "passthrough" : "ipc");
+            return passthrough;
+        }
     }
 #endif
-    return std::nullopt;
+    LOGI("supportPassthrough = %d", supportPassthrough);
+    return supportPassthrough;
 }
 
-sptr<ICodecComponentManager> GetManager(bool getCap, bool supportPassthrough)
+sptr<ICodecComponentManager> GetManager(bool getCap, bool supportPassthrough, bool isSecure)
 {
     lock_guard<mutex> lk(g_mtx);
-    bool isPassthrough = false;
-    if (getCap) {
-        isPassthrough = true;
-    } else {
-        optional<bool> para = IsPassthroughFromParam();
-        isPassthrough = para.has_value() ? para.value() : supportPassthrough;
-        LOGI("%s mode", isPassthrough ? "passthrough" : "ipc");
-    }
+    bool isPassthrough = getCap ? true : DecideMode(supportPassthrough, isSecure);
     sptr<ICodecComponentManager>& mng = (isPassthrough ? g_compMgrPassthru : g_compMgrIpc);
     if (mng) {
         return mng;
