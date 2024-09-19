@@ -429,8 +429,6 @@ void HevcDecoder::ResetData()
 void HevcDecoder::ResetBuffers()
 {
     inputAvailQue_->Clear();
-    std::unique_lock<std::mutex> iLock(inputMutex_);
-    iLock.unlock();
     codecAvailQue_->Clear();
     if (sInfo_.surface != nullptr) {
         renderAvailQue_->Clear();
@@ -902,9 +900,7 @@ void HevcDecoder::ReleaseBuffers()
     }
 
     inputAvailQue_->Clear();
-    std::unique_lock<std::mutex> iLock(inputMutex_);
     buffers_[INDEX_INPUT].clear();
-    iLock.unlock();
 
     std::unique_lock<std::mutex> oLock(outputMutex_);
     codecAvailQue_->Clear();
