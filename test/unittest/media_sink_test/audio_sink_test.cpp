@@ -1015,6 +1015,118 @@ HWTEST(TestAudioSink, audio_sink_ChangeTrack, TestSize.Level1)
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     ASSERT_EQ(Status::OK, audioSink->ChangeTrack(meta, nullptr));
 }
+
+HWTEST(TestAudioSink, audio_sink_CalcMaxAmplitude_001, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    AVBufferConfig config;
+    config.size = 1;
+    config.capacity = 1;
+    config.memoryType = MemoryType::VIRTUAL_MEMORY;
+    std::shared_ptr<OHOS::Media::AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
+    audioSink->CalcMaxAmplitude(buffer);
+    ASSERT_EQ(0, audioSink->DoSyncWrite(buffer));
+}
+
+HWTEST(TestAudioSink, audio_sink_CheckUpdateState_001, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    int8_t frame[] = {0, 127};
+    audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 0);
+    float amplitude = 0.0f;
+    amplitude = audioSink->GetMaxAmplitude();
+    ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
+}
+
+HWTEST(TestAudioSink, audio_sink_CheckUpdateState_002, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    int8_t frame[] = {0, -127};
+    audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 0);
+    float amplitude = 0.0f;
+    amplitude = audioSink->GetMaxAmplitude();
+    ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
+}
+
+HWTEST(TestAudioSink, audio_sink_CheckUpdateState_003, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    int16_t frame[] = {0, -32767};
+    audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 1);
+    float amplitude = 0.0f;
+    amplitude = audioSink->GetMaxAmplitude();
+    ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
+}
+
+HWTEST(TestAudioSink, audio_sink_CheckUpdateState_004, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    int16_t frame[] = {0, 32767};
+    audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 1);
+    float amplitude = 0.0f;
+    amplitude = audioSink->GetMaxAmplitude();
+    ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
+}
+
+HWTEST(TestAudioSink, audio_sink_CheckUpdateState_005, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    int8_t frame[] = {0, 0, 0, 1, 0, 0x80};
+    audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 2);
+    float amplitude = 0.0f;
+    amplitude = audioSink->GetMaxAmplitude();
+    ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
+}
+
+HWTEST(TestAudioSink, audio_sink_CheckUpdateState_006, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    int8_t frame[] = {0, 0, 0, 0xff, 0xff, 0x7f};
+    audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 2);
+    float amplitude = 0.0f;
+    amplitude = audioSink->GetMaxAmplitude();
+    ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
+}
+
+HWTEST(TestAudioSink, audio_sink_CheckUpdateState_007, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    int32_t frame[] = {0, -2147483647};
+    audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 3);
+    float amplitude = 0.0f;
+    amplitude = audioSink->GetMaxAmplitude();
+    ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
+}
+
+HWTEST(TestAudioSink, audio_sink_CheckUpdateState_008, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    int32_t frame[] = {0, 2147483647};
+    audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 3);
+    float amplitude = 0.0f;
+    amplitude = audioSink->GetMaxAmplitude();
+    ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
+}
+
+HWTEST(TestAudioSink, audio_sink_CheckUpdateState_009, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    int32_t frame[] = {0, 2147483647};
+    audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), -1);
+    float amplitude = 0.0f;
+    amplitude = audioSink->GetMaxAmplitude();
+    ASSERT_EQ(true, fabs(amplitude) <= 1e-6);
+}
 } // namespace Test
 } // namespace Media
 } // namespace OHOS
