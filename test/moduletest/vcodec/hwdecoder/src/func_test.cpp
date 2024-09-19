@@ -48,7 +48,7 @@ protected:
     const char *INP_DIR_1080_20 = "/data/test/media/1920_1080_20M_30.h265";
     const char *inpDirVivid = "/data/test/media/hlg_vivid_4k.h265";
     const char *INP_DIR_VVC_1080 = "/data/test/media/1920_1080_10bit.vvc";
-    const char *INP_DIR_VVC_RESOLUTION = "/data/test/media/resolution.vvc";
+    const char *INP_DIR_VVC_Resolution = "/data/test/media/resolution.vvc";
 };
 } // namespace Media
 } // namespace OHOS
@@ -1090,9 +1090,9 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0300, TestSize.Level1)
  */
 HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0400, TestSize.Level2)
 {
-    if (access(INP_DIR_VVC_RESOLUTION, F_OK) == 0) {
+    if (access(INP_DIR_VVC_Resolution, F_OK) == 0) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_VVC_RESOLUTION;
+        vDecSample->INP_DIR = INP_DIR_VVC_Resolution;
         vDecSample->DEFAULT_WIDTH = 1104;
         vDecSample->DEFAULT_HEIGHT = 622;
         vDecSample->DEFAULT_FRAME_RATE = 30;
