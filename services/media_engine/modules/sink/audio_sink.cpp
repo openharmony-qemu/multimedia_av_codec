@@ -403,8 +403,9 @@ void AudioSink::CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer)
 
 bool AudioSink::DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
 {
-    FALSE_RETURN_V(isApe_, false);
-    FALSE_RETURN_V(seekTimeUs_ != HST_TIME_NONE, false);
+    if (!isApe_ || seekTimeUs_ == HST_TIME_NONE) {
+        return false;
+    }
     if (filledOutputBuffer->pts_ < seekTimeUs_) {
         MEDIA_LOG_D("Drop ape buffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);

@@ -1653,14 +1653,14 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
     bool ret = HandleSelectTrackChangeStream(trackId, newStreamID, newTrackId);
     if (ret && eventReceiver_ != nullptr) {
         if (type == TrackType::TRACK_AUDIO) {
-            audioTrackId_ = newTrackId;
+            audioTrackId_ = static_cast<uint32_t>(newTrackId);
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, newTrackId});
             shouldCheckAudioFramePts_ = true;
         } else if (type == TrackType::TRACK_VIDEO) {
-            videoTrackId_ = newTrackId;
+            videoTrackId_ = static_cast<uint32_t>(newTrackId);
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_VIDEO_TRACK_CHANGE, newTrackId});
         } else if (type == TrackType::TRACK_SUBTITLE) {
-            subtitleTrackId_ = newTrackId;
+            subtitleTrackId_ = static_cast<uint32_t>(newTrackId);
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, newTrackId});
             shouldCheckSubtitleFramePts_ = true;
         }
