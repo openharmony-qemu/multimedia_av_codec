@@ -74,11 +74,6 @@ ohos_shared_library("av_codec_service_dfx") {
     "media_foundation:media_foundation",
   ]
 
-  if (av_codec_support_hidumper) {
-    external_deps += [ "hidumper:lib_dump_usage" ]
-  }
-
-  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
