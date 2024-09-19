@@ -284,7 +284,11 @@ Status FileFdSourcePlugin::SeekToOnlineFile(uint64_t offset)
     }
     ringBuffer_->Clear();
     ringBuffer_->SetMediaOffset(offset);
-    ringBuffer_->SetActive(true);
+    {
+        std::lock_guard<std::mutex> lock(interruptMutex_);
+        FALSE_RETURN_V(!isInterrupted_, Status::OK);
+        ringBuffer_->SetActive(true);
+    }
 
     int32_t ret = lseek(fd_, offset + static_cast<uint64_t>(offset_), SEEK_SET);
     if (ret == -1) {
@@ -573,7 +577,10 @@ Status FileFdSourcePlugin::SetReadBlockingFlag(bool isAllowed)
 void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("SetInterruptState isInterrupted_" PUBLIC_LOG_D32, isInterruptNeeded);
-    isInterrupted_ = isInterruptNeeded;
+    {
+        std::lock_guard<std::mutex> lock(interruptMutex_);
+        isInterrupted_ = isInterruptNeeded;
+    }
     if (ringBuffer_ != nullptr) {
         if (isInterrupted_) {
             ringBuffer_->SetActive(false);

@@ -94,6 +94,7 @@ private:
     std::atomic<bool> inSeek_ {false};
     std::shared_ptr<Task> downloadTask_;
     std::shared_mutex mutex_;
+    std::mutex interruptMutex_;
     bool isReadFrame_ {false};
     bool isSeekHit_ {false};
     std::atomic<uint64_t> cachePosition_ {0};
