@@ -78,7 +78,8 @@ private:
     void SubmitOneBufferFromFreeList();
     bool SubmitOneItem(SurfaceBufferItem& item);
     void SubmitDynamicBufferIfPossible() override;
-    void SubmitOneDynamicBuffer(std::vector<BufferInfo>::iterator nullSlot);
+    void SurfaceModeSubmitOneDynamicBuffer(std::vector<BufferInfo>::iterator nullSlot);
+    void BufferModeSubmitOneDynamicBuffer(std::vector<BufferInfo>::iterator nullSlot);
 
     // switch surface
     void OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface,
