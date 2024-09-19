@@ -143,6 +143,8 @@ public:
     bool outputCallbackFlush = false;
     bool outputCallbackStop = false;
     int32_t DecodeSetSurface();
+    bool enableLowLatency = false;
+
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
