@@ -655,6 +655,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Feature_Long_Term_Reference_001, TestSize.Level
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
+    videoEnc_->ltrParam.enableUseLtr = true;
+    videoEnc_->ltrParam.ltrInterval = DEFAULT_LTR_INTERVAL;
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, DEFAULT_LTR_COUNT);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());

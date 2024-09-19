@@ -55,6 +55,11 @@ public:
     std::atomic<bool> isPreparing_ = true;
 };
 
+struct LtrParam {
+    bool enableUseLtr = false;
+    int32_t ltrInterval;
+};
+
 class VEncCallbackTest : public AVCodecCallbackMock {
 public:
     explicit VEncCallbackTest(std::shared_ptr<VEncSignal> signal);
@@ -166,6 +171,7 @@ private:
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
     void CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer);
+    void InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount);
     void CheckSHA();
     void PerformEosFrameAndVerifiedSHA();
     std::shared_ptr<VideoEncMock> videoEnc_ = nullptr;
@@ -187,6 +193,7 @@ private:
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
     OHNativeWindow *nativeWindow_ = nullptr;
+    LtrParam ltrParam;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

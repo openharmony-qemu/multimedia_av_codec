@@ -629,6 +629,26 @@ void VideoEncSample::PrepareInner()
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
+void VideoEncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount)
+{
+    if (!ltrParam.enableUseLtr) {
+        return;
+    }
+    int32_t interval = ltrParam.ltrInterval;
+    static int32_t useLtrIndex = 0;
+    if (frameInputCount % interval == 0) {
+        format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, 1);
+    }
+    if (interval > 0 && (frameInputCount % interval == 0)) {
+        useLtrIndex = frameInputCount;
+    }
+    if (frameInputCount > useLtrIndex) {
+        format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex);
+    } else if (frameInputCount == useLtrIndex && frameInputCount > 0) {
+        format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, frameInputCount - interval);
+    }
+}
+
 void VideoEncSample::InputParamLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
@@ -657,6 +677,9 @@ void VideoEncSample::InputParamLoopFunc()
         if (isDiscardFrame_ && (frameInputCount_ % 2) == 0) { // 2: encode half frames
             format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
         }
+
+        InputLtrParam(format, frameInputCount_);
+
         UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
         int32_t ret = PushInputParameter(index);
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
@@ -840,6 +863,8 @@ void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<A
             }
         }
         format->Destroy();
+    } else if (ltrParam.enableUseLtr && (attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
+        std::shared_ptr<FormatMock> format = buffer->GetParameter();
     }
 }
 
