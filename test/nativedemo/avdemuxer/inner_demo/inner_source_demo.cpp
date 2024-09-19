@@ -67,18 +67,22 @@ int32_t InnerSourceDemo::CreateWithFD(int32_t fd, int64_t offset, int64_t size)
 
 Format InnerSourceDemo::GetSourceFormat()
 {
-    int32_t ret = this->avsource_->GetSourceFormat(source_format_);
-    if (ret != 0) {
-        printf("GetSourceFormat is failed\n");
+    if (this->avsource_ != nullptr) {
+        int32_t ret = this->avsource_->GetSourceFormat(source_format_);
+        if (ret != 0) {
+            printf("GetSourceFormat is failed\n");
+        }
     }
     return source_format_;
 }
 
 Format InnerSourceDemo::GetTrackFormat(uint32_t trackIndex)
 {
-    int32_t ret = this->avsource_->GetTrackFormat(track_format_, trackIndex);
-    if (ret != 0) {
-        printf("GetTrackFormat is failed\n");
+    if (this->avsource_ != nullptr) {
+        int32_t ret = this->avsource_->GetTrackFormat(track_format_, trackIndex);
+        if (ret != 0) {
+            printf("GetTrackFormat is failed\n");
+        }
     }
     return track_format_;
 }
