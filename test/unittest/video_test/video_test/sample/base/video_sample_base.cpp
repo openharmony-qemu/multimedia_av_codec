@@ -146,10 +146,22 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
     }
 
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
-    if (!(info.codecType & 0b10)) {   // 0b10: Video encoder mask
-        WriteOutputFileWithStrideYUV420(bufferAddr);
-    } else {
+    if (info.codecType & 0b10) {   // 0b10: Video encoder mask
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
+    } else {
+        switch (info.pixelFormat) {
+            case AV_PIXEL_FORMAT_NV12:
+                [[fallthrough]];
+            case AV_PIXEL_FORMAT_NV21:
+                WriteOutputFileWithStrideYUV420(bufferAddr);
+                break;
+            case AV_PIXEL_FORMAT_RGBA:
+                WriteOutputFileWithStrideRGBA(bufferAddr);
+                break;
+            default:
+                AVCODEC_LOGE("Unsupported pixel format, skip");
+                break;
+        }
     }
 }
 
@@ -173,6 +185,20 @@ void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr)
     for (int32_t row = 0; row < (info.videoHeight / yuvSampleRatio); row++) {
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), videoWidth);
         bufferAddr += videoStrideWidth;
+    }
+}
+
+void VideoSampleBase::WriteOutputFileWithStrideRGBA(uint8_t *bufferAddr)
+{
+    CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
+    auto &info = *context_->sampleInfo;
+    int32_t width = info.videoHeight *
+        ((info.codecMime == OH_AVCODEC_MIMETYPE_VIDEO_HEVC && info.profile == HEVC_PROFILE_MAIN_10) ? 2 : 1);
+    int32_t &stride = info.videoStrideWidth;
+
+    for (int32_t row = 0; row < info.videoSliceHeight; row++) {
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), width * 4); // 4: RGBA 4 channels
+        bufferAddr += stride;
     }
 }
 
