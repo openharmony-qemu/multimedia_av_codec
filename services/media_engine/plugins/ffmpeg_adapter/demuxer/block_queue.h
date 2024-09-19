@@ -164,7 +164,7 @@ public:
     }
 
 private:
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "BlockQueue" };
     void ClearUnprotected()
     {
         if (que_.empty()) {
