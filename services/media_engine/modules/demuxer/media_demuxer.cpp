@@ -1458,7 +1458,7 @@ Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
     doPrepareFrame_ = false;
     if (!res) {
         waitForDataFail_ = true;
-        eventReceiver_->OnEvent({"demuxer", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
+        MEDIA_LOG_I("demuxer is timeout and not enough data");
     }
     return PauseForPrepareFrame();
 }
