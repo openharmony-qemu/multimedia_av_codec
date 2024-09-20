@@ -1416,7 +1416,7 @@ void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_
     auto decoderIsEOS = decoderIsEOS_.load();
     auto decodedFrameCount = decodedFrameCount_.load();
     auto needEOS = processedFrameCount_.load() == (decodedFrameCount - 1);
-    AVCODEC_LOGD("Processed frame count = %{public}" PRIu64, "decoded frame count = %{public}" PRIu64,
+    AVCODEC_LOGD("Processed frame count = %{public}" PRIu64 "decoded frame count = %{public}" PRIu64
         ", decoder eos = %{public}u, need eos = %{public}u", processedFrameCount_.load(), decodedFrameCount,
         decoderIsEOS ? 1 : 0, needEOS ? 1 : 0);
     if (!decoderIsEOS || !needEOS) {
@@ -1435,7 +1435,7 @@ void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_
         QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
     videoCb_->OnOutputBufferAvailable(info->index, info->buffer);
     processedFrameCount_++;
-    AVCODEC_LOGD("EOS frame. Processed frame count = %{public}" PRIu64, "decoded frame count = %{public}" PRIu64,
+    AVCODEC_LOGD("EOS frame. Processed frame count = %{public}" PRIu64 "decoded frame count = %{public}" PRIu64,
         processedFrameCount_.load(), decodedFrameCount);
 }
 
