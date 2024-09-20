@@ -43,7 +43,7 @@ constexpr uint32_t DEFAULT_BITRATE = 128000;
 constexpr uint32_t DEFAULT_WIDTH = 0;
 constexpr uint32_t DEFAULT_AAC_TYPE = 1;
 constexpr uint32_t DEFAULT_AAC_LATM_TYPE = 0;
-constexpr string_view OPUS_SO_FILE_PATH = "/system/lib64/libav_codec_ext_base.z.so";
+const string OPUS_SO_FILE_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_ext_base.z.so";
 } // namespace
 
 namespace OHOS {
