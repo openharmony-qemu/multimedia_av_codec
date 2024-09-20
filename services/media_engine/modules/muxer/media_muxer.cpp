@@ -157,8 +157,16 @@ Status MediaMuxer::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
     MEDIA_LOG_I("SetUserMeta");
     std::lock_guard<std::mutex> lock(mutex_);
+    std::vector<std::string> keys;
+    userMeta->GetKeys(keys);
+    for (auto& k: keys) {
+        if (k.compare("com.openharmony.recorder.timestamp") == 0) {
+            MEDIA_LOG_I("set com.openharmony.recorder.timestamp");
+            return muxer_->SetUserMeta(userMeta);
+        }
+    }
     FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED || state_ == State::STARTED, Status::ERROR_WRONG_STATE,
-        "The state is not INITIALIZED, the interface must be called after constructor and before Start(). "
+        "The state is not INITIALIZED, the interface must be called at initialized or started state. "
         "The current state is %{public}s.", StateConvert(state_).c_str());
     return muxer_->SetUserMeta(userMeta);
 }
