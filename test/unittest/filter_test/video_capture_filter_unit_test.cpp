@@ -448,7 +448,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_003, T
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
         .WillOnce(DoAll(
             SetArgReferee<0>(mockBuffer),
-            Return(OHOS::GSError::GSERROR_BINDER)
+            Return(OHOS::GSError::GSERROR_NO_PERMISSION)
         ));
     EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(0);
 
@@ -470,7 +470,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_004, T
     EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
 
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
-        .WillOnce(Return(OHOS::GSError::GSERROR_BINDER));
+        .WillOnce(Return(OHOS::GSError::GSERROR_NO_PERMISSION));
     EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(0);
 
     videoCaptureFilter_->OnBufferAvailable();
