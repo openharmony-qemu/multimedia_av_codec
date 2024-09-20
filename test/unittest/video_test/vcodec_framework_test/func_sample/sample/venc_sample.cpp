@@ -629,7 +629,8 @@ void VideoEncSample::PrepareInner()
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
-void VideoEncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount)
+void VideoEncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount,
+                                   std::shared_ptr<AVBufferMock> buffer)
 {
     if (!ltrParam.enableUseLtr) {
         return;
@@ -646,6 +647,9 @@ void VideoEncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t f
         format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex);
     } else if (frameInputCount == useLtrIndex && frameInputCount > 0) {
         format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, frameInputCount - interval);
+    }
+    if (buffer) {
+        buffer->SetParameter(format);
     }
 }
 
@@ -678,7 +682,7 @@ void VideoEncSample::InputParamLoopFunc()
             format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
         }
 
-        InputLtrParam(format, frameInputCount_);
+        InputLtrParam(format, frameInputCount_, nullptr);
 
         UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
         int32_t ret = PushInputParameter(index);
@@ -961,6 +965,7 @@ int32_t VideoEncSample::InputLoopInnerExt()
         for (int32_t i = 0; i < attr.size; i += stride) {
             (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
         }
+        InputLtrParam(format, frameInputCount_, buffer);
     }
 
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {

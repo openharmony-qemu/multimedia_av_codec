@@ -36,6 +36,7 @@ using namespace OHOS::Media;
 
 namespace {
 constexpr int32_t DEFAULT_LTR_COUNT = 4;
+constexpr int32_t DEFAULT_LTR_INTERVAL = 4;
 class TEST_SUIT : public testing::TestWithParam<int32_t> {
 public:
     static void SetUpTestCase(void);
@@ -652,6 +653,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Feature_Long_Term_Reference_001, TestSize.Level
     if (!GetTemporalScalabilityCapability(GetParam(), false)) {
         return;
     };
+    videoEnc_->isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
