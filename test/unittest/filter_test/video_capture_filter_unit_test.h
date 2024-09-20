@@ -55,7 +55,7 @@ public:
     MOCK_METHOD(Status, RemoveBufferFilledListener, (sptr<IBrokerListener> & listener), (override));
     MOCK_METHOD(Status, SetBufferAvailableListener, (sptr<IProducerListener> & listener), (override));
     MOCK_METHOD(Status, Clear, (), (override));
-    DECLARE_INTERFACE_DESCRIPTOR(u "Media.MyAVBufferQueueProducer");
+    DECLARE_INTERFACE_DESCRIPTOR("Media.MyAVBufferQueueProducer");
 
 protected:
     enum : uint32_t {
@@ -119,8 +119,9 @@ class TestFilter : public Filter {
 public:
     TestFilter() : Filter("TestFilter", FilterType::FILTERTYPE_SOURCE) {}
     ~TestFilter() = default;
-    Status
-    OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta, const std::shared_ptr<FilterLinkCallback> &callback)
+    Status OnLinked(StreamType inType,
+                    const std::shared_ptr<Meta> &meta,
+                    const std::shared_ptr<FilterLinkCallback> &callback)
     {
         (void)inType;
         (void)meta;
