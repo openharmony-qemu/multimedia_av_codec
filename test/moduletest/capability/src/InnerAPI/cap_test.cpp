@@ -30,8 +30,6 @@
 
 namespace {
 OH_AVCodec *venc_ = NULL;
-OH_AVCapability *cap = nullptr;
-OH_AVCapability *cap_hevc = nullptr;
 constexpr uint32_t CODEC_NAME_SIZE = 128;
 char g_codecName[CODEC_NAME_SIZE] = {};
 char g_codecNameHEVC[CODEC_NAME_SIZE] = {};
@@ -61,16 +59,27 @@ using namespace OHOS::MediaAVCodec;
 
 void HwCapabilityInnerNdkTest::SetUpTestCase()
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
-    const char *tmpCodecName = OH_AVCapability_GetName(cap);
-    if (memcpy_s(g_codecName, sizeof(g_codecName), tmpCodecName, strlen(tmpCodecName)) != 0)
-        cout << "memcpy failed" << endl;
-    cout << "codecname: " << g_codecName << endl;
-    cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
-    const char *tmpCodecNameHevc = OH_AVCapability_GetName(cap_hevc);
-    if (memcpy_s(g_codecNameHEVC, sizeof(g_codecNameHEVC), tmpCodecNameHevc, strlen(tmpCodecNameHevc)) != 0)
-        cout << "memcpy failed" << endl;
-    cout << "codecname_hevc: " << g_codecNameHEVC << endl;
+    auto codeclist = AVCodecListFactory::CreateAVCodecList();
+    if (codeclist != nullptr) {
+        CapabilityData *cap = codeclist->GetCapability(string(CodecMimeType::VIDEO_AVC),
+            true, AVCodecCategory::AVCODEC_HARDWARE);
+        if (cap != nullptr) {
+            const std::string &name = cap->codecName;
+            const char *tmpCodecName = name.data();
+            if (memcpy_s(g_codecName, sizeof(g_codecName), tmpCodecName, strlen(tmpCodecName)) != 0)
+                cout << "memcpy failed" << endl;
+            cout << "codecname: " << g_codecName << endl;
+        }
+        CapabilityData *cap_hevc = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
+            true, AVCodecCategory::AVCODEC_HARDWARE);
+        if (cap_hevc != nullptr) {
+            const std::string &name = cap_hevc->codecName;
+            const char *tmpCodecNameHevc = name.data();
+            if (memcpy_s(g_codecNameHEVC, sizeof(g_codecNameHEVC), tmpCodecNameHevc, strlen(tmpCodecNameHevc)) != 0)
+            cout << "memcpy failed" << endl;
+            cout << "codecname_hevc: " << g_codecNameHEVC << endl;
+        }
+    }
 }
 void HwCapabilityInnerNdkTest::TearDownTestCase() {}
 void HwCapabilityInnerNdkTest::SetUp() {}
