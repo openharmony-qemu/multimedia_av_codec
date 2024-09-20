@@ -104,7 +104,8 @@ public:
     int32_t RepeatCallStartStop();
     int32_t RepeatCallStartFlushStop();
     void Release();
-    int32_t SendData(std::shared_ptr<AVCodecVideoDecoder> codec, uint32_t index, std::shared_ptr<AVSharedMemory> buffer);
+    int32_t SendData(std::shared_ptr<AVCodecVideoDecoder> codec,
+        uint32_t index, std::shared_ptr<AVSharedMemory> buffer);
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     bool needEncode = false;
     bool needTransCode = false;

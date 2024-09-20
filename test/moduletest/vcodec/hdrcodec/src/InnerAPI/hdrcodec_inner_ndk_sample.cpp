@@ -23,8 +23,6 @@
 #include "avcodec_errors.h"
 #include "avcodec_common.h"
 
-
-
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace std;
@@ -51,8 +49,8 @@ static void clearIntqueue(std::queue<uint32_t> &q)
 }
 }
 
-HdrDecInnerCallback::HdrDecInnerCallback(std::shared_ptr<InnerSignal> signal):decInnersignal_(signal){}
-HdrEncInnerCallback::HdrEncInnerCallback(std::shared_ptr<InnerSignal> signal):encInnersignal_(signal){}
+HdrDecInnerCallback::HdrDecInnerCallback(std::shared_ptr<InnerSignal> signal) : decInnersignal_(signal) {}
+HdrEncInnerCallback::HdrEncInnerCallback(std::shared_ptr<InnerSignal> signal) : encInnersignal_(signal) {}
 
 HDRCodecInnderNdkSample::~HDRCodecInnderNdkSample()
 {
@@ -76,7 +74,7 @@ void HdrDecInnerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr
 }
 
 void HdrDecInnerCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-        std::shared_ptr<AVSharedMemory> buffer)
+    std::shared_ptr<AVSharedMemory> buffer)
 {
     hdr_sample->vdec_->ReleaseOutputBuffer(index, true);
     if (flag & AVCODEC_BUFFER_FLAG_EOS) {
@@ -259,7 +257,7 @@ int32_t HDRCodecInnderNdkSample::EncSetCallback()
         return AVCS_ERR_UNKNOWN;
     }
     encCb_ = make_shared<HdrEncInnerCallback>(signal_);
-    return venc_->SetCallback(encCb_);  
+    return venc_->SetCallback(encCb_);
 }
 
 int32_t HDRCodecInnderNdkSample::ReConfigure()
@@ -364,7 +362,8 @@ void HDRCodecInnderNdkSample::WaitForEos()
     venc_->Stop();
 }
 
-int32_t HDRCodecInnderNdkSample::SendData(std::shared_ptr<AVCodecVideoDecoder> codec, uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
+int32_t HDRCodecInnderNdkSample::SendData(std::shared_ptr<AVCodecVideoDecoder> codec,
+    uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     uint32_t bufferSize = 0;
     int32_t result = 0;
