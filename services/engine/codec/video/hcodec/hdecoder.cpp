@@ -818,15 +818,9 @@ void HDecoder::SurfaceModeSubmitOneDynamicBuffer(std::vector<BufferInfo>::iterat
 {
     SCOPED_TRACE();
     for (size_t i = 0; i < outputBufferPool_.size(); i++) {
-        SurfaceBufferItem item;
-        if (!freeList_.empty()) {
-            item = freeList_.front();
-            freeList_.pop_front();
-        } else {
-            item = RequestBuffer();
-            if (item.buffer == nullptr) {
-                return;
-            }
+        SurfaceBufferItem item = RequestBuffer();
+        if (item.buffer == nullptr) {
+            return;
         }
         auto iter = FindBelongTo(item.buffer);
         WaitFence(item.fence);
