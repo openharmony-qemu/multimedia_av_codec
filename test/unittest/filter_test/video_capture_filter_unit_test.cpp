@@ -383,7 +383,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_001, T
     EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
 
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
-    sptr<SyncFence> mockFence = new SyncFence();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
     EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
         .WillOnce(DoAll(
@@ -491,7 +491,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_005, T
     EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
 
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
-    sptr<SyncFence> mockFence = new SyncFence();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
     EXPECT_NE(mockBuffer, nullptr);
     videoCaptureFilter_->isStop_ = true;
 
@@ -521,7 +521,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_006, T
     EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
 
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
-    sptr<SyncFence> mockFence = new SyncFence();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
     EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
         .WillOnce(DoAll(
@@ -560,7 +560,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_007, T
     EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
 
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
-    sptr<SyncFence> mockFence = new SyncFence();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
     EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
         .WillOnce(DoAll(
@@ -598,7 +598,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_008, T
     EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
 
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
-    sptr<SyncFence> mockFence = new SyncFence();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
     EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
         .WillOnce(DoAll(
