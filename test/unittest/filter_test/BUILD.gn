@@ -117,7 +117,6 @@ ohos_unittest("filter_unit_test") {
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
     "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
-    "//third_party/googletest:gmock_main",
   ]
 
   public_configs = []

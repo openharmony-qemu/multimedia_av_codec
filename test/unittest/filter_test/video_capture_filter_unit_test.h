@@ -55,7 +55,7 @@ public:
     MOCK_METHOD(Status, RemoveBufferFilledListener, (sptr<IBrokerListener> & listener), (override));
     MOCK_METHOD(Status, SetBufferAvailableListener, (sptr<IProducerListener> & listener), (override));
     MOCK_METHOD(Status, Clear, (), (override));
-    DECLARE_INTERFACE_DESCRIPTOR("Media.MyAVBufferQueueProducer");
+    DECLARE_INTERFACE_DESCRIPTOR(u"Media.MyAVBufferQueueProducer");
 
 protected:
     enum : uint32_t {
