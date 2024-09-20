@@ -168,8 +168,10 @@ int32_t HDRCodecInnderNdkSample::RepeatCall()
 
 void HDRCodecInnderNdkSample::InputFunc()
 {
-    while (true) {
+    bool flag = true;
+    while (flag) {
         if (!g_isRunning.load()) {
+            flag = false;
             break;
         }
         int32_t ret = RepeatCall();
@@ -178,6 +180,7 @@ void HDRCodecInnderNdkSample::InputFunc()
             errorCount++;
             g_isRunning.store(false);
             g_cv.notify_all();
+            flag = false;
             break;
         }
         uint32_t index;
@@ -189,6 +192,7 @@ void HDRCodecInnderNdkSample::InputFunc()
             return signal_->inIdxQueue_.size() > 0;
         });
         if (!g_isRunning.load()) {
+            flag = false;
             break;
         }
         index = signal_->inIdxQueue_.front();
