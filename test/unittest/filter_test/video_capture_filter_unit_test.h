@@ -36,15 +36,17 @@ public:
     void TearDown(void);
 
 protected:
-    std::shared_ptr<VideoCaptureFilter> videoCaptureFilter_{nullptr};
+    std::shared_ptr<VideoCaptureFilter> videoCaptureFilter_{ nullptr };
 };
 
 class MockAVBufferQueueProducer : public IRemoteStub<AVBufferQueueProducer> {
 public:
     MOCK_METHOD(uint32_t, GetQueueSize, (), (override));
     MOCK_METHOD(Status, SetQueueSize, (uint32_t size), (override));
-    MOCK_METHOD(Status, RequestBuffer,
-                (std::shared_ptr<AVBuffer> & outBuffer, const AVBufferConfig &config, int32_t timeoutMs), (override));
+    MOCK_METHOD(Status,
+                RequestBuffer,
+                (std::shared_ptr<AVBuffer> & outBuffer, const AVBufferConfig &config, int32_t timeoutMs),
+                (override));
     MOCK_METHOD(Status, PushBuffer, (const std::shared_ptr<AVBuffer> &inBuffer, bool available), (override));
     MOCK_METHOD(Status, ReturnBuffer, (const std::shared_ptr<AVBuffer> &inBuffer, bool available), (override));
     MOCK_METHOD(Status, AttachBuffer, (std::shared_ptr<AVBuffer> & inBuffer, bool isFilled), (override));
@@ -53,7 +55,7 @@ public:
     MOCK_METHOD(Status, RemoveBufferFilledListener, (sptr<IBrokerListener> & listener), (override));
     MOCK_METHOD(Status, SetBufferAvailableListener, (sptr<IProducerListener> & listener), (override));
     MOCK_METHOD(Status, Clear, (), (override));
-    DECLARE_INTERFACE_DESCRIPTOR(u"Media.MyAVBufferQueueProducer");
+    DECLARE_INTERFACE_DESCRIPTOR(u "Media.MyAVBufferQueueProducer");
 
 protected:
     enum : uint32_t {
@@ -74,14 +76,20 @@ class TestEventReceiver : public Pipeline::EventReceiver {
 public:
     ~TestEventReceiver() = default;
 
-    void OnEvent(const Event &event) { return; }
+    void OnEvent(const Event &event)
+    {
+        return;
+    }
 
 private:
 };
 
 class TestFilterCallback : public FilterCallback {
 public:
-    explicit TestFilterCallback() { std::cout << "filter back constructor" << std::endl; }
+    explicit TestFilterCallback()
+    {
+        std::cout << "filter back constructor" << std::endl;
+    }
 
     Status OnCallback(const std::shared_ptr<Filter> &filter, FilterCallBackCommand cmd, StreamType outType)
 
@@ -93,17 +101,27 @@ public:
 class TestFilterLinkCallback : public FilterLinkCallback {
 public:
     ~TestFilterLinkCallback() = default;
-    void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) { return; }
-    void OnUnlinkedResult(std::shared_ptr<Meta> &meta) { return; }
-    void OnUpdatedResult(std::shared_ptr<Meta> &meta) { return; }
+    void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta)
+    {
+        return;
+    }
+    void OnUnlinkedResult(std::shared_ptr<Meta> &meta)
+    {
+        return;
+    }
+    void OnUpdatedResult(std::shared_ptr<Meta> &meta)
+    {
+        return;
+    }
 };
 
 class TestFilter : public Filter {
 public:
     TestFilter() : Filter("TestFilter", FilterType::FILTERTYPE_SOURCE) {}
     ~TestFilter() = default;
-    Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
-                    const std::shared_ptr<FilterLinkCallback> &callback) {
+    Status
+    OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta, const std::shared_ptr<FilterLinkCallback> &callback)
+    {
         (void)inType;
         (void)meta;
         (void)callback;
@@ -118,8 +136,10 @@ class MockConsumerSurface : public ConsumerSurface {
 public:
     explicit MockConsumerSurface(const std::string &name, bool isShared = false) : ConsumerSurface(name, isShared) {}
     static sptr<MockConsumerSurface> CreateSurfaceAsConsumer(std::string name, bool isShared = false);
-    MOCK_METHOD(GSError, AcquireBuffer,
-                (sptr<SurfaceBuffer> & buffer, sptr<SyncFence> &fence, int64_t &timestamp, Rect &damage), (override));
+    MOCK_METHOD(GSError,
+                AcquireBuffer,
+                (sptr<SurfaceBuffer> & buffer, sptr<SyncFence> &fence, int64_t &timestamp, Rect &damage),
+                (override));
     MOCK_METHOD(GSError, ReleaseBuffer, (sptr<SurfaceBuffer> & buffer, int32_t fence), (override));
 
 private:
@@ -131,7 +151,7 @@ private:
     std::map<std::string, OnUserDataChangeFunc> onUserDataChange_;
     std::mutex lockMutex_;
     uint64_t uniqueId_ = 0;
-}
+};
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
