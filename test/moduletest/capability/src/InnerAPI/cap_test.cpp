@@ -325,7 +325,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0021, TestSiz
 {
     Format featureFormat;
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist);    
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_AVC),
         false, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
@@ -343,7 +343,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0022, TestSiz
 {
     Format featureFormat;
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist);     
+    ASSERT_NE(nullptr, codeclist);
     if (!access("/system/lib64/media/", 0)) {
         CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_AVC),
             true, AVCodecCategory::AVCODEC_HARDWARE);
@@ -391,7 +391,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0024, TestSiz
 {
     Format featureFormat;
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist);    
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_AVC),
         false, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
@@ -431,7 +431,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0025, TestSiz
 HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0026, TestSize.Level1)
 {
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist); 
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
@@ -451,13 +451,14 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0026, TestSiz
 HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0027, TestSize.Level1)
 {
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist); 
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
         false, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
     ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
 }
+
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0028
  * @tc.name      : 能力查询是否支持低时延H265
@@ -466,7 +467,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0027, TestSiz
 HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0028, TestSize.Level1)
 {
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist);     
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
@@ -486,7 +487,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0028, TestSiz
 HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0029, TestSize.Level1)
 {
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist);      
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
         false, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
@@ -497,6 +498,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0029, TestSiz
         ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_LOW_LATENCY));
     }
 }
+
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0030
  * @tc.name      : 能力查询是否支持分层编码H265
@@ -509,7 +511,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0030, TestSiz
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
-    std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData); 
+    std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
     if (!access("/system/lib64/media/", 0)) {
         ASSERT_EQ(true, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
     } else {
@@ -525,13 +527,14 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0030, TestSiz
 HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0031, TestSize.Level1)
 {
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist);    
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
         false, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
     ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
 }
+
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0032
  * @tc.name      : 编码,查询低时延的能力值H265
@@ -541,7 +544,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0032, TestSiz
 {
     Format featureFormat;
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist);     
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
@@ -554,6 +557,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0032, TestSiz
             codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY, featureFormat));
     }
 }
+
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0033
  * @tc.name      : 解码,查询低时延的能力值H265
@@ -563,7 +567,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0033, TestSiz
 {
     Format featureFormat;
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist); 
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
         false, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
@@ -571,6 +575,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0033, TestSiz
     ASSERT_EQ(AVCS_ERR_INVALID_OPERATION,
         codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY, featureFormat));
 }
+
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0034
  * @tc.name      : 解码，查询分层编码的能力值H265
@@ -580,7 +585,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0034, TestSiz
 {
     Format featureFormat;
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist);     
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
         false, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
@@ -598,7 +603,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0035, TestSiz
 {
     Format featureFormat;
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist);     
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
@@ -611,6 +616,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0035, TestSiz
             codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY, featureFormat));
     }
 }
+
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0036
  * @tc.name      : 解码，查询LTR能力值H265
@@ -638,7 +644,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0037, TestSiz
 {
     Format featureFormat;
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist);    
+    ASSERT_NE(nullptr, codeclist);
     if (!access("/system/lib64/media/", 0)) {
         CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
             true, AVCodecCategory::AVCODEC_HARDWARE);
