@@ -44,6 +44,7 @@ string g_file_one_i_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_one_i_f
 string g_file_all_i_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_all_i_frame_hevc.mp4");
 string g_file_ipb_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_ipb_frame_hevc.mp4");
 string g_file_sdtp_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_sdtp_frame_hevc.mp4");
+string g_file_sdtp_extended_hevc = TEST_FILE_PATH + string("demuxer_parser_sdtp_extended_hevc.mp4");
 string g_file_ltr_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_ltr_frame_hevc.mp4");
 string g_file_2_layer_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_2_layer_frame_hevc.mp4");
 string g_file_3_layer_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_3_layer_frame_hevc.mp4");
@@ -678,6 +679,21 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0040, TestSize.Level1)
 }
 
 /**
+ * @tc.number    : DEMUXER_REFERENCE_H265_FUNC_0050
+ * @tc.name      : Pts corresponding to the Nth frame for startTimeMs in sdtp-extended seek scene
+ * @tc.desc      : func test
+ */
+HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0050, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_sdtp_extended_hevc);
+    parserSample->InitParameter(MP4Scene::SDTP_EXTENDED_HEVC);
+    ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::RANDOM_PTS));
+}
+
+/**
  * @tc.number    : DEMUXER_REFERENCE_H265_FUNC_0060
  * @tc.name      : Pts corresponding to the Nth frame for startTimeMs in 2-layer-frame seek scene
  * @tc.desc      : func test
@@ -984,6 +1000,21 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0240, TestSize.Level1)
     }
     shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_sdtp_frame_hevc);
     parserSample->InitParameter(MP4Scene::SDTP_FRAME_HEVC);
+    ASSERT_TRUE(parserSample->RunSpeedScene(WorkPts::RANDOM_PTS));
+}
+
+/**
+ * @tc.number    : DEMUXER_REFERENCE_H265_FUNC_0250
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame in sdtp-extended
+ * @tc.desc      : func test
+ */
+HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0250, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_sdtp_extended_hevc);
+    parserSample->InitParameter(MP4Scene::SDTP_EXTENDED_HEVC);
     ASSERT_TRUE(parserSample->RunSpeedScene(WorkPts::RANDOM_PTS));
 }
 
