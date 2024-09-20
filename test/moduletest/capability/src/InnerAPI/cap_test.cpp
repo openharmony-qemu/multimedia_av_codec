@@ -409,7 +409,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0025, TestSiz
 {
     Format featureFormat;
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
-    ASSERT_NE(nullptr, codeclist);    
+    ASSERT_NE(nullptr, codeclist);
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_AVC),
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
@@ -567,7 +567,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0033, TestSiz
     CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
         false, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
-    std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData); 
+    std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
     ASSERT_EQ(AVCS_ERR_INVALID_OPERATION,
         codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY, featureFormat));
 }
