@@ -47,6 +47,8 @@ protected:
     const char *INP_DIR_1080_30 = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *INP_DIR_1080_20 = "/data/test/media/1920_1080_20M_30.h265";
     const char *inpDirVivid = "/data/test/media/hlg_vivid_4k.h265";
+    const char *INP_DIR_VVC_1080 = "/data/test/media/1920_1080_10bit.vvc";
+    const char *inpDirVvcResolution = "/data/test/media/resolution.vvc";
 };
 } // namespace Media
 } // namespace OHOS
@@ -54,8 +56,10 @@ protected:
 namespace {
 static OH_AVCapability *cap = nullptr;
 static OH_AVCapability *cap_hevc = nullptr;
+static OH_AVCapability *cap_vvc = nullptr;
 static string g_codecName = "";
 static string g_codecNameHEVC = "";
+static string g_codecNameVVC = "";
 constexpr int32_t DEFAULT_WIDTH = 1920;
 constexpr int32_t DEFAULT_HEIGHT = 1080;
 constexpr int32_t MAX_NALU_LEN = 12000;
@@ -71,6 +75,9 @@ void HwdecFuncNdkTest::SetUpTestCase()
     cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
     cout << "g_codecNameHEVC: " << g_codecNameHEVC << endl;
+    cap_vvc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_VVC, false, HARDWARE);
+    g_codecNameVVC = OH_AVCapability_GetName(cap_vvc);
+    cout << "g_codecNameVVC: " << g_codecNameVVC << endl;
 }
 void HwdecFuncNdkTest::TearDownTestCase() {}
 void HwdecFuncNdkTest::SetUp() {}
@@ -1009,5 +1016,239 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1420, TestSize.Level2)
     vDecSample->WaitForEOS();
     ASSERT_EQ(501, vDecSample->outFrameCount);
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_0100
+ * @tc.name      : decode vvc buffer
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0100, TestSize.Level0)
+{
+    if (access(INP_DIR_VVC_1080, F_OK) == 0) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_0200
+ * @tc.name      : decode vvc surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0200, TestSize.Level0)
+{
+    if (access(INP_DIR_VVC_1080, F_OK) == 0) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameVVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_0300
+ * @tc.name      : decode vvc switch surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0300, TestSize.Level1)
+{
+    if (access(INP_DIR_VVC_1080, F_OK) == 0) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameVVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_0400
+ * @tc.name      : decode vvc resolution change
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0400, TestSize.Level2)
+{
+    if (access(inpDirVvcResolution, F_OK) == 0) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolution;
+        vDecSample->DEFAULT_WIDTH = 1104;
+        vDecSample->DEFAULT_HEIGHT = 622;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_0500
+ * @tc.name      : decode vvc 10bit hdrVivid
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0500, TestSize.Level1)
+{
+    if (access(INP_DIR_VVC_1080, F_OK) == 0) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_0600
+ * @tc.name      : decode vvc surf change in normal state
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0600, TestSize.Level2)
+{
+    if (access(INP_DIR_VVC_1080, F_OK) == 0) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+        vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameVVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        ASSERT_EQ(AV_ERR_INVALID_STATE, vDecSample->SwitchSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_0700
+ * @tc.name      : decode vvc surf change in flushed state
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0700, TestSize.Level2)
+{
+    if (access(INP_DIR_VVC_1080, F_OK) == 0) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+        vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_0800
+ * @tc.name      : decode vvc surf change in buffer mode
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0800, TestSize.Level2)
+{
+    if (access(INP_DIR_VVC_1080, F_OK) == 0) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_0900
+ * @tc.name      : decode vvc get decode output descriptions h265
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0900, TestSize.Level2)
+{
+    if (access(INP_DIR_VVC_1080, F_OK) == 0) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+        vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->needCheckOutputDesc = true;
+        vDecSample->expectCropTop = 0;
+        vDecSample->expectCropBottom = DEFAULT_HEIGHT - 1;
+        vDecSample->expectCropLeft = 0;
+        vDecSample->expectCropRight = DEFAULT_WIDTH - 1;
+
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_1000
+ * @tc.name      : decode vvc enable low latency
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_1000, TestSize.Level2)
+{
+    if (access(INP_DIR_VVC_1080, F_OK) == 0) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+        vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enableLowLatency = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
 }
 } // namespace
