@@ -1411,13 +1411,14 @@ void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_
     CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Push data failed, %{public}s",
         QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
     videoCb_->OnOutputBufferAvailable(index, info->buffer);
-
     processedFrameCount_++;
+
     auto decoderIsEOS = decoderIsEOS_.load();
-    AVCODEC_LOGD("Processed frame count = %{public}" PRIu64 ", decoder eos = %{public}u", processedFrameCount_.load(),
-        decoderIsEOS ? 1 : 0);
-    auto decodedFrameCount = decodedFrameCount_.load() - 1;
-    auto needEOS = processedFrameCount_.compare_exchange_strong(decodedFrameCount, decodedFrameCount + 1);
+    auto decodedFrameCount = decodedFrameCount_.load();
+    auto needEOS = processedFrameCount_.load() == (decodedFrameCount - 1);
+    AVCODEC_LOGD("Processed frame count = %{public}" PRIu64, "decoded frame count = %{public}" PRIu64,
+        ", decoder eos = %{public}u, need eos = %{public}u", processedFrameCount_.load(), decodedFrameCount,
+        decoderIsEOS ? 1 : 0, needEOS ? 1 : 0);
     if (!decoderIsEOS || !needEOS) {
         return;
     }
@@ -1433,6 +1434,9 @@ void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_
     CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Push data failed, %{public}s",
         QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
     videoCb_->OnOutputBufferAvailable(info->index, info->buffer);
+    processedFrameCount_++;
+    AVCODEC_LOGD("EOS frame. Processed frame count = %{public}" PRIu64, "decoded frame count = %{public}" PRIu64,
+        processedFrameCount_.load(), decodedFrameCount);
 }
 
 void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
