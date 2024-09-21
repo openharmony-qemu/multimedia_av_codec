@@ -977,12 +977,15 @@ void Downloader::SetAppState(bool isAppBackground)
 void Downloader::StopBufferring()
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::StopBufferring");
+    if (task_ == nullptr || currentRequest_ == nullptr) {
+        MEDIA_LOG_E("Downloader StopBufferring error.");
+        return;
+    }
     if (isAppBackground_) {
         if (!task_->IsTaskRunning() && client_ != nullptr) {
             MEDIA_LOG_I("StopBufferring: is task not running.");
             client_->Close(false);
         }
-        MEDIA_LOG_I("StopBufferring: now pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
     } else {
         if (currentRequest_ != nullptr && !shouldStartNextRequest) {
             int64_t lastStartPos = currentRequest_->startPos_; // downlaod from last pos
