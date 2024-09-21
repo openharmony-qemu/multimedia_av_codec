@@ -35,7 +35,7 @@ std::mutex ReferenceParserManager::mtx_;
 
 ReferenceParserManager::~ReferenceParserManager()
 {
-    if (referenceParser_) {
+    if (referenceParser_ != nullptr && destroyFunc_ != nullptr) {
         destroyFunc_(referenceParser_);
         referenceParser_ = nullptr;
     }

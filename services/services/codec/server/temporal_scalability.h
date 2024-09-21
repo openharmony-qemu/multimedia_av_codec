@@ -26,10 +26,10 @@
 namespace OHOS {
 namespace MediaAVCodec {
 constexpr double DEFAULT_FRAMERATE = 30.0;
-constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 2000;
+constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 1000;
 constexpr int32_t MIN_TEMPORAL_GOPSIZE = 2;
 constexpr int32_t DEFAULT_TEMPORAL_GOPSIZE = 4;
-constexpr int32_t DEFAULT_GOPSIZE = 60;
+constexpr int32_t DEFAULT_GOPSIZE = 30;
 
 class TemporalScalability {
 public:
