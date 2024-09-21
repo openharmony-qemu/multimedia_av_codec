@@ -112,11 +112,6 @@ protected:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
 private:
-    struct MediaMetaData {
-        std::vector<std::shared_ptr<Meta>> trackMetas;
-        std::shared_ptr<Meta> globalMeta;
-    };
-
     bool FindTrackId(StreamType outType, int32_t &trackId);
     bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime, size_t index);
     bool ShouldTrackSkipped(Plugins::MediaType mediaType, std::string mime, size_t index);
@@ -131,7 +126,6 @@ private:
     std::atomic<bool> isPrepareFramed{false};
 
     std::shared_ptr<Filter> nextFilter_;
-    MediaMetaData mediaMetaData_;
     std::shared_ptr<MediaDemuxer> demuxer_;
     std::shared_ptr<MediaSource> mediaSource_;
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
