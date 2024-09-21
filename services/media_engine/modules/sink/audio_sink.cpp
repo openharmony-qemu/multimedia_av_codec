@@ -17,6 +17,7 @@
 #include "syspara/parameters.h"
 #include "plugin/plugin_manager_v2.h"
 #include "common/log.h"
+#include "calc_max_amplitude.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
@@ -36,7 +37,7 @@ int64_t GetAudioLatencyFixDelay()
     constexpr uint64_t defaultValue = 120 * HST_USECOND;
     static uint64_t fixDelay = OHOS::system::GetUintParameter("debug.media_service.audio_sync_fix_delay", defaultValue);
     MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d, fixdelay: " PUBLIC_LOG_U64, getprocpid(), fixDelay);
-    return (int64_t)fixDelay;
+    return static_cast<int64_t>(fixDelay);
 }
 
 AudioSink::AudioSink()
@@ -369,6 +370,37 @@ void AudioSink::DrainAndReportEosEvent()
     playerEventReceiver_->OnEvent(event);
 }
 
+void AudioSink::CheckUpdateState(char *frame, uint64_t replyBytes, int32_t format)
+{
+    FALSE_RETURN(frame != nullptr && replyBytes != 0);
+    auto currentMaxAmplitude = OHOS::Media::CalcMaxAmplitude::UpdateMaxAmplitude(frame, replyBytes, format);
+    AutoLock amplitudeLock(amplitudeMutex_);
+    if (currentMaxAmplitude > maxAmplitude_) {
+        maxAmplitude_ = currentMaxAmplitude;
+    }
+}
+ 
+float AudioSink::GetMaxAmplitude()
+{
+    AutoLock amplitudeLock(amplitudeMutex_);
+    auto ret = maxAmplitude_;
+    maxAmplitude_ = 0;
+    return ret;
+}
+ 
+void AudioSink::CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer)
+{
+    FALSE_RETURN(filledOutputBuffer != nullptr);
+    auto mem = filledOutputBuffer->memory_;
+    FALSE_RETURN(mem != nullptr);
+    auto srcBuffer = mem->GetAddr();
+    auto destBuffer = const_cast<uint8_t *>(srcBuffer);
+    auto srcLength = mem->GetSize();
+    size_t destLength = static_cast<size_t>(srcLength);
+    int32_t format = plugin_->GetSampleFormat();
+    CheckUpdateState(reinterpret_cast<char *>(destBuffer), destLength, format);
+}
+
 void AudioSink::DrainOutputBuffer()
 {
     std::lock_guard<std::mutex> lock(pluginMutex_);
@@ -406,6 +438,11 @@ void AudioSink::DrainOutputBuffer()
     }
     UpdateAudioWriteTimeMayWait();
     DoSyncWrite(filledOutputBuffer);
+    if (calMaxAmplitudeCbStatus_) {
+        CalcMaxAmplitude(filledOutputBuffer);
+    } else {
+        maxAmplitude_ = 0.0f;
+    }
     lastBufferWriteSuccess_ = (plugin_->Write(filledOutputBuffer) == Status::OK);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
@@ -600,6 +637,13 @@ Status AudioSink::SetMuted(bool isMuted)
     isMuted_ = isMuted;
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     return plugin_->SetMuted(isMuted);
+}
+
+int32_t AudioSink::SetMaxAmplitudeCbStatus(bool status)
+{
+    calMaxAmplitudeCbStatus_ = status;
+    MEDIA_LOG_I("audio SetMaxAmplitudeCbStatus  = " PUBLIC_LOG_D32, calMaxAmplitudeCbStatus_);
+    return 0;
 }
 } // namespace MEDIA
 } // namespace OHOS
