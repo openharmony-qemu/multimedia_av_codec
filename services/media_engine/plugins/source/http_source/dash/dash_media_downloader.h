@@ -66,6 +66,10 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void SetDemuxerState(int32_t streamId) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+    size_t GetBufferSize() const override;
+    void SetAppUid(int32_t appUid) override;
+    bool GetPlayable() override;
+    bool GetBufferingTimeOut() override;
 
 private:
     void ReceiveMpdStreamInitEvent();
@@ -91,7 +95,7 @@ private:
     void ResetBitrateParam();
     void ResetTrackParam();
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloader(int32_t streamId);
-    std::shared_ptr<DashSegmentDownloader> GetSegmentDownloaderByType(MediaAVCodec::MediaType type);
+    std::shared_ptr<DashSegmentDownloader> GetSegmentDownloaderByType(MediaAVCodec::MediaType type) const;
     void OpenInitSegment(const std::shared_ptr<DashStreamDescription> &streamDesc,
                          const std::shared_ptr<DashSegment> &seg);
 

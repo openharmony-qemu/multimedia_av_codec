@@ -112,7 +112,7 @@ private:
     int32_t UpdateSurfaceMemory(uint32_t index);
     void SendFrame();
     void ReceiveFrame();
-    void RenderFrame();
+    void FindAvailIndex(uint32_t index);
     void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
@@ -125,9 +125,15 @@ private:
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
-    int32_t AttachToNewSurface(const sptr<Surface> &newSurface);
-    int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
+    int32_t SwitchBetweenSurface(const sptr<Surface> &newSurface);
+    int32_t RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index);
+    int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index);
     int32_t SetSurfaceCfg(int32_t bufferCnt);
+    // surface listener callback
+    void RequestBufferFromConsumer();
+    GSError BufferReleasedByConsumer(uint64_t surfaceId);
+    GSError RegisterListenerToSurface(const sptr<Surface> &surface);
+    int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
@@ -156,11 +162,11 @@ private:
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
+    std::map<uint32_t, sptr<SurfaceBuffer>> renderSurfaceBufferMap_;
     std::optional<uint32_t> synIndex_ = std::nullopt;
     SurfaceControl sInfo_;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
     std::shared_ptr<TaskThread> receiveTask_ = nullptr;
-    std::shared_ptr<TaskThread> renderTask_ = nullptr;
     std::mutex inputMutex_;
     std::mutex outputMutex_;
     std::mutex sendMutex_;

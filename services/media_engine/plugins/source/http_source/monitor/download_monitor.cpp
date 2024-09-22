@@ -26,6 +26,8 @@ namespace {
     constexpr int RETRY_THRESHOLD = 1;
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
+    constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
+    constexpr int64_t RETRY_SEG = 50;
     const std::set<int32_t> CLIENT_RETRY_ERROR_CODES = {
         25, // Upload faild.
         26, // Faild to open/read local data from file/application.
@@ -55,7 +57,7 @@ DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) no
         OnDownloadStatus(std::forward<decltype(downloader)>(downloader), std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
-    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"), "", TaskType::SINGLETON);
+    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"));
     task_->RegisterJob([this] { return HttpMonitorLoop(); });
     task_->Start();
 }
@@ -73,7 +75,7 @@ int64_t DownloadMonitor::HttpMonitorLoop()
     if (task.request && task.function) {
         task.function();
     }
-    return 50 * 1000; // retry after 50ms
+    return RETRY_SEG * MICROSECONDS_TO_MILLISECOND; // retry after 50ms
 }
 
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
@@ -107,8 +109,13 @@ void DownloadMonitor::Close(bool isAsync)
         AutoLock lock(taskMutex_);
         retryTasks_.clear();
     }
-    task_->Stop();
-    downloader_->Close(isAsync);
+    if (isAsync) {
+        downloader_->Close(true);
+        task_->Stop();
+    } else {
+        task_->Stop();
+        downloader_->Close(false);
+    }
     isPlaying_ = false;
 }
 
@@ -224,17 +231,21 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     if (CLIENT_RETRY_ERROR_CODES.find(clientError) == CLIENT_RETRY_ERROR_CODES.end() ||
         SERVER_RETRY_ERROR_CODES.find(serverError) == SERVER_RETRY_ERROR_CODES.end() ||
         serverError >= SERVER_ERROR_THRESHOLD) {
-        MEDIA_LOG_I("error code dont't need to retry.");
-        downloader_->SetDownloadErrorState();
-        NotifyError(clientError, serverError);
-        request->Close();
-        return false;
+        if (!GetPlayable() || GetBufferingTimeOut()) {
+            MEDIA_LOG_I("error code dont't need to retry.");
+            downloader_->SetDownloadErrorState();
+            NotifyError(clientError, serverError);
+            request->Close();
+            return false;
+        }
     }
     if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR) { // Report error to upper layer
-        MEDIA_LOG_I("Retry times readches the upper limit.");
-        downloader_->SetDownloadErrorState();
-        NotifyError(clientError, serverError);
-        return false;
+        if (!GetPlayable() || GetBufferingTimeOut()) {
+            MEDIA_LOG_I("Retry times readches the upper limit.");
+            downloader_->SetDownloadErrorState();
+            NotifyError(clientError, serverError);
+            return false;
+        }
     }
     return true;
 }
@@ -303,12 +314,26 @@ void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
     }
 }
 
+std::pair<int32_t, int32_t> DownloadMonitor::GetDownloadInfo()
+{
+    MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
+    if (downloader_ == nullptr) {
+        return std::make_pair(0, 0);
+    }
+    return downloader_->GetDownloadInfo();
+}
+
 void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 {
     if (downloader_ != nullptr) {
         MEDIA_LOG_I("DownloadMonitor GetPlaybackInfo");
         downloader_->GetPlaybackInfo(playbackInfo);
     }
+}
+
+size_t DownloadMonitor::GetBufferSize() const
+{
+    return downloader_->GetBufferSize();
 }
 
 Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
@@ -340,6 +365,57 @@ void DownloadMonitor::GetClientMediaServiceErrorCode(int32_t errorCode, int32_t&
         MEDIA_LOG_D("clientCode: " PUBLIC_LOG_D32, static_cast<int32_t>(clientCode));
     }
 }
+
+void DownloadMonitor::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+}
+
+bool DownloadMonitor::GetPlayable()
+{
+    if (downloader_) {
+        return downloader_->GetPlayable();
+    }
+    return false;
+}
+
+bool DownloadMonitor::GetBufferingTimeOut()
+{
+    if (downloader_) {
+        return downloader_->GetBufferingTimeOut();
+    } else {
+        return false;
+    }
+}
+
+size_t DownloadMonitor::GetSegmentOffset()
+{
+    if (downloader_) {
+        return downloader_->GetSegmentOffset();
+    }
+    return 0;
+}
+
+bool DownloadMonitor::GetHLSDiscontinuity()
+{
+    if (downloader_) {
+        return downloader_->GetHLSDiscontinuity();
+    }
+    return false;
+}
+
+Status DownloadMonitor::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("DownloadMonitor::StopBufferring");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("StopBufferring failed, downloader_ is nullptr");
+        return Status::ERROR_NULL_POINTER;
+    }
+    return downloader_->StopBufferring(isAppBackground);
+}
+
 }
 }
 }

@@ -30,7 +30,7 @@ namespace HttpPlugin {
 namespace {
 constexpr int PER_REQUEST_SIZE = 48 * 1024 * 10;
 constexpr unsigned int SLEEP_TIME = 5;    // Sleep 5ms
-constexpr size_t RETRY_TIMES = 200;  // Retry 200 times
+constexpr size_t RETRY_TIMES = 6000;  // Retry 6000 times
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
 constexpr long LIVE_CONTENT_LENGTH = 2147483646;
 constexpr int32_t DOWNLOAD_LOG_FEQUENCE = 10;
@@ -38,6 +38,10 @@ constexpr int32_t LOOP_TIMES = 5;
 constexpr int32_t MAX_LEN = 128;
 const std::string USER_AGENT = "User-Agent";
 const std::string DISPLAYVERSION = "const.product.software.version";
+constexpr int FIRST_REQUEST_SIZE = 8 * 1024;
+constexpr int MIN_REQUEST_SIZE = 2;
+constexpr int SERVER_RANGE_ERROR_CODE = 416;
+constexpr int32_t LOOP_LOG_FEQUENCE = 50;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -227,6 +231,9 @@ bool DownloadRequest::IsM3u8Request() const
 
 bool DownloadRequest::IsServerAcceptRange() const
 {
+    if (headerInfo_.isChunked) {
+        return false;
+    }
     return headerInfo_.isServerAcceptRange;
 }
 
@@ -243,8 +250,12 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
     client_->Init();
     requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>(name_ + "RequestQue",
         REQUEST_QUEUE_SIZE);
-    task_ = std::make_shared<Task>(std::string("OS_" + name_ + "Downloader"), "", TaskType::SINGLETON);
-    task_->RegisterJob([this] { return HttpDownloadLoop(); });
+    task_ = std::make_shared<Task>(std::string("OS_" + name_ + "Downloader"));
+    task_->RegisterJob([this] {
+        HttpDownloadLoop();
+        NotifyLoopPause();
+        return 0;
+    });
 }
 
 Downloader::~Downloader()
@@ -285,37 +296,47 @@ void Downloader::Start()
 void Downloader::Pause(bool isAsync)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
-    MEDIA_LOG_I("pause Begin");
+    MEDIA_LOG_I("Pause Begin");
     requestQue_->SetActive(false, false);
     if (client_ != nullptr) {
         isClientClose_ = true;
-        client_->Close();
+        client_->Close(isAsync);
     }
-    PauseLoop(isAsync);
-    MEDIA_LOG_I("pause End");
+    PauseLoop(true);
+    if (!isAsync) {
+        WaitLoopPause();
+    }
+    MEDIA_LOG_I("Pause End");
 }
 
 void Downloader::Cancel()
 {
+    MEDIA_LOG_I("Cancel Begin");
+    if (currentRequest_->retryTimes_ > 0) {
+        currentRequest_->retryTimes_ = 0;
+    }
     requestQue_->SetActive(false, true);
     if (currentRequest_ != nullptr) {
         currentRequest_->Close();
     }
     if (client_ != nullptr) {
-        client_->Close();
+        client_->Close(false);
     }
     shouldStartNextRequest = true;
-    task_->Pause();
+    PauseLoop(true);
+    WaitLoopPause();
+    MEDIA_LOG_I("Cancel End");
 }
 
 
 void Downloader::Resume()
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Resume");
+    FALSE_RETURN_MSG(!isDestructor_ && !isInterruptNeeded_, "not Resume. is Destructor or InterruptNeeded");
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("resume Begin");
-        if (client_ != nullptr && currentRequest_ != nullptr) {
+        if (isClientClose_ && client_ != nullptr && currentRequest_ != nullptr) {
             isClientClose_ = false;
             client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
         }
@@ -332,16 +353,17 @@ void Downloader::Stop(bool isAsync)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Stop");
     MEDIA_LOG_I("Stop Begin");
+    isDestructor_ = true;
     if (requestQue_ != nullptr) {
         requestQue_->SetActive(false);
     }
     if (currentRequest_ != nullptr) {
+        currentRequest_->isInterruptNeeded_ = true;
         currentRequest_->Close();
     }
     if (client_ != nullptr) {
-        client_->Close();
+        client_->Close(isAsync);
         if (!isAsync) {
-            isDestructor_ = true;
             client_->Deinit();
         }
     }
@@ -359,6 +381,7 @@ void Downloader::Stop(bool isAsync)
 bool Downloader::Seek(int64_t offset)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Seek, offset: " + std::to_string(offset));
+    FALSE_RETURN_V_MSG(!isDestructor_ && !isInterruptNeeded_, false, "not Seek. is Destructor or InterruptNeeded");
     AutoLock lock(operatorMutex_);
     FALSE_RETURN_V(currentRequest_ != nullptr, false);
     size_t contentLength = currentRequest_->GetFileContentLength();
@@ -375,6 +398,9 @@ bool Downloader::Seek(int64_t offset)
     }
     currentRequest_->isEos_ = false;
     shouldStartNextRequest = false; // Reuse last request when seek
+    if (currentRequest_->retryTimes_ > 0) {
+        currentRequest_->retryTimes_ = 0;
+    }
     return true;
 }
 
@@ -393,17 +419,25 @@ void Downloader::GetIp(std::string &ip)
 // Pause download thread before use currentRequest_
 bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
+    FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
+        "not Retry, client null or isDestructor or isInterruptNeeded");
+    if (isAppBackground_) {
+        Pause(true);
+        MEDIA_LOG_I("Retry avoid, forground to background.");
+        return true;
+    }
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("Retry Begin");
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest, false);
+        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest && !isDestructor_ && !isInterruptNeeded_, false);
         requestQue_->SetActive(false, false);
     }
-    task_->Pause();
+    PauseLoop(true);
+    WaitLoopPause();
     {
         AutoLock lock(operatorMutex_);
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest, false);
-        client_->Close();
+        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest && !isDestructor_ && !isInterruptNeeded_, false);
+        client_->Close(false);
         if (currentRequest_ != nullptr) {
             if (currentRequest_->IsSame(request) && !shouldStartNextRequest) {
                 currentRequest_->retryTimes_++;
@@ -457,7 +491,7 @@ bool Downloader::BeginDownload()
 
     if (currentRequest_->endPos_ <= 0) {
         currentRequest_->startPos_ = 0;
-        currentRequest_->requestSize_ = 2; // 2
+        currentRequest_->requestSize_ = FIRST_REQUEST_SIZE;
     } else {
         int64_t temp = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
         currentRequest_->requestSize_ = static_cast<int>(std::min(temp, static_cast<int64_t>(PER_REQUEST_SIZE)));
@@ -469,9 +503,11 @@ bool Downloader::BeginDownload()
     return true;
 }
 
-int64_t Downloader::HttpDownloadLoop()
+void Downloader::HttpDownloadLoop()
 {
     AutoLock lock(operatorMutex_);
+    MEDIA_LOGI_LIMIT(LOOP_LOG_FEQUENCE, "Downloader loop shouldStartNextRequest %{public}d",
+        shouldStartNextRequest.load());
     if (shouldStartNextRequest) {
         std::shared_ptr<DownloadRequest> tempRequest = requestQue_->Pop(1000); // 1000ms timeout limit.
         if (!tempRequest) {
@@ -480,7 +516,7 @@ int64_t Downloader::HttpDownloadLoop()
             if (noTaskLoopTimes_ >= LOOP_TIMES) {
                 PauseLoop(true);
             }
-            return 0;
+            return;
         }
         noTaskLoopTimes_ = 0;
         currentRequest_ = tempRequest;
@@ -491,10 +527,10 @@ int64_t Downloader::HttpDownloadLoop()
         MEDIA_LOG_I("currentRequest_ %{public}d client_ %{public}d nullptr",
                     currentRequest_ != nullptr, client_ != nullptr);
         PauseLoop(true);
-        return -1;
+        return;
     }
     RequestData();
-    return 0;
+    return;
 }
 
 void Downloader::RequestData()
@@ -516,7 +552,15 @@ void Downloader::RequestData()
         if (isDestructor_) {
             return;
         }
-
+        if (currentRequest_->requestSize_ == FIRST_REQUEST_SIZE && !currentRequest_->isFirstRangeRequestReady_
+            && currentRequest_->serverError_ == SERVER_RANGE_ERROR_CODE) {
+            MEDIA_LOG_I("first request is above filesize, need retry.");
+            currentRequest_->startPos_ = 0;
+            currentRequest_->requestSize_ = MIN_REQUEST_SIZE;
+            currentRequest_->isHeaderUpdated = false;
+            currentRequest_->isFirstRangeRequestReady_ = true;
+            return;
+        }
         if (ret == Status::OK) {
             HandleRetOK();
         } else {
@@ -543,6 +587,7 @@ void Downloader::HandlePlayingFinish()
     if (currentRequest_->downloadDoneCallback_ && !isDestructor_) {
         currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
         currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
+        currentRequest_->isFirstRangeRequestReady_ = false;
     }
 }
 
@@ -592,6 +637,9 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
     HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
     if (info->contentLen > 0 && info->contentLen < LIVE_CONTENT_LENGTH) {
         info->isChunked = false;
+    }
+    if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
+        info->isChunked = true;
     }
     mediaDownloader->currentRequest_->SaveHeader(info);
 }
@@ -878,9 +926,79 @@ void Downloader::PauseLoop(bool isAsync)
     }
 }
 
+void Downloader::SetAppUid(int32_t appUid)
+{
+    if (client_) {
+        client_->SetAppUid(appUid);
+    }
+}
+
 const std::shared_ptr<DownloadRequest>& Downloader::GetCurrentRequest()
 {
     return currentRequest_;
+}
+
+void Downloader::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+    NotifyLoopPause();
+}
+
+void Downloader::NotifyLoopPause()
+{
+    FALSE_RETURN(!(loopStatus_ == LoopStatus::PAUSE || isInterruptNeeded_));
+    AutoLock lk(loopPauseMutex_);
+    if (loopStatus_ == LoopStatus::PAUSE || isInterruptNeeded_) {
+        MEDIA_LOG_I("Downloader NotifyLoopPause");
+        loopStatus_ = LoopStatus::PAUSEDONE;
+        loopPauseCond_.NotifyAll();
+    }
+}
+
+void Downloader::WaitLoopPause()
+{
+    FALSE_RETURN(task_->IsTaskRunning());
+    AutoLock lk(loopPauseMutex_);
+    MEDIA_LOG_I("Downloader WaitLoopPause task Running %{public}d, loopStatus_ %{public}d",
+        task_->IsTaskRunning(), loopStatus_.load());
+    FALSE_RETURN(task_->IsTaskRunning());
+    loopStatus_ = LoopStatus::PAUSE;
+    loopPauseCond_.Wait(lk, [this]() {
+        return loopStatus_ == LoopStatus::PAUSEDONE || isInterruptNeeded_;
+    });
+    loopStatus_ = LoopStatus::NORMAL;
+}
+
+void Downloader::SetAppState(bool isAppBackground)
+{
+    isAppBackground_ = isAppBackground;
+}
+
+void Downloader::StopBufferring()
+{
+    MediaAVCodec::AVCodecTrace trace("Downloader::StopBufferring");
+    if (task_ == nullptr || currentRequest_ == nullptr) {
+        MEDIA_LOG_E("Downloader StopBufferring error.");
+        return;
+    }
+    if (isAppBackground_) {
+        if (!task_->IsTaskRunning() && client_ != nullptr) {
+            MEDIA_LOG_I("StopBufferring: is task not running.");
+            client_->Close(false);
+        }
+    } else {
+        if (currentRequest_ != nullptr && !shouldStartNextRequest) {
+            int64_t lastStartPos = currentRequest_->startPos_; // downlaod from last pos
+            BeginDownload();
+            currentRequest_->startPos_ = lastStartPos;
+            if (currentRequest_->startPos_ > 0) {
+                currentRequest_->retryOnGoing_ = true;
+                currentRequest_->dropedDataLen_ = 0;
+            }
+            MEDIA_LOG_I("StopBufferring: begin pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
+        }
+        Start();
+    }
 }
 }
 }

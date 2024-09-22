@@ -751,7 +751,7 @@ bool HEncoder::ReadyToStart()
         return false;
     }
     if (inputSurface_) {
-        HLOGI("surface mode");
+        HLOGI("surface mode, surface id = " PRIu64, inputSurface_->GetUniqueId());
     } else {
         HLOGI("buffer mode");
     }
@@ -867,7 +867,8 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
     if (inBufferCnt_ > inputSurface_->GetQueueSize()) {
         inputSurface_->SetQueueSize(inBufferCnt_);
     }
-    HLOGI("queue size %u", inputSurface_->GetQueueSize());
+    HLOGI("succ, surface id = " PRIu64 ", queue size %u",
+          inputSurface_->GetUniqueId(), inputSurface_->GetQueueSize());
     return producerSurface;
 }
 
@@ -1175,7 +1176,11 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
     WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
-    HCodec::OnQueueInputBuffer(mode, bufferInfo);
+    int32_t err = HCodec::OnQueueInputBuffer(mode, bufferInfo);
+    if (err != AVCS_ERR_OK) {
+        ResetSlot(*bufferInfo);
+        callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INPUT_DATA_ERROR);
+    }
 }
 
 void HEncoder::OnGetBufferFromSurface(const ParamSP& param)
@@ -1193,6 +1198,9 @@ bool HEncoder::GetOneBufferFromSurface()
     GSError ret = inputSurface_->AcquireBuffer(
         entry.item->buffer, entry.item->fence, entry.pts, entry.item->damage);
     if (ret != GSERROR_OK || entry.item->buffer == nullptr) {
+        return false;
+    }
+    if (!CheckBufPixFmt(entry.item->buffer)) {
         return false;
     }
     entry.item->generation = ++currGeneration_;

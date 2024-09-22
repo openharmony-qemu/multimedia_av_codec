@@ -20,7 +20,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioResample"};
-constexpr uint8_t LOGD_FREQUENCY = 10;
 } // namespace
 
 namespace OHOS {
@@ -98,12 +97,22 @@ int32_t AudioResample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFr
         AVCODEC_LOGE("Frame null pointer");
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
-    for (uint32_t i = 0; i < resamplePara_.channels; i++) {
-        if (inputFrame->extended_data[i] == nullptr) {
-            AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "channels:%{public}u, extended_data[%{public}u] is nullptr",
-                resamplePara_.channels, i);
+    int planar = av_sample_fmt_is_planar(static_cast<AVSampleFormat>(inputFrame->format));
+    if (planar) {
+        for (auto i = 0; i < inputFrame->channels; i++) {
+            if (inputFrame->extended_data[i] == nullptr) {
+                AVCODEC_LOGE("this is a planar audio, inputFrame->channels: %{public}d, "
+                             "but inputFrame->extended_data[%{public}d] is nullptr", inputFrame->channels, i);
+                return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
+            }
+        }
+    } else {
+        if (inputFrame->extended_data[0] == nullptr) {
+            AVCODEC_LOGE("inputFrame->extended_data[0] is nullptr");
+            return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
         }
     }
+
     outputFrame->ch_layout = resamplePara_.channelLayout;
     outputFrame->format = resamplePara_.destFmt;
     outputFrame->sample_rate = resamplePara_.sampleRate;

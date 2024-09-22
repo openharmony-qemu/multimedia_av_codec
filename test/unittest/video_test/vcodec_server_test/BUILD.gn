@@ -93,6 +93,7 @@ ohos_unittest("codec_server_coverage_unit_test") {
     "./codec_server_coverage_unit_test.cpp",
     "./mock/codec_drm_decrypt_mock.cpp",
     "./mock/codecbase_mock.cpp",
+    "./post_processing_coverage_unit_test.cpp",
   ]
 
   # av_codec_engine_codeclist_mock

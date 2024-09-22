@@ -26,6 +26,12 @@ public:
     ~HDecoder() override;
 
 private:
+    struct SurfaceBufferItem {
+        sptr<SurfaceBuffer> buffer;
+        sptr<SyncFence> fence;
+    };
+
+private:
     // configure
     int32_t OnConfigure(const Format &format) override;
     int32_t SetupPort(const Format &format);
@@ -34,7 +40,7 @@ private:
     void UpdateColorAspects() override;
     void GetCropFromOmx(uint32_t w, uint32_t h, OHOS::Rect& damage);
     int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
-    int32_t OnSetOutputSurface(const sptr<Surface> &surface, bool cfg) override;
+    void OnSetOutputSurface(const MsgInfo &msg, BufferOperationMode mode) override;
     int32_t OnSetOutputSurfaceWhenCfg(const sptr<Surface> &surface);
     int32_t OnSetParameters(const Format &format) override;
     bool UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt);
@@ -66,13 +72,21 @@ private:
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     GSError OnBufferReleasedByConsumer(uint64_t surfaceId) override;
     void OnGetBufferFromSurface(const ParamSP& param) override;
-    bool RequestAndFindBelongTo(
-        sptr<SurfaceBuffer>& buffer, sptr<SyncFence>& fence, std::vector<BufferInfo>::iterator& iter);
-    __attribute__((no_sanitize("cfi"))) void SubmitDynamicBufferIfPossible() override;
+    SurfaceBufferItem RequestBuffer();
+    std::vector<BufferInfo>::iterator FindBelongTo(sptr<SurfaceBuffer>& buffer);
+    void SubmitBufferToDecoder();
+    void SubmitOneBufferFromFreeList();
+    bool SubmitOneItem(SurfaceBufferItem& item);
+    void SubmitDynamicBufferIfPossible() override;
+    void SurfaceModeSubmitOneDynamicBuffer(std::vector<BufferInfo>::iterator nullSlot);
+    void BufferModeSubmitOneDynamicBuffer(std::vector<BufferInfo>::iterator nullSlot);
 
     // switch surface
-    int32_t OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface);
-    int32_t SwitchBetweenSurface(const sptr<Surface> &newSurface);
+    void OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface,
+        const MsgInfo &msg, BufferOperationMode mode);
+    void SwitchBetweenSurface(const sptr<Surface> &newSurface,
+        const MsgInfo &msg, BufferOperationMode mode);
+    void ConsumeFreeList(BufferOperationMode mode);
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
@@ -94,6 +108,7 @@ private:
         std::optional<GraphicTransformType> originalTransform_;
     } currSurface_;
 
+    std::list<SurfaceBufferItem> freeList_;
     bool isDynamic_ = false;
     uint32_t outBufferCnt_ = 0;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;

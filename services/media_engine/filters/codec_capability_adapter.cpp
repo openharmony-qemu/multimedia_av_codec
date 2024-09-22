@@ -17,7 +17,7 @@
 #include "codec_capability_adapter.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "CodecCapabilityAdapter" };
 }
 
 
@@ -56,6 +56,7 @@ Status CodecCapabilityAdapter::IsWatermarkSupported(std::string &codecMimeType, 
     if (capabilityData == nullptr) {
         MEDIA_LOG_E("capabilityData is null, codecMimeType" PUBLIC_LOG_S, codecMimeType.c_str());
         isWatermarkSupported = false;
+        return Status::ERROR_UNKNOWN;
     }
     if (capabilityData->featuresMap.count(static_cast<int32_t>(MediaAVCodec::AVCapabilityFeature::VIDEO_WATERMARK))) {
         isWatermarkSupported = true;

@@ -272,13 +272,13 @@ namespace {
             }
         }
         if (count == 1) {
-            ASSERT_EQ(0, strcmp(mimeType, "audio/g711mu"));
+            ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_G711MU));
             ASSERT_EQ(layout, LAYOUTMONO);
             ASSERT_EQ(rate, SAMPLERATEMONO);
             ASSERT_EQ(count, COUNTMONO);
             ASSERT_EQ(bitrate, BITRATEMONO);
         } else {
-            ASSERT_EQ(0, strcmp(mimeType, "audio/g711mu"));
+            ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_G711MU));
             ASSERT_EQ(layout, LAYOUTDUAL);
             ASSERT_EQ(rate, SAMPLERATEDUAL);
             ASSERT_EQ(count, COUNTDUAL);
@@ -299,7 +299,7 @@ namespace {
         trackFormatV = OH_AVSource_GetTrackFormat(sourceV, 0);
         ASSERT_NE(trackFormatV, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormatV, OH_MD_KEY_CODEC_MIME, &mimeTypeV));
-        ASSERT_EQ(0, strcmp(mimeTypeV, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeTypeV, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormatV, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxerV, 0));
@@ -734,7 +734,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -776,7 +776,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -922,7 +922,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -964,7 +964,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1014,7 +1014,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1054,7 +1054,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1111,7 +1111,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1157,7 +1157,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1202,7 +1202,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1255,7 +1255,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1308,7 +1308,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1357,7 +1357,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1406,7 +1406,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1456,7 +1456,7 @@ namespace {
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
         ASSERT_EQ(1, g_trackCount);
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));

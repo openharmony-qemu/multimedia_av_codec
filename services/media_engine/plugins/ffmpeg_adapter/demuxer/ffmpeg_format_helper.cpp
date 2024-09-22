@@ -36,12 +36,14 @@ extern "C" {
 }
 #endif
 
+#define DISPLAY_MATRIX_SIZE (static_cast<size_t>(9))
+#define CONVERT_MATRIX_SIZE (static_cast<size_t>(4))
 #define CUVA_VERSION_MAP (static_cast<uint16_t>(1))
 #define TERMINAL_PROVIDE_CODE (static_cast<uint16_t>(4))
 #define TERMINAL_PROVIDE_ORIENTED_CODE (static_cast<uint16_t>(5))
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegFormatHelper" };
 }
 
 namespace OHOS {
@@ -224,11 +226,68 @@ static std::map<std::string, VideoRotation> g_pFfRotationMap = {
     {"270", VIDEO_ROTATION_270},
 };
 
+static const std::map<std::string, VideoOrientationType> matrixTypes = {
+    /**
+     * display matrix
+     *                                  | a b u |
+     *   (a, b, u, c, d, v, x, y, w) -> | c d v |
+     *                                  | x y w |
+     * [a b c d] can confirm the orientation type
+     */
+    {"0 -1 1 0", VideoOrientationType::ROTATE_90},
+    {"-1 0 0 -1", VideoOrientationType::ROTATE_180},
+    {"0 1 -1 0", VideoOrientationType::ROTATE_270},
+    {"-1 0 0 1", VideoOrientationType::FLIP_H},
+    {"1 0 0 -1", VideoOrientationType::FLIP_V},
+    {"0 1 1 0", VideoOrientationType::FLIP_H_ROT90},
+    {"0 -1 -1 0", VideoOrientationType::FLIP_V_ROT90},
+};
+
+VideoOrientationType GetMatrixType(const std::string& value)
+{
+    auto it = matrixTypes.find(value);
+    if (it!= matrixTypes.end()) {
+        return it->second;
+    } else {
+        return VideoOrientationType::ROTATE_NONE;
+    }
+}
+
+inline int ConvFp(int32_t x)
+{
+    return static_cast<int32_t>(x / (1 << 16)); // 16 is used for digital conversion
+}
+
+std::string ConvertArrayToString(const int* Array, size_t size)
+{
+    std::string result;
+    for (size_t i = 0; i < size; ++i) {
+        if (i > 0) {
+            result += ' ';
+        }
+        result += std::to_string(Array[i]);
+    }
+    return result;
+}
+
 bool IsPCMStream(AVCodecID codecID)
 {
     MEDIA_LOG_D("CodecID " PUBLIC_LOG_D32 "[" PUBLIC_LOG_S "].",
         static_cast<int32_t>(codecID), avcodec_get_name(codecID));
     return StartWith(avcodec_get_name(codecID), "pcm_");
+}
+
+int64_t GetDefaultTrackStartTime(const AVFormatContext& avFormatContext)
+{
+    int64_t dafaultTime = 0;
+    for (uint32_t trackIndex = 0; trackIndex < avFormatContext.nb_streams; ++trackIndex) {
+        auto avStream = avFormatContext.streams[trackIndex];
+        if (avStream != nullptr && avStream->codecpar != nullptr &&
+            avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && avStream->start_time != AV_NOPTS_VALUE) {
+            dafaultTime = AvTime2Us(ConvertTimeFromFFmpeg(avStream->start_time, avStream->time_base));
+        }
+    }
+    return dafaultTime;
 }
 
 void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, Meta& format)
@@ -239,8 +298,6 @@ void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, 
     bool hasSubtitle = false;
     bool hasTimedMeta = false;
     for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
-        MEDIA_LOG_I("Track " PUBLIC_LOG_U32 " type: " PUBLIC_LOG_S ".", i,
-            ConvertFFmpegMediaTypeToString(avFormatContext.streams[i]->codecpar->codec_type).data());
         if (avFormatContext.streams[i] == nullptr || avFormatContext.streams[i]->codecpar == nullptr) {
             MEDIA_LOG_I("Track " PUBLIC_LOG_U32 " is invalid.", i);
             continue;
@@ -284,6 +341,9 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     }
     if (avFormatContext.start_time != AV_NOPTS_VALUE) {
         format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t>(avFormatContext.start_time));
+    } else {
+        format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t>(0));
+        MEDIA_LOG_W("Parse container start time failed.");
     }
     ParseLocationInfo(avFormatContext, format);
     for (TagType key: g_supportSourceFormat) {
@@ -345,17 +405,17 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
     }
 }
 
-void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format)
+void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, const AVFormatContext& avFormatContext)
 {
     FALSE_RETURN_MSG(avStream.codecpar != nullptr, "Parse track info failed due to codec par is nullptr.");
-    ParseBaseTrackInfo(avStream, format);
+    ParseBaseTrackInfo(avStream, format, avFormatContext);
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         if ((static_cast<uint32_t>(avStream.disposition) & static_cast<uint32_t>(AV_DISPOSITION_ATTACHED_PIC)) ||
             (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)) {
             ParseImageTrackInfo(avStream, format);
         } else {
             ParseAVTrackInfo(avStream, format);
-            ParseVideoTrackInfo(avStream, format);
+            ParseVideoTrackInfo(avStream, format, avFormatContext);
         }
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         ParseAVTrackInfo(avStream, format);
@@ -366,7 +426,8 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format)
     }
 }
 
-void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &format)
+void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &format,
+                                            const AVFormatContext& avFormatContext)
 {
     if (g_codecIdToMime.count(avStream.codecpar->codec_id) != 0) {
         format.Set<Tag::MIME_TYPE>(std::string(g_codecIdToMime[avStream.codecpar->codec_id]));
@@ -382,15 +443,17 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {
         format.Set<Tag::MEDIA_TYPE>(g_convertFfmpegTrackType[mediaType]);
     } else {
-        MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".",
-            static_cast<int32_t>(avStream.codecpar->codec_type));
+        MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".", static_cast<int32_t>(mediaType));
     }
 
     if (avStream.start_time != AV_NOPTS_VALUE) {
         format.SetData(Tag::MEDIA_START_TIME,
-            ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base));
+            AvTime2Us(ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base)));
     } else {
-        MEDIA_LOG_D("Parse track start time info failed.");
+        if (mediaType == AVMEDIA_TYPE_AUDIO) {
+            format.SetData(Tag::MEDIA_START_TIME, GetDefaultTrackStartTime(avFormatContext));
+        }
+        MEDIA_LOG_W("Parse track start time failed.");
     }
 }
 
@@ -445,7 +508,8 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     }
 }
 
-void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format)
+void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format,
+                                             const AVFormatContext& avFormatContext)
 {
     format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(avStream.codecpar->width));
     format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(avStream.codecpar->height));
@@ -475,6 +539,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         if (g_pFfRotationMap.count(std::string(valPtr->value)) > 0) {
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
         }
+    }
+    if (GetFileTypeByName(avFormatContext) == FileType::MP4) {
+        ParseOrientationFromMatrix(avStream, format);
     }
 
     AVRational sar = avStream.sample_aspect_ratio;
@@ -518,6 +585,37 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
         MEDIA_LOG_D("Parse rotate info from display matrix failed, set rotation as dafault 0");
         format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
     }
+}
+
+void PrintMatrixToLog(int32_t * matrix, const std::string& matrixName)
+{
+    MEDIA_LOG_D(PUBLIC_LOG_S ": [" PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " "
+            PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 "]",
+            matrixName.c_str(), matrix[0], matrix[1], matrix[2], matrix[3], matrix[4],
+            matrix[5], matrix[6], matrix[7], matrix[8]);
+}
+
+void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Meta &format)
+{
+    VideoOrientationType orientationType = VideoOrientationType::ROTATE_NONE;
+    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
+    if (displayMatrix) {
+        PrintMatrixToLog(displayMatrix, "displayMatrix");
+        int convertedMatrix[CONVERT_MATRIX_SIZE];
+        std::transform(&displayMatrix[0], &displayMatrix[0] + 1, // 0 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[0], ConvFp); // 0 is convertedMatrix index
+        std::transform(&displayMatrix[1], &displayMatrix[1] + 1, // 1 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[1], ConvFp); // 1 is convertedMatrix index
+        std::transform(&displayMatrix[3], &displayMatrix[3] + 1, // 3 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[2], ConvFp); // 2 is convertedMatrix index
+        std::transform(&displayMatrix[4], &displayMatrix[4] + 1, // 4 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[3], ConvFp); // 3 is convertedMatrix index
+        orientationType = GetMatrixType(ConvertArrayToString(convertedMatrix, CONVERT_MATRIX_SIZE));
+    } else {
+        MEDIA_LOG_D("Parse orientation info from display matrix failed, set orientation as dafault 0");
+    }
+    format.Set<Tag::VIDEO_ORIENTATION_TYPE>(orientationType);
+    MEDIA_LOG_D("The type of matrix is: " PUBLIC_LOG_D32, static_cast<int>(orientationType));
 }
 
 void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &format)
@@ -671,7 +769,6 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
     auto FileType = GetFileTypeByName(avFormatContext);
     if (FileType == FileType::MPEGTS ||
         FileType == FileType::FLV) {
-        MEDIA_LOG_I("Updata info for mpegts from parser");
         format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(parse.picWidInLumaSamples));
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));
     }

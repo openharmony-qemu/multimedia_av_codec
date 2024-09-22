@@ -19,7 +19,6 @@
 #include "media_downloader.h"
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
-#include "meta/media_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -60,9 +59,12 @@ public:
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+    size_t GetSegmentOffset() override;
+    bool GetHLSDiscontinuity() override;
+    Status StopBufferring(bool isAppBackground) override;
 
 private:
-    void CloseUri();
+    void CloseUri(bool isAsync = false);
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
 
     uint32_t bufferSize_;

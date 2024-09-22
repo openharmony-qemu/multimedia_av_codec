@@ -29,6 +29,9 @@ namespace HttpPlugin {
 constexpr int FDPOS = 2;
 constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
 constexpr int MIN_PRE_PARSE_CONTENT_LEN = 5 * 1024; // 5k
+constexpr int RETRY_DELTA_TIME_TO_REPORT_ERROR = 5 * 1000; // 5s
+constexpr int RETRY_TIME_TO_REPORT_ERROR = 10; // 10
+
 static bool isNumber(const std::string& str)
 {
     return str.find_first_not_of("0123456789") == std::string::npos;
@@ -73,6 +76,19 @@ void PlayListDownloader::DoOpen(const std::string& url)
 {
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                       std::shared_ptr<DownloadRequest>& request) {
+        if (retryStartTime_ == 0) {
+            retryStartTime_ = request->GetNowTime();
+        }
+        int64_t nowTime = request->GetNowTime();
+        bool isNeedReportError = (nowTime - retryStartTime_) >= RETRY_DELTA_TIME_TO_REPORT_ERROR
+                                  || request->GetRetryTimes() >= RETRY_TIME_TO_REPORT_ERROR;
+        if (isNeedReportError && eventCallback_ != nullptr) {
+            MEDIA_LOG_E("fail to download m3u8.");
+            eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
+                                    {NetworkClientErrorCode::ERROR_TIME_OUT}, "download m3u8"});
+
+            return;
+        }
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
 
@@ -191,6 +207,7 @@ bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
     playList_.reserve(playList_.size() + len);
     playList_.append(reinterpret_cast<const char*>(data), len);
     startedDownloadStatus_ = true;
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader nullptr");
     int32_t contentlen = static_cast<int32_t>(downloader_->GetCurrentRequest()->GetFileContentLengthNoWait());
     std::string location;
     downloader_->GetCurrentRequest()->GetLocation(location);
@@ -204,6 +221,10 @@ void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const st
 {
     ParseManifest(location);
     playList_.clear();
+    retryStartTime_ = 0;
+    if (isAppBackground_) {
+        downloader_->Pause(true);
+    }
 }
 
 void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
@@ -288,6 +309,38 @@ void PlayListDownloader::Cancel()
 std::map<std::string, std::string> PlayListDownloader::GetHttpHeader()
 {
     return httpHeader_;
+}
+
+void PlayListDownloader::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+}
+
+void PlayListDownloader::SetCallback(Callback* cb)
+{
+    eventCallback_ = cb;
+}
+
+void PlayListDownloader::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
+    }
+}
+
+void PlayListDownloader::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("PlayListDownloader::StopBufferring.");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("PlayListDownloader:StopBufferring error.");
+        return;
+    }
+    isAppBackground_ = isAppBackground;
+    downloader_->SetAppState(isAppBackground);
+    downloader_->StopBufferring();
 }
 }
 }

@@ -114,7 +114,7 @@ FileFdSourcePlugin::~FileFdSourcePlugin()
 {
     MEDIA_LOG_I("~FileFdSourcePlugin in.");
     steadyClock_.Reset();
-    isInterrupted_ = true;
+    SetInterruptState(true);
     MEDIA_LOG_I("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
     FALSE_RETURN_MSG(downloadTask_ != nullptr, "~FileFdSourcePlugin out.");
     downloadTask_->Stop();
@@ -284,7 +284,11 @@ Status FileFdSourcePlugin::SeekToOnlineFile(uint64_t offset)
     }
     ringBuffer_->Clear();
     ringBuffer_->SetMediaOffset(offset);
-    ringBuffer_->SetActive(true);
+    {
+        std::lock_guard<std::mutex> lock(interruptMutex_);
+        FALSE_RETURN_V(!isInterrupted_, Status::OK);
+        ringBuffer_->SetActive(true);
+    }
 
     int32_t ret = lseek(fd_, offset + static_cast<uint64_t>(offset_), SEEK_SET);
     if (ret == -1) {
@@ -474,8 +478,8 @@ void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
         // read fail with errno, retry 3 * 10ms
         retryTimes_++;
         if (retryTimes_ >= RETRY_TIMES) {
-            SetInterruptState(true);
             NotifyReadFail();
+            SetInterruptState(true);
         }
         usleep(TEN_MILLISECOUNDS);
     } else {
@@ -508,7 +512,8 @@ void FileFdSourcePlugin::NotifyBufferingPercent()
             callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS,
                 {BufferingInfoType::BUFFERING_PERCENT}, std::to_string(bp)});
         } else {
-            MEDIA_LOG_E("EVENT_BUFFER_PROGRESS callback_ is nullptr or isInterrupted_ is true");
+            MEDIA_LOG_E("EVENT_BUFFER_PROGRESS callback_ is nullptr or isInterrupted_ \
+                is true or isBuffering_ is false");
         }
     }
 }
@@ -572,7 +577,10 @@ Status FileFdSourcePlugin::SetReadBlockingFlag(bool isAllowed)
 void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("SetInterruptState isInterrupted_" PUBLIC_LOG_D32, isInterruptNeeded);
-    isInterrupted_ = isInterruptNeeded;
+    {
+        std::lock_guard<std::mutex> lock(interruptMutex_);
+        isInterrupted_ = isInterruptNeeded;
+    }
     if (ringBuffer_ != nullptr) {
         if (isInterrupted_) {
             ringBuffer_->SetActive(false);
@@ -609,6 +617,11 @@ void FileFdSourcePlugin::CheckFileType()
     MEDIA_LOG_I("SetSource ioctl loc, ret " PUBLIC_LOG_D32 ", loc " PUBLIC_LOG_D32 ", errno"
         PUBLIC_LOG_D32, ioResult, loc, errno);
 
+    if (!isEnableFdCache_) {
+        isCloudFile_ = false;
+        return;
+    }
+
     if (ioResult == 0) {
         if (loc == IOCTL_CLOUD) {
             isCloudFile_ = true;
@@ -622,7 +635,7 @@ void FileFdSourcePlugin::CheckFileType()
         }
     } else {
         isCloudFile_ = false;
-        MEDIA_LOG_I("ioctl get file type");
+        MEDIA_LOG_I("ioctl failed to get file type");
     }
 }
 
@@ -716,6 +729,11 @@ bool FileFdSourcePlugin::IsValidTime(int64_t curTime, int64_t lastTime)
 {
     return lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
         curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER;
+}
+
+void FileFdSourcePlugin::SetEnableOnlineFdCache(bool isEnableFdCache)
+{
+    isEnableFdCache_ = isEnableFdCache;
 }
 } // namespace FileFdSource
 } // namespace Plugin

@@ -149,6 +149,7 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::atomic<bool> retryOnGoing_ {false};
     int64_t dropedDataLen_ {0};
+    std::atomic<bool> isFirstRangeRequestReady_ {false};
 };
 
 class Downloader {
@@ -166,11 +167,16 @@ public:
     bool Retry(const std::shared_ptr<DownloadRequest>& request);
     void SetRequestSize(size_t downloadRequestSize);
     void GetIp(std::string &ip);
+    void SetAppUid(int32_t appUid);
     const std::shared_ptr<DownloadRequest>& GetCurrentRequest();
+    void SetInterruptState(bool isInterruptNeeded);
+    void SetAppState(bool isAppBackground);
+    void StopBufferring();
+
 private:
     bool BeginDownload();
 
-    int64_t HttpDownloadLoop();
+    void HttpDownloadLoop();
     void RequestData();
     void HandlePlayingFinish();
     void HandleRetOK();
@@ -186,6 +192,8 @@ private:
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
     static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
     void PauseLoop(bool isAsync = false);
+    void WaitLoopPause();
+    void NotifyLoopPause();
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;
@@ -193,11 +201,22 @@ private:
     FairMutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
     std::atomic<bool> shouldStartNextRequest {false};
-    size_t downloadRequestSize_ {0};
     int32_t noTaskLoopTimes_ {0};
+    size_t downloadRequestSize_ {0};
     std::shared_ptr<Task> task_;
     std::atomic<bool> isDestructor_ {false};
     std::atomic<bool> isClientClose_ {false};
+    std::atomic<bool> isInterruptNeeded_{false};
+
+    enum struct LoopStatus {
+        NORMAL,
+        PAUSE,
+        PAUSEDONE,
+    };
+    std::atomic<LoopStatus> loopStatus_ {LoopStatus::NORMAL};
+    FairMutex loopPauseMutex_ {};
+    ConditionVariable loopPauseCond_;
+    std::atomic<bool> isAppBackground_ {false};
 };
 }
 }

@@ -23,6 +23,7 @@
 #include "filter/filter_factory.h"
 
 #include "surface_encoder_filter.h"
+#include "surface_encoder_adapter.h"
 
 namespace OHOS::Media {
 
@@ -86,7 +87,7 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, SurfaceEncoderFilter_001, TestSize.Level1
     EXPECT_EQ(surfaceEncoder->Reset(), Status::OK);
     EXPECT_EQ(surfaceEncoder->DoFlush(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(surfaceEncoder->DoRelease(), Status::OK);
-    EXPECT_EQ(surfaceEncoder->NotifyEos(), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(surfaceEncoder->NotifyEos(UINT32_MAX), Status::ERROR_UNKNOWN);
 
     surfaceEncoder->SetParameter(format);
     surfaceEncoder->GetParameter(format);
@@ -106,5 +107,87 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, SurfaceEncoderFilter_001, TestSize.Level1
     EXPECT_EQ(surfaceEncoder->OnUpdated(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
         Status::OK);
     EXPECT_EQ(surfaceEncoder->OnUnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, filterLinkCallback), Status::OK);
+}
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, OnError_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    surfaceEncoder->eventReceiver_ = std::make_shared<TestEventReceiver>();
+    surfaceEncoder->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_INTERNAL, 11);
+    surfaceEncoder->eventReceiver_ = nullptr;
+    surfaceEncoder->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_INTERNAL, 11);
+    EXPECT_EQ(surfaceEncoder->isUpdateCodecNeeded_, false);
+}
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, Init_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    std::shared_ptr<TestEventReceiver> receiver = std::make_shared<TestEventReceiver>();
+    std::shared_ptr<TestFilterCallback> callback = std::make_shared<TestFilterCallback>();
+    surfaceEncoder->mediaCodec_ = nullptr;
+    surfaceEncoder->isUpdateCodecNeeded_ = false;
+    surfaceEncoder->Init(receiver, callback);
+    surfaceEncoder->isUpdateCodecNeeded_ = true;
+    surfaceEncoder->Init(receiver, callback);
+    surfaceEncoder->mediaCodec_ = std::make_shared<OHOS::Media::SurfaceEncoderAdapter>();
+    surfaceEncoder->Init(receiver, callback);
+    EXPECT_EQ(surfaceEncoder->instanceId_, 0);
+}
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, GetInputSurface_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    surfaceEncoder->surface_ = nullptr;
+    surfaceEncoder->GetInputSurface();
+    surfaceEncoder->mediaCodec_ = nullptr;
+    surfaceEncoder->GetInputSurface();
+    EXPECT_EQ(surfaceEncoder->instanceId_, 0);
+}
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, SetParameter_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::MEDIA_END_OF_STREAM>(true);
+    parameter->Set<Tag::USER_FRAME_PTS>(1);
+    surfaceEncoder->SetParameter(parameter);
+    parameter->Set<Tag::MEDIA_END_OF_STREAM>(false);
+    parameter->Set<Tag::USER_FRAME_PTS>(2);
+    surfaceEncoder->SetParameter(parameter);
+    EXPECT_EQ(surfaceEncoder->instanceId_, 0);
+}
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, OnLinkedResult_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    sptr<AVBufferQueueProducer> outputBufferQueue = new MyAVBufferQueueProducer();
+    surfaceEncoder->mediaCodec_ = std::make_shared<OHOS::Media::SurfaceEncoderAdapter>();
+    surfaceEncoder->onLinkedResultCallback_ = std::make_shared<TestFilterLinkCallback>();
+    surfaceEncoder->OnLinkedResult(outputBufferQueue, meta);
+    surfaceEncoder->onLinkedResultCallback_ = nullptr;
+    surfaceEncoder->OnLinkedResult(outputBufferQueue, meta);
+    EXPECT_EQ(surfaceEncoder->instanceId_, 0);
+}
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportKeyFramePts_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    surfaceEncoder->OnReportKeyFramePts("test");
+    surfaceEncoder->mediaCodec_ = std::make_shared<OHOS::Media::SurfaceEncoderAdapter>();
+    int32_t appUid =  0;
+    int32_t appPid = 0;
+    const std::string bundleName = "test";
+    uint64_t instanceId = 0;
+    surfaceEncoder->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    surfaceEncoder->mediaCodec_ = nullptr;
+    surfaceEncoder->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    EXPECT_EQ(surfaceEncoder->instanceId_, 0);
 }
 }

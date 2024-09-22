@@ -24,7 +24,7 @@
 #include "parameters.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSinkFilter" };
 }
 
 namespace OHOS {
@@ -326,6 +326,13 @@ int32_t AudioSinkFilter::SetMaxAmplitudeCbStatus(bool status)
 {
     FALSE_RETURN_V(audioSink_ != nullptr, MSERR_INVALID_VAL);
     return audioSink_->SetMaxAmplitudeCbStatus(status);
+}
+
+Status AudioSinkFilter::SetSeekTime(int64_t seekTime)
+{
+    MEDIA_LOG_D("SetSeekTime");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->SetSeekTime(seekTime);
 }
 } // namespace Pipeline
 } // namespace Media

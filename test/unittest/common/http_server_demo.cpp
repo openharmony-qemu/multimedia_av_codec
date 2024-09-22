@@ -14,6 +14,7 @@
  */
 
 #include "http_server_demo.h"
+#include <chrono>
 #include "unittest_log.h"
 
 namespace OHOS {
@@ -68,6 +69,7 @@ void HttpServerDemo::StartServer(int32_t port)
     listen(listenFd_, DEFAULT_LISTEN);
     isRunning_.store(true);
     serverLoop_ = std::make_unique<std::thread>(&HttpServerDemo::ServerLoopFunc, this);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
 void HttpServerDemo::StopServer()
@@ -207,7 +209,6 @@ void HttpServerDemo::FileReadFunc(int32_t connFd)
     int32_t keepAlive = 1;
     int32_t keepIdle = 10;
     std::string recvStr = std::string(recvBuff);
-    std::cout << "recv recvStr=" << recvStr << std::endl;
     std::string path = "";
     if (ret <= 0) {
         std::cout << "recv error, ret=" << ret << std::endl;
@@ -243,6 +244,9 @@ void HttpServerDemo::FileReadFunc(int32_t connFd)
     }
     if (ret > 0) {
         std::string httpContext = "HTTP/2 200 OK\r\nServer:demohttp\r\n";
+        send(connFd, httpContext.c_str(), httpContext.size(), MSG_NOSIGNAL);
+    } else {
+        std::string httpContext = "HTTP/2 500 Internal Server Error\r\nServer:demohttp\r\n";
         send(connFd, httpContext.c_str(), httpContext.size(), MSG_NOSIGNAL);
     }
     CloseFd(connFd, fileFd, true, true);

@@ -231,6 +231,26 @@ public:
     {
         return Status::OK;
     }
+
+    virtual void SetEnableOnlineFdCache(bool isEnableFdCache)
+    {
+        (void)isEnableFdCache;
+    }
+
+    virtual size_t GetSegmentOffset()
+    {
+        return 0;
+    }
+
+    virtual bool GetHLSDiscontinuity()
+    {
+        return false;
+    }
+
+    virtual Status StopBufferring(bool isAppBackground)
+    {
+        return Status::OK;
+    }
 };
 
 /// Source plugin api major number.

@@ -22,6 +22,7 @@
 #include "osal/task/autolock.h"
 #include "securec.h"
 #include "net_conn_client.h"
+#include <fcntl.h>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -57,7 +58,7 @@ std::string InsertCharBefore(std::string input, char from, char preChar, char ne
     std::string str(arr, strSize);
     std::size_t pos = output.find(from);
     std::size_t length = output.length();
-    while (pos >= 0 && pos <= length - 1 && pos != std::string::npos) {
+    while (pos >= 0 && length >= 1 && pos <= length - 1 && pos != std::string::npos) {
         char nextCharTemp = pos >= length ? '\0' : output[pos + 1];
         if (nextChar == '\0' || nextCharTemp == '\0' || nextCharTemp != nextChar) {
             output.replace(pos, 1, str);
@@ -79,7 +80,7 @@ std::string Trim(std::string str)
     if (str.empty()) {
         return str;
     }
-    while (std::isspace(str[str.size() - 1])) {
+    while (str.size() >= 1 && std::isspace(str[str.size() - 1])) {
             str.erase(str.size() - 1, 1);
     }
     return str;
@@ -101,7 +102,6 @@ std::string GetHostnameFromURL(const std::string &url)
     }
     return tempUrl.substr(posStart);
 }
-
 bool IsRegexValid(const std::string &regex)
 {
     if (Trim(regex).empty()) {
@@ -180,6 +180,7 @@ HttpCurlClient::HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void 
 HttpCurlClient::~HttpCurlClient()
 {
     MEDIA_LOG_I("~HttpCurlClient dtor");
+    Close(false);
 }
 
 Status HttpCurlClient::Init()
@@ -222,6 +223,7 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
 Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader,
                             int32_t timeoutMs)
 {
+    MEDIA_LOG_I("Open client in");
     if (easyHandle_ == nullptr) {
         MEDIA_LOG_E("EasyHandle is nullptr, init easyHandle.");
         easyHandle_ = curl_easy_init();
@@ -233,16 +235,21 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
         isFirstOpen_ = false;
     }
     InitCurlEnvironment(url, timeoutMs);
+    MEDIA_LOG_I("Open client out");
     return Status::OK;
 }
 
-Status HttpCurlClient::Close()
+Status HttpCurlClient::Close(bool isAsync)
 {
+    MEDIA_LOG_I("Close client in");
     if (easyHandle_) {
         curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
     }
+    if (isAsync) {
+        MEDIA_LOG_I("Close client Async out");
+        return Status::OK;
+    }
     AutoLock lock(mutex_);
-    MEDIA_LOG_I("Close client");
     if (easyHandle_) {
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
@@ -251,6 +258,7 @@ Status HttpCurlClient::Close()
     if (!ip_.empty()) {
         ip_.clear();
     }
+    MEDIA_LOG_I("Close client out");
     return Status::OK;
 }
 
@@ -414,6 +422,11 @@ Status HttpCurlClient::SetIp()
         }
     }
     return retSetIp;
+}
+
+void HttpCurlClient::SetAppUid(int32_t appUid)
+{
+    appUid_ = appUid;
 }
 }
 }

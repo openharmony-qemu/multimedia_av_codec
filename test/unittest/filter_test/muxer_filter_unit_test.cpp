@@ -142,6 +142,11 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnBufferFilled_0100, TestSize.Level1)
     inputBuffer->pts_ = 3000000000;
     muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
     EXPECT_EQ(inputBuffer->flag_, 0);
+    muxerFilter_->isTransCoderMode = true;
+    muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    muxerFilter_->isTransCoderMode = true;
+    muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    EXPECT_EQ(inputBuffer->flag_, 0);
 }
 
 /**
@@ -177,10 +182,15 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnTransCoderBufferFilled_0200, TestSiz
     sptr<AVBufferQueueProducer> inputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
     muxerFilter_->eosCount_ = 0;
     muxerFilter_->preFilterCount_ = 0;
+    muxerFilter_->videoIsEos = true;
+    muxerFilter_->audioIsEos = false;
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+    muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
     inputBuffer->flag_ = 0;
+    muxerFilter_->eosCount_ = 0;
+    muxerFilter_->preFilterCount_ = 1;
     muxerFilter_->videoIsEos = true;
     muxerFilter_->audioIsEos = true;
-    StreamType streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
     muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
     muxerFilter_->lastAudioPts_ = 1;
     inputBuffer->pts_ = 0;

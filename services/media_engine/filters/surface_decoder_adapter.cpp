@@ -22,7 +22,8 @@
 #include "media_description.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER,
+                                                "SurfaceDecoderAdapter" };
 }
 
 namespace OHOS {
@@ -60,10 +61,11 @@ public:
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
     {
         if (auto surfaceDecoderAdapter = surfaceDecoderAdapter_.lock()) {
-            MEDIA_LOG_I("OnOutputBuffer flag   "  PUBLIC_LOG_D32, buffer->flag_);
+            MEDIA_LOG_D("OnOutputBuffer flag   "  PUBLIC_LOG_D32, buffer->flag_);
             surfaceDecoderAdapter->OnOutputBufferAvailable(index, buffer);
             if (buffer->flag_ == 1) {
-                surfaceDecoderAdapter->decoderAdapterCallback_->OnBufferEos();
+                MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64, surfaceDecoderAdapter->lastBufferPts_);
+                surfaceDecoderAdapter->decoderAdapterCallback_->OnBufferEos(surfaceDecoderAdapter->lastBufferPts_);
             }
         } else {
             MEDIA_LOG_I("invalid surfaceDecoderAdapter");
@@ -322,7 +324,7 @@ void SurfaceDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     {
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
         if (buffer->flag_ == 1) {
-            indexs_.push_back(index);
+            dropIndexs_.push_back(index);
         } else if (buffer->pts_ > lastBufferPts_) {
             lastBufferPts_ = buffer->pts_;
             indexs_.push_back(index);

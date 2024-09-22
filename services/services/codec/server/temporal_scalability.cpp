@@ -76,12 +76,14 @@ void TemporalScalability::ValidateTemporalGopParam(Format &format)
         AVCODEC_LOGI("Set temporal gop size successfully, value is %{public}d.", temporalGopSize_);
     } else {
         temporalGopSize_ = gopSize_ <= DEFAULT_TEMPORAL_GOPSIZE ? MIN_TEMPORAL_GOPSIZE : DEFAULT_TEMPORAL_GOPSIZE;
+        format.PutIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_);
         AVCODEC_LOGI("Get temporal gop size failed, use default value %{public}d.", temporalGopSize_);
     }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_)) {
         AVCODEC_LOGI("Set temporal reference mode successfully.");
     } else {
         tRefMode_ = static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE);
+        format.PutIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_);
         AVCODEC_LOGI("Get temporal reference mode failed, use default value ADJACENT_REFERENCE.");
     }
     svcLTR_ = IsLTRSolution();

@@ -25,7 +25,7 @@
 #include "source.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "Source" };
 }
 
 namespace OHOS {
@@ -122,6 +122,7 @@ Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "InitPlugin failed");
 
     plugin_->SetCallback(this);
+    plugin_->SetEnableOnlineFdCache(isEnableFdCache_);
     ret = plugin_->SetSource(source);
 
     MEDIA_LOG_I("InitPlugin exit");
@@ -176,6 +177,14 @@ Status Source::SelectBitRate(uint32_t bitRate)
         return Status::ERROR_INVALID_OPERATION;
     }
     return plugin_->SelectBitRate(bitRate);
+}
+
+Status Source::StopBufferring(bool flag)
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "StopBufferring failed, plugin_ is nullptr!");
+    MEDIA_LOG_I("StopBufferring begin, flag = " PUBLIC_LOG_D32, flag);
+    return plugin_->StopBufferring(flag);
 }
 
 Status Source::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
@@ -307,13 +316,16 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     }
 }
 
-void Source::SetSelectBitRateFlag(bool flag)
+void Source::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
 {
-    mediaDemuxerCallback_->SetSelectBitRateFlag(flag);
+    if (mediaDemuxerCallback_) {
+        mediaDemuxerCallback_->SetSelectBitRateFlag(flag, desBitRate);
+    }
 }
 
 bool Source::CanAutoSelectBitRate()
 {
+    FALSE_RETURN_V_MSG_E(mediaDemuxerCallback_ != nullptr, false, "mediaDemuxerCallback_ is nullptr.");
     return mediaDemuxerCallback_->CanAutoSelectBitRate();
 }
 
@@ -426,7 +438,6 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
         protocol_.append("stream");
         uri_.append("stream://");
     }
-    MEDIA_LOG_I("protocol: " PUBLIC_LOG_S, protocol_.c_str());
     return ret;
 }
 
@@ -471,5 +482,23 @@ Status Source::SelectStream(int32_t streamID)
     FALSE_RETURN_V_MSG_W(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "SelectStream Source plugin is nullptr!");
     return plugin_->SelectStream(streamID);
 }
+
+void Source::SetEnableOnlineFdCache(bool isEnableFdCache)
+{
+    isEnableFdCache_ = isEnableFdCache;
+}
+
+size_t Source::GetSegmentOffset()
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, 0, "GetSegmentOffset source pulgin is nullptr!");
+    return plugin_->GetSegmentOffset();
+}
+
+bool Source::GetHLSDiscontinuity()
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "GetHLSDiscontinuity source pulgin is nullptr!");
+    return plugin_->GetHLSDiscontinuity();
+}
+
 } // namespace Media
 } // namespace OHOS

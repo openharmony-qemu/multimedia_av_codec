@@ -20,6 +20,7 @@
 #include "osal/utils/dump_buffer.h"
 #include "avcodec_trace.h"
 #include "plugin/plugin_manager_v2.h"
+#include "avcodec_log.h"
 #include "common/event.h"
 #include "avcodec_errors.h"
 #include "common/media_core.h"
@@ -72,14 +73,29 @@ MediaCodec::MediaCodec()
 
 MediaCodec::~MediaCodec()
 {
-    codecPlugin_ = nullptr;
-    inputBufferQueue_ = nullptr;
-    inputBufferQueueProducer_ = nullptr;
-    inputBufferQueueConsumer_ = nullptr;
-    outputBufferQueueProducer_ = nullptr;
-    codecCallback_ = nullptr;
-    mediaCodecCallback_ = nullptr;
+    state_ = CodecState::UNINITIALIZED;
     outputBufferCapacity_ = 0;
+    if (codecPlugin_) {
+        codecPlugin_ = nullptr;
+    }
+    if (inputBufferQueue_) {
+        inputBufferQueue_ = nullptr;
+    }
+    if (inputBufferQueueProducer_) {
+        inputBufferQueueProducer_ = nullptr;
+    }
+    if (inputBufferQueueConsumer_) {
+        inputBufferQueueConsumer_ = nullptr;
+    }
+    if (outputBufferQueueProducer_) {
+        outputBufferQueueProducer_ = nullptr;
+    }
+    if (codecCallback_) {
+        codecCallback_ = nullptr;
+    }
+    if (mediaCodecCallback_) {
+        mediaCodecCallback_ = nullptr;
+    }
 }
 
 int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
@@ -215,15 +231,9 @@ int32_t MediaCodec::Prepare()
     }
     outputBufferCapacity_ = 0;
     auto ret = (int32_t)PrepareInputBufferQueue();
-    if (ret != (int32_t)Status::OK) {
-        MEDIA_LOG_E("PrepareInputBufferQueue failed");
-        return (int32_t)ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == (int32_t)Status::OK, (int32_t)ret, "PrepareInputBufferQueue failed");
     ret = (int32_t)PrepareOutputBufferQueue();
-    if (ret != (int32_t)Status::OK) {
-        MEDIA_LOG_E("PrepareOutputBufferQueue failed");
-        return (int32_t)ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == (int32_t)Status::OK, (int32_t)ret, "PrepareOutputBufferQueue failed");
     state_ = CodecState::PREPARED;
     MEDIA_LOG_I("Prepare, ret = %{public}d", (int32_t)ret);
     return (int32_t)Status::OK;
@@ -233,9 +243,7 @@ sptr<AVBufferQueueProducer> MediaCodec::GetInputBufferQueue()
 {
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ == CodecState::PREPARED, sptr<AVBufferQueueProducer>());
-    if (isSurfaceMode_) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(!isSurfaceMode_, nullptr, "GetInputBufferQueue isSurfaceMode_");
     isBufferMode_ = true;
     return inputBufferQueueProducer_;
 }
@@ -244,9 +252,7 @@ sptr<Surface> MediaCodec::GetInputSurface()
 {
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ == CodecState::PREPARED, nullptr);
-    if (isBufferMode_) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(!isBufferMode_, nullptr, "GetInputBufferQueue isBufferMode_");
     isSurfaceMode_ = true;
     return nullptr;
 }
@@ -678,23 +684,21 @@ Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const s
         codecPlugin_ = nullptr;
     }
     codecPlugin_ = CreatePlugin(mime, type);
-    if (codecPlugin_ != nullptr) {
-        ret = codecPlugin_->SetParameter(meta);
-        MEDIA_LOG_I("codecPlugin SetParameter ret %{public}d", ret);
-        ret = codecPlugin_->Init();
-        MEDIA_LOG_I("codecPlugin Init ret %{public}d", ret);
-        ret = codecPlugin_->SetDataCallback(this);
-        MEDIA_LOG_I("codecPlugin SetDataCallback ret %{public}d", ret);
-        PrepareInputBufferQueue();
-        PrepareOutputBufferQueue();
-        if (state_ == CodecState::RUNNING) {
-            ret = codecPlugin_->Start();
-            MEDIA_LOG_I("codecPlugin Start ret %{public}d", ret);
-        }
-    } else {
-        MEDIA_LOG_I("createPlugin failed");
-        return Status::ERROR_INVALID_PARAMETER;
+
+    CHECK_AND_RETURN_RET_LOG(codecPlugin_ != nullptr, Status::ERROR_INVALID_PARAMETER, "createPlugin failed");
+    ret = codecPlugin_->SetParameter(meta);
+    MEDIA_LOG_I("codecPlugin SetParameter ret %{public}d", ret);
+    ret = codecPlugin_->Init();
+    MEDIA_LOG_I("codecPlugin Init ret %{public}d", ret);
+    ret = codecPlugin_->SetDataCallback(this);
+    MEDIA_LOG_I("codecPlugin SetDataCallback ret %{public}d", ret);
+    PrepareInputBufferQueue();
+    PrepareOutputBufferQueue();
+    if (state_ == CodecState::RUNNING) {
+        ret = codecPlugin_->Start();
+        MEDIA_LOG_I("codecPlugin Start ret %{public}d", ret);
     }
+
     return ret;
 }
 

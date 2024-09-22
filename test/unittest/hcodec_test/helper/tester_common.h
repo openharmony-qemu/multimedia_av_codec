@@ -21,7 +21,6 @@
 #include <condition_variable>
 #include <memory>
 #include "surface.h"
-#include "wm/window.h"  // foundation/window/window_manager/interfaces/innerkits/
 #include "native_avbuffer.h" // foundation/multimedia/media_foundation/interface/kits/c
 #include "buffer/avbuffer.h" // foundation/multimedia/media_foundation/interface/inner_api
 #include "native_avcodec_base.h" // foundation/multimedia/av_codec/interfaces/kits/c/
@@ -134,7 +133,6 @@ protected:
 
     bool RunDecoder();
     bool InitDemuxer();
-    sptr<Surface> CreateSurfaceFromWindow();
     sptr<Surface> CreateSurfaceNormal();
     virtual bool SetOutputSurface(sptr<Surface> &surface) = 0;
     void PrepareSeek();
@@ -142,7 +140,6 @@ protected:
     virtual bool ConfigureDecoder() = 0;
     int GetNextSample(const Span &dstSpan, size_t &sampleIdx, bool &isCsd); // return filledLen
     sptr<Surface> surface_; // consumer
-    sptr<OHOS::Rosen::Window> window_;
     std::shared_ptr<StartCodeDetector> demuxer_;
     size_t totalSampleCnt_ = 0;
     size_t currSampleIdx_ = 0;

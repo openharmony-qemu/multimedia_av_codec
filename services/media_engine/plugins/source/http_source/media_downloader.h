@@ -18,6 +18,7 @@
 
 #include <string>
 #include "plugin/plugin_base.h"
+#include "meta/media_types.h"
 #include "plugin/source_plugin.h"
 #include "download/downloader.h"
 #include "common/media_source.h"
@@ -29,6 +30,7 @@ namespace HttpPlugin {
 struct ReadDataInfo {
     int32_t streamId_ = 0;
     int32_t nextStreamId_ = 0; // streamId will change after switch in dash
+    uint64_t ffmpegOffset = 0;
     unsigned int wantReadLength_ = 0;
     unsigned int realReadLength_ = 0;
     bool isEos_ = false;
@@ -48,6 +50,9 @@ public:
         MEDIA_LOG_E("SeekToPos is unimplemented.");
         return false;
     }
+    virtual size_t GetBufferSize() const = 0;
+    virtual bool GetPlayable() = 0;
+    virtual bool GetBufferingTimeOut() = 0;
     virtual size_t GetContentLength() const = 0;
     virtual int64_t GetDuration() const = 0;
     virtual Seekable GetSeekable() const = 0;
@@ -57,6 +62,11 @@ public:
     virtual void GetDownloadInfo(DownloadInfo& downloadInfo)
     {
         MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
+    }
+    virtual std::pair<int32_t, int32_t> GetDownloadInfo()
+    {
+        MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
+        return std::make_pair(0, 0);
     }
     virtual void GetPlaybackInfo(PlaybackInfo& playbackInfo)
     {
@@ -111,6 +121,24 @@ public:
     virtual Status SelectStream(int32_t streamId)
     {
         MEDIA_LOG_W("SelectStream is unimplemented.");
+        return Status::OK;
+    }
+
+    virtual void SetAppUid(int32_t appUid) = 0;
+
+    virtual size_t GetSegmentOffset()
+    {
+        return 0;
+    }
+
+    virtual bool GetHLSDiscontinuity()
+    {
+        return false;
+    }
+
+    virtual Status StopBufferring(bool isAppBackground)
+    {
+        MEDIA_LOG_W("StopBufferring is unimplemented.");
         return Status::OK;
     }
 };

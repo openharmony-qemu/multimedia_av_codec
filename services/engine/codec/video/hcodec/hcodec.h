@@ -187,7 +187,7 @@ protected:
     int32_t SetProcessName();
     int32_t SetLowLatency(const Format &format);
 
-    virtual int32_t OnSetOutputSurface(const sptr<Surface> &surface, bool cfg) { return AVCS_ERR_UNSUPPORT; }
+    virtual void OnSetOutputSurface(const MsgInfo &msg, BufferOperationMode mode);
     virtual int32_t OnSetParameters(const Format &format) { return AVCS_ERR_OK; }
     virtual sptr<Surface> OnCreateInputSurface() { return nullptr; }
     virtual int32_t OnSetInputSurface(sptr<Surface> &inputSurface) { return AVCS_ERR_UNSUPPORT; }
@@ -221,11 +221,12 @@ protected:
     // input buffer circulation
     virtual void NotifyUserToFillThisInBuffer(BufferInfo &info);
     virtual void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode);
-    void OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info);
+    int32_t OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info);
     virtual void OnSignalEndOfInputStream(const MsgInfo &msg);
     int32_t NotifyOmxToEmptyThisInBuffer(BufferInfo& info);
     virtual void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) = 0;
     virtual void RepeatIfNecessary(const ParamSP& param) {}
+    bool CheckBufPixFmt(const sptr<SurfaceBuffer>& buffer);
 
     // output buffer circulation
     virtual void SubmitDynamicBufferIfPossible() {}
@@ -394,6 +395,7 @@ private:
         virtual void OnCheckIfStuck(const MsgInfo &info);
         void OnForceShutDown(const MsgInfo &info);
         void OnStateExited() override { codec_->stateGeneration_++; }
+        void OnSetParameters(const MsgInfo &info);
 
     protected:
         HCodec *codec_;
@@ -442,7 +444,6 @@ private:
         void OnCodecEvent(CodecHDI::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void OnFlush(const MsgInfo &info);
-        void OnSetParameters(const MsgInfo &info);
     };
 
     struct OutputPortChangedState : BaseState {

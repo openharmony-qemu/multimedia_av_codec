@@ -245,8 +245,7 @@ Status FFmpegBaseEncoder::AllocateContext(const std::string &name)
 {
     {
         std::lock_guard<std::mutex> lock(avMutext_);
-        avCodec_ = std::shared_ptr<AVCodec>(const_cast<AVCodec *>(avcodec_find_encoder_by_name(name.c_str())),
-                                            [](AVCodec *ptr) {});
+        avCodec_ = std::shared_ptr<AVCodec>(const_cast<AVCodec *>(avcodec_find_encoder_by_name(name.c_str())));
         cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
         avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *ptr) { av_packet_free(&ptr); });
     }

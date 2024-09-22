@@ -540,9 +540,8 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
 
 Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates)
 {
-    if (mediaSource_ == nullptr) {
-        MEDIA_LOG_E_SHORT("GetBitRates failed, mediaSource = nullptr");
-    }
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "GetBitRates failed, demuxer_ = nullptr.");
     return demuxer_->GetBitRates(bitRates);
 }
 
@@ -562,11 +561,17 @@ Status DemuxerFilter::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     return demuxer_->GetPlaybackInfo(playbackInfo);
 }
 
+Status DemuxerFilter::StopBufferring(bool flag)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "StopBufferring failed, demuxer_ = nullptr.");
+    return demuxer_->StopBufferring(flag);
+}
+
 Status DemuxerFilter::SelectBitRate(uint32_t bitRate)
 {
-    if (mediaSource_ == nullptr) {
-        MEDIA_LOG_E_SHORT("SelectBitRate failed, mediaSource = nullptr");
-    }
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "SelectBitRate failed, demuxer_ = nullptr.");
     return demuxer_->SelectBitRate(bitRate);
 }
 

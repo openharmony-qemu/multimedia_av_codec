@@ -36,7 +36,8 @@ private:
                                   CapabilityData& userCap);
 };
 
-sptr<CodecHDI::ICodecComponentManager> GetManager(bool getCap, bool supportPassthrough = false);
+sptr<CodecHDI::ICodecComponentManager> GetManager(bool getCap,
+    bool supportPassthrough = false, bool isSecure = false);
 std::vector<CodecHDI::CodecCompCapability> GetCapList();
 }
 

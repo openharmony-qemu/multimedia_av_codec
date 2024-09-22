@@ -125,6 +125,13 @@ void HCodec::BaseState::OnGetFormat(const MsgInfo &info)
     }
 }
 
+void HCodec::BaseState::OnSetParameters(const MsgInfo &info)
+{
+    Format params;
+    (void)info.param->GetValue("params", params);
+    ReplyErrorCode(info.id, codec_->OnSetParameters(params));
+}
+
 void HCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
 {
     int32_t generation = 0;
@@ -253,9 +260,7 @@ void HCodec::InitializedState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::SET_OUTPUT_SURFACE: {
-            sptr<Surface> surface;
-            (void)info.param->GetValue("surface", surface);
-            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, true));
+            codec_->OnSetOutputSurface(info, outputMode_);
             return;
         }
         case MsgWhat::START: {
@@ -489,9 +494,7 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             codec_->OnReleaseOutputBuffer(info, outputMode_);
             break;
         case MsgWhat::SET_OUTPUT_SURFACE: {
-            sptr<Surface> surface;
-            (void)info.param->GetValue("surface", surface);
-            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
+            codec_->OnSetOutputSurface(info, outputMode_);
             return;
         }
         case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
@@ -568,13 +571,6 @@ void HCodec::RunningState::OnFlush(const MsgInfo &info)
         ReplyErrorCode(info.id, AVCS_ERR_UNKNOWN);
     }
 }
-
-void HCodec::RunningState::OnSetParameters(const MsgInfo &info)
-{
-    Format params;
-    (void)info.param->GetValue("params", params);
-    ReplyErrorCode(info.id, codec_->OnSetParameters(params));
-}
 /**************************** RunningState End ********************************/
 
 
@@ -589,15 +585,15 @@ void HCodec::OutputPortChangedState::OnStateEntered()
 void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
-        case MsgWhat::FLUSH: {
+        case MsgWhat::FLUSH:
             OnFlush(info);
             return;
-        }
         case MsgWhat::START:
-        case MsgWhat::SET_PARAMETERS: {
             codec_->DeferMessage(info);
             return;
-        }
+        case MsgWhat::SET_PARAMETERS:
+            OnSetParameters(info);
+            return;
         case MsgWhat::QUEUE_INPUT_BUFFER: {
             codec_->OnQueueInputBuffer(info, inputMode_);
             return;
@@ -623,9 +619,7 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::SET_OUTPUT_SURFACE: {
-            sptr<Surface> surface;
-            (void)info.param->GetValue("surface", surface);
-            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
+            codec_->OnSetOutputSurface(info, outputMode_);
             return;
         }
         case MsgWhat::PRINT_ALL_BUFFER_OWNER: {

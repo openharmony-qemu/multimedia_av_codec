@@ -51,6 +51,15 @@ public:
 protected:
     std::shared_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter_{ nullptr };
 };
+
+class MockEncoderAdapterKeyFramePtsCallback : public EncoderAdapterKeyFramePtsCallback {
+public:
+    void OnReportKeyFramePts(std::string KeyFramePts)
+    {
+        (void)KeyFramePts;
+    }
+};
+
 class MyAVCodecVideoEncoder : public MediaAVCodec::AVCodecVideoEncoder {
 public:
      ~MyAVCodecVideoEncoder() = default;
@@ -216,6 +225,15 @@ protected:
         PRODUCER_REMOVE_FILLED_LISTENER = 8,
         PRODUCER_SET_AVAILABLE_LISTENER = 9
     };
+};
+
+class MyEncoderAdapterKeyFramePtsCallback : public EncoderAdapterKeyFramePtsCallback {
+public:
+    ~MyEncoderAdapterKeyFramePtsCallback() = default;
+    void OnReportKeyFramePts(std::string KeyFramePts)
+    {
+        return;
+    }
 };
 }  // namespace Pipeline
 }  // namespace Media

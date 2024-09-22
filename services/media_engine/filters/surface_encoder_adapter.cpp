@@ -27,7 +27,7 @@
 #include "common/log.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "SurfaceEncoderAdapter" };
 }
 
 constexpr uint32_t TIME_OUT_MS = 1000;
@@ -210,6 +210,9 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
             return Status::ERROR_UNKNOWN;
         }
     }
+    if (isTransCoderMode) {
+        format.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
+    }
     ret = codecServer_->Configure(format);
     if (ret != 0) {
         SetFaultEvent("SurfaceEncoderAdapter::Configure error", ret);
@@ -260,6 +263,14 @@ Status SurfaceEncoderAdapter::SetEncoderAdapterCallback(
     }
 }
 
+Status SurfaceEncoderAdapter::SetEncoderAdapterKeyFramePtsCallback(
+    const std::shared_ptr<EncoderAdapterKeyFramePtsCallback> &encoderAdapterKeyFramePtsCallback)
+{
+    MEDIA_LOG_I("SetEncoderAdapterKeyFramePtsCallback");
+    encoderAdapterKeyFramePtsCallback_ = encoderAdapterKeyFramePtsCallback;
+    return Status::OK;
+}
+
 Status SurfaceEncoderAdapter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("GetInputSurface");
@@ -304,6 +315,7 @@ Status SurfaceEncoderAdapter::Start()
     }
     ret = codecServer_->Start();
     isStart_ = true;
+    isStartKeyFramePts_= true;
     if (ret == 0) {
         return Status::OK;
     } else {
@@ -317,11 +329,13 @@ Status SurfaceEncoderAdapter::Stop()
     MEDIA_LOG_I("Stop");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Stop");
     GetCurrentTime(stopTime_);
+    isStopKeyFramePts_ = true;
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
     if (isStart_ && !isTransCoderMode) {
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
+        AddStopPts();
     }
     if (releaseBufferTask_) {
         isThreadExit_ = true;
@@ -358,6 +372,8 @@ Status SurfaceEncoderAdapter::Pause()
         (pauseResumeQueue_.back().second == StateCode::RESUME && pauseResumeQueue_.back().first <= pauseTime)) {
         pauseResumeQueue_.push_back({pauseTime, StateCode::PAUSE});
         pauseResumeQueue_.push_back({std::numeric_limits<int64_t>::max(), StateCode::RESUME});
+        pauseResumePts_.push_back({pauseTime, StateCode::PAUSE});
+        pauseResumePts_.push_back({std::numeric_limits<int64_t>::max(), StateCode::RESUME});
     }
     return Status::OK;
 }
@@ -380,6 +396,7 @@ Status SurfaceEncoderAdapter::Resume()
     }
     if (pauseResumeQueue_.back().second == StateCode::RESUME) {
         pauseResumeQueue_.back().first = std::min(resumeTime, pauseResumeQueue_.back().first);
+        pauseResumePts_.back().first = std::min(resumeTime, pauseResumePts_.back().first);
     }
     return Status::OK;
 }
@@ -412,8 +429,10 @@ Status SurfaceEncoderAdapter::Reset()
     stopTime_ = -1;
     totalPauseTime_ = 0;
     isStart_ = false;
+    isStartKeyFramePts_ = false;
     mappingTimeQueue_.clear();
     pauseResumeQueue_.clear();
+    pauseResumePts_.clear();
     if (ret == 0) {
         return Status::OK;
     } else {
@@ -438,14 +457,20 @@ Status SurfaceEncoderAdapter::Release()
     }
 }
 
-Status SurfaceEncoderAdapter::NotifyEos()
+Status SurfaceEncoderAdapter::NotifyEos(int64_t pts)
 {
     MEDIA_LOG_I("NotifyEos");
     if (!codecServer_) {
         SetFaultEvent("SurfaceEncoderAdapter::NotifyEos, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
-    int32_t ret = codecServer_->NotifyEos();
+    int32_t ret = 0;
+    MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 " current PTS: " PUBLIC_LOG_D64, pts, currentPts_.load());
+    eosPts_ = pts;
+    if (!isTransCoderMode || currentPts_.load() >= eosPts_.load()) {
+        MEDIA_LOG_I("Notify encoder eos");
+        ret = codecServer_->NotifyEos();
+    }
     if (ret == 0) {
         return Status::OK;
     } else {
@@ -480,6 +505,10 @@ std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
 
 void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    if (buffer->pts_ >= eosPts_.load() && codecServer_) {
+        MEDIA_LOG_I("Notify encoder eos");
+        codecServer_->NotifyEos();
+    }
     if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
         MEDIA_LOG_I("buffer->pts > stopTime, ready to stop");
         std::unique_lock<std::mutex> lock(stopMutex_);
@@ -530,6 +559,7 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
 void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     MEDIA_LOG_D("OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
+    currentPts_ = currentPts_.load() < buffer->pts_? buffer->pts_ : currentPts_.load();
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnOutputBufferAvailable");
     if (isTransCoderMode) {
         TransCoderOnOutputBufferAvailable(index, buffer);
@@ -553,6 +583,11 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         if (startBufferTime_ == -1) {
             startBufferTime_ = buffer->pts_;
         }
+        // cache recent 2 pts
+        preKeyFramePts_ = currentKeyFramePts_;
+        currentKeyFramePts_ = buffer->pts_;
+        AddStartPts(buffer->pts_);
+        AddPauseResumePts(buffer->pts_);
     } else {
         MEDIA_LOG_D("OnOutputBufferAvailable buffer->flag_" PUBLIC_LOG_U32, buffer->flag_);
         mappingTime = startBufferTime_ + buffer->pts_;
@@ -577,7 +612,6 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         indexs_.push_back(index);
     }
     releaseBufferCondition_.notify_all();
-    MEDIA_LOG_D("OnOutputBufferAvailable end");
 }
 
 void SurfaceEncoderAdapter::ReleaseBuffer()
@@ -592,7 +626,7 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
             releaseBufferCondition_.wait(lock, [this] {
-                return isThreadExit_||!indexs_.empty();
+                return isThreadExit_ || !indexs_.empty();
             });
             indexs = indexs_;
             indexs_.clear();
@@ -729,6 +763,64 @@ void SurfaceEncoderAdapter::GetCurrentTime(int64_t &currentTime)
     struct timespec timestamp = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &timestamp);
     currentTime = static_cast<int64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<int64_t>(timestamp.tv_nsec);
+}
+
+void SurfaceEncoderAdapter::AddStartPts(int64_t currentPts)
+{
+    // start time
+    if (isStartKeyFramePts_) {
+        keyFramePts_ += std::to_string(currentPts / NS_PER_US) + ",";
+        isStartKeyFramePts_ = false;
+        MEDIA_LOG_I("AddStartPts success %{public}s end", keyFramePts_.c_str());
+    }
+}
+
+void SurfaceEncoderAdapter::AddStopPts()
+{
+    // stop time
+    MEDIA_LOG_D("AddStopPts enter");
+    if (isStopKeyFramePts_) {
+        if (currentKeyFramePts_ > stopTime_) {
+            keyFramePts_ += std::to_string(preKeyFramePts_ / NS_PER_US);
+            MEDIA_LOG_I("AddStopPts preKeyFramePts_ %{public}s end", keyFramePts_.c_str());
+        } else {
+            keyFramePts_ += std::to_string(currentKeyFramePts_ / NS_PER_US);
+            MEDIA_LOG_I("AddStopPts currentKeyFramePts_ %{public}s end", keyFramePts_.c_str());
+        }
+        isStopKeyFramePts_ = false;
+        encoderAdapterKeyFramePtsCallback_->OnReportKeyFramePts(keyFramePts_);
+        keyFramePts_.clear();
+    }
+}
+
+bool SurfaceEncoderAdapter::AddPauseResumePts(int64_t currentPts)
+{
+    if (pauseResumePts_.empty()) {
+        return false;
+    }
+    auto stateCode = pauseResumePts_[0].second;
+    MEDIA_LOG_D("CheckFrames stateCode: " PUBLIC_LOG_D32
+        " time:" PUBLIC_LOG_D64, static_cast<int32_t>(stateCode), pauseResumePts_[0].first);
+    // means not dropped frames when less than pause time
+    if (stateCode == StateCode::PAUSE && currentPts < pauseResumePts_[0].first) {
+        return false;
+    }
+    // means dropped frames when less than resume time
+    if (stateCode == StateCode::RESUME && currentPts < pauseResumePts_[0].first) {
+        return true;
+    }
+    if (stateCode == StateCode::PAUSE) {
+        MEDIA_LOG_D("AddPausePts %{public}s start", keyFramePts_.c_str());
+        keyFramePts_ += std::to_string(preKeyFramePts_ / NS_PER_US) + ",";
+        MEDIA_LOG_D("AddPausePts %{public}s end", keyFramePts_.c_str());
+    }
+    if (stateCode == StateCode::RESUME) {
+        MEDIA_LOG_D("AddResumePts %{public}s start", keyFramePts_.c_str());
+        keyFramePts_ += std::to_string(currentKeyFramePts_ / NS_PER_US) + ",";
+        MEDIA_LOG_D("AddResumePts %{public}s end", keyFramePts_.c_str());
+    }
+    pauseResumePts_.pop_front();
+    return AddPauseResumePts(currentPts);
 }
 } // namespace MEDIA
 } // namespace OHOS

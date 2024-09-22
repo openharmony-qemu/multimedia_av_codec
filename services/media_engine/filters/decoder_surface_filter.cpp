@@ -31,7 +31,7 @@
 #include "scope_guard.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "DecoderSurfaceFilter" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DecoderSurfaceFilter" };
 }
 
 namespace OHOS {
@@ -669,6 +669,9 @@ void DecoderSurfaceFilter::ConsumeVideoFrame(uint32_t index, bool isRender, int6
 
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    if (outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
+        MEDIA_LOG_I("Decoder output EOS");
+    }
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_D("DrainOutputBuffer pts: " PUBLIC_LOG_D64"  outputSize:%{public}zu",
         outputBuffer->pts_, outputBuffers_.size());
@@ -686,7 +689,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         return;
     }
     if (doPrepareFrame_.load()) {
-        if (renderFirstFrame_) {
+        if (renderFirstFrame_ && !(outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS))) {
             videoDecoder_->ReleaseOutputBuffer(index, true);
         } else {
             outputBuffers_.push_back(make_pair(index, outputBuffer));

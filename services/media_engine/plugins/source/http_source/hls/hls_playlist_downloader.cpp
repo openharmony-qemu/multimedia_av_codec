@@ -122,7 +122,7 @@ void HlsPlayListDownloader::NotifyListChange()
     auto playList = std::vector<PlayInfo>();
     if (currentVariant_->m3u8_->isDecryptAble_) {
         while (!currentVariant_->m3u8_->isDecryptKeyReady_) {
-            Task::SleepInTask(10); // 10 ms
+            Task::SleepInTask(10); // sleep 10ms
         }
         callback_->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
             currentVariant_->m3u8_->iv_);
@@ -172,6 +172,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
     } else {
         if (master_->isSimple_) {
             bool ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
+            master_->isParseSuccess_ = ret;
             if (ret) {
                 UpdateMasterInfo(isPreParse);
                 NotifyListChange();
@@ -186,12 +187,18 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
             }
         }
     }
+    if (!master_->isParseSuccess_ && eventCallback_ != nullptr) {
+        MEDIA_LOG_E("ParseManifest parse failed.");
+        eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
+                                {NetworkClientErrorCode::ERROR_TIME_OUT}, "parse m3u8"});
+    }
 }
 
 void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
 {
     master_->bLive_ = currentVariant_->m3u8_->IsLive();
     master_->duration_ = currentVariant_->m3u8_->GetDuration();
+    master_->segmentOffsets_ = currentVariant_->m3u8_->segmentOffsets_;
     isParseFinished_ = isPreParse ? false : true;
 }
 
@@ -334,15 +341,27 @@ std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetNewVariant()
     return newVariant_;
 }
 
-void HlsPlayListDownloader::SetInterruptState(bool isInterruptNeeded)
-{
-    isInterruptNeeded_ = isInterruptNeeded;
-}
-
 void HlsPlayListDownloader::SetMimeType(const std::string& mimeType)
 {
     mimeType_ = mimeType;
 }
+
+size_t HlsPlayListDownloader::GetSegmentOffset(int tsIndex)
+{
+    if (master_ && master_->segmentOffsets_.size() > tsIndex) {
+        return master_->segmentOffsets_[tsIndex];
+    }
+    return 0;
+}
+
+bool HlsPlayListDownloader::GetHLSDiscontinuity()
+{
+    if (master_) {
+        return master_->discontinuity;
+    }
+    return false;
+}
+
 }
 }
 }

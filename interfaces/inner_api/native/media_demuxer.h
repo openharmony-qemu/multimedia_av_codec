@@ -80,6 +80,7 @@ public:
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
+    Status StopBufferring(bool flag);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
@@ -104,7 +105,7 @@ public:
     Status DisableMediaTrack(Plugins::MediaType mediaType);
     void OnBufferAvailable(uint32_t trackId);
 
-    void SetSelectBitRateFlag(bool flag) override;
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override;
     bool CanAutoSelectBitRate() override;
 
     Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
@@ -124,6 +125,7 @@ public:
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
     void SetCacheLimit(uint32_t limitSize);
+    void SetEnableOnlineFdCache(bool isEnableFdCache);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -132,6 +134,11 @@ private:
         std::shared_ptr<Meta> globalMeta;
     };
 
+    struct MaintainBaseInfo {
+        int64_t segmentOffset = -1;
+        int64_t basePts = -1;
+        int64_t lastPts = 0;
+    };
     bool isHttpSource_ = false;
     std::string videoMime_{};
 
@@ -161,12 +168,13 @@ private:
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     void CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     bool IsTrackDisabled(Plugins::MediaType mediaType);
+    bool HandleDashChangeStream(uint32_t trackId);
 
     Status SeekToTimePre();
     Status SeekToTimeAfter();
     bool SelectBitRateChangeStream(uint32_t trackId);
     bool SelectTrackChangeStream(uint32_t trackId);
-    bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID);
+    bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
     Status PauseForPrepareFrame();
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
 
@@ -197,6 +205,8 @@ private:
     void HandleStopPlugin(int32_t trackId);
     void HandleStartPlugin(int32_t trackId);
     bool IsSubtitleMime(const std::string& mime);
+    Status HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
+    Status InitPtsInfo();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -246,6 +256,7 @@ private:
     bool isDump_ = false;
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
     std::atomic<bool> isSelectBitRate_ = false;
+    uint32_t targetBitRate_ = 0;
     std::string dumpPrefix_ = "";
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 
@@ -267,6 +278,8 @@ private:
     std::atomic<bool> isDemuxerLoopExecuting_ {false};
     std::atomic<bool> isFirstFrameAfterSeek_ {false};
     std::atomic<bool> isInterruptNeeded_ {false};
+    bool isAutoMaintainPts_ = false;
+    std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
 };
 } // namespace Media
 } // namespace OHOS

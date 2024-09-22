@@ -665,6 +665,11 @@ HWTEST_F(DemuxerFilterUnitTest, SelectBitRate, TestSize.Level1)
     std::cout << "SelectBitRate " << static_cast<int32_t>(res) << std::endl;
     ASSERT_EQ(res, Status::OK);
 
+    demuxerFilter_->mediaSource_ = std::make_shared<MediaSource>("file:////");
+    res = demuxerFilter_->SelectBitRate(0);
+    demuxerFilter_->mediaSource_ = nullptr;
+    res = demuxerFilter_->SelectBitRate(0);
+
     auto mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
     demuxerFilter_->SetDataSource(mediaSource);
     res = demuxerFilter_->SelectBitRate(0);
@@ -697,6 +702,21 @@ HWTEST_F(DemuxerFilterUnitTest, OnDumpInfo, TestSize.Level1)
     demuxerFilter_->SetBundleName("xxxxx");
     demuxerFilter_->OnDumpInfo(0);
     ASSERT_NE(temp[0], ' ');
+}
+
+/**
+ * @tc.name: GetBitRates_0200
+ * @tc.desc: GetBitRates
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, GetBitRates_0200, TestSize.Level1)
+{
+    std::vector<uint32_t> bitRates;
+    demuxerFilter_->mediaSource_ = nullptr;
+    demuxerFilter_->GetBitRates(bitRates);
+    demuxerFilter_->mediaSource_ = std::make_shared<MediaSource>("file:////");
+    demuxerFilter_->GetBitRates(bitRates);
+    ASSERT_EQ(demuxerFilter_->isDump_, false);
 }
 }  // namespace Pipeline
 }  // namespace Media

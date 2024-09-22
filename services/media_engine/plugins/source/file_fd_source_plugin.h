@@ -57,6 +57,7 @@ public:
     void NotifyBufferingPercent();
     void NotifyBufferingEnd();
     void NotifyReadFail();
+    void SetEnableOnlineFdCache(bool isEnableFdCache) override;
 private:
     Status ParseUriInfo(const std::string& uri);
     Status ReadOfflineFile(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
@@ -93,6 +94,7 @@ private:
     std::atomic<bool> inSeek_ {false};
     std::shared_ptr<Task> downloadTask_;
     std::shared_mutex mutex_;
+    std::mutex interruptMutex_;
     bool isReadFrame_ {false};
     bool isSeekHit_ {false};
     std::atomic<uint64_t> cachePosition_ {0};
@@ -110,6 +112,7 @@ private:
     int64_t curReadTime_ {0};
     int64_t retryTimes_ {0};
     int64_t lastReadTime_ {0};
+    bool isEnableFdCache_{ true };
 };
 } // namespace FileSource
 } // namespace Plugins

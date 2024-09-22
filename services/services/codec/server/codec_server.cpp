@@ -18,6 +18,7 @@
 #include <malloc.h>
 #include <map>
 #include <unistd.h>
+#include <limits>
 #include <vector>
 #include "avcodec_codec_name.h"
 #include "avcodec_dump_utils.h"
@@ -55,22 +56,22 @@ const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_
     {OHOS::MediaAVCodec::CodecServer::CONFIGURED, "configured"},
     {OHOS::MediaAVCodec::CodecServer::RUNNING, "running"},
     {OHOS::MediaAVCodec::CodecServer::FLUSHED, "flushed"},
-    {OHOS::MediaAVCodec::CodecServer::END_OF_STREAM, "end of stream"},
+    {OHOS::MediaAVCodec::CodecServer::END_OF_STREAM, "EOS"},
     {OHOS::MediaAVCodec::CodecServer::ERROR, "error"},
 };
 
 const std::vector<std::pair<std::string_view, const std::string>> VIDEO_DUMP_TABLE = {
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "CodecName"},
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, "Width"},
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_HEIGHT, "Height"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, "Frame_Rate"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, "Pixel_Format"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_SCALE_TYPE, "Scale_Type"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, "Rotation_Angle"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "Max_Input_Size"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, "Max_Input_Buffer_Count"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, "Max_Output_Buffer_Count"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, "FrameRate"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "BitRate"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, "PixelFormat"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_SCALE_TYPE, "ScaleType"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, "RotationAngle"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "MaxInputSize"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, "MaxInputBufferCount"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, "MaxOutputBufferCount"},
 };
 
 const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
@@ -85,9 +86,9 @@ const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
 
 const std::map<int32_t, const std::string> SCALE_TYPE_STRING_MAP = {
     {OHOS::ScalingMode::SCALING_MODE_FREEZE, "Freeze"},
-    {OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW, "Scale_to_window"},
-    {OHOS::ScalingMode::SCALING_MODE_SCALE_CROP, "Scale_crop"},
-    {OHOS::ScalingMode::SCALING_MODE_NO_SCALE_CROP, "No_scale_crop"},
+    {OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW, "Scale to window"},
+    {OHOS::ScalingMode::SCALING_MODE_SCALE_CROP, "Scale crop"},
+    {OHOS::ScalingMode::SCALING_MODE_NO_SCALE_CROP, "No scale crop"},
 };
 
 int32_t GetAudioCodecName(const OHOS::MediaAVCodec::AVCodecType type, std::string &name)
@@ -552,9 +553,9 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
 int32_t CodecServer::QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     int32_t ret = AVCS_ERR_OK;
-    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || (isSetParameterCb_ && status_ == END_OF_STREAM),
-                             AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
-                             GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG(
+        status_ == RUNNING || ((isSetParameterCb_ || inputParamTask_ != nullptr) && status_ == END_OF_STREAM),
+        AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     if (temporalScalability_ != nullptr) {
         temporalScalability_->ConfigureLTR(index);
@@ -769,16 +770,14 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     AVCodecDumpControler dumpControler;
     auto statusIt = CODEC_STATE_MAP.find(status_);
     if (forwardCaller_.pid != -1 || !forwardCaller_.processName.empty()) {
-        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PID, "Forward_Caller_Pid", std::to_string(forwardCaller_.pid));
-        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_UID, "Forward_Caller_Uid", std::to_string(forwardCaller_.uid));
+        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PID, "ForwardCallerPid", std::to_string(forwardCaller_.pid));
         dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PROCESS_NAME,
-            "Forward_Caller_Process_Name", forwardCaller_.processName);
+            "ForwardCallerProcessName", forwardCaller_.processName);
     }
-    dumpControler.AddInfo(DUMP_INDEX_CALLER_PID, "Caller_Pid", std::to_string(caller_.pid));
-    dumpControler.AddInfo(DUMP_INDEX_CALLER_UID, "Caller_Uid", std::to_string(caller_.uid));
-    dumpControler.AddInfo(DUMP_INDEX_CALLER_PROCESS_NAME, "Caller_Process_Name", caller_.processName);
+    dumpControler.AddInfo(DUMP_INDEX_CALLER_PID, "CallerPid", std::to_string(caller_.pid));
+    dumpControler.AddInfo(DUMP_INDEX_CALLER_PROCESS_NAME, "CallerProcessName", caller_.processName);
     dumpControler.AddInfo(DUMP_INDEX_STATUS, "Status", statusIt != CODEC_STATE_MAP.end() ? statusIt->second : "");
-    dumpControler.AddInfo(DUMP_INDEX_LAST_ERROR, "Last_Error", lastErrMsg_.size() ? lastErrMsg_ : "Null");
+    dumpControler.AddInfo(DUMP_INDEX_LAST_ERROR, "LastError", lastErrMsg_.size() ? lastErrMsg_ : "Null");
 
     uint32_t infoIndex = 1;
     for (auto iter : VIDEO_DUMP_TABLE) {
@@ -1269,6 +1268,12 @@ int32_t CodecServer::StopPostProcessing()
     if (postProcessingOutputBufferInfoQueue_) {
         postProcessingOutputBufferInfoQueue_->Clear();
     }
+
+    AVCODEC_LOGD("reset frame count");
+    decodedFrameCount_.store(0);
+    processedFrameCount_.store(0);
+    decoderIsEOS_.store(false);
+
     AVCODEC_LOGI("Post processing is stopped");
     return AVCS_ERR_OK;
 }
@@ -1292,6 +1297,12 @@ int32_t CodecServer::FlushPostProcessing()
     if (postProcessingOutputBufferInfoQueue_) {
         postProcessingOutputBufferInfoQueue_->Clear();
     }
+
+    AVCODEC_LOGD("reset frame count");
+    decodedFrameCount_.store(0);
+    processedFrameCount_.store(0);
+    decoderIsEOS_.store(false);
+
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Flush post processing failed");
     AVCODEC_LOGI("Post processing is flushed");
     return AVCS_ERR_OK;
@@ -1343,7 +1354,11 @@ int32_t CodecServer::ReleaseOutputBufferOfPostProcessing(uint32_t index, bool re
     auto ret = postProcessingOutputBufferInfoQueue_->PopWait(info);
     CHECK_AND_RETURN_RET_LOG(ret == QueueResult::OK, AVCS_ERR_UNKNOWN,
         "Failed to get data, %{public}s", QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-    CHECK_AND_RETURN_RET_LOG(info, AVCS_ERR_UNKNOWN, "Data is null");
+    CHECK_AND_RETURN_RET_LOG(info && info->buffer, AVCS_ERR_UNKNOWN, "Data is null");
+    if (info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        AVCODEC_LOGD("EOS is got");
+        return AVCS_ERR_OK;
+    }
     return postProcessing_->ReleaseOutputBuffer(index, render);
 }
 
@@ -1396,6 +1411,32 @@ void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_
     CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Push data failed, %{public}s",
         QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
     videoCb_->OnOutputBufferAvailable(index, info->buffer);
+    processedFrameCount_++;
+
+    auto decoderIsEOS = decoderIsEOS_.load();
+    auto decodedFrameCount = decodedFrameCount_.load();
+    auto needEOS = processedFrameCount_.load() == (decodedFrameCount - 1);
+    AVCODEC_LOGD("Processed frame count = %{public}" PRIu64 "decoded frame count = %{public}" PRIu64
+        ", decoder eos = %{public}u, need eos = %{public}u", processedFrameCount_.load(), decodedFrameCount,
+        decoderIsEOS ? 1 : 0, needEOS ? 1 : 0);
+    if (!decoderIsEOS || !needEOS) {
+        return;
+    }
+
+    ret = postProcessingInputBufferInfoQueue_->PopWait(info);
+    CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Get data failed, %{public}s",
+        QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
+    CHECK_AND_RETURN_LOG(info && info->buffer, "Invalid data");
+    CHECK_AND_RETURN_LOG (info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS, "The cache info is not EOS frame");
+    AVCODEC_LOGD("EOS flag = %{public}u", info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS ? 1 : 0);
+    info->index = std::numeric_limits<uint32_t>::max();
+    ret = postProcessingOutputBufferInfoQueue_->PushWait(info);
+    CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Push data failed, %{public}s",
+        QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
+    videoCb_->OnOutputBufferAvailable(info->index, info->buffer);
+    processedFrameCount_++;
+    AVCODEC_LOGD("EOS frame. Processed frame count = %{public}" PRIu64 "decoded frame count = %{public}" PRIu64,
+        processedFrameCount_.load(), decodedFrameCount);
 }
 
 void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
@@ -1463,8 +1504,12 @@ void CodecServer::PostProcessingTask()
     ret = postProcessingInputBufferInfoQueue_->PushWait(info);
     CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Push data failed, %{public}s",
         QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
+    decodedFrameCount_++;
+    AVCODEC_LOGD("Decoded frame count = %{public}" PRIu64, decodedFrameCount_.load());
     if (info && info->buffer && info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
-        AVCODEC_LOGI("index: %{public}u, EOS flag", info->index);
+        AVCODEC_LOGI("index = %{public}u, EOS flag", info->index);
+        decoderIsEOS_.store(true);
+        return;
     }
     (void)ReleaseOutputBufferOfCodec(info->index, true);
 }
@@ -1497,6 +1542,10 @@ void CodecServer::CleanPostProcessingResource()
     if (postProcessingOutputBufferInfoQueue_) {
         postProcessingOutputBufferInfoQueue_.reset();
     }
+
+    decodedFrameCount_.store(0);
+    processedFrameCount_.store(0);
+    decoderIsEOS_.store(false);
 }
 
 } // namespace MediaAVCodec

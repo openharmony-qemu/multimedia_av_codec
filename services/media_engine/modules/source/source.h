@@ -39,17 +39,24 @@ class CallbackImpl : public Plugins::Callback {
 public:
     void OnEvent(const Plugins::PluginEvent &event) override
     {
-        callbackWrap_->OnEvent(event);
+        if (callbackWrap_) {
+            callbackWrap_->OnEvent(event);
+        }
     }
 
-    void SetSelectBitRateFlag(bool flag) override
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
     {
-        callbackWrap_->SetSelectBitRateFlag(flag);
+        if (callbackWrap_) {
+            callbackWrap_->SetSelectBitRateFlag(flag, desBitRate);
+        }
     }
 
     bool CanAutoSelectBitRate() override
     {
-        return callbackWrap_->CanAutoSelectBitRate();
+        if (callbackWrap_) {
+            return callbackWrap_->CanAutoSelectBitRate();
+        }
+        return false;
     }
 
     void SetCallbackWrap(Callback* callbackWrap)
@@ -79,7 +86,7 @@ public:
     Status GetSize(uint64_t &fileSize);
 
     void OnEvent(const Plugins::PluginEvent &event) override;
-    void SetSelectBitRateFlag(bool flag) override;
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override;
     bool CanAutoSelectBitRate() override;
 
     bool IsSeekToTimeSupported();
@@ -87,6 +94,7 @@ public:
     Status SeekToTime(int64_t seekTime, SeekMode mode);
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
+    Status StopBufferring(bool flag);
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID);
     void SetCallback(Callback* callback);
     bool IsNeedPreDownload();
@@ -98,6 +106,10 @@ public:
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status SelectStream(int32_t streamID);
+    void SetEnableOnlineFdCache(bool isEnableFdCache);
+    size_t GetSegmentOffset();
+    bool GetHLSDiscontinuity();
+
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
     static std::string GetUriSuffix(const std::string& uri);
@@ -120,6 +132,7 @@ private:
 
     std::shared_ptr<CallbackImpl> mediaDemuxerCallback_;
     std::atomic<bool> isInterruptNeeded_{false};
+    bool isEnableFdCache_{ true };
 };
 } // namespace Media
 } // namespace OHOS

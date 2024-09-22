@@ -26,7 +26,7 @@
 #include "plugin/plugin_manager_v2.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "TypeFinder" };
 }
 
 namespace OHOS {
@@ -167,7 +167,6 @@ Plugins::Seekable TypeFinder::GetSeekable()
 
 std::string TypeFinder::SniffMediaType()
 {
-    MEDIA_LOG_I("SniffMediaType begin.");
     std::string pluginName;
     auto dataSource = shared_from_this();
     pluginName = Plugins::PluginManagerV2::Instance().SnifferPlugin(PluginType::DEMUXER, dataSource);

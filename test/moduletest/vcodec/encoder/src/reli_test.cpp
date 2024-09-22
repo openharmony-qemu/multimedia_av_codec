@@ -24,6 +24,7 @@
 
 #include "gtest/gtest.h"
 #include "videoenc_api11_sample.h"
+#include "videoenc_inner_sample.h"
 #include "native_avcodec_videoencoder.h"
 #include "native_avcodec_base.h"
 #include "native_avcapability.h"
@@ -65,6 +66,15 @@ OH_AVCapability *cap = nullptr;
 OH_AVCapability *cap_hevc = nullptr;
 string g_codecNameAvc;
 string g_codecNameHEVC;
+fileInfo file_640_480_rgba{"/data/test/media/640_480.rgba", GRAPHIC_PIXEL_FMT_RGBA_8888, 640, 480 };
+fileInfo file_1280_536_nv21{"/data/test/media/1280_536_nv21.yuv", GRAPHIC_PIXEL_FMT_YCRCB_420_SP, 1280, 536 };
+fileInfo file_1280_720_nv12{"/data/test/media/1280_720_nv12.yuv", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, 1280, 720 };
+fileInfo file_1920_816_rgba{"/data/test/media/1920_816.rgba", GRAPHIC_PIXEL_FMT_RGBA_8888, 1920, 816 };
+fileInfo file_1920_1080_nv21{"/data/test/media/1920_1080_nv21.yuv", GRAPHIC_PIXEL_FMT_YCRCB_420_SP, 1920, 1080 };
+fileInfo file_3840_2160_nv12{"/data/test/media/3840_2160_nv12.yuv", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, 3840, 2160 };
+fileInfo file_1280_720_nv12_10bit{"/data/test/media/1280_720_nv12_10bit.yuv", GRAPHIC_PIXEL_FMT_YCBCR_P010, 1280, 720 };
+fileInfo file_1080_1920_nv12{"/data/test/media/1080_1920_nv12.yuv", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, 1080, 1920 };
+fileInfo file_1280_1280_nv12{"/data/test/media/1280_1280_nv12.yuv", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, 1280, 1280 };
 } // namespace
 void HwEncReliNdkTest::SetUpTestCase()
 {
@@ -495,6 +505,34 @@ HWTEST_F(HwEncReliNdkTest, LTR_FUNC_019, TestSize.Level3)
             encVec[i]->WaitForEOS();
         }
         encVec.clear();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0030
+ * @tc.name      : repeatedly surface change encode to call for 12 hours
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_RELI_0010, TestSize.Level3)
+{
+    auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+    while (true) {
+        vEncInnerSample->DEFAULT_WIDTH = 3840;
+        vEncInnerSample->DEFAULT_HEIGHT = 2160;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_RELI_0010.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->fileInfos.push_back(file_640_480_rgba);
+        vEncInnerSample->fileInfos.push_back(file_1280_536_nv21);
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);
+        vEncInnerSample->fileInfos.push_back(file_1920_816_rgba);
+        vEncInnerSample->fileInfos.push_back(file_1920_1080_nv21);
+        vEncInnerSample->fileInfos.push_back(file_3840_2160_nv12);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
     }
 }
 } // namespace
