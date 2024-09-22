@@ -1383,10 +1383,4 @@ const char* HCodec::ToString(MsgWhat what)
     }
     return "UNKNOWN";
 }
-
-int32_t HCodec::GetCurrentTimeSecond()
-{
-    time_t currentTime = time(0);
-    return currentTime;
-}
 } // namespace OHOS::MediaAVCodec
