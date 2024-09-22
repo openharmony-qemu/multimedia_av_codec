@@ -384,7 +384,7 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
     optional<double> frameRate = GetFrameRateFromUser(format);
     if (frameRate.has_value() && floor(frameRate.value()) != VRR_DEFAULT_INPUT_FRAME_RATE
         && ceil(frameRate.value()) != VRR_DEFAULT_INPUT_FRAME_RATE) {
-        HLOGW("VRR only support for 60fps, current frameRate = %f", frameRate.value());
+        HLOGE("VRR only support for 60fps, current frameRate = %f", frameRate.value());
         return AVCS_ERR_UNSUPPORT;
     }
     int vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_NONE;
@@ -393,17 +393,17 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
     } else if (static_cast<int>(codingType_) == CODEC_OMX_VIDEO_CodingAVC) {
         vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_AVC;
     } else {
-        HLOGW("VRR only support for HEVC or AVC");
+        HLOGE("VRR only support for HEVC or AVC");
         return AVCS_ERR_UNSUPPORT;
     }
     int32_t width = 0;
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width) || width <= 0) {
-        HLOGW("format should contain width");
+        HLOGE("VRR format should contain width");
         return AVCS_ERR_INVALID_VAL;
     }
     int32_t height = 0;
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height) || height <= 0) {
-        HLOGW("format should contain height");
+        HLOGE("VRR format should contain height");
         return AVCS_ERR_INVALID_VAL;
     }
     // 通知芯片组件 MV 信息需要上报
@@ -411,17 +411,17 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
     InitOMXParamExt(param);
     param.isMvUpload = vrrEnable;
     if (!SetParameter(OMX_IndexParamIsMvUpload, param)) {
-        HLOGW("SetIsMvUploadParam SetParameter failed");
+        HLOGE("VRR SetIsMvUploadParam SetParameter failed");
         return AVCS_ERR_UNSUPPORT;
     }
     vrrPredictor_ = OHOS::Media::VideoProcessingEngine::VideoRefreshRatePredictionImpl::Create();
     if (vrrPredictor_ == nullptr) {
-        HLOGW("VideoRefreshRatePrediction create failed");
+        HLOGE("VRR VideoRefreshRatePrediction create failed");
         return AVCS_ERR_UNSUPPORT;
     }
     vrrPredictor_->SetParameter(height, width, VRR_DEFAULT_INPUT_FRAME_RATE, vrrMvType);
     isVrrEnable_ = true;
-    HLOGW("VRR enabled");
+    HLOGI("VRR enabled");
     return AVCS_ERR_OK;
 }
 #endif
