@@ -41,7 +41,6 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
 
     context_ = std::make_shared<SampleContext>();
     context_->sampleInfo = std::make_shared<SampleInfo>(sampleInfo);
-    CHECK_AND_RETURN_RET_LOG(context_ == nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
 
     auto &info = *context_->sampleInfo;
     auto &videoCodec = context_->videoCodec;
