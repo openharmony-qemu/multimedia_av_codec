@@ -78,8 +78,6 @@ ohos_shared_library("hcodec") {
     ]
   }
 
-  include_dirs += VRR_INCLUDE_DIRS
-
   deps = [
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
