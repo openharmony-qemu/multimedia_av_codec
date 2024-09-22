@@ -17,9 +17,9 @@
 #define HCODEC_HDECODER_H
 
 #include "hcodec.h"
-#include "video_refreshrate_prediction_impl.h"
-#include "graphic_common.h"
-#include "transaction/rs_interfaces.h"
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+#include "video_refreshrate_prediction.h"
+#endif
 
 namespace OHOS::MediaAVCodec {
 class HDecoder : public HCodec {
@@ -85,9 +85,12 @@ private:
     void OnEnterUninitializedState() override;
 
     // VRR
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t SetVrrEnable(const Format &format);
     int32_t VrrPrediction(BufferInfo &info) override;
-    bool CheckIfNeedCloseVrr(int32_t vrrFrameRate);
+    static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
+    std::unique_ptr<OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction> vrrPredictor_;
+#endif
 
 private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
@@ -110,12 +113,6 @@ private:
     std::optional<ScalingMode> scaleMode_;
     double lastFlushRate_ = 0.0;
     double codecRate_ = 0.0;
-
-    // VRR
-    int32_t continuousHitFrame_ = 0;
-    static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
-    static constexpr int32_t VRR_CHECK_INTERVAL_FRAMES = 30;
-    std::unique_ptr<OHOS::Media::VideoProcessingEngine::VideoRefreshRatePredictionImpl> vrrPredictor_;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HDECODER_H

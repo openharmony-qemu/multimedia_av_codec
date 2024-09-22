@@ -1008,16 +1008,11 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
                 NotifyOmxToFillThisOutBuffer(info);
                 return;
             }
+#ifdef USE_VIDEO_PROCESSING_ENGINE
             if (!isEncoder_ && isVrrEnable_) {
-                if (isTempCloseVrr_) { // close vrr algo for 5 seconds
-                    isTempCloseVrr_ = (GetCurrentTimeSecond() - lastVrrCheckSecond_) <= VRR_CHECK_INTERVAL_SECOND;
-                    if (!isTempCloseVrr_) {
-                        lastVrrCheckSecond_ = GetCurrentTimeSecond();
-                    }
-                } else {
-                    (void)VrrPrediction(info);
-                }
+                (void)VrrPrediction(info);
             }
+#endif
             NotifyUserOutBufferAvaliable(info);
             if (eos) {
                 outputPortEos_ = true;

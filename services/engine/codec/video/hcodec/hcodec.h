@@ -251,10 +251,6 @@ protected:
     void FreeOmxBuffer(OMX_DIRTYPE portIndex, const BufferInfo& info);
     virtual void OnEnterUninitializedState() {}
 
-    // VRR
-    virtual int32_t VrrPrediction(BufferInfo &info) { return AVCS_ERR_UNSUPPORT; }
-    int32_t GetCurrentTimeSecond();
-
     // template
     template <typename T>
     static inline void InitOMXParam(T& param)
@@ -350,10 +346,10 @@ protected:
     bool outPortHasChanged_ = false;
 
     // VRR
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     bool isVrrEnable_ = false;
-    bool isTempCloseVrr_ = false;
-    int32_t lastVrrCheckSecond_ = 0;
-    static constexpr int32_t VRR_CHECK_INTERVAL_SECOND = 30;
+    virtual int32_t VrrPrediction(BufferInfo &info) { return AVCS_ERR_UNSUPPORT; }
+#endif
 
     struct TotalCntAndCost {
         uint64_t totalCnt = 0;
