@@ -79,6 +79,26 @@ enum HevcNalType {
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
+int32_t BitstreamReader::Init(const std::shared_ptr<SampleInfo> &info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    sampleInfo_ = info;
+    inputFile_ = std::make_unique<std::ifstream>(sampleInfo_->inputFilePath.data(), std::ios::binary | std::ios::in);
+    CHECK_AND_RETURN_RET_LOG(inputFile_ && inputFile_->is_open(), AVCODEC_SAMPLE_ERR_ERROR, "Open input file failed");
+
+    nalUnitReader_ = sampleInfo_->dataProducerInfo.bitstreamType == BITSTREAM_TYPE_ANNEXB ?
+        std::static_pointer_cast<NalUnitReader>(std::make_shared<AnnexbNalUnitReader>(inputFile_)) :
+        std::static_pointer_cast<NalUnitReader>(std::make_shared<AvccNalUnitReader>(inputFile_));
+    CHECK_AND_RETURN_RET_LOG(nalUnitReader_, AVCODEC_SAMPLE_ERR_ERROR, "Nal unit reader create failed");
+
+    nalDetector_ = sampleInfo_->codecMime == OH_AVCODEC_MIMETYPE_VIDEO_AVC ?
+        std::static_pointer_cast<NalDetector>(std::make_shared<AVCNalDetector>()) :
+        std::static_pointer_cast<NalDetector>(std::make_shared<HEVCNalDetector>());
+    CHECK_AND_RETURN_RET_LOG(nalDetector_, AVCODEC_SAMPLE_ERR_ERROR, "Nal detector create failed");
+
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
 int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -91,50 +111,36 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Got invalid buffer");
 
     do {
-        int32_t ret = 0;
         int32_t frameSize = 0;
-        int32_t naluType = 0;
-        if (sampleInfo_->dataProducerInfo.bitstreamType == BITSTREAM_TYPE_AVCC) {
-            ret = ReadAvccSample(bufferAddr, frameSize);
-            naluType = GetNaluType(bufferAddr[AVCC_FRAME_HEAD_LEN]);
-        } else if (sampleInfo_->dataProducerInfo.bitstreamType == BITSTREAM_TYPE_ANNEXB) {
-            ret = ReadAnnexbSample(bufferAddr, frameSize);
-            naluType = GetNaluType(bufferAddr);
-        }
+        int32_t ret = nalUnitReader_->ReadNalUnit(bufferAddr, frameSize);
         CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Sample failed");
 
+        int32_t naluType = nalDetector_->GetNalType(bufferAddr);
         bufferInfo.attr.size += frameSize;
         bufferAddr += frameSize;
-        bufferInfo.attr.flags |= IsXPS(naluType) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : 0;
-        bufferInfo.attr.flags |= IsIDR(naluType) ? AVCODEC_BUFFER_FLAGS_SYNC_FRAME : 0;
-        CHECK_AND_BREAK(!IsVCL(naluType));
+        bufferInfo.attr.flags |= nalDetector_->IsXPS(naluType) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : 0;
+        bufferInfo.attr.flags |= nalDetector_->IsIDR(naluType) ? AVCODEC_BUFFER_FLAGS_SYNC_FRAME : 0;
+        CHECK_AND_BREAK(!nalDetector_->IsVCL(naluType));
     } while (true);
 
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t BitstreamReader::ReadAvccSample(uint8_t *bufferAddr, int32_t &bufferSize)
+bool BitstreamReader::IsEOS()
 {
-    uint8_t len[AVCC_FRAME_HEAD_LEN] = {};
-    (void)inputFile_->read(reinterpret_cast<char *>(len), AVCC_FRAME_HEAD_LEN);
-    // 0 1 2 3: avcc frame head byte offset; 8 16 24: avcc frame head bit offset
-    bufferSize = static_cast<uint32_t>((len[3]) | (len[2] << 8) | (len[1] << 16) | (len[0] << 24));
-
-    (void)inputFile_->read(reinterpret_cast<char *>(bufferAddr + AVCC_FRAME_HEAD_LEN), bufferSize);
-    if (ANNEXB_INPUT_ONLY) {
-        ToAnnexb(bufferAddr);
-    }
-
-    bufferSize += AVCC_FRAME_HEAD_LEN;
-    return AVCODEC_SAMPLE_ERR_OK;
+    return nalUnitReader_ ? nalUnitReader_->IsEOS() : true;
 }
 
-int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSize)
+BitstreamReader::AnnexbNalUnitReader::AnnexbNalUnitReader(std::shared_ptr<std::ifstream> inputFile)
 {
-    if (pPrereadBuffer_ >= prereadBufferSize_) {
-        PrereadFile();
-        CHECK_AND_RETURN_RET_LOG(prereadBufferSize_ > 0, AVCODEC_SAMPLE_ERR_ERROR, "Empty file, nothing to read");
-    }
+    inputFile_ = inputFile;
+    prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE + ANNEXB_FRAME_HEAD_LEN);
+    PrereadFile();
+}
+
+int32_t BitstreamReader::AnnexbNalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize)
+{
+    CHECK_AND_RETURN_RET_LOG(prereadBufferSize_ > 0, AVCODEC_SAMPLE_ERR_ERROR, "Empty file, nothing to read");
 
     auto pBuffer = bufferAddr;
     do {
@@ -160,25 +166,47 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
         pBuffer -= ANNEXB_FRAME_HEAD_LEN;
         pPrereadBuffer_ = 0;
     } while (true);
-    if (prereadBuffer_.get()[pPrereadBuffer_ - 1] == 0 && !IsEOS()) {
-        bufferSize--;
-        pPrereadBuffer_--;
-    }
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-void BitstreamReader::PrereadFile()
+bool BitstreamReader::AnnexbNalUnitReader::IsEOS()
 {
-    if (prereadBuffer_ == nullptr) {
-        prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE + ANNEXB_FRAME_HEAD_LEN);
-    }
-    inputFile_->read(reinterpret_cast<char *>(
-        prereadBuffer_.get() + ANNEXB_FRAME_HEAD_LEN), PREREAD_BUFFER_SIZE);
+    return (pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->peek() == EOF);
+}
+
+void BitstreamReader::AnnexbNalUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nallptr");
+    inputFile_->read(reinterpret_cast<char *>(prereadBuffer_.get() + ANNEXB_FRAME_HEAD_LEN), PREREAD_BUFFER_SIZE);
     prereadBufferSize_ = inputFile_->gcount() + ANNEXB_FRAME_HEAD_LEN;
     pPrereadBuffer_ = ANNEXB_FRAME_HEAD_LEN;
 }
 
-int32_t BitstreamReader::ToAnnexb(uint8_t *bufferAddr)
+BitstreamReader::AvccNalUnitReader::AvccNalUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+}
+
+int32_t BitstreamReader::AvccNalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize)
+{
+    uint8_t len[AVCC_FRAME_HEAD_LEN] = {};
+    (void)inputFile_->read(reinterpret_cast<char *>(len), AVCC_FRAME_HEAD_LEN);
+    // 0 1 2 3: avcc frame head byte offset; 8 16 24: avcc frame head bit offset
+    bufferSize = static_cast<uint32_t>((len[3]) | (len[2] << 8) | (len[1] << 16) | (len[0] << 24));
+
+    (void)inputFile_->read(reinterpret_cast<char *>(bufferAddr + AVCC_FRAME_HEAD_LEN), bufferSize);
+    ToAnnexb(bufferAddr);
+
+    bufferSize += AVCC_FRAME_HEAD_LEN;
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+bool BitstreamReader::AvccNalUnitReader::IsEOS()
+{
+    return inputFile_->peek() == EOF;
+}
+
+int32_t BitstreamReader::AvccNalUnitReader::ToAnnexb(uint8_t *bufferAddr)
 {
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Buffer address is null");
 
@@ -189,51 +217,48 @@ int32_t BitstreamReader::ToAnnexb(uint8_t *bufferAddr)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-inline uint8_t BitstreamReader::GetNaluType(uint8_t value)
-{
-    return sampleInfo_->codecMime == OH_AVCODEC_MIMETYPE_VIDEO_AVC ? (value & 0x1F) : ((value & 0x7E) >> 1);
-}
-
-inline uint8_t BitstreamReader::GetNaluType(const uint8_t *const bufferAddr)
+uint8_t BitstreamReader::AVCNalDetector::GetNalType(const uint8_t *const bufferAddr)
 {
     auto pos = std::search(bufferAddr, bufferAddr + ANNEXB_FRAME_HEAD_LEN + 1,
         std::begin(ANNEXB_FRAME_HEAD), std::end(ANNEXB_FRAME_HEAD));
-    return GetNaluType(*(pos + ANNEXB_FRAME_HEAD_LEN));
+    return (*(pos + ANNEXB_FRAME_HEAD_LEN)) & 0x1F; // AVC Nal offset: value & 0x1F
 }
 
-bool BitstreamReader::IsXPS(uint8_t naluType)
+bool BitstreamReader::AVCNalDetector::IsXPS(uint8_t nalType)
 {
-    bool isH264Stream = sampleInfo_->codecMime == OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    if ((isH264Stream && ((naluType == AVC_SPS) || (naluType == AVC_PPS))) ||
-        (!isH264Stream && ((naluType >= HEVC_VPS_NUT) && (naluType <= HEVC_PPS_NUT)))) {
-        return true;
-    }
-    return false;
+    return (nalType == AVC_SPS) || (nalType == AVC_PPS) ? true : false;
 }
 
-bool BitstreamReader::IsIDR(uint8_t naluType)
+bool BitstreamReader::AVCNalDetector::IsIDR(uint8_t nalType)
 {
-    bool isH264Stream = sampleInfo_->codecMime == OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    if ((isH264Stream && (naluType == AVC_IDR)) ||
-        (!isH264Stream && ((naluType >= HEVC_IDR_W_RADL) && (naluType <= HEVC_CRA_NUT)))) {
-        return true;
-    }
-    return false;
+    return (nalType == AVC_IDR) ? true : false;
 }
 
-bool BitstreamReader::IsVCL(uint8_t nalType)
+uint8_t BitstreamReader::HEVCNalDetector::GetNalType(const uint8_t *const bufferAddr)
 {
-    bool isH264Stream = sampleInfo_->codecMime == OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    if ((isH264Stream && (nalType >= AVC_NON_IDR && nalType <= AVC_IDR)) ||
-        (!isH264Stream && (nalType >= HEVC_TRAIL_N && nalType <= HEVC_CRA_NUT))) {
-        return true;
-    }
-    return false;
+    auto pos = std::search(bufferAddr, bufferAddr + ANNEXB_FRAME_HEAD_LEN + 1,
+        std::begin(ANNEXB_FRAME_HEAD), std::end(ANNEXB_FRAME_HEAD));
+    return (((*(pos + ANNEXB_FRAME_HEAD_LEN)) & 0x7E) >> 1);    // HEVC Nal offset: (value & 0x7E) >> 1
 }
 
-bool BitstreamReader::IsEOS()
+bool BitstreamReader::AVCNalDetector::IsVCL(uint8_t nalType)
 {
-    return (pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->peek() == EOF);
+    return (nalType >= AVC_NON_IDR && nalType <= AVC_IDR) ? true : false;
+}
+
+bool BitstreamReader::HEVCNalDetector::IsXPS(uint8_t nalType)
+{
+    return (nalType >= HEVC_VPS_NUT) && (nalType <= HEVC_PPS_NUT) ? true : false;
+}
+
+bool BitstreamReader::HEVCNalDetector::IsIDR(uint8_t nalType)
+{
+    return (nalType >= HEVC_IDR_W_RADL) && (nalType <= HEVC_CRA_NUT) ? true : false;
+}
+
+bool BitstreamReader::HEVCNalDetector::IsVCL(uint8_t nalType)
+{
+    return (nalType >= HEVC_TRAIL_N && nalType <= HEVC_CRA_NUT) ? true : false;
 }
 } // Sample
 } // MediaAVCodec

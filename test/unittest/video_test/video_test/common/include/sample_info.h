@@ -24,8 +24,6 @@
 #include "native_avcodec_videoencoder.h"
 #include "native_avbuffer.h"
 
-#define ANNEXB_INPUT_ONLY 1
-
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
