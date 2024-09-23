@@ -854,8 +854,8 @@ void VideoEncSample::OutputLoopFuncExt()
 
 void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer)
 {
+    std::shared_ptr<FormatMock> format = buffer->GetParameter();
     if (!(attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA) && !(attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
-        std::shared_ptr<FormatMock> format = buffer->GetParameter();
         int32_t qpAverage = 60;
         if (format->GetIntValue(Media::Tag::VIDEO_ENCODER_QP_AVERAGE, qpAverage)) {
             UNITTEST_INFO_LOG("qpAverage is:%d", qpAverage);
@@ -866,10 +866,17 @@ void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<A
                 UNITTEST_INFO_LOG("mse is:%lf", mse);
             }
         }
-        format->Destroy();
     } else if (ltrParam.enableUseLtr && (attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
-        std::shared_ptr<FormatMock> format = buffer->GetParameter();
+        int32_t isLtr = 0;
+        int32_t framePoc = 0;
+        if (format->GetIntValue(Media::Tag::VIDEO_PER_FRAME_IS_LTR, isLtr)) {
+            UNITTEST_INFO_LOG("isLtr is:%d", isLtr);
+        }
+        if (format->GetIntValue(Media::Tag::VIDEO_PER_FRAME_POC, framePoc)) {
+            UNITTEST_INFO_LOG("framePoc is:%d", framePoc);
+        }
     }
+    format->Destroy();
 }
 
 int32_t VideoEncSample::OutputLoopInnerExt()
