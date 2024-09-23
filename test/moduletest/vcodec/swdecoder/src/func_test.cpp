@@ -20,6 +20,9 @@
 #include "videodec_api11_sample.h"
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
+#include "native_avcapability.h"
+#include "native_avformat.h"
+#include "openssl/sha.h"
 
 #ifdef SUPPORT_DRM
 #include "native_mediakeysession.h"
@@ -54,12 +57,363 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-void SwdecFuncNdkTest::SetUpTestCase() {}
+namespace {
+static OH_AVCapability *cap_avc = nullptr;
+static string g_codecName_avc = "";
+}
+
+
+void SwdecFuncNdkTest::SetUpTestCase() {
+    cap_avc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    g_codecName_avc = OH_AVCapability_GetName(cap_avc);
+    cout << "g_codecName_avc: " << g_codecName_avc << endl;
+}
 void SwdecFuncNdkTest::TearDownTestCase() {}
 void SwdecFuncNdkTest::SetUp() {}
 void SwdecFuncNdkTest::TearDown() {}
 
 namespace {
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_001
+ * @tc.name      : surf model change in normal state
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        ASSERT_EQ(AV_ERR_INVALID_STATE, vDecSample->SwitchSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_002 
+ * @tc.name      : surf model change in flushed state
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_003
+ * @tc.name      : surf model change in runing state
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->autoSwitchSurface = false;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_004
+ * @tc.name      : repeat call setSurface fastly
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
+        vDecSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_005
+ * @tc.name      : surf model change in flush to runnig state
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_006
+ * @tc.name      : surf model change in decoder finish to End-of-Stream state
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface()); 
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_007
+ * @tc.name      : buffer model change in decoder finish to End-of-Stream state
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->autoSwitchSurface = false;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_avc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_008
+ * @tc.name      : buffer model change in runing to flushed state
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->autoSwitchSurface = false;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_009
+ * @tc.name      : buffer model change in flushed to runing state
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->autoSwitchSurface = false;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
+        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_012
+ * @tc.name      : buffer model change in normal state
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->autoSwitchSurface = false;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_avc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        ASSERT_EQ(AV_ERR_INVALID_STATE, vDecSample->SwitchSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_013
+ * @tc.name      : surf model change in config state
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->autoSwitchSurface = false;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_014
+ * @tc.name      : surf model change in config state
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->autoSwitchSurface = false;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_avc));;
+        ASSERT_EQ(AV_ERR_INVALID_STATE, vDecSample->SwitchSurface());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_015
+ * @tc.name      : Two object repeat call setSurface fastly
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_015, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
+        vDecSample->WaitForEOS();
+
+        auto vDecSample_1 = make_shared<VDecAPI11Sample>();
+        vDecSample_1->INP_DIR = INP_DIR_1080_30;
+        vDecSample_1->DEFAULT_WIDTH = 1920;
+        vDecSample_1->DEFAULT_HEIGHT = 1080;
+        vDecSample_1->DEFAULT_FRAME_RATE = 30;
+        vDecSample_1->SURFACE_OUTPUT = true;
+        vDecSample_1->autoSwitchSurface = true;
+        vDecSample_1->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample_1->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample_1->SwitchSurface());
+        vDecSample_1->WaitForEOS();    
+    }
+}
+
+/**
+ * @tc.number    : API11_SURF_CHANGE_FUNC_016
+ * @tc.name      : repeat call setSurface fastly 2 time
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_016, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        for (int i = 0; i < 2; i++) {
+            auto vDecSample = make_shared<VDecAPI11Sample>();
+            vDecSample->INP_DIR = INP_DIR_1080_30;
+            vDecSample->DEFAULT_WIDTH = 1920;
+            vDecSample->DEFAULT_HEIGHT = 1080;
+            vDecSample->DEFAULT_FRAME_RATE = 30;
+            vDecSample->SURFACE_OUTPUT = true;
+            vDecSample->autoSwitchSurface = true;
+            vDecSample->sleepOnFPS = true;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
+            vDecSample->WaitForEOS();
+        }
+    }
+}
+
+
 /**
  * @tc.number    : VIDEO_SWDEC_FUNCTION_0200
  * @tc.name      : create nonexist decoder
@@ -389,29 +743,6 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_ATTIME_0010, TestSize.Level0)
     vDecSample->rsAtTime = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface("OH.Media.Codec.Decoder.Video.AVC"));
     vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-}
-/**
- * @tc.number    : VIDEO_SWDEC_FUNCTION_1900
- * @tc.name      : Increase frame rate judgment
- * @tc.desc      : function test
- */
-HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1910, TestSize.Level2)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_720_30;
-    vDecSample->OUT_DIR = "/data/test/media/SW_720_30.yuv";
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->outputYuvFlag = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(101, vDecSample->outFrameCount);
     ASSERT_EQ(0, vDecSample->errCount);
 }
 } // namespace

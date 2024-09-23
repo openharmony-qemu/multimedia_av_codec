@@ -24,6 +24,7 @@
 
 #include "gtest/gtest.h"
 #include "videodec_sample.h"
+#include "videodec_api11_sample.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avformat.h"
 #include "native_averrors.h"
@@ -57,6 +58,8 @@ OH_AVCapability *cap = nullptr;
 OH_AVCapability *cap_hevc = nullptr;
 VDecSignal *signal_;
 const string INVALID_CODEC_NAME = "avdec_h265";
+const string VIDEO_DECODER_HEVC_NAME = "OH.Media.Codec.Decoder.Video.HEVC"; 
+const string VIDEO_DECODER_HISI = "OMX.hisi.video.decoder.hevc";
 static string g_codecName_hevc = "";
 OH_AVFormat *format;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
@@ -95,11 +98,10 @@ void HevcSwdecApiNdkTest::TearDown()
 } // namespace OHOS
 
 namespace {
-
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_0100
- * @tc.name      : OH_VideoDecoder_FindDecoder para error
- * @tc.desc      : function test
+ * @tc.name      : OH_VideoDecoder_CreateByName para error
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0100, TestSize.Level2)
 {
@@ -111,13 +113,13 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0100, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_0200
- * @tc.name      : OH_VideoDecoder_CreateByName para error
- * @tc.desc      : function test
+ * @tc.name      : blue zone create decoder fail
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(NULL);
+    if (access("/system/lib64/media/", 0)) {
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_EQ(NULL, vdec_);
     }
 }
@@ -125,7 +127,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0200, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_3300
  * @tc.name      : OH_VideoDecoder_SetCallback para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_3300, TestSize.Level2)
 {
@@ -142,7 +144,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_3300, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1800
  * @tc.name      : OH_VideoDecoder_SetCallback para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1800, TestSize.Level2)
 {
@@ -162,7 +164,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1800, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_0300
  * @tc.name      : OH_VideoDecoder_SetCallback para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0300, TestSize.Level2)
 {
@@ -180,7 +182,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0300, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_0400
  * @tc.name      : OH_VideoDecoder_Destroy para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0400, TestSize.Level2)
 {
@@ -192,7 +194,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0400, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_0500
  * @tc.name      : OH_VideoDecoder_Configure para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0500, TestSize.Level2)
 {
@@ -206,7 +208,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0500, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1400
  * @tc.name      : OH_VideoDecoder_Configure para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1400, TestSize.Level2)
 {
@@ -218,25 +220,24 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1400, TestSize.Level2)
 }
 
 /**
- * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1400
+ * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_5000
  * @tc.name      : OH_VideoDecoder_Configure para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_5000, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-        string widthStr = "width";
-        (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(NULL, format));
     }
 }
 
 /**
- * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1400
+ * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_5100
  * @tc.name      : OH_VideoDecoder_Configure para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_5100, TestSize.Level2)
 {
@@ -254,7 +255,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_5100, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_0600
  * @tc.name      : OH_VideoDecoder_Start para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0600, TestSize.Level2)
 {
@@ -266,7 +267,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0600, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_0700
  * @tc.name      : OH_VideoDecoder_Stop para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0700, TestSize.Level2)
 {
@@ -278,7 +279,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0700, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_0800
  * @tc.name      : OH_VideoDecoder_Flush para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0800, TestSize.Level2)
 {
@@ -290,7 +291,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0800, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_0900
  * @tc.name      : OH_VideoDecoder_Reset para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0900, TestSize.Level2)
 {
@@ -302,7 +303,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0900, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1000
  * @tc.name      : OH_VideoDecoder_GetOutputDescription para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1000, TestSize.Level2)
 {
@@ -314,7 +315,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1000, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1100
  * @tc.name      : OH_VideoDecoder_SetParameter para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1100, TestSize.Level2)
 {
@@ -327,7 +328,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1100, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_4100
  * @tc.name      : OH_VideoDecoder_Prepare para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_4100, TestSize.Level2)
 {
@@ -341,7 +342,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_4100, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1500
  * @tc.name      : OH_VideoDecoder_SetParameter para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1500, TestSize.Level2)
 {
@@ -359,7 +360,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1500, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1200
  * @tc.name      : OH_VideoDecoder_SetSurface para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1200, TestSize.Level2)
 {
@@ -372,19 +373,20 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1200, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1300
  * @tc.name      : OH_VideoDecoder_CreateByName para correct
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1300, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
+        ASSERT_NE(NULL, vdec_);
     }
 }
 
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1600
  * @tc.name      : OH_VideoDecoder_CreateByName para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1600, TestSize.Level2)
 {
@@ -397,7 +399,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1600, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1700
  * @tc.name      : OH_VideoDecoder_CreateByName para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1700, TestSize.Level2)
 {
@@ -408,9 +410,9 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1700, TestSize.Level2)
 }
 
 /**
- * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_1700
+ * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_2200
  * @tc.name      : OH_VideoDecoder_IsValid para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2200, TestSize.Level2)
 {
@@ -429,7 +431,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2200, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_2500
  * @tc.name      : OH_VideoDecoder_RenderOutputData para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2500, TestSize.Level2)
 {
@@ -441,7 +443,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2500, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_2600
  * @tc.name      : OH_VideoDecoder_RenderOutputData para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2600, TestSize.Level2)
 {
@@ -454,7 +456,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2600, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_2700
  * @tc.name      : OH_VideoDecoder_FreeOutputData para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2700, TestSize.Level2)
 {
@@ -466,7 +468,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2700, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_2800
  * @tc.name      : OH_VideoDecoder_FreeOutputData para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2800, TestSize.Level2)
 {
@@ -479,7 +481,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2800, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_2900
  * @tc.name      : OH_VideoDecoder_FreeOutputData para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2900, TestSize.Level2)
 {
@@ -492,7 +494,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2900, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_3000
  * @tc.name      : OH_VideoDecoder_PushInputData para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_3000, TestSize.Level2)
 {
@@ -510,7 +512,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_3000, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_3100
  * @tc.name      : OH_VideoDecoder_PushInputData para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_3100, TestSize.Level2)
 {
@@ -528,7 +530,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_3100, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_3200
  * @tc.name      : OH_VideoDecoder_PushInputData para error
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_3200, TestSize.Level2)
 {
@@ -538,47 +540,42 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_3200, TestSize.Level2)
         attr.size = 0;
         attr.offset = 0;
         attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_PushInputData(NULL, 0, attr));
     }
 }
 
 /**
  * @tc.number    : VIDEO_SWDEC_API_0100
- * @tc.name      : create create
- * @tc.desc      : function test
+ * @tc.name      : OH_VideoDecoder_CreateByName Creat Success and reset
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0100, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(vdec_, NULL);
-        OH_AVCodec *vdec_2 = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
-        ASSERT_NE(vdec_2, NULL);
-        OH_VideoDecoder_Destroy(vdec_2);
-        vdec_2 = nullptr;
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec_));
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(vdec_));
+        vdec_ = nullptr;
     }
 }
 
 /**
  * @tc.number    : VIDEO_SWDEC_API_0200
- * @tc.name      : create configure configure
- * @tc.desc      : function test
+ * @tc.name      : OH_AVFormat_SetIntValue Setting Properties
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0200, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(NULL, vdec_);
-
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(vdec_, format));
     }
@@ -586,23 +583,20 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0200, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_SWDEC_API_0300
- * @tc.name      : create configure start start
- * @tc.desc      : function test
+ * @tc.name      : OH_VideoDecoder_Start start decoder
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0300, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(NULL, vdec_);
-
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
         ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Start(vdec_));
@@ -611,23 +605,20 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0300, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_SWDEC_API_0400
- * @tc.name      : create configure start stop stop
- * @tc.desc      : function test
+ * @tc.name      : OH_VideoDecoder_Stop Stop decoding
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0400, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(NULL, vdec_);
-
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Stop(vdec_));
@@ -638,7 +629,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0400, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_API_0500
  * @tc.name      : create configure start stop reset reset
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0500, TestSize.Level2)
 {
@@ -665,22 +656,19 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0500, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_API_0700
  * @tc.name      : create configure start flush flush
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0700, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(NULL, vdec_);
-
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(vdec_));
@@ -691,22 +679,19 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0700, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_API_0800
  * @tc.name      : create configure start stop release release
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0800, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(NULL, vdec_);
-
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Stop(vdec_));
@@ -718,8 +703,8 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0800, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_SWDEC_API_0900
- * @tc.name      : create create
- * @tc.desc      : function test
+ * @tc.name      : create  two decoder
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0900, TestSize.Level2)
 {
@@ -736,7 +721,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_0900, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_API_1000
  * @tc.name      : repeat OH_VideoDecoder_SetCallback
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_1000, TestSize.Level2)
 {
@@ -755,7 +740,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_1000, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_API_1100
  * @tc.name      : repeat OH_VideoDecoder_GetOutputDescription
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_1100, TestSize.Level2)
 {
@@ -771,22 +756,19 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_1100, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_API_1200
  * @tc.name      : repeat OH_VideoDecoder_SetParameter
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_1200, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(NULL, vdec_);
-
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-
         ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_SetParameter(vdec_, format));
         ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_SetParameter(vdec_, format));
     }
@@ -795,22 +777,9 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_API_1200, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_0100
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0100, TestSize.Level2)
-{
-    if (!access("/system/lib64/media/", 0)) {
-        cap = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false);
-        ASSERT_NE(cap, nullptr);
-    }
-}
-
-/**
- * @tc.number    : VIDEO_SWDEC_CAP_API_0110
- * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
- */
-HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0110, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         cap = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false);
@@ -819,9 +788,23 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0110, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_0110
+ * @tc.name      : OH_AVCodec_GetCapability
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0110, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        cap = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false);
+        string codec_name = OH_AVCapability_GetName(cap);
+        ASSERT_EQ(VIDEO_DECODER_HISI, codec_name);
+    }
+}
+
+/**
  * @tc.number    : VIDEO_SWDEC_CAP_API_0200
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0200, TestSize.Level2)
 {
@@ -834,21 +817,22 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0200, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_0300
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0300, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         cap = OH_AVCodec_GetCapabilityByCategory(
             OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
-        ASSERT_NE(cap, nullptr);
+        string codec_name = OH_AVCapability_GetName(cap);
+        ASSERT_EQ(VIDEO_DECODER_HEVC_NAME, codec_name);
     }
 }
 
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_0400
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0400, TestSize.Level2)
 {
@@ -861,7 +845,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0400, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_0500
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0500, TestSize.Level2)
 {
@@ -876,7 +860,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0500, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_0510
  * @tc.name      : OH_AVCodec_GetCapability hevc
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0510, TestSize.Level2)
 {
@@ -891,7 +875,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0510, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_0600
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0600, TestSize.Level2)
 {
@@ -903,7 +887,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0600, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_0700
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0700, TestSize.Level2)
 {
@@ -915,7 +899,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0700, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_0800
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0800, TestSize.Level2)
 {
@@ -923,51 +907,28 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0800, TestSize.Level2)
         cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(cap, nullptr);
         string codec_name = OH_AVCapability_GetName(cap);
-        if (codec_name == "OMX.hisi.video.decoder.havc") {
-            ASSERT_EQ(30, OH_AVCapability_GetMaxSupportedInstances(cap));
-        } else {
-            ASSERT_EQ(64, OH_AVCapability_GetMaxSupportedInstances(cap));
-        }
-    }
-}
-
-/**
- * @tc.number    : VIDEO_SWDEC_CAP_API_0810
- * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
- */
-HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0810, TestSize.Level2)
-{
-    if (!access("/system/lib64/media/", 0)) {
-        cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
-        ASSERT_NE(cap, nullptr);
-        string codec_name = OH_AVCapability_GetName(cap);
-        if (codec_name == "OMX.hisi.video.decoder.hevc") {
-            ASSERT_EQ(30, OH_AVCapability_GetMaxSupportedInstances(cap));
-        } else {
-            ASSERT_EQ(64, OH_AVCapability_GetMaxSupportedInstances(cap));
-        }
+        ASSERT_EQ(64, OH_AVCapability_GetMaxSupportedInstances(cap));
     }
 }
 
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_0900
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0900, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(cap, nullptr);
-        ASSERT_EQ(g_codecName_hevc, OH_AVCapability_GetName(cap));
+        ASSERT_EQ(VIDEO_DECODER_HEVC_NAME, OH_AVCapability_GetName(cap));
     }
 }
 
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_1000
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : api test
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_1000, TestSize.Level2)
 {
@@ -1024,9 +985,9 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3300, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         int32_t alignment = 0;
         ret = OH_AVCapability_GetVideoWidthAlignment(capability, &alignment);
-        cout << "WidthAlignment " << alignment << endl;
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GE(alignment, 0);
+        ASSERT_EQ(alignment, 2);
     }
 }
 /**
@@ -1043,7 +1004,6 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3310, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         int32_t alignment = 0;
         ret = OH_AVCapability_GetVideoWidthAlignment(capability, &alignment);
-        cout << "WidthAlignment " << alignment << endl;
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GE(alignment, 0);
     }
@@ -1095,9 +1055,9 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3600, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         int32_t alignment = 0;
         ret = OH_AVCapability_GetVideoHeightAlignment(capability, &alignment);
-        cout << "HeightAlignment " << alignment << endl;
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GE(alignment, 0);
+        ASSERT_EQ(alignment, 2);
     }
 }
 
@@ -1115,7 +1075,6 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3610, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         int32_t alignment = 0;
         ret = OH_AVCapability_GetVideoHeightAlignment(capability, &alignment);
-        cout << "HeightAlignment " << alignment << endl;
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GE(alignment, 0);
     }
@@ -1191,10 +1150,11 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4000, TestSize.Level2)
             OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, &range);
-        cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
+        ASSERT_EQ(range.minVal, 2);
+        ASSERT_EQ(range.maxVal, 1920);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
@@ -1202,12 +1162,12 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4000, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
 
@@ -1226,7 +1186,6 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4010, TestSize.Level2)
             OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, &range);
-        cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
@@ -1237,12 +1196,12 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4010, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
 
@@ -1317,9 +1276,10 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4400, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
-        cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
+        ASSERT_EQ(range.minVal, 2);
+        ASSERT_EQ(range.maxVal, 1920);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
@@ -1327,12 +1287,12 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4400, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.minVal - 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.maxVal + 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
 
@@ -1352,7 +1312,6 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4410, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
-        cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
@@ -1362,12 +1321,12 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4410, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.minVal - 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.maxVal + 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
 
@@ -1419,9 +1378,10 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4700, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRange(capability, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
-        cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
+        ASSERT_EQ(range.minVal, 2);
+        ASSERT_EQ(range.maxVal, 1920);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
@@ -1429,12 +1389,12 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4700, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
 
@@ -1454,7 +1414,6 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4710, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRange(capability, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
-        cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
@@ -1464,12 +1423,12 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4710, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
 
@@ -1522,9 +1481,10 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5000, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
         ASSERT_EQ(AV_ERR_OK, ret);
-        cout << "minval=" << heightRange.minVal << "  maxval=" << heightRange.maxVal << endl;
         ASSERT_GE(heightRange.minVal, 0);
         ASSERT_GT(heightRange.maxVal, 0);
+        ASSERT_EQ(heightRange.minVal, 2);
+        ASSERT_EQ(heightRange.maxVal, 1920);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
@@ -1532,12 +1492,12 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5000, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.minVal - 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.maxVal + 1);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
 
@@ -1558,7 +1518,6 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_1700, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
         ASSERT_EQ(AV_ERR_OK, ret);
-        cout << "minval=" << heightRange.minVal << "  maxval=" << heightRange.maxVal << endl;
         ASSERT_GE(heightRange.minVal, 0);
         ASSERT_GT(heightRange.maxVal, 0);
         ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
@@ -1736,6 +1695,8 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_1600, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
+        ASSERT_EQ(range.minVal, 0);
+        ASSERT_EQ(range.maxVal, 30);
     }
 }
 
@@ -1827,16 +1788,18 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6200, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 1280, 720, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
-        cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
+        ASSERT_EQ(range.minVal, 0);
+        ASSERT_EQ(range.maxVal, 30);
 
         ret = OH_AVCapability_GetVideoFrameRateRangeForSize(
             capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
-        cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
+        ASSERT_EQ(range.minVal, 0);
+        ASSERT_EQ(range.maxVal, 30);
     }
 }
 
@@ -2073,12 +2036,15 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_1200, TestSize.Level2)
         ret_1 = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat_1, &pixelFormatNum_1);
         ASSERT_NE(nullptr, pixelFormat_1);
         ASSERT_GT(pixelFormatNum_1, 0);
+        ASSERT_EQ(pixelFormatNum_1, 2);
         ASSERT_EQ(AV_ERR_OK, ret_1);
         for (int i = 0; i < pixelFormatNum_1; i++) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
             ASSERT_NE(nullptr, format);
+            ASSERT_EQ(pixelFormat_1[0], 2);
+            ASSERT_EQ(pixelFormat_1[1], 3);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
             EXPECT_GE(pixelFormat_1[i], 0);
@@ -2102,17 +2068,10 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_1200, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
         ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        if (!access("/system/lib64/media/", 0)) {
-            vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
-            ASSERT_NE(nullptr, vdec_);
-            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA);
-            ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
-        } else {
-            vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
-            ASSERT_NE(nullptr, vdec_);
-            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV21);
-            ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
-        }
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
+        ASSERT_NE(nullptr, vdec_);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA);
+        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
 
@@ -2184,10 +2143,10 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7500, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
         ASSERT_EQ(AV_ERR_OK, ret);
-        ASSERT_GT(profileNum, 0);
+        ASSERT_EQ(profileNum, 2);
         ASSERT_NE(nullptr, profiles);
         for (int i = 0; i < profileNum; i++) {
-            EXPECT_GE(profiles[i], 0);
+            ASSERT_EQ(profiles[i], i);
         }
     }
 }
@@ -2309,16 +2268,17 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8000, TestSize.Level2)
         ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GT(profileNum, 0);
+        ASSERT_EQ(profileNum, 2);
         ASSERT_NE(nullptr, profiles);
         for (int i = 0; i < profileNum; i++) {
-            EXPECT_GE(profiles[i], 0);
+            ASSERT_EQ(profiles[i], i);
             ret = OH_AVCapability_GetSupportedLevelsForProfile(
                 capability, profiles[i], &levels, &levelNum);
             ASSERT_EQ(AV_ERR_OK, ret);
             ASSERT_NE(nullptr, levels);
             EXPECT_GT(levelNum, 0);
             for (int j = 0; j < levelNum; j++) {
-                EXPECT_GE(levels[j], 0);
+                EXPECT_EQ(levels[j], j);
             }
         }
     }
@@ -2398,7 +2358,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8300, TestSize.Level2)
             OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(
-            capability, AVC_PROFILE_BASELINE, 1));
+            capability, HEVC_PROFILE_MAIN_10, 1));
     }
 }
 
@@ -2415,6 +2375,241 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8310, TestSize.Level2)
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(
             capability, HEVC_PROFILE_MAIN, 1));
+        ASSERT_EQ(false, OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_TEMPORAL_SCALABILITY));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_8400
+ * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8400, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        OH_AVFormat *format = OH_AVCapability_GetFeatureProperties(capability,
+            VIDEO_ENCODER_LONG_TERM_REFERENCE);
+        ASSERT_EQ(nullptr, format);
+        OH_AVFormat_Destroy(format);
+    }
+}
+
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CONFIGURE_0010
+ * @tc.name      : set max input size with illegal value
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0010, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)){
+        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
+        ASSERT_NE(NULL, vdec);
+        OH_AVFormat *format = OH_AVFormat_Create();
+        ASSERT_NE(NULL, format);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, -1);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+        OH_VideoDecoder_Destroy(vdec);
+        OH_AVFormat_Destroy(format);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CONFIGURE_0020
+ * @tc.name      : set max input size with illegal value
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0020, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)){
+        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
+        ASSERT_NE(NULL, vdec);
+        OH_AVFormat *format = OH_AVFormat_Create();
+        ASSERT_NE(NULL, format);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, 0);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+        OH_VideoDecoder_Destroy(vdec);
+        OH_AVFormat_Destroy(format);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CONFIGURE_0030
+ * @tc.name      : set max input size with illegal value HEVC
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0030, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)){
+        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
+        ASSERT_NE(NULL, vdec);
+        OH_AVFormat *format = OH_AVFormat_Create();
+        ASSERT_NE(NULL, format);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, -1);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+        OH_VideoDecoder_Destroy(vdec);
+        OH_AVFormat_Destroy(format);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CONFIGURE_0040
+ * @tc.name      : set max input size with illegal value HEVC
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0040, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)){
+        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
+        ASSERT_NE(NULL, vdec);
+        OH_AVFormat *format = OH_AVFormat_Create();
+        ASSERT_NE(NULL, format);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, 0);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+        OH_VideoDecoder_Destroy(vdec);
+        OH_AVFormat_Destroy(format);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CONFIGURE_0050
+ * @tc.name      : set high rand and width rand, time 100
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0050, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        int32_t DEFAULT_HEIGHT = 1920;
+        int32_t DEFAULT_WIDTH = 1080;
+        for (int i = 0; i < 100; i++) {
+            OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+                OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+            ASSERT_NE(nullptr, capability);
+            DEFAULT_HEIGHT = HighRand();
+            usleep(1500);
+            DEFAULT_WIDTH = WidthRand();
+            usleep(1500);
+            ASSERT_EQ(true, OH_AVCapability_IsVideoSizeSupported(capability,
+                 DEFAULT_WIDTH, DEFAULT_HEIGHT));
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CONFIGURE_0060
+ * @tc.name      : set high rand, width rand, frame rand time 100
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0060, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        double DEFAULT_FRAME_RATE = 30.0;
+        int32_t DEFAULT_HEIGHT = 1920;
+        int32_t DEFAULT_WIDTH = 1080;
+        for (int i = 0; i < 100; i++) {
+            OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+                OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+            ASSERT_NE(nullptr, capability);
+            DEFAULT_HEIGHT = HighRand();
+            usleep(1500);
+            DEFAULT_WIDTH = WidthRand();
+            usleep(1500);
+            DEFAULT_FRAME_RATE = FrameRand();
+            usleep(1500);
+            ASSERT_EQ(true, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability,
+                 DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FRAME_RATE));
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CONFIGURE_0070
+ * @tc.name      : profile and level all support
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0070, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVErrCode ret = AV_ERR_OK;
+        const int32_t *levels = nullptr;
+        uint32_t levelNum = 0;
+        const int32_t *profiles = nullptr;
+        uint32_t profileNum = 0;
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(profileNum, 2);
+        ASSERT_NE(nullptr, profiles);
+        for (int i = 0; i < profileNum; i++) {
+            ASSERT_EQ(profiles[i], i);
+            ret = OH_AVCapability_GetSupportedLevelsForProfile(
+                capability, profiles[i], &levels, &levelNum);
+            ASSERT_EQ(AV_ERR_OK, ret);
+            ASSERT_NE(nullptr, levels);
+            for (int j = 0; j < levelNum; j++) {
+                ASSERT_EQ(levels[j], j);
+                ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability, profiles[i], levels[j]));
+            }
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CONFIGURE_0080
+ * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0080, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+        ASSERT_NE(nullptr, capability);
+        string g_codecName_hevc_H = OH_AVCapability_GetName(capability);
+        cout << "g_codecName_hevc_H: " << g_codecName_hevc_H << endl;
+        OH_AVRange FRateRange;
+        int ret = OH_AVCapability_GetVideoFrameRateRange(capability, &FRateRange);
+        cout << "FRateRangeMax = " << FRateRange.maxVal << endl;
+        cout << "FRateRangeMin = " << FRateRange.minVal << endl;
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CONFIGURE_0090
+ * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0090, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        string g_codecName_hevc_H = OH_AVCapability_GetName(capability);
+        cout << "g_codecName_hevc_H: " << g_codecName_hevc_H << endl;
+        OH_AVRange FRateRange;
+        int ret = OH_AVCapability_GetVideoFrameRateRange(capability, &FRateRange);
+        cout << "FRateRangeMax = " << FRateRange.maxVal << endl;
+        cout << "FRateRangeMin = " << FRateRange.minVal << endl;
+        ASSERT_EQ(AV_ERR_OK, ret);
     }
 }
 } // namespace
