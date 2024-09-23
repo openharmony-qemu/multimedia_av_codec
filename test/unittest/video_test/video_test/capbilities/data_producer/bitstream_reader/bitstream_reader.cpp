@@ -105,9 +105,7 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
 
-    auto bufferAddr = static_cast<uint8_t>(sampleInfo_->codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
-        OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer)) :
-        OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
+    auto bufferAddr = bufferInfo.bufferAddr;
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Got invalid buffer");
 
     do {

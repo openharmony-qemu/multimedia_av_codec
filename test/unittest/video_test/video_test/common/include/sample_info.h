@@ -154,11 +154,15 @@ struct CodecBufferInfo {
     CodecBufferInfo(uint32_t argBufferIndex, OH_AVMemory *argBuffer, OH_AVCodecBufferAttr argAttr)
         : bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer)), attr(argAttr) {};
     CodecBufferInfo(uint32_t argBufferIndex, OH_AVMemory *argBuffer)
-        : bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer)) {};
+        : bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer))
+    {
+        bufferAddr = OH_AVMemory_GetAddr(argBuffer);
+    };
     CodecBufferInfo(uint32_t argBufferIndex, OH_AVBuffer *argBuffer)
         : bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer))
     {
         OH_AVBuffer_GetBufferAttr(argBuffer, &attr);
+        bufferAddr = OH_AVBuffer_GetAddr(argBuffer);
     };
 };
 static inline CodecBufferInfo eosBufferInfo =
