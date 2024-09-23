@@ -941,6 +941,9 @@ const std::shared_ptr<DownloadRequest>& Downloader::GetCurrentRequest()
 void Downloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
+    if (currentRequest_ != nullptr) {
+        currentRequest_->isInterruptNeeded_ = isInterruptNeeded;
+    }
     NotifyLoopPause();
 }
 
