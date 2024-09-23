@@ -59,10 +59,9 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
 {
     state_ = Pipeline::FilterState::INITIALIZED;
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
-    if (meta != nullptr) {
-        meta->SetData(Tag::APP_PID, appPid_);
-        meta->SetData(Tag::APP_UID, appUid_);
-    }
+    FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
+    meta->SetData(Tag::APP_PID, appPid_);
+    meta->SetData(Tag::APP_UID, appUid_);
     plugin_->SetEventReceiver(receiver);
     plugin_->SetParameter(meta);
     plugin_->Init();
@@ -103,10 +102,9 @@ sptr<AVBufferQueueConsumer> AudioSink::GetBufferQueueConsumer()
 Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
 {
     UpdateMediaTimeRange(meta);
-    if (meta != nullptr) {
-        meta->GetData(Tag::APP_PID, appPid_);
-        meta->GetData(Tag::APP_UID, appUid_);
-    }
+    FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
+    meta->GetData(Tag::APP_PID, appPid_);
+    meta->GetData(Tag::APP_UID, appUid_);
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     plugin_->SetParameter(meta);
     return Status::OK;
@@ -677,10 +675,9 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     }
     plugin_ = CreatePlugin();
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
-    if (meta != nullptr) {
-        meta->SetData(Tag::APP_PID, appPid_);
-        meta->SetData(Tag::APP_UID, appUid_);
-    }
+    FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
+    meta->SetData(Tag::APP_PID, appPid_);
+    meta->SetData(Tag::APP_UID, appUid_);
     plugin_->SetEventReceiver(receiver);
     plugin_->SetParameter(meta);
     plugin_->Init();
