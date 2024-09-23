@@ -25,7 +25,8 @@ auto GopInfoStdpExtendedHevc = R"([
     {'gopId': 3, 'gopSize': 30, 'startFrameId': 90},
     {'gopId': 4, 'gopSize': 30, 'startFrameId': 120},
     {'gopId': 5, 'gopSize': 30, 'startFrameId': 150},
-    {'gopId': 6, 'gopSize': 30, 'startFrameId': 180}
+    {'gopId': 6, 'gopSize': 30, 'startFrameId': 180},
+    {'gopId': 7, 'gopSize': 7, 'startFrameId': 210}
 ])"_json;
 
 auto FrameLayerInfoStdpExtendedHevc = R"([
@@ -239,13 +240,13 @@ auto FrameLayerInfoStdpExtendedHevc = R"([
     {"frameId": 207, "dts": 6899977, "layer": 0, "discardable": true},
     {"frameId": 208, "dts": 6933311, "layer": 1, "discardable": true},
     {"frameId": 209, "dts": 6966644, "layer": 0, "discardable": true},
-    {"frameId": 210, "dts": 6999977, "layer": 0, "discardable": false},
-    {"frameId": 211, "dts": 7033311, "layer": 0, "discardable": false},
-    {"frameId": 212, "dts": 7066644, "layer": 0, "discardable": false},
-    {"frameId": 213, "dts": 7099977, "layer": 0, "discardable": false},
-    {"frameId": 214, "dts": 7133311, "layer": 0, "discardable": false},
-    {"frameId": 215, "dts": 7166644, "layer": 0, "discardable": false},
-    {"frameId": 216, "dts": 7199977, "layer": 0, "discardable": false}
+    {"frameId": 210, "dts": 6999977, "layer": 3, "discardable": false},
+    {"frameId": 211, "dts": 7033311, "layer": 2, "discardable": true},
+    {"frameId": 212, "dts": 7066644, "layer": 1, "discardable": true},
+    {"frameId": 213, "dts": 7099977, "layer": 0, "discardable": true},
+    {"frameId": 214, "dts": 7133311, "layer": 2, "discardable": false},
+    {"frameId": 215, "dts": 7166644, "layer": 1, "discardable": true},
+    {"frameId": 216, "dts": 7199977, "layer": 0, "discardable": true}
 ])"_json;
 
 #endif //LAYER_INFO_SDTP_EXTENDED_HEVC_H
