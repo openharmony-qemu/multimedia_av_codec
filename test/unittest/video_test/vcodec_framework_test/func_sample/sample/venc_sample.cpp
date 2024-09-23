@@ -866,7 +866,8 @@ void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<A
                 UNITTEST_INFO_LOG("mse is:%lf", mse);
             }
         }
-    } else if (ltrParam.enableUseLtr && (attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
+    }
+    if (ltrParam.enableUseLtr && (attr.flags == AVCODEC_BUFFER_FLAG_NONE)) {
         int32_t isLtr = 0;
         int32_t framePoc = 0;
         if (format->GetIntValue(Media::Tag::VIDEO_PER_FRAME_IS_LTR, isLtr)) {

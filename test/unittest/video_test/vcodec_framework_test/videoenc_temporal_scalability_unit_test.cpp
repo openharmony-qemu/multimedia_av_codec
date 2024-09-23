@@ -645,7 +645,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_04, TestSize.Leve
 
 /**
  * @tc.name: VideoEncoder_Feature_Long_Term_Reference_001
- * @tc.desc: enable feature long term reference
+ * @tc.desc: enable feature long term reference by buffer mode
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_Feature_Long_Term_Reference_001, TestSize.Level1)
@@ -661,6 +661,30 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Feature_Long_Term_Reference_001, TestSize.Level
     videoEnc_->ltrParam.ltrInterval = DEFAULT_LTR_INTERVAL;
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, DEFAULT_LTR_COUNT);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_Feature_Long_Term_Reference_002
+ * @tc.desc: enable feature long term reference by surface mode
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_Feature_Long_Term_Reference_002, TestSize.Level1)
+{
+    if (!GetTemporalScalabilityCapability(GetParam(), false)) {
+        return;
+    };
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    videoEnc_->ltrParam.enableUseLtr = true;
+    videoEnc_->ltrParam.ltrInterval = DEFAULT_LTR_INTERVAL;
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, DEFAULT_LTR_COUNT);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
