@@ -378,7 +378,8 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, vrrEnable)) {
         return AVCS_ERR_UNSUPPORT;
     }
-    if (!vrrEnable) {
+    if (vrrEnable == 0) {
+        HLOGI("VRR disabled");
         return AVCS_ERR_OK;
     }
     optional<double> frameRate = GetFrameRateFromUser(format);
