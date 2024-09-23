@@ -387,15 +387,6 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         HLOGE("VRR only support for 60fps, current frameRate = %f", frameRate.value());
         return AVCS_ERR_UNSUPPORT;
     }
-    int vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_NONE;
-    if (static_cast<int>(codingType_) == CODEC_OMX_VIDEO_CodingHEVC) {
-        vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_HEVC;
-    } else if (static_cast<int>(codingType_) == CODEC_OMX_VIDEO_CodingAVC) {
-        vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_AVC;
-    } else {
-        HLOGE("VRR only support for HEVC or AVC");
-        return AVCS_ERR_UNSUPPORT;
-    }
     int32_t width = 0;
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width) || width <= 0) {
         HLOGE("VRR format should contain width");
@@ -1074,7 +1065,16 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
     if (vrrPredictor_ == nullptr) {
         return AVCS_ERR_INVALID_OPERATION;
     }
-    vrrPredictor_->Process(info.surfaceBuffer);
+    int vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_NONE;
+    if (static_cast<int>(codingType_) == CODEC_OMX_VIDEO_CodingHEVC) {
+        vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_HEVC;
+    } else if (static_cast<int>(codingType_) == OMX_VIDEO_CodingAVC) {
+        vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_AVC;
+    } else {
+        HLOGE("VRR only support for HEVC or AVC");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    vrrPredictor_->Process(info.surfaceBuffer, codecRate_, vrrMvType);
     return AVCS_ERR_OK;
 }
 #endif
