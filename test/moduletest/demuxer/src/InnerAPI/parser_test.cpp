@@ -688,7 +688,8 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0050, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_sdtp_extended_hevc);
+    shared_ptr<InnerDemuxerParserSample> parserSample =
+        make_shared<InnerDemuxerParserSample>(g_file_sdtp_extended_hevc);
     parserSample->InitParameter(MP4Scene::SDTP_EXTENDED_HEVC);
     ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::RANDOM_PTS));
 }
