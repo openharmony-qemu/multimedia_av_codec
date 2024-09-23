@@ -42,6 +42,9 @@ public:
     Status SetParameter(const std::shared_ptr<Meta>& meta);
 private:
     float GetSpeed(float speed);
+    void UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
+        const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+    std::atomic<bool> needUpdateTimeAnchor_ {true};
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};
     uint32_t frameRate_ {0};

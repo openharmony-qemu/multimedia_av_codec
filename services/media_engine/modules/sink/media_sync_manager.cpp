@@ -396,6 +396,11 @@ void MediaSyncManager::SetLastAudioBufferDuration(int64_t durationUs)
     }
 }
 
+void MediaSyncManager::SetLastVideoBufferPts(int64_t bufferPts)
+{
+    lastVideoBufferPts_ = bufferPts;
+}
+
 void MediaSyncManager::ReportLagEvent(int64_t lagDurationMs)
 {
     auto eventReceiver = eventReceiver_.lock();
@@ -405,11 +410,11 @@ void MediaSyncManager::ReportLagEvent(int64_t lagDurationMs)
 
 int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
 {
-    int64_t maxMediaProgress;
+    int64_t maxMediaProgress = 0;
     if (currentSyncerPriority_ == IMediaSynchronizer::AUDIO_SINK) {
         maxMediaProgress = currentAnchorMediaTime_ + lastAudioBufferDuration_;
-    } else {
-        maxMediaProgress = currentAnchorMediaTime_;
+    } else if (currentSyncerPriority_ == IMediaSynchronizer::VIDEO_SINK) {
+        maxMediaProgress = lastVideoBufferPts_;
     }
     if (newMediaProgressTime > maxMediaProgress) {
         ReportLagEvent((newMediaProgressTime - maxMediaProgress) / US_TO_MS);

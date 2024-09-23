@@ -107,6 +107,7 @@ public:
     void ResetMediaStartPts() override;
     int64_t GetMediaStartPts() override;
     void SetLastAudioBufferDuration(int64_t durationUs) override;
+    void SetLastVideoBufferPts(int64_t bufferPts) override;
 private:
     enum class State {
         RESUMED,
@@ -164,6 +165,7 @@ private:
     int64_t delayTime_ {HST_TIME_NONE};
     int64_t startPts_ {HST_TIME_NONE};
     std::atomic<int64_t> lastAudioBufferDuration_ {0};
+    std::atomic<int64_t> lastVideoBufferPts_ {0};
     std::atomic<int64_t> lastReportMediaTime_ {HST_TIME_NONE};
     std::atomic<bool> frameAfterSeeked_ {false};
     std::weak_ptr<EventReceiver> eventReceiver_;

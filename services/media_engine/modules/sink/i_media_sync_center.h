@@ -100,6 +100,8 @@ struct IMediaSyncCenter {
     virtual int64_t GetMediaStartPts() = 0;
 
     virtual void SetLastAudioBufferDuration(int64_t durationUs) = 0;
+
+    virtual void SetLastVideoBufferPts(int64_t bufferPts) = 0;
 };
 } // namespace Pipeline
 } // namespace Media

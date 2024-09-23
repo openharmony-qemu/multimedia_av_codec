@@ -63,6 +63,22 @@ VideoSink::~VideoSink()
     this->eventReceiver_ = nullptr;
 }
 
+void VideoSink::UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
+    const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+{
+    auto syncCenter = syncCenter_.lock();
+    FALSE_RETURN(syncCenter != nullptr && buffer != nullptr);
+    syncCenter->SetLastVideoBufferPts(buffer->pts_ - firstPts_);
+    if (!needUpdateTimeAnchor_) {
+        return;
+    }
+    uint64_t latency = 0;
+    (void)GetLatency(latency);
+    syncCenter->UpdateTimeAnchor(nowCt + waitTime, latency, buffer->pts_ - firstPts_,
+        buffer->pts_, buffer->duration_, this);
+    needUpdateTimeAnchor_ = false;
+}
+
 int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
     FALSE_RETURN_V(buffer != nullptr, false);
@@ -79,12 +95,7 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         } else {
             waitTime = CheckBufferLatenessMayWait(buffer);
         }
-        if (syncCenter) {
-            uint64_t latency = 0;
-            (void)GetLatency(latency);
-            render = syncCenter->UpdateTimeAnchor(nowCt + waitTime, latency, buffer->pts_ - firstPts_,
-                buffer->pts_, buffer->duration_, this);
-        }
+        UpdateTimeAnchorIfNeeded(nowCt, waitTime, buffer);
         lastTimeStamp_ = buffer->pts_ - firstPts_;
     } else {
         MEDIA_LOG_I_SHORT("Video sink EOS");
@@ -112,6 +123,7 @@ void VideoSink::ResetSyncInfo()
     seekFlag_ = false;
     lastPts_ = HST_TIME_NONE;
     lastClockTime_ = HST_TIME_NONE;
+    needUpdateTimeAnchor_ = true;
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)
