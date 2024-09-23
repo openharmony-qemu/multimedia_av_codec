@@ -405,12 +405,16 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         HLOGE("VRR SetIsMvUploadParam SetParameter failed");
         return AVCS_ERR_UNSUPPORT;
     }
-    vrrPredictor_ = OHOS::Media::VideoProcessingEngine::VideoRefreshRatePredictionImpl::Create();
+    vrrPredictor_ = OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction::Create();
     if (vrrPredictor_ == nullptr) {
         HLOGE("VRR VideoRefreshRatePrediction create failed");
         return AVCS_ERR_UNSUPPORT;
     }
-    vrrPredictor_->SetParameter(height, width, VRR_DEFAULT_INPUT_FRAME_RATE, vrrMvType);
+    int32_t ret = vrrPredictor_->CheckLtpoSupport();
+    if (ret != AVCS_ERR_OK) {
+        HLOGE("VRR SetParameter failed");
+        return AVCS_ERR_UNKNOWN;
+    }
     isVrrEnable_ = true;
     HLOGI("VRR enabled");
     return AVCS_ERR_OK;
