@@ -302,7 +302,7 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
             mediaDemuxerCallback_->OnEvent(event);
         }
     } else if (event.type == PluginEventType::CACHED_DURATION) {
-        MEDIA_LOG_I("Onevent cached duration.");
+        MEDIA_LOG_D("Onevent cached duration.");
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }

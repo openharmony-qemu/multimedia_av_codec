@@ -180,7 +180,7 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
     if (size <= 0) {
         HandleReadResult(expectedLen, size);
-        MEDIA_LOG_I("ReadLocal END_OF_STREAM");
+        MEDIA_LOG_D("ReadLocal END_OF_STREAM");
         return Status::END_OF_STREAM;
     }
     bufData->UpdateDataSize(size);
