@@ -72,6 +72,7 @@ ohos_unittest("demuxer_native_module_test") {
 
       #"./src/net_test.cpp",
       #"./src/net2_test.cpp",
+      "./src/proc2_test.cpp",
       "./src/proc_test.cpp",
     ]
   }
