@@ -312,7 +312,7 @@ void Downloader::Pause(bool isAsync)
 void Downloader::Cancel()
 {
     MEDIA_LOG_I("Cancel Begin");
-    if (currentRequest_->retryTimes_ > 0) {
+    if (currentRequest_ != nullptr && currentRequest_->retryTimes_ > 0) {
         currentRequest_->retryTimes_ = 0;
     }
     requestQue_->SetActive(false, true);
