@@ -87,7 +87,8 @@ public:
 
     int32_t Configure(const std::shared_ptr<Meta> &meta);
 
-    int32_t SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
+    __attribute__((no_sanitize("cfi"))) int32_t SetOutputBufferQueue(
+        const sptr<AVBufferQueueProducer> &bufferQueueProducer);
 
     int32_t SetCodecCallback(const std::shared_ptr<CodecCallback> &codecCallback);
 
@@ -135,7 +136,7 @@ private:
     Status AttachDrmBufffer(std::shared_ptr<AVBuffer> &drmInbuf, std::shared_ptr<AVBuffer> &drmOutbuf,
         uint32_t size);
     Status DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuffer);
-    Status HandleOutputBuffer(uint32_t eosStatus);
+    __attribute__((no_sanitize("cfi"))) Status HandleOutputBuffer(uint32_t eosStatus);
 
     int32_t PrepareInputBufferQueue();
 
