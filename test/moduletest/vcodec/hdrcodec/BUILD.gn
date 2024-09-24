@@ -58,6 +58,8 @@ ohos_unittest("hdrcodec_native_module_test") {
 
   if (av_codec_support_codec) {
     sources = [
+      "./src/InnerAPI/func_test.cpp",
+      "./src/InnerAPI/hdrcodec_inner_ndk_sample.cpp",
       "./src/func_test.cpp",
       "./src/hdrcodec_ndk_sample.cpp",
     ]

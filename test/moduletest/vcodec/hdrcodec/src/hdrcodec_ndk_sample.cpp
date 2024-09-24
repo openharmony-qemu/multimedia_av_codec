@@ -243,6 +243,7 @@ static int32_t RepeatCallStartFlushStop(HDRCodecNdkSample *sample)
 
 HDRCodecNdkSample::~HDRCodecNdkSample()
 {
+    Release();
 }
 
 int32_t HDRCodecNdkSample::CreateCodec()
@@ -480,6 +481,17 @@ void HDRCodecNdkSample::WaitForEos()
 
 int32_t HDRCodecNdkSample::Release()
 {
-    delete decSignal;
+    if (decSignal != nullptr) {
+        delete decSignal;
+        decSignal = nullptr;
+    }
+    if (vdec_ != nullptr) {
+        OH_VideoDecoder_Destroy(vdec_);
+        vdec_ = nullptr;
+    }
+    if (venc_ != nullptr) {
+        OH_VideoEncoder_Destroy(venc_);
+        venc_ = nullptr;
+    }
     return 0;
 }

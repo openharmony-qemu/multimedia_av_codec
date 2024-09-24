@@ -20,7 +20,10 @@ module_output_path = "av_codec/moduletest"
 
 ohos_unittest("capability_module_test") {
   module_out_path = module_output_path
-  sources = [ "./src/cap_test.cpp" ]
+  sources = [
+    "./src/InnerAPI/cap_test.cpp",
+    "./src/cap_test.cpp",
+  ]
 
   include_dirs = [
     "Avbuffer/include",
