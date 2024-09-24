@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <random>
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
 #include "videodec_api11_sample.h"
@@ -281,7 +282,7 @@ int32_t HighRand()
 int32_t FrameRand()
 {
     std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<> dis(64, 1920);
+    std::uniform_int_distribution<> dis(1, 30);
     int FRand = dis(rng);
     if (FRand % 2 != 0) {
         FRand++;
@@ -293,7 +294,7 @@ int32_t FrameRand()
 int32_t WidthRand()
 {
     std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<> dis(1, 30);
+    std::uniform_int_distribution<> dis(64, 1920);
     int WRand = dis(rng);
     if (WRand % 2 != 0) {
         WRand++;
