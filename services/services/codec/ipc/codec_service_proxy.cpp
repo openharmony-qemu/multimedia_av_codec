@@ -41,7 +41,8 @@ int32_t CodecServiceProxy::SetListenerObject(const sptr<IRemoteObject> &object)
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    (void)data.WriteRemoteObject(object);
+    bool parcelRet = data.WriteRemoteObject(object);
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
     int32_t ret =
         Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_LISTENER_OBJ), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
@@ -71,10 +72,11 @@ int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::st
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    callerInfo.ToParcel(data);
-    data.WriteInt32(static_cast<int32_t>(type));
-    data.WriteBool(isMimeType);
-    data.WriteString(name);
+    bool parcelRet = callerInfo.ToParcel(data);
+    parcelRet = parcelRet && data.WriteInt32(static_cast<int32_t>(type));
+    parcelRet = parcelRet && data.WriteBool(isMimeType);
+    parcelRet = parcelRet && data.WriteString(name);
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::INIT), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
@@ -90,7 +92,8 @@ int32_t CodecServiceProxy::Configure(const Format &format)
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    (void)AVCodecParcel::Marshalling(data, format);
+    bool parcelRet = AVCodecParcel::Marshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
     int32_t ret =
         Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::CONFIGURE), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
@@ -122,8 +125,9 @@ int32_t CodecServiceProxy::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    token = buffer->WriteToMessageParcel(data);
-    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write to messageParcel failed!");
+    bool parcelRet = buffer->WriteToMessageParcel(data);
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
+
     int32_t ret =
         Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_CUSTOM_BUFFER), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
@@ -268,8 +272,10 @@ int32_t CodecServiceProxy::SetOutputSurface(sptr<OHOS::Surface> surface)
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    (void)data.WriteRemoteObject(object);
-    data.WriteString(format);
+    bool parcelRet = data.WriteRemoteObject(object);
+    parcelRet = parcelRet && data.WriteString(format);
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
+
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_OUTPUT_SURFACE), data,
                                         reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
@@ -288,9 +294,9 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index, AVCodecBufferInfo in
 
     data.WriteUint32(index);
 
-    bool retWrite =
-        static_cast<CodecListenerStub *>(listener_.GetRefPtr())->WriteInputMemoryToParcel(index, info, flag, data);
-    CHECK_AND_RETURN_RET_LOG(retWrite == true, AVCS_ERR_INVALID_STATE, "Listener write data failed");
+    auto listenerStub = static_cast<CodecListenerStub *>(listener_.GetRefPtr());
+    bool parcelRet = listenerStub->WriteInputMemoryToParcel(index, info, flag, data);
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_STATE, "Write parcel failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,
                                         reply, option);
@@ -310,8 +316,9 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index)
 
     data.WriteUint32(index);
 
-    bool retWrite = static_cast<CodecListenerStub *>(listener_.GetRefPtr())->WriteInputBufferToParcel(index, data);
-    CHECK_AND_RETURN_RET_LOG(retWrite == true, AVCS_ERR_INVALID_OPERATION, "Listener write data failed");
+    auto listenerStub = static_cast<CodecListenerStub *>(listener_.GetRefPtr());
+    bool parcelRet = listenerStub->WriteInputBufferToParcel(index, data);
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_STATE, "Write parcel failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,
                                         reply, option);
@@ -331,8 +338,9 @@ int32_t CodecServiceProxy::QueueInputParameter(uint32_t index)
 
     data.WriteUint32(index);
 
-    bool retWrite = static_cast<CodecListenerStub *>(listener_.GetRefPtr())->WriteInputParameterToParcel(index, data);
-    CHECK_AND_RETURN_RET_LOG(retWrite == true, AVCS_ERR_INVALID_OPERATION, "Listener write data failed");
+    auto listenerStub = static_cast<CodecListenerStub *>(listener_.GetRefPtr());
+    bool parcelRet = listenerStub->WriteInputParameterToParcel(index, data);
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_STATE, "Write parcel failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,
                                         reply, option);
@@ -367,9 +375,12 @@ int32_t CodecServiceProxy::ReleaseOutputBuffer(uint32_t index, bool render)
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    data.WriteUint32(index);
-    data.WriteBool(render);
-    static_cast<CodecListenerStub *>(listener_.GetRefPtr())->WriteOutputBufferToParcel(index, data);
+    auto listenerStub = static_cast<CodecListenerStub *>(listener_.GetRefPtr());
+    bool parcelRet = data.WriteUint32(index);
+    parcelRet = parcelRet && data.WriteBool(render);
+    parcelRet = parcelRet && listenerStub->WriteOutputBufferToParcel(index, data);
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_STATE, "Write parcel failed");
+
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER), data,
                                         reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
@@ -386,8 +397,10 @@ int32_t CodecServiceProxy::RenderOutputBufferAtTime(uint32_t index, int64_t rend
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    data.WriteUint32(index);
-    data.WriteInt64(renderTimestampNs);
+    bool parcelRet = data.WriteUint32(index);
+    parcelRet = parcelRet && data.WriteInt64(renderTimestampNs);
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
+
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::RENDER_OUTPUT_BUFFER_AT_TIME),
                                         data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
@@ -404,7 +417,9 @@ int32_t CodecServiceProxy::SetParameter(const Format &format)
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    (void)AVCodecParcel::Marshalling(data, format);
+    bool parcelRet = AVCodecParcel::Marshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
+
     int32_t ret =
         Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_PARAMETER), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
