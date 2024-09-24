@@ -37,6 +37,7 @@ public:
     void DestroyStubObjectForPid(pid_t pid);
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args);
     void NotifyProcessStatus(const int32_t status);
+    void SetMemMgrStatus(const bool isStarted);
     void SetCritical(const bool isKeyService);
 
 private:
@@ -82,6 +83,7 @@ private:
     std::shared_ptr<void> libMemMgrClientHandle_ = nullptr;
     NotifyProcessStatusFunc notifyProcessStatusFunc_ = nullptr;
     SetCriticalFunc setCriticalFunc_ = nullptr;
+    std::atomic<bool> memMgrStarted_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
