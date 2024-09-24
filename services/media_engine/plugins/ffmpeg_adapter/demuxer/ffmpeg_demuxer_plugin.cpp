@@ -42,14 +42,6 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerPlugin" };
 }
 
-#if defined(LIBAVFORMAT_VERSION_INT) && defined(LIBAVFORMAT_VERSION_INT)
-#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 78, 0) and LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 64, 100)
-#if LIBAVFORMAT_VERSION_INT != AV_VERSION_INT(58, 76, 100)
-#include "libavformat/internal.h"
-#endif
-#endif
-#endif
-
 namespace OHOS {
 namespace Media {
 namespace Plugins {
@@ -1278,12 +1270,14 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
     } else {
         fps_ = videoStream->avg_frame_rate.num / (double)videoStream->avg_frame_rate.den;
     }
-    FFStream *sti = ffstream(videoStream);
-    for (int32_t i = 0; i < sti->nb_index_entries; i++) {
-        uint32_t flags = static_cast<uint32_t>(sti->index_entries[i].flags);
-        if (flags & AVINDEX_KEYFRAME) {
-            IFramePos_.emplace_back(i);
+    struct KeyFrameNode *keyFramePosInfo = nullptr;
+    if (av_get_key_frame_pos_from_stream(videoStream, &keyFramePosInfo) == 0) {
+        struct KeyFrameNode *cur = keyFramePosInfo;
+        while (cur != nullptr) {
+            IFramePos_.emplace_back(cur->pos);
+            cur = cur->next;
         }
+        av_destory_key_frame_pos_list(keyFramePosInfo);
     }
     MEDIA_LOG_I("Success to parser fps: " PUBLIC_LOG_F ", IFramePos size: " PUBLIC_LOG_ZU, fps_, IFramePos_.size());
 }
