@@ -73,6 +73,7 @@ void AVCodecServer::OnAddSystemAbility(int32_t systemAbilityId, const std::strin
     AVCODEC_LOGI("AVCodecServer OnAddSystemAbility, systemAbilityId:%{public}d, deviceId:%s", systemAbilityId,
                  deviceId.c_str());
     if (systemAbilityId == MEMORY_MANAGER_SA_ID) {
+        AVCodecServerManager::GetInstance().SetMemMgrStatus(true);
         AVCodecServerManager::GetInstance().NotifyProcessStatus(1);
     }
 }

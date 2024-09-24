@@ -229,8 +229,14 @@ void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
     }
 }
 
+void AVCodecServerManager::SetMemMgrStatus(const bool isStarted)
+{
+    memMgrStarted_ = isStarted;
+}
+
 void AVCodecServerManager::SetCritical(const bool isKeyService)
 {
+    CHECK_AND_RETURN_LOG(memMgrStarted_, "Memory manager service is not started");
     CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "set critical is nullptr, %{public}d.", isKeyService);
     int32_t ret = setCriticalFunc_(pid_, isKeyService, AV_CODEC_SERVICE_ID);
     if (ret == 0) {
