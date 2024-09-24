@@ -46,11 +46,15 @@ constexpr int32_t RES_CHANGE_TIME = 4;
 constexpr int32_t CROP_INFO_SIZE = 2;
 constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
     {1079, 1919}, {719, 1279}, {855, 1919}};
-
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
 constexpr int32_t SYS_MAX_INPUT_SIZE = 1024 * 1024 * 24;
+constexpr int32_t MIN_RANGE = 64;
+constexpr int32_t MAX_RANGE = 1920;
+constexpr int32_t MIN_FRANGE = 1;
+constexpr int32_t MAX_FRANGE = 30;
+constexpr int32_t EVEN_NUMBER = 2;
 
 SHA512_CTX g_c;
 uint8_t g_md[SHA512_DIGEST_LENGTH];
@@ -236,14 +240,14 @@ static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVa
 {
     printf("--------------output hash value----------------\n");
     for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
-        printf("%02x,",outputHashVal[i - 1]);
+        printf("%02x,", outputHashVal[i - 1]);
         if (i % SIXTEEN == 0) {
             printf("\n");
         }
     }
     printf("--------------standard hash value----------------\n");
     for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
-        printf("%02x,",srcHashVal[i - 1]);
+        printf("%02x,", srcHashVal[i - 1]);
         if (i % SIXTEEN == 0) {
             printf("\n");
         }
@@ -270,10 +274,10 @@ bool VDecAPI11Sample::MdCompare(uint8_t source[])
 int32_t HighRand()
 {
     std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<> dis(64, 1920);
+    std::uniform_int_distribution<> dis(MIN_RANGE, MAX_RANGE);
     int HRand = dis(rng);
-    if (HRand % 2 != 0) {
-        HRand++;
+    if (HRand % EVEN_NUMBER != 0) {
+        HRand = HRand + 1;
     }
     cout << "HRand is =  " << HRand << endl;
     return HRand;
@@ -282,10 +286,10 @@ int32_t HighRand()
 int32_t FrameRand()
 {
     std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<> dis(1, 30);
+    std::uniform_int_distribution<> dis(MIN_FRANGE, MAX_FRANGE);
     int FRand = dis(rng);
-    if (FRand % 2 != 0) {
-        FRand++;
+    if (FRand % EVEN_NUMBER != 0) {
+        FRand = FRand + 1;
     }
     cout << "FRand is =  " << FRand << endl;
     return FRand;
@@ -294,10 +298,10 @@ int32_t FrameRand()
 int32_t WidthRand()
 {
     std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<> dis(64, 1920);
+    std::uniform_int_distribution<> dis(MIN_RANGE, MAX_RANGE);
     int WRand = dis(rng);
-    if (WRand % 2 != 0) {
-        WRand++;
+    if (WRand % EVEN_NUMBER != 0) {
+        WRand = WRand + 1;
     }
     cout << "WRand is =  " << WRand << endl;
     return WRand;
@@ -585,7 +589,7 @@ void VDecAPI11Sample::WaitForEOS()
 
 void VDecAPI11Sample::InFuncTest()
 {
- if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
+    if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
         REPEAT_START_FLUSH_BEFORE_EOS--;
         OH_VideoDecoder_Flush(vdec_);
         Flush_buffer();
@@ -817,8 +821,8 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
         SHA512_Final(g_md, &g_c);
         OPENSSL_cleanse(&g_c, sizeof(g_c));
         if (!SF_OUTPUT) {
-            if(!MdCompare(g_md)) {
-                    errCount++;
+            if (!MdCompare(g_md)) {
+                errCount++;
             }
         }
         return -1;

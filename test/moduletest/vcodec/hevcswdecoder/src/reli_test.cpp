@@ -197,31 +197,31 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0040, TestSize.Level3)
 
 /**
  * @tc.number    : VIDEO_SWDEC_STABILITY_0050
- * @tc.name      : repeat start and1000 times before EOS 
+ * @tc.name      : repeat start and 1000 times before EOS 
  * @tc.desc      : reli test
  */
 HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0050, TestSize.Level3)
 {
     if (!access("/system/lib64/media/", 0)) {
-            auto vDecSample = make_shared<VDecNdkSample>();
-            vDecSample->INP_DIR = INP_DIR_1080_30;
-            vDecSample->DEFAULT_WIDTH = 1920;
-            vDecSample->DEFAULT_HEIGHT = 1080;
-            vDecSample->DEFAULT_FRAME_RATE = 30;
-            vDecSample->SF_OUTPUT = false;
-            vDecSample->REPEAT_START_STOP_BEFORE_EOS = 1000;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc.c_str()));
-            ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-            ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-            ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-            vDecSample->WaitForEOS();
-            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->REPEAT_START_STOP_BEFORE_EOS = 1000;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc.c_str()));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 
 /**
  * @tc.number    : VIDEO_SWDEC_STABILITY_0060
- * @tc.name      : repeat start flush and1000 time before EOS 
+ * @tc.name      : repeat start flush and 1000 time before EOS 
  * @tc.desc      : reli test
  */
 HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0060, TestSize.Level3)
@@ -250,7 +250,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0060, TestSize.Level3)
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0010, TestSize.Level3)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for(int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < reli_count; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->SF_OUTPUT = false;
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -552,7 +552,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_0120, TestSize.Level0)
 
 /**
  * @tc.number    : API11_VIDEO_SWDEC_STABLITY_FUNC_0130
- * @tc.name      : rand high and whith (176 * 144)
+ * @tc.name      : rand and whith (176 * 144)
  * @tc.desc      : reli test
  */
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0130, TestSize.Level0) 

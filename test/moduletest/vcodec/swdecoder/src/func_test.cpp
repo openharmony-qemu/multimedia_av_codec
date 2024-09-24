@@ -60,10 +60,10 @@ protected:
 namespace {
 static OH_AVCapability *cap_avc = nullptr;
 static string g_codecName_avc = "";
-}
+} // namespace
 
-
-void SwdecFuncNdkTest::SetUpTestCase() {
+void SwdecFuncNdkTest::SetUpTestCase() 
+{
     cap_avc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
     g_codecName_avc = OH_AVCapability_GetName(cap_avc);
     cout << "g_codecName_avc: " << g_codecName_avc << endl;

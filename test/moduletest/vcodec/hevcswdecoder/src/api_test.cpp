@@ -58,7 +58,7 @@ OH_AVCapability *cap = nullptr;
 OH_AVCapability *cap_hevc = nullptr;
 VDecSignal *signal_;
 const string INVALID_CODEC_NAME = "avdec_h265";
-const string VIDEO_DECODER_HEVC_NAME = "OH.Media.Codec.Decoder.Video.HEVC"; 
+const string VIDEO_DECODER_HEVC_NAME = "OH.Media.Codec.Decoder.Video.HEVC";
 const string VIDEO_DECODER_HISI = "OMX.hisi.video.decoder.hevc";
 static string g_codecName_hevc = "";
 OH_AVFormat *format;

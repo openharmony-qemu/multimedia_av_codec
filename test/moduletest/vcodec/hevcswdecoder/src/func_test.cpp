@@ -66,9 +66,10 @@ constexpr int32_t DEFAULT_WIDTH = 1920;
 constexpr int32_t DEFAULT_HEIGHT = 1080;
 } // namespace
 
-void HevcSwdecFuncNdkTest::SetUpTestCase()
+void HevcSwdecFuncNdkTest::SetUpTestCase() 
 {   
-    cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC,false,SOFTWARE);
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(
+        OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
     g_codecName_hevc = OH_AVCapability_GetName(cap_hevc);
     cout << "g_codecName_hevc: " << g_codecName_hevc << endl;
 }
@@ -82,7 +83,7 @@ namespace {
  * @tc.name      : test h265 decode buffer, pixel foramt nv12
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0)
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0) 
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -102,7 +103,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0)
  * @tc.name      : test h265 decode buffer, pixel foramt nv21
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0330, TestSize.Level0)
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0330, TestSize.Level0) 
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -1310,7 +1311,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_006, TestSize.Level4)
 
 /**
  * @tc.number    : VIDEO_SWDEC_PARA_007
- * @tc.name      : test h265 decode buffer, framerate -1
+ * @tc.name      : test h265 decode buffer framerate -1
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_007, TestSize.Level0) 
@@ -1331,7 +1332,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_007, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_SWDEC_PARA_008
- * @tc.name      : test h265 decode buffer, framerate 0
+ * @tc.name      : test h265 decode buffer framerate 0
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008, TestSize.Level0) 
@@ -1352,7 +1353,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_SWDEC_PARA_008_2
- * @tc.name      : test h265 decode buffer, framerate 0.1
+ * @tc.name      : test h265 decode buffer framerate 0.1
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008_2, TestSize.Level0)  
@@ -1373,7 +1374,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008_2, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_SWDEC_PARA_009
- * @tc.name      : test h265 decode buffer, framerate 1
+ * @tc.name      : test h265 decode buffer framerate 1
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_009, TestSize.Level0) 
@@ -1394,7 +1395,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_009, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_SWDEC_PARA_010
- * @tc.name      : test h265 decode buffer, framerate 100000
+ * @tc.name      : test h265 decode buffer framerate 100000
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_010, TestSize.Level0)  
@@ -1415,7 +1416,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_010, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_SWDEC_PARA_011
- * @tc.name      : width set -1 ,height set -1
+ * @tc.name      : width set -1 height set -1
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_011, TestSize.Level0) 
@@ -1434,7 +1435,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_011, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_SWDEC_PARA_012
- * @tc.name      : width set 0 ,height set 0
+ * @tc.name      : width set 0 height set 0
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_012, TestSize.Level0) 
@@ -1453,7 +1454,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_012, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_SWDEC_PARA_013
- * @tc.name      : width set 1 ,height set 1
+ * @tc.name      : width set 1 height set 1
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_013, TestSize.Level0) 
@@ -1472,7 +1473,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_013, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_SWDEC_PARA_014
- * @tc.name      : width set 10000 ,height set 10000
+ * @tc.name      : width set 10000 height set 10000
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_014, TestSize.Level0) 
@@ -1491,7 +1492,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_014, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_SWDEC_PARA_015
- * @tc.name      : width set 64 ,height set 64
+ * @tc.name      : width set 64 height set 64
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_015, TestSize.Level0) 
@@ -1514,7 +1515,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_015, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_SWDEC_STABILITY_0200
- * @tc.name      : confige-start-flush-start-reset-destroy 50 times
+ * @tc.name      : confige start flush start reset destroy 50 times
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_STABILITY_FUNC_0010, TestSize.Level4)
@@ -1542,7 +1543,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_STABILITY_FUNC_0010, TestSize.Level4)
 
 /**
  * @tc.number    : VIDEO_SWDEC_STABILITY_0020
- * @tc.name      : confige-start-flush-start-reset 1000 times
+ * @tc.name      : confige start flush start reset 1000 times
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_STABILITY_FUNC_0020, TestSize.Level4)
@@ -1657,7 +1658,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0110, TestSize.Le
 
 /**
  * @tc.number    : API11_VIDEO_SWDEC_STABLITY_FUNC_0120
- * @tc.name      : rand high and whith (64 * 64)
+ * @tc.name      : rand and whith (64 * 64)
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0120, TestSize.Level0) 

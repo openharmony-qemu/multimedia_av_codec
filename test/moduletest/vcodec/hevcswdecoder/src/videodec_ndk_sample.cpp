@@ -249,14 +249,14 @@ static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVa
 {
     printf("--------------output hash value----------------\n");
     for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
-        printf("%02x, ",outputHashVal[i - 1]);
+        printf("%02x, ", outputHashVal[i - 1]);
         if (i % SIXTEEN == 0) {
             printf("\n");
         }
     }
     printf("--------------standard hash value----------------\n");
     for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
-        printf("%02x, ",srcHashVal[i - 1]);
+        printf("%02x, ", srcHashVal[i - 1]);
         if (i % SIXTEEN == 0) {
             printf("\n");
         }
@@ -696,7 +696,7 @@ void VDecNdkSample::CheckOutputDescription()
         int32_t picHeight = 0;
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_PIC_WIDTH, &picWidth);
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_PIC_HEIGHT, &picHeight);
-        if (picWidth != DEFAULT_WIDTH || picHeight != DEFAULT_HEIGHT ) {
+        if (picWidth != DEFAULT_WIDTH || picHeight != DEFAULT_HEIGHT) {
             std::cout << "DEFAULT_WIDTH:" << picWidth << " DEFAULT_HEIGHT:" << picHeight << std::endl;
             errCount++;
         }
@@ -754,7 +754,7 @@ void VDecNdkSample::OutputFuncTest()
             AutoSwitchSurface();
             SHA512_Final(md, &c);
             OPENSSL_cleanse(&c, sizeof(c));
-            if(!MdCompare(md)) {
+            if (!MdCompare(md)) {
                 errCount++;
             }
             break;
