@@ -69,11 +69,13 @@ int32_t reli_count = 16;
 int32_t reli_count_1000 = 1000;
 void HevcSwdecReliNdkTest::SetUpTestCase()
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC,false,SOFTWARE);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(
+        OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
     g_codecName_hevc = OH_AVCapability_GetName(cap);
     cout << "g_codecName_hevc: " << g_codecName_hevc << endl;
 
-    OH_AVCapability *cap2 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC,false,HARDWARE);
+    OH_AVCapability *cap2 = OH_AVCodec_GetCapabilityByCategory(
+        OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     g_codecName_hisi = OH_AVCapability_GetName(cap2);
     cout << "g_codecName_hisi: " << g_codecName_hisi  << endl;
 }
@@ -195,7 +197,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0040, TestSize.Level3)
 
 /**
  * @tc.number    : VIDEO_SWDEC_STABILITY_0050
- * @tc.name      : repeat start and stop 1000 time before EOS 
+ * @tc.name      : repeat start and1000 times before EOS 
  * @tc.desc      : reli test
  */
 HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0050, TestSize.Level3)
@@ -219,7 +221,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0050, TestSize.Level3)
 
 /**
  * @tc.number    : VIDEO_SWDEC_STABILITY_0060
- * @tc.name      : repeat start and flush 1000 time before EOS 
+ * @tc.name      : repeat start flush and1000 time before EOS 
  * @tc.desc      : reli test
  */
 HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0060, TestSize.Level3)
@@ -392,7 +394,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0050, TestSize.Level3
  */
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0070, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -416,7 +418,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0070, TestSize.Level2
  */
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0080, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -471,7 +473,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0090, TestSize.Level0
  */
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0100, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_144;
@@ -501,7 +503,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0100, TestSize.Level0
  */
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_0110, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -528,7 +530,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_0110, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_0120, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_64;
@@ -555,7 +557,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_0120, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0130, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_144;

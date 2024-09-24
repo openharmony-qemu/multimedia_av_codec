@@ -48,6 +48,8 @@ protected:
     const char *INP_DIR_1440 = "/data/test/media/1920_1440_Main_HEIF.h265";
     const char *INP_DIR_1022 = "/data/test/media/1858_1022_Main.h265";
     const char *INP_DIR_71 = "/data/test/media/95_71_Rext_gray.h265";
+    const char *INP_DIR_var = "/data/test/media/95_71_Rext_gray.h265";
+    const char *INP_DIR_1080_64_var = "/data/test/media/1920_1080_64_64_var.h265";
 };
 } // namespace Media
 } // namespace OHOS
@@ -82,7 +84,7 @@ namespace {
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -102,7 +104,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0330, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -123,7 +125,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0330, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0400, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->SF_OUTPUT = true;
@@ -142,7 +144,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0400, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0410, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->SF_OUTPUT = true;
@@ -162,7 +164,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0410, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0700, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -185,7 +187,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0700, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0800, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -208,7 +210,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0800, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0900, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -232,7 +234,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0900, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -256,9 +258,9 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1200, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = INP_DIR_1080_64_var;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -279,7 +281,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1300, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_001, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -303,7 +305,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_001, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_002, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -328,7 +330,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_002, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_003, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -350,7 +352,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_003, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_004, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -373,7 +375,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_004, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -395,7 +397,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -417,9 +419,8 @@ HWTEST_F(HevcSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, SUB_MEDIA_VIDEO_SWDEC_H265_SWITCH_001, TestSize.Level0)
 {
-    if(!access("/system/lib64/media/", 0)){
-        for(int i = 0; i <= 39; i++)
-        {
+    if(!access("/system/lib64/media/", 0)) {
+        for(int i = 0; i <= 39; i++) {
             vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -455,7 +456,6 @@ HWTEST_F(HevcSwdecFuncNdkTest, SUB_MEDIA_VIDEO_SWDEC_H265_SWITCH_002, TestSize.L
                 ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_hevc));
                 vDecSample->WaitForEOS();
                 ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
-            
             }
             vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
             ASSERT_NE(nullptr, vdec_);
@@ -479,7 +479,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, SUB_MEDIA_VIDEO_SWDEC_H265_SWITCH_002, TestSize.L
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0310, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -500,7 +500,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0310, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -521,7 +521,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0400, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->SF_OUTPUT = true;
@@ -540,7 +540,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0400, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0410, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->SF_OUTPUT = true;
@@ -560,7 +560,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0410, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0420, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->SF_OUTPUT = true;
@@ -579,7 +579,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0420, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0430, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->SF_OUTPUT = true;
@@ -599,7 +599,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0430, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0700, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -622,7 +622,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0700, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0800, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -645,7 +645,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0800, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0900, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -669,7 +669,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0900, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1000, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -699,7 +699,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1000, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1100, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -729,7 +729,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1100, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -753,9 +753,9 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1200, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = INP_DIR_var;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -776,7 +776,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1300, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -800,7 +800,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -824,7 +824,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -847,7 +847,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -869,7 +869,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -893,7 +893,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -915,7 +915,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -938,7 +938,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -961,7 +961,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -984,7 +984,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -1009,7 +1009,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1033,7 +1033,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1056,7 +1056,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_016, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1090,7 +1090,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_016, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_017, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -1113,7 +1113,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_017, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_018, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -1139,7 +1139,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_018, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1161,7 +1161,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_002, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1183,7 +1183,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_001, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1205,7 +1205,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_001, TestSize.Level4)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_002, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1227,7 +1227,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_002, TestSize.Level4)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_003, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1249,7 +1249,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_003, TestSize.Level4)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_004, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1271,7 +1271,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_004, TestSize.Level4)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_005, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1293,7 +1293,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_005, TestSize.Level4)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_006, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1315,7 +1315,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_006, TestSize.Level4)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_007, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1336,7 +1336,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_007, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1355,9 +1355,9 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008, TestSize.Level0)
  * @tc.name      : test h265 decode buffer, framerate 0.1
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008_2, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008_2, TestSize.Level0)  
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1378,7 +1378,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008_2, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_009, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1397,9 +1397,9 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_009, TestSize.Level0)
  * @tc.name      : test h265 decode buffer, framerate 100000
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_010, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_010, TestSize.Level0)  
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1420,7 +1420,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_010, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_011, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = -1;
@@ -1439,7 +1439,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_011, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_012, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 0;
@@ -1458,7 +1458,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_012, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_013, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1;
@@ -1477,7 +1477,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_013, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_014, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 10000;
@@ -1496,7 +1496,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_014, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_015, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 64;
@@ -1519,7 +1519,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_015, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_STABILITY_FUNC_0010, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count_100; i++) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
             ASSERT_NE(nullptr, vdec_);
@@ -1547,7 +1547,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_STABILITY_FUNC_0010, TestSize.Level4)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_STABILITY_FUNC_0020, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count_100; i++) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
             ASSERT_NE(nullptr, vdec_);
@@ -1575,7 +1575,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_STABILITY_FUNC_0020, TestSize.Level4)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_STABILITY_FUNC_0030, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
@@ -1605,7 +1605,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_STABILITY_FUNC_0030, TestSize.Level4)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STAB_FUNC_0100, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count_2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_144;
@@ -1635,7 +1635,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STAB_FUNC_0100, TestSize.Level0
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0110, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count_2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -1662,7 +1662,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0110, TestSize.Le
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0120, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count_2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_64;
@@ -1689,7 +1689,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0120, TestSize.Le
  */
 HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0130, TestSize.Level0) 
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count_2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_144;
@@ -1715,7 +1715,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0130, TestSize.Le
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_001, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->SF_OUTPUT = false;
         vDecSample->INP_DIR = INP_DIR_1158;
@@ -1734,7 +1734,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_001, TestSize.Level3)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_002, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1440;
         vDecSample->SF_OUTPUT = false;
@@ -1753,7 +1753,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_002, TestSize.Level3)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_003, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->SF_OUTPUT = false;
         vDecSample->INP_DIR = INP_DIR_1022;
@@ -1772,7 +1772,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_003, TestSize.Level3)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_004, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->SF_OUTPUT = false;
         vDecSample->INP_DIR = INP_DIR_71;

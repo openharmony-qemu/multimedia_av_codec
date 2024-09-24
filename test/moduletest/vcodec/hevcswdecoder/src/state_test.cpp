@@ -58,7 +58,7 @@ VDecNdkSample *vDecSample = NULL;
 void HevcSwdecStateNdkTest::SetUp(void)
 {
     vDecSample = new VDecNdkSample();
-    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC,false,SOFTWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
     string hevc_codeName = OH_AVCapability_GetName(cap);
     cout << "hevc_codeName: " << hevc_codeName << endl;
     int32_t ret = vDecSample->CreateVideoDecoder(hevc_codeName);
@@ -87,7 +87,7 @@ namespace {
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Stop();
         ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
         ret = vDecSample->Flush();
@@ -104,7 +104,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0100, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Stop();
@@ -121,7 +121,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0200, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Stop();
@@ -138,7 +138,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0300, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Stop();
@@ -155,7 +155,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0400, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Stop();
@@ -174,7 +174,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0500, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->StartVideoDecoder();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -195,7 +195,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0600, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -215,7 +215,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0700, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->StartVideoDecoder();
         ASSERT_EQ(AV_ERR_OK, ret);
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -236,7 +236,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0800, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -254,7 +254,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0900, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -274,7 +274,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1000, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -294,7 +294,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1100, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -314,7 +314,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1200, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -336,7 +336,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1300, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -356,7 +356,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1400, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -376,7 +376,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1500, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -400,7 +400,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1600, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -419,7 +419,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1700, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -438,7 +438,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1800, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -457,7 +457,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_1900, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -476,7 +476,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2000, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -499,7 +499,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2100, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -521,7 +521,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2200, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -540,7 +540,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2300, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -559,7 +559,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2400, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -580,7 +580,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2500, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -599,7 +599,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2600, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -618,7 +618,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2700, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -643,7 +643,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2800, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Reset();
@@ -660,7 +660,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_2900, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Reset();
@@ -677,7 +677,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3000, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Reset();
@@ -700,7 +700,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3100, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->ConfigureVideoDecoder();
@@ -719,7 +719,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3200, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Reset();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->ConfigureVideoDecoder();
@@ -734,7 +734,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3300, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Release();
         ASSERT_EQ(AV_ERR_OK, ret);
     }
@@ -747,7 +747,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3400, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3500, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         vDecSample->inputCallbackFlush = true;
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -763,7 +763,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3500, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3600, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         vDecSample->inputCallbackStop = true;
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -779,7 +779,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3600, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3700, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         vDecSample->outputCallbackFlush = true;
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -795,7 +795,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3700, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3800, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         vDecSample->outputCallbackStop = true;
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -811,7 +811,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3800, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3900, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->inputCallbackFlush = true;
         int32_t ret = vDecSample->StartVideoDecoder();
@@ -828,7 +828,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_3900, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_4000, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->inputCallbackStop = true;
         int32_t ret = vDecSample->StartVideoDecoder();
@@ -845,7 +845,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_4000, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_4100, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->outputCallbackFlush = true;
         int32_t ret = vDecSample->StartVideoDecoder();
@@ -862,7 +862,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_4100, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_4200, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->outputCallbackStop = true;
         int32_t ret = vDecSample->StartVideoDecoder();

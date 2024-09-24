@@ -2405,7 +2405,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8400, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0010, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(NULL, vdec);
         OH_AVFormat *format = OH_AVFormat_Create();
@@ -2427,7 +2427,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0010, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0020, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(NULL, vdec);
         OH_AVFormat *format = OH_AVFormat_Create();
@@ -2449,7 +2449,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0020, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0030, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(NULL, vdec);
         OH_AVFormat *format = OH_AVFormat_Create();
@@ -2471,7 +2471,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0030, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0040, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
         ASSERT_NE(NULL, vdec);
         OH_AVFormat *format = OH_AVFormat_Create();

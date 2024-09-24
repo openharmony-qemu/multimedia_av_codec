@@ -105,7 +105,6 @@ void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 
 void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
-    
     int32_t current_width = 0;
     int32_t current_height = 0;
     int32_t stride = 0;
@@ -239,7 +238,7 @@ std::vector<uint8_t> VDecNdkSample::LoadHashFile()
         std::string item;
         while (getline(ss, item, ',')) {
             if (!item.empty()) {
-                ret.push_back(stol(item, nullptr, 16));
+                ret.push_back(stol(item, nullptr, SIXTEEN));
             } 
         }
     }
@@ -250,15 +249,15 @@ static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVa
 {
     printf("--------------output hash value----------------\n");
     for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
-        printf("%02x,",outputHashVal[i - 1]);
-        if (i % 16 == 0) {
+        printf("%02x, ",outputHashVal[i - 1]);
+        if (i % SIXTEEN == 0) {
             printf("\n");
         }
     }
     printf("--------------standard hash value----------------\n");
     for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
-        printf("%02x,",srcHashVal[i - 1]);
-        if (i % 16 == 0) {
+        printf("%02x, ",srcHashVal[i - 1]);
+        if (i % SIXTEEN == 0) {
             printf("\n");
         }
     }
@@ -274,8 +273,8 @@ bool VDecNdkSample::MdCompare(uint8_t source[])
     }
     for (int32_t i = 0; i < SHA512_DIGEST_LENGTH; i++) {
         if (source[i] != srcHashVal[i]) {
-             cout << "decoded hash value mismatch" << endl;
-             return false;
+            cout << "decoded hash value mismatch" << endl;
+            return false;
         }
     }
     return true;
@@ -772,7 +771,7 @@ void VDecNdkSample::ProcessOutputData(OH_AVMemory *buffer, uint32_t index)
 {
     if (!SF_OUTPUT) {
         uint8_t *bufferAddr = OH_AVMemory_GetAddr(buffer);
-        uint32_t cropSize = picWidth_ * picHeight_ * THREE >> 1;
+        uint32_t cropSize = (picWidth_ * picHeight_ * THREE) >> 1;
         uint8_t *cropBuffer = new uint8_t[cropSize];
         uint8_t *copyPos = cropBuffer;
         //copy y

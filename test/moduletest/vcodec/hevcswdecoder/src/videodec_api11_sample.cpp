@@ -50,8 +50,6 @@ constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
 constexpr int32_t SYS_MAX_INPUT_SIZE = 1024 * 1024 * 24;
-int32_t MIN_LEN = 64;
-int32_t MAX_LEN = 1920;
 
 SHA512_CTX g_c;
 uint8_t g_md[SHA512_DIGEST_LENGTH];
@@ -261,8 +259,8 @@ bool VDecAPI11Sample::MdCompare(uint8_t source[])
     }
     for (int32_t i = 0; i < SHA512_DIGEST_LENGTH; i++) {
         if (source[i] != srcHashVal[i]) {
-             cout << "decoded hash value mismatch" << endl;
-             return false;
+            cout << "decoded hash value mismatch" << endl;
+            return false;
         }
     }
     return true;
@@ -270,44 +268,36 @@ bool VDecAPI11Sample::MdCompare(uint8_t source[])
 
 int32_t HighRand()
 {
-    int32_t HRand = 0;
-    struct timeb timeSeed;
-    ftime(&timeSeed);
-    srand(timeSeed.time * 1000 + timeSeed.millitm);
-    if (MIN_LEN % 2 == 1) {
-        MIN_LEN++;
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<> dis(64, 1920);
+    int HRand = dis(rng);
+    if (HRand % 2 != 0) {
+        HRand++;
     }
-    HRand = (rand() % ((MAX_LEN - MIN_LEN) / 2)) * 2 + MIN_LEN;
     cout << "HRand is =  " << HRand << endl;
     return HRand;
 }
 
 int32_t FrameRand()
 {
-    int32_t FRand = 0;
-    struct timeb timeSeed;
-    ftime(&timeSeed);
-    srand(timeSeed.time * 1000 + timeSeed.millitm);
-    int32_t Min_frame = 1;
-    int32_t Max_frame = 30;
-    if (Min_frame % 2 == 1) {
-        Min_frame++;
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<> dis(64, 1920);
+    int FRand = dis(rng);
+    if (FRand % 2 != 0) {
+        FRand++;
     }
-    FRand = (rand() % ((Max_frame - Min_frame) / 2)) * 2 + Min_frame;
     cout << "FRand is =  " << FRand << endl;
     return FRand;
 }
 
 int32_t WidthRand()
 {
-    int32_t WRand = 0;
-    struct timeb timeSeed;
-    ftime(&timeSeed);
-    srand(timeSeed.time * 1000 + timeSeed.millitm);
-    if (MIN_LEN % 2 == 1) {
-        MIN_LEN++;
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<> dis(1, 30);
+    int WRand = dis(rng);
+    if (WRand % 2 != 0) {
+        WRand++;
     }
-    WRand = (rand() % ((MAX_LEN - MIN_LEN) / 2)) * 2 + MIN_LEN;
     cout << "WRand is =  " << WRand << endl;
     return WRand;
 }
@@ -359,7 +349,7 @@ void VDecAPI11Sample::CreateSurface()
     auto p = cs[0]->GetProducer();
     ps[0] = Surface::CreateSurfaceAsProducer(p);
     nativeWindow[0] = CreateNativeWindowFromSurface(&ps[0]);
-    if (autoSwitchSurface)  {
+    if (autoSwitchSurface) {
         cs[1] = Surface::CreateSurfaceAsConsumer();
         sptr<IBufferConsumerListener> listener2 = new ConsumerListenerBuffer(cs[1], OUT_DIR2);
         cs[1]->RegisterConsumerListener(listener2);
@@ -525,9 +515,7 @@ int32_t VDecAPI11Sample::StartDecoder()
         Release();
         return AV_ERR_UNKNOWN;
     }
-
     return AV_ERR_OK;
-
 }
 
 int32_t VDecAPI11Sample::StartVideoDecoder()
@@ -952,8 +940,7 @@ void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
                 errCount = errCount + 1;
             }
         }
-    }
-    
+    }  
 }
 
 void VDecAPI11Sample::RenderOutAtTime(uint32_t index)
@@ -1055,7 +1042,7 @@ int32_t VDecAPI11Sample::Stop()
 
 int32_t VDecAPI11Sample::Prepare()
 {
-     return OH_VideoDecoder_Prepare(vdec_);
+    return OH_VideoDecoder_Prepare(vdec_);
 }
 
 int32_t VDecAPI11Sample::Start()
