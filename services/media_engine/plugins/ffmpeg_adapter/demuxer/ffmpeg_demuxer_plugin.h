@@ -34,7 +34,6 @@
 extern "C" {
 #endif
 #include "libavformat/avformat.h"
-#include "libavformat/internal.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
