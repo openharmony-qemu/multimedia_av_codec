@@ -1068,6 +1068,7 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
 {
     SCOPED_TRACE();
     if (vrrPredictor_ == nullptr) {
+        HLOGE("vrrPredictor_ is nullptr");
         return AVCS_ERR_INVALID_OPERATION;
     }
     int vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_NONE;
@@ -1079,7 +1080,7 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
         HLOGE("VRR only support for HEVC or AVC");
         return AVCS_ERR_UNSUPPORT;
     }
-    vrrPredictor_->Process(info.surfaceBuffer, codecRate_, vrrMvType);
+    vrrPredictor_->Process(info.surfaceBuffer, static_cast<int32_t>(codecRate_), vrrMvType);
     return AVCS_ERR_OK;
 }
 #endif
