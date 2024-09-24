@@ -299,7 +299,7 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index, AVCodecBufferInfo in
 
     auto listenerStub = static_cast<CodecListenerStub *>(listener_.GetRefPtr());
     bool parcelRet = listenerStub->WriteInputMemoryToParcel(index, info, flag, data);
-    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_STATE, "Write parcel failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,
                                         reply, option);
@@ -321,7 +321,7 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index)
 
     auto listenerStub = static_cast<CodecListenerStub *>(listener_.GetRefPtr());
     bool parcelRet = listenerStub->WriteInputBufferToParcel(index, data);
-    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_STATE, "Write parcel failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,
                                         reply, option);
@@ -343,7 +343,7 @@ int32_t CodecServiceProxy::QueueInputParameter(uint32_t index)
 
     auto listenerStub = static_cast<CodecListenerStub *>(listener_.GetRefPtr());
     bool parcelRet = listenerStub->WriteInputParameterToParcel(index, data);
-    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_STATE, "Write parcel failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,
                                         reply, option);
@@ -382,7 +382,7 @@ int32_t CodecServiceProxy::ReleaseOutputBuffer(uint32_t index, bool render)
     bool parcelRet = data.WriteUint32(index);
     parcelRet = parcelRet && data.WriteBool(render);
     parcelRet = parcelRet && listenerStub->WriteOutputBufferToParcel(index, data);
-    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
+    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_STATE, "Write parcel failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER), data,
                                         reply, option);
