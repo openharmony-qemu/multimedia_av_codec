@@ -589,26 +589,6 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_no_bitrate_mode, TestSize.Lev
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
-HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_temporal_ok, TestSize.Level1)
-{
-    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
-    ASSERT_TRUE(testObj);
-    Media::Meta meta{};
-    int32_t err = testObj->Init(meta);
-    ASSERT_TRUE(err == AVCS_ERR_OK);
-    Format format;
-    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
-    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
-    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 2); // 2: gop mode
-    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4); // 4: temporal gop size
-    int32_t ret = testObj->Configure(format);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-}
-
 /* ============== GET_OUTPUT_FORMAT ============== */
 HWTEST_F(HEncoderPreparingUnitTest, get_output_format_after_configure, TestSize.Level1)
 {

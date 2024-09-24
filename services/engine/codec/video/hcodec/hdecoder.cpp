@@ -80,14 +80,10 @@ int32_t HDecoder::SetupPort(const Format &format)
     PortInfo inputPortInfo {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
                             codingType_, std::nullopt, frameRate.value()};
     int32_t maxInputSize = 0;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize)) {
-        if (maxInputSize > 0) {
-            inputPortInfo.inputBufSize = static_cast<uint32_t>(maxInputSize);
-        } else {
-            HLOGW("user don't set valid input buffer size");
-        }
+    (void)format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
+    if (maxInputSize > 0) {
+        inputPortInfo.inputBufSize = static_cast<uint32_t>(maxInputSize);
     }
-
     int32_t ret = SetVideoPortInfo(OMX_DirInput, inputPortInfo);
     if (ret != AVCS_ERR_OK) {
         return ret;
@@ -194,7 +190,7 @@ void HDecoder::UpdateColorAspects()
     if (!GetParameter(OMX_IndexColorAspects, param, true)) {
         return;
     }
-    HLOGI("isFullRange %d, primary %u, transfer %u, matrix %u",
+    HLOGI("range:%d, primary:%d, transfer:%d, matrix:%d)",
         param.aspects.range, param.aspects.primaries, param.aspects.transfer, param.aspects.matrixCoeffs);
     if (outputFormat_) {
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, param.aspects.range);
@@ -689,7 +685,7 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
     GSError err = surface->RegisterReleaseListener([weakThis, surfaceId](sptr<SurfaceBuffer>&) {
         std::shared_ptr<HCodec> codec = weakThis.lock();
         if (codec == nullptr) {
-            LOGI("decoder is gone");
+            LOGD("decoder is gone");
             return GSERROR_OK;
         }
         return codec->OnBufferReleasedByConsumer(surfaceId);

@@ -108,14 +108,6 @@ int32_t HCodec::Configure(const Format &format)
     return DoSyncCall(MsgWhat::CONFIGURE, proc);
 }
 
-int32_t HCodec::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
-{
-    std::function<void(ParamSP)> proc = [&](ParamSP msg) {
-        msg->SetValue("buffer", buffer);
-    };
-    return DoSyncCall(MsgWhat::CONFIGURE_BUFFER, proc);
-}
-
 int32_t HCodec::SetOutputSurface(sptr<Surface> surface)
 {
     HLOGI(">>");
@@ -413,10 +405,6 @@ int32_t HCodec::SetLowLatency(const Format &format)
 {
     int32_t enableLowLatency;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, enableLowLatency)) {
-        return AVCS_ERR_OK;
-    }
-    if (!caps_.port.video.isSupportLowLatency) {
-        HLOGW("platform not support LowLatency");
         return AVCS_ERR_OK;
     }
 
