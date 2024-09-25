@@ -136,6 +136,7 @@ private:
     Status GetSeiInfo();
 
     void ParserFirstDts();
+    Status InitIoContext();
     Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
     Status SelectProGopId();
