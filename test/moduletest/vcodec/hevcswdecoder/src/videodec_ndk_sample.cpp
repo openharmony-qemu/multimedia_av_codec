@@ -45,7 +45,6 @@ constexpr int32_t RES_CHANGE_TIME = 4;
 constexpr int32_t CROP_INFO_SIZE = 2;
 constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
     {1079, 1919}, {719, 1279}, {855, 1919}};
-
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;

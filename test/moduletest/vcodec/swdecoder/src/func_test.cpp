@@ -62,7 +62,7 @@ static OH_AVCapability *cap_avc = nullptr;
 static string g_codecName_avc = "";
 } // namespace
 
-void SwdecFuncNdkTest::SetUpTestCase() 
+void SwdecFuncNdkTest::SetUpTestCase()
 {
     cap_avc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
     g_codecName_avc = OH_AVCapability_GetName(cap_avc);
@@ -100,7 +100,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level0)
 }
 
 /**
- * @tc.number    : API11_SURF_CHANGE_FUNC_002 
+ * @tc.number    : API11_SURF_CHANGE_FUNC_002
  * @tc.name      : surf model change in flushed state
  * @tc.desc      : function test
  */
@@ -386,7 +386,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_015, TestSize.Level0)
         vDecSample_1->sleepOnFPS = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample_1->RunVideoDec_Surface(g_codecName_avc));
         ASSERT_EQ(AV_ERR_OK, vDecSample_1->SwitchSurface());
-        vDecSample_1->WaitForEOS();    
+        vDecSample_1->WaitForEOS();
     }
 }
 

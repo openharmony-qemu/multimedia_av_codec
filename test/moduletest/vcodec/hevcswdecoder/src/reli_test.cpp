@@ -321,7 +321,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0030, TestSize.Level3
 
 /**
  * @tc.number    : API11_VIDEO_SWDEC_STABILITY_0040
- * @tc.name      : 16 Multiple instances h265 soft decode with buffer mode 
+ * @tc.name      : 16 Multiple instances h265 soft decode with buffer mode
  * @tc.desc      : reli test
  */
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0040, TestSize.Level3)
