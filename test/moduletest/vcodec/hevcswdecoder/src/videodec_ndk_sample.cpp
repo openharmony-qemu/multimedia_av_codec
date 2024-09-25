@@ -239,7 +239,7 @@ std::vector<uint8_t> VDecNdkSample::LoadHashFile()
         while (getline(ss, item, ',')) {
             if (!item.empty()) {
                 ret.push_back(stol(item, nullptr, SIXTEEN));
-            } 
+            }
         }
     }
     return ret;

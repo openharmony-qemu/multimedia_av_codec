@@ -66,13 +66,14 @@ constexpr int32_t DEFAULT_WIDTH = 1920;
 constexpr int32_t DEFAULT_HEIGHT = 1080;
 } // namespace
 
-void HevcSwdecFuncNdkTest::SetUpTestCase() 
+void HevcSwdecFuncNdkTest::SetUpTestCase()
 {   
     cap_hevc = OH_AVCodec_GetCapabilityByCategory(
         OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
     g_codecName_hevc = OH_AVCapability_GetName(cap_hevc);
     cout << "g_codecName_hevc: " << g_codecName_hevc << endl;
 }
+
 void HevcSwdecFuncNdkTest::TearDownTestCase() {}
 void HevcSwdecFuncNdkTest::SetUp() {}
 void HevcSwdecFuncNdkTest::TearDown() {}
@@ -103,7 +104,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0)
  * @tc.name      : test h265 decode buffer, pixel foramt nv21
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0330, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0330, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -421,7 +422,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
 HWTEST_F(HevcSwdecFuncNdkTest, SUB_MEDIA_VIDEO_SWDEC_H265_SWITCH_001, TestSize.Level0)
 {
     if(!access("/system/lib64/media/", 0)) {
-        for(int i = 0; i <= 39; i++) {
+        for (int i = 0; i <= 39; i++) {
             vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -444,8 +445,8 @@ HWTEST_F(HevcSwdecFuncNdkTest, SUB_MEDIA_VIDEO_SWDEC_H265_SWITCH_001, TestSize.L
  */
 HWTEST_F(HevcSwdecFuncNdkTest, SUB_MEDIA_VIDEO_SWDEC_H265_SWITCH_002, TestSize.Level0)
 {
-    if(!access("/system/lib64/media/", 0)) {
-        for(int i = 0; i <= 30; i++) {
+    if (!access("/system/lib64/media/", 0)) {
+        for (int i = 0; i <= 30; i++) {
             if (i == 30) {
                 shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
                 vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -1160,7 +1161,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
  * @tc.name      : MaxInputSize value incorrect
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_002, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
@@ -1314,7 +1315,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_006, TestSize.Level4)
  * @tc.name      : test h265 decode buffer framerate -1
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_007, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_007, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
@@ -1335,7 +1336,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_007, TestSize.Level0)
  * @tc.name      : test h265 decode buffer framerate 0
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
@@ -1356,7 +1357,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008, TestSize.Level0)
  * @tc.name      : test h265 decode buffer framerate 0.1
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008_2, TestSize.Level0)  
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008_2, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
@@ -1377,7 +1378,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008_2, TestSize.Level0)
  * @tc.name      : test h265 decode buffer framerate 1
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_009, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_009, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
@@ -1398,7 +1399,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_009, TestSize.Level0)
  * @tc.name      : test h265 decode buffer framerate 100000
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_010, TestSize.Level0)  
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_010, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
@@ -1419,7 +1420,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_010, TestSize.Level0)
  * @tc.name      : width set -1 height set -1
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_011, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_011, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -1438,7 +1439,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_011, TestSize.Level0)
  * @tc.name      : width set 0 height set 0
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_012, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_012, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -1457,7 +1458,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_012, TestSize.Level0)
  * @tc.name      : width set 1 height set 1
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_013, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_013, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -1476,7 +1477,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_013, TestSize.Level0)
  * @tc.name      : width set 10000 height set 10000
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_014, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_014, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -1495,7 +1496,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_014, TestSize.Level0)
  * @tc.name      : width set 64 height set 64
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_015, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_015, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -1604,7 +1605,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_STABILITY_FUNC_0030, TestSize.Level4)
  * @tc.name      : 10bit stream and 8bit stream decode simultaneously
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STAB_FUNC_0100, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STAB_FUNC_0100, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count_2; i++) {
@@ -1634,7 +1635,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STAB_FUNC_0100, TestSize.Level0
  * @tc.name      : rand high and whith (1920 * 1080)
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0110, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0110, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count_2; i++) {
@@ -1661,7 +1662,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0110, TestSize.Le
  * @tc.name      : rand and whith (64 * 64)
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0120, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0120, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count_2; i++) {
@@ -1688,7 +1689,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0120, TestSize.Le
  * @tc.name      : rand high and whith (176 * 144)
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0130, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0130, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < reli_count_2; i++) {

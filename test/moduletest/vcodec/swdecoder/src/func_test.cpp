@@ -68,6 +68,7 @@ void SwdecFuncNdkTest::SetUpTestCase()
     g_codecName_avc = OH_AVCapability_GetName(cap_avc);
     cout << "g_codecName_avc: " << g_codecName_avc << endl;
 }
+
 void SwdecFuncNdkTest::TearDownTestCase() {}
 void SwdecFuncNdkTest::SetUp() {}
 void SwdecFuncNdkTest::TearDown() {}
