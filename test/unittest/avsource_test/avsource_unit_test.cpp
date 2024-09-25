@@ -2131,6 +2131,24 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1601, TestSize.Level1)
 }
 
 /**
+ * @tc.name: AVSourse_ValidateMimeType_1000
+ * @tc.desc: validate MimeType when av_codec Type is mulaw
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSourse_ValidateMimeType_1000, TestSize.Level1)
+{
+    fd_ = OpenFile(g_wavPath2);
+    size_ = GetFileSize(g_wavPath2);
+    printf("----%s----\n", g_wavPath2.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    
+}
+
+/**
  * @tc.name: AVSourse_OrientationType_1000
  * @tc.desc: determine the orientation type of the video ROTATE_NONE.mp4
  * @tc.type: FUNC
