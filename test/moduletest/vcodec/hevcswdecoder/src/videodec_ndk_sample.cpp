@@ -50,7 +50,7 @@ constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
 constexpr int32_t SYS_MAX_INPUT_SIZE = 1024 * 1024 * 24;
 SHA512_CTX c;
-uint8_t md[SHA512_DIGEST_LENGTH];
+uint8_t md_[SHA512_DIGEST_LENGTH];
 VDecNdkSample *dec_sample = nullptr;
 
 void clearIntqueue(std::queue<uint32_t> &q)
@@ -751,9 +751,9 @@ void VDecNdkSample::OutputFuncTest()
         }
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
             AutoSwitchSurface();
-            SHA512_Final(md, &c);
+            SHA512_Final(md_, &c);
             OPENSSL_cleanse(&c, sizeof(c));
-            if (!MdCompare(md)) {
+            if (!MdCompare(md_)) {
                 errCount++;
             }
             break;

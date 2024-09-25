@@ -68,7 +68,7 @@ constexpr int32_t DEFAULT_HEIGHT = 1080;
 
 void HevcSwdecFuncNdkTest::SetUpTestCase()
 {
-    cap_hevc = OH_AVCodec_GetByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
     g_codecName_hevc = OH_AVCapability_GetName(cap_hevc);
     cout << "g_codecName_hevc: " << g_codecName_hevc << endl;
 }
