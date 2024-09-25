@@ -67,11 +67,10 @@ constexpr int32_t DEFAULT_HEIGHT = 1080;
 } // namespace
 
 void HevcSwdecFuncNdkTest::SetUpTestCase()
-{   
-    cap_hevc = OH_AVCodec_GetCapabilityByCategory(
-        OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
-    g_codecName_hevc = OH_AVCapability_GetName(cap_hevc);
-    cout << "g_codecName_hevc: " << g_codecName_hevc << endl;
+{
+    cap_hevc = OH_AVCodec_GetByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+    gName_hevc = OH_AVCapability_GetName(cap_hevc);
+    cout "g_codecName_hevc: " << g_codecName_hevc << endl;
 }
 
 void HevcSwdecFuncNdkTest::TearDownTestCase() {}
@@ -81,10 +80,10 @@ void HevcSwdecFuncNdkTest::TearDown() {}
 namespace {
 /**
  * @tc.number    : VIDEO_SWDEC_FUNCTION_0320
- * @tc.name      : test h265 decode buffer, pixel foramt nv12
+ * @tc.name      : test h265 decode buffer pixel foramt nv12
  * @tc.desc      : function test
  */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0) 
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -100,8 +99,8 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0)
 }
 
 /**
- * @tc.number    : VIDEO_SWDEC_FUNCTION_0330
- * @tc.name      : test h265 decode buffer, pixel foramt nv21
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_0320
+ * @tc.name      : test h265 decode buffer pixel foramt nv21
  * @tc.desc      : function test
  */
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0330, TestSize.Level0)
@@ -421,7 +420,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecFuncNdkTest, SUB_MEDIA_VIDEO_SWDEC_H265_SWITCH_001, TestSize.Level0)
 {
-    if(!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i <= 39; i++) {
             vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
             ASSERT_NE(nullptr, vdec_);
@@ -1596,7 +1595,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_STABILITY_FUNC_0030, TestSize.Level4)
         }
         OH_AVFormat_Destroy(format);
         OH_VideoDecoder_Stop(vdec_);
-        OH_VideoDecoder_Destroy(vdec_);     
+        OH_VideoDecoder_Destroy(vdec_);
     }
 }
 

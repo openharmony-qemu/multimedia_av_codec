@@ -210,7 +210,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level0)
         vDecSample->sleepOnFPS = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface()); 
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
     }
 }
 

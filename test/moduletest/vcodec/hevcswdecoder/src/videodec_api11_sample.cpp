@@ -55,7 +55,6 @@ constexpr int32_t MAX_RANGE = 1920;
 constexpr int32_t MIN_FRANGE = 1;
 constexpr int32_t MAX_FRANGE = 30;
 constexpr int32_t EVEN_NUMBER = 2;
-
 SHA512_CTX g_c;
 uint8_t g_md[SHA512_DIGEST_LENGTH];
 VDecAPI11Sample *dec_sample = nullptr;
@@ -230,7 +229,7 @@ std::vector<uint8_t> VDecAPI11Sample::LoadHashFile()
         while (getline(ss, item, ',')) {
             if (!item.empty()) {
                 ret.push_back(stol(item, nullptr, SIXTEEN));
-            } 
+            }
         }
     }
     return ret;
@@ -912,7 +911,7 @@ void VDecAPI11Sample::OutputFuncTest()
 
 void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
 {
-    if (!SF_OUTPUT) { 
+    if (!SF_OUTPUT) {
         uint8_t *bufferAddr = OH_AVBuffer_GetAddr(buffer);
         uint32_t cropSize = (picWidth_ * picHeight_ * THREE) >> 1;
         uint8_t *cropBuffer = new uint8_t[cropSize];
@@ -945,7 +944,7 @@ void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
                 errCount = errCount + 1;
             }
         }
-    }  
+    }
 }
 
 void VDecAPI11Sample::RenderOutAtTime(uint32_t index)

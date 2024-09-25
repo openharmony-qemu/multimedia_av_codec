@@ -81,15 +81,13 @@ void HevcSwdecReliNdkTest::SetUpTestCase()
 }
 
 void HevcSwdecReliNdkTest::TearDownTestCase() {}
-
 void HevcSwdecReliNdkTest::SetUp() {}
-
 void HevcSwdecReliNdkTest::TearDown() {}
 
 namespace {
 /**
  * @tc.number    : VIDEO_SWDEC_STABILITY_0010
- * @tc.name      : h265 soft decode 16 times successively
+ * @tc.name      : h265 soft decode successively 16 times
  * @tc.desc      : reli test
  */
 HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0010, TestSize.Level3)
@@ -168,7 +166,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0030, TestSize.Level3)
 
 /**
  * @tc.number    : VIDEO_SWDEC_STABILITY_0040
- * @tc.name      : 16 Multiple instances h265 soft decode with buffer mode 
+ * @tc.name      : 16 Multiple instances h265 soft decode with buffer mode
  * @tc.desc      : reli test
  */
 HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0040, TestSize.Level3)
@@ -197,7 +195,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0040, TestSize.Level3)
 
 /**
  * @tc.number    : VIDEO_SWDEC_STABILITY_0050
- * @tc.name      : repeat start and 1000 times before EOS 
+ * @tc.name      : repeat start before eos 1000 times
  * @tc.desc      : reli test
  */
 HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0050, TestSize.Level3)
@@ -221,7 +219,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0050, TestSize.Level3)
 
 /**
  * @tc.number    : VIDEO_SWDEC_STABILITY_0060
- * @tc.name      : repeat start flush and 1000 time before eos 
+ * @tc.name      : repeat start flush before eos 1000 time
  * @tc.desc      : reli test
  */
 HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0060, TestSize.Level3)
@@ -244,7 +242,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0060, TestSize.Level3)
 
 /**
  * @tc.number    : API11_VIDEO_SWDEC_STABILITY_0010
- * @tc.name      : h265 soft decode 16 times successively 
+ * @tc.name      : h265 soft decode 16 times successively
  * @tc.desc      : reli test
  */
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0010, TestSize.Level3)
