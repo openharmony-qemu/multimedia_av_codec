@@ -105,7 +105,6 @@ ohos_shared_library("av_codec_media_engine_modules") {
     external_deps += [ "drm_framework:drm_framework" ]
   }
 
-  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
