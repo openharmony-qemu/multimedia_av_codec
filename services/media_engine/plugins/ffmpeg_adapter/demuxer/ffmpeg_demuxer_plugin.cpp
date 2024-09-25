@@ -445,6 +445,8 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
     FALSE_RETURN_V_MSG_E(formatName.find("mp4") != std::string::npos, Status::ERROR_UNSUPPORTED_FORMAT, "mp4 only.");
     for (uint32_t trackIndex = 0; trackIndex < parserRefFormatContext_->nb_streams; trackIndex++) {
         AVStream *stream = parserRefFormatContext_->streams[trackIndex];
+        FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_UNKNOWN,
+			     "Stream or codecpar is null, trackIndex:" PUBLIC_LOG_U32, trackIndex);
         if (stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
             stream->discard = AVDISCARD_ALL;
         } else {
@@ -453,8 +455,6 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
     }
     FALSE_RETURN_V_MSG_E(parserRefVideoStreamIdx_ >= 0, Status::ERROR_UNKNOWN, "Can not find video stream.");
     AVStream *videoStream = parserRefFormatContext_->streams[parserRefVideoStreamIdx_];
-    FALSE_RETURN_V_MSG_E(videoStream != nullptr, Status::ERROR_UNKNOWN, "Video stream is null.");
-    FALSE_RETURN_V_MSG_E(videoStream->codecpar != nullptr, Status::ERROR_UNKNOWN, "Video stream codecpar is null.");
     processingIFrame_.assign(IFramePos_.begin(), IFramePos_.end());
     FALSE_RETURN_V_MSG_E(
         videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC || videoStream->codecpar->codec_id == AV_CODEC_ID_H264,
