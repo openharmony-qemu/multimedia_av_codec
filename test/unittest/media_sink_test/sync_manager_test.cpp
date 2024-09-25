@@ -517,7 +517,7 @@ HWTEST_F(TestSyncManager, BoundMediaProgress_004, TestSize.Level0)
     mediaSyncManager.currentAnchorMediaTime_ = 100;
     mediaSyncManager.lastReportMediaTime_ = 150;
     mediaSyncManager.frameAfterSeeked_ = true;
-    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::VIDEO_SINK;
+    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
 
     newMediaProgressTime = 50;
     auto result = mediaSyncManager.BoundMediaProgress(newMediaProgressTime);
@@ -533,11 +533,24 @@ HWTEST_F(TestSyncManager, BoundMediaProgress_005, TestSize.Level0)
     mediaSyncManager.currentAnchorMediaTime_ = 200;
     mediaSyncManager.lastReportMediaTime_ = 150;
     mediaSyncManager.frameAfterSeeked_ = true;
-    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::VIDEO_SINK;
+    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
 
     newMediaProgressTime = 175;
     auto result = mediaSyncManager.BoundMediaProgress(newMediaProgressTime);
     ASSERT_EQ(result, newMediaProgressTime);
+}
+
+// Scenario6: video audio priority and seeked, go forward after seek
+HWTEST_F(TestSyncManager, BoundMediaProgress_006, TestSize.Level0)
+{
+    MediaSyncManager mediaSyncManager;
+    int64_t newMediaProgressTime;
+    // pre-defined values
+    mediaSyncManager.lastVideoBufferPts_ = 0;
+    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::VIDEO_SINK;
+    newMediaProgressTime = 175;
+    auto result = mediaSyncManager.BoundMediaProgress(newMediaProgressTime);
+    ASSERT_EQ(result, mediaSyncManager.lastVideoBufferPts_);
 }
 
 // Scenario1: Test case when isSeeking_ is true
@@ -562,7 +575,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_002, TestSize.Level0)
     mediaSyncManager.firstMediaTimeAfterSeek_ = 50;
     mediaSyncManager.clockState_ = MediaSyncManager::State::PAUSED;
     mediaSyncManager.startPts_ = 0;
-    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::VIDEO_SINK;
+    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     int64_t result = mediaSyncManager.GetMediaTimeNow();
     EXPECT_EQ(result, mediaSyncManager.pausedExactAbsMediaTime_);
 }
@@ -594,7 +607,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_004, TestSize.Level0)
     mediaSyncManager.frameAfterSeeked_ = false;
     mediaSyncManager.firstMediaTimeAfterSeek_ = 50; // firstMediaTimeAfterSeek_ < currentMediaTime
     mediaSyncManager.startPts_ = 0;
-    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::VIDEO_SINK;
+    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     mediaSyncManager.currentAnchorClockTime_ = mediaSyncManager.GetSystemClock();
     int64_t result = mediaSyncManager.GetMediaTimeNow();
     EXPECT_EQ(result >= lastReportMediaTime_, true);
@@ -616,7 +629,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_005, TestSize.Level0)
     mediaSyncManager.frameAfterSeeked_ = false;
     mediaSyncManager.firstMediaTimeAfterSeek_ = 150; // firstMediaTimeAfterSeek_ >= currentMediaTime
     mediaSyncManager.startPts_ = 0;
-    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::VIDEO_SINK;
+    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     mediaSyncManager.currentAnchorClockTime_ = mediaSyncManager.GetSystemClock();
     int64_t result = mediaSyncManager.GetMediaTimeNow();
     EXPECT_EQ(result >= lastReportMediaTime_, true);
@@ -638,7 +651,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_006, TestSize.Level0)
     mediaSyncManager.frameAfterSeeked_ = false;
     mediaSyncManager.firstMediaTimeAfterSeek_ = HST_TIME_NONE; // firstMediaTimeAfterSeek_ = HST_TIME_NONE
     mediaSyncManager.startPts_ = 0;
-    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::VIDEO_SINK;
+    mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     mediaSyncManager.currentAnchorClockTime_ = mediaSyncManager.GetSystemClock();
     int64_t result = mediaSyncManager.GetMediaTimeNow();
     EXPECT_EQ(result >= lastReportMediaTime_, true);
@@ -652,7 +665,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_007, TestSize.Level0)
     syncManager_->pausedExactAbsMediaTime_ = 100;
     syncManager_->firstMediaTimeAfterSeek_ = 150;
     syncManager_->startPts_ = 50;
-    syncManager_->currentSyncerPriority_ = IMediaSynchronizer::VIDEO_SINK;
+    syncManager_->currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     syncManager_->currentAnchorMediaTime_ = 50;
     EXPECT_EQ(syncManager_->GetMediaTimeNow(), 50);
 }
@@ -663,7 +676,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_008, TestSize.Level0)
     syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
     syncManager_->pausedExactAbsMediaTime_ = 100;
     syncManager_->firstMediaTimeAfterSeek_ = 150;
-    syncManager_->currentSyncerPriority_ = IMediaSynchronizer::VIDEO_SINK;
+    syncManager_->currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     syncManager_->currentAnchorMediaTime_ = 50;
     EXPECT_EQ(syncManager_->GetMediaTimeNow(), 50);
 }
