@@ -315,11 +315,18 @@ Status DemuxerFilter::DoPrepareFrame(bool renderFirstFrame)
 
 Status DemuxerFilter::PrepareBeforeStart()
 {
+    Status ret = Status::OK;
     if (isLoopStarted.load()) {
         MEDIA_LOG_I_SHORT("Loop is started. Not need start again.");
-        return Status::OK;
+        return ret;
     }
-    return Filter::Start();
+    ret = Filter::Start();
+    if (ret != Status::OK) {
+        return ret;
+    }
+    ret = Filter::WaitAllState(FilterState::RUNNING);
+    MEDIA_LOG_I_SHORT("PrepareBeforeStart done ret = %{public}d", ret);
+    return ret;
 }
 
 Status DemuxerFilter::DoStart()
@@ -389,11 +396,23 @@ Status DemuxerFilter::ResumeForSeek()
     if (it != nextFiltersMap_.end() && it->second.size() == 1) {
         auto filter = it->second.back();
         if (filter != nullptr) {
+            if (filter->IsDesignatedState(FilterState::RUNNING)) {
+                MEDIA_LOG_I_SHORT("current filter state is running");
+                return Status::OK;
+            }
             MEDIA_LOG_I_SHORT("filter resume");
             filter->Resume();
         }
     }
-    return demuxer_->Resume();
+    demuxer_->Resume();
+    if (it != nextFiltersMap_.end() && it->second.size() == 1) {
+        auto filter = it->second.back();
+        if (filter != nullptr) {
+            MEDIA_LOG_I_SHORT("filter WaitAllState");
+            filter->WaitAllState(FilterState::RUNNING);
+        }
+    }
+    return Status::OK;
 }
 
 Status DemuxerFilter::DoFlush()
