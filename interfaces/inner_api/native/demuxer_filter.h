@@ -39,6 +39,7 @@ public:
     Status DoStart() override;
     Status DoStop() override;
     Status DoPause() override;
+    Status DoPauseDragging() override;
     Status DoResume() override;
     Status DoResumeDragging() override;
     Status DoFlush() override;

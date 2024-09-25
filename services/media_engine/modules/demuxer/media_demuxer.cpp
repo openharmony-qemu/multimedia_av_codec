@@ -1297,6 +1297,29 @@ Status MediaDemuxer::Pause()
     return Status::OK;
 }
 
+Status MediaDemuxer::PauseDragging()
+{
+    MEDIA_LOG_I("PauseDragging");
+    isPaused_ = true;
+    if (streamDemuxer_) {
+        streamDemuxer_->SetIsIgnoreParse(true);
+        streamDemuxer_->Pause();
+    }
+    if (source_) {
+        source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
+        source_->Pause();
+    }
+    if (taskMap_[videoTrackId_] != nullptr) {
+        taskMap_[videoTrackId_]->PauseAsync();
+        taskMap_[videoTrackId_]->Pause();
+    }
+ 
+    if (source_ != nullptr) {
+        source_->SetReadBlockingFlag(true); // Enable source read blocking to ensure get wanted data
+    }
+    return Status::OK;
+}
+
 Status MediaDemuxer::PauseTaskByTrackId(int32_t trackId)
 {
     MEDIA_LOG_I("Pause trackId: %{public}d", trackId);

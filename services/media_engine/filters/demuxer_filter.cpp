@@ -351,6 +351,12 @@ Status DemuxerFilter::DoPause()
     return demuxer_->Pause();
 }
 
+Status DemuxerFilter::DoPauseDragging()
+{
+    MEDIA_LOG_I("DoPauseDragging in");
+    return demuxer_->PauseDragging();
+}
+
 Status DemuxerFilter::PauseForSeek()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::PauseForSeek");
