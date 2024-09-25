@@ -395,7 +395,7 @@ auto FrameLayerInfoStdpAvc = R"([
 	{"frameId": 368, "dts": 12200000, "layer": 1, "discardable": false},
 	{"frameId": 369, "dts": 12233333, "layer": 1, "discardable": false},
 	{"frameId": 370, "dts": 12266666, "layer": 0, "discardable": true},
-	{"frameId": 371, "dts": 12300000, "layer": 1, "discardable": false}
+	{"frameId": 371, "dts": 12300000, "layer": 0, "discardable": true}
 ])"_json;
 
 #endif //LAYER_INFO_SDTP_AVC_H

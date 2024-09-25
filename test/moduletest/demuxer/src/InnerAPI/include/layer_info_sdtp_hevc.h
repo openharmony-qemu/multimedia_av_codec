@@ -269,7 +269,7 @@ auto FrameLayerInfoStdpHevc = R"([
 	{"frameId": 242, "dts": 8000000, "layer": 0, "discardable": true},
 	{"frameId": 243, "dts": 8033333, "layer": 1, "discardable": false},
 	{"frameId": 244, "dts": 8066666, "layer": 0, "discardable": true},
-	{"frameId": 245, "dts": 8100000, "layer": 1, "discardable": false},
+	{"frameId": 245, "dts": 8100000, "layer": 0, "discardable": true},
 	{"frameId": 246, "dts": 8133333, "layer": 2, "discardable": false},
 	{"frameId": 247, "dts": 8166666, "layer": 1, "discardable": false},
 	{"frameId": 248, "dts": 8200000, "layer": 0, "discardable": true},
