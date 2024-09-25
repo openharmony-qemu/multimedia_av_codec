@@ -144,7 +144,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVALID_TEST_0102, TestSize.L
 
 /**
  * @tc.name: ENCODE_KEY_WIDTH_INVALID_TEST_0103
- * @tc.desc: codec video configure width out of range3
+ * @tc.desc: codec video configure width out of range
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVALID_TEST_0103, TestSize.Level3)
