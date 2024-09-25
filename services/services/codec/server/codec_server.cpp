@@ -1349,16 +1349,16 @@ int32_t CodecServer::ReleasePostProcessing()
 int32_t CodecServer::ReleaseOutputBufferOfPostProcessing(uint32_t index, bool render)
 {
     CHECK_AND_RETURN_RET_LOG(postProcessing_, AVCS_ERR_UNKNOWN, "Post processing is null");
+    if (index == std::numeric_limits<uint32_t>::max()) {
+        AVCODEC_LOGD("EOS is got");
+        return AVCS_ERR_OK;
+    }
     std::shared_ptr<DecodedBufferInfo> info{nullptr};
     CHECK_AND_RETURN_RET_LOG(postProcessingOutputBufferInfoQueue_, AVCS_ERR_UNKNOWN, "Queue is null");
     auto ret = postProcessingOutputBufferInfoQueue_->PopWait(info);
     CHECK_AND_RETURN_RET_LOG(ret == QueueResult::OK, AVCS_ERR_UNKNOWN,
         "Failed to get data, %{public}s", QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
     CHECK_AND_RETURN_RET_LOG(info && info->buffer, AVCS_ERR_UNKNOWN, "Data is null");
-    if (info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
-        AVCODEC_LOGD("EOS is got");
-        return AVCS_ERR_OK;
-    }
     return postProcessing_->ReleaseOutputBuffer(index, render);
 }
 
@@ -1412,31 +1412,6 @@ void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_
         QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
     videoCb_->OnOutputBufferAvailable(index, info->buffer);
     processedFrameCount_++;
-
-    auto decoderIsEOS = decoderIsEOS_.load();
-    auto decodedFrameCount = decodedFrameCount_.load();
-    auto needEOS = processedFrameCount_.load() == (decodedFrameCount - 1);
-    AVCODEC_LOGD("Processed frame count = %{public}" PRIu64 "decoded frame count = %{public}" PRIu64
-        ", decoder eos = %{public}u, need eos = %{public}u", processedFrameCount_.load(), decodedFrameCount,
-        decoderIsEOS ? 1 : 0, needEOS ? 1 : 0);
-    if (!decoderIsEOS || !needEOS) {
-        return;
-    }
-
-    ret = postProcessingInputBufferInfoQueue_->PopWait(info);
-    CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Get data failed, %{public}s",
-        QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-    CHECK_AND_RETURN_LOG(info && info->buffer, "Invalid data");
-    CHECK_AND_RETURN_LOG (info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS, "The cache info is not EOS frame");
-    AVCODEC_LOGD("EOS flag = %{public}u", info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS ? 1 : 0);
-    info->index = std::numeric_limits<uint32_t>::max();
-    ret = postProcessingOutputBufferInfoQueue_->PushWait(info);
-    CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Push data failed, %{public}s",
-        QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-    videoCb_->OnOutputBufferAvailable(info->index, info->buffer);
-    processedFrameCount_++;
-    AVCODEC_LOGD("EOS frame. Processed frame count = %{public}" PRIu64 "decoded frame count = %{public}" PRIu64,
-        processedFrameCount_.load(), decodedFrameCount);
 }
 
 void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
@@ -1496,22 +1471,44 @@ int32_t CodecServer::StartPostProcessingTask()
 void CodecServer::PostProcessingTask()
 {
     CHECK_AND_RETURN_LOG(decodedBufferInfoQueue_ && postProcessingInputBufferInfoQueue_, "Queue is null");
-    std::shared_ptr<DecodedBufferInfo> info{nullptr};
-    auto ret = decodedBufferInfoQueue_->PopWait(info);
-    CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Get data failed, %{public}s",
-        QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-    CHECK_AND_RETURN_LOG(info && info->buffer, "Invalid data");
-    ret = postProcessingInputBufferInfoQueue_->PushWait(info);
-    CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Push data failed, %{public}s",
-        QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-    decodedFrameCount_++;
-    AVCODEC_LOGD("Decoded frame count = %{public}" PRIu64, decodedFrameCount_.load());
-    if (info && info->buffer && info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
-        AVCODEC_LOGI("index = %{public}u, EOS flag", info->index);
-        decoderIsEOS_.store(true);
-        return;
+    if (decoderIsEOS_.load() == false) {
+        std::shared_ptr<DecodedBufferInfo> info{nullptr};
+        auto ret = decodedBufferInfoQueue_->PopWait(info);
+        CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Get data failed, %{public}s",
+            QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
+        CHECK_AND_RETURN_LOG(info && info->buffer, "Invalid data");
+        ret = postProcessingInputBufferInfoQueue_->PushWait(info);
+        CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Push data failed, %{public}s",
+            QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
+        decodedFrameCount_++;
+        AVCODEC_LOGD("Decoded frame count = %{public}" PRIu64, decodedFrameCount_.load());
+        if (info && info->buffer && info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+            AVCODEC_LOGI("index = %{public}u, EOS flag", info->index);
+            decoderIsEOS_.store(true);
+        } else {
+            (void)ReleaseOutputBufferOfCodec(info->index, true);
+            return;
+        }
     }
-    (void)ReleaseOutputBufferOfCodec(info->index, true);
+
+    if (decodedFrameCount_.load() == processedFrameCount_.load() + 1) {
+        std::shared_ptr<DecodedBufferInfo> eosInfo{nullptr};
+        auto eosRet = postProcessingInputBufferInfoQueue_->PopWait(eosInfo);
+        CHECK_AND_RETURN_LOG(eosRet == QueueResult::OK, "Get data failed, %{public}s",
+            QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(eosRet)]);
+        CHECK_AND_RETURN_LOG(eosInfo && eosInfo->buffer, "Invalid data");
+        CHECK_AND_RETURN_LOG(eosInfo->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS, "The cache info is not EOS frame");
+        AVCODEC_LOGD("EOS flag got, frame count = %{public}" PRIu64, decodedFrameCount_.load());
+        processedFrameCount_++;
+        std::lock_guard<std::shared_mutex> lock(cbMutex_);
+        if (videoCb_ == nullptr) {
+            AVCODEC_LOGD("Missing video callback");
+        } else {
+            videoCb_->OnOutputBufferAvailable(std::numeric_limits<uint32_t>::max(), eosInfo->buffer);
+        }
+    } else {
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
 }
 
 void CodecServer::DeactivatePostProcessingQueue()
