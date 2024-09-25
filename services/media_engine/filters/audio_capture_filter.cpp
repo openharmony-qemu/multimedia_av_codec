@@ -21,6 +21,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SCREENCAPTURE, "AudioCaptureFilter" };
+static constexpr uint8_t LOG_LIMIT_HUNDRED = 100;
 }
 
 namespace OHOS {
@@ -336,7 +337,7 @@ void AudioCaptureFilter::ReadLoop()
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
     if (ret != Status::OK) {
-        MEDIA_LOG_E("RequestBuffer fail");
+        MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioCaptureFilter RequestBuffer fail");
         return;
     }
     ret = audioCaptureModule_->Read(buffer, bufferSize);
@@ -346,7 +347,7 @@ void AudioCaptureFilter::ReadLoop()
         return;
     }
     if (ret != Status::OK) {
-        MEDIA_LOG_E("RequestBuffer fail");
+        MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioCaptureFilter RequestBuffer fail");
         outputBufferQueue_->PushBuffer(buffer, false);
         return;
     }
