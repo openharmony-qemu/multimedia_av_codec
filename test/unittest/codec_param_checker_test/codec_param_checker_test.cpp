@@ -116,11 +116,11 @@ void SetFormatBasicParam(bool isDecoder)
 }
 
 /**
- * @tc.name: ENCODE_KEY_WIDTH_INVAILD_TEST_0101
+ * @tc.name: ENCODE_KEY_WIDTH_INVALID_TEST_0101
  * @tc.desc: codec video configure not exsit width
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVAILD_TEST_0101, TestSize.Level3)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVALID_TEST_0101, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
@@ -143,11 +143,11 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVALID_TEST_0102, TestSize.L
 }
 
 /**
- * @tc.name: ENCODE_KEY_WIDTH_INVAILD_TEST_0103
- * @tc.desc: codec video configure width out of range
+ * @tc.name: ENCODE_KEY_WIDTH_INVALID_TEST_0103
+ * @tc.desc: codec video configure width out of range3
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVAILD_TEST_0103, TestSize.Level3)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVALID_TEST_0103, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));

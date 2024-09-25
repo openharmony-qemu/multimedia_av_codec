@@ -36,6 +36,7 @@ using namespace OHOS::Media;
 
 namespace {
 constexpr int32_t DEFAULT_LTR_COUNT = 4;
+constexpr int32_t DEFAULT_INVALID_LTR_COUNT = 1000;
 constexpr int32_t DEFAULT_LTR_INTERVAL = 4;
 class TEST_SUIT : public testing::TestWithParam<int32_t> {
 public:
@@ -687,6 +688,23 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Feature_Long_Term_Reference_002, TestSize.Level
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_Feature_Long_Term_Reference_003
+ * @tc.desc: ltr frame count is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_Feature_Long_Term_Reference_003, TestSize.Level1)
+{
+    if (!GetTemporalScalabilityCapability(GetParam(), false)) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, DEFAULT_INVALID_LTR_COUNT);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
 }
 } // namespace
 
