@@ -1482,7 +1482,7 @@ void CodecServer::PostProcessingTask()
             QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
         decodedFrameCount_++;
         AVCODEC_LOGD("Decoded frame count = %{public}" PRIu64, decodedFrameCount_.load());
-        if (info && info->buffer && info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        if (info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
             AVCODEC_LOGI("index = %{public}u, EOS flag", info->index);
             decoderIsEOS_.store(true);
         } else {
@@ -1498,6 +1498,12 @@ void CodecServer::PostProcessingTask()
             QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(eosRet)]);
         CHECK_AND_RETURN_LOG(eosInfo && eosInfo->buffer, "Invalid data");
         CHECK_AND_RETURN_LOG(eosInfo->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS, "The cache info is not EOS frame");
+        if (eosInfo->buffer->flag_ != AVCODEC_BUFFER_FLAG_EOS) {
+            if (videoCb_) {
+                videoCb_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
+            }
+            return;
+        }
         AVCODEC_LOGD("EOS flag got, frame count = %{public}" PRIu64, decodedFrameCount_.load());
         processedFrameCount_++;
         std::lock_guard<std::shared_mutex> lock(cbMutex_);
@@ -1507,7 +1513,7 @@ void CodecServer::PostProcessingTask()
             videoCb_->OnOutputBufferAvailable(std::numeric_limits<uint32_t>::max(), eosInfo->buffer);
         }
     } else {
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        std::this_thread::sleep_for(std::chrono::milliseconds(20)); // 20: sleep for 20ms
     }
 }
 
