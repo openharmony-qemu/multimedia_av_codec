@@ -415,6 +415,8 @@ int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
         maxMediaProgress = currentAnchorMediaTime_ + lastAudioBufferDuration_;
     } else if (currentSyncerPriority_ == IMediaSynchronizer::VIDEO_SINK) {
         maxMediaProgress = lastVideoBufferPts_;
+    } else {
+        maxMediaProgress = currentAnchorMediaTime_;
     }
     if (newMediaProgressTime > maxMediaProgress) {
         ReportLagEvent((newMediaProgressTime - maxMediaProgress) / US_TO_MS);
