@@ -1529,6 +1529,15 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
 
 Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
 {
+#ifdef BUILD_ENG_VERSION
+    if (pkt == nullptr) {
+        MEDIA_LOG_D("Dump failed due to pkt is nullptr.");
+    } else {
+        DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
+            avpacketIndex_++, pkt->pts, pkt->pos};
+        Dump(dumpParam);
+    }
+#endif
     auto trackId = pkt->stream_index;
     Status ret = Status::OK;
     if (NeedCombineFrame(trackId) && !GetNextFrame(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
@@ -1545,15 +1554,6 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
             ret = CheckCacheDataLimit(static_cast<uint32_t>(trackId));
         }
     }
-#ifdef BUILD_ENG_VERSION
-    if (pkt == nullptr) {
-        MEDIA_LOG_D("Dump failed due to pkt is nullptr.");
-    } else {
-        DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
-            avpacketIndex_++, pkt->pts, pkt->pos};
-        Dump(dumpParam);
-    }
-#endif
     return ret;
 }
 
@@ -1576,11 +1576,6 @@ Status FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
             av_packet_unref(pkt);
             break;
         }
-#ifdef BUILD_ENG_VERSION
-        DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
-            avpacketIndex_++, pkt->pts, pkt->pos};
-        Dump(dumpParam);
-#endif
         cacheQueue_.AddTrackQueue(pkt->stream_index);
         ret = AddPacketToCacheQueue(pkt);
         if (ret != Status::OK) {
