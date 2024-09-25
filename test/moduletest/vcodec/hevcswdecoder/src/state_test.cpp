@@ -879,18 +879,20 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_4200, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4300, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -900,18 +902,20 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4300, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4400, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -921,18 +925,20 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4400, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4500, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -942,16 +948,18 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4500, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4600, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -961,18 +969,20 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4600, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4700, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -982,18 +992,20 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4700, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4800, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1003,18 +1015,20 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4800, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4900, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1024,20 +1038,22 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_4900, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5000, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
 }
 
 /**
@@ -1047,18 +1063,20 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5000, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5100, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1068,18 +1086,20 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5100, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5200, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1089,22 +1109,24 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5200, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5300, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    }
 }
 
 /**
@@ -1114,15 +1136,17 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5300, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5400, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1132,15 +1156,17 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5400, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5500, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1150,15 +1176,17 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5500, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5600, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1168,15 +1196,17 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5600, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5700, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1186,17 +1216,19 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5700, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5800, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1206,17 +1238,19 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5800, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5900, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1226,17 +1260,19 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5900, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6000, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->state_EOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->state_EOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1246,17 +1282,19 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6000, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6100, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1266,17 +1304,19 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6100, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6200, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1286,21 +1326,23 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6200, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6300, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1310,20 +1352,22 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6300, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6400, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    cout << "set callback" << endl;
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        cout << "set callback" << endl;
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1333,17 +1377,19 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6400, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6500, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1353,17 +1399,19 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6500, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6600, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1373,19 +1421,21 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6600, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6700, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1395,17 +1445,19 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6700, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6800, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1415,17 +1467,19 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6800, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6900, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1435,23 +1489,25 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_6900, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7000, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1461,15 +1517,17 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7000, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7100, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1479,15 +1537,17 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7100, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7200, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1497,21 +1557,23 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7200, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7300, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1521,17 +1583,19 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7300, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7400, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1541,13 +1605,15 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7400, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7500, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1557,11 +1623,13 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7500, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7600, TestSize.Level2)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1571,14 +1639,16 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7600, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7700, TestSize.Level1)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->inputCallbackFlush = true;
-    ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->inputCallbackFlush = true;
+        ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1588,14 +1658,16 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7700, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7800, TestSize.Level1)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->inputCallbackStop = true;
-    ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->inputCallbackStop = true;
+        ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+    }
 }
 
 /**
@@ -1605,14 +1677,16 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7800, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7900, TestSize.Level1)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->outputCallbackFlush = true;
-    ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->outputCallbackFlush = true;
+        ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+    }
 }
 
 /**
@@ -1622,14 +1696,16 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_7900, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_8000, TestSize.Level1)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->outputCallbackStop = true;
-    ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->outputCallbackStop = true;
+        ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+    }
 }
 
 /**
@@ -1639,14 +1715,16 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_8000, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_8100, TestSize.Level1)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->inputCallbackFlush = true;
-    ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->inputCallbackFlush = true;
+        ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -1656,14 +1734,16 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_8100, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_8200, TestSize.Level1)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->inputCallbackStop = true;
-    ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->inputCallbackStop = true;
+        ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+    }
 }
 
 /**
@@ -1673,14 +1753,16 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_8200, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_8300, TestSize.Level1)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->outputCallbackFlush = true;
-    ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->outputCallbackFlush = true;
+        ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+    }
 }
 
 /**
@@ -1690,13 +1772,15 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_8300, TestSize.Level1)
  */
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_8400, TestSize.Level1)
 {
-    vDecSample->SF_OUTPUT = true;
-    int32_t ret = vDecSample->DecodeSetSurface();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->outputCallbackStop = true;
-    ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->outputCallbackStop = true;
+        ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+    }
 }
 } // namespace
