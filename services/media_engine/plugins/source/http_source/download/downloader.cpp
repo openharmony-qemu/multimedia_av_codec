@@ -30,7 +30,7 @@ namespace HttpPlugin {
 namespace {
 constexpr int PER_REQUEST_SIZE = 48 * 1024 * 10;
 constexpr unsigned int SLEEP_TIME = 5;    // Sleep 5ms
-constexpr size_t RETRY_TIMES = 200;  // Retry 200 times
+constexpr size_t RETRY_TIMES = 6000;  // Retry 6000 times
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
 constexpr long LIVE_CONTENT_LENGTH = 2147483646;
 constexpr int32_t DOWNLOAD_LOG_FEQUENCE = 10;
@@ -345,6 +345,7 @@ void Downloader::Stop(bool isAsync)
         requestQue_->SetActive(false);
     }
     if (currentRequest_ != nullptr) {
+        currentRequest_->isInterruptNeeded_ = true;
         currentRequest_->Close();
     }
     if (client_ != nullptr) {
