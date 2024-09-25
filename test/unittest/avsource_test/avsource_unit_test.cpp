@@ -2054,35 +2054,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_4000, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_ValidateMimeType_1000
- * @tc.desc: validate MimeType when av_codec Type is mulaw
- * @tc.type: FUNC
- */
-HWTEST_F(AVSourceUnitTest, AVSource_ValidateMimeType_1000, TestSize.Level1)
-{
-    fd_ = OpenFile(g_wavPath2);
-    size_ = GetFileSize(g_wavPath2);
-    printf("----%s----\n", g_wavPath2.c_str());
-    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
-    ASSERT_EQ(formatVal_.codecMime, "audio/g711mu");
-    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.channelLayout, 3);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
-    ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 705600);
-}
-
-/**
  * @tc.name: AVSource_GetFormat_1601
  * @tc.desc: get format when the file is mp4 vvc
  * @tc.type: FUNC
@@ -2128,6 +2099,35 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1601, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     ASSERT_EQ(formatVal_.width, 640);
     ASSERT_EQ(formatVal_.height, 360);
+}
+
+/**
+ * @tc.name: AVSource_ValidateMimeType_1000
+ * @tc.desc: validate MimeType when av_codec Type is mulaw
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_ValidateMimeType_1000, TestSize.Level1)
+{
+    fd_ = OpenFile(g_wavPath2);
+    size_ = GetFileSize(g_wavPath2);
+    printf("----%s----\n", g_wavPath2.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_EQ(formatVal_.codecMime, "audio/g711mu");
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.bitRate, 705600);
 }
 
 /**

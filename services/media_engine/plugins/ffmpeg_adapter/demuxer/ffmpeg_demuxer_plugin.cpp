@@ -723,8 +723,10 @@ void FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
 void FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
 {
     size_t cencInfoSize = 0;
-    uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
-    streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo, cencInfoSize, false);
+    uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO,
+        &cencInfoSize);
+    streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo,
+        static_cast<size_t>(cencInfoSize), false);
     if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
         streamParser_->IsSyncFrame(pkt.data, pkt.size)) {
         pkt.flags = static_cast<int32_t>(static_cast<uint32_t>(pkt.flags) | static_cast<uint32_t>(AV_PKT_FLAG_KEY));
@@ -1433,8 +1435,8 @@ void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int
     std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
     MEDIA_LOG_D("ParseDrmInfo.");
-    int32_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
-    for (int32_t index = 0; index < infoCount; index++) {
+    uint32_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
+    for (uint32_t index = 0; index < infoCount; index++) {
         std::stringstream ssConverter;
         std::string uuid;
         for (uint32_t i = 0; i < metaDrmInfo[index].uuidLen; i++) {
