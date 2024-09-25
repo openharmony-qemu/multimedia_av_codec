@@ -949,7 +949,7 @@ void Downloader::SetInterruptState(bool isInterruptNeeded)
 
 void Downloader::NotifyLoopPause()
 {
-    FALSE_RETURN(!(loopStatus_ == LoopStatus::PAUSE || isInterruptNeeded_));
+    FALSE_RETURN(loopStatus_ == LoopStatus::PAUSE || isInterruptNeeded_);
     AutoLock lk(loopPauseMutex_);
     if (loopStatus_ == LoopStatus::PAUSE || isInterruptNeeded_) {
         MEDIA_LOG_I("Downloader NotifyLoopPause");
