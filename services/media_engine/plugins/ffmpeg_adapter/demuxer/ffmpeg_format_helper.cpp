@@ -43,7 +43,7 @@ extern "C" {
 #define TERMINAL_PROVIDE_ORIENTED_CODE (static_cast<uint16_t>(5))
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegFormatHelper" };
 }
 
 namespace OHOS {
@@ -87,8 +87,8 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
-    {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
+    {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
     {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
     {AV_CODEC_ID_FFMETADATA, MimeType::TIMED_METADATA}
@@ -789,7 +789,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         parseFromMoov = true;
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_D("Parse failed");
+        MEDIA_LOG_D("Parse failed.");
         return;
     }
     if (parseFromMoov) {
