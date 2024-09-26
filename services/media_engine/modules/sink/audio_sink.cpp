@@ -533,9 +533,7 @@ bool AudioSink::UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBu
     uint64_t latency = 0;
     FALSE_LOG_MSG(plugin_->GetLatency(latency) == Status::OK, "failed to get latency");
     underrunDetector_.DetectAudioUnderrun(nowCt, latency);
-    Pipeline::IMediaSyncCenter::IMediaTime iMediaTime;
-    iMediaTime.absMediaTime = buffer->pts_;
-    iMediaTime.maxMediaTime = buffer->duration_;
+    Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_, buffer->duration_};
     syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_,
         buffer->pts_ - firstPts_, iMediaTime, this);
     MEDIA_LOG_I("AudioSink fixDelay_: " PUBLIC_LOG_D64
