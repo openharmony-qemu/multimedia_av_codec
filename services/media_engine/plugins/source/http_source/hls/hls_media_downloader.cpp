@@ -69,32 +69,35 @@ constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
 //   fragment --- one item in play list, download media data according to the fragment address.
-HlsMediaDownloader::HlsMediaDownloader() noexcept
+HlsMediaDownloader::HlsMediaDownloader(const std::map<std::string, std::string>& httpHeader) noexcept;
 {
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
     isBuffering_ = true;
     totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
+    httpHeader_ = httpHeader;
     MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
     HlsInit();
 }
 
-HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
+HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, const std::map<std::string, std::string>& httpHeader) noexcept;
 {
     expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
     userDefinedBufferDuration_ = true;
     totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
+    httpHeader_ = httpHeader;
     MEDIA_LOG_I("HLS user define buffer duration.");
     MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
     HlsInit();
 }
 
-HlsMediaDownloader::HlsMediaDownloader(std::string mimeType)
+HlsMediaDownloader::HlsMediaDownloader(std::string mimeType, const std::map<std::string, std::string>& httpHeader)
 {
     mimeType_ = mimeType;
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
     totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
+    httpHeader_ = httpHeader;
     MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
     HlsInit();
 }
@@ -106,7 +109,7 @@ void HlsMediaDownloader::HlsInit()
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
-    playlistDownloader_ = std::make_shared<HlsPlayListDownloader>();
+    playlistDownloader_ = std::make_shared<HlsPlayListDownloader>(httpHeader_);
     playlistDownloader_->SetPlayListCallback(this);
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     waterLineAbove_ = PLAY_WATER_LINE;
@@ -518,7 +521,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     isNearSeek_ = true;
     seekTime_ = static_cast<uint64_t>(seekTime);
     PrepareToSeek();
-    if (seekTime_ < playlistDownloader_->GetDuration()) {
+    if (seekTime_ < static_cast<uint64_t>(playlistDownloader_->GetDuration())) {
         SeekToTs(seekTime, mode);
     } else {
         readTsIndex_ = backPlayList_.size() > 0 ? backPlayList_.size() - 1 : 0; // 0

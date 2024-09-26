@@ -38,7 +38,7 @@ public:
         }
         isTiming_ = true;
         steadyClock_.Reset();
-        startTime_ = steadyClock_.ElapsedMilliseconds();
+        startTime_ = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     }
     void StopClock()
     {
@@ -48,7 +48,7 @@ public:
         CaculateWriteBitrate();
         writeBytes_ = 0;
         isTiming_ = false;
-        stopTime_ = steadyClock_.ElapsedMilliseconds();
+        stopTime_ = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     }
     void ResetClock()
     {
@@ -56,7 +56,7 @@ public:
         CaculateWriteBitrate();
         writeBytes_ = 0;
         steadyClock_.Reset();
-        startTime_ = steadyClock_.ElapsedMilliseconds();
+        startTime_ = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     }
     uint64_t GetWriteTime()
     {

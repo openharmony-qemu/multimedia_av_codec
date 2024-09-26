@@ -55,15 +55,18 @@ void PlayListDownloader::PlayListDownloaderInit()
     });
 }
 
-PlayListDownloader::PlayListDownloader()
+PlayListDownloader::PlayListDownloader(const std::map<std::string, std::string>& httpHeader)
 {
     downloader_ = std::make_shared<Downloader>("hlsPlayList");
+    httpHeader_ = httpHeader;
     PlayListDownloaderInit();
 }
 
-PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader)
+PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader,
+    const std::map<std::string, std::string>& httpHeader)
 {
     downloader_ = downloader;
+    httpHeader_ = httpHeader;
     PlayListDownloaderInit();
 }
 

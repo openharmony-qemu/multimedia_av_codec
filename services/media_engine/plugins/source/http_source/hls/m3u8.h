@@ -115,6 +115,7 @@ struct M3U8 {
     std::atomic<bool> isPlayTypeFound_ {false};
     bool discontinuity { false };
     std::vector<size_t> segmentOffsets_;
+    std::map<std::string, std::string> httpHeader_ {};
 };
 
 struct M3U8Media {
@@ -144,7 +145,8 @@ struct M3U8VariantStream {
 };
 
 struct M3U8MasterPlaylist {
-    M3U8MasterPlaylist(const std::string& playList, const std::string& uri);
+    M3U8MasterPlaylist(const std::string& playList, const std::string& uri,
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>());
     void UpdateMediaPlaylist();
     void UpdateMasterPlaylist();
     void DownloadSessionKey(std::shared_ptr<Tag>& tag);
@@ -163,6 +165,7 @@ struct M3U8MasterPlaylist {
     std::atomic<bool> isParseSuccess_ {true};
     std::vector<size_t> segmentOffsets_;
     bool discontinuity { false };
+    std::map<std::string, std::string> httpHeader_ {};
 };
 }
 }

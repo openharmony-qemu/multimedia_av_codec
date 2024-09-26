@@ -160,8 +160,9 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         url_ = location;
     }
     if (!master_) {
-        master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_);
+        master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, httpHeader_);
         currentVariant_ = master_->defaultVariant_;
+        currentVariant_->m3u8_->httpHeader_ = httpHeader_;
         if (!master_->isSimple_) {
             UpdateManifest();
         } else {
@@ -171,6 +172,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         }
     } else {
         if (master_->isSimple_) {
+            currentVariant_->m3u8_->httpHeader_ = httpHeader_;
             bool ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
             master_->isParseSuccess_ = ret;
             if (ret) {
@@ -179,6 +181,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
             }
         } else {
             currentVariant_ = master_->defaultVariant_;
+            currentVariant_->m3u8_->httpHeader_ = httpHeader_;
             bool ret = currentVariant_->m3u8_->Update(playList_, true);
             if (ret) {
                 UpdateMasterInfo(isPreParse);
@@ -348,7 +351,7 @@ void HlsPlayListDownloader::SetMimeType(const std::string& mimeType)
 
 size_t HlsPlayListDownloader::GetSegmentOffset(int tsIndex)
 {
-    if (master_ && master_->segmentOffsets_.size() > tsIndex) {
+    if (master_ && master_->segmentOffsets_.size() > static_cast<size_t>(tsIndex)) {
         return master_->segmentOffsets_[tsIndex];
     }
     return 0;

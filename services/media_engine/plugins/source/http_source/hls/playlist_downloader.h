@@ -38,8 +38,10 @@ struct PlayListChangeCallback {
 };
 class PlayListDownloader {
 public:
-    PlayListDownloader();
-    explicit PlayListDownloader(std::shared_ptr<Downloader> downloader);
+    explicit PlayListDownloader(
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
+    explicit PlayListDownloader(std::shared_ptr<Downloader> downloader,
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
     virtual ~PlayListDownloader() = default;
 
     virtual void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
