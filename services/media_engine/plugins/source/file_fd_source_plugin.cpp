@@ -114,7 +114,7 @@ FileFdSourcePlugin::~FileFdSourcePlugin()
 {
     MEDIA_LOG_I("~FileFdSourcePlugin in.");
     steadyClock_.Reset();
-    isInterrupted_ = true;
+    SetInterruptState(true);
     MEDIA_LOG_I("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
     FALSE_RETURN_MSG(downloadTask_ != nullptr, "~FileFdSourcePlugin out.");
     downloadTask_->Stop();
@@ -607,6 +607,11 @@ void FileFdSourcePlugin::CheckFileType()
     MEDIA_LOG_I("SetSource ioctl loc, ret " PUBLIC_LOG_D32 ", loc " PUBLIC_LOG_D32 ", errno"
         PUBLIC_LOG_D32, ioResult, loc, errno);
 
+    if (!isEnableFdCache_) {
+        isCloudFile_ = false;
+        return;
+    }
+
     if (ioResult == 0) {
         if (loc == IOCTL_CLOUD) {
             isCloudFile_ = true;
@@ -714,6 +719,11 @@ bool FileFdSourcePlugin::IsValidTime(int64_t curTime, int64_t lastTime)
 {
     return lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
         curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER;
+}
+
+void FileFdSourcePlugin::SetEnableOnlineFdCache(bool isEnableFdCache)
+{
+    isEnableFdCache_ = isEnableFdCache;
 }
 } // namespace FileFdSource
 } // namespace Plugin
