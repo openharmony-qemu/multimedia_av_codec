@@ -162,7 +162,9 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
     if (!master_) {
         master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, httpHeader_);
         currentVariant_ = master_->defaultVariant_;
-        currentVariant_->m3u8_->httpHeader_ = httpHeader_;
+        if (currentVariant_->m3u8_) {
+                currentVariant_->m3u8_->httpHeader_ = httpHeader_;
+        }
         if (!master_->isSimple_) {
             UpdateManifest();
         } else {
