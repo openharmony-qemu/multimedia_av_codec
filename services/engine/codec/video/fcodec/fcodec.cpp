@@ -1368,8 +1368,15 @@ int32_t FCodec::UnRegisterListenerToSurface(const sptr<Surface> &surface)
 GSError FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
 {
     uint64_t surfaceId = surface->GetUniqueId();
-    GSError err = surface->RegisterReleaseListener(
-        [this, surfaceId](sptr<SurfaceBuffer> &) { return BufferReleasedByConsumer(surfaceId); });
+    wptr<FCodec> wp = this;
+    GSError err = surface->RegisterReleaseListener([wp, surfaceId](sptr<SurfaceBuffer> &) {
+        sptr<FCodec> codec = wp.promote();
+        if (!codec) {
+            AVCODEC_LOGD("decoder is gone");
+            return GSERROR_OK;
+        }
+        return codec->BufferReleasedByConsumer(surfaceId);
+    });
     return err;
 }
 
