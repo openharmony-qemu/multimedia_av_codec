@@ -629,6 +629,30 @@ void VideoEncSample::PrepareInner()
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
+void VideoEncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount,
+                                   std::shared_ptr<AVBufferMock> buffer)
+{
+    if (!ltrParam.enableUseLtr) {
+        return;
+    }
+    int32_t interval = ltrParam.ltrInterval;
+    static int32_t useLtrIndex = 0;
+    if (frameInputCount % interval == 0) {
+        format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, 1);
+    }
+    if (interval > 0 && (frameInputCount % interval == 0)) {
+        useLtrIndex = frameInputCount;
+    }
+    if (frameInputCount > useLtrIndex) {
+        format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex);
+    } else if (frameInputCount == useLtrIndex && frameInputCount > 0) {
+        format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, frameInputCount - interval);
+    }
+    if (buffer) {
+        buffer->SetParameter(format);
+    }
+}
+
 void VideoEncSample::InputParamLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
@@ -657,6 +681,9 @@ void VideoEncSample::InputParamLoopFunc()
         if (isDiscardFrame_ && (frameInputCount_ % 2) == 0) { // 2: encode half frames
             format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
         }
+
+        InputLtrParam(format, frameInputCount_, nullptr);
+
         UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
         int32_t ret = PushInputParameter(index);
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
@@ -827,8 +854,8 @@ void VideoEncSample::OutputLoopFuncExt()
 
 void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer)
 {
+    std::shared_ptr<FormatMock> format = buffer->GetParameter();
     if (!(attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA) && !(attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
-        std::shared_ptr<FormatMock> format = buffer->GetParameter();
         int32_t qpAverage = 60;
         if (format->GetIntValue(Media::Tag::VIDEO_ENCODER_QP_AVERAGE, qpAverage)) {
             UNITTEST_INFO_LOG("qpAverage is:%d", qpAverage);
@@ -839,8 +866,18 @@ void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<A
                 UNITTEST_INFO_LOG("mse is:%lf", mse);
             }
         }
-        format->Destroy();
     }
+    if (ltrParam.enableUseLtr && (attr.flags == AVCODEC_BUFFER_FLAG_NONE)) {
+        int32_t isLtr = 0;
+        int32_t framePoc = 0;
+        if (format->GetIntValue(Media::Tag::VIDEO_PER_FRAME_IS_LTR, isLtr)) {
+            UNITTEST_INFO_LOG("isLtr is:%d", isLtr);
+        }
+        if (format->GetIntValue(Media::Tag::VIDEO_PER_FRAME_POC, framePoc)) {
+            UNITTEST_INFO_LOG("framePoc is:%d", framePoc);
+        }
+    }
+    format->Destroy();
 }
 
 int32_t VideoEncSample::OutputLoopInnerExt()
@@ -936,6 +973,7 @@ int32_t VideoEncSample::InputLoopInnerExt()
         for (int32_t i = 0; i < attr.size; i += stride) {
             (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
         }
+        InputLtrParam(format, frameInputCount_, buffer);
     }
 
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
