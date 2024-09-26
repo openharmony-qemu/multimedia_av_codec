@@ -1497,11 +1497,13 @@ void CodecServer::PostProcessingTask()
         CHECK_AND_RETURN_LOG(eosRet == QueueResult::OK, "Get data failed, %{public}s",
             QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(eosRet)]);
         CHECK_AND_RETURN_LOG(eosInfo && eosInfo->buffer, "Invalid data");
-        CHECK_AND_RETURN_LOG(eosInfo->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS, "The cache info is not EOS frame");
         if (eosInfo->buffer->flag_ != AVCODEC_BUFFER_FLAG_EOS) {
             if (videoCb_) {
+                std::lock_guard<std::shared_mutex> lock(cbMutex_);
                 videoCb_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
             }
+            AVCODEC_LOGE("The cache info is not EOS frame");
+            std::this_thread::sleep_for(std::chrono::seconds(1)); // 1: sleep for 1s
             return;
         }
         AVCODEC_LOGD("EOS flag got, frame count = %{public}" PRIu64, decodedFrameCount_.load());
@@ -1511,6 +1513,7 @@ void CodecServer::PostProcessingTask()
             AVCODEC_LOGD("Missing video callback");
         } else {
             videoCb_->OnOutputBufferAvailable(std::numeric_limits<uint32_t>::max(), eosInfo->buffer);
+            return;
         }
     } else {
         std::this_thread::sleep_for(std::chrono::milliseconds(20)); // 20: sleep for 20ms
