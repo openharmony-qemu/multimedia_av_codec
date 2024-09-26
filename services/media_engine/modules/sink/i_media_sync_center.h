@@ -51,6 +51,7 @@ struct IMediaSyncCenter {
      * @retval current frame Whether rendering is required
      */
     struct IMediaTime {
+        int64_t mediaTime;
         int64_t absMediaTime;
         int64_t maxMediaTime;
     } iMediaTime;
