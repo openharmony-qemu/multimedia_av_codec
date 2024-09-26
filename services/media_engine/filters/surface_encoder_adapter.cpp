@@ -27,7 +27,7 @@
 #include "common/log.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "SurfaceEncoderAdapter" };
 }
 
 constexpr uint32_t TIME_OUT_MS = 1000;

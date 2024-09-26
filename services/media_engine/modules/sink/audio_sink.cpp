@@ -20,7 +20,7 @@
 #include "calc_max_amplitude.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSink" };
 constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
 }
 
