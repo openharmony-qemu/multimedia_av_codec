@@ -162,7 +162,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
     if (!master_) {
         master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, httpHeader_);
         currentVariant_ = master_->defaultVariant_;
-        if (currentVariant_->m3u8_) {
+        if (currentVariant_ && currentVariant_->m3u8_) {
                 currentVariant_->m3u8_->httpHeader_ = httpHeader_;
         }
         if (!master_->isSimple_) {
@@ -174,21 +174,25 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         }
     } else {
         if (master_->isSimple_) {
-            currentVariant_->m3u8_->httpHeader_ = httpHeader_;
-            bool ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
-            master_->isParseSuccess_ = ret;
-            if (ret) {
-                UpdateMasterInfo(isPreParse);
-                NotifyListChange();
+            if (currentVariant_ && currentVariant_->m3u8_) {
+                currentVariant_->m3u8_->httpHeader_ = httpHeader_;
+                bool ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
+                master_->isParseSuccess_ = ret;
+                if (ret) {
+                    UpdateMasterInfo(isPreParse);
+                    NotifyListChange();
+                }
             }
         } else {
             currentVariant_ = master_->defaultVariant_;
-            currentVariant_->m3u8_->httpHeader_ = httpHeader_;
-            bool ret = currentVariant_->m3u8_->Update(playList_, true);
-            if (ret) {
-                UpdateMasterInfo(isPreParse);
-                master_->isSimple_ = true;
-                NotifyListChange();
+            if (currentVariant_ && currentVariant_->m3u8_) {
+                currentVariant_->m3u8_->httpHeader_ = httpHeader_;
+                bool ret = currentVariant_->m3u8_->Update(playList_, true);
+                if (ret) {
+                    UpdateMasterInfo(isPreParse);
+                    master_->isSimple_ = true;
+                    NotifyListChange();
+                }
             }
         }
     }
