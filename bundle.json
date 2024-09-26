@@ -47,7 +47,6 @@
           "bounds_checking_function",
           "c_utils",
           "drivers_interface_codec",
-          "drivers_interface_display",
           "graphic_2d",
           "graphic_surface",
           "hdf_core",
