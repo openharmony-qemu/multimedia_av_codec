@@ -27,10 +27,6 @@
 #include "type_converter.h"
 #include "surface_buffer.h"
 #include "buffer_extra_data_impl.h"  // foundation/graphic/graphic_surface/surface/include/
-#ifdef USE_VIDEO_PROCESSING_ENGINE
-#include <sys/stat.h>
-#include "v2_0/buffer_handle_meta_key_type.h"
-#endif
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
