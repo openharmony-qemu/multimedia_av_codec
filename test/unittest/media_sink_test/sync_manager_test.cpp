@@ -92,19 +92,19 @@ HWTEST_F(TestSyncManager, sync_manager_update_time_without_synchronizer, TestSiz
     // RemoveSynchronizer
     syncManager_->RemoveSynchronizer(&sync);
     // UpdateTimeAnchor
-    auto updateTimeStatus = syncManager_->UpdateTimeAnchor(-1, -1, -1, -1, -1, nullptr);
+    auto updateTimeStatus = syncManager_->UpdateTimeAnchor(-1, -1, -1, {-1, -1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, -1, -1, -1, -1, nullptr);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, -1, -1, {-1, -1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, -1, -1, -1, nullptr);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, -1, {-1, -1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, -1, -1, nullptr);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, {-1, -1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, 1, -1, nullptr);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, {1, -1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, 1, 1, nullptr);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, {1, 1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, 1, 1, &sync);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, {1, 1}, &sync);
     ASSERT_EQ(updateTimeStatus, true);
 }
 
@@ -114,19 +114,19 @@ HWTEST_F(TestSyncManager, sync_manager_life_func, TestSize.Level1)
     VideoSink sync;
     syncManager_->AddSynchronizer(&sync);
     // UpdateTimeAnchor
-    auto updateTimeStatus = syncManager_->UpdateTimeAnchor(-1, -1, -1, -1, -1, nullptr);
+    auto updateTimeStatus = syncManager_->UpdateTimeAnchor(-1, -1, -1, {-1, -1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, -1, -1, -1, -1, nullptr);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, -1, -1, {-1, -1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, -1, -1, -1, nullptr);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, -1, {-1, -1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, -1, -1, nullptr);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, {-1, -1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, 1, -1, nullptr);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, {1, -1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, 1, 1, nullptr);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, {1, 1}, nullptr);
     ASSERT_EQ(updateTimeStatus, true);
-    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, 1, 1, &sync);
+    updateTimeStatus = syncManager_->UpdateTimeAnchor(1, 1, 1, {1, 1}, &sync);
     ASSERT_EQ(updateTimeStatus, true);
 
     // GetMediaTimeNow

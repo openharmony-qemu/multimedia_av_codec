@@ -336,7 +336,7 @@ void MediaSyncManager::UpdateFirstPtsAfterSeek(int64_t mediaTime)
 }
 
 bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime,
-    int64_t mediaAbsTime, int64_t maxMediaTime, IMediaSynchronizer* supplier)
+    IMediaTime iMediaTime, IMediaSynchronizer* supplier)
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     bool render = true;
@@ -348,7 +348,7 @@ bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, in
     delayTime_ = delayTime;
     if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
         currentSyncerPriority_ = supplier->GetPriority();
-        SimpleUpdateTimeAnchor(clockTime, mediaTime, mediaAbsTime);
+        SimpleUpdateTimeAnchor(clockTime, mediaTime, iMediaTime.absMediaTime);
         MEDIA_LOG_D_SHORT("update time anchor to priority " PUBLIC_LOG_D32 ", mediaTime " PUBLIC_LOG_D64 ", clockTime "
         PUBLIC_LOG_D64, currentSyncerPriority_, currentAnchorMediaTime_, currentAnchorClockTime_);
         if (isSeeking_) {
