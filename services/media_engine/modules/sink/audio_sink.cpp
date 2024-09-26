@@ -620,7 +620,7 @@ bool AudioSink::OnNewAudioMediaTime(int64_t mediaTimeUs)
         nowUs = syncCenter->GetClockTimeNow();
     }
     int64_t pendingTimeUs = getPendingAudioPlayoutDurationUs(nowUs);
-    render = syncCenter->UpdateTimeAnchor(nowUs, pendingTimeUs, mediaTimeUs, mediaTimeUs, mediaTimeUs, this);
+    render = syncCenter->UpdateTimeAnchor(nowUs, pendingTimeUs, mediaTimeUs, {mediaTimeUs, mediaTimeUs}, this);
     return render;
 }
 
