@@ -27,7 +27,7 @@ public:
     Status Reset() override;
     void AddSynchronizer(Pipeline::IMediaSynchronizer* syncer) override;
     void RemoveSynchronizer(Pipeline::IMediaSynchronizer* syncer) override;
-    bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime, IMediaTime iMediaTime,
+    bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, IMediaTime iMediaTime,
         Pipeline::IMediaSynchronizer* supplier) override;
     int64_t GetMediaTimeNow() override;
     int64_t GetClockTimeNow() override;

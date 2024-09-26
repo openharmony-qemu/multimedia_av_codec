@@ -74,9 +74,8 @@ void VideoSink::UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
     }
     uint64_t latency = 0;
     (void)GetLatency(latency);
-    Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_, buffer->duration_};
-    syncCenter->UpdateTimeAnchor(nowCt + waitTime, latency, buffer->pts_ - firstPts_,
-        iMediaTime, this);
+    Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_};
+    syncCenter->UpdateTimeAnchor(nowCt + waitTime, latency, iMediaTime, this);
     needUpdateTimeAnchor_ = false;
 }
 

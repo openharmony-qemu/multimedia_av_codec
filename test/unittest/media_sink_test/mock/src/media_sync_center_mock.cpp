@@ -35,12 +35,11 @@ void MockMediaSyncCenter::RemoveSynchronizer(Pipeline::IMediaSynchronizer* synce
     (void)syncer;
 }
 
-bool MockMediaSyncCenter::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime,
-    IMediaTime iMediaTime, Pipeline::IMediaSynchronizer* supplier)
+bool MockMediaSyncCenter::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, IMediaTime iMediaTime,
+    Pipeline::IMediaSynchronizer* supplier)
 {
     (void)clockTime;
     (void)delayTime;
-    (void)mediaTime;
     (void)iMediaTime;
     (void)supplier;
     return returnBool_;

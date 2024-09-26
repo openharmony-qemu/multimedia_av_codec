@@ -55,7 +55,7 @@ struct IMediaSyncCenter {
         int64_t maxMediaTime;
     } iMediaTime;
     
-    virtual bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime, IMediaTime iMediaTime,
+    virtual bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, IMediaTime iMediaTime,
         IMediaSynchronizer* supplier);
 
     /**
