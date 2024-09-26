@@ -62,8 +62,8 @@ public:
      * @param supplier which report this time anchor
      * @retval current frame Whether rendering is required
      */
-    bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime, int64_t mediaAbsTime,
-        int64_t maxMediaTime, IMediaSynchronizer* supplier) override;
+    bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, IMediaTime iMediaTime,
+        IMediaSynchronizer* supplier) override;
 
     /**
      * get media time currently

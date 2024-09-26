@@ -335,12 +335,12 @@ void MediaSyncManager::UpdateFirstPtsAfterSeek(int64_t mediaTime)
     }
 }
 
-bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime,
-    int64_t mediaAbsTime, int64_t maxMediaTime, IMediaSynchronizer* supplier)
+bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, IMediaTime iMediaTime,
+    IMediaSynchronizer* supplier)
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     bool render = true;
-    if (clockTime == HST_TIME_NONE || mediaTime == HST_TIME_NONE
+    if (clockTime == HST_TIME_NONE || iMediaTime.mediaTime == HST_TIME_NONE
         || delayTime == HST_TIME_NONE || supplier == nullptr) {
         return render;
     }
@@ -348,13 +348,13 @@ bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, in
     delayTime_ = delayTime;
     if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
         currentSyncerPriority_ = supplier->GetPriority();
-        SimpleUpdateTimeAnchor(clockTime, mediaTime, mediaAbsTime);
+        SimpleUpdateTimeAnchor(clockTime, iMediaTime.mediaTime, iMediaTime.absMediaTime);
         MEDIA_LOG_D_SHORT("update time anchor to priority " PUBLIC_LOG_D32 ", mediaTime " PUBLIC_LOG_D64 ", clockTime "
         PUBLIC_LOG_D64, currentSyncerPriority_, currentAnchorMediaTime_, currentAnchorClockTime_);
         if (isSeeking_) {
             MEDIA_LOG_I_SHORT("leaving seeking_");
             isSeeking_ = false;
-            UpdateFirstPtsAfterSeek(mediaTime);
+            UpdateFirstPtsAfterSeek(iMediaTime.mediaTime);
             seekCond_.notify_all();
         }
     }
