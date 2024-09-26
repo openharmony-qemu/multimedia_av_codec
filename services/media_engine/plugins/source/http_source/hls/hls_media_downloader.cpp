@@ -69,7 +69,7 @@ constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
 //   fragment --- one item in play list, download media data according to the fragment address.
-HlsMediaDownloader::HlsMediaDownloader(const std::map<std::string, std::string>& httpHeader) noexcept;
+HlsMediaDownloader::HlsMediaDownloader(const std::map<std::string, std::string>& httpHeader) noexcept
 {
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
@@ -80,7 +80,8 @@ HlsMediaDownloader::HlsMediaDownloader(const std::map<std::string, std::string>&
     HlsInit();
 }
 
-HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, const std::map<std::string, std::string>& httpHeader) noexcept;
+HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration,
+    const std::map<std::string, std::string>& httpHeader) noexcept
 {
     expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
     userDefinedBufferDuration_ = true;
@@ -91,7 +92,8 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, const std::map<
     HlsInit();
 }
 
-HlsMediaDownloader::HlsMediaDownloader(std::string mimeType, const std::map<std::string, std::string>& httpHeader)
+HlsMediaDownloader::HlsMediaDownloader(std::string mimeType,
+    const std::map<std::string, std::string>& httpHeader) noexcept
 {
     mimeType_ = mimeType;
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();

@@ -55,7 +55,7 @@ void PlayListDownloader::PlayListDownloaderInit()
     });
 }
 
-PlayListDownloader::PlayListDownloader(const std::map<std::string, std::string>& httpHeader)
+PlayListDownloader::PlayListDownloader(const std::map<std::string, std::string>& httpHeader) noexcept
 {
     downloader_ = std::make_shared<Downloader>("hlsPlayList");
     httpHeader_ = httpHeader;
@@ -63,7 +63,7 @@ PlayListDownloader::PlayListDownloader(const std::map<std::string, std::string>&
 }
 
 PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader,
-    const std::map<std::string, std::string>& httpHeader)
+    const std::map<std::string, std::string>& httpHeader) noexcept
 {
     downloader_ = downloader;
     httpHeader_ = httpHeader;
