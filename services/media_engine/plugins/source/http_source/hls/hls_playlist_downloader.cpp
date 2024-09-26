@@ -351,7 +351,7 @@ void HlsPlayListDownloader::SetMimeType(const std::string& mimeType)
     mimeType_ = mimeType;
 }
 
-size_t HlsPlayListDownloader::GetSegmentOffset(int tsIndex)
+size_t HlsPlayListDownloader::GetSegmentOffset(uint32_t tsIndex)
 {
     if (master_ && master_->segmentOffsets_.size() > static_cast<size_t>(tsIndex)) {
         return master_->segmentOffsets_[tsIndex];

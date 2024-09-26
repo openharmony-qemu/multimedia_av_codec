@@ -76,7 +76,7 @@ public:
     std::map<std::string, std::string> GetHttpHeader();
     void SetAppUid(int32_t appUid);
     void SetCallback(Callback* cb);
-    virtual size_t GetSegmentOffset(int tsIndex)
+    virtual size_t GetSegmentOffset(uint32_t tsIndex)
     {
         return 0;
     }
