@@ -899,6 +899,79 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DoInitAfterLink_001, TestSize.Level1)
     ret = decoderSurfaceFilter_->DoInitAfterLink();
     EXPECT_NE(ret, Status::OK);
 }
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, GetLagInfo_001, TestSize.Level1)
+{
+    int32_t lagTimes = 0;
+    int32_t maxLagDuration = 0;
+    int32_t avgLagDuration = 0;
+    decoderSurfaceFilter_->videoDecoder_ = nullptr;
+    Status status = decoderSurfaceFilter_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+
+    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
+
+    Status statusOk = decoderSurfaceFilter_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+
+    EXPECT_EQ(statusOk, Status::OK);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, OnUpdated_001, TestSize.Level1)
+{
+    StreamType inType = StreamType::STREAMTYPE_RAW_VIDEO;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    std::shared_ptr<FilterLinkCallbackMock> filterLinkCallback = std::make_shared<FilterLinkCallbackMock>();
+
+    Status status = decoderSurfaceFilter_->OnUpdated(inType, meta, filterLinkCallback);
+
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, GetFilterType_001, TestSize.Level1)
+{
+    FilterType result = decoderSurfaceFilter_->GetFilterType();
+
+    EXPECT_EQ(FilterType::FILTERTYPE_VIDEODEC, result);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, OnLinked_001, TestSize.Level1)
+{
+    StreamType inType = StreamType::STREAMTYPE_RAW_VIDEO;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    std::shared_ptr<FilterLinkCallbackMock> callback = std::make_shared<FilterLinkCallbackMock>();
+
+    Status result = decoderSurfaceFilter_->OnLinked(inType, meta, callback);
+
+    EXPECT_EQ(result, Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(decoderSurfaceFilter_->meta_, meta);
+    EXPECT_EQ(decoderSurfaceFilter_->onLinkedResultCallback_, nullptr);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, LinkNext_001, TestSize.Level1)
+{
+    StreamType outType = StreamType::STREAMTYPE_RAW_VIDEO;
+    std::shared_ptr<TestFilter> nextFilter = std::make_shared<TestFilter>();
+
+    Status result = decoderSurfaceFilter_->LinkNext(nextFilter, outType);
+
+    EXPECT_EQ(result, Status::OK);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DoSetPlayRange_001, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    int64_t start = 100;
+    int64_t end = 200;
+
+    // 2. Call the function to be tested
+    Status status = decoderSurfaceFilter_->DoSetPlayRange(start, end);
+
+    // 3. Verify the result
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->playRangeStartTime_, start);
+    EXPECT_EQ(decoderSurfaceFilter_->playRangeEndTime_, end);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
