@@ -1356,6 +1356,11 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     formatContext_ = InitAVFormatContext(&ioContext_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN,
         "Set datasource failed due to can not init formatContext for source.");
+    if (ioContext_.retry) {
+        ioContext_.retry = false;
+        formatContext_ = nullptr;
+        return Status::ERROR_NOT_ENOUGH_DATA;
+    }
     InitParser();
 
     NotifyInitializationCompleted();
