@@ -222,7 +222,7 @@ void AudioDataSourceFilter::ReadLoop()
     }
     int64_t bufferSize = 0;
     if (audioDataSource_->GetSize(bufferSize) != 0) {
-        MEDIA_LOG_E("Get audioCaptureModule buffer size fail");
+        MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "Get audioCaptureModule buffer size fail");
         return;
     }
     MEDIA_LOG_D("AudioDataSourceFilter GetSize : " PUBLIC_LOG_D64, bufferSize);
@@ -239,7 +239,7 @@ void AudioDataSourceFilter::ReadLoop()
         return;
     }
     if (audioDataSource_->ReadAt(buffer, bufferSize) != 0) {
-        MEDIA_LOG_E("AudioDataSourceFilter ReadAt fail");
+        MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioDataSourceFilter ReadAt fail");
         outputBufferQueue_->PushBuffer(buffer, false);
         return;
     }
