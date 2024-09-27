@@ -634,7 +634,10 @@ bool AEncDemoAuto::RunCase(const uint8_t *data, size_t size)
         << " ms" << std::endl;
     DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
     DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
-    DEMO_CHECK_AND_RETURN_RET_LOG(Destroy(audioEnc_) == AV_ERR_OK, false, "Fatal: Destroy fail");
+    if (format != nullptr) {
+        OH_AVFormat_Destroy(format);
+        format = nullptr;
+    }
     sleep(1);
     return true;
 }
