@@ -394,10 +394,10 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         HLOGE("VRR format should contain height");
         return AVCS_ERR_INVALID_VAL;
     }
-    // 通知芯片组件 MV 信息需要上报
-    IsMvUploadParam param {};
-    InitOMXParamExt(param);
-    param.isMvUpload = vrrEnable;
+
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = OMX_TRUE;
     if (!SetParameter(OMX_IndexParamIsMvUpload, param)) {
         HLOGE("VRR SetIsMvUploadParam SetParameter failed");
         return AVCS_ERR_UNSUPPORT;
