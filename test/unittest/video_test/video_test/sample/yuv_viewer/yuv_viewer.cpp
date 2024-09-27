@@ -112,7 +112,7 @@ void YuvViewer::InputThread()
         OHNativeWindowBuffer *buffer = nullptr;
         int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(window_.get(), &buffer, &fenceFd);
         CHECK_AND_CONTINUE_LOG(ret == 0 && buffer != nullptr, "RequestBuffer failed, ret: %{public}d", ret);
-    
+
         BufferHandle* bufferHandle = OH_NativeWindow_GetBufferHandleFromNative(buffer);
         CHECK_AND_BREAK_LOG(bufferHandle != nullptr, "Get buffer handle failed, thread out");
         uint8_t *bufferAddr = static_cast<uint8_t *>(mmap(bufferHandle->virAddr, bufferHandle->size,

@@ -142,7 +142,7 @@ int32_t BitstreamReader::NalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Got a invalid buffer addr");
     CHECK_AND_RETURN_RET_LOG(nalUnit_, AVCODEC_SAMPLE_ERR_ERROR, "Nal unit buffer is nullptr");
     bufferSize = nalUnit_->size();
-    memcpy(bufferAddr, nalUnit_->data(), bufferSize);
+    memcpy_s(bufferAddr, bufferSize, nalUnit_->data(), bufferSize);
 
     if (!IsEOS()) {
         PrereadNalUnit();
