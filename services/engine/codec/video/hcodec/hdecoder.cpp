@@ -384,16 +384,6 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         HLOGE("VRR only support for 60fps, current frameRate = %f", frameRate.value());
         return AVCS_ERR_UNSUPPORT;
     }
-    int32_t width = 0;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width) || width <= 0) {
-        HLOGE("VRR format should contain width");
-        return AVCS_ERR_INVALID_VAL;
-    }
-    int32_t height = 0;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height) || height <= 0) {
-        HLOGE("VRR format should contain height");
-        return AVCS_ERR_INVALID_VAL;
-    }
 
     OMX_CONFIG_BOOLEANTYPE param {};
     InitOMXParam(param);
