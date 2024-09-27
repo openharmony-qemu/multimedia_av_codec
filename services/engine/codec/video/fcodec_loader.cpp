@@ -16,10 +16,12 @@
 #include <dlfcn.h>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "fcodec.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace {
+using FCodec = Codec::FCodec;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodecLoader"};
 const char *FCODEC_LIB_PATH = "libfcodec.z.so";
 const char *FCODEC_CREATE_FUNC_NAME = "CreateFCodecByName";
@@ -40,7 +42,8 @@ std::shared_ptr<CodecBase> FCodecLoader::CreateByName(const std::string &name)
     }
     auto deleter = [&loader](CodecBase *ptr) {
         std::lock_guard<std::mutex> lock(loader.mutex_);
-        delete ptr;
+        FCodec *codec = reinterpret_cast<FCodec*>(ptr);
+        codec->DecStrongRef(codec);
         --(loader.fcodecCount_);
         loader.CloseLibrary();
     };
