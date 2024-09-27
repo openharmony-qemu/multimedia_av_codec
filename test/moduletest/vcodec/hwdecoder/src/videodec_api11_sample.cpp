@@ -99,6 +99,9 @@ VDecAPI11Sample::~VDecAPI11Sample()
 
 void VdecAPI11Error(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
+    if (dec_sample == nullptr) {
+        return;
+    }
     if ((errorCode == AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION) || (errorCode == AV_ERR_UNSUPPORT)) {
         dec_sample->isRunning_.store(false);
         dec_sample->signal_->inCond_.notify_all();
@@ -109,6 +112,9 @@ void VdecAPI11Error(OH_AVCodec *codec, int32_t errorCode, void *userData)
 
 void VdecAPI11FormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
+    if (dec_sample == nullptr) {
+        return;
+    }
     int32_t currentWidth = 0;
     int32_t currentHeight = 0;
     int32_t stride = 0;
@@ -145,6 +151,9 @@ void VdecAPI11FormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userDa
 
 void VdecAPI11InputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
 {
+    if (dec_sample == nullptr) {
+        return;
+    }
     if (dec_sample->isFlushing_) {
         return;
     }
@@ -173,6 +182,9 @@ void VdecAPI11InputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *dat
 
 void VdecAPI11OutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
 {
+    if (dec_sample == nullptr) {
+        return;
+    }
     if (dec_sample->isFlushing_) {
         return;
     }
