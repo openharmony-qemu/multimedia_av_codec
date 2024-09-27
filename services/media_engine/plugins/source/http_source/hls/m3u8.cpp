@@ -307,7 +307,10 @@ void M3U8::DownloadKey()
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
     std::string realKeyUrl = UriJoin(uri_, *keyUri_);
-    downloadRequest_ = std::make_shared<DownloadRequest>(realKeyUrl, dataSave_, realStatusCallback, true);
+    RequestInfo requestInfo;
+    requestInfo.url = realKeyUrl;
+    requestInfo.httpHeader = httpHeader_;
+    downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, requestInfo, true);
     downloader_->Download(downloadRequest_, -1);
     downloader_->Start();
 }
@@ -467,10 +470,12 @@ M3U8VariantStream::M3U8VariantStream(std::string name, std::string uri, std::sha
 {
 }
 
-M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::string& uri)
+M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::string& uri,
+    const std::map<std::string, std::string>& httpHeader)
 {
     playList_ = playList;
     uri_ = uri;
+    httpHeader_ = httpHeader;
     if (!StrHasPrefix(playList_, "#EXTM3U")) {
         MEDIA_LOG_I("playlist doesn't start with #EXTM3U ");
         isParseSuccess_ = false;
@@ -498,6 +503,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     }
     segmentOffsets_ = m3u8->segmentOffsets_;
     discontinuity = m3u8->discontinuity;
+    m3u8->httpHeader_ = httpHeader_;
     isParseSuccess_ = m3u8->Update(playList_, false);
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();

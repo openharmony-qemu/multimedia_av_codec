@@ -51,11 +51,12 @@ public:
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();
     std::shared_ptr<M3U8VariantStream> GetCurrentVariant();
     std::shared_ptr<M3U8VariantStream> GetNewVariant();
-    size_t GetSegmentOffset(int tsIndex) override;
+    size_t GetSegmentOffset(uint32_t tsIndex) override;
     bool GetHLSDiscontinuity() override;
 
 private:
     void UpdateMasterInfo(bool isPreParse);
+    void UpdateMasterAndNotifyList(bool isPreParse);
 private:
     std::string url_ {};
     PlayListChangeCallback* callback_ {nullptr};
