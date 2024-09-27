@@ -74,7 +74,7 @@ void AVCodecParamCheckerTest::SetUpTestCase(void)
     const int32_t *pixFormats = nullptr;
     uint32_t pixFormatNum = 0;
     auto ret = OH_AVCapability_GetVideoSupportedPixelFormats(encoderCapability, &pixFormats, &pixFormatNum);
-    if (ret == AV_ERR_OK) {
+    if (ret == AV_ERR_OK && pixFormats != nullptr) {
         ENCODER_PIXEL_FORMAT = pixFormatNum > 0 ? pixFormats[0] : ENCODER_PIXEL_FORMAT;
         std::cout << "encoder pixel format = " << ENCODER_PIXEL_FORMAT << std::endl;
     }
@@ -83,7 +83,7 @@ void AVCodecParamCheckerTest::SetUpTestCase(void)
     pixFormats = nullptr;
     pixFormatNum = 0;
     ret = OH_AVCapability_GetVideoSupportedPixelFormats(decoderCapability, &pixFormats, &pixFormatNum);
-    if (ret == AV_ERR_OK) {
+    if (ret == AV_ERR_OK && pixFormats != nullptr) {
         DECODER_PIXEL_FORMAT = pixFormatNum > 0 ? pixFormats[0] : DECODER_PIXEL_FORMAT;
         std::cout << "decoder pixel format = " << DECODER_PIXEL_FORMAT << std::endl;
     }
@@ -101,9 +101,9 @@ void AVCodecParamCheckerTest::SetUp(void)
 
 void AVCodecParamCheckerTest::TearDown(void)
 {
-    OH_AVFormat_Destroy(g_format);
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(g_videoEnc));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(g_videoDec));
+    OH_AVFormat_Destroy(g_format);
 }
 
 void SetFormatBasicParam(bool isDecoder)
@@ -157,11 +157,11 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVALID_TEST_0103, TestSize.L
 }
 
 /**
- * @tc.name: ENCODE_KEY_WIDTH_VAILD_TEST_0104
+ * @tc.name: ENCODE_KEY_WIDTH_VALID_TEST_0104
  * @tc.desc: codec video configure default width
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_VAILD_TEST_0104, TestSize.Level3)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_VALID_TEST_0104, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));

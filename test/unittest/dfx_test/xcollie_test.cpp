@@ -49,12 +49,13 @@ HWTEST_F(XCollieTestSuilt, DUMP_TEST, TestSize.Level1)
     ASSERT_EQ(ret, AVCS_ERR_OK);
 
     std::thread task([] COLLIE_LISTEN(usleep(SLEEP_TIME), "CollieTest", true, false, 5));
-    usleep(20'000); // 20'000: 20ms
-    ret = AVCodecXCollie::GetInstance().Dump(0);
-    ASSERT_EQ(ret, AVCS_ERR_OK);
-
     if (task.joinable()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(20)); // 20 ms
+        ret = AVCodecXCollie::GetInstance().Dump(0);
+        ASSERT_EQ(ret, AVCS_ERR_OK);
         task.join();
+    } else {
+        std::cout << "task create failed" << std::endl;
     }
 }
 }
