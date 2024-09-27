@@ -69,9 +69,7 @@ ohos_shared_library("hcodec") {
 
   if (defined(av_codec_support_video_processing_engine) &&
       av_codec_support_video_processing_engine) {
-    include_dirs += [
-      "$video_processing_engine_root_dir/interfaces/inner_api",
-    ]
+    include_dirs += [ "$video_processing_engine_root_dir/interfaces/inner_api" ]
   }
 
   deps = [
@@ -95,9 +93,7 @@ ohos_shared_library("hcodec") {
 
   if (defined(av_codec_support_video_processing_engine) &&
       av_codec_support_video_processing_engine) {
-    external_deps += [
-      "video_processing_engine:videoprocessingengine",
-    ]
+    external_deps += [ "video_processing_engine:videoprocessingengine" ]
   }
 
   if (build_variant != "user") {
