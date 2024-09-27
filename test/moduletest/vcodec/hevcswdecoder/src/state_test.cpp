@@ -73,7 +73,7 @@ void HevcSwdecStateNdkTest::SetUp(void)
         ret = vDecSample->ConfigureVideoDecoder();
         ASSERT_EQ(AV_ERR_OK, ret);
         vDecSample->INP_DIR = "/data/test/media/1920_1080_30.h265";
-	}
+    }
 }
 
 void HevcSwdecStateNdkTest::TearDown(void)
