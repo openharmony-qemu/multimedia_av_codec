@@ -99,6 +99,9 @@ void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 
 void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
+    if (dec_sample == nullptr) {
+        return;
+    }
     int32_t current_width = 0;
     int32_t current_height = 0;
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &current_width);
@@ -127,6 +130,9 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
+    if (dec_sample == nullptr) {
+        return;
+    }
     if (dec_sample->isFlushing_) {
         return;
     }
@@ -157,6 +163,9 @@ void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, vo
 void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
                          void *userData)
 {
+    if (dec_sample == nullptr) {
+        return;
+    }
     if (dec_sample->isFlushing_) {
         return;
     }
