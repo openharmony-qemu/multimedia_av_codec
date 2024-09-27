@@ -32,7 +32,7 @@ public:
     ~SidxBoxParser();
 
 private:
-    static void BuildSubSegmentIndexes(char *bitStream, int64_t sidxEndOffset,
+    static bool BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize, int64_t sidxEndOffset,
                                        DashList<std::shared_ptr<SubSegmentIndex>> &subSegIndexTable, uint32_t &currPos);
 
 private:
