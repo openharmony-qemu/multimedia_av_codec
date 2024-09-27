@@ -401,13 +401,12 @@ void FFmpegDemuxerPlugin::ParserFirstDts()
     av_packet_free(&pkt);
 }
 
-Status FFmpegDemuxerPlugin::ParserRefInit()
+Status FFmpegDemuxerPlugin::InitIoContext()
 {
-    FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0 && fps_ > 0, Status::ERROR_UNKNOWN,
-                         "Init failed, IFramePos size:" PUBLIC_LOG_ZU ", fps:" PUBLIC_LOG_F, IFramePos_.size(), fps_);
     parserRefIoContext_.dataSource = ioContext_.dataSource;
     parserRefIoContext_.offset = 0;
     parserRefIoContext_.eos = false;
+    parserRefIoContext_.initCompleted = true;
     FALSE_RETURN_V_MSG_E(parserRefIoContext_.dataSource != nullptr, Status::ERROR_UNKNOWN, "Data source is null.");
     if (parserRefIoContext_.dataSource->GetSeekable() == Plugins::Seekable::SEEKABLE) {
         parserRefIoContext_.dataSource->GetSize(parserRefIoContext_.fileSize);
@@ -416,6 +415,14 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
         MEDIA_LOG_E("not support oneline video");
         return Status::ERROR_INVALID_OPERATION;
     }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::ParserRefInit()
+{
+    FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0 && fps_ > 0, Status::ERROR_UNKNOWN,
+                         "Init failed, IFramePos size:" PUBLIC_LOG_ZU ", fps:" PUBLIC_LOG_F, IFramePos_.size(), fps_);
+    FALSE_RETURN_V_MSG_E(InitIoContext() == Status::OK, Status::ERROR_UNKNOWN, "InitIoContext failed");
     parserRefFormatContext_ = InitAVFormatContext(&parserRefIoContext_);
     FALSE_RETURN_V_MSG_E(parserRefFormatContext_ != nullptr, Status::ERROR_UNKNOWN,
                          "ParserRefHeader failed due to can not init formatContext for source.");
