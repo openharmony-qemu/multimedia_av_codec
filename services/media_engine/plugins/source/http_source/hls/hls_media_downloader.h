@@ -105,6 +105,7 @@ private:
     void SetDownloadErrorState() override;
     bool SaveData(uint8_t* data, uint32_t len);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
+    void ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SaveEncryptData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
     void DownloadRecordHistory(int64_t nowTime);
@@ -148,6 +149,7 @@ private:
     void HlsInit();
     bool SaveCacheBufferData(uint8_t* data, uint32_t len);
     bool GetBufferingTimeOut() override;
+    bool ClearChunksOfFragment();
 
 private:
     size_t totalBufferSize_ {0};
@@ -276,6 +278,7 @@ private:
     bool isFreeze_ {false};
     volatile size_t wantedReadLength_ {0};
     volatile size_t bufferingTime_ {0};
+    FairMutex tsStorageInfoMutex_ {};
 };
 }
 }

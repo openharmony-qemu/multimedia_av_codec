@@ -87,6 +87,9 @@ public:
     void Dump(uint64_t param);
     bool Check();
     void Clear();
+    uint64_t GetFreeSize();
+    bool ClearFragmentBeforeOffset(uint64_t offset);
+    bool ClearChunksOfFragment(uint64_t offset);
 
 protected:
     virtual CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false);
@@ -184,6 +187,9 @@ public:
     virtual void Clear() = 0;
     virtual void SetReadBlocking(bool isReadBlockingAllowed) = 0;
     virtual void Dump(uint64_t param) = 0;
+    virtual uint64_t GetFreeSize() = 0;
+    virtual bool ClearFragmentBeforeOffset(uint64_t offset) = 0;
+    virtual bool ClearChunksOfFragment(uint64_t offset) = 0;
 };
 
 class CacheMediaChunkBufferImpl;
@@ -206,15 +212,19 @@ public:
     void SetReadBlocking(bool isReadBlockingAllowed) override;
     void Dump(uint64_t param) override;
     bool Check();
+    uint64_t GetFreeSize() override;
+    bool ClearFragmentBeforeOffset(uint64_t offset) override;
+    bool ClearChunksOfFragment(uint64_t offset) override;
 private:
     std::unique_ptr<CacheMediaChunkBufferImpl> impl_;
 };
 
 class CacheMediaChunkBufferHlsImpl : public CacheMediaChunkBufferImpl {
 protected:
-    CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false);
-    ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter, uint64_t offset, ChunkIterator chunkPos);
-    ChunkIterator AddFragmentCacheBuffer(uint64_t offset);
+    CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false) override;
+    ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter, uint64_t offset,
+        ChunkIterator chunkPos) override;
+    ChunkIterator AddFragmentCacheBuffer(uint64_t offset) override;
 };
 
 }
