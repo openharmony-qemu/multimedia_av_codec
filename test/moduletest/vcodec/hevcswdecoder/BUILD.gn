@@ -21,6 +21,7 @@ hevcswdecoder_moduletest_native_include_dirs = [
   "./include",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
   "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
+  "$MEDIA_ROOT_DIR/../../../third_party/json/include",
   "$drm_framework_root_dir/interfaces/kits/c/drm_capi/common",
   "$drm_framework_root_dir/interfaces/kits/c/drm_capi/include",
 ]
@@ -59,15 +60,8 @@ ohos_unittest("hevcswdecoder_native_module_test") {
   if (av_codec_support_codec) {
     sources = [
       "./src/api_test.cpp",
-
-      #"./src/configure_test.cpp",
-      #"./src/func_test.cpp",
-
-      #"./src/perf_test.cpp",
-      #"./src/reli_test.cpp",
-      #"./src/state_test.cpp",
-
-      #"./src/compatibility_test.cpp",
+      "./src/func_test.cpp",
+      "./src/state_test.cpp",
       "./src/videodec_api11_sample.cpp",
       "./src/videodec_ndk_sample.cpp",
     ]
