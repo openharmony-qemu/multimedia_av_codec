@@ -61,28 +61,28 @@ void HevcSwdecStateNdkTest::TearDownTestCase(void) {}
 VDecNdkSample *vDecSample = NULL;
 void HevcSwdecStateNdkTest::SetUp(void)
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
-    string hevc_codeName = OH_AVCapability_GetName(cap);
-    cout << "hevc_codeName: " << hevc_codeName << endl;
-    if (!access("/system/lib64/media/", 0)) {
-        vDecSample = new VDecNdkSample();
-        int32_t ret = vDecSample->CreateVideoDecoder(hevc_codeName);
-        ASSERT_EQ(AV_ERR_OK, ret);
-        ret = vDecSample->SetVideoDecoderCallback();
-        ASSERT_EQ(AV_ERR_OK, ret);
-        ret = vDecSample->ConfigureVideoDecoder();
-        ASSERT_EQ(AV_ERR_OK, ret);
-        vDecSample->INP_DIR = "/data/test/media/1920_1080_30.h265";
-    }
+	cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+	string hevc_codeName = OH_AVCapability_GetName(cap);
+	cout << "hevc_codeName: " << hevc_codeName << endl;
+	if (!access("/system/lib64/media/", 0)) {
+		vDecSample = new VDecNdkSample();
+		int32_t ret = vDecSample->CreateVideoDecoder(hevc_codeName);
+		ASSERT_EQ(AV_ERR_OK, ret);
+		ret = vDecSample->SetVideoDecoderCallback();
+		ASSERT_EQ(AV_ERR_OK, ret);
+		ret = vDecSample->ConfigureVideoDecoder();
+		ASSERT_EQ(AV_ERR_OK, ret);
+		vDecSample->INP_DIR = "/data/test/media/1920_1080_30.h265";
+	}
 }
 
 void HevcSwdecStateNdkTest::TearDown(void)
 {
-    if (!access("/system/lib64/media/", 0)) {
-        vDecSample->Release();
-        delete vDecSample;
-        vDecSample = nullptr;
-    }
+	if (!access("/system/lib64/media/", 0)) {
+		vDecSample->Release();
+		delete vDecSample;
+		vDecSample = nullptr;
+	}
 }
 } // namespace Media
 } // namespace OHOS

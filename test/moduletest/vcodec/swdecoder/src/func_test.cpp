@@ -746,4 +746,28 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_ATTIME_0010, TestSize.Level0)
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
 }
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_1900
+ * @tc.name      : Increase frame rate judgment
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1910, TestSize.Level2)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->INP_DIR = INP_DIR_720_30;
+    vDecSample->OUT_DIR = "/data/test/media/SW_720_30.yuv";
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->outputYuvFlag = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(101, vDecSample->outFrameCount);
+    ASSERT_EQ(0, vDecSample->errCount);
+}
 } // namespace
