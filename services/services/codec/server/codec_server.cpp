@@ -1498,10 +1498,6 @@ void CodecServer::PostProcessingTask()
             QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(eosRet)]);
         CHECK_AND_RETURN_LOG(eosInfo && eosInfo->buffer, "Invalid data");
         if (eosInfo->buffer->flag_ != AVCODEC_BUFFER_FLAG_EOS) {
-            if (videoCb_) {
-                std::lock_guard<std::shared_mutex> lock(cbMutex_);
-                videoCb_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
-            }
             AVCODEC_LOGE("The cache info is not EOS frame");
             std::this_thread::sleep_for(std::chrono::seconds(1)); // 1: sleep for 1s
             return;
