@@ -56,6 +56,7 @@ public:
 
 private:
     void UpdateMasterInfo(bool isPreParse);
+    void UpdateMasterAndNotifyList(bool isPreParse);
 private:
     std::string url_ {};
     PlayListChangeCallback* callback_ {nullptr};

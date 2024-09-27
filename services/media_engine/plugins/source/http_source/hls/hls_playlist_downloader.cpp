@@ -170,36 +170,37 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         } else {
             // need notify , avoid delay 5s
             isParseFinished_ = isPreParse ? false : true;
-            NotifyListChange();
+            NotifyListChange(isPreParse);
         }
     } else {
-        if (master_->isSimple_) {
-            if (currentVariant_ && currentVariant_->m3u8_) {
-                currentVariant_->m3u8_->httpHeader_ = httpHeader_;
-                bool ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
-                master_->isParseSuccess_ = ret;
-                if (ret) {
-                    UpdateMasterInfo(isPreParse);
-                    NotifyListChange();
-                }
-            }
-        } else {
-            currentVariant_ = master_->defaultVariant_;
-            if (currentVariant_ && currentVariant_->m3u8_) {
-                currentVariant_->m3u8_->httpHeader_ = httpHeader_;
-                bool ret = currentVariant_->m3u8_->Update(playList_, true);
-                if (ret) {
-                    UpdateMasterInfo(isPreParse);
-                    master_->isSimple_ = true;
-                    NotifyListChange();
-                }
-            }
-        }
+        UpdateMasterAndNotifyList();
     }
     if (!master_->isParseSuccess_ && eventCallback_ != nullptr) {
         MEDIA_LOG_E("ParseManifest parse failed.");
         eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
                                 {NetworkClientErrorCode::ERROR_TIME_OUT}, "parse m3u8"});
+    }
+}
+
+void HlsPlayListDownloader::UpdateMasterAndNotifyList(bool isPreParse)
+{
+    bool ret = false;
+    if (!master_->isSimple_) {
+        currentVariant_ = master_->defaultVariant_;
+    }
+    if (currentVariant_ && currentVariant_->m3u8_) {
+        currentVariant_->m3u8_->httpHeader_ = httpHeader_;
+        ret = currentVariant_->m3u8_->Update(playList_, true);
+    }
+    if (master_->isSimple_) {
+        master_->isParseSuccess_ = ret;
+    }
+    if (ret) {
+        if (!master_->isSimple_) {
+            master_->isSimple_ = true;
+        }
+        UpdateMasterInfo(isPreParse);
+        NotifyListChange();
     }
 }
 
