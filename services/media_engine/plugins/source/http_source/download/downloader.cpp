@@ -252,6 +252,10 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
         REQUEST_QUEUE_SIZE);
     task_ = std::make_shared<Task>(std::string("OS_" + name_ + "Downloader"));
     task_->RegisterJob([this] {
+        {
+            AutoLock lk(loopPauseMutex_);
+            loopStatus_ = LoopStatus::START;
+        }
         HttpDownloadLoop();
         NotifyLoopPause();
         return 0;
@@ -949,27 +953,30 @@ void Downloader::SetInterruptState(bool isInterruptNeeded)
 
 void Downloader::NotifyLoopPause()
 {
-    FALSE_RETURN(loopStatus_ == LoopStatus::PAUSE || isInterruptNeeded_);
     AutoLock lk(loopPauseMutex_);
     if (loopStatus_ == LoopStatus::PAUSE || isInterruptNeeded_) {
         MEDIA_LOG_I("Downloader NotifyLoopPause");
-        loopStatus_ = LoopStatus::PAUSEDONE;
+        loopStatus_ = LoopStatus::IDLE;
         loopPauseCond_.NotifyAll();
+    } else {
+        loopStatus_ = LoopStatus::IDLE;
+        MEDIA_LOG_I("Downloader not NotifyLoopPause loopStatus %{public}d isInterruptNeeded %{public}d",
+            loopStatus_.load(), isInterruptNeeded_.load());
     }
 }
 
 void Downloader::WaitLoopPause()
 {
-    FALSE_RETURN(task_->IsTaskRunning());
     AutoLock lk(loopPauseMutex_);
-    MEDIA_LOG_I("Downloader WaitLoopPause task Running %{public}d, loopStatus_ %{public}d",
-        task_->IsTaskRunning(), loopStatus_.load());
-    FALSE_RETURN(task_->IsTaskRunning());
+    if (loopStatus_ == LoopStatus::IDLE) {
+        MEDIA_LOG_I("Downloader not WaitLoopPause loopStatus is idle");
+        return;
+    }
+    MEDIA_LOG_I("Downloader WaitLoopPause task loopStatus_ %{public}d", loopStatus_.load());
     loopStatus_ = LoopStatus::PAUSE;
     loopPauseCond_.Wait(lk, [this]() {
-        return loopStatus_ == LoopStatus::PAUSEDONE || isInterruptNeeded_;
+        return loopStatus_ == LoopStatus::IDLE || isInterruptNeeded_;
     });
-    loopStatus_ = LoopStatus::NORMAL;
 }
 
 void Downloader::SetAppState(bool isAppBackground)

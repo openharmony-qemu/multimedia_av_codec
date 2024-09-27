@@ -209,11 +209,11 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
 
     enum struct LoopStatus {
-        NORMAL,
+        IDLE,
+        START,
         PAUSE,
-        PAUSEDONE,
     };
-    std::atomic<LoopStatus> loopStatus_ {LoopStatus::NORMAL};
+    std::atomic<LoopStatus> loopStatus_ {LoopStatus::IDLE};
     FairMutex loopPauseMutex_ {};
     ConditionVariable loopPauseCond_;
     std::atomic<bool> isAppBackground_ {false};
