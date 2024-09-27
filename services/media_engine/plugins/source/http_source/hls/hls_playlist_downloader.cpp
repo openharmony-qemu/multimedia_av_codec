@@ -170,10 +170,10 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         } else {
             // need notify , avoid delay 5s
             isParseFinished_ = isPreParse ? false : true;
-            NotifyListChange(isPreParse);
+            NotifyListChange();
         }
     } else {
-        UpdateMasterAndNotifyList();
+        UpdateMasterAndNotifyList(isPreParse);
     }
     if (!master_->isParseSuccess_ && eventCallback_ != nullptr) {
         MEDIA_LOG_E("ParseManifest parse failed.");
