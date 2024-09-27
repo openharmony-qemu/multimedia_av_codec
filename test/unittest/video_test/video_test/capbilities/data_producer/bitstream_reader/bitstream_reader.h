@@ -32,22 +32,26 @@ private:
     public:
         NalUnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
         virtual ~NalUnitReader() {};
-        virtual int32_t ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize) = 0;
+        uint8_t const *GetNextNalUnitAddr();
+        int32_t ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize);
         virtual bool IsEOS() = 0;
-    
+
     protected:
         NalUnitReader() {};
+        virtual void PrereadNalUnit() = 0;
+
         std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+        std::unique_ptr<std::vector<uint8_t>> nalUnit_;
     };
 
     class AnnexbNalUnitReader : public NalUnitReader {
     public:
         AnnexbNalUnitReader(std::shared_ptr<std::ifstream> inputFile);
-        int32_t ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize) override;
         bool IsEOS() override;
 
     private:
         void PrereadFile();
+        void PrereadNalUnit() override;
 
         std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
         uint32_t prereadBufferSize_ = 0;
@@ -57,36 +61,40 @@ private:
     class AvccNalUnitReader : public NalUnitReader {
     public:
         AvccNalUnitReader(std::shared_ptr<std::ifstream> inputFile);
-        int32_t ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize) override;
         bool IsEOS() override;
 
     private:
+        void PrereadNalUnit() override;
         int32_t ToAnnexb(uint8_t *bufferAddr);
     };
 
     class NalDetector {
     public:
         virtual ~NalDetector() {};
-        virtual uint8_t GetNalType(const uint8_t *const bufferAddr) = 0;
+        const uint8_t *GetNalTypeAddr(const uint8_t *bufferAddr);
+        virtual uint8_t GetNalType(const uint8_t *bufferAddr) = 0;
         virtual bool IsXPS(uint8_t nalType) = 0;
         virtual bool IsIDR(uint8_t nalType) = 0;
         virtual bool IsVCL(uint8_t nalType) = 0;
+        virtual bool IsFullVCL(uint8_t nalType, const uint8_t *NextNaluTypeAddr) = 0;
     };
 
     class AVCNalDetector : public NalDetector {
     public:
-        uint8_t GetNalType(const uint8_t *const bufferAddr) override;
+        uint8_t GetNalType(const uint8_t *bufferAddr) override;
         bool IsXPS(uint8_t nalType) override;
         bool IsIDR(uint8_t nalType) override;
         bool IsVCL(uint8_t nalType) override;
+        bool IsFullVCL(uint8_t nalType, const uint8_t *NextNaluTypeAddr) override;
     };
 
     class HEVCNalDetector : public NalDetector {
     public:
-        uint8_t GetNalType(const uint8_t *const bufferAddr) override;
+        uint8_t GetNalType(const uint8_t *bufferAddr) override;
         bool IsXPS(uint8_t nalType) override;
         bool IsIDR(uint8_t nalType) override;
         bool IsVCL(uint8_t nalType) override;
+        bool IsFullVCL(uint8_t nalType, const uint8_t *NextNaluTypeAddr) override;
     };
 
     std::shared_ptr<NalUnitReader> nalUnitReader_ = nullptr;
