@@ -988,6 +988,59 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DoSetPlayRange_001, TestSize.Level1)
     EXPECT_EQ(decoderSurfaceFilter_->playRangeStartTime_, start);
     EXPECT_EQ(decoderSurfaceFilter_->playRangeEndTime_, end);
 }
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, StartSeekContinous_001, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    decoderSurfaceFilter_->isInSeekContinous_ = false;
+
+    // 2. Call the function to be tested
+    Status status = decoderSurfaceFilter_->StartSeekContinous();
+
+    // 3. Verify the result
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->isInSeekContinous_, true);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, StopSeekContinous_001, TestSize.Level1)
+{
+    Status status = decoderSurfaceFilter_->StopSeekContinous();
+
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->isInSeekContinous_, false);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, SetBitrateStart_001, TestSize.Level1)
+{
+    int32_t oldBitrateChange = decoderSurfaceFilter_->bitrateChange_;
+    decoderSurfaceFilter_->SetBitrateStart();
+
+    EXPECT_EQ(decoderSurfaceFilter_->bitrateChange_, oldBitrateChange + 1);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, SetSeekTime_001, TestSize.Level1)
+{
+    decoderSurfaceFilter_->SetSeekTime(1000000);
+
+    EXPECT_EQ(decoderSurfaceFilter_->isSeek_, true);
+    EXPECT_EQ(decoderSurfaceFilter_->seekTimeUs_, 1000000);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, ResetSeekInfo_001, TestSize.Level1)
+{
+    decoderSurfaceFilter_->ResetSeekInfo();
+
+    EXPECT_EQ(decoderSurfaceFilter_->isSeek_, false);
+    EXPECT_EQ(decoderSurfaceFilter_->seekTimeUs_, 0);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, WaitPrepareFrame_001, TestSize.Level1)
+{
+    Status status = decoderSurfaceFilter_->WaitPrepareFrame();
+
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->doPrepareFrame_, false);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
