@@ -16,10 +16,12 @@
 #include <dlfcn.h>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "hevc_decoder.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace {
+using HevcDecoder = Codec::HevcDecoder;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "HevcDecoderLoader"};
 const char *HEVC_DECODER_LIB_PATH = "libhevc_decoder.z.so";
 const char *HEVC_DECODER_CREATE_FUNC_NAME = "CreateHevcDecoderByName";
@@ -40,7 +42,8 @@ std::shared_ptr<CodecBase> HevcDecoderLoader::CreateByName(const std::string &na
     }
     auto deleter = [&loader](CodecBase *ptr) {
         std::lock_guard<std::mutex> lock(loader.mutex_);
-        delete ptr;
+        HevcDecoder *codec = reinterpret_cast<HevcDecoder*>(ptr);
+        codec->DecStrongRef(codec);
         --(loader.hevcDecoderCount_);
         loader.CloseLibrary();
     };

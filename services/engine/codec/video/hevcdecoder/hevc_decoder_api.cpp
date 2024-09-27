@@ -27,8 +27,9 @@ int32_t GetHevcDecoderCapabilityList(std::vector<CapabilityData> &caps)
 
 void CreateHevcDecoderByName(const std::string &name, std::shared_ptr<CodecBase> &codec)
 {
-    HevcDecoder *hevcDecoder = new HevcDecoder(name);
-    codec = std::shared_ptr<HevcDecoder>(hevcDecoder, [](HevcDecoder *ptr) { (void)ptr; });
+    sptr<HevcDecoder> hevcDecoder = new (std::nothrow) HevcDecoder(name);
+    hevcDecoder->IncStrongRef(hevcDecoder.GetRefPtr());
+    codec = std::shared_ptr<HevcDecoder>(hevcDecoder.GetRefPtr(), [](HevcDecoder *ptr) { (void)ptr; });
 }
 }
 } // namespace OHOS::MediaAVCodec::Codec

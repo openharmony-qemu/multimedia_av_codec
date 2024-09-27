@@ -44,7 +44,7 @@ using AVAllocator = Media::AVAllocator;
 using AVAllocatorFactory = Media::AVAllocatorFactory;
 using MemoryFlag = Media::MemoryFlag;
 using FormatDataType = Media::FormatDataType;
-class FCodec : public CodecBase {
+class FCodec : public CodecBase, public RefBase {
 public:
     explicit FCodec(const std::string &name);
     ~FCodec() override;
