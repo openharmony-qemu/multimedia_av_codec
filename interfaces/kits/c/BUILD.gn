@@ -126,7 +126,6 @@ ohos_shared_library("native_media_avmuxer") {
     "media_foundation:native_media_core",
   ]
   output_extension = "so"
-  innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
@@ -155,7 +154,6 @@ ohos_shared_library("native_media_avdemuxer") {
     "media_foundation:native_media_core",
   ]
   output_extension = "so"
-  innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
@@ -184,7 +182,6 @@ ohos_shared_library("native_media_avsource") {
     "media_foundation:native_media_core",
   ]
   output_extension = "so"
-  innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
@@ -218,7 +215,6 @@ ohos_shared_library("native_media_codecbase") {
     "media_foundation:native_media_core",
   ]
   output_extension = "so"
-  innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
@@ -287,7 +283,6 @@ ohos_shared_library("native_media_adec") {
     "media_foundation:native_media_core",
   ]
   output_extension = "so"
-  innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
@@ -317,7 +312,6 @@ ohos_shared_library("native_media_aenc") {
     "media_foundation:native_media_core",
   ]
   output_extension = "so"
-  innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
@@ -355,7 +349,6 @@ ohos_shared_library("native_media_vdec") {
     ]
   }
   output_extension = "so"
-  innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
@@ -386,7 +379,6 @@ ohos_shared_library("native_media_venc") {
     "media_foundation:native_media_core",
   ]
   output_extension = "so"
-  innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
