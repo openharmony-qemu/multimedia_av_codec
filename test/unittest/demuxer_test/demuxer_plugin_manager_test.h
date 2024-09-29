@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#ifndef DEMUXER_PLUGIN_MANAGER_UNIT_TEST_H
+#define DEMUXER_PLUGIN_MANAGER_UNIT_TEST_H
+
 #include "gtest/gtest.h"
 #include "demuxer_plugin_manager.h"
 
@@ -35,3 +38,4 @@ protected:
 };
 }  // namespace Media
 }  // namespace OHOS
+#endif
