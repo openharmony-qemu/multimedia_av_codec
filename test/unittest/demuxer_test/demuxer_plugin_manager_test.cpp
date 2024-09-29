@@ -1,0 +1,108 @@
+/*
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "demuxer_plugin_manager_test.h"
+
+#include "gtest/gtest.h"
+#include "stream_demuxer.h"
+#include "demuxer_plugin_manager.h"
+
+#define LOCAL true
+
+using namespace OHOS;
+using namespace OHOS::Media;
+using namespace testing::ext;
+using namespace std;
+
+namespace OHOS {
+namespace Media {
+void DemuxerPluginManagerUnitTest::SetUpTestCase(void) {}
+
+void DemuxerPluginManagerUnitTest::TearDownTestCase(void) {}
+
+void DemuxerPluginManagerUnitTest::SetUp(void)
+{
+    demuxerPluginManagerMock_ = std::make_shared<DemuxerPluginManagerMock>();;
+    demuxerPluginManager_ = std::make_shared<DemuxerPluginManager>();
+    std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxer>();
+    int32_t streamId = 0;
+    dataSourceImpl_ = std::make_shared<DataSourceImpl>(streamDemuxer, streamId);
+}
+
+void DemuxerPluginManagerUnitTest::TearDown(void)
+{
+    demuxerPluginManager_ = nullptr;
+    dataSourceImpl_ = nullptr;
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, SetStreamID_001, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    ASSERT_NE(dataSourceImpl_, nullptr);
+
+    // 2. Call the function to be tested
+    Status status = dataSourceImpl_->SetStreamID(1);
+
+    // 3. Verify the result
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_EQ(dataSourceImpl_->streamID_, 1);
+    EXPECT_EQ(dataSourceImpl_->GetStreamID(), 1);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamCount_001, TestSize.Level1)
+{
+    size_t streamCount = demuxerPluginManager_->GetStreamCount();
+
+    EXPECT_EQ(streamCount, demuxerPluginManager_->streamInfoMap_.size());
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, LoadCurrentSubtitlePlugin_001, TestSize.Level1)
+{
+    demuxerPluginManager_->curSubTitleStreamID_ = -1;
+    std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxer>();
+    Plugins::MediaInfo mediaInfo;
+    Status status = demuxerPluginManager_->LoadCurrentSubtitlePlugin(streamDemuxer, mediaInfo);
+
+    EXPECT_EQ(status, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, GetInnerTrackIDByTrackID_001, TestSize.Level1)
+{
+    int32_t trackId = 1;
+    demuxerPluginManager_->trackInfoMap_[trackId].innerTrackIndex = 2;
+
+    // 2. Call the function to be tested
+    int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackIDByTrackID(trackId);
+
+    // 3. Verify the result
+    EXPECT_EQ(innerTrackId, 2);
+}
+
+/**
+* @tc.name    : GetInnerTrackIDByTrackID_002
+* @tc.number  : GetInnerTrackIDByTrackID_002
+* @tc.desc    : Test GetInnerTrackIDByTrackID interface, trackId does not exist in trackInfoMap_.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(DemuxerPluginManagerUnitTest, GetInnerTrackIDByTrackID_002, TestSize.Level1)
+{
+    int32_t trackId = 1;
+
+    // 2. Call the function to be tested
+    int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackIDByTrackID(trackId);
+
+    // 3. Verify the result
+    EXPECT_EQ(innerTrackId, -1);
+}

@@ -42,6 +42,7 @@ demuxer_unittest_cflags = [
 ohos_unittest("demuxer_capi_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  testonly = true
   include_dirs = [
     "./",
     "./capi",
@@ -58,6 +59,7 @@ ohos_unittest("demuxer_capi_unit_test") {
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
     "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/services/media_engine/modules/demuxer",
   ]
 
   cflags = demuxer_unittest_cflags
@@ -72,6 +74,7 @@ ohos_unittest("demuxer_capi_unit_test") {
       "./demuxer_hevc_unit_test.cpp",
       "./demuxer_unit_test.cpp",
       "./demuxer_uri_unit_test.cpp",
+      "./demuxer_plugin_manager_test.cpp",
     ]
   }
 
@@ -89,12 +92,23 @@ ohos_unittest("demuxer_capi_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
+    "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
+    "//third_party/googletest:gmock_main",
   ]
   external_deps = [
     "av_codec:av_codec_client",
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "audio_framework:audio_capturer",
+    "ffmpeg:libohosffmpeg",
+    "graphic_surface:sync_fence",
+    "hitrace:libhitracechain",
+    "init:libbegetutil",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "safwk:system_ability_fwk",
   ]
   if (av_codec_support_drm) {
     external_deps += [
