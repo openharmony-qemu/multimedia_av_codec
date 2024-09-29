@@ -187,6 +187,7 @@ void BitstreamReader::AnnexbNalUnitReader::PrereadNalUnit()
 
     auto pBuffer = nalUnit_->data();
     uint32_t bufferSize = 0;
+    nalUnit_->resize(MAX_NALU_SIZE);
     do {
         auto pos = std::search(prereadBuffer_.get() + pPrereadBuffer_ + (bufferSize > 0 ? 0 : ANNEXB_FRAME_HEAD_LEN),
             prereadBuffer_.get() + prereadBufferSize_, std::begin(ANNEXB_FRAME_HEAD), std::end(ANNEXB_FRAME_HEAD));
