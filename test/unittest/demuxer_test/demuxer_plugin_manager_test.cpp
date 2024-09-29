@@ -1,3 +1,6 @@
+#ifndef HUAWEI_DEVICE_LICENSE_H
+#define HUAWEI_DEVICE_LICENSE_H
+
 /*
  * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +37,6 @@ void DemuxerPluginManagerUnitTest::TearDownTestCase(void) {}
 
 void DemuxerPluginManagerUnitTest::SetUp(void)
 {
-    demuxerPluginManagerMock_ = std::make_shared<DemuxerPluginManagerMock>();;
     demuxerPluginManager_ = std::make_shared<DemuxerPluginManager>();
     std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxer>();
     int32_t streamId = 0;
@@ -106,3 +108,49 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetInnerTrackIDByTrackID_002, TestSize.Le
     // 3. Verify the result
     EXPECT_EQ(innerTrackId, -1);
 }
+
+HWTEST_F(DemuxerPluginManagerUnitTest, AddExternalSubtitle_001, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    demuxerPluginManager_->curSubTitleStreamID_ = -1;
+    // 2. Call the function to be tested
+    int32_t result = demuxerPluginManager_->AddExternalSubtitle();
+    // 3. Verify the result
+    EXPECT_EQ(result, 0);
+    EXPECT_EQ(demuxerPluginManager_->curSubTitleStreamID_, 0);
+
+    // 1. Set up the test environment
+    demuxerPluginManager_->curSubTitleStreamID_ = 0;
+    // 2. Call the function to be tested
+    result = demuxerPluginManager_->AddExternalSubtitle();
+    // 3. Verify the result
+    EXPECT_EQ(result, -1);
+    EXPECT_EQ(demuxerPluginManager_->curSubTitleStreamID_, 0);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, IsSubtitleMime_001, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    std::string mime = "application/x-subrip";
+    // 2. Call the function to be tested
+    bool result = demuxerPluginManager_->IsSubtitleMime(mime);
+    // 3. Verify the result
+    EXPECT_EQ(result, true);
+
+    // 1. Set up the test environment
+    mime = "text/vtt";
+    // 2. Call the function to be tested
+    result = demuxerPluginManager_->IsSubtitleMime(mime);
+    // 3. Verify the result
+    EXPECT_EQ(result, true);
+
+    // 1. Set up the test environment
+    mime = "video/mp4";
+    // 2. Call the function to be tested
+    result = demuxerPluginManager_->IsSubtitleMime(mime);
+    // 3. Verify the result
+    EXPECT_EQ(result, false);
+}
+}
+}
+#endif
