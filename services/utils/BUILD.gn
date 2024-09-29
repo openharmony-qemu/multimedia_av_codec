@@ -60,7 +60,6 @@ ohos_shared_library("av_codec_service_utils") {
     "init:libbegetutil",
   ]
 
-  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
