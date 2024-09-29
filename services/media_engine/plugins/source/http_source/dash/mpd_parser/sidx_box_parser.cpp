@@ -38,6 +38,7 @@ namespace {
     constexpr unsigned int BUFF_INDEX_1 = 1;
     constexpr unsigned int BUFF_INDEX_2 = 2;
     constexpr unsigned int BUFF_INDEX_3 = 3;
+    constexpr unsigned int SIDX_REFERENCE_ITEM_SIZE = 12; // bytes of one referenced item
 }
 
 static inline unsigned short Get2Bytes(char *buffer, uint32_t &currPos);
@@ -65,7 +66,9 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
         uint32_t boxType = Get4Bytes(bitStream, currPos);
         if (boxType == BEM_SIDX) {
             MEDIA_LOG_D("it is a sidx box");
-            BuildSubSegmentIndexes(bitStream, sidxEndOffset, subSegIndexTable, currPos);
+            if (!BuildSubSegmentIndexes(bitStream, streamSize, sidxEndOffset, subSegIndexTable, currPos)) {
+                return -1;
+            }
         } else {
             MEDIA_LOG_W("sdix box error box=(%c %c %c %c), typeSize="
                 PUBLIC_LOG_D32, (boxType >> SHIFT_NUM_24) & 0x000000ff, (boxType >> SHIFT_NUM_16) & 0x000000ff,
@@ -77,7 +80,7 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
     return 0;
 }
 
-void SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, int64_t sidxEndOffset,
+bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize, int64_t sidxEndOffset,
                                            DashList<std::shared_ptr<SubSegmentIndex>> &subSegIndexTable,
                                            uint32_t &currPos)
 {
@@ -107,6 +110,13 @@ void SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, int64_t sidxEndOffse
     ForwardBytes(currPos, SHIFT_NUM_2);
 
     uint32_t referenceCount = Get2Bytes(bitStream, currPos);
+    if ((referenceCount * SIDX_REFERENCE_ITEM_SIZE + currPos) > streamSize) {
+        MEDIA_LOG_W("sidx box reference count error: " PUBLIC_LOG_U32 ", currPos:" PUBLIC_LOG_U32 ", streamSize:"
+            PUBLIC_LOG_U32, referenceCount, currPos, streamSize);
+        return false;
+    }
+
+    MEDIA_LOG_D("sidx box reference count " PUBLIC_LOG_U32, referenceCount);
     for (uint32_t i = 0; i < referenceCount; i++) {
         std::shared_ptr<SubSegmentIndex> subSegIndex = std::make_shared<SubSegmentIndex>();
         uint32_t typeAndSize = Get4Bytes(bitStream, currPos);
@@ -120,7 +130,7 @@ void SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, int64_t sidxEndOffse
         Get4Bytes(bitStream, currPos); // uint32_t sapInfo
         subSegIndexTable.push_back(subSegIndex);
     }
-    MEDIA_LOG_D("sidx box reference count " PUBLIC_LOG_U32, referenceCount);
+    return true;
 }
 
 unsigned short Get2Bytes(char *buffer, uint32_t &currPos)
