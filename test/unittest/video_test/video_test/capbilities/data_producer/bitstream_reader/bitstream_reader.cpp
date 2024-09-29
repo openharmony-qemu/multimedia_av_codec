@@ -291,7 +291,7 @@ bool BitstreamReader::AVCNalDetector::IsFullVCL(uint8_t nalType, const uint8_t *
     auto nextNaluType = GetNalType(nextNaluTypeAddr);
     return (IsVCL(nalType) && (
         (!IsVCL(nextNaluType)) ||
-        ((IsVCL(nextNaluType)) && (*(nextNaluTypeAddr + 1) & 0x80))    // 0x80: first_mb_in_slice
+        ((IsVCL(nextNaluType)) && !(*(nextNaluTypeAddr + 1) & 0x80))    // 0x80: first_mb_in_slice
     ));
 }
 
