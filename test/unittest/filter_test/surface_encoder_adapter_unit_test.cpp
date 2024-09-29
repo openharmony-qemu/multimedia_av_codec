@@ -190,6 +190,20 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Resume_0100, TestS
 }
 
 /**
+ * @tc.name: SurfaceEncoderAdapter_Resume_0200
+ * @tc.desc: Resume
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Resume_0200, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    surfaceEncoderAdapter_->pauseResumeQueue_.push_back(std::make_pair(100, StateCode::RESUME));
+    surfaceEncoderAdapter_->pauseResumePts_.push_back(std::make_pair(100, StateCode::RESUME));
+    Status ret = surfaceEncoderAdapter_->Resume();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
  * @tc.name: SurfaceEncoderAdapter_Flush_0100
  * @tc.desc: Flush
  * @tc.type: FUNC
@@ -608,6 +622,108 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_AddStopPts_0100, T
     surfaceEncoderAdapter_->stopTime_ = 0;
     surfaceEncoderAdapter_->AddStopPts();
     EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_AddStopPts_0200
+ * @tc.desc: AddStopPts
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_AddStopPts_0200, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->encoderAdapterKeyFramePtsCallback_ =
+                            std::make_shared<MyEncoderAdapterKeyFramePtsCallback>();
+    surfaceEncoderAdapter_->isStopKeyFramePts_ = true;
+    surfaceEncoderAdapter_->currentKeyFramePts_ = 1;
+    surfaceEncoderAdapter_->stopTime_ = 0;
+    surfaceEncoderAdapter_->AddStopPts();
+    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_AddPauseResumePts_0100
+ * @tc.desc: AddPauseResumePts
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_AddPauseResumePts_0100, TestSize.Level1)
+{
+    int64_t currentPts = 0;
+    bool result = surfaceEncoderAdapter_->AddPauseResumePts(currentPts);
+    ASSERT_EQ(result, false);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_AddPauseResumePts_0200
+ * @tc.desc: AddPauseResumePts
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_AddPauseResumePts_0200, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->pauseResumePts_.push_back(std::make_pair(100, StateCode::PAUSE));
+    int64_t currentPts = 0;
+    bool result = surfaceEncoderAdapter_->AddPauseResumePts(currentPts);
+    ASSERT_EQ(result, false);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_AddPauseResumePts_0300
+ * @tc.desc: AddPauseResumePts
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_AddPauseResumePts_0300, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->pauseResumePts_.push_back(std::make_pair(100, StateCode::RESUME));
+    int64_t currentPts = 0;
+    bool result = surfaceEncoderAdapter_->AddPauseResumePts(currentPts);
+    ASSERT_EQ(result, true);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_AddPauseResumePts_0400
+ * @tc.desc: AddPauseResumePts
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_AddPauseResumePts_0400, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->pauseResumePts_.push_back(std::make_pair(100, StateCode::PAUSE));
+    int64_t currentPts = 100;
+    bool result = surfaceEncoderAdapter_->AddPauseResumePts(currentPts);
+    ASSERT_EQ(result, false);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_AddPauseResumePts_0500
+ * @tc.desc: AddPauseResumePts
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_AddPauseResumePts_0500, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->pauseResumePts_.push_back(std::make_pair(100, StateCode::RESUME));
+    int64_t currentPts = 100;
+    bool result = surfaceEncoderAdapter_->AddPauseResumePts(currentPts);
+    ASSERT_EQ(result, false);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_GetOutputFormat_0100
+ * @tc.desc: GetOutputFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_GetOutputFormat_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> testMeta = surfaceEncoderAdapter_->GetOutputFormat();
+    ASSERT_EQ(testMeta, nullptr);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_SetEncoderAdapterKeyFramePtsCallback_0100
+ * @tc.desc: SetEncoderAdapterKeyFramePtsCallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetEncoderAdapterKeyFramePtsCallback_0100, TestSize.Level1)
+{
+    Status ret = surfaceEncoderAdapter_->SetEncoderAdapterKeyFramePtsCallback(std::make_shared<MockEncoderAdapterKeyFramePtsCallback>());
+    EXPECT_EQ(ret, Status::OK);
 }
 }  // namespace Pipeline
 }  // namespace Media
