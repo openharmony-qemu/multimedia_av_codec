@@ -29,7 +29,7 @@
 #include <thread>
 namespace OHOS {
 namespace Media {
-class DemuxerProc2NdkTest : public testing::Test {
+class DemuxerFormatNdkTest : public testing::Test {
 public:
     // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
@@ -67,14 +67,14 @@ constexpr uint32_t ACTUAL_CHARACTERISTICS = 2;
 constexpr uint32_t ACTUAL_COEFFICIENTS = 2;
 constexpr uint32_t ACTUAL_PRIMARIES = 2;
 
-void DemuxerProc2NdkTest::SetUpTestCase() {}
-void DemuxerProc2NdkTest::TearDownTestCase() {}
-void DemuxerProc2NdkTest::SetUp()
+void DemuxerFormatNdkTest::SetUpTestCase() {}
+void DemuxerFormatNdkTest::TearDownTestCase() {}
+void DemuxerFormatNdkTest::SetUp()
 {
     memory = OH_AVMemory_Create(g_width * g_height);
     g_trackCount = 0;
 }
-void DemuxerProc2NdkTest::TearDown()
+void DemuxerFormatNdkTest::TearDown()
 {
     if (trackFormat != nullptr) {
         OH_AVFormat_Destroy(trackFormat);
@@ -114,6 +114,9 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
+
+string g_vvc8bitPath = string("/data/test/media/vvc_8bit_3840_2160.mp4");
+string g_vvc10bitPath = string("/data/test/media/vvc_aac_10bit_1920_1080.mp4");
 
 static int64_t GetFileSize(const char *fileName)
 {
@@ -535,7 +538,7 @@ static void OtherVideoParam(OH_AVFormat *paramFormat)
  * @tc.name      : demux hevc ts video
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerProc2NdkTest, SUB_MEDIA_DEMUXER_PROCESS_4400, TestSize.Level0)
+HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4400, TestSize.Level0)
 {
     int tarckType = 0;
     const char *file = "/data/test/media/test_265_B_Gop25_4sec.mp4";
@@ -590,7 +593,7 @@ HWTEST_F(DemuxerProc2NdkTest, SUB_MEDIA_DEMUXER_PROCESS_4400, TestSize.Level0)
  * @tc.name      : demux avc ts video
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerProc2NdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
+HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
 {
     int tarckType = 0;
     const char *file = "/data/test/media/test_264_B_Gop25_4sec.mp4";
@@ -644,7 +647,7 @@ HWTEST_F(DemuxerProc2NdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
  * @tc.name      : demux avc pg video
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerProc2NdkTest, SUB_MEDIA_DEMUXER_PROCESS_4510, TestSize.Level0)
+HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4510, TestSize.Level0)
 {
     int tarckType = 0;
     const char *file = "/data/test/media/01_1_h265.mp4";
@@ -698,16 +701,16 @@ HWTEST_F(DemuxerProc2NdkTest, SUB_MEDIA_DEMUXER_PROCESS_4510, TestSize.Level0)
  * @tc.name      : demuxer 8bit H266 MP4 file, check key
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0500, TestSize.Level0)
+HWTEST_F(DemuxerFormatNdkTest, VIDEO_DEMUXER_VVC_0500, TestSize.Level0)
 {
-    if (access(g_mp4Vvc8bitPath.c_str(), F_OK) != 0) {
+    if (access(g_vvc8bitPath.c_str(), F_OK) != 0) {
         return;
     }
     int64_t duration = 0;
     int64_t startTime;
-    int fd = open(g_mp4Vvc8bitPath.c_str(), O_RDONLY);
-    int64_t size = GetFileSize(g_mp4Vvc8bitPath.c_str());
-    cout << g_mp4Vvc8bitPath.c_str() << "---------" << fd << "----------" << size <<endl;
+    int fd = open(g_vvc8bitPath.c_str(), O_RDONLY);
+    int64_t size = GetFileSize(g_vvc8bitPath.c_str());
+    cout << g_vvc8bitPath.c_str() << "---------" << fd << "----------" << size <<endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
@@ -729,17 +732,17 @@ HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0500, TestSize.Level0)
  * @tc.name      : demuxer 10bit H266 MP4 file, check key
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0600, TestSize.Level0)
+HWTEST_F(DemuxerFormatNdkTest, VIDEO_DEMUXER_VVC_0600, TestSize.Level0)
 {
-    if (access(g_mp4Vvc10bitPath.c_str(), F_OK) != 0) {
+    if (access(g_vvc10bitPath.c_str(), F_OK) != 0) {
         return;
     }
     int64_t duration = 0;
     int64_t startTime;
     int tarckType = 0;
-    int fd = open(g_mp4Vvc10bitPath.c_str(), O_RDONLY);
-    int64_t size = GetFileSize(g_mp4Vvc10bitPath.c_str());
-    cout << g_mp4Vvc10bitPath.c_str() << "---------" << fd << "----------" << size <<endl;
+    int fd = open(g_vvc10bitPath.c_str(), O_RDONLY);
+    int64_t size = GetFileSize(g_vvc10bitPath.c_str());
+    cout << g_vvc10bitPath.c_str() << "---------" << fd << "----------" << size <<endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
