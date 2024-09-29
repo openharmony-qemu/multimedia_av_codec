@@ -114,7 +114,7 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
         auto ret = nalUnitReader_->ReadNalUnit(bufferAddr, frameSize);
         CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Sample failed");
 
-        auto naluType = nalDetector_->GetNalType(bufferAddr);
+        auto naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(bufferAddr));
         bufferInfo.attr.size += frameSize;
         bufferAddr += frameSize;
         bufferInfo.attr.flags |= nalDetector_->IsXPS(naluType) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : 0;
@@ -164,7 +164,12 @@ BitstreamReader::AnnexbNalUnitReader::AnnexbNalUnitReader(std::shared_ptr<std::i
 
 bool BitstreamReader::AnnexbNalUnitReader::IsEOS()
 {
-    return (pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->peek() == EOF) && nalUnit_->empty();
+    return IsEOF() && nalUnit_->empty();
+}
+
+bool BitstreamReader::AnnexbNalUnitReader::IsEOF()
+{
+    return (pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->peek() == EOF);
 }
 
 void BitstreamReader::AnnexbNalUnitReader::PrereadFile()
@@ -215,7 +220,12 @@ BitstreamReader::AvccNalUnitReader::AvccNalUnitReader(std::shared_ptr<std::ifstr
 
 bool BitstreamReader::AvccNalUnitReader::IsEOS()
 {
-    return inputFile_->peek() == EOF && nalUnit_->empty();
+    return IsEOF() && nalUnit_->empty();
+}
+
+bool BitstreamReader::AvccNalUnitReader::IsEOF()
+{
+    return inputFile_->peek() == EOF;
 }
 
 void BitstreamReader::AvccNalUnitReader::PrereadNalUnit()
@@ -253,7 +263,7 @@ const uint8_t *BitstreamReader::NalDetector::GetNalTypeAddr(const uint8_t *buffe
 
 uint8_t BitstreamReader::AVCNalDetector::GetNalType(const uint8_t *bufferAddr)
 {
-    return (*GetNalTypeAddr(bufferAddr)) & 0x1F; // AVC Nal offset: value & 0x1F
+    return (*bufferAddr) & 0x1F; // AVC Nal offset: value & 0x1F
 }
 
 bool BitstreamReader::AVCNalDetector::IsXPS(uint8_t nalType)
@@ -268,7 +278,7 @@ bool BitstreamReader::AVCNalDetector::IsIDR(uint8_t nalType)
 
 uint8_t BitstreamReader::HEVCNalDetector::GetNalType(const uint8_t *bufferAddr)
 {
-    return (((*GetNalTypeAddr(bufferAddr)) & 0x7E) >> 1);    // HEVC Nal offset: (value & 0x7E) >> 1
+    return (((*bufferAddr) & 0x7E) >> 1);    // HEVC Nal offset: (value & 0x7E) >> 1
 }
 
 bool BitstreamReader::AVCNalDetector::IsVCL(uint8_t nalType)
@@ -276,11 +286,12 @@ bool BitstreamReader::AVCNalDetector::IsVCL(uint8_t nalType)
     return (nalType >= AVC_NON_IDR && nalType <= AVC_IDR) ? true : false;
 }
 
-bool BitstreamReader::AVCNalDetector::IsFullVCL(uint8_t nalType, const uint8_t *NextNaluTypeAddr)
+bool BitstreamReader::AVCNalDetector::IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr)
 {
+    auto nextNaluType = GetNalType(nextNaluTypeAddr);
     return (IsVCL(nalType) && (
-        (!IsVCL(*NextNaluTypeAddr)) ||
-        ((IsVCL(*NextNaluTypeAddr)) && (*(NextNaluTypeAddr + 1) & 0x80))    // 0x80: first_mb_in_slice
+        (!IsVCL(nextNaluType)) ||
+        ((IsVCL(nextNaluType)) && (*(nextNaluTypeAddr + 1) & 0x80))    // 0x80: first_mb_in_slice
     ));
 }
 
@@ -299,11 +310,12 @@ bool BitstreamReader::HEVCNalDetector::IsVCL(uint8_t nalType)
     return (nalType >= HEVC_TRAIL_N && nalType <= HEVC_CRA_NUT) ? true : false;
 }
 
-bool BitstreamReader::HEVCNalDetector::IsFullVCL(uint8_t nalType, const uint8_t *NextNaluTypeAddr)
+bool BitstreamReader::HEVCNalDetector::IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr)
 {
+    auto nextNaluType = GetNalType(nextNaluTypeAddr);
     return (IsVCL(nalType) && (
-        (!IsVCL(*NextNaluTypeAddr)) ||
-        ((IsVCL(*NextNaluTypeAddr)) && (*(NextNaluTypeAddr + 2) & 0x80)) // 0x80: first_slice_segment_in_pic_flag
+        (!IsVCL(nextNaluType)) ||
+        ((IsVCL(nextNaluType)) && (*(nextNaluTypeAddr + 2) & 0x80)) // 0x80: first_slice_segment_in_pic_flag
     ));
 }
 } // Sample
