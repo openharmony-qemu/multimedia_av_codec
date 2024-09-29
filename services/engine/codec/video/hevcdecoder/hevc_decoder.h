@@ -45,7 +45,7 @@ using AVAllocator = Media::AVAllocator;
 using AVAllocatorFactory = Media::AVAllocatorFactory;
 using MemoryFlag = Media::MemoryFlag;
 using FormatDataType = Media::FormatDataType;
-class HevcDecoder : public CodecBase {
+class HevcDecoder : public CodecBase, public RefBase {
 public:
     explicit HevcDecoder(const std::string &name);
     ~HevcDecoder() override;
