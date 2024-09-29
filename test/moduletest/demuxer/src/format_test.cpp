@@ -441,7 +441,7 @@ static void SetOtherAllParam(OH_AVFormat *paramFormat)
     const char* description = nullptr;
     const char* lyrics = nullptr;
     const char* title = nullptr;
-    int32_t dur = 10820000;
+    int32_t dur = 10800000;
     ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_DURATION, &duration));
     ASSERT_EQ(dur, duration);
     ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_TITLE, &title));
@@ -500,37 +500,28 @@ static void OtherVideoParam(OH_AVFormat *paramFormat)
     int32_t width = 3840;
     int32_t height = 2160;
     int32_t framerateActual = 30;
-    int32_t bitrateActual = 10543729;
-    int32_t rotationActual = 0;
+    int32_t bitrateActual = 24863756;
+    int32_t rotationActual = 180;
     ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_WIDTH, &currentWidth));
     ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_HEIGHT, &currentHeight));
     ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_ROTATION, &rotation));
     ASSERT_TRUE(OH_AVFormat_GetDoubleValue(paramFormat, OH_MD_KEY_FRAME_RATE, &frameRate));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_PROFILE, &profile));
     ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_BITRATE, &bitrate));
     ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, &mode));
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_RANGE_FLAG, &flag));
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_TRANSFER_CHARACTERISTICS, &characteristics));
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_MATRIX_COEFFICIENTS, &coefficients));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_RANGE_FLAG, &flag));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_TRANSFER_CHARACTERISTICS, &characteristics));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_MATRIX_COEFFICIENTS, &coefficients));
     ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_COLOR_PRIMARIES, &primaries));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_COLOR_PRIMARIES, &primaries));
     ASSERT_FALSE(OH_AVFormat_GetDoubleValue(paramFormat, OH_MD_KEY_VIDEO_SAR, &sar));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-    if (!access("/system/lib64/media/", 0)) {
-        ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_PROFILE, &profile));
-        ASSERT_EQ(0, profile);
-    } else {
-        ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_PROFILE, &profile));
-    }
-    ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_VIDEO_HEVC));
+    ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_VIDEO_AVC));
     ASSERT_EQ(width, currentWidth);
     ASSERT_EQ(height, currentHeight);
     ASSERT_EQ(framerateActual, frameRate);
     ASSERT_EQ(bitrateActual, bitrate);
     ASSERT_EQ(rotationActual, rotation);
-    ASSERT_EQ(0, flag);
-    ASSERT_EQ(TRANSFER_CHARACTERISTIC_BT709, characteristics);
-    ASSERT_EQ(MATRIX_COEFFICIENT_BT709, coefficients);
-    ASSERT_EQ(COLOR_PRIMARY_BT709, primaries);
 }
 
 /**
@@ -644,13 +635,13 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
 }
 /**
  * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_4510
- * @tc.name      : demux avc pg video
+ * @tc.name      : demux avc ios video, check key
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4510, TestSize.Level0)
 {
     int tarckType = 0;
-    const char *file = "/data/test/media/01_1_h265.mp4";
+    const char *file = "/data/test/media/recodeFromIos.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << fd << "---------" << size << endl;
@@ -660,7 +651,7 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4510, TestSize.Level0)
     ASSERT_NE(demuxer, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    ASSERT_EQ(2, g_trackCount);
+    ASSERT_EQ(5, g_trackCount);
     SetOtherAllParam(sourceFormat);
     const char* mimeType = nullptr;
     for (int32_t index = 0; index < 2; index++) {
