@@ -1,6 +1,3 @@
-#ifndef HUAWEI_DEVICE_LICENSE_H
-#define HUAWEI_DEVICE_LICENSE_H
-
 /*
  * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -153,4 +150,3 @@ HWTEST_F(DemuxerPluginManagerUnitTest, IsSubtitleMime_001, TestSize.Level1)
 }
 }
 }
-#endif
