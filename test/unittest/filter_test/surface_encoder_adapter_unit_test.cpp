@@ -720,9 +720,12 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_GetOutputFormat_01
  * @tc.desc: SetEncoderAdapterKeyFramePtsCallback
  * @tc.type: FUNC
  */
-HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetEncoderAdapterKeyFramePtsCallback_0100, TestSize.Level1)
+HWTEST_F(SurfaceEncoderAdapterUnitTest, 
+    SurfaceEncoderAdapter_SetEncoderAdapterKeyFramePtsCallback_0100, 
+    TestSize.Level1)
 {
-    Status ret = surfaceEncoderAdapter_->SetEncoderAdapterKeyFramePtsCallback(std::make_shared<MockEncoderAdapterKeyFramePtsCallback>());
+    Status ret = surfaceEncoderAdapter_->SetEncoderAdapterKeyFramePtsCallback(
+        std::make_shared<MockEncoderAdapterKeyFramePtsCallback>());
     EXPECT_EQ(ret, Status::OK);
 }
 }  // namespace Pipeline
