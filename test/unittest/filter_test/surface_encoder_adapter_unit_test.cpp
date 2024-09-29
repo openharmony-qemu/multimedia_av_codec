@@ -720,8 +720,8 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_GetOutputFormat_01
  * @tc.desc: SetEncoderAdapterKeyFramePtsCallback
  * @tc.type: FUNC
  */
-HWTEST_F(SurfaceEncoderAdapterUnitTest, 
-    SurfaceEncoderAdapter_SetEncoderAdapterKeyFramePtsCallback_0100, 
+HWTEST_F(SurfaceEncoderAdapterUnitTest,
+    SurfaceEncoderAdapter_SetEncoderAdapterKeyFramePtsCallback_0100,
     TestSize.Level1)
 {
     Status ret = surfaceEncoderAdapter_->SetEncoderAdapterKeyFramePtsCallback(
