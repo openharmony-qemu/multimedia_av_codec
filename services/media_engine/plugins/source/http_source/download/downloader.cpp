@@ -320,13 +320,10 @@ void Downloader::Cancel()
         currentRequest_->retryTimes_ = 0;
     }
     requestQue_->SetActive(false, true);
-    if (currentRequest_ != nullptr) {
-        currentRequest_->Close();
-    }
+    shouldStartNextRequest = true;
     if (client_ != nullptr) {
         client_->Close(false);
     }
-    shouldStartNextRequest = true;
     PauseLoop(true);
     WaitLoopPause();
     MEDIA_LOG_I("Cancel End");
