@@ -27,8 +27,9 @@ int32_t GetFCodecCapabilityList(std::vector<CapabilityData> &caps)
 
 void CreateFCodecByName(const std::string &name, std::shared_ptr<CodecBase> &codec)
 {
-    FCodec *fcodec = new FCodec(name);
-    codec = std::shared_ptr<FCodec>(fcodec, [](FCodec *ptr) { (void)ptr; });
+    sptr<FCodec> fcodec = new (std::nothrow) FCodec(name);
+    fcodec->IncStrongRef(fcodec.GetRefPtr());
+    codec = std::shared_ptr<FCodec>(fcodec.GetRefPtr(), [](FCodec *ptr) { (void)ptr; });
 }
 }
 } // namespace OHOS::MediaAVCodec::Codec
