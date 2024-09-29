@@ -1140,8 +1140,6 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     int dataSize = static_cast<int>(buffer->GetMemory()->GetSize());
     MEDIA_LOG_D("Want data size:" PUBLIC_LOG_D32 ", Get data size:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64
         ", readatIndex:" PUBLIC_LOG_D32, bufSize, dataSize, ioContext->offset, readatIndex_.load());
-
-
 #ifdef BUILD_ENG_VERSION
     DumpParam dumpParam {DumpMode(DUMP_READAT_INPUT & ioContext->dumpMode), buf, -1, ioContext->offset,
         dataSize, readatIndex_++, -1, -1};
