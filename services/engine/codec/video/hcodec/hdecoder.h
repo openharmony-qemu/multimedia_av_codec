@@ -17,6 +17,9 @@
 #define HCODEC_HDECODER_H
 
 #include "hcodec.h"
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+#include "video_refreshrate_prediction.h"
+#endif
 
 namespace OHOS::MediaAVCodec {
 class HDecoder : public HCodec {
@@ -93,6 +96,14 @@ private:
     void OnClearBufferPool(OMX_DIRTYPE portIndex) override;
     void CancelBufferToSurface(BufferInfo &info);
     void OnEnterUninitializedState() override;
+
+    // VRR
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+    int32_t SetVrrEnable(const Format &format);
+    int32_t VrrPrediction(BufferInfo &info) override;
+    static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
+    std::unique_ptr<OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction> vrrPredictor_;
+#endif
 
 private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;

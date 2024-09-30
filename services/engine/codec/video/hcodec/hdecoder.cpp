@@ -64,6 +64,12 @@ int32_t HDecoder::OnConfigure(const Format &format)
     SaveScaleMode(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+    ret = SetVrrEnable(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+#endif
     return SetupPort(format);
 }
 
@@ -391,6 +397,47 @@ int32_t HDecoder::SetScaleMode()
     HLOGI("set ScalingMode %d to surface succ", scaleMode_.value());
     return AVCS_ERR_OK;
 }
+
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+int32_t HDecoder::SetVrrEnable(const Format &format)
+{
+    int32_t vrrEnable = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, vrrEnable)) {
+        return AVCS_ERR_UNSUPPORT;
+    }
+    if (vrrEnable == 0) {
+        HLOGI("VRR disabled");
+        return AVCS_ERR_OK;
+    }
+    optional<double> frameRate = GetFrameRateFromUser(format);
+    if (frameRate.has_value() && floor(frameRate.value()) != VRR_DEFAULT_INPUT_FRAME_RATE
+        && ceil(frameRate.value()) != VRR_DEFAULT_INPUT_FRAME_RATE) {
+        HLOGE("VRR only support for 60fps, current frameRate = %f", frameRate.value());
+        return AVCS_ERR_UNSUPPORT;
+    }
+
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = OMX_TRUE;
+    if (!SetParameter(OMX_IndexParamIsMvUpload, param)) {
+        HLOGE("VRR SetIsMvUploadParam SetParameter failed");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    vrrPredictor_ = OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction::Create();
+    if (vrrPredictor_ == nullptr) {
+        HLOGE("VRR VideoRefreshRatePrediction create failed");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    int32_t ret = vrrPredictor_->CheckLtpoSupport();
+    if (ret != AVCS_ERR_OK) {
+        HLOGE("VRR SetParameter failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    isVrrEnable_ = true;
+    HLOGI("VRR enabled");
+    return AVCS_ERR_OK;
+}
+#endif
 
 int32_t HDecoder::SubmitOutputBuffersToOmxNode()
 {
@@ -1100,4 +1147,26 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     SetScaleMode();
     HLOGI("set surface(%" PRIu64 ")(%s) succ", newId, newSurface->GetName().c_str());
 }
+
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+int32_t HDecoder::VrrPrediction(BufferInfo &info)
+{
+    SCOPED_TRACE();
+    if (vrrPredictor_ == nullptr) {
+        HLOGE("vrrPredictor_ is nullptr");
+        return AVCS_ERR_INVALID_OPERATION;
+    }
+    int vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_NONE;
+    if (static_cast<int>(codingType_) == CODEC_OMX_VIDEO_CodingHEVC) {
+        vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_HEVC;
+    } else if (static_cast<int>(codingType_) == OMX_VIDEO_CodingAVC) {
+        vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_AVC;
+    } else {
+        HLOGE("VRR only support for HEVC or AVC");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    vrrPredictor_->Process(info.surfaceBuffer, static_cast<int32_t>(codecRate_), vrrMvType);
+    return AVCS_ERR_OK;
+}
+#endif
 } // namespace OHOS::MediaAVCodec

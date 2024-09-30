@@ -1019,6 +1019,11 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
                 NotifyOmxToFillThisOutBuffer(info);
                 return;
             }
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+            if (!isEncoder_ && isVrrEnable_) {
+                (void)VrrPrediction(info);
+            }
+#endif
             NotifyUserOutBufferAvaliable(info);
             if (eos) {
                 outputPortEos_ = true;

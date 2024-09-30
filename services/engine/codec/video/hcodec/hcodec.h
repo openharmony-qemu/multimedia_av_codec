@@ -346,6 +346,12 @@ protected:
     bool gotFirstOutput_ = false;
     bool outPortHasChanged_ = false;
 
+    // VRR
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+    bool isVrrEnable_ = false;
+    virtual int32_t VrrPrediction(BufferInfo &info) { return AVCS_ERR_UNSUPPORT; }
+#endif
+
     struct TotalCntAndCost {
         uint64_t totalCnt = 0;
         uint64_t totalCostUs = 0;

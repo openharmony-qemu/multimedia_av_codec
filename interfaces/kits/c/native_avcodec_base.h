@@ -647,6 +647,14 @@ extern const char *OH_MD_KEY_TRACK_START_TIME;
  * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE;
+/**
+ * @brief Key for describing if enable VRR or not, value type is int32_t (0 or 1): 1 is enabled, 0 otherwise.
+ * This is an optional key that applies only to video decoder. It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+extern const char *OH_MD_KEY_VIDEO_DECODER_ENABLE_VRR;
 
 /**
  * @brief Media type.
