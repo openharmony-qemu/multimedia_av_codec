@@ -1251,8 +1251,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1205, TestSize.Level1)
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 1500, 1000, 1740, 1970, 2100}; // ms
-    vector<int32_t> videoVals = {0, 76, 76, 0, 76, 0, 0, 76, 76, 0, 76, 0, 0, 76, 0, 0, 76, 0};
-    vector<int32_t> audioVals = {0, 107, 107, 0, 107, 0, 0, 107, 107, 0, 107, 0, 0, 107, 0, 0, 107, 0};
+    vector<int32_t> videoVals = {76, 76, 76, 0, 76, 0, 0, 76, 76, 0, 76, 0, 0, 76, 0, 0, 76, 0};
+    vector<int32_t> audioVals = {107, 107, 107, 0, 107, 0, 0, 107, 107, 0, 107, 0, 0, 107, 0, 0, 107, 0};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1289,8 +1289,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1230, TestSize.Level1)
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 4500, 7000, 2000}; // ms
-    vector<int32_t> videoVals = {352, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 602};
-    vector<int32_t> audioVals = {253, 433, 433, 74, 254, 254, 74, 254, 74, 253, 433, 433};
+    vector<int32_t> videoVals = {602, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 602};
+    vector<int32_t> audioVals = {433, 433, 433, 74, 254, 254, 74, 254, 74, 253, 433, 433};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1327,7 +1327,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1240, TestSize.Level1)
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 4500, 7000, 2000}; // ms
-    vector<int32_t> videoVals = {352, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 602};
+    vector<int32_t> videoVals = {602, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 602};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
