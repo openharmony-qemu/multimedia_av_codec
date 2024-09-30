@@ -641,7 +641,7 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
 HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4510, TestSize.Level0)
 {
     int tarckType = 0;
-    const char *file = "/data/test/media/recodeFromIos.mp4";
+    const char *file = "/data/test/media/record_from_ios.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << fd << "---------" << size << endl;
