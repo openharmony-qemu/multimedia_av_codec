@@ -102,7 +102,7 @@ private:
     int32_t SetVrrEnable(const Format &format);
     int32_t VrrPrediction(BufferInfo &info) override;
     static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
-    std::unique_ptr<OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction> vrrPredictor_;
+    std::shared_ptr<OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction> vrrPredictor_;
 #endif
 
 private:
