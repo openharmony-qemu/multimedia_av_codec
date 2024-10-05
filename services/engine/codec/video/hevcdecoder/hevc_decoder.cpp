@@ -1291,9 +1291,15 @@ int32_t HevcDecoder::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surface
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_INVALID_VAL,
                              "Failed to update surface memory: surface buffer is NULL");
     OHOS::BufferFlushConfig flushConfig = {{0, 0, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight()},
-        outAVBuffer4Surface_[index]->pts_};
+        outAVBuffer4Surface_[index]->pts_, -1};
     surfaceMemory->SetNeedRender(true);
     surfaceMemory->UpdateSurfaceBufferScaleMode();
+    if (outAVBuffer4Surface_[index]->meta_->Find(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP) !=
+        outAVBuffer4Surface_[index]->meta_->end()) {
+        outAVBuffer4Surface_[index]->meta_->Get<OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP>(
+            flushConfig.desiredPresentTimestamp);
+        outAVBuffer4Surface_[index]->meta_->Remove(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP);
+    }
     auto res = sInfo_.surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
     if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
         AVCODEC_LOGW("Failed to update surface memory: %{public}d", res);
@@ -1301,7 +1307,7 @@ int32_t HevcDecoder::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surface
         surfaceMemory->ReleaseSurfaceBuffer();
         return AVCS_ERR_UNKNOWN;
     }
-    renderSurfaceBufferMap_[index] = surfaceBuffer;
+    renderSurfaceBufferMap_[index] = std::make_pair(surfaceBuffer, flushConfig);
     surfaceMemory->ReleaseSurfaceBuffer();
     return AVCS_ERR_OK;
 }
@@ -1394,7 +1400,7 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         sptr<SurfaceBuffer> surfaceBuffer = nullptr;
         if (buffers_[INDEX_OUTPUT][index]->owner_ == HBuffer::Owner::OWNED_BY_SURFACE) {
             if (renderSurfaceBufferMap_.count(index)) {
-                surfaceBuffer = renderSurfaceBufferMap_[index];
+                surfaceBuffer = renderSurfaceBufferMap_[index].first;
                 ownedBySurfaceBufferIndex.push_back(index);
             }
         } else {
@@ -1435,9 +1441,8 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
 int32_t HevcDecoder::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index)
 {
     std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory;
-    sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index];
-    OHOS::BufferFlushConfig flushConfig = {{0, 0, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight()},
-        outAVBuffer4Surface_[index]->pts_};
+    sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index].first;
+    OHOS::BufferFlushConfig flushConfig = renderSurfaceBufferMap_[index].second;
     surfaceMemory->SetNeedRender(true);
     newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), sInfo_.scalingMode);
     auto res = newSurface->FlushBuffer(surfaceBuffer, -1, flushConfig);
