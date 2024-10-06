@@ -262,6 +262,15 @@ const uint8_t *BitstreamReader::NalDetector::GetNalTypeAddr(const uint8_t *buffe
     return pos + ANNEXB_FRAME_HEAD_LEN;
 }
 
+bool BitstreamReader::NalDetector::IsFullVCL(uint8_t nalType, const uint8_t *nextNalTypeAddr)
+{
+    auto nextNalType = GetNalType(nextNalTypeAddr);
+    return (IsVCL(nalType) && (
+        (!IsVCL(nextNalType)) ||
+        ((IsVCL(nextNalType)) && IsFirstSlice(nextNalTypeAddr))
+    ));
+}
+
 uint8_t BitstreamReader::AVCNalDetector::GetNalType(const uint8_t *bufferAddr)
 {
     return (*bufferAddr) & 0x1F; // AVC Nal offset: value & 0x1F
@@ -287,13 +296,9 @@ bool BitstreamReader::AVCNalDetector::IsVCL(uint8_t nalType)
     return (nalType >= AVC_NON_IDR && nalType <= AVC_IDR) ? true : false;
 }
 
-bool BitstreamReader::AVCNalDetector::IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr)
+bool BitstreamReader::AVCNalDetector::IsFirstSlice(const uint8_t *nalTypeAddr)
 {
-    auto nextNaluType = GetNalType(nextNaluTypeAddr);
-    return (IsVCL(nalType) && (
-        (!IsVCL(nextNaluType)) ||
-        ((IsVCL(nextNaluType)) && !(*(nextNaluTypeAddr + 1) & 0x80))    // 0x80: first_mb_in_slice
-    ));
+    return !(*(nalTypeAddr + 1) & 0x80);   // *(nalTypeAddr + 1) & 0x80: AVC first_mb_in_slice
 }
 
 bool BitstreamReader::HEVCNalDetector::IsXPS(uint8_t nalType)
@@ -311,13 +316,9 @@ bool BitstreamReader::HEVCNalDetector::IsVCL(uint8_t nalType)
     return (nalType >= HEVC_TRAIL_N && nalType <= HEVC_CRA_NUT) ? true : false;
 }
 
-bool BitstreamReader::HEVCNalDetector::IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr)
+bool BitstreamReader::HEVCNalDetector::IsFirstSlice(const uint8_t *nalTypeAddr)
 {
-    auto nextNaluType = GetNalType(nextNaluTypeAddr);
-    return (IsVCL(nalType) && (
-        (!IsVCL(nextNaluType)) ||
-        ((IsVCL(nextNaluType)) && (*(nextNaluTypeAddr + 2) & 0x80)) // 0x80: first_slice_segment_in_pic_flag
-    ));
+    return *(nalTypeAddr + 2) & 0x80;   // *(nalTypeAddr + 2) & 0x80: HEVC first_slice_segment_in_pic_flag
 }
 } // Sample
 } // MediaAVCodec

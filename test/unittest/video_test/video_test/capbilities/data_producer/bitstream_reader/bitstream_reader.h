@@ -30,7 +30,7 @@ private:
 
     class NalUnitReader {
     public:
-        NalUnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        explicit NalUnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
         virtual ~NalUnitReader() {};
         uint8_t const *GetNextNalUnitAddr();
         int32_t ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize);
@@ -47,7 +47,7 @@ private:
 
     class AnnexbNalUnitReader : public NalUnitReader {
     public:
-        AnnexbNalUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        explicit AnnexbNalUnitReader(std::shared_ptr<std::ifstream> inputFile);
         bool IsEOS() override;
 
     private:
@@ -62,7 +62,7 @@ private:
 
     class AvccNalUnitReader : public NalUnitReader {
     public:
-        AvccNalUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        explicit AvccNalUnitReader(std::shared_ptr<std::ifstream> inputFile);
         bool IsEOS() override;
 
     private:
@@ -79,7 +79,8 @@ private:
         virtual bool IsXPS(uint8_t nalType) = 0;
         virtual bool IsIDR(uint8_t nalType) = 0;
         virtual bool IsVCL(uint8_t nalType) = 0;
-        virtual bool IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr) = 0;
+        virtual bool IsFirstSlice(const uint8_t *nalTypeAddr) = 0;
+        bool IsFullVCL(uint8_t nalType, const uint8_t *nextNalTypeAddr);
     };
 
     class AVCNalDetector : public NalDetector {
@@ -88,7 +89,7 @@ private:
         bool IsXPS(uint8_t nalType) override;
         bool IsIDR(uint8_t nalType) override;
         bool IsVCL(uint8_t nalType) override;
-        bool IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr) override;
+        bool IsFirstSlice(const uint8_t *nalTypeAddr) override;
     };
 
     class HEVCNalDetector : public NalDetector {
@@ -97,7 +98,7 @@ private:
         bool IsXPS(uint8_t nalType) override;
         bool IsIDR(uint8_t nalType) override;
         bool IsVCL(uint8_t nalType) override;
-        bool IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr) override;
+        bool IsFirstSlice(const uint8_t *nalTypeAddr) override;
     };
 
     std::shared_ptr<NalUnitReader> nalUnitReader_ = nullptr;
