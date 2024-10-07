@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <mutex>
 #include <thread>
 #include "playlist_downloader.h"
+#include "download/downloader.h"
 #include "media_downloader.h"
 #include "osal/utils/ring_buffer.h"
 #include "osal/utils/steady_clock.h"
@@ -85,7 +86,6 @@ public:
         double hstTime, const PlayInfo& item);
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void AutoSelectBitrate(uint32_t bitRate);
-    size_t GetRingBufferSize();
     size_t GetTotalBufferSize();
     void SetInterruptState(bool isInterruptNeeded) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
@@ -95,9 +95,10 @@ public:
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     void ReportVideoSizeChange();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
-    void SetAppUid(int32_t appUid) override;
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
+    size_t GetBufferingTimeOut() override;
+    void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
     Status StopBufferring(bool isAppBackground) override;
@@ -113,7 +114,7 @@ private:
     void InitMediaDownloader();
     void DownloadRecordHistory(int64_t nowTime);
     void OnWriteCacheBuffer(uint32_t len);
-    void OnReadCacheBuffer(uint32_t len);
+    void OnReadBuffer(uint32_t len);
     double GetAveDownSpeed();
     uint64_t GetMinBuffer();
     void DownloadReport();
@@ -126,7 +127,6 @@ private:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     uint64_t TransferSizeToBitRate(int width);
-    void CacheData();
     bool HandleBuffering();
     bool HandleCache();
     bool CheckReadStatus();
@@ -142,7 +142,6 @@ private:
     void UpdateCachedPercent(BufferingInfoType infoType);
     bool CheckBufferingOneSeconds();
     float GetCacheDuration(float ratio);
-    size_t GetCacheBufferSize();
     void HandleFfmpegReadback(uint64_t ffmpegOffset);
     void SeekToTsForRead(uint32_t currentTsIndex);
     int64_t RequestNewTsForRead(const PlayInfo& item);
@@ -151,7 +150,6 @@ private:
     bool CheckDataIntegrity();
     void HlsInit();
     bool SaveCacheBufferData(uint8_t* data, uint32_t len);
-    bool GetBufferingTimeOut() override;
     bool ClearChunksOfFragment();
 
 private:
@@ -273,15 +271,11 @@ private:
     std::atomic<uint32_t> readTsIndex_ {0};
     std::atomic<bool> canWrite_ {true};
     uint64_t ffmpegOffset_ = 0;
-    std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
-
-    SteadyClock cachedDurationClock_;
-    SteadyClock freezeClock_;
-    bool isNearSeek_ {false};
-    bool isFreeze_ {false};
     volatile size_t wantedReadLength_ {0};
     volatile size_t bufferingTime_ {0};
     FairMutex tsStorageInfoMutex_ {};
+
+    std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 };
 }
 }

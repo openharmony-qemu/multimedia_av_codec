@@ -1753,6 +1753,7 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
             return Status::OK;
         }
+        HandleAutoMaintainPts(trackId, bufferMap_[trackId]);
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
     } else {

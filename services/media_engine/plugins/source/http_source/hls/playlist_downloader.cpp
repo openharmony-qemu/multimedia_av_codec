@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -95,10 +95,10 @@ void PlayListDownloader::DoOpen(const std::string& url)
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
 
-    RequestInfo mediaSouce;
-    mediaSouce.url = url;
-    mediaSouce.httpHeader = httpHeader_;
-    downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSouce, true);
+    RequestInfo requestInfo;
+    requestInfo.url = url;
+    requestInfo.httpHeader = httpHeader_;
+    downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, requestInfo, true);
     if (downloadRequest_ == nullptr) {
         MEDIA_LOG_E("no enough memory downloadRequest_ is nullptr");
         return;
@@ -235,7 +235,7 @@ void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr
 {
     // This should not be called normally
     MEDIA_LOG_D("Should not call this OnDownloadStatus, should call monitor.");
-    if (request->GetClientError() != 0 || request->GetServerError() != 0) {
+    if (request->GetClientError() != NetworkClientErrorCode::ERROR_OK || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
 }
@@ -314,13 +314,6 @@ std::map<std::string, std::string> PlayListDownloader::GetHttpHeader()
     return httpHeader_;
 }
 
-void PlayListDownloader::SetAppUid(int32_t appUid)
-{
-    if (downloader_) {
-        downloader_->SetAppUid(appUid);
-    }
-}
-
 void PlayListDownloader::SetCallback(Callback* cb)
 {
     eventCallback_ = cb;
@@ -331,6 +324,13 @@ void PlayListDownloader::SetInterruptState(bool isInterruptNeeded)
     isInterruptNeeded_ = isInterruptNeeded;
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded);
+    }
+}
+
+void PlayListDownloader::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
     }
 }
 

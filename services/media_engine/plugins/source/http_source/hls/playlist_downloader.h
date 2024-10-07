@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -74,8 +74,8 @@ public:
     void PlayListDownloaderInit();
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     std::map<std::string, std::string> GetHttpHeader();
-    void SetAppUid(int32_t appUid);
     void SetCallback(Callback* cb);
+    void SetAppUid(int32_t appUid);
     virtual size_t GetSegmentOffset(uint32_t tsIndex)
     {
         return 0;

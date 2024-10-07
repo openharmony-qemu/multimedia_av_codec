@@ -100,7 +100,7 @@ protected:
     FragmentIterator EraseFragmentCache(const FragmentIterator& iter);
     FragmentIterator GetOffsetFragmentCache(FragmentIterator& fragmentPos, uint64_t offset);
     ChunkIterator GetOffsetChunkCache(CacheChunkList& fragmentCacheBuffer, uint64_t offset);
-    static void DumpInner(uint64_t param);
+    void DumpInner(uint64_t param);
     bool CheckInner();
     void CheckFragment(const FragmentCacheBuffer& fragment, bool& checkSuccess);
     bool DumpAndCheckInner();

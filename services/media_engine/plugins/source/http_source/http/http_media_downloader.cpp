@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -52,11 +52,11 @@ constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 constexpr size_t MIN_WATER_LINE_ABOVE = 10 * 1024;
 constexpr int32_t ONE_SECONDS = 1000;
 constexpr int32_t TEN_MILLISECONDS = 10;
-constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.4;
-constexpr float CACHE_LEVEL_1                   = 0.3;
-constexpr float DEFAULT_CACHE_TIME              = 5;
-constexpr uint32_t CACHED_DURATION_NOTIFY_TIME = 500; // ms
+constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.9;
+constexpr float CACHE_LEVEL_1 = 0.3;
+constexpr float DEFAULT_CACHE_TIME = 10;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
+constexpr size_t MAX_WATER_LINE_ABOVE = 1 * 1024 * 1024;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -78,7 +78,6 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url)
     downloader_ = std::make_shared<Downloader>("http");
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     steadyClock_.Reset();
-    cachedDurationClock_.Reset();
     waterLineAbove_ = PLAY_WATER_LINE;
     recordData_ = std::make_shared<RecordData>();
 }
@@ -145,7 +144,6 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
     downloader_ = std::make_shared<Downloader>("http");
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     steadyClock_.Reset();
-    cachedDurationClock_.Reset();
     waterLineAbove_ = PLAY_WATER_LINE;
     recordData_ = std::make_shared<RecordData>();
 }
@@ -186,10 +184,10 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
             totalBits_, static_cast<int64_t>(downloadTime * SECOND_TO_MILLIONSECOND));
         HandleBuffering();
     };
-    RequestInfo mediaSouce;
-    mediaSouce.url = url;
-    mediaSouce.httpHeader = httpHeader;
-    downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, mediaSouce);
+    RequestInfo requestInfo;
+    requestInfo.url = url;
+    requestInfo.httpHeader = httpHeader;
+    downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloader_->Download(downloadRequest_, -1); // -1
     if (isRingBuffer_) {
@@ -207,7 +205,9 @@ void HttpMediaDownloader::Close(bool isAsync)
         buffer_->SetActive(false);
     }
     isInterrupt_ = true;
-    downloader_->Stop(isAsync);
+    if (downloader_) {
+        downloader_->Stop(isAsync);
+    }
     cvReadWrite_.NotifyOne();
     if (!isDownloadFinish_) {
         int64_t nowTime = steadyClock_.ElapsedMilliseconds();
@@ -283,7 +283,7 @@ bool HttpMediaDownloader::HandleBuffering()
         isBuffering_ = false;
     }
 
-    if (isFirstFrameArrived_ && callback_ != nullptr) {
+    if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: "
         PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32,
             GetCurrentBufferSize(), waterLineAbove_, isBuffering_, canWrite_.load());
@@ -299,8 +299,7 @@ bool HttpMediaDownloader::HandleBuffering()
 
 bool HttpMediaDownloader::StartBuffering(int32_t wantReadLength)
 {
-    if (!canWrite_ || downloadRequest_->IsChunkedVod() || wantReadLength <= 0 ||
-        callback_ == nullptr || isBuffering_) {
+    if (!canWrite_ || downloadRequest_->IsChunkedVod() || wantReadLength <= 0 || callback_ == nullptr) {
         return false;
     }
     size_t cacheWaterLine = 0;
@@ -330,6 +329,7 @@ bool HttpMediaDownloader::StartBuffering(int32_t wantReadLength)
             PUBLIC_LOG_ZU, waterLineAbove_, GetCurrentBufferSize());
         UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
         callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+        bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
         return true;
     }
     return false;
@@ -377,6 +377,7 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
 
 Status HttpMediaDownloader::ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
+    FALSE_RETURN_V(downloadRequest_ != nullptr, Status::ERROR_UNKNOWN);
     if (downloadRequest_ != nullptr) {
         readDataInfo.isEos_ = downloadRequest_->IsEos();
     }
@@ -436,10 +437,6 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
 
 Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    size_t remain = GetCurrentBufferSize();
-    MEDIA_LOG_D("HTTP Read in: wantReadLength " PUBLIC_LOG_D32 " isEos "
-        PUBLIC_LOG_D32 " readOffset: " PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_ZU, readDataInfo.wantReadLength_,
-        readDataInfo.isEos_, readOffset_, remain);
     if (isRingBuffer_) {
         FALSE_RETURN_V_MSG(buffer_ != nullptr, Status::END_OF_STREAM, "buffer_ = nullptr");
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
@@ -521,16 +518,16 @@ Status HttpMediaDownloader::CheckIsEosCacheBuffer(unsigned char* buff, ReadDataI
 void HttpMediaDownloader::ChangeDownloadPos()
 {
     MEDIA_LOG_D("HTTP ChangeDownloadPos in.");
-
+    if (writeOffset_ == readOffset_ + cacahedMediaBuffer_->GetBufferSize(readOffset_) && canWrite_) {
+        return;
+    }
     if (!canWrite_) {
         MEDIA_LOG_I("HTTP CacheMediaBuffer clear.");
-        isNeedDropData_ = true;
         downloader_->Pause();
         cacheMediaBuffer_->Clear();
-    } else {
-        isNeedDropData_ = true;
-        downloader_->Pause();
     }
+    isNeedDropData_ = true;
+    downloader_->Pause();
 
     isNeedDropData_ = false;
     size_t downloadOffset = static_cast<size_t>(readOffset_) + cacheMediaBuffer_->GetBufferSize(readOffset_);
@@ -598,7 +595,6 @@ bool HttpMediaDownloader::SeekRingBuffer(int64_t offset)
 
 bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
 {
-    isNearSeek_ = true;
     size_t remain = cacheMediaBuffer_->GetBufferSize(offset);
     MEDIA_LOG_I("HTTP Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, remain, offset);
     if (remain > 0) {
@@ -849,18 +845,10 @@ void HttpMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("HTTP SetDownloadErrorState");
     downloadErrorState_ = true;
-    if (callback_ != nullptr) {
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+    if (callback_) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "download"});
     }
-    if (isRingBuffer_) {
-        if (buffer_ != nullptr && buffer_->GetSize() == 0) {
-            Close(true);
-        }
-    } else {
-        if (cacheMediaBuffer_ != nullptr && cacheMediaBuffer_->GetBufferSize(readOffset_) == 0) {
-            Close(true);
-        }
-    }
+    Close(true);
 }
 
 void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
@@ -1015,11 +1003,6 @@ void HttpMediaDownloader::HandleCachedDuration()
     if (currentBitRate_ <= 0 || callback_ == nullptr) {
         return;
     }
-    uint64_t onEventDuration = cachedDurationClock_.ElapsedMilliseconds();
-    if (onEventDuration < CACHED_DURATION_NOTIFY_TIME) {
-        return;
-    }
-    cachedDurationClock_.Reset();
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetCurrentBufferSize()) *
         BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<int64_t>(currentBitRate_));
     // Subtraction of unsigned integers requires size comparison first.
@@ -1136,6 +1119,7 @@ void HttpMediaDownloader::UpdateWaterLineAbove()
 
     waterLineAbove_ = std::min(waterLineAbove_, static_cast<size_t>(MAX_CACHE_BUFFER_SIZE *
         WATER_LINE_ABOVE_LIMIT_RATIO));
+    waterLineAbove_ = std::min(waterLineAbove_, MAX_WATER_LINE_ABOVE);
     MEDIA_LOG_D("UpdateWaterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
 }
 

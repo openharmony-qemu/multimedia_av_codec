@@ -103,7 +103,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo5, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, GetRingBufferSize, TestSize.Level1)
 {
-    size_t actualSize = hlsMediaDownloader->GetRingBufferSize();
+    size_t actualSize = hlsMediaDownloader->GetBufferSize();
     EXPECT_EQ(actualSize, 0);
 }
 
@@ -169,7 +169,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer1, TestSize.Level1)
 {
     uint32_t len = 100;
     hlsMediaDownloader->bufferedDuration_ = 50;
-    hlsMediaDownloader->OnReadCacheBuffer(len);
+    hlsMediaDownloader->OnReadBuffer(len);
     EXPECT_EQ(hlsMediaDownloader->bufferedDuration_, 0);
 }
 
@@ -177,7 +177,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer2, TestSize.Level1)
 {
     uint32_t len = 50;
     hlsMediaDownloader->bufferedDuration_ = 100;
-    hlsMediaDownloader->OnReadCacheBuffer(len);
+    hlsMediaDownloader->OnReadBuffer(len);
     EXPECT_LT(hlsMediaDownloader->bufferedDuration_, 100);
 }
 
@@ -186,7 +186,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer3, TestSize.Level1)
     uint32_t len = 50;
     hlsMediaDownloader->bufferedDuration_ = 0;
     hlsMediaDownloader->lastReadTime_ = 0;
-    hlsMediaDownloader->OnReadCacheBuffer(len);
+    hlsMediaDownloader->OnReadBuffer(len);
     EXPECT_NE(hlsMediaDownloader->bufferLeastRecord_, nullptr);
 }
 
@@ -196,7 +196,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer4, TestSize.Level1)
     hlsMediaDownloader->bufferedDuration_ = 0;
     hlsMediaDownloader->lastReadTime_ = 0;
     for (int i = 0; i < MAX_RECORD_COUNT + 1; i++) {
-        hlsMediaDownloader->OnReadCacheBuffer(len);
+        hlsMediaDownloader->OnReadBuffer(len);
     }
     EXPECT_NE(hlsMediaDownloader->bufferLeastRecord_->next, nullptr);
 }

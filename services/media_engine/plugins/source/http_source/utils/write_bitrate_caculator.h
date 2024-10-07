@@ -69,7 +69,7 @@ public:
     }
     void CaculateWriteBitrate()
     {
-        stopTime_ = steadyClock_.ElapsedMilliseconds();
+        stopTime_ = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
         uint64_t writeTime = GetWriteTime();
         if (writeTime == 0) {
             writeBitrate_ = 0;
