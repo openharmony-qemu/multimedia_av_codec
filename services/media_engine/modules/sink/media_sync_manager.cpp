@@ -24,6 +24,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "MediaSyncManager" };
+constexpr int64_t US_TO_MS = 1000; // 1000 us per ms
 }
 
 namespace OHOS {
@@ -386,6 +387,13 @@ int64_t MediaSyncManager::SimpleGetMediaTimeExactly(int64_t anchorClockTime, int
     return anchorMediaTime + (nowClockTime - anchorClockTime + delayTime) * static_cast<double>(playRate) - delayTime;
 }
 
+void MediaSyncManager::ReportLagEvent(int64_t lagDurationMs)
+{
+    auto eventReceiver = eventReceiver_.lock();
+    FALSE_RETURN(eventReceiver != nullptr);
+    eventReceiver->OnEvent({"SyncManager", EventType::EVENT_STREAM_LAG, lagDurationMs});
+}
+
 int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
 {
     if ((newMediaProgressTime >= lastReportMediaTime_) || frameAfterSeeked_) {
@@ -511,6 +519,11 @@ void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
     if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
         currentSyncerPriority_ = IMediaSynchronizer::NONE;
     }
+}
+
+void MediaSyncManager::SetEventReceiver(std::weak_ptr<EventReceiver> eventReceiver)
+{
+    eventReceiver_ = eventReceiver;
 }
 } // namespace Pipeline
 } // namespace Media
