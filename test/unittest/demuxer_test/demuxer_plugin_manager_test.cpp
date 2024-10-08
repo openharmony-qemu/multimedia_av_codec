@@ -89,12 +89,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetInnerTrackIDByTrackID_001, TestSize.Le
     EXPECT_EQ(innerTrackId, 2);
 }
 
-/**
-* @tc.name    : GetInnerTrackIDByTrackID_002
-* @tc.number  : GetInnerTrackIDByTrackID_002
-* @tc.desc    : Test GetInnerTrackIDByTrackID interface, trackId does not exist in trackInfoMap_.
-* @tc.require : issueI5NZAQ
-*/
 HWTEST_F(DemuxerPluginManagerUnitTest, GetInnerTrackIDByTrackID_002, TestSize.Level1)
 {
     int32_t trackId = 1;
@@ -168,12 +162,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetTrackTypeByTrackID_001, TestSize.Level
     EXPECT_EQ(result, TRACK_AUDIO);
 }
 
-/**
-* @tc.name    : Test GetTrackTypeByTrackID API
-* @tc.number  : GetTrackTypeByTrackID_002
-* @tc.desc    : Test GetTrackTypeByTrackID interface, when mimeType starts with "video".
-* @tc.require : issueI5NZAQ
-*/
 HWTEST_F(DemuxerPluginManagerUnitTest, GetTrackTypeByTrackID_002, TestSize.Level1)
 {
     // 1. Set up the test environment
@@ -193,12 +181,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetTrackTypeByTrackID_002, TestSize.Level
     EXPECT_EQ(result, TRACK_VIDEO);
 }
 
-/**
-* @tc.name    : Test GetTrackTypeByTrackID API
-* @tc.number  : GetTrackTypeByTrackID_003
-* @tc.desc    : Test GetTrackTypeByTrackID interface, when mimeType is a subtitle type.
-* @tc.require : issueI5NZAQ
-*/
 HWTEST_F(DemuxerPluginManagerUnitTest, GetTrackTypeByTrackID_003, TestSize.Level1)
 {
     // 1. Set up the test environment
@@ -218,12 +200,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetTrackTypeByTrackID_003, TestSize.Level
     EXPECT_EQ(result, TRACK_SUBTITLE);
 }
 
-/**
-* @tc.name    : Test GetTrackTypeByTrackID API
-* @tc.number  : GetTrackTypeByTrackID_004
-* @tc.desc    : Test GetTrackTypeByTrackID interface, when mimeType is not recognized.
-* @tc.require : issueI5NZAQ
-*/
 HWTEST_F(DemuxerPluginManagerUnitTest, GetTrackTypeByTrackID_004, TestSize.Level1)
 {
     // 1. Set up the test environment
@@ -243,12 +219,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetTrackTypeByTrackID_004, TestSize.Level
     EXPECT_EQ(result, TRACK_INVALID);
 }
 
-/**
-* @tc.name    : GetStreamTypeByTrackID API
-* @tc.number  : GetStreamTypeByTrackID_001
-* @tc.desc    : Test GetStreamTypeByTrackID interface, set trackId to valid value.
-* @tc.require : issueI5NZAQ
-*/
 HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamTypeByTrackID_001, TestSize.Level1)
 {
     int32_t trackId = 1;
@@ -263,12 +233,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamTypeByTrackID_001, TestSize.Leve
     EXPECT_EQ(result, StreamType::VIDEO);
 }
 
-/**
-* @tc.name    : UpdateDefaultStreamID API
-* @tc.number  : UpdateDefaultStreamID_001
-* @tc.desc    : Test UpdateDefaultStreamID interface, set type to AUDIO.
-* @tc.require : issueI5NZAQ
-*/
 HWTEST_F(DemuxerPluginManagerUnitTest, UpdateDefaultStreamID_001, TestSize.Level1)
 {
     // 1. Set up the test environment
@@ -283,12 +247,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, UpdateDefaultStreamID_001, TestSize.Level
     EXPECT_EQ(result, Status::OK);
 }
 
-/**
-* @tc.name    : UpdateDefaultStreamID API
-* @tc.number  : UpdateDefaultStreamID_002
-* @tc.desc    : Test UpdateDefaultStreamID interface, set type to SUBTITLE.
-* @tc.require : issueI5NZAQ
-*/
 HWTEST_F(DemuxerPluginManagerUnitTest, UpdateDefaultStreamID_002, TestSize.Level1)
 {
     // 1. Set up the test environment
@@ -303,12 +261,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, UpdateDefaultStreamID_002, TestSize.Level
     EXPECT_EQ(result, Status::OK);
 }
 
-/**
-* @tc.name    : UpdateDefaultStreamID API
-* @tc.number  : UpdateDefaultStreamID_003
-* @tc.desc    : Test UpdateDefaultStreamID interface, set type to VIDEO.
-* @tc.require : issueI5NZAQ
-*/
 HWTEST_F(DemuxerPluginManagerUnitTest, UpdateDefaultStreamID_003, TestSize.Level1)
 {
     // 1. Set up the test environment
