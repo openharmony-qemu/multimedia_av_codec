@@ -66,6 +66,7 @@ public:
 
     void SetParameter(const std::shared_ptr<Meta>& parameter) override;
     void GetParameter(std::shared_ptr<Meta>& parameter) override;
+    void SetInterruptState(bool isInterruptNeeded);
 
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -160,6 +161,7 @@ private:
     std::atomic<bool> doPrepareFrame_{false};
     bool renderFirstFrame_{false};
     std::atomic<bool> isRenderStarted_{false};
+    std::atomic<bool> isInterruptNeeded_{false};
     Mutex formatChangeMutex_{};
     int32_t rateUpperLimit_{0};
 

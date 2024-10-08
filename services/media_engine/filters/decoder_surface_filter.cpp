@@ -265,12 +265,14 @@ Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
 Status DecoderSurfaceFilter::WaitPrepareFrame()
 {
     MEDIA_LOG_D("WaitPrepareFrame");
-    AutoLock lock(firstFrameMutex_);
-    bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
-         return !doPrepareFrame_;
-    });
-    MEDIA_LOG_I("PrepareFrame res= %{public}d.", res);
-    doPrepareFrame_ = false;
+   {
+        AutoLock lock(firstFrameMutex_);
+        bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
+            return !doPrepareFrame_ || isInterruptNeeded_;
+        });
+        MEDIA_LOG_I("PrepareFrame res= %{public}d. isInterruptNeeded= %{public}d", res, isInterruptNeeded_.load());
+        doPrepareFrame_ = false;
+    }
     DoPause();
     return Status::OK;
 }
@@ -463,6 +465,13 @@ void DecoderSurfaceFilter::SetCallingInfo(int32_t appUid, int32_t appPid, std::s
     appPid_ = appPid;
     bundleName_ = bundleName;
     instanceId_ = instanceId;
+}
+
+void DecoderSurfaceFilter::SetInterruptState(bool isInterruptNeeded)
+{
+    AutoLock lock(firstFrameMutex_);
+    isInterruptNeeded_ = isInterruptNeeded;
+    firstFrameCond_.NotifyAll();
 }
 
 Status DecoderSurfaceFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
