@@ -321,9 +321,7 @@ Status DemuxerFilter::PrepareBeforeStart()
         return ret;
     }
     ret = Filter::Start();
-    if (ret != Status::OK) {
-        return ret;
-    }
+    FALSE_RETURN_V(ret == Status::OK, ret);
     ret = Filter::WaitAllState(FilterState::RUNNING);
     MEDIA_LOG_I_SHORT("PrepareBeforeStart done ret = %{public}d", ret);
     return ret;
