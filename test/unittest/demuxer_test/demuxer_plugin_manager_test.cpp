@@ -148,5 +148,192 @@ HWTEST_F(DemuxerPluginManagerUnitTest, IsSubtitleMime_001, TestSize.Level1)
     // 3. Verify the result
     EXPECT_EQ(result, false);
 }
+
+HWTEST_F(DemuxerPluginManagerUnitTest, GetTrackTypeByTrackID_001, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    int32_t trackId = 0;
+    std::vector<Meta> tracks;
+    Meta meta;
+    meta.SetData(Tag::MIME_TYPE, "audio/mpeg");
+    tracks.push_back(meta);
+    Plugins::MediaInfo mediaInfo;
+    mediaInfo.tracks = tracks;
+    demuxerPluginManager_->curMediaInfo_ = mediaInfo;
+
+    // 2. Call the function to be tested
+    TrackType result = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
+
+    // 3. Verify the result
+    EXPECT_EQ(result, TRACK_AUDIO);
+}
+
+/**
+* @tc.name    : Test GetTrackTypeByTrackID API
+* @tc.number  : GetTrackTypeByTrackID_002
+* @tc.desc    : Test GetTrackTypeByTrackID interface, when mimeType starts with "video".
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(DemuxerPluginManagerUnitTest, GetTrackTypeByTrackID_002, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    int32_t trackId = 0;
+    std::vector<Meta> tracks;
+    Meta meta;
+    meta.SetData(Tag::MIME_TYPE, "video/mpeg");
+    tracks.push_back(meta);
+    Plugins::MediaInfo mediaInfo;
+    mediaInfo.tracks = tracks;
+    demuxerPluginManager_->curMediaInfo_ = mediaInfo;
+
+    // 2. Call the function to be tested
+    TrackType result = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
+
+    // 3. Verify the result
+    EXPECT_EQ(result, TRACK_VIDEO);
+}
+
+/**
+* @tc.name    : Test GetTrackTypeByTrackID API
+* @tc.number  : GetTrackTypeByTrackID_003
+* @tc.desc    : Test GetTrackTypeByTrackID interface, when mimeType is a subtitle type.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(DemuxerPluginManagerUnitTest, GetTrackTypeByTrackID_003, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    int32_t trackId = 0;
+    std::vector<Meta> tracks;
+    Meta meta;
+    meta.SetData(Tag::MIME_TYPE, "application/x-subrip");
+    tracks.push_back(meta);
+    Plugins::MediaInfo mediaInfo;
+    mediaInfo.tracks = tracks;
+    demuxerPluginManager_->curMediaInfo_ = mediaInfo;
+
+    // 2. Call the function to be tested
+    TrackType result = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
+
+    // 3. Verify the result
+    EXPECT_EQ(result, TRACK_SUBTITLE);
+}
+
+/**
+* @tc.name    : Test GetTrackTypeByTrackID API
+* @tc.number  : GetTrackTypeByTrackID_004
+* @tc.desc    : Test GetTrackTypeByTrackID interface, when mimeType is not recognized.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(DemuxerPluginManagerUnitTest, GetTrackTypeByTrackID_004, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    int32_t trackId = 0;
+    std::vector<Meta> tracks;
+    Meta meta;
+    meta.SetData(Tag::MIME_TYPE, "unknown/type");
+    tracks.push_back(meta);
+    Plugins::MediaInfo mediaInfo;
+    mediaInfo.tracks = tracks;
+    demuxerPluginManager_->curMediaInfo_ = mediaInfo;
+
+    // 2. Call the function to be tested
+    TrackType result = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
+
+    // 3. Verify the result
+    EXPECT_EQ(result, TRACK_INVALID);
+}
+
+/**
+* @tc.name    : GetStreamTypeByTrackID API
+* @tc.number  : GetStreamTypeByTrackID_001
+* @tc.desc    : Test GetStreamTypeByTrackID interface, set trackId to valid value.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamTypeByTrackID_001, TestSize.Level1)
+{
+    int32_t trackId = 1;
+    std::map<int32_t, MediaTrackMap> mediaTrackMap;
+    mediaTrackMap[1].streamID = 1;
+    demuxerPluginManager_->trackInfoMap_ = mediaTrackMap;
+    demuxerPluginManager_->streamInfoMap_[1].type = StreamType::VIDEO;
+    // 2. Call the function to be tested
+    StreamType result = demuxerPluginManager_->GetStreamTypeByTrackID(trackId);
+
+    // 3. Verify the result
+    EXPECT_EQ(result, StreamType::VIDEO);
+
+}
+
+/**
+* @tc.name    : UpdateDefaultStreamID API
+* @tc.number  : UpdateDefaultStreamID_001
+* @tc.desc    : Test UpdateDefaultStreamID interface, set type to AUDIO.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(DemuxerPluginManagerUnitTest, UpdateDefaultStreamID_001, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    Plugins::MediaInfo mediaInfo;
+    int32_t newStreamID = 1; // Assuming streamID 1 is valid
+
+    // 2. Call the function to be tested
+    Status result = demuxerPluginManager_->UpdateDefaultStreamID(mediaInfo, StreamType::AUDIO, newStreamID);
+
+    // 3. Verify the result
+    EXPECT_EQ(demuxerPluginManager_->curAudioStreamID_, newStreamID);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+* @tc.name    : UpdateDefaultStreamID API
+* @tc.number  : UpdateDefaultStreamID_002
+* @tc.desc    : Test UpdateDefaultStreamID interface, set type to SUBTITLE.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(DemuxerPluginManagerUnitTest, UpdateDefaultStreamID_002, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    Plugins::MediaInfo mediaInfo;
+    int32_t newStreamID = 1; // Assuming streamID 1 is valid
+
+    // 2. Call the function to be tested
+    Status result = demuxerPluginManager_->UpdateDefaultStreamID(mediaInfo, StreamType::SUBTITLE, newStreamID);
+
+    // 3. Verify the result
+    EXPECT_EQ(demuxerPluginManager_->curSubTitleStreamID_, newStreamID);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+* @tc.name    : UpdateDefaultStreamID API
+* @tc.number  : UpdateDefaultStreamID_003
+* @tc.desc    : Test UpdateDefaultStreamID interface, set type to VIDEO.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(DemuxerPluginManagerUnitTest, UpdateDefaultStreamID_003, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    Plugins::MediaInfo mediaInfo;
+    int32_t newStreamID = 1; // Assuming streamID 1 is valid
+
+    // 2. Call the function to be tested
+    Status result = demuxerPluginManager_->UpdateDefaultStreamID(mediaInfo, StreamType::VIDEO, newStreamID);
+
+    // 3. Verify the result
+    EXPECT_EQ(demuxerPluginManager_->curVideoStreamID_, newStreamID);
+    EXPECT_EQ(result, Status::OK);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, SetResetEosStatus_001, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    bool flag = true;
+
+    // 2. Call the function to be tested
+    demuxerPluginManager_->SetResetEosStatus(flag);
+
+    // 3. Verify the result
+    EXPECT_EQ(demuxerPluginManager_->needResetEosStatus_, flag);
+}
 }
 }
