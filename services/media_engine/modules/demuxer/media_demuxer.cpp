@@ -1669,16 +1669,9 @@ void MediaDemuxer::DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> 
     }
 }
 
-void MediaDemuxer::InnerFixAbsolutePtsForPlayer(std::shared_ptr<AVBuffer> sample)
-{
-    FALSE_RETURN(sample != nullptr);
-    sample->pts_ = sample->absPts_;
-}
-
 Status MediaDemuxer::HandleRead(uint32_t trackId)
 {
     Status ret = InnerReadSample(trackId, bufferMap_[trackId]);
-    InnerFixAbsolutePtsForPlayer(bufferMap_[trackId]);
     if (trackId == videoTrackId_ && VideoStreamReadyCallback_ != nullptr) {
         MEDIA_LOG_D("step into HandleRead");
         bool isDiscardable = VideoStreamReadyCallback_->IsVideoStreamDiscardable(bufferMap_[trackId]);
