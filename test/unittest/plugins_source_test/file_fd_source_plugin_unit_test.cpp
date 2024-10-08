@@ -129,6 +129,33 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetSource_0200, TestSize.Level1)
 {
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
     fileFdSourcePlugin_->isCloudFile_ = true;
+    fileFdSourcePlugin_->isEnableFdCache_ = false;
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->SetSource(mediaSource));
+}
+
+/**
+ * @tc.name: FileFdSource_SetSource_0300
+ * @tc.desc: SetSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetSource_0300, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
+    fileFdSourcePlugin_->isCloudFile_ = false;
+    fileFdSourcePlugin_->isEnableFdCache_ = true;
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->SetSource(mediaSource));
+}
+
+/**
+ * @tc.name: FileFdSource_SetSource_0400
+ * @tc.desc: SetSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetSource_0400, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
+    fileFdSourcePlugin_->isCloudFile_ = false;
+    fileFdSourcePlugin_->isEnableFdCache_ = false;
     EXPECT_NE(Status::OK, fileFdSourcePlugin_->SetSource(mediaSource));
 }
 
@@ -503,6 +530,18 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0200, TestSize.Le
 }
 
 /**
+ * @tc.name: FileFdSource_SetReadBlockingFlag_0100
+ * @tc.desc: FileFdSource_SetReadBlockingFlag_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetReadBlockingFlag_0100, TestSize.Level1)
+{
+    fileFdSourcePlugin_->ringBuffer_ = std::make_shared<RingBufferMock>(0);
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->SetReadBlockingFlag(true));
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->SetReadBlockingFlag(false));
+}
+
+/**
  * @tc.name: FileFdSource_SetInterruptState_0100
  * @tc.desc: FileFdSource_SetInterruptState_0100
  * @tc.type: FUNC
@@ -512,6 +551,8 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetInterruptState_0100, TestSize.Lev
     fileFdSourcePlugin_->ringBuffer_ = std::make_shared<RingBufferMock>(0);
     fileFdSourcePlugin_->SetInterruptState(true);
     EXPECT_EQ(true, fileFdSourcePlugin_->isInterrupted_);
+    fileFdSourcePlugin_->SetInterruptState(false);
+    EXPECT_EQ(false, fileFdSourcePlugin_->isInterrupted_);
     fileFdSourcePlugin_->isInterrupted_ = true;
     fileFdSourcePlugin_->SetInterruptState(true);
     EXPECT_EQ(true, fileFdSourcePlugin_->isInterrupted_);
@@ -532,20 +573,21 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetInterruptState_0100, TestSize.Lev
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_CheckFileType_0100, TestSize.Level1)
 {
-    fileFdSourcePlugin_->ringBuffer_ = std::make_shared<RingBufferMock>(0);
-    fileFdSourcePlugin_->SetInterruptState(true);
-    EXPECT_EQ(true, fileFdSourcePlugin_->isInterrupted_);
-    fileFdSourcePlugin_->isInterrupted_ = true;
-    fileFdSourcePlugin_->SetInterruptState(true);
-    EXPECT_EQ(true, fileFdSourcePlugin_->isInterrupted_);
-    fileFdSourcePlugin_->isCloudFile_ = true;
-    fileFdSourcePlugin_->SetInterruptState(true);
-    EXPECT_EQ(true, fileFdSourcePlugin_->isInterrupted_);
-    std::shared_ptr<Task> task = std::make_shared<Task>("test");
-    fileFdSourcePlugin_->downloadTask_ = task;
-    fileFdSourcePlugin_->SetInterruptState(true);
-    EXPECT_EQ(true, fileFdSourcePlugin_->isInterrupted_);
-    sleep(1);
+    fileFdSourcePlugin_->isEnableFdCache_ = false;
+    fileFdSourcePlugin_->CheckFileType();
+    EXPECT_EQ(false, fileFdSourcePlugin_->isCloudFile_);
+}
+
+/**
+ * @tc.name: FileFdSource_CheckFileType_0200
+ * @tc.desc: FileFdSource_CheckFileType_0200
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_CheckFileType_0200, TestSize.Level1)
+{
+    fileFdSourcePlugin_->fd_ = -1;
+    fileFdSourcePlugin_->CheckFileType();
+    EXPECT_EQ(false, fileFdSourcePlugin_->isCloudFile_);
 }
 
 /**
