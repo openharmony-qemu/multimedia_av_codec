@@ -77,6 +77,7 @@ public:
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
     Status StopBufferring(bool isAppBackground) override;
+    bool IsBuffering() override;
 
 private:
     int64_t HttpMonitorLoop();

@@ -416,6 +416,13 @@ Status DownloadMonitor::StopBufferring(bool isAppBackground)
     return downloader_->StopBufferring(isAppBackground);
 }
 
+bool DownloadMonitor::IsBuffering()
+{
+    if (downloader_) {
+        return downloader_->IsBuffering();
+    }
+    return false;
+}
 }
 }
 }

@@ -455,6 +455,11 @@ Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
     return downloader_->StopBufferring(isAppBackground);
 }
 
+bool HttpSourcePlugin::IsBuffering()
+{
+    FALSE_RETURN_V(downloader_ != nullptr, false);
+    return downloader_->IsBuffering();
+}
 }
 }
 }
