@@ -40,8 +40,10 @@ DashMediaDownloader::DashMediaDownloader() noexcept
 
 DashMediaDownloader::~DashMediaDownloader()
 {
+    if (mpdDownloader_ != nullptr) {
+        mpdDownloader_->Close(false);
+    }
     segmentDownloaders_.clear();
-    mpdDownloader_ = nullptr;
 }
 
 bool DashMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)

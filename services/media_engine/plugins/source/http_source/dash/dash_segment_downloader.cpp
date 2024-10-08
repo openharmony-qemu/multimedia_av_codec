@@ -84,10 +84,12 @@ DashSegmentDownloader::DashSegmentDownloader(Callback *callback, int streamId, M
 
 DashSegmentDownloader::~DashSegmentDownloader() noexcept
 {
-    downloadRequest_ = nullptr;
-    downloader_ = nullptr;
-    mediaSegment_ = nullptr;
-    buffer_ = nullptr;
+    if (buffer_ != nullptr) {
+        buffer_->SetActive(false, true);
+    }
+    if (downloader_ != nullptr) {
+        downloader_->Stop(false);
+    }
     segmentList_.clear();
 }
 
