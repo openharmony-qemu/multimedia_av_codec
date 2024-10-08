@@ -144,7 +144,7 @@ int32_t BitstreamReader::NalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t
     bufferSize = nalUnit_->size();
     memcpy_s(bufferAddr, bufferSize, nalUnit_->data(), bufferSize);
 
-    if (!IsEOS()) {
+    if (!IsEOF()) {
         PrereadNalUnit();
     } else {
         nalUnit_->resize(0);
