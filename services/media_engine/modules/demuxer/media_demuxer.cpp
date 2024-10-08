@@ -813,7 +813,9 @@ Status MediaDemuxer::StartTask(int32_t trackId)
         } else if (trackType == TrackType::TRACK_SUBTITLE) {
             AddDemuxerCopyTask(trackId, TaskType::SUBTITLE);
         }
-        taskMap_[trackId]->Start();
+        if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
+            taskMap_[trackId]->Start();
+        }
     } else {
         if (taskMap_[trackId] != nullptr && !taskMap_[trackId]->IsTaskRunning()) {
             taskMap_[trackId]->Start();
