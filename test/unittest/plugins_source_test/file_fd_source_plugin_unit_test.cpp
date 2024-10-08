@@ -537,8 +537,10 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0200, TestSize.Le
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetReadBlockingFlag_0100, TestSize.Level1)
 {
     fileFdSourcePlugin_->ringBuffer_ = std::make_shared<RingBufferMock>(0);
-    EXPECT_NE(Status::OK, fileFdSourcePlugin_->SetReadBlockingFlag(true));
-    EXPECT_NE(Status::OK, fileFdSourcePlugin_->SetReadBlockingFlag(false));
+    fileFdSourcePlugin_->SetReadBlockingFlag(true);
+    EXPECT_EQ(true, fileFdSourcePlugin_->isReadBlocking_);
+    fileFdSourcePlugin_->SetReadBlockingFlag(false);
+    EXPECT_EQ(false, fileFdSourcePlugin_->isReadBlocking_);
 }
 
 /**
