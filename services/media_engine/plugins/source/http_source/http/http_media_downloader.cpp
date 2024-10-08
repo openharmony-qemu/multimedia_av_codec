@@ -560,7 +560,7 @@ bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
 
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
     size_t downloadOffset = static_cast<size_t>(offset) + cacheMediaBuffer_->GetBufferSize(offset);
-    if (downloadOffset > fileContentLength) {
+    if (downloadOffset >= fileContentLength) {
         MEDIA_LOG_W("HTTP downloadOffset invalid, offset " PUBLIC_LOG_D64 " downloadOffset " PUBLIC_LOG_ZU
             " fileContentLength " PUBLIC_LOG_ZU, offset, downloadOffset, fileContentLength);
         return true;
