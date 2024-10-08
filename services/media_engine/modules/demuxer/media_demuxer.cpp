@@ -815,7 +815,7 @@ Status MediaDemuxer::StartTask(int32_t trackId)
         }
         taskMap_[trackId]->Start();
     } else {
-        if (!taskMap_[trackId]->IsTaskRunning()) {
+        if (taskMap_[trackId] != nullptr && !taskMap_[trackId]->IsTaskRunning()) {
             taskMap_[trackId]->Start();
         }
     }
@@ -880,7 +880,9 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
 Status MediaDemuxer::DoSelectTrack(int32_t trackId, int32_t curTrackId)
 {
     if (static_cast<uint32_t>(curTrackId) != TRACK_ID_DUMMY) {
-        taskMap_[curTrackId]->Stop();
+        if (taskMap_.find(curTrackId) != taskMap_.end() && taskMap_[curTrackId] != nullptr) {
+            taskMap_[curTrackId]->Stop();
+        }
         Status ret = UnselectTrack(curTrackId);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "DoSelectTrack track error.");
         bufferQueueMap_.insert(
@@ -1245,10 +1247,10 @@ Status MediaDemuxer::ResumeAllTask()
     auto it = bufferQueueMap_.begin();
     while (it != bufferQueueMap_.end()) {
         uint32_t trackId = it->first;
-        if (taskMap_[trackId] == nullptr) {
-            MEDIA_LOG_W("track " PUBLIC_LOG_U32 " task is not exist, start failed.", trackId);
-        } else {
+        if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
             taskMap_[trackId]->Start();
+        } else {
+            MEDIA_LOG_W("track " PUBLIC_LOG_U32 " task is not exist, start failed.", trackId);
         }
         it++;
     }
@@ -1268,7 +1270,7 @@ Status MediaDemuxer::PauseForPrepareFrame()
         source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
         source_->Pause();
     }
-    if (taskMap_[videoTrackId_] != nullptr) {
+    if (taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr) {
         taskMap_[videoTrackId_]->PauseAsync();
         taskMap_[videoTrackId_]->Pause();
     }
@@ -1329,8 +1331,10 @@ Status MediaDemuxer::Resume()
     if (!doPrepareFrame_) {
         ResumeAllTask();
     } else {
-        if (taskMap_[videoTrackId_] != nullptr) {
-            streamDemuxer_->SetIsIgnoreParse(false);
+        if (taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr) {
+            if (streamDemuxer_) {
+                streamDemuxer_->SetIsIgnoreParse(false);
+            }
             taskMap_[videoTrackId_]->Start();
         }
     }
@@ -1347,7 +1351,7 @@ Status MediaDemuxer::ResumeDragging()
     if (source_) {
         source_->Resume();
     }
-    if (taskMap_[videoTrackId_] != nullptr) {
+    if (taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr) {
         if (streamDemuxer_) {
             streamDemuxer_->SetIsIgnoreParse(false);
         }
@@ -1419,15 +1423,15 @@ Status MediaDemuxer::Start()
         auto it = bufferQueueMap_.begin();
         while (it != bufferQueueMap_.end()) {
             uint32_t trackId = it->first;
-            if (taskMap_[trackId] == nullptr) {
-                MEDIA_LOG_W("track " PUBLIC_LOG_U32 " task is not exist, start failed.", trackId);
-            } else {
+            if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
                 taskMap_[trackId]->Start();
+            } else {
+                MEDIA_LOG_W("track " PUBLIC_LOG_U32 " task is not exist, start failed.", trackId);
             }
             it++;
         }
     } else {
-        if (taskMap_[videoTrackId_] != nullptr) {
+        if (taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr) {
             taskMap_[videoTrackId_]->Start();
         }
     }
@@ -1669,7 +1673,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
             isSelectTrack_.store(false);
         }
 
-        if (taskMap_[trackId] != nullptr) {
+        if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
             taskMap_[trackId]->StopAsync();   // stop self
         }
     }
@@ -1746,7 +1750,9 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
             eosMap_[trackId] = true;
-            taskMap_[trackId]->StopAsync();
+            if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
+                taskMap_[trackId]->StopAsync();
+            }
             MEDIA_LOG_I("CopyFrameToUserQueue track eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
                 ", pts: " PUBLIC_LOG_D64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
@@ -1887,9 +1893,13 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
             AutoLock lock(firstFrameMutex_);
             firstFrameCount_++;
             firstFrameCond_.NotifyAll();
-            taskMap_[trackId]->Pause();
+            bool isTaskExistInMap = taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr;
+            if (isTaskExistInMap) {
+                taskMap_[trackId]->Pause();
+            }
         }
-        if (ret == Status::OK || ret == Status::ERROR_AGAIN) {
+        bool isNeedRetry = ret == Status::OK || ret == Status::ERROR_AGAIN;
+        if (isNeedRetry) {
             return 0; // retry next frame
         } else if (ret == Status::ERROR_NO_MEMORY) {
             MEDIA_LOG_E("cache data size is greater than cache limit size");
