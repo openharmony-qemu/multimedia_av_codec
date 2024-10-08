@@ -261,7 +261,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamTypeByTrackID_001, TestSize.Leve
 
     // 3. Verify the result
     EXPECT_EQ(result, StreamType::VIDEO);
-
 }
 
 /**
