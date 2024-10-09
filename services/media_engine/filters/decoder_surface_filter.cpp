@@ -265,7 +265,7 @@ Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
 Status DecoderSurfaceFilter::WaitPrepareFrame()
 {
     MEDIA_LOG_D("WaitPrepareFrame");
-   {
+    {
         AutoLock lock(firstFrameMutex_);
         bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
             return !doPrepareFrame_ || isInterruptNeeded_;
