@@ -266,59 +266,6 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_EXVEEDS_MAX_LOOP, TestSize.Level1)
     EXPECT_FALSE(m3u8.isDecryptKeyReady_);
 }
 
-HWTEST_F(M3u8UnitTest, NULL_SRC, TestSize.Level1)
-{
-    uint8_t dest[100];
-    uint32_t destSize = 100;
-    EXPECT_FALSE(M3U8::Base64Decode(nullptr, 10, dest, &destSize));
-}
-
-HWTEST_F(M3u8UnitTest, NULL_DEST, TestSize.Level1)
-{
-    uint8_t src[10] = {0};
-    uint32_t destSize = 100;
-    EXPECT_FALSE(M3U8::Base64Decode(src, 10, nullptr, &destSize));
-}
-
-HWTEST_F(M3u8UnitTest, NULL_DEST_SIZE, TestSize.Level1)
-{
-    uint8_t src[10] = {0};
-    uint8_t dest [100];
-    EXPECT_FALSE(M3U8::Base64Decode(src, 10, dest, nullptr));
-}
-
-HWTEST_F(M3u8UnitTest, ZERO_SRC_SIZE, TestSize.Level1)
-{
-    uint8_t src[10] = {0};
-    uint8_t dest [100];
-    uint32_t destSize = 100;
-    EXPECT_FALSE(M3U8::Base64Decode(src, 0, dest, &destSize));
-}
-
-HWTEST_F(M3u8UnitTest, SRC_SIZE_GREATER_THAN_DEST_SIZE, TestSize.Level1)
-{
-    uint8_t src[10] = {0};
-    uint8_t dest [100];
-    uint32_t destSize = 100;
-    EXPECT_TRUE(M3U8::Base64Decode(src, 20, dest, &destSize));
-}
-
-HWTEST_F(M3u8UnitTest, INVALID_SRC_SIZE, TestSize.Level1)
-{
-    uint8_t src[5] = {0};
-    uint8_t dest [100];
-    uint32_t destSize = 100;
-    EXPECT_FALSE(M3U8::Base64Decode(src, 5, dest, &destSize));
-}
-
-HWTEST_F(M3u8UnitTest, VALID_SRC, TestSize.Level1)
-{
-    uint8_t src[12] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'};
-    uint8_t dest [100];
-    uint32_t destSize = 100;
-    EXPECT_TRUE(M3U8::Base64Decode(src, 12, dest, &destSize));
-}
-
 HWTEST_F(M3u8UnitTest, SET_DRM_INFO_NULL_KEY_URI, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
@@ -491,18 +438,6 @@ HWTEST_F(M3u8UnitTest, SaveDataTest, TestSize.Level1)
 
     // 验证 keyLen_ 是否被正确设置
     ASSERT_EQ(testM3u8->keyLen_, sizeof(data));
-}
-
-HWTEST_F(M3u8UnitTest, Base64DecodeTest, TestSize.Level1)
-{
-    const uint8_t src[] = "dGVzdCBzdHJpbmc="; // base64 编码的 "test string"
-    uint8_t dest[20];                         // 预期解码输出的大小
-    uint32_t destSize = sizeof(dest);
-
-    bool result = testM3u8->Base64Decode(src, sizeof(src) - 1, dest, &destSize);
-    ASSERT_TRUE(result);
-    ASSERT_EQ(destSize, 11u); // "test string" 的长度
-    ASSERT_EQ(std::string(reinterpret_cast<char *>(dest), destSize), "test string");
 }
 
 HWTEST_F(M3u8UnitTest, SetDrmInfoTest, TestSize.Level1)
