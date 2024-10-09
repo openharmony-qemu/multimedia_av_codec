@@ -117,7 +117,6 @@ private:
     bool GetProtocolByUri();
     bool ParseProtocol(const std::shared_ptr<MediaSource>& source);
     Status FindPlugin(const std::shared_ptr<MediaSource>& source);
-
     void ClearData();
 
     std::string protocol_;
