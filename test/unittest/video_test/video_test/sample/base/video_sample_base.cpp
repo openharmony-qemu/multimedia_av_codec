@@ -135,7 +135,7 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
         }
     }
 
-    uint8_t *bufferAddr = nullptr;
+    uint8_t *bufferAddr = bufferInfo.bufferAddr;
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     if (info.codecType & 0b10) {   // 0b10: Video encoder mask
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
