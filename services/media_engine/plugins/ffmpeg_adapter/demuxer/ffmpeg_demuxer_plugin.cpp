@@ -229,7 +229,7 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
 int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode)
 {
     FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "stream is nullptr.");
-    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE && FFtime == 0) {
+    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE && ffTime == 0) {
         return AVSEEK_FLAG_FRAME;
     }
     if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
@@ -708,7 +708,7 @@ Status FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "av_bsf_send_packet failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
     av_packet_unref(&pkt);
-    ret = av_bsf_send_packet(avbsfContext_.get(), &pkt);
+    ret = av_bsf_receive_packet(avbsfContext_.get(), &pkt);
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "av_bsf_receive_packet failed, err:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
     return Status::OK;
@@ -717,9 +717,9 @@ Status FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
 Status FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
 {
     size_t cencInfoSize = 0;
-    uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkt[0], AV_PKT_DATA_ENCRYPTION_INFO,
+    uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO,
         &cencInfoSize);
-    streamParser_->ConvertPacketAnnexb(&(pkt.data), pkt.size, cencInfo,
+    streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo,
         static_cast<size_t>(cencInfoSize), false);
     if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
         streamParser_->IsSyncFrame(pkt.data, pkt.size)) {
