@@ -72,6 +72,7 @@ public:
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
     Status GetIFramePos(std::vector<uint32_t> &IFramePos) override;
     Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) override;
+
     Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index) override;
     Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
@@ -114,7 +115,7 @@ private:
 
     void InitParser();
     void InitBitStreamContext(const AVStream& avStream);
-    void ConvertAvcToAnnexb(AVPacket& pkt);
+    Status ConvertAvcToAnnexb(AVPacket& pkt);
     Status PushEOSToAllCache();
     bool TrackIsSelected(const uint32_t trackId);
     Status ReadPacketToCacheQueue(const uint32_t readId);
@@ -122,7 +123,7 @@ private:
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
-    void ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
+    Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, int32_t writeSize);
@@ -131,8 +132,8 @@ private:
     bool GetNextFrame(const uint8_t *data, const uint32_t size);
     bool NeedCombineFrame(uint32_t trackId);
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
-    void ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
-    void ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
 
     void ParserFirstDts();
