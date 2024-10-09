@@ -15,38 +15,13 @@
 
 #ifndef VDEC_SAMPLE_H
 #define VDEC_SAMPLE_H
-#include <atomic>
-#include <fstream>
-#include <iostream>
-#include <mutex>
-#include <queue>
 #include <string>
 #include <thread>
 #include "securec.h"
-#include "vcodec_mock.h"
+#include "bitstream_processing.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-struct VDecSignal {
-public:
-    std::mutex mutex_;
-    std::mutex inMutex_;
-    std::mutex outMutex_;
-    std::condition_variable cond_;
-    std::condition_variable inCond_;
-    std::condition_variable outCond_;
-    std::queue<uint32_t> inIndexQueue_;
-    std::queue<uint32_t> outIndexQueue_;
-    std::queue<OH_AVCodecBufferAttr> outAttrQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> inMemoryQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> outMemoryQueue_;
-    std::queue<std::shared_ptr<AVBufferMock>> inBufferQueue_;
-    std::queue<std::shared_ptr<AVBufferMock>> outBufferQueue_;
-    int32_t errorNum_ = 0;
-    std::atomic<bool> isRunning_ = false;
-    std::atomic<bool> isPreparing_ = true;
-};
-
 class VDecCallbackTest : public AVCodecCallbackMock {
 public:
     explicit VDecCallbackTest(std::shared_ptr<VDecSignal> signal);
@@ -145,6 +120,7 @@ private:
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
     void CheckSHA();
+    int32_t CreateBitstreamProcessing();
     std::shared_ptr<VideoDecMock> videoDec_ = nullptr;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;
@@ -162,6 +138,7 @@ private:
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
+    std::shared_ptr<BitstreamProcessing> bitstreamProcessing_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
