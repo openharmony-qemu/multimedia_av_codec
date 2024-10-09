@@ -350,14 +350,14 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
     if (ffmpegOffset_ <= ffmpegOffset || readTsIndex_ == 0) {
         return;
     }
-    MEDIA_LOG_I("HLS Read back, ffmpegOffset: " PUBLIC_LOG_U64 " ffmpegOffset: " PUBLIC_LOG_U64,
+    MEDIA_LOG_D("HLS Read back, ffmpegOffset: " PUBLIC_LOG_U64 " ffmpegOffset: " PUBLIC_LOG_U64,
         ffmpegOffset_, ffmpegOffset);
     uint64_t readBack = ffmpegOffset_ - ffmpegOffset;
     uint64_t curTsHaveRead = readOffset_ > SpliceOffset(readTsIndex_, 0) ?
         readOffset_ - SpliceOffset(readTsIndex_, 0) : 0;
     if (curTsHaveRead >= readBack) {
         readOffset_ -= readBack;
-        MEDIA_LOG_I("HLS Read back, current ts, update readOffset: " PUBLIC_LOG_U64, readOffset_);
+        MEDIA_LOG_D("HLS Read back, current ts, update readOffset: " PUBLIC_LOG_U64, readOffset_);
     } else {
         if (tsStorageInfo_.count(readTsIndex_ - 1) <= 0) {
             readOffset_ = readOffset_ > curTsHaveRead ? readOffset_ - curTsHaveRead : 0;
@@ -368,7 +368,7 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
         readTsIndex_--;
         uint64_t lastTsReadBack = readBack - curTsHaveRead;
         readOffset_ = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first - lastTsReadBack);
-        MEDIA_LOG_I("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
+        MEDIA_LOG_D("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
             PUBLIC_LOG_U64, readTsIndex_.load(), readOffset_);
     }
 }
@@ -382,8 +382,6 @@ bool HlsMediaDownloader::CheckDataIntegrity()
         uint64_t hasRead = readOffset_ > head ? readOffset_ - head : 0;
         size_t bufferSize = tsStorageInfo_[readTsIndex_].first > hasRead ?
             tsStorageInfo_[readTsIndex_].first - hasRead : 0;
-        MEDIA_LOG_I("HLS CheckDataIntegrity, bufferSize " PUBLIC_LOG_ZU " GetCacheBufferSize "
-            PUBLIC_LOG_ZU, bufferSize, GetCacheBufferSize());
         return bufferSize == GetCacheBufferSize();
     }
 }
@@ -1633,6 +1631,11 @@ bool HlsMediaDownloader::ClearChunksOfFragment()
         res = cacheMediaBuffer_->ClearChunksOfFragment(readOffset_ - READ_BACK_SAVE_SIZE);
     }
     return res;
+}
+
+bool HlsMediaDownloader::IsBuffering()
+{
+    return isBuffering_;
 }
 }
 }

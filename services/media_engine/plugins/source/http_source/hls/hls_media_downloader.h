@@ -101,6 +101,7 @@ public:
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
     Status StopBufferring(bool isAppBackground) override;
+    bool IsBuffering() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);

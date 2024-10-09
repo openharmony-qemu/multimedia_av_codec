@@ -490,15 +490,20 @@ void Source::SetEnableOnlineFdCache(bool isEnableFdCache)
 
 size_t Source::GetSegmentOffset()
 {
-    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, 0, "GetSegmentOffset source pulgin is nullptr!");
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, 0, "GetSegmentOffset source plugin is nullptr!");
     return plugin_->GetSegmentOffset();
 }
 
 bool Source::GetHLSDiscontinuity()
 {
-    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "GetHLSDiscontinuity source pulgin is nullptr!");
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "GetHLSDiscontinuity source plugin is nullptr!");
     return plugin_->GetHLSDiscontinuity();
 }
 
+bool Source::IsBuffering()
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "IsBuffering source plugin is nullptr");
+    return plugin_->IsBuffering();
+}
 } // namespace Media
 } // namespace OHOS

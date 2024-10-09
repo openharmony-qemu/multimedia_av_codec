@@ -513,7 +513,7 @@ Status HttpMediaDownloader::CheckIsEosCacheBuffer(unsigned char* buff, ReadDataI
         canWrite_ = true;
         readDataInfo.realReadLength_ = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
         readOffset_ += readDataInfo.realReadLength_;
-        MEDIA_LOG_I("HTTP read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
+        MEDIA_LOG_D("HTTP read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
         return Status::OK;
     }
 }
@@ -1185,6 +1185,11 @@ Status HttpMediaDownloader::StopBufferring(bool isAppBackground)
     downloader_->StopBufferring();
     MEDIA_LOG_I("HttpMediaDownloader:StopBufferring out");
     return Status::OK;
+}
+
+bool HttpMediaDownloader::IsBuffering()
+{
+    return isBuffering_;
 }
 }
 }
