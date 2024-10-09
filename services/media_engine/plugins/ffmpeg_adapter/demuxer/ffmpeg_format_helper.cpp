@@ -281,13 +281,13 @@ int64_t GetDefaultTrackStartTime(const AVFormatContext& avFormatContext)
 {
     int64_t dafaultTime = 0;
     for (uint32_t trackIndex = 0; trackIndex < avFormatContext.nb_streams; ++trackIndex) {
-        auto avStream = avFormatContext.stream[trackIndex];
+        auto avStream = avFormatContext.streams[trackIndex];
         if (avStream != nullptr && avStream->codecpar != nullptr &&
             avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && avStream->start_time != AV_NOPTS_VALUE) {
-                dafaultTime = AvTime2Us(ConvertTimeFromFFmpeg(avStream->start_time, avStream->time_base));
+            dafaultTime = AvTime2Us(ConvertTimeFromFFmpeg(avStream->start_time, avStream->time_base));
         }
     }
-    retrun dafaultTime;
+    return dafaultTime;
 }
 
 void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, Meta& format)
@@ -342,7 +342,7 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     if (avFormatContext.start_time != AV_NOPTS_VALUE) {
         format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t>(avFormatContext.start_time));
     } else {
-        format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t(0));
+        format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t>(0));
         MEDIA_LOG_W("Parse container start time failed.");
     }
     ParseLocationInfo(avFormatContext, format);
