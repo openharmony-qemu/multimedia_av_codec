@@ -183,7 +183,7 @@ void VideoSampleBase::WriteOutputFileWithStrideRGBA(uint8_t *bufferAddr)
 {
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     auto &info = *context_->sampleInfo;
-    int32_t width = info.videoHeight *
+    int32_t width = info.videoWidth *
         ((info.codecMime == OH_AVCODEC_MIMETYPE_VIDEO_HEVC && info.profile == HEVC_PROFILE_MAIN_10) ? 2 : 1);
     int32_t &stride = info.videoStrideWidth;
 
