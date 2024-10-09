@@ -224,7 +224,7 @@ void TEST_SUIT::PrepareSource(int32_t param)
     auto check = [](char it) { return it == '/'; };
     (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
     videoDec_->SetOutPath(prefix + fileName);
-    int32_t ret = videoDec_->CreateBitstreamProcessing();
+    int32_t ret = videoDec_->CreateAvccReader();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
 

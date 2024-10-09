@@ -18,7 +18,7 @@
 #include <string>
 #include <thread>
 #include "securec.h"
-#include "bitstream_processing.h"
+#include "avcc_reader.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -120,7 +120,7 @@ private:
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
     void CheckSHA();
-    int32_t CreateBitstreamProcessing();
+    int32_t CreateAvccReader();
     std::shared_ptr<VideoDecMock> videoDec_ = nullptr;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;
@@ -138,7 +138,7 @@ private:
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
-    std::shared_ptr<BitstreamProcessing> bitstreamProcessing_ = nullptr;
+    std::shared_ptr<AvccReader> avccReader_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

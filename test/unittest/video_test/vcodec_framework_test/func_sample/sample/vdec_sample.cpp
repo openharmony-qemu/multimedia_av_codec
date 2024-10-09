@@ -435,14 +435,14 @@ void VideoDecSample::SetSourceType(bool isH264Stream)
     isH264Stream_ = isH264Stream;
 }
 
-int32_t VideoDecSample::CreateBitstreamProcessing()
+int32_t VideoDecSample::CreateAvccReader()
 {
-    std::shared_ptr<BitstreamInfo> info = std::make_shared<BitstreamInfo>();
+    std::shared_ptr<AvccReaderInfo> info = std::make_shared<AvccReaderInfo>();
     info->inPath_ = inPath_;
     info->isH264Stream_ = isH264Stream_;
 
-    bitstreamProcessing_ = std::make_shared<BitstreamProcessing>();
-    int32_t ret = bitstreamProcessing_->Init(info);
+    avccReader_ = std::make_shared<AvccReader>();
+    int32_t ret = avccReader_->Init(info);
     return ret;
 }
 
@@ -636,8 +636,8 @@ int32_t VideoDecSample::InputLoopInner()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
                                       AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    bitstreamProcessing_->FillBuffer(signal_, attr);
-    return PushInputData(bitstreamProcessing_->frameInputCount_, attr);
+    avccReader_->FillBuffer(signal_, attr);
+    return PushInputData(avccReader_->frameInputCount_, attr);
 }
 
 void VideoDecSample::OutputLoopFunc()
@@ -824,8 +824,8 @@ int32_t VideoDecSample::InputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
                                       AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    bitstreamProcessing_->FillBufferExt(signal_, attr);
-    return PushInputBuffer(bitstreamProcessing_->frameInputCount_);
+    avccReader_->FillBufferExt(signal_, attr);
+    return PushInputBuffer(avccReader_->frameInputCount_);
 }
 
 int32_t VideoDecSample::SetVideoDecryptionConfig()

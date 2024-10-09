@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef BITSTREAM_PROCESSING_H
-#define BITSTREAM_PROCESSING_H
+#ifndef AVCC_READER_H
+#define AVCC_READER_H
 #include <atomic>
 #include <fstream>
 #include <iostream>
 #include <mutex>
 #include <queue>
-#include "vcodec_mock.h"
+#include "../../func_sample/mock/vcodec_mock.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -44,18 +44,18 @@ public:
     std::atomic<bool> isPreparing_ = true;
 };
 
-struct BitstreamInfo {
+struct AvccReaderInfo {
     std::string inPath_;
     bool isH264Stream_ = true; // true: H264; false: H265
 };
 
-class BitstreamProcessing {
+class AvccReader {
 public:
     int32_t FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr);
     int32_t FillBufferExt(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr);
     void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t naluType, bool isEosFrame);
     bool IsEOS();
-    int32_t Init(const std::shared_ptr<BitstreamInfo> &info);
+    int32_t Init(const std::shared_ptr<AvccReaderInfo> &info);
     std::mutex mutex_;
     int32_t frameInputCount_ = 0;
 private:
@@ -96,6 +96,7 @@ private:
         virtual bool IsIDR(uint8_t nalType) = 0;
         virtual bool IsVCL(uint8_t nalType) = 0;
         virtual bool IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr) = 0;
+        virtual bool IsFirstSlice(const uint8_t *nextNaluTypeAddr) = 0;
     };
 
     class AVCNalDetector : public NalDetector {
@@ -105,6 +106,7 @@ private:
         bool IsIDR(uint8_t nalType) override;
         bool IsVCL(uint8_t nalType) override;
         bool IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr) override;
+        bool IsFirstSlice(const uint8_t *nextNaluTypeAddr) override;
     };
 
     class HEVCNalDetector : public NalDetector {
@@ -114,6 +116,7 @@ private:
         bool IsIDR(uint8_t nalType) override;
         bool IsVCL(uint8_t nalType) override;
         bool IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr) override;
+        bool IsFirstSlice(const uint8_t *nextNaluTypeAddr) override;
     };
 
     std::shared_ptr<NalUnitReader> nalUnitReader_ = nullptr;
@@ -121,4 +124,4 @@ private:
 };
 } // MediaAVCodec
 } // OHOS
-#endif // BITSTREAM_PROCESSING_H
+#endif // AVCC_READER_H
