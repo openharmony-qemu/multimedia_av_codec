@@ -120,7 +120,7 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
         bufferInfo.attr.flags |= nalDetector_->IsXPS(naluType) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : 0;
         bufferInfo.attr.flags |= nalDetector_->IsIDR(naluType) ? AVCODEC_BUFFER_FLAGS_SYNC_FRAME : 0;
         CHECK_AND_BREAK(!nalDetector_->IsFullVCL(
-            naluType, nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr())));
+            naluType, nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr())) && !IsEOS());
     } while (true);
 
     return AVCODEC_SAMPLE_ERR_OK;
@@ -217,6 +217,8 @@ void BitstreamReader::AnnexbNalUnitReader::PrereadNalUnit()
 BitstreamReader::AvccNalUnitReader::AvccNalUnitReader(std::shared_ptr<std::ifstream> inputFile)
 {
     inputFile_ = inputFile;
+    nalUnit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    PrereadNalUnit();
 }
 
 bool BitstreamReader::AvccNalUnitReader::IsEOS()
@@ -233,6 +235,7 @@ void BitstreamReader::AvccNalUnitReader::PrereadNalUnit()
 {
     uint8_t len[AVCC_FRAME_HEAD_LEN] = {};
     (void)inputFile_->read(reinterpret_cast<char *>(len), AVCC_FRAME_HEAD_LEN);
+    nalUnit_->resize(MAX_NALU_SIZE);
     // 0 1 2 3: avcc frame head byte offset; 8 16 24: avcc frame head bit offset
     uint32_t bufferSize = static_cast<uint32_t>((len[3]) | (len[2] << 8) | (len[1] << 16) | (len[0] << 24));
     uint8_t *bufferAddr = nalUnit_->data();
@@ -298,7 +301,7 @@ bool BitstreamReader::AVCNalDetector::IsVCL(uint8_t nalType)
 
 bool BitstreamReader::AVCNalDetector::IsFirstSlice(const uint8_t *nalTypeAddr)
 {
-    return !(*(nalTypeAddr + 1) & 0x80);   // *(nalTypeAddr + 1) & 0x80: AVC first_mb_in_slice
+    return (*(nalTypeAddr + 1) & 0x80) == 0x80;   // *(nalTypeAddr + 1) & 0x80: AVC first_mb_in_slice
 }
 
 bool BitstreamReader::HEVCNalDetector::IsXPS(uint8_t nalType)
