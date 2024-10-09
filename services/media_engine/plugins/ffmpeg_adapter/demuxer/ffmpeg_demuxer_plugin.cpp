@@ -229,7 +229,7 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
 int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode)
 {
     FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "stream is nullptr.");
-    if (avStream->codecpar->codec_ttype == AVMEDIA_TYPE_SUBTITLE && FFtime == 0) {
+    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE && FFtime == 0) {
         return AVSEEK_FLAG_FRAME;
     }
     if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
