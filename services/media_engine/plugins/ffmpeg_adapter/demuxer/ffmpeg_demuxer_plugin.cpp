@@ -890,7 +890,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
     Status ret = ConvertPacketToAnnexb(sample, tempPkt, samplePacket);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, "Convert packet info failed due to convert annexb failed.");
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to convert annexb failed.");
 
     // flag\copy
     int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
@@ -902,7 +902,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
 
     sample->flag_ = flag;
     ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, "Convert packet info failed due to write buffer failed.");
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
 
     if (!samplePacket->isEOS) {
         trackDfxInfoMap_[tempPkt->stream_index].lastPts = sample->pts_;
