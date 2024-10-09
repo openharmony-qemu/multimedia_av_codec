@@ -837,6 +837,7 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         width_ = width;
         height_ = height;
         bitDepth_ = bitDepth;
+        ResetData();
         scale_ = nullptr;
         std::unique_lock<std::mutex> sLock(surfaceMutex_);
         sInfo_.requestConfig.width = width_;
