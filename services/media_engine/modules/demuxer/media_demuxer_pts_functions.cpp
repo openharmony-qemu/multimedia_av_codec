@@ -75,8 +75,8 @@ void MediaDemuxer::HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuf
     }
     sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts;
     MEDIA_LOG_I("HandleAutoMaintainPts success, trackId: " PUBLIC_LOG_U32 ", orginal pts: "
-    PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64 ", Offset: " PUBLIC_LOG_D64 ", basePts: "
-    PUBLIC_LOG_D64, trackId, curPacketPts, sample->pts_, offsetUs, baseInfo->basePts);
+        PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64 ", basePts: " PUBLIC_LOG_D64, trackId,
+        curPacketPts, sample->pts_, baseInfo->basePts);
 }
 
 void MediaDemuxer::InitPtsInfo()

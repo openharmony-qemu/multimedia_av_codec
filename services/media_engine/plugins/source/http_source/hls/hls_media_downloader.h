@@ -97,11 +97,12 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
-    size_t GetBufferingTimeOut() override;
+    bool GetBufferingTimeOut() override;
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
     Status StopBufferring(bool isAppBackground) override;
+    bool IsBuffering() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);

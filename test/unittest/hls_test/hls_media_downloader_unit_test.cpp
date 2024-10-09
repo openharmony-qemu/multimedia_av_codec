@@ -101,7 +101,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo5, TestSize.Level1)
     EXPECT_EQ(downloadInfo.isTimeOut, true);
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, GetRingBufferSize, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, GetBufferSize, TestSize.Level1)
 {
     size_t actualSize = hlsMediaDownloader->GetBufferSize();
     EXPECT_EQ(actualSize, 0);

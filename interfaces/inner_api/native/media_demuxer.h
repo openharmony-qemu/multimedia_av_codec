@@ -70,6 +70,7 @@ public:
     Status Start();
     Status Stop();
     Status Pause();
+    Status PauseDragging();
     Status Resume();
     Status ResumeDragging();
     Status Flush();
@@ -126,6 +127,7 @@ public:
     Status PauseDemuxerReadLoop();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
+    bool IsBuffering();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

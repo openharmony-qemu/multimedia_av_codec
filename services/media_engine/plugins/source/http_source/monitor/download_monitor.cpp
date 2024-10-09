@@ -27,7 +27,7 @@ namespace {
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
     constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
-    constexpr int64_t RETRY_SEG = 50
+    constexpr int64_t RETRY_SEG = 50;
 }
 
 DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept
@@ -195,7 +195,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         return false;
     }
 
-    if (clientError == NetworkClientErrorCode::ERROR_NOT_RETRY ||
+    if (clientError == static_cast<int32_t>(NetworkClientErrorCode::ERROR_NOT_RETRY) ||
         notRetryErrorSet.find(serverError) != notRetryErrorSet.end() ||
         serverError >= SERVER_ERROR_THRESHOLD) {
         if (retryTimes > RETRY_THRESHOLD && !GetPlayable()) {
@@ -206,10 +206,11 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
             return false;
         }
     }
-    if (clientError != NetworkClientErrorCode::ERROR_OK || clientError != NetworkClientErrorCode::ERROR_NOT_RETRY
+    if (clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)
+        || clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_NOT_RETRY)
         || serverError != 0) {
-        if (retryTimes > RETRY_THRESHOLD && !GetPlayable()) {
-            if (clientError != NetworkClientErrorCode::ERROR_OK) {
+        if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR && !GetPlayable()) {
+            if (clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)) {
                 MEDIA_LOG_I("Send http client error, code: " PUBLIC_LOG_D32, static_cast<int32_t>(clientError));
             }
             if (serverError != 0) {
@@ -308,7 +309,7 @@ void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 size_t DownloadMonitor::GetBufferSize() const
 {
-    FASLE_RETURN_V(downloader_ != nullptr, 0);
+    FALSE_RETURN_V(downloader_ != nullptr, 0);
     return downloader_->GetBufferSize();
 }
 
@@ -372,6 +373,13 @@ Status DownloadMonitor::StopBufferring(bool isAppBackground)
     return downloader_->StopBufferring(isAppBackground);
 }
 
+bool DownloadMonitor::IsBuffering()
+{
+    if (downloader_) {
+        return downloader_->IsBuffering();
+    }
+    return false;
+}
 }
 }
 }

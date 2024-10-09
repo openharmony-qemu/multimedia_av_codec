@@ -84,10 +84,12 @@ DashSegmentDownloader::DashSegmentDownloader(Callback *callback, int streamId, M
 
 DashSegmentDownloader::~DashSegmentDownloader() noexcept
 {
-    downloadRequest_ = nullptr;
-    downloader_ = nullptr;
-    mediaSegment_ = nullptr;
-    buffer_ = nullptr;
+    if (buffer_ != nullptr) {
+        buffer_->SetActive(false, true);
+    }
+    if (downloader_ != nullptr) {
+        downloader_->Stop(false);
+    }
     segmentList_.clear();
 }
 
@@ -958,7 +960,7 @@ std::pair<int64_t, int64_t> DashSegmentDownloader::GetDownloadRecordData()
     return recordData;
 }
 
-uint32_t DashSegmentDownloader::GetRingBufferSize() const
+uint32_t DashSegmentDownloader::GetBufferSize() const
 {
     if (buffer_ != nullptr) {
         return buffer_->GetSize();

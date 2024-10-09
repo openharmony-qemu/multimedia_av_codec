@@ -238,7 +238,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
     isPlayTypeFound_ = false;
 }
 
-void M3U8::AddFile(std::make_shared<M3U8Fragment> fragment, size_t duration)
+void M3U8::AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration)
 {
     segmentOffsets_.emplace_back(duration);
     files_.emplace_back(fragment);
@@ -335,7 +335,8 @@ void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &
     std::shared_ptr<DownloadRequest> &request)
 {
     // This should not be called normally
-    if (request->GetClientError() != NetworkClientErrorCode::ERROR_OK || request->GetServerError() != 0) {
+    if (request->GetClientError() != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK) 
+        || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
 }

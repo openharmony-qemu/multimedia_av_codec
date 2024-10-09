@@ -72,7 +72,7 @@ struct M3U8 {
     void InitTagUpdatersMap();
     bool Update(const std::string& playList, bool isNeedCleanFiles);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
-    void AddFile(std::make_shared<M3U8Fragment> fragment, size_t duration);
+    void AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration);
     void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const;
     double GetDuration() const;
     bool IsLive() const;
