@@ -245,6 +245,14 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnTransCoderBufferFilled_0400, TestSiz
     muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
     EXPECT_EQ(muxerFilter_->videoIsEos, true);
 }
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnUnLinked_0400, TestSize.Level1)
+{
+    std::shared_ptr<MyFilterLinkCallback> callback = std::make_shared<MyFilterLinkCallback>();
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    Status status = muxerFilter_->OnUnLinked(streamType, callback);
+    EXPECT_EQ(status, Status::OK);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
