@@ -1329,8 +1329,6 @@ size_t HlsMediaDownloader::GetTotalBufferSize()
     return totalBufferSize_;
 }
 
-
-
 void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;

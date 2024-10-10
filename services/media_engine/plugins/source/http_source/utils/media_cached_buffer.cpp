@@ -1007,7 +1007,8 @@ void CacheMediaChunkBufferImpl::CheckFragment(const FragmentCacheBuffer& fragmen
         auto accessLength = accessChunk->offset > fragment.offsetBegin ?
             accessChunk->offset - fragment.offsetBegin : 0;
         if (fragment.accessLength < accessLength ||
-            fragment.accessLength > (static_cast<int64_t>(accessLength) + static_cast<int64_t>(accessChunk->dataLength))) {
+            fragment.accessLength > (static_cast<int64_t>(accessLength)
+                                        + static_cast<int64_t>(accessChunk->dataLength))) {
             checkSuccess = false;
         }
     }

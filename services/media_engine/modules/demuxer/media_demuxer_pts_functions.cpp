@@ -51,7 +51,7 @@ constexpr int64_t INVALID_PTS_DATA = -1; // The invalid pts data -1.
 
 void MediaDemuxer::HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
-    if (!isAutoMaintainPts_){
+    if (!isAutoMaintainPts_) {
         return;
     }
     int64_t curPacketPts = sample->pts_;

@@ -335,7 +335,7 @@ void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &
     std::shared_ptr<DownloadRequest> &request)
 {
     // This should not be called normally
-    if (request->GetClientError() != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK) 
+    if (request->GetClientError() != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)
         || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
