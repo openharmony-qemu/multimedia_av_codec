@@ -1932,8 +1932,10 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
 Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConvertMode mode,
     const AVStream* avStream, int64_t absolutePTS, uint32_t index)
 {
-    uint32_t sttsIndex = 0, cttsIndex = 0;
-    int64_t pts = 0, dts = 0; // init pts and dts
+    uint32_t sttsIndex = 0;
+    uint32_t cttsIndex = 0;
+    int64_t pts = 0; // init pts 
+    int64_t dts = 0; // init dts
 
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
     int32_t cttsCurNum = 0;
@@ -1965,7 +1967,8 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
     const AVStream* avStream, int64_t absolutePTS, uint32_t index)
 {
     uint32_t sttsIndex = 0;
-    int64_t pts = 0, dts = 0; // init pts and dts
+    int64_t pts = 0; // init pts 
+    int64_t dts = 0; // init dts
 
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
 
