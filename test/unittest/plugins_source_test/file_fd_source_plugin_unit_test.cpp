@@ -473,7 +473,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
     fileFdSourcePlugin_->ringBuffer_ = buffer;
     fileFdSourcePlugin_->NotifyBufferingPercent();
     fileFdSourcePlugin_->waterLineAbove_ = 1;
-    fileFdSourcePlugin_->ringBufferSize_ = 100;;
     fileFdSourcePlugin_->isBuffering_ = true;
     CallbackMock* cb = new CallbackMock();
     fileFdSourcePlugin_->callback_ = cb;
