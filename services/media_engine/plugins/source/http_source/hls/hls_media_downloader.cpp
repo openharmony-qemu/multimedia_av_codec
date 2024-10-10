@@ -79,7 +79,7 @@ HlsMediaDownloader::HlsMediaDownloader(const std::map<std::string, std::string>&
     isBuffering_ = true;
     totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
     httpHeader_ = httpHeader;
-    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, MAX_CACHE_BUFFER_SIZE);
+    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
     HlsInit();
 }
 
