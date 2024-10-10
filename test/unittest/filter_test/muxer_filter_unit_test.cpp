@@ -329,6 +329,19 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_SetTransCoderMode_0400, TestSize.Level
     EXPECT_EQ(status, Status::OK);
     EXPECT_TRUE(muxerFilter_->isTransCoderMode);
 }
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_SetCallingInfo_0400, TestSize.Level1)
+{
+    int32_t appUid = 1;
+    int32_t appPid = 1;
+    std::string bundleName = "test";
+    uint64_t instanceId = 1;
+    muxerFilter_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    EXPECT_EQ(appUid, muxerFilter_->appUid_);
+    EXPECT_EQ(appPid, muxerFilter_->appPid_);
+    EXPECT_EQ(bundleName, muxerFilter_->bundleName_);
+    EXPECT_EQ(instanceId, muxerFilter_->instanceId_);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
