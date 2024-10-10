@@ -146,7 +146,6 @@ int32_t VideoEncoder::GetSurface(SampleInfo &sampleInfo)
         "Get surface failed, ret: %{public}d", ret);
     (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_BUFFER_GEOMETRY,
         sampleInfo.videoWidth, sampleInfo.videoHeight);
-    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_USAGE, 16427);      // 16427: Window usage
     (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_FORMAT,
         ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.profile));
 
