@@ -1941,7 +1941,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertCheckInputParameters(const AVStrea
 }
 
 Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConvertMode mode,
-        const AVStream* avStream, int64_t absolutePTS, uint32_t index)
+    const AVStream* avStream, int64_t absolutePTS, uint32_t index)
 {
     uint32_t sttsIndex = 0;
     uint32_t cttsIndex = 0;
@@ -1979,7 +1979,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
 }
 
 Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvertMode mode,
-        const AVStream* avStream, int64_t absolutePTS, uint32_t index)
+    const AVStream* avStream, int64_t absolutePTS, uint32_t index)
 {
     uint32_t sttsIndex = 0;
 
