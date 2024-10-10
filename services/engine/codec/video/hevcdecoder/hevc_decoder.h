@@ -195,7 +195,7 @@ private:
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
-    std::map<uint32_t, sptr<SurfaceBuffer>> renderSurfaceBufferMap_;
+    std::map<uint32_t, std::pair<sptr<SurfaceBuffer>, OHOS::BufferFlushConfig>> renderSurfaceBufferMap_;
     sptr<Surface> surface_ = nullptr;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
     std::mutex outputMutex_;
