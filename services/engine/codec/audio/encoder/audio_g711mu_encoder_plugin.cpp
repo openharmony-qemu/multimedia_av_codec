@@ -153,10 +153,6 @@ uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
 
 int32_t AudioG711muEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
-    if (!inputBuffer) {
-        AVCODEC_LOGE("AudioG711muEncoderPlugin inputBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         auto attr = inputBuffer->GetBufferAttr();
@@ -188,10 +184,6 @@ int32_t AudioG711muEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuf
 
 int32_t AudioG711muEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
-    if (!outBuffer) {
-        AVCODEC_LOGE("AudioG711muEncoderPlugin outBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         auto memory = outBuffer->GetBuffer();

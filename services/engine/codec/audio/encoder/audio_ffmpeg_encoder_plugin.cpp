@@ -72,10 +72,6 @@ int32_t AudioFfmpegEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBuffer
 
 int32_t AudioFfmpegEncoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
-    if (!inputBuffer) {
-        AVCODEC_LOGE("inputBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     int ret = av_frame_make_writable(cachedFrame_.get());
     if (ret != 0) {
         AVCODEC_LOGE("Frame make writable failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
@@ -124,10 +120,6 @@ int32_t AudioFfmpegEncoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferIn
 
 int32_t AudioFfmpegEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
-    if (!outBuffer) {
-        AVCODEC_LOGE("outBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     int32_t status;
     {
         std::lock_guard<std::mutex> lock(avMutext_);
@@ -223,9 +215,8 @@ int32_t AudioFfmpegEncoderPlugin::AllocateContext(const std::string &name)
         cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
         avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *ptr) { av_packet_free(&ptr); });
     }
-    if (avCodec_ == nullptr) {
-        return AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_PROTOCOL_TYPE;
-    }
+    CHECK_AND_RETURN_RET_LOG(avCodec_ != nullptr,
+        AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_PROTOCOL_TYPE, "AllocateContext failed %{public}s", name.c_str());
 
     AVCodecContext *context = nullptr;
     {
@@ -320,10 +311,9 @@ int32_t AudioFfmpegEncoderPlugin::InitFrame()
     cachedFrame_->channel_layout = avCodecContext_->channel_layout;
     cachedFrame_->channels = avCodecContext_->channels;
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
-    if (ret < 0) {
-        AVCODEC_LOGE("Get frame buffer failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
-        return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >=  0, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
+        "Get frame buffer failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
+
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
