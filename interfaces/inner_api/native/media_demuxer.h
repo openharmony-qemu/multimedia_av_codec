@@ -264,6 +264,7 @@ private:
     int64_t lastSubtitlePts_ = 0;
     std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
     std::atomic<bool> isDemuxerLoopExecuting_ {false};
+    std::atomic<bool> isInterruptNeeded_ {false};
     std::atomic<bool> isFirstFrameAfterSeek_ {false};
 };
 } // namespace Media
