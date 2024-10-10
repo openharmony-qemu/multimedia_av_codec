@@ -1675,7 +1675,7 @@ void MediaDemuxer::DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> 
 Status MediaDemuxer::HandleRead(uint32_t trackId)
 {
     Status ret = InnerReadSample(trackId, bufferMap_[trackId]);
-if (trackId == videoTrackId_ && VideoStreamReadyCallback_ != nullptr) {
+    if (trackId == videoTrackId_ && VideoStreamReadyCallback_ != nullptr) {
         MEDIA_LOG_D("step into HandleRead");
         bool isDiscardable = VideoStreamReadyCallback_->IsVideoStreamDiscardable(bufferMap_[trackId]);
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDiscardable);
