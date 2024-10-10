@@ -58,7 +58,7 @@ void RawdataReader::ReadInputBufferWithStrideRGBA(uint8_t *bufferAddr)
          RATIO_10BIT : RATIO_8BIT);
     for (uint32_t row = 0; row < sampleInfo_->videoSliceHeight; row++) {
         inputFile_->read(reinterpret_cast<char *>(bufferAddr), width * 4); // 4: RGBA 4 channels
-        bufferAddr += sampleInfo_->videoStrideWidth;
+        bufferAddr += sampleInfo_->videoStrideWidth * 4; // 4: RGBA 4 channels;
     }
 }
 
