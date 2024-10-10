@@ -1929,17 +1929,6 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::PTSAndIndexConvertCheckInputParameters(const AVStream* avStream)
-{
-    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
-        "GetPresentationTimeUsFromFfmpegMOV failed due to avStream is nullptr.");
-    FALSE_RETURN_V_MSG_E(avStream->stts_data != nullptr && avStream->stts_count != 0,
-        Status::ERROR_NULL_POINTER, "GetPresentationTimeUsFromFfmpegMOV failed due to avStream->stts_data is empty.");
-    FALSE_RETURN_V_MSG_E(avStream->time_scale != 0, Status::ERROR_INVALID_DATA,
-        "GetPresentationTimeUsFromFfmpegMOV failed due to avStream->time_scale is zero.");
-    return Status::OK;
-}
-
 Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConvertMode mode,
     const AVStream* avStream, int64_t absolutePTS, uint32_t index)
 {
@@ -1998,10 +1987,13 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
     uint32_t trackIndex, int64_t absolutePTS, uint32_t index)
 {
     auto avStream = formatContext_->streams[trackIndex];
-    auto status = PTSAndIndexConvertCheckInputParameters(avStream);
-    if (status != Status::OK) {
-        return status;
-    }
+    auto status = Status::OK;
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
+        "GetPresentationTimeUsFromFfmpegMOV failed due to avStream is nullptr.");
+    FALSE_RETURN_V_MSG_E(avStream->stts_data != nullptr && avStream->stts_count != 0,
+        Status::ERROR_NULL_POINTER, "GetPresentationTimeUsFromFfmpegMOV failed due to avStream->stts_data is empty.");
+    FALSE_RETURN_V_MSG_E(avStream->time_scale != 0, Status::ERROR_INVALID_DATA,
+        "GetPresentationTimeUsFromFfmpegMOV failed due to avStream->time_scale is zero.");
     if (avStream->ctts_data == nullptr) {
         status = PTSAndIndexConvertOnlySttsProcess(mode, avStream, absolutePTS, index);
     } else {

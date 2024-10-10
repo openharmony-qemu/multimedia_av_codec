@@ -148,7 +148,6 @@ private:
 
     Status GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode,
         uint32_t trackIndex, int64_t absolutePTS, uint32_t index);
-    Status PTSAndIndexConvertCheckInputParameters(const AVStream* avStream);
     Status PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConvertMode mode,
         const AVStream* avStream, int64_t absolutePTS, uint32_t index);
     Status PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvertMode mode,
