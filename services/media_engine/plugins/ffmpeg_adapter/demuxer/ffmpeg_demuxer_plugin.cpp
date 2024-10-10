@@ -1934,7 +1934,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
 {
     uint32_t sttsIndex = 0;
     uint32_t cttsIndex = 0;
-    int64_t pts = 0; // init pts 
+    int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
 
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
@@ -1967,7 +1967,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
     const AVStream* avStream, int64_t absolutePTS, uint32_t index)
 {
     uint32_t sttsIndex = 0;
-    int64_t pts = 0; // init pts 
+    int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
 
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
@@ -1990,19 +1990,16 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
     uint32_t trackIndex, int64_t absolutePTS, uint32_t index)
 {
     auto avStream = formatContext_->streams[trackIndex];
-    auto status = Status::OK;
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
         "GetPresentationTimeUsFromFfmpegMOV failed due to avStream is nullptr.");
     FALSE_RETURN_V_MSG_E(avStream->stts_data != nullptr && avStream->stts_count != 0,
         Status::ERROR_NULL_POINTER, "GetPresentationTimeUsFromFfmpegMOV failed due to avStream->stts_data is empty.");
     FALSE_RETURN_V_MSG_E(avStream->time_scale != 0, Status::ERROR_INVALID_DATA,
         "GetPresentationTimeUsFromFfmpegMOV failed due to avStream->time_scale is zero.");
-    if (avStream->ctts_data == nullptr) {
-        status = PTSAndIndexConvertOnlySttsProcess(mode, avStream, absolutePTS, index);
-    } else {
-        status = PTSAndIndexConvertSttsAndCttsProcess(mode, avStream, absolutePTS, index);
-    }
-    return status;
+    
+    return avStream->ctts_data == nullptr ?
+        PTSAndIndexConvertOnlySttsProcess(mode, avStream, absolutePTS, index) :
+        PTSAndIndexConvertSttsAndCttsProcess(mode, avStream, absolutePTS, index);
 }
 
 void FFmpegDemuxerPlugin::PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
