@@ -429,21 +429,19 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_CacheDataLoop_0100, TestSize.Level1)
     fileFdSourcePlugin_->isBuffering_ = true;
     fileFdSourcePlugin_->waterLineAbove_ = 0;
     fileFdSourcePlugin_->CacheDataLoop();
-    EXPECT_EQ(0, fileFdSourcePlugin_->ringBufferSize_);
+    EXPECT_EQ(0, fileFdSourcePlugin_->ringBuffer_->GetSize());
 
     buffer->readBufferSize_ = false;
     fileFdSourcePlugin_->inSeek_ = false;
     fileFdSourcePlugin_->isInterrupted_ = true;
-    fileFdSourcePlugin_->ringBufferSize_ = 10;
     fileFdSourcePlugin_->CacheDataLoop();
 
     fileFdSourcePlugin_->inSeek_ = true;
-    fileFdSourcePlugin_->ringBufferSize_ = 0;
     fileFdSourcePlugin_->cachePosition_ = 1;
     fileFdSourcePlugin_->CacheDataLoop();
 
     fileFdSourcePlugin_->CacheDataLoop();
-    EXPECT_EQ(0, fileFdSourcePlugin_->ringBufferSize_);
+    EXPECT_EQ(0, fileFdSourcePlugin_->ringBuffer_->GetSize());
 }
 
 /**
