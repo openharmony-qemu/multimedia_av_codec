@@ -26,6 +26,7 @@ namespace Plugins {
 namespace HttpPlugin {
 constexpr uint32_t BASE64_DATA_MULTIPLE = 4;
 constexpr uint32_t BASE64_BASE_UNIT_OF_CONVERSION = 3;
+constexpr uint8_t MAX_BASE64_DECODE_NUM = 128;
 /**
  * base64 decoding table
  */
@@ -74,6 +75,11 @@ bool Base64Utils::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *de
 
     for (i = 0, j = 0; i < srcSize;
          i += BASE64_DATA_MULTIPLE, j += BASE64_BASE_UNIT_OF_CONVERSION) {
+        if (src[i] >= MAX_BASE64_DECODE_NUM || src[i + 1] >= MAX_BASE64_DECODE_NUM ||
+            src[i + 2] >= MAX_BASE64_DECODE_NUM || src[i + 3] >= MAX_BASE64_DECODE_NUM) { // 2&3 src index offset
+            MEDIA_LOG_E("src data is err");
+            return false;
+        }
         dest[j] = (BASE64_DECODE_TABLE[src[i]] << 2) | (BASE64_DECODE_TABLE[src[i + 1]] >> 4); // 2&4bits move
         dest[j + 1] = (BASE64_DECODE_TABLE[src[i + 1]] << 4) | // 4:4bits moved
                       (BASE64_DECODE_TABLE[src[i + 2]] >> 2); // 2:index 2:2bits moved
