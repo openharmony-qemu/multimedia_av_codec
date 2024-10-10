@@ -253,6 +253,82 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnUnLinked_0400, TestSize.Level1)
     Status status = muxerFilter_->OnUnLinked(streamType, callback);
     EXPECT_EQ(status, Status::OK);
 }
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnUpdated_0400, TestSize.Level1)
+{
+    std::shared_ptr<MyFilterLinkCallback> callback = std::make_shared<MyFilterLinkCallback>();
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
+    Status status = muxerFilter_->OnUpdated(streamType, userMeta, callback);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_GetFilterType_0400, TestSize.Level1)
+{
+    FilterType filterType = muxerFilter_->GetFilterType();
+    EXPECT_EQ(filterType, FilterType::FILTERTYPE_MUXER);
+}
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_UnLinkNext_0400, TestSize.Level1)
+{
+    std::shared_ptr<TestFilter> filter = std::make_shared<TestFilter>();
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    Status status = muxerFilter_->UnLinkNext(filter, streamType);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_UpdateNext_0400, TestSize.Level1)
+{
+    std::shared_ptr<TestFilter> filter = std::make_shared<TestFilter>();
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    Status status = muxerFilter_->UpdateNext(filter, streamType);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_LinkNext_0400, TestSize.Level1)
+{
+    std::shared_ptr<TestFilter> filter = std::make_shared<TestFilter>();
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    Status status = muxerFilter_->LinkNext(filter, streamType);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoRelease_0400, TestSize.Level1)
+{
+    Status status = muxerFilter_->DoRelease();
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoFlush_0400, TestSize.Level1)
+{
+    Status status = muxerFilter_->DoFlush();
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoResume_0400, TestSize.Level1)
+{
+    Status status = muxerFilter_->DoResume();
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoPause_0400, TestSize.Level1)
+{
+    Status status = muxerFilter_->DoPause();
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoPrepare_0400, TestSize.Level1)
+{
+    Status status = muxerFilter_->DoPrepare();
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_SetTransCoderMode_0400, TestSize.Level1)
+{
+    Status status = muxerFilter_->SetTransCoderMode();
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_TRUE(muxerFilter_->isTransCoderMode);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
