@@ -1943,18 +1943,12 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertCheckInputParameters(const AVStrea
 Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConvertMode mode,
     const AVStream* avStream, int64_t absolutePTS, uint32_t index)
 {
-    uint32_t sttsIndex = 0;
-    uint32_t cttsIndex = 0;
-
-    int64_t pts = 0; // init pts
-    int64_t dts = 0; // init dts
+    uint32_t sttsIndex = 0, cttsIndex = 0;
+    int64_t pts = 0, dts = 0; // init pts and dts
 
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
     int32_t cttsCurNum = 0;
 
-    if (avStream->ctts_data == nullptr) {
-        return Status::OK;
-    }
     cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
     while (sttsIndex < avStream->stts_count && cttsIndex < avStream->ctts_count &&
             cttsCurNum >= 0 && sttsCurNum >= 0) {
@@ -1982,9 +1976,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
     const AVStream* avStream, int64_t absolutePTS, uint32_t index)
 {
     uint32_t sttsIndex = 0;
-
-    int64_t pts = 0; // init pts
-    int64_t dts = 0; // init dts
+    int64_t pts = 0, dts = 0; // init pts and dts
 
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
 
@@ -2010,16 +2002,12 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
     if (status != Status::OK) {
         return status;
     }
-
-    status = PTSAndIndexConvertSttsAndCttsProcess(mode, avStream, absolutePTS, index);
-    if (status != Status::OK) {
-        return status;
+    if (avStream->ctts_data == nullptr) {
+        status = PTSAndIndexConvertOnlySttsProcess(mode, avStream, absolutePTS, index);
+    } else {
+        status = PTSAndIndexConvertSttsAndCttsProcess(mode, avStream, absolutePTS, index);
     }
-    status = PTSAndIndexConvertOnlySttsProcess(mode, avStream, absolutePTS, index);
-    if (status != Status::OK) {
-        return status;
-    }
-    return Status::OK;
+    return status;
 }
 
 void FFmpegDemuxerPlugin::PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
