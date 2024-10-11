@@ -570,6 +570,9 @@ void VideoDecSample::InputLoopFunc()
 
         int32_t ret = InputLoopInner();
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "PushInputData fail or eos, exit");
+
+        signal_->inIndexQueue_.pop();
+        signal_->inMemoryQueue_.pop();
     }
 }
 

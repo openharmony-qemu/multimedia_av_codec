@@ -110,8 +110,8 @@ void AvccReader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, u
 {
     attr.size += frameSize;
     attr.pts = GetTimeUs();
-    attr.flags |= nalDetector_->IsXPS(naluType) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : 0;
-    attr.flags |= nalDetector_->IsIDR(naluType) ? AVCODEC_BUFFER_FLAGS_SYNC_FRAME : 0;
+    attr.flags |= nalDetector_->IsXPS(naluType) ? AVCODEC_BUFFER_FLAG_CODEC_DATA : 0;
+    attr.flags |= nalDetector_->IsIDR(naluType) ? AVCODEC_BUFFER_FLAG_SYNC_FRAME : 0;
     if (isEosFrame) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
         std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_ + 1) << std::endl;
@@ -128,12 +128,10 @@ int32_t AvccReader::FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecB
         int32_t frameSize = 0;
         bool isEosFrame = false;
         auto ret = nalUnitReader_->ReadNalUnit(bufferAddr, frameSize, isEosFrame);
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_INVALID_VAL, AV_ERR_INVALID_VAL, "ReadNalUnit failed");
-        uint8_t naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(buffer->GetAddr()));
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ReadNalUnit failed");
+        uint8_t naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(bufferAddr));
         bufferAddr += frameSize;
         FillBufferAttr(attr, frameSize, naluType, isEosFrame);
-        signal_->inIndexQueue_.pop();
-        signal_->inMemoryQueue_.pop();
         UNITTEST_CHECK_AND_BREAK_LOG(!nalDetector_->IsFullVCL(
             naluType, nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr())) && !IsEOS(),
             "FillBuffer stop running");
@@ -153,13 +151,11 @@ int32_t AvccReader::FillBufferExt(std::shared_ptr<VDecSignal> &signal_, OH_AVCod
         int32_t frameSize = 0;
         bool isEosFrame = false;
         auto ret = nalUnitReader_->ReadNalUnit(bufferAddr, frameSize, isEosFrame);
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_INVALID_VAL, AV_ERR_INVALID_VAL, "ReadNalUnit failed");
-        auto naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(buffer->GetAddr()));
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ReadNalUnit failed");
+        auto naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(bufferAddr));
         bufferAddr += frameSize;
         FillBufferAttr(attr, frameSize, naluType, isEosFrame);
         buffer->SetBufferAttr(attr);
-        signal_->inIndexQueue_.pop();
-        signal_->inMemoryQueue_.pop();
         UNITTEST_CHECK_AND_BREAK_LOG(!nalDetector_->IsFullVCL(
             naluType, nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr())) && !IsEOS(),
             "FillBuffer stop running");
@@ -183,7 +179,7 @@ uint8_t const * AvccReader::NalUnitReader::GetNextNalUnitAddr()
 int32_t AvccReader::NalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Got a invalid buffer addr");
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(nalUnit_ != nullptr, AV_ERR_INVALID_VAL, "Nal unit buffer is nullptr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(nalUnit_, AV_ERR_INVALID_VAL, "Nal unit buffer is nullptr");
     bufferSize = nalUnit_->size();
     memcpy_s(bufferAddr, bufferSize, nalUnit_->data(), bufferSize);
 
@@ -248,6 +244,15 @@ const uint8_t *AvccReader::NalDetector::GetNalTypeAddr(const uint8_t *bufferAddr
     return pos + ANNEXB_FRAME_HEAD_LEN;
 }
 
+bool AvccReader::AVCNalDetector::IsFullVCL(uint8_t nalType, const uint8_t *nextNalTypeAddr)
+{
+    auto nextNaluType = GetNalType(nextNalTypeAddr);
+    return (IsVCL(nalType) && (
+        (!IsVCL(nextNaluType)) ||
+        ((IsVCL(nextNaluType)) && IsFirstSlice(nextNalTypeAddr)) // 0x80: first_slice_segment_in_pic_flag
+    ));
+}
+
 uint8_t AvccReader::AVCNalDetector::GetNalType(const uint8_t *bufferAddr)
 {
     return (*bufferAddr) & 0x1F; // AVC Nal offset: value & 0x1F
@@ -273,18 +278,9 @@ bool AvccReader::AVCNalDetector::IsVCL(uint8_t nalType)
     return (nalType >= AVC_NON_IDR && nalType <= AVC_IDR) ? true : false;
 }
 
-bool AvccReader::AVCNalDetector::IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr)
+bool AvccReader::AVCNalDetector::IsFirstSlice(const uint8_t *nalTypeAddr)
 {
-    auto nextNaluType = GetNalType(nextNaluTypeAddr);
-    return (IsVCL(nalType) && (
-        (!IsVCL(nextNaluType)) ||
-        ((IsVCL(nextNaluType)) && IsFirstSlice(nextNaluTypeAddr))
-    ));
-}
-
-bool AvccReader::AVCNalDetector::IsFirstSlice(const uint8_t *nextNaluTypeAddr)
-{
-    return (*(nextNaluTypeAddr + 1) & 0x80) == 0x80; // *(nextNaluTypeAddr + 1) & 0x80: AVC first_mb_in_slice
+    return (*(nalTypeAddr + 1) & 0x80) == 0x80; // *(nalTypeAddr + 1) & 0x80: AVC first_mb_in_slice
 }
 
 bool AvccReader::HEVCNalDetector::IsXPS(uint8_t nalType)
@@ -302,17 +298,9 @@ bool AvccReader::HEVCNalDetector::IsVCL(uint8_t nalType)
     return (nalType >= HEVC_TRAIL_N && nalType <= HEVC_CRA_NUT) ? true : false;
 }
 
-bool AvccReader::HEVCNalDetector::IsFullVCL(uint8_t nalType, const uint8_t *nextNaluTypeAddr)
+bool AvccReader::HEVCNalDetector::IsFirstSlice(const uint8_t *nalTypeAddr)
 {
-    auto nextNaluType = GetNalType(nextNaluTypeAddr);
-    return (IsVCL(nalType) && (
-        (!IsVCL(nextNaluType)) ||
-        ((IsVCL(nextNaluType)) && (*(nextNaluTypeAddr + 2) & 0x80)) // 0x80: first_slice_segment_in_pic_flag
-    ));
-}
-bool AvccReader::HEVCNalDetector::IsFirstSlice(const uint8_t *nextNaluTypeAddr)
-{
-    return *(nextNaluTypeAddr + 2) & 0x80; // *(nextNaluTypeAddr + 2) & 0x80: HEVC first_slice_segment_in_pic_flag
+    return *(nalTypeAddr + 2) & 0x80; // *(nalTypeAddr + 2) & 0x80: HEVC first_slice_segment_in_pic_flag
 }
 } // MediaAVCodec
 } // OHOS
