@@ -81,6 +81,7 @@ Status MediaDemuxer::InitPtsInfo()
     FALSE_RETURN_V(source_ != nullptr && source_->GetHLSDiscontinuity(), Status::OK);
     MEDIA_LOG_I("Enable hls disContinuity auto maintain pts");
     isAutoMaintainPts_ = true;
+    AutoLock lock(mapMutex_);
     for (auto it = bufferQueueMap_.begin(); it != bufferQueueMap_.end(); it++) {
         uint32_t trackId = it->first;
         if (maintainBaseInfos_[trackId] == nullptr) {
