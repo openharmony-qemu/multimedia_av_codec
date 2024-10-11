@@ -1929,6 +1929,63 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConvertMode mode,
+    const AVStream* avStream, int64_t absolutePTS, uint32_t index)
+{
+    uint32_t sttsIndex = 0;
+    uint32_t cttsIndex = 0;
+    int64_t pts = 0; // init pts
+    int64_t dts = 0; // init dts
+
+    int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
+    int32_t cttsCurNum = 0;
+
+    cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
+    while (sttsIndex < avStream->stts_count && cttsIndex < avStream->ctts_count &&
+            cttsCurNum >= 0 && sttsCurNum >= 0) {
+        if (cttsCurNum == 0) {
+            cttsIndex++;
+            cttsCurNum = cttsIndex < avStream->ctts_count ?
+                         static_cast<int32_t>(avStream->ctts_data[cttsIndex].count) : 0;
+        }
+        cttsCurNum--;
+        pts = (dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) *
+                1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
+        PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
+        sttsCurNum--;
+        dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
+        if (sttsCurNum == 0) {
+            sttsIndex++;
+            sttsCurNum = sttsIndex < avStream->stts_count ?
+                         static_cast<int32_t>(avStream->stts_data[sttsIndex].count) : 0;
+        }
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvertMode mode,
+    const AVStream* avStream, int64_t absolutePTS, uint32_t index)
+{
+    uint32_t sttsIndex = 0;
+    int64_t pts = 0; // init pts
+    int64_t dts = 0; // init dts
+
+    int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
+
+    while (sttsIndex < avStream->stts_count && sttsCurNum >= 0) {
+        pts = dts * 1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is for converting pts to us
+        PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
+        sttsCurNum--;
+        dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
+        if (sttsCurNum == 0) {
+            sttsIndex++;
+            sttsCurNum = sttsIndex < avStream->stts_count ?
+                         static_cast<int32_t>(avStream->stts_data[sttsIndex].count) : 0;
+        }
+    }
+    return Status::OK;
+}
+
 Status FFmpegDemuxerPlugin::GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode,
     uint32_t trackIndex, int64_t absolutePTS, uint32_t index)
 {
@@ -1939,48 +1996,10 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
         Status::ERROR_NULL_POINTER, "GetPresentationTimeUsFromFfmpegMOV failed due to avStream->stts_data is empty.");
     FALSE_RETURN_V_MSG_E(avStream->time_scale != 0, Status::ERROR_INVALID_DATA,
         "GetPresentationTimeUsFromFfmpegMOV failed due to avStream->time_scale is zero.");
-
-    uint32_t sttsIndex = 0;
-    uint32_t cttsIndex = 0;
-
-    int64_t pts = 0; // init pts
-    int64_t dts = 0; // init dts
-
-    int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
-    int32_t cttsCurNum = 0;
-
-    if (avStream->ctts_data != nullptr) {
-        cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
-        while (sttsIndex < avStream->stts_count && cttsIndex < avStream->ctts_count &&
-                cttsCurNum >= 0 && sttsCurNum >= 0) {
-            if (cttsCurNum == 0) {
-                cttsIndex++;
-                cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
-            }
-            cttsCurNum--;
-            pts = (dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) *
-                   1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
-            PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
-            sttsCurNum--;
-            dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
-            if (sttsCurNum == 0) {
-                sttsIndex++;
-                sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
-            }
-        }
-    } else {
-        while (sttsIndex < avStream->stts_count && cttsCurNum >= 0 && sttsCurNum >= 0) {
-            pts = dts * 1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is for converting pts to us
-            PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
-            sttsCurNum--;
-            dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
-            if (sttsCurNum == 0) {
-                sttsIndex++;
-                sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
-            }
-        }
-    }
-    return Status::OK;
+    
+    return avStream->ctts_data == nullptr ?
+        PTSAndIndexConvertOnlySttsProcess(mode, avStream, absolutePTS, index) :
+        PTSAndIndexConvertSttsAndCttsProcess(mode, avStream, absolutePTS, index);
 }
 
 void FFmpegDemuxerPlugin::PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
