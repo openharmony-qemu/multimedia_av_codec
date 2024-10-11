@@ -508,6 +508,7 @@ Status MediaDemuxer::ProcessDrmInfos()
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
         "get demuxer plugin failed.");
+
     std::multimap<std::string, std::vector<uint8_t>> drmInfo;
     Status ret = pluginTemp->GetDrmInfo(drmInfo);
     if (ret == Status::OK && !drmInfo.empty()) {
@@ -1984,6 +1985,7 @@ void MediaDemuxer::HandleSourceDrmInfoEvent(const std::multimap<std::string, std
     bool isUpdated = GetDrmInfosUpdated(info, infoUpdated);
     if (isUpdated) {
         ReportDrmInfos(infoUpdated);
+        return;
     }
     MEDIA_LOG_D("demuxer filter received source drminfos but not update");
 }

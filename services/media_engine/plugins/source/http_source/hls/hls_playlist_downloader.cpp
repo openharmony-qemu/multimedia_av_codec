@@ -55,7 +55,7 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
         updateTask_->Stop();
     }
     if (downloader_ != nullptr) {
-        downloader_ = nullptr;
+        downloader_->Stop(false);
     }
     MEDIA_LOG_I("~HlsPlayListDownloader out");
 }

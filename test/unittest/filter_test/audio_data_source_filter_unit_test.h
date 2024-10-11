@@ -146,6 +146,26 @@ public:
 private:
 };
 
+class TestFilterLinkCallback : public Pipeline::FilterLinkCallback {
+public:
+    explicit TestFilterLinkCallback()
+    {
+        std::cout << "filter back constructor" << std::endl;
+    }
+    void OnLinkedResult(const sptr<AVBufferQueueProducer>& queue, std::shared_ptr<Meta>& meta)
+    {
+        std::cout << "call OnLinkedResult" << std::endl;
+    }
+    void OnUnlinkedResult(std::shared_ptr<Meta>& meta)
+    {
+        std::cout << "call OnUnlinkedResult" << std::endl;
+    }
+    void OnUpdatedResult(std::shared_ptr<Meta>& meta)
+    {
+        std::cout << "call OnUpdatedResult" << std::endl;
+    }
+};
+
 class TestFilterCallback : public FilterCallback {
 public:
     explicit TestFilterCallback()

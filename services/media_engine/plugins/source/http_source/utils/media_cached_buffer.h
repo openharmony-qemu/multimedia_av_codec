@@ -52,6 +52,7 @@ struct FragmentCacheBuffer {
     TimePoint readTime;
     CacheChunkList chunks;
     ChunkIterator accessPos;
+    bool isSplit {false};
 
     explicit FragmentCacheBuffer(uint64_t offset = 0) : offsetBegin(offset), dataLength(0),
         accessLength(0), totalReadSize(0), readTime(Clock::now())
@@ -83,13 +84,15 @@ public:
     size_t Write(void* ptr, uint64_t inOffset, size_t inWriteSize);
     bool Seek(uint64_t offset);
     size_t GetBufferSize(uint64_t offset);
-    size_t GetNextBufferOffset(uint64_t offset);
+    uint64_t GetNextBufferOffset(uint64_t offset);
     void Dump(uint64_t param);
     bool Check();
     void Clear();
     uint64_t GetFreeSize();
     bool ClearFragmentBeforeOffset(uint64_t offset);
     bool ClearChunksOfFragment(uint64_t offset);
+    bool ClearMiddleReadFragment(uint64_t minOffset, uint64_t maxOffset);
+    bool IsReadSplit(uint64_t offset);
 
 protected:
     virtual CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false);
@@ -112,6 +115,7 @@ protected:
     size_t ReadInner(void* ptr, uint64_t offset, size_t readSize);
 
     template<typename Pred>
+    // Search for the fragment pointed to by the offset.
     FragmentIterator GetOffsetFragmentCache(FragmentIterator& fragmentPos, uint64_t offset, Pred pred)
     {
         if (fragmentPos != fragmentCacheBuffer_.end()) {
@@ -131,6 +135,7 @@ protected:
     }
 
     template<typename Pred>
+    // Search for the chunk pointed to by the offset.
     static ChunkIterator GetOffsetChunkCache(CacheChunkList& chunkCaches, uint64_t offset, Pred pred)
     {
         auto chunkCachePos = std::find_if(chunkCaches.begin(), chunkCaches.end(),
@@ -183,13 +188,15 @@ public:
     virtual size_t Write(void* ptr, uint64_t offset, size_t writeSize) = 0;
     virtual bool Seek(uint64_t offset) = 0;
     virtual size_t GetBufferSize(uint64_t offset) = 0;
-    virtual size_t GetNextBufferOffset(uint64_t offset) = 0;
+    virtual uint64_t GetNextBufferOffset(uint64_t offset) = 0;
     virtual void Clear() = 0;
     virtual void SetReadBlocking(bool isReadBlockingAllowed) = 0;
     virtual void Dump(uint64_t param) = 0;
     virtual uint64_t GetFreeSize() = 0;
     virtual bool ClearFragmentBeforeOffset(uint64_t offset) = 0;
     virtual bool ClearChunksOfFragment(uint64_t offset) = 0;
+    virtual bool ClearMiddleReadFragment(uint64_t minOffset, uint64_t maxOffset) = 0;
+    virtual bool IsReadSplit(uint64_t offset) = 0;
 };
 
 class CacheMediaChunkBufferImpl;
@@ -207,7 +214,7 @@ public:
     size_t Write(void* ptr, uint64_t offset, size_t writeSize) override;
     bool Seek(uint64_t offset) override;
     size_t GetBufferSize(uint64_t offset) override;
-    size_t GetNextBufferOffset(uint64_t offset) override;
+    uint64_t GetNextBufferOffset(uint64_t offset) override;
     void Clear() override;
     void SetReadBlocking(bool isReadBlockingAllowed) override;
     void Dump(uint64_t param) override;
@@ -215,6 +222,8 @@ public:
     uint64_t GetFreeSize() override;
     bool ClearFragmentBeforeOffset(uint64_t offset) override;
     bool ClearChunksOfFragment(uint64_t offset) override;
+    bool ClearMiddleReadFragment(uint64_t minOffset, uint64_t maxOffset) override;
+    bool IsReadSplit(uint64_t offset) override;
 private:
     std::unique_ptr<CacheMediaChunkBufferImpl> impl_;
 };

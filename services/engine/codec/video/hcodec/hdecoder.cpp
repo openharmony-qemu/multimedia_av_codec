@@ -928,7 +928,14 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
     BufferFlushConfig cfg {
         .damage = {.x = 0, .y = 0, .w = info.surfaceBuffer->GetWidth(), .h = info.surfaceBuffer->GetHeight() },
         .timestamp = info.omxBuffer->pts,
+        .desiredPresentTimestamp = -1,
     };
+    if (info.avBuffer->meta_->Find(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP) !=
+        info.avBuffer->meta_->end()) {
+        info.avBuffer->meta_->Get<OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP>(
+            cfg.desiredPresentTimestamp);
+        info.avBuffer->meta_->Remove(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP);
+    }
     GSError ret = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, cfg);
     if (ret != GSERROR_OK) {
         HLOGW("surface(%" PRIu64 "), FlushBuffer(seq=%u) failed, GSError=%d",

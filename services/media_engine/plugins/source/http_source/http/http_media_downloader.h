@@ -91,18 +91,24 @@ private:
     void InitCacheBuffer(uint32_t expectBufferDuration);
 
     bool HandleBuffering();
-    bool StartBuffering(int32_t wantReadLength);
+    bool StartBuffering(unsigned int& wantReadLength);
     size_t GetCurrentBufferSize() const;
     bool HandleBreak();
-    void ChangeDownloadPos();
+    bool ChangeDownloadPos(bool isSeekHit);
     void UpdateWaterLineAbove();
     void HandleCachedDuration();
     bool CheckBufferingOneSeconds();
     double CalculateCurrentDownloadSpeed();
     float GetCacheDuration(float ratio);
+    void HandleDownloadWaterLine();
+    void UpdateMinAndMaxReadOffset();
+    bool StartBufferingCheck(unsigned int& wantReadLength);
+    bool ClearHasReadBuffer();
+    void ClearCacheBuffer();
+    void CheckDownloadPos(unsigned int wantReadLength);
 
 private:
-    std::shared_ptr<RingBuffer> buffer_;
+    std::shared_ptr<RingBuffer> ringBuffer_;
     std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;
@@ -112,10 +118,8 @@ private:
     StatusCallbackFunc statusCallback_ {nullptr};
     bool aboveWaterline_ {false};
     bool startedPlayStatus_ {false};
-    uint64_t readTime_ {0};
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
-    std::atomic<bool> isInterruptNeeded_{false};
     int totalBufferSize_ {0};
     SteadyClock steadyClock_;
     uint64_t totalBits_ {0};
@@ -139,9 +143,10 @@ private:
     std::atomic<bool> isHitSeeking_ {false};
     std::atomic<bool> isNeedDropData_ {false};
     std::atomic<bool> isServerAcceptRange_ {false};
+    std::atomic<bool> isInterrupt_ {false};
+    std::atomic<bool> isInterruptNeeded_{false};
 
     size_t waterLineAbove_ {0};
-    bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
 
@@ -160,8 +165,16 @@ private:
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
+
+    SteadyClock cachedDurationClock_;
     volatile size_t wantedReadLength_ {0};
     volatile size_t bufferingTime_ {0};
+
+    uint64_t minReadOffset_ {0};
+    uint64_t maxReadOffset_ {0};
+    int32_t minOffsetNotUpdateCount_ {0};
+    int32_t maxOffsetNotUpdateCount_ {0};
+    std::atomic<bool> isMinAndMaxOffsetUpdate_ {false};
 };
 }
 }

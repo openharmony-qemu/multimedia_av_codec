@@ -92,7 +92,6 @@ struct M3U8 {
     bool SaveData(uint8_t *data, uint32_t len);
     static void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,
         std::shared_ptr<DownloadRequest> &request);
-    static bool Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize);
     bool SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void ProcessDrmInfos(void);
