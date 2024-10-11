@@ -55,7 +55,7 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 const uint32_t DEFAULT_READ_SIZE = 4096;
-const uint32_t MP3_PROBE_SIZE = DEFAULT_READ_SIZE * 4; // sniff mp3 format need more data, 16k
+const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
@@ -2030,7 +2030,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
     }
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
         "Sniff failed due to get plugin for " PUBLIC_LOG_S " failed.", pluginName.c_str());
-    size_t bufferSize = StartWith(plugin->name, "mp3") ? MP3_PROBE_SIZE : DEFAULT_READ_SIZE; // mp3 need more probe data
+    size_t bufferSize = DEFAULT_SNIFF_SIZE;
     uint64_t fileSize = 0;
     if (dataSource->GetSize(fileSize) == Status::OK) {
         bufferSize = (bufferSize < fileSize) ? bufferSize : fileSize;
@@ -2058,8 +2058,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
         MEDIA_LOG_I("effective sniff: dataSize:" PUBLIC_LOG_D32 " " PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/100]",
             getData, plugin->name, confidence);
     }
-    if ((StartWith(plugin->name, "mp3") && static_cast<uint32_t>(getData) < MP3_PROBE_SIZE) ||
-        (static_cast<uint32_t>(getData) < DEFAULT_READ_SIZE)) { // not enough data
+    if (static_cast<uint32_t>(getData) < DEFAULT_SNIFF_SIZE) { // not enough data
         MEDIA_LOG_I("leak sniff: dataSize:" PUBLIC_LOG_D32 " " PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/100]",
             getData, plugin->name, confidence);
     }
