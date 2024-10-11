@@ -131,7 +131,7 @@ HlsMediaDownloader::~HlsMediaDownloader()
         playlistDownloader_ = nullptr;
     }
     if (downloader_ != nullptr) {
-        downloader_ = nullptr;
+        downloader_->Stop(false);
     }
     MEDIA_LOG_I("~HlsMediaDownloader out");
 }
