@@ -43,8 +43,10 @@ enum class AudioMuxerFormatType : int32_t {
 };
 
 typedef struct AudioTrackParam {
+    int32_t trackId;
     const char* mimeType;
     int32_t sampleRate;
+    long bitRate;
     int32_t channels;
     int32_t frameSize;
     int32_t width;
