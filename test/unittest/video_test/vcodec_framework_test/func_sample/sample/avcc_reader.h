@@ -95,8 +95,8 @@ private:
         virtual bool IsXPS(uint8_t nalType) = 0;
         virtual bool IsIDR(uint8_t nalType) = 0;
         virtual bool IsVCL(uint8_t nalType) = 0;
-        virtual bool IsFullVCL(uint8_t nalType, const uint8_t *nextNalTypeAddr) = 0;
         virtual bool IsFirstSlice(const uint8_t *nalTypeAddr) = 0;
+        bool IsFullVCL(uint8_t nalType, const uint8_t *nextNalTypeAddr);
     };
 
     class AVCNalDetector : public NalDetector {
@@ -105,7 +105,6 @@ private:
         bool IsXPS(uint8_t nalType) override;
         bool IsIDR(uint8_t nalType) override;
         bool IsVCL(uint8_t nalType) override;
-        bool IsFullVCL(uint8_t nalType, const uint8_t *nextNalTypeAddr) override;
         bool IsFirstSlice(const uint8_t *nalTypeAddr) override;
     };
 
@@ -115,7 +114,6 @@ private:
         bool IsXPS(uint8_t nalType) override;
         bool IsIDR(uint8_t nalType) override;
         bool IsVCL(uint8_t nalType) override;
-        bool IsFullVCL(uint8_t nalType, const uint8_t *nextNalTypeAddr) override;
         bool IsFirstSlice(const uint8_t *nalTypeAddr) override;
     };
 

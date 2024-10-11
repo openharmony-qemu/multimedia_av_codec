@@ -244,7 +244,7 @@ const uint8_t *AvccReader::NalDetector::GetNalTypeAddr(const uint8_t *bufferAddr
     return pos + ANNEXB_FRAME_HEAD_LEN;
 }
 
-bool AvccReader::AVCNalDetector::IsFullVCL(uint8_t nalType, const uint8_t *nextNalTypeAddr)
+bool AvccReader::NalDetector::IsFullVCL(uint8_t nalType, const uint8_t *nextNalTypeAddr)
 {
     auto nextNaluType = GetNalType(nextNalTypeAddr);
     return (IsVCL(nalType) && (
