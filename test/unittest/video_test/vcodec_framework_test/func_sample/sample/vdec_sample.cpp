@@ -640,7 +640,7 @@ int32_t VideoDecSample::InputLoopInner()
                                       AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     avccReader_->FillBuffer(signal_, attr);
-    return PushInputData(avccReader_->frameInputCount_, attr);
+    return PushInputData(index, attr);
 }
 
 void VideoDecSample::OutputLoopFunc()
@@ -828,7 +828,7 @@ int32_t VideoDecSample::InputLoopInnerExt()
                                       AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     avccReader_->FillBufferExt(signal_, attr);
-    return PushInputBuffer(avccReader_->frameInputCount_);
+    return PushInputBuffer(index);
 }
 
 int32_t VideoDecSample::SetVideoDecryptionConfig()
