@@ -174,6 +174,7 @@ private:
     std::mutex recvMutex_;
     std::mutex syncMutex_;
     std::mutex surfaceMutex_;
+    std::mutex formatMutex_;
     std::condition_variable sendCv_;
     std::condition_variable recvCv_;
     std::shared_ptr<MediaCodecCallback> callback_;
