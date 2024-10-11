@@ -347,7 +347,7 @@ bool HlsMediaDownloader::HandleCache()
 
 void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
 {
-    if (ffmpegOffset_ <= ffmpegOffset || readTsIndex_ == 0) {
+    if (ffmpegOffset_ <= ffmpegOffset) {
         return;
     }
     MEDIA_LOG_D("HLS Read back, ffmpegOffset: " PUBLIC_LOG_U64 " ffmpegOffset: " PUBLIC_LOG_U64,
@@ -359,16 +359,21 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
         readOffset_ -= readBack;
         MEDIA_LOG_D("HLS Read back, current ts, update readOffset: " PUBLIC_LOG_U64, readOffset_);
     } else {
+        if (readTsIndex_ == 0) {
+            readOffset_ = 0; // Cross ts readback, but this is the first ts, so reset readOffset.
+            MEDIA_LOG_W("HLS Read back, this is the first ts: " PUBLIC_LOG_U64, readOffset_);
+            return;
+        }
         if (tsStorageInfo_.count(readTsIndex_ - 1) <= 0) {
             readOffset_ = readOffset_ > curTsHaveRead ? readOffset_ - curTsHaveRead : 0;
-            MEDIA_LOG_E("HLS Read back, last ts is not ready, update readOffset to readTsIndex head: "
+            MEDIA_LOG_W("HLS Read back, last ts is not ready, update readOffset to readTsIndex head: "
                 PUBLIC_LOG_U64, readOffset_);
             return;
         }
         readTsIndex_--;
         uint64_t lastTsReadBack = readBack - curTsHaveRead;
         readOffset_ = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first - lastTsReadBack);
-        MEDIA_LOG_D("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
+        MEDIA_LOG_I("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
             PUBLIC_LOG_U64, readTsIndex_.load(), readOffset_);
     }
 }
