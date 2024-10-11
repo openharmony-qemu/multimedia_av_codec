@@ -226,13 +226,13 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
     return true;
 }
 
-int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode)
+int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int64_t seekTime)
 {
     FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "stream is nullptr.");
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE && ffTime == 0) {
         return AVSEEK_FLAG_FRAME;
     }
-    if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
+    if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO || seekTime == 0) {
         return AVSEEK_FLAG_BACKWARD;
     }
     if (mode == SeekMode::SEEK_NEXT_SYNC || mode == SeekMode::SEEK_PREVIOUS_SYNC) {
@@ -1671,7 +1671,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         return Status::ERROR_INVALID_OPERATION;
     }
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
-    int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode);
+    int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode, seekTime);
     MEDIA_LOG_I("Seek:time [" PUBLIC_LOG_U64 "/" PUBLIC_LOG_U64 "/" PUBLIC_LOG_D64 "] flag ["
                 PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]",
                 seekTime, ffTime, realSeekTime, static_cast<int32_t>(mode), flag);
