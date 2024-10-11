@@ -58,10 +58,7 @@ int32_t VideoDecoderSample::Prepare()
 {
     inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);
     outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
-    if (inputThread_ == nullptr || outputThread_ == nullptr) {
-        AVCODEC_LOGE("Create thread failed");
-        return AVCODEC_SAMPLE_ERR_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(inputThread_ && outputThread_, AVCODEC_SAMPLE_ERR_ERROR, "Create thread failed");
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -76,6 +73,7 @@ void VideoDecoderSample::InputThread()
 
         int32_t ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Read EOS frame, thread out");
         AVCODEC_LOGV("In buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
             context_->inputBufferQueue.GetFrameCount(),
             bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
@@ -84,7 +82,6 @@ void VideoDecoderSample::InputThread()
 
         ret = context_->videoCodec->PushInput(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
-        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputBufferQueue.GetFrameCount());
     PushEosFrame();

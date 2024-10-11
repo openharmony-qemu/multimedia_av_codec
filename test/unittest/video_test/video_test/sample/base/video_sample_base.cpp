@@ -31,16 +31,17 @@ namespace MediaAVCodec {
 namespace Sample {
 VideoSampleBase::~VideoSampleBase()
 {
-    InnerRelease();
+    Release();
 }
 
 int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(context_ == nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
-    
+
     context_ = std::make_shared<SampleContext>();
     context_->sampleInfo = std::make_shared<SampleInfo>(sampleInfo);
+
     auto &info = *context_->sampleInfo;
     auto &videoCodec = context_->videoCodec;
 
@@ -48,7 +49,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     CHECK_AND_RETURN_RET_LOG(dataProducer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create data producer failed");
     int32_t ret = dataProducer_->Init(context_->sampleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Data producer init failed");
-    
+
     videoCodec = VideoCodecFactory::CreateVideoCodec(info.codecType, info.codecRunMode);
     CHECK_AND_RETURN_RET_LOG(videoCodec != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
         "Create video encoder failed, no memory");
@@ -58,7 +59,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     ret = Init();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Init failed");
     PrintSampleInfo(info);
-    
+
     ret = videoCodec->Config(info, reinterpret_cast<uintptr_t *>(context_.get()));
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec config failed");
 
@@ -69,12 +70,9 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
 int32_t VideoSampleBase::Start()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
-    
-    auto &videoCodec = context_->videoCodec;
-    CHECK_AND_RETURN_RET_LOG(videoCodec != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+    CHECK_AND_RETURN_RET_LOG(context_ && context_->videoCodec, AVCODEC_SAMPLE_ERR_ERROR, "Context error");
 
-    int32_t ret = videoCodec->Start();
+    int32_t ret = context_->videoCodec->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Codec start failed");
 
     ret = Prepare();
@@ -112,11 +110,6 @@ void VideoSampleBase::Release()
     AVCODEC_LOGI("Succeed");
 }
 
-void VideoSampleBase::InnerRelease()
-{
-    Release();
-}
-
 void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
 {
     auto &info = *context_->sampleInfo;
@@ -133,7 +126,7 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
                 info.outputFilePath = "VideoEncoderOut_"s + std::to_string(time) + ".bin";
             }
         }
-        
+
         outputFile_ = std::make_unique<std::ofstream>(info.outputFilePath, std::ios::out | std::ios::trunc);
         if (!outputFile_->is_open()) {
             outputFile_ = nullptr;
@@ -142,20 +135,24 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
         }
     }
 
-    uint8_t *bufferAddr = nullptr;
-    if (bufferInfo.bufferAddr != nullptr) {
-        bufferAddr = bufferInfo.bufferAddr;
-    } else {
-        bufferAddr = static_cast<uint8_t>(info.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
-                        OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer)) :
-                        OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
-    }
-
+    uint8_t *bufferAddr = bufferInfo.bufferAddr;
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
-    if (!(info.codecType & 0b10)) {   // 0b10: Video encoder mask
-        WriteOutputFileWithStrideYUV420(bufferAddr);
-    } else {
+    if (info.codecType & 0b10) {   // 0b10: Video encoder mask
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
+    } else {
+        switch (info.pixelFormat) {
+            case AV_PIXEL_FORMAT_NV12:
+                [[fallthrough]];
+            case AV_PIXEL_FORMAT_NV21:
+                WriteOutputFileWithStrideYUV420(bufferAddr);
+                break;
+            case AV_PIXEL_FORMAT_RGBA:
+                WriteOutputFileWithStrideRGBA(bufferAddr);
+                break;
+            default:
+                AVCODEC_LOGE("Unsupported pixel format, skip");
+                break;
+        }
     }
 }
 
@@ -179,6 +176,20 @@ void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr)
     for (int32_t row = 0; row < (info.videoHeight / yuvSampleRatio); row++) {
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), videoWidth);
         bufferAddr += videoStrideWidth;
+    }
+}
+
+void VideoSampleBase::WriteOutputFileWithStrideRGBA(uint8_t *bufferAddr)
+{
+    CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
+    auto &info = *context_->sampleInfo;
+    int32_t width = info.videoWidth *
+        ((info.codecMime == OH_AVCODEC_MIMETYPE_VIDEO_HEVC && info.profile == HEVC_PROFILE_MAIN_10) ? 2 : 1);
+    int32_t &stride = info.videoStrideWidth;
+
+    for (int32_t row = 0; row < info.videoSliceHeight; row++) {
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), width * 4); // 4: RGBA 4 channels
+        bufferAddr += stride;
     }
 }
 

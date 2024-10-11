@@ -107,15 +107,7 @@ void DataProducerBase::DumpInput(const CodecBufferInfo &bufferInfo)
         }
     }
 
-    uint8_t *bufferAddr = nullptr;
-    if (bufferInfo.bufferAddr != nullptr) {
-        bufferAddr = bufferInfo.bufferAddr;
-    } else {
-        bufferAddr = static_cast<uint8_t>(sampleInfo_->codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
-                        OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer)) :
-                        OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
-    }
-
+    uint8_t *bufferAddr = bufferInfo.bufferAddr;
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     inputDumpFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
 }

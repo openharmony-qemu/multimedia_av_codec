@@ -370,7 +370,7 @@ SampleInfo ParseDemoArg(int argc, char *argv[])
     SampleInfo info;
     DemoArgumentType argType = DEMO_ARG_UNKNOW;
     while ((argType = static_cast<DemoArgumentType>(getopt_long(argc, argv, "", DEMO_LONG_ARGUMENT, nullptr))) != -1) {
-        if (argType <= DEMO_ARG_UNKNOW || argType >= DEMO_ARG_END) {
+        if (argType <= DEMO_ARG_UNKNOW || argType >= DEMO_ARG_END || !ARG_OPT_MAP.count(argType)) {
             std::cout << "Unknow arg type: " << argType << ", value: " << optarg << std::endl;
             continue;
         }
