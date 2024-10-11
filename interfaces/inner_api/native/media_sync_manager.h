@@ -24,6 +24,7 @@
 #include "osal/task/mutex.h"
 #include "osal/task/autolock.h"
 #include "osal/utils/steady_clock.h"
+#include "filter/filter.h"
 #include "common/status.h"
 #include "plugin/plugin_time.h"
 
@@ -45,6 +46,7 @@ public:
     Status Seek(int64_t mediaTime, bool isClosest = false);
     Status Reset() override;
     bool InSeeking();
+    void SetEventReceiver(std::weak_ptr<EventReceiver> eventReceiver);
     std::condition_variable seekCond_;
 
     // interfaces from IMediaSyncCenter
@@ -102,6 +104,9 @@ public:
     int64_t GetSeekTime() override;
     void ResetTimeAnchorNoLock();
     void SetMediaStartPts(int64_t startPts) override;
+    void ResetMediaStartPts() override;
+    int64_t GetMediaStartPts() override;
+    void SetLastAudioBufferDuration(int64_t durationUs) override;
 private:
     enum class State {
         RESUMED,
@@ -123,6 +128,7 @@ private:
     void SetAllSyncShouldWaitNoLock();
     int64_t BoundMediaProgress(int64_t newMediaProgressTime);
     void UpdateFirstPtsAfterSeek(int64_t mediaTime);
+    void ReportLagEvent(int64_t lagDurationMs);
 
     int64_t ClipMediaTime(int64_t inTime);
     OHOS::Media::Mutex clockMutex_ {};
@@ -157,8 +163,10 @@ private:
     std::vector<IMediaSynchronizer*> prerolledSyncers_;
     int64_t delayTime_ {HST_TIME_NONE};
     int64_t startPts_ {HST_TIME_NONE};
+    std::atomic<int64_t> lastAudioBufferDuration_ {0};
     std::atomic<int64_t> lastReportMediaTime_ {HST_TIME_NONE};
     std::atomic<bool> frameAfterSeeked_ {false};
+    std::weak_ptr<EventReceiver> eventReceiver_;
 };
 } // namespace Pipeline
 } // namespace Media

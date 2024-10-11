@@ -57,6 +57,7 @@ protected:
     int32_t nbStreams_ = 0;
     int32_t numbers_ = 0;
     int32_t ret_ = AV_ERR_OK;
+    bool initStatus_ = false;
     std::map<uint32_t, int32_t> frames_;
     std::map<uint32_t, int32_t> keyFrames_;
     std::map<uint32_t, bool> eosFlag_;

@@ -98,6 +98,7 @@ public:
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status SelectStream(int32_t streamID);
+    void SetEnableOnlineFdCache(bool isEnableFdCache);
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
     static std::string GetUriSuffix(const std::string& uri);
@@ -120,6 +121,7 @@ private:
 
     std::shared_ptr<CallbackImpl> mediaDemuxerCallback_;
     std::atomic<bool> isInterruptNeeded_{false};
+    bool isEnableFdCache_{ true };
 };
 } // namespace Media
 } // namespace OHOS

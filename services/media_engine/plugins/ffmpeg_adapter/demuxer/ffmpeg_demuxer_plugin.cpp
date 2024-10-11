@@ -42,20 +42,12 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerPlugin" };
 }
 
-#if defined(LIBAVFORMAT_VERSION_INT) && defined(LIBAVFORMAT_VERSION_INT)
-#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 78, 0) and LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 64, 100)
-#if LIBAVFORMAT_VERSION_INT != AV_VERSION_INT(58, 76, 100)
-#include "libavformat/internal.h"
-#endif
-#endif
-#endif
-
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 const uint32_t DEFAULT_READ_SIZE = 4096;
-const uint32_t MP3_PROBE_SIZE = DEFAULT_READ_SIZE * 2;
+const uint32_t MP3_PROBE_SIZE = DEFAULT_READ_SIZE * 4; // sniff mp3 format need more data, 16k
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
@@ -412,14 +404,13 @@ void FFmpegDemuxerPlugin::ParserFirstDts()
     av_packet_free(&pkt);
 }
 
-Status FFmpegDemuxerPlugin::ParserRefInit()
+Status FFmpegDemuxerPlugin::InitIoContext()
 {
-    FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0 && fps_ > 0, Status::ERROR_UNKNOWN,
-                         "ParserRefInit failed, IFramePos size: " PUBLIC_LOG_ZU ", fps: " PUBLIC_LOG_F,
-                         IFramePos_.size(), fps_);
     parserRefIoContext_.dataSource = ioContext_.dataSource;
     parserRefIoContext_.offset = 0;
     parserRefIoContext_.eos = false;
+    parserRefIoContext_.initCompleted = true;
+    FALSE_RETURN_V_MSG_E(parserRefIoContext_.dataSource != nullptr, Status::ERROR_UNKNOWN, "Data source is null.");
     if (parserRefIoContext_.dataSource->GetSeekable() == Plugins::Seekable::SEEKABLE) {
         parserRefIoContext_.dataSource->GetSize(parserRefIoContext_.fileSize);
     } else {
@@ -427,14 +418,23 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
         MEDIA_LOG_E("not support oneline video");
         return Status::ERROR_INVALID_OPERATION;
     }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::ParserRefInit()
+{
+    FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0 && fps_ > 0, Status::ERROR_UNKNOWN,
+                         "Init failed, IFramePos size:" PUBLIC_LOG_ZU ", fps:" PUBLIC_LOG_F, IFramePos_.size(), fps_);
+    FALSE_RETURN_V_MSG_E(InitIoContext() == Status::OK, Status::ERROR_UNKNOWN, "InitIoContext failed");
     parserRefFormatContext_ = InitAVFormatContext(&parserRefIoContext_);
     FALSE_RETURN_V_MSG_E(parserRefFormatContext_ != nullptr, Status::ERROR_UNKNOWN,
                          "ParserRefHeader failed due to can not init formatContext for source.");
     std::string formatName(parserRefFormatContext_.get()->iformat->name);
-    FALSE_RETURN_V_MSG_E(formatName.find("mp4") != std::string::npos, Status::ERROR_UNSUPPORTED_FORMAT,
-                         "only support mp4.");
+    FALSE_RETURN_V_MSG_E(formatName.find("mp4") != std::string::npos, Status::ERROR_UNSUPPORTED_FORMAT, "mp4 only.");
     for (uint32_t trackIndex = 0; trackIndex < parserRefFormatContext_->nb_streams; trackIndex++) {
         AVStream *stream = parserRefFormatContext_->streams[trackIndex];
+	FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_UNKNOWN,
+			     "Stream or codecpar is null, trackIndex:" PUBLIC_LOG_U32, trackIndex);
         if (stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
             stream->discard = AVDISCARD_ALL;
         } else {
@@ -443,7 +443,6 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
     }
     FALSE_RETURN_V_MSG_E(parserRefVideoStreamIdx_ >= 0, Status::ERROR_UNKNOWN, "Can not find video stream.");
     AVStream *videoStream = parserRefFormatContext_->streams[parserRefVideoStreamIdx_];
-    FALSE_RETURN_V_MSG_E(videoStream != nullptr, Status::ERROR_UNKNOWN, "Video stream is null.");
     processingIFrame_.assign(IFramePos_.begin(), IFramePos_.end());
     FALSE_RETURN_V_MSG_E(
         videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC || videoStream->codecpar->codec_id == AV_CODEC_ID_H264,
@@ -703,37 +702,36 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
     MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " will convert to annexb.", avStream.index);
 }
 
-void FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
+Status FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
 {
     int ret = av_bsf_send_packet(avbsfContext_.get(), &pkt);
-    if (ret < 0) {
-        MEDIA_LOG_E("Convert to annexb failed due to av_bsf_send_packet failed, err:" PUBLIC_LOG_S,
-        AVStrError(ret).c_str());
-    }
+    FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
+        "av_bsf_send_packet failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
     av_packet_unref(&pkt);
-    ret = 1;
-    while (ret >= 0) {
-        ret = av_bsf_receive_packet(avbsfContext_.get(), &pkt);
-    }
-    if (ret == AVERROR_EOF) {
-        MEDIA_LOG_D("Convert avc to annexb successfully, ret:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
-    }
+    ret = av_bsf_receive_packet(avbsfContext_.get(), &pkt);
+    FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
+        "av_bsf_receive_packet failed, err:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
+    return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
+Status FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
 {
     size_t cencInfoSize = 0;
-    uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
-    streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo, cencInfoSize, false);
+    uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO,
+        &cencInfoSize);
+    streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo,
+        static_cast<size_t>(cencInfoSize), false);
     if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
         streamParser_->IsSyncFrame(pkt.data, pkt.size)) {
         pkt.flags = static_cast<int32_t>(static_cast<uint32_t>(pkt.flags) | static_cast<uint32_t>(AV_PKT_FLAG_KEY));
     }
+    return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
+Status FFmpegDemuxerPlugin::ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
 {
     streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, nullptr, 0, false);
+    return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::WriteBuffer(
@@ -840,19 +838,21 @@ AVPacket* FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePacket> samp
     return tempPkt;
 }
 
-void FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* srcAVPacket,
+Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* srcAVPacket,
     std::shared_ptr<SamplePacket> dstSamplePacket)
 {
+    Status ret = Status::OK;
     auto codecId = formatContext_->streams[srcAVPacket->stream_index]->codecpar->codec_id;
     if (codecId == AV_CODEC_ID_HEVC && streamParser_ != nullptr && streamParserInited_) {
-        ConvertHevcToAnnexb(*srcAVPacket, dstSamplePacket);
+        ret = ConvertHevcToAnnexb(*srcAVPacket, dstSamplePacket);
         SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_HEVC);
     } else if (codecId == AV_CODEC_ID_VVC && streamParser_ != nullptr && streamParserInited_) {
-        ConvertVvcToAnnexb(*srcAVPacket, dstSamplePacket);
+        ret = ConvertVvcToAnnexb(*srcAVPacket, dstSamplePacket);
     } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
-        ConvertAvcToAnnexb(*srcAVPacket);
+        ret = ConvertAvcToAnnexb(*srcAVPacket);
         SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_H264);
     }
+    return ret;
 }
 
 void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
@@ -889,7 +889,9 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     // convert
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
-    ConvertPacketToAnnexb(sample, tempPkt, samplePacket);
+    Status ret = ConvertPacketToAnnexb(sample, tempPkt, samplePacket);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to convert annexb failed.");
+
     // flag\copy
     int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
@@ -899,7 +901,9 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     SetDrmCencInfo(sample, samplePacket);
 
     sample->flag_ = flag;
-    Status ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
+    ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
+
     if (!samplePacket->isEOS) {
         trackDfxInfoMap_[tempPkt->stream_index].lastPts = sample->pts_;
         trackDfxInfoMap_[tempPkt->stream_index].lastDurantion = sample->duration_;
@@ -915,7 +919,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         av_free(tempPkt);
         tempPkt = nullptr;
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
+
     if (copySize < remainSize) {
         samplePacket->offset += static_cast<uint32_t>(copySize);
         MEDIA_LOG_D("Buffer is not enough, next buffer to save remain data.");
@@ -1281,12 +1285,14 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
     } else {
         fps_ = videoStream->avg_frame_rate.num / (double)videoStream->avg_frame_rate.den;
     }
-    FFStream *sti = ffstream(videoStream);
-    for (int32_t i = 0; i < sti->nb_index_entries; i++) {
-        uint32_t flags = static_cast<uint32_t>(sti->index_entries[i].flags);
-        if (flags & AVINDEX_KEYFRAME) {
-            IFramePos_.emplace_back(i);
+    struct KeyFrameNode *keyFramePosInfo = nullptr;
+    if (av_get_key_frame_pos_from_stream(videoStream, &keyFramePosInfo) == 0) {
+        struct KeyFrameNode *cur = keyFramePosInfo;
+        while (cur != nullptr) {
+            IFramePos_.emplace_back(cur->pos);
+            cur = cur->next;
         }
+        av_destory_key_frame_pos_list(keyFramePosInfo);
     }
     MEDIA_LOG_I("Success to parser fps: " PUBLIC_LOG_F ", IFramePos size: " PUBLIC_LOG_ZU, fps_, IFramePos_.size());
 }
@@ -1433,8 +1439,8 @@ void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int
     std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
     MEDIA_LOG_D("ParseDrmInfo.");
-    int32_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
-    for (int32_t index = 0; index < infoCount; index++) {
+    uint32_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
+    for (uint32_t index = 0; index < infoCount; index++) {
         std::stringstream ssConverter;
         std::string uuid;
         for (uint32_t i = 0; i < metaDrmInfo[index].uuidLen; i++) {

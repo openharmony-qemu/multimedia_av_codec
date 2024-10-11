@@ -24,6 +24,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "MediaSyncManager" };
+constexpr int64_t US_TO_MS = 1000; // 1000 us per ms
 }
 
 namespace OHOS {
@@ -386,8 +387,37 @@ int64_t MediaSyncManager::SimpleGetMediaTimeExactly(int64_t anchorClockTime, int
     return anchorMediaTime + (nowClockTime - anchorClockTime + delayTime) * static_cast<double>(playRate) - delayTime;
 }
 
+void MediaSyncManager::SetLastAudioBufferDuration(int64_t durationUs)
+{
+    if (durationUs > 0) {
+        lastAudioBufferDuration_ = durationUs;
+    } else {
+        lastAudioBufferDuration_ = 0; // If buffer duration is unavailable, treat it as 0.
+    }
+}
+
+void MediaSyncManager::ReportLagEvent(int64_t lagDurationMs)
+{
+    auto eventReceiver = eventReceiver_.lock();
+    FALSE_RETURN(eventReceiver != nullptr);
+    eventReceiver->OnEvent({"SyncManager", EventType::EVENT_STREAM_LAG, lagDurationMs});
+}
+
 int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
 {
+    int64_t maxMediaProgress;
+    if (currentSyncerPriority_ == IMediaSynchronizer::AUDIO_SINK) {
+        maxMediaProgress = currentAnchorMediaTime_ + lastAudioBufferDuration_;
+    } else {
+        maxMediaProgress = currentAnchorMediaTime_;
+    }
+    if (newMediaProgressTime > maxMediaProgress) {
+        ReportLagEvent((newMediaProgressTime - maxMediaProgress) / US_TO_MS);
+        lastReportMediaTime_ = maxMediaProgress; // Avoid media progress go too far when data underrun.
+        MEDIA_LOG_W("Data underrun for %{public}" PRId64 " us, currentSyncerPriority_ is %{public}" PRId32,
+            newMediaProgressTime - maxMediaProgress, currentSyncerPriority_);
+        return lastReportMediaTime_;
+    }
     if ((newMediaProgressTime >= lastReportMediaTime_) || frameAfterSeeked_) {
         lastReportMediaTime_ = newMediaProgressTime;
     } else {
@@ -499,7 +529,19 @@ bool MediaSyncManager::InSeeking()
 
 void MediaSyncManager::SetMediaStartPts(int64_t startPts)
 {
-    startPts_ = startPts;
+    if (startPts_ == HST_TIME_NONE || startPts < startPts_) {
+        startPts_ = startPts;
+    }
+}
+
+void MediaSyncManager::ResetMediaStartPts()
+{
+    startPts_ = HST_TIME_NONE;
+}
+
+int64_t MediaSyncManager::GetMediaStartPts()
+{
+    return startPts_;
 }
 
 void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
@@ -511,6 +553,11 @@ void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
     if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
         currentSyncerPriority_ = IMediaSynchronizer::NONE;
     }
+}
+
+void MediaSyncManager::SetEventReceiver(std::weak_ptr<EventReceiver> eventReceiver)
+{
+    eventReceiver_ = eventReceiver;
 }
 } // namespace Pipeline
 } // namespace Media
