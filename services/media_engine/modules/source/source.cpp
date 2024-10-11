@@ -276,41 +276,36 @@ Status Source::SetReadBlockingFlag(bool isReadBlockingAllowed)
 void Source::OnEvent(const Plugins::PluginEvent& event)
 {
     MEDIA_LOG_D("OnEvent");
+    if (protocol_ == "http" && isInterruptNeeded_) {
+        MEDIA_LOG_I("http OnEvent isInterruptNeeded, return");
+        return;
+    }
     if (event.type == PluginEventType::ABOVE_LOW_WATERLINE) {
         if (isPluginReady_ && isAboveWaterline_) {
-            isAboveWaterline_ = false;
             isPluginReady_ = false;
+            isAboveWaterline_ = false;
         }
-    } else if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
+        return;
+    }
+    FALSE_RETURN_MSG(mediaDemuxerCallback_ != nullptr, "mediaDemuxerCallback is nullptr");
+    if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
         MEDIA_LOG_I("Error happened, need notify client by OnEvent");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::SOURCE_DRM_INFO_UPDATE) {
         MEDIA_LOG_I("Drminfo updates from source");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::BUFFERING_END || event.type == PluginEventType::BUFFERING_START) {
         MEDIA_LOG_I("Buffering start or end.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::SOURCE_BITRATE_START) {
         MEDIA_LOG_I("source bitrate start from source.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::CACHED_DURATION) {
         MEDIA_LOG_D("Onevent cached duration.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::EVENT_BUFFER_PROGRESS) {
         MEDIA_LOG_I("buffer percent update.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        mediaDemuxerCallback_->OnEvent(event);
     } else {
         MEDIA_LOG_I("on event type undefined.");
     }
