@@ -148,6 +148,7 @@ size_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
 {
     if (fragmentDownloadStart[playInfo.url_]) {
+        writeTsIndex_ > 0 ? writeTsIndex_-- : 0;
         return;
     }
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
