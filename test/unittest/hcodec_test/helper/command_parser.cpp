@@ -273,6 +273,7 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_WATERMARK:
                 opt.ParseWaterMark(optarg);
+                break;
             case OPT_ENABLE_PARAMS_FEEDBACK:
                 opt.paramsFeedback = stol(optarg);
                 break;
@@ -291,6 +292,7 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_SCALE_MODE:
                 opt.scaleMode = static_cast<OH_ScalingMode>(stol(optarg));
+                break;
             default:
                 break;
         }

@@ -689,7 +689,7 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
     GSError err = surface->RegisterReleaseListener([weakThis, surfaceId](sptr<SurfaceBuffer>&) {
         std::shared_ptr<HCodec> codec = weakThis.lock();
         if (codec == nullptr) {
-            LOGI("decoder is gone");
+            LOGD("decoder is gone");
             return GSERROR_OK;
         }
         return codec->OnBufferReleasedByConsumer(surfaceId);
@@ -780,6 +780,7 @@ void HDecoder::SubmitDynamicBufferIfPossible()
             UpdateFormatFromSurfaceBuffer();
         }
         NotifyOmxToFillThisOutBuffer(*idleIter);
+        idleIter->omxBuffer->bufferhandle = nullptr;
         return;
     }
 }
@@ -787,7 +788,7 @@ void HDecoder::SubmitDynamicBufferIfPossible()
 int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
 {
     SCOPED_TRACE_WITH_ID(info.bufferId);
-    info.lastFlushTime = chrono::steady_clock::now();
+    info.lastFlushTime = GetNowUs();
     if (std::abs(lastFlushRate_ - codecRate_) > std::numeric_limits<float>::epsilon()) {
         sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
         extraData->ExtraSet("VIDEO_RATE", codecRate_);
@@ -871,7 +872,9 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
-    NotifySurfaceToRenderOutputBuffer(info);
+    if (info.omxBuffer->filledLen != 0) {
+        NotifySurfaceToRenderOutputBuffer(info);
+    }
     if (mode == FREE_BUFFER) {
         EraseBufferFromPool(OMX_DirOutput, idx.value());
     } else {
@@ -890,8 +893,7 @@ HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface)
 void HDecoder::SurfaceItem::Release()
 {
     if (surface_) {
-        LOGI("before release surface(%" PRIu64 "), refCnt=%d",
-             surface_->GetUniqueId(), surface_->GetSptrRefCount());
+        LOGI("release surface(%" PRIu64 ")", surface_->GetUniqueId());
         if (originalTransform_.has_value()) {
             surface_->SetTransform(originalTransform_.value());
             originalTransform_ = std::nullopt;
@@ -930,26 +932,27 @@ int32_t HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-    currSurface_.surface_->CleanCache(true); // make sure old surface is empty and go black
-    newSurface->Connect(); // cleancache will work only if the surface is connected by us
-    newSurface->CleanCache(); // make sure new surface is empty
-    ret = AttachToNewSurface(newSurface);
+    ret = SwitchBetweenSurface(newSurface);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-
-    currSurface_.Release();
-    currSurface_ = SurfaceItem(newSurface);
     SetTransform();
     SetScaleMode();
     HLOGI("set surface(%" PRIu64 ")(%s) succ", newId, newSurface->GetName().c_str());
     return AVCS_ERR_OK;
 }
 
-int32_t HDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
+int32_t HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
 {
+    newSurface->Connect(); // cleancache will work only if the surface is connected by us
+    newSurface->CleanCache(); // make sure new surface is empty
+    // if owned by old surface, we need to transfer them to new surface
+    map<int64_t, size_t> ownedBySurfaceFlushTime2BufferIndex;
+    // the consumer of old surface may be destroyed, so flushbuffer will fail, and they are owned by us
+    vector<size_t> ownedByUs;
     uint64_t newId = newSurface->GetUniqueId();
-    for (BufferInfo& info : outputBufferPool_) {
+    for (size_t i = 0; i < outputBufferPool_.size(); i++) {
+        BufferInfo& info = outputBufferPool_[i];
         if (info.surfaceBuffer == nullptr) {
             continue;
         }
@@ -960,45 +963,25 @@ int32_t HDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
             return AVCS_ERR_UNKNOWN;
         }
         if (info.owner == OWNED_BY_SURFACE) {
-            ChangeOwner(info, BufferOwner::OWNED_BY_US);
+            ownedBySurfaceFlushTime2BufferIndex[info.lastFlushTime] = i;
+        } else if (info.owner == OWNED_BY_US) {
+            ownedByUs.push_back(i);
         }
-        if ((info.owner == OWNED_BY_US) && (currState_->GetName() == "Running")) {
-            NotifyOmxToFillThisOutBuffer(info);
+    }
+
+    SurfaceItem oldSurface = currSurface_;
+    currSurface_ = SurfaceItem(newSurface);
+    for (auto [flushTime, i] : ownedBySurfaceFlushTime2BufferIndex) {
+        ChangeOwner(outputBufferPool_[i], BufferOwner::OWNED_BY_US);
+        NotifySurfaceToRenderOutputBuffer(outputBufferPool_[i]);
+    }
+    if (currState_->GetName() == "Running") {
+        for (size_t i : ownedByUs) {
+            NotifyOmxToFillThisOutBuffer(outputBufferPool_[i]);
         }
     }
-    return AVCS_ERR_OK;
-}
-
-int32_t HDecoder::PushBlankBufferToCurrSurface()
-{
-    BufferRequestConfig reqCfg {
-        .width = 1,
-        .height = 1,
-        .strideAlignment = STRIDE_ALIGNMENT,
-        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
-        .usage = 0,
-        .timeout = 0,
-    };
-
-    sptr<SurfaceBuffer> buffer;
-    int32_t fence = -1;
-    GSError err = currSurface_.surface_->RequestBuffer(buffer, fence, reqCfg);
-    if (err != GSERROR_OK) {
-        HLOGW("surface(%" PRIu64 "), RequestBuffer failed, GSError=%d",
-                currSurface_.surface_->GetUniqueId(), err);
-        return AVCS_ERR_UNKNOWN;
-    }
-    BufferFlushConfig flushCfg {
-        .damage = {},
-        .timestamp = 0,
-    };
-    err = currSurface_.surface_->FlushBuffer(buffer, fence, flushCfg);
-    if (err != GSERROR_OK) {
-        HLOGW("surface(%" PRIu64 "), FlushBuffer failed, GSError=%d",
-                currSurface_.surface_->GetUniqueId(), err);
-        return AVCS_ERR_UNKNOWN;
-    }
-
+    oldSurface.surface_->CleanCache(true); // make sure old surface is empty and go black
+    oldSurface.Release();
     return AVCS_ERR_OK;
 }
 } // namespace OHOS::MediaAVCodec
