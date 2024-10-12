@@ -44,7 +44,7 @@ constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 48 * 10 * 1024;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
-constexpr int32_t SAVE_DATA_LOG_FEQUENCE = 50;
+constexpr int32_t SAVE_DATA_LOG_FREQUENCE = 50;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int32_t DEFAULT_BIT_RATE = 1638400;
@@ -54,9 +54,8 @@ constexpr int32_t ONE_SECONDS = 1000;
 constexpr int32_t TWO_SECONDS = 2000;
 constexpr int32_t TEN_MILLISECONDS = 10;
 constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.6;
-constexpr float CACHE_LEVEL_1                   = 0.3;
-constexpr float DEFAULT_CACHE_TIME              = 5;
-constexpr uint32_t CACHED_DURATION_NOTIFY_TIME = 500; // ms
+constexpr float CACHE_LEVEL_1 = 0.3;
+constexpr float DEFAULT_CACHE_TIME = 5;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 constexpr uint32_t OFFSET_NOT_UPDATE_THRESHOLD = 8;
 constexpr float DOWNLOAD_WATER_LINE_RATIO = 0.95;
@@ -822,7 +821,7 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         writeOffset_ += res;
         hasWriteSize += res;
         writeBitrateCaculator_->UpdateWriteBytes(res);
-        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "writeOffset " PUBLIC_LOG_ZU " res " PUBLIC_LOG_ZU, writeOffset_, res);
+        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "writeOffset " PUBLIC_LOG_ZU " res " PUBLIC_LOG_ZU, writeOffset_, res);
         if (canWrite_.load() && (res > 0 || hasWriteSize == len)) {
             HandleCachedDuration();
             writeBitrateCaculator_->StartClock();
@@ -837,7 +836,7 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         canWrite_ = false;
         HandleBuffering();
         while (!isInterrupt_.load() && !isNeedClean_.load() && !canWrite_.load() && !isInterruptNeeded_.load()) {
-            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "HTTP CacheMediaBuffer full, waiting seek or read.");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "HTTP CacheMediaBuffer full, waiting seek or read.");
             if (isHitSeeking_ || isNeedDropData_) {
                 canWrite_ = true;
                 return true;
