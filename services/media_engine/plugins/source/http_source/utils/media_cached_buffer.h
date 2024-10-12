@@ -97,6 +97,7 @@ public:
 protected:
     virtual CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false);
     virtual ChunkIterator AddFragmentCacheBuffer(uint64_t offset);
+    FragmentIterator GetFragmentIterator(FragmentIterator& currFragmentIter);
     virtual ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter,
         uint64_t offset, ChunkIterator chunkPos);
     void DeleteHasReadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum);

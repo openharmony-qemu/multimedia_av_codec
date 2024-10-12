@@ -730,18 +730,8 @@ CacheChunk* CacheMediaChunkBufferHlsImpl::GetFreeCacheChunk(uint64_t offset, boo
     return nullptr;
 }
 
-ChunkIterator CacheMediaChunkBufferImpl::SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter,
-    uint64_t offset, ChunkIterator chunkPos)
+FragmentIterator CacheMediaChunkBufferImpl::GetFragmentIterator(FragmentIterator& currFragmentIter)
 {
-    ResetReadSizeAlloc();
-    auto& chunkInfo = *chunkPos;
-    CacheChunk* splitHead = nullptr;
-    if (offset != chunkInfo->offset) {
-        splitHead = freeChunks_.empty() ? GetFreeCacheChunk(offset, true) : PopFreeCacheChunk(freeChunks_, offset);
-        if (splitHead == nullptr) {
-            return chunkPos;
-        }
-    }
     auto newFragmentPos = fragmentCacheBuffer_.emplace(std::next(currFragmentIter), offset);
     if (splitHead == nullptr) {
         newFragmentPos->chunks.splice(newFragmentPos->chunks.end(), currFragmentIter->chunks, chunkPos,
@@ -777,8 +767,23 @@ ChunkIterator CacheMediaChunkBufferImpl::SplitFragmentCacheBuffer(FragmentIterat
     currFragmentIter->isSplit = true;
     currFragmentIter->dataLength = static_cast<int64_t>(offset > currFragmentIter->offsetBegin ?
                                         offset - currFragmentIter->offsetBegin : 0);
-    currFragmentIter = newFragmentPos;
+    return newFragmentPos;
+}
 
+ChunkIterator CacheMediaChunkBufferImpl::SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter,
+    uint64_t offset, ChunkIterator chunkPos)
+{
+    ResetReadSizeAlloc();
+    auto& chunkInfo = *chunkPos;
+    CacheChunk* splitHead = nullptr;
+    if (offset != chunkInfo->offset) {
+        splitHead = freeChunks_.empty() ? GetFreeCacheChunk(offset, true) : PopFreeCacheChunk(freeChunks_, offset);
+        if (splitHead == nullptr) {
+            return chunkPos;
+        }
+    }
+    auto newFragmentPos = GetFragmentIterator(currFragmentIter);
+    currFragmentIter = newFragmentPos;
     if (fragmentCacheBuffer_.size() > CACHE_FRAGMENT_MAX_NUM_DEFAULT) {
         CheckThresholdFragmentCacheBuffer(currFragmentIter);
     }
