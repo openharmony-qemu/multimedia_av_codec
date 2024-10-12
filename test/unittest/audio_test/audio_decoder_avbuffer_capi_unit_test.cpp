@@ -80,7 +80,7 @@ constexpr string_view INPUT_OPUS_FILE_PATH = "/data/test/media/voice_opus.dat";
 constexpr string_view OUTPUT_OPUS_PCM_FILE_PATH = "/data/test/media/opus_decode.pcm";
 constexpr string_view INPUT_APE_FILE_PATH = "/data/test/media/voice_ape.dat";
 constexpr string_view OUTPUT_APE_PCM_FILE_PATH = "/data/test/media/ape_decode.pcm";
-constexpr string_view OPUS_SO_FILE_PATH = "/system/lib64/libav_codec_ext_base.z.so";
+const string OPUS_SO_FILE_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_ext_base.z.so";
 } // namespace
 
 namespace OHOS {
@@ -791,6 +791,14 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Mp3_GetOutputFormat_01, Te
     Release();
 }
 
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Mp3_State_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_MP3));
+    bool isValid = false;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_IsValid(audioDec_, &isValid));
+    Release();
+}
+
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Mp3_IsValid_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_MP3));
@@ -1268,7 +1276,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Aac_Configure_05, TestSize
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(),
         BITS_RATE[(uint32_t)AudioBufferFormatType::TYPE_AAC]);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), ABNORMAL_SAMPLE_FORMAT);
-    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_)); // abnormal sample format
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_)); // default change to s16le
 
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), DEFAULT_SAMPLE_FORMAT);
