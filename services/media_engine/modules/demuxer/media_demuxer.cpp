@@ -589,6 +589,7 @@ Status MediaDemuxer::InnerPrepare()
             int64_t bitRate = 0;
             mediaMetaData_.trackMetas[videoTrackId_]->GetData(Tag::MEDIA_BITRATE, bitRate);
             source_->SetCurrentBitRate(bitRate, streamId);
+            targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
         }
         if (audioTrackId_ != TRACK_ID_DUMMY) {
             AddDemuxerCopyTask(audioTrackId_, TaskType::AUDIO);
@@ -994,7 +995,7 @@ Status MediaDemuxer::SeekToTimePre()
         return Status::OK;
     }
 
-    if (isSelectBitRate_ == true) {
+    if (isSelectBitRate_) {
         HandleStopPlugin(audioTrackId_);
     } else if (isSelectTrack_ == true) {
         TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(selectTrackTrackID_);
@@ -1026,7 +1027,7 @@ Status MediaDemuxer::SeekToTimeAfter()
         return Status::OK;
     }
 
-    if (isSelectBitRate_ == true) {
+    if (isSelectBitRate_) {
         HandleStartPlugin(audioTrackId_);
     } else if (isSelectTrack_ == true) {
         TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(selectTrackTrackID_);
@@ -1119,6 +1120,7 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
             isSelectBitRate_.store(false);
         }
     }
+    targetBitRate_ = bitRate;
     MEDIA_LOG_I("SelectBitRate success");
     return ret;
 }
@@ -1550,7 +1552,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
     return ret == Status::OK;
 }
 
-bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID)
+bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId)
 {
     StreamType streamType = demuxerPluginManager_->GetStreamTypeByTrackID(selectTrackTrackID_);
     int32_t currentStreamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
@@ -1571,18 +1573,22 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
     demuxerPluginManager_->UpdateDefaultStreamID(mediaInfo, streamType, newStreamID);
     InitMediaMetaData(mediaInfo); // update mediaMetaData_
 
+    // get newStreamID
+    int32_t newInnerTrackId;
+    demuxerPluginManager_->GetTrackInfoByStreamID(newStreamID, newTrackId, newInnerTrackId);
+
     // update track map
     demuxerPluginManager_->DeleteTempTrackMapInfo(currentTrackId);
-    int32_t innerTrackID = demuxerPluginManager_->GetInnerTrackIDByTrackID(selectTrackTrackID_);
-    demuxerPluginManager_->UpdateTempTrackMapInfo(selectTrackTrackID_, selectTrackTrackID_, innerTrackID);
+    int32_t innerTrackID = demuxerPluginManager_->GetInnerTrackIDByTrackID(newTrackId);
+    demuxerPluginManager_->UpdateTempTrackMapInfo(newTrackId, newTrackId, innerTrackID);
     MEDIA_LOG_I("HandleSelectTrackChangeStream dash, UpdateTempTrackMapInfo done");
 
-    InnerSelectTrack(selectTrackTrackID_);
+    InnerSelectTrack(newTrackId);
 
     // update buffer queue
-    bufferQueueMap_.insert(std::pair<uint32_t, sptr<AVBufferQueueProducer>>(selectTrackTrackID_,
+    bufferQueueMap_.insert(std::pair<uint32_t, sptr<AVBufferQueueProducer>>(newTrackId,
         bufferQueueMap_[currentTrackId]));
-    bufferMap_.insert(std::pair<uint32_t, std::shared_ptr<AVBuffer>>(selectTrackTrackID_,
+    bufferMap_.insert(std::pair<uint32_t, std::shared_ptr<AVBuffer>>(newTrackId,
         bufferMap_[currentTrackId]));
     bufferQueueMap_.erase(currentTrackId);
     bufferMap_.erase(currentTrackId);
@@ -1613,23 +1619,58 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
     if (trackId != oldTrackId) {
         return false;
     }
-    bool ret = HandleSelectTrackChangeStream(trackId, newStreamID);
+    int32_t newTrackId;
+    bool ret = HandleSelectTrackChangeStream(trackId, newStreamID, newTrackId);
     if (ret) {
         if (type == TrackType::TRACK_AUDIO) {
-            audioTrackId_ = selectTrackTrackID_;
-            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, selectTrackTrackID_});
+            audioTrackId_ = newTrackId;
+            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, newTrackId});
             shouldCheckAudioFramePts_ = true;
         } else if (type == TrackType::TRACK_VIDEO) {
-            videoTrackId_ = selectTrackTrackID_;
-            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_VIDEO_TRACK_CHANGE, selectTrackTrackID_});
+            videoTrackId_ = newTrackId;
+            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_VIDEO_TRACK_CHANGE, newTrackId});
         } else if (type == TrackType::TRACK_SUBTITLE) {
-            subtitleTrackId_ = selectTrackTrackID_;
-            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, selectTrackTrackID_});
+            subtitleTrackId_ = newTrackId;
+            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, newTrackId});
             shouldCheckSubtitleFramePts_ = true;
+        }
+        if (newTrackId == selectTrackTrackID_) {
+            isSelectTrack_.store(false);
         }
         taskMap_[trackId]->StopAsync();   // stop self
     }
     return ret;
+}
+
+bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
+{
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "demuxerPluginManager_ is nullptr.");
+    FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr, false, "streamDemuxer_ is nullptr.");
+    if (demuxerPluginManager_->IsDash() == false) {
+
+        return false;
+    }
+
+    if (trackId == videoTrackId_ && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
+        auto result = SelectBitRateChangeStream(trackId);
+        if (result) {
+            streamDemuxer_->SetChangeFlag(true);
+            if (targetBitRate_ == demuxerPluginManager_->GetCurrentBitRate()) {
+                isSelectBitRate_.store(false);
+            }
+            return true;
+        }
+    } else if (isSelectTrack_) {
+        auto result = SelectTrackChangeStream(trackId);
+        if (result) {
+            targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
+            streamDemuxer_->SetChangeFlag(true);
+            isSelectTrack_.store(false);
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool MediaDemuxer::SelectBitRateChangeStream(uint32_t trackId)
@@ -1740,23 +1781,9 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32 ", try again", trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY,
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32, trackId);
-
-    if (demuxerPluginManager_->IsDash()) {
-        if (isSelectBitRate_ && (trackId == videoTrackId_)) {
-            auto result = SelectBitRateChangeStream(trackId);
-            if (result) {
-                streamDemuxer_->SetChangeFlag(true);
-                isSelectBitRate_.store(false);
-                return Status::OK;
-            }
-        } else if (isSelectTrack_) {
-            auto result = SelectTrackChangeStream(trackId);
-            if (result) {
-                streamDemuxer_->SetChangeFlag(true);
-                isSelectTrack_.store(false);
-                return Status::OK;
-            }
-        }
+    
+    if (HandleDashChangeStream(trackId)) {
+        return Status::OK;
     }
 
     SetTrackNotifyFlag(trackId, true);
@@ -2053,16 +2080,22 @@ bool MediaDemuxer::IsTrackDisabled(Plugins::MediaType mediaType)
     return !disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end();
 }
 
-void MediaDemuxer::SetSelectBitRateFlag(bool flag)
+void MediaDemuxer::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
 {
-    MEDIA_LOG_I("SetSelectBitRateFlag = " PUBLIC_LOG_D32, static_cast<int32_t>(flag));
+    MEDIA_LOG_I("SetSelectBitRateFlag = " PUBLIC_LOG_D32 " desBitRate = " PUBLIC_LOG_U32,
+        static_cast<int32_t>(flag), desBitRate);
     isSelectBitRate_.store(flag);
+    if (flag) {
+        targetBitRate_ = desBitRate;
+    }
 }
 
 bool MediaDemuxer::CanAutoSelectBitRate()
 {
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "demuxerPluginManager_ is nullptr.");
     // calculating auto selectbitrate time
-    return !(isSelectBitRate_.load()) && !(isSelectTrack_.load());
+    return !(isSelectBitRate_.load()) && !(isSelectTrack_.load())
+        && (targetBitRate_ == demuxerPluginManager_->GetCurrentBitRate());
 }
 
 bool MediaDemuxer::IsRenderNextVideoFrameSupported()
