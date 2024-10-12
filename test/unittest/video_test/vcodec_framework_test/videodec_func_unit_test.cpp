@@ -772,6 +772,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_002, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    int32_t ret = videoDec_->CreateAvccReader();
+    ASSERT_EQ(AV_ERR_OK, ret);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
@@ -791,6 +793,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_003, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+    int32_t ret = videoDec_->CreateAvccReader();
+    ASSERT_EQ(AV_ERR_OK, ret);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
