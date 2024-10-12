@@ -1646,7 +1646,6 @@ bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "demuxerPluginManager_ is nullptr.");
     FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr, false, "streamDemuxer_ is nullptr.");
     if (demuxerPluginManager_->IsDash() == false) {
-
         return false;
     }
 
