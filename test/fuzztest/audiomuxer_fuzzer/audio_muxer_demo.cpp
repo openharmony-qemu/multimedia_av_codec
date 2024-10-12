@@ -172,6 +172,7 @@ AudioTrackParam AVMuxerDemo::InitFormatParam(AudioMuxerFormatType type)
     param.colorMatrixCoeff = COLOR_MATRIXCIEFF_2;
     param.colorRange = 0;
     param.isHdrVivid = 0;
+    param.isNeedCover = false;
     param.isNeedVideo = false;
     if (audioType_ == AudioMuxerFormatType::TYPE_AAC) {
         param.mimeType = OH_AVCODEC_MIMETYPE_AUDIO_AAC;
