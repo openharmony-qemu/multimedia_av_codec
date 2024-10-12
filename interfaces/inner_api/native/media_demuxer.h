@@ -168,7 +168,7 @@ private:
     Status SeekToTimeAfter();
     bool SelectBitRateChangeStream(uint32_t trackId);
     bool SelectTrackChangeStream(uint32_t trackId);
-    bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID);
+    bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
     Status PauseForPrepareFrame();
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
 
