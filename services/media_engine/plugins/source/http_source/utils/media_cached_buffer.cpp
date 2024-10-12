@@ -794,7 +794,6 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::SplitFragmentCacheBuffer(FragmentIte
     uint64_t offset, ChunkIterator chunkPos)
 {
     ResetReadSizeAlloc();
-
     auto& chunkInfo = *chunkPos;
     CacheChunk* splitHead = nullptr;
     if (offset != chunkInfo->offset) {
@@ -803,7 +802,6 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::SplitFragmentCacheBuffer(FragmentIte
             return chunkPos;
         }
     }
-
     auto newFragmentPos = fragmentCacheBuffer_.emplace(std::next(currFragmentIter), offset);
     if (splitHead == nullptr) {
         newFragmentPos->chunks.splice(newFragmentPos->chunks.end(), currFragmentIter->chunks, chunkPos,
@@ -837,7 +835,6 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::SplitFragmentCacheBuffer(FragmentIte
     newFragmentPos->accessPos = newFragmentPos->chunks.begin();
     currFragmentIter->dataLength = static_cast<uint64_t>(offset > diff ? offset - diff : 0);
     currFragmentIter = newFragmentPos;
-
     lruCache_.Refer(newFragmentPos->offsetBegin, newFragmentPos);
     return newFragmentPos->accessPos;
 }
