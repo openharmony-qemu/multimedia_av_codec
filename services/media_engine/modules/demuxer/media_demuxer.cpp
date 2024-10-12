@@ -1576,7 +1576,6 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
     // get newStreamID
     int32_t newInnerTrackId;
     demuxerPluginManager_->GetTrackInfoByStreamID(newStreamID, newTrackId, newInnerTrackId);
-
     // update track map
     demuxerPluginManager_->DeleteTempTrackMapInfo(currentTrackId);
     int32_t innerTrackID = demuxerPluginManager_->GetInnerTrackIDByTrackID(newTrackId);
