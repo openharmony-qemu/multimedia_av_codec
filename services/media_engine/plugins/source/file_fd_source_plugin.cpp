@@ -484,8 +484,8 @@ void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
 
 void FileFdSourcePlugin::NotifyBufferingStart()
 {
-    MEDIA_LOG_I("NotifyBufferingStart, ringBufferSize_ " PUBLIC_LOG_U64
-        ", waterLineAbove_ " PUBLIC_LOG_U64, ringBufferSize_, waterLineAbove_);
+    MEDIA_LOG_I("NotifyBufferingStart, ringBuffer_->GetSize() " PUBLIC_LOG_ZU
+        ", waterLineAbove_ " PUBLIC_LOG_U64, ringBuffer_->GetSize(), waterLineAbove_);
     isBuffering_ = true;
     if (callback_ != nullptr && !isInterrupted_) {
         MEDIA_LOG_I("Read OnEvent BUFFERING_START.");
@@ -500,8 +500,8 @@ void FileFdSourcePlugin::NotifyBufferingPercent()
     if (waterLineAbove_ != 0) {
         int64_t bp = static_cast<float>(ringBuffer_->GetSize()) / waterLineAbove_ * PERCENT_100;
         if (isBuffering_ && callback_ != nullptr && !isInterrupted_) {
-            MEDIA_LOG_I("NotifyBufferingPercent, ringBufferSize_ " PUBLIC_LOG_U64 ", waterLineAbove_ " PUBLIC_LOG_U64
-                "PERCENT " PUBLIC_LOG_D32, ringBufferSize_, waterLineAbove_, static_cast<int32_t>(bp));
+            MEDIA_LOG_I("NotifyBufferingPercent, ringBuffer_->GetSize() " PUBLIC_LOG_ZU ", waterLineAbove_ " PUBLIC_LOG_U64
+                ", PERCENT " PUBLIC_LOG_D32, ringBuffer_->GetSize(), waterLineAbove_, static_cast<int32_t>(bp));
             callback_->OnEvent({PluginEventType::BUFFERING_PERCENT,
                 {BufferingInfoType::BUFFERING_PERCENT}, std::to_string(bp)});
         } else {
@@ -513,8 +513,8 @@ void FileFdSourcePlugin::NotifyBufferingPercent()
 void FileFdSourcePlugin::NotifyBufferingEnd()
 {
     NotifyBufferingPercent();
-    MEDIA_LOG_I("NotifyBufferingEnd, ringBufferSize_ " PUBLIC_LOG_U64
-        ", waterLineAbove_ " PUBLIC_LOG_U64, ringBufferSize_, waterLineAbove_);
+    MEDIA_LOG_I("NotifyBufferingEnd, ringBuffer_->GetSize() " PUBLIC_LOG_ZU
+        ", waterLineAbove_ " PUBLIC_LOG_U64, ringBuffer_->GetSize(), waterLineAbove_);
     MEDIA_LOG_I("water line above, ringBuffer_->GetSize() " PUBLIC_LOG_ZU, ringBuffer_->GetSize());
     isBuffering_ = false;
     lastReadTime_ = 0;
