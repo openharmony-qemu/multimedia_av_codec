@@ -39,7 +39,9 @@ class CallbackImpl : public Plugins::Callback {
 public:
     void OnEvent(const Plugins::PluginEvent &event) override
     {
-        callbackWrap_->OnEvent(event);
+        if (callbackWrap_) {
+            callbackWrap_->OnEvent(event);
+        }
     }
 
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
