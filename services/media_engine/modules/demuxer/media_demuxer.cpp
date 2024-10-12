@@ -1633,7 +1633,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, newTrackId});
             shouldCheckSubtitleFramePts_ = true;
         }
-        if (newTrackId == selectTrackTrackID_) {
+        if (newTrackId == static_cast<int32_t>(selectTrackTrackID_)) {
             isSelectTrack_.store(false);
         }
         taskMap_[trackId]->StopAsync();   // stop self
