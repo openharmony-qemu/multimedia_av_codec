@@ -63,7 +63,8 @@ enum struct MP4Scene : uint32_t {
     LTR_FRAME_HEVC,
     TWO_LAYER_FRAME_HEVC,
     THREE_LAYER_FRAME_HEVC,
-    FOUR_LAYER_FRAME_HEVC
+    FOUR_LAYER_FRAME_HEVC,
+    SDTP_EXTENDED_HEVC
 };
 
 enum struct WorkPts : uint32_t {
