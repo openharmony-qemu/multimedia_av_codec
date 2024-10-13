@@ -207,7 +207,6 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
     auto fmt = avformat_alloc_context();
     if (!fmt) {
         MEDIA_LOG_E("Failed to allocate AVFormatContext, fmt is null.");
-        return;
     }
     fmt->pb = nullptr;
     fmt->oformat = outputFormat_.get();
