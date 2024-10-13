@@ -205,6 +205,10 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
     cachePacket_ = std::shared_ptr<AVPacket> (pkt, [] (AVPacket *packet) {av_packet_free(&packet);});
     outputFormat_ = g_pluginOutputFmt[pluginName_];
     auto fmt = avformat_alloc_context();
+    if (!fmt) {
+        MEDIA_LOG_E("Failed to allocate AVFormatContext, fmt is null.");
+        return;
+    }
     fmt->pb = nullptr;
     fmt->oformat = outputFormat_.get();
     fmt->flags = static_cast<uint32_t>(fmt->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
@@ -898,6 +902,7 @@ Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const std::share
         int32_t size = static_cast<int32_t>(nonAnnexbData.size());
         FALSE_RETURN_V_MSG_E(size > 0, Status::ERROR_INVALID_DATA, "annexb to mp4 is empty!");
         std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(nonAnnexbData.data(), size, size);
+        FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "allocate buffer failed!");
         buffer->pts_ = sample->pts_;
         buffer->flag_ = sample->flag_;
         return WriteNormal(trackIndex, buffer);
