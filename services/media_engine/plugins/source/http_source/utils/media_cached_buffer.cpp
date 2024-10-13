@@ -730,7 +730,8 @@ CacheChunk* CacheMediaChunkBufferHlsImpl::GetFreeCacheChunk(uint64_t offset, boo
     return nullptr;
 }
 
-FragmentIterator CacheMediaChunkBufferImpl::GetFragmentIterator(FragmentIterator& currFragmentIter)
+FragmentIterator CacheMediaChunkBufferImpl::GetFragmentIterator(FragmentIterator& currFragmentIter,
+    uint64_t offset, ChunkIterator chunkPos, CacheChunk* splitHead, CacheChunk*& chunkInfo)
 {
     auto newFragmentPos = fragmentCacheBuffer_.emplace(std::next(currFragmentIter), offset);
     if (splitHead == nullptr) {
@@ -782,7 +783,7 @@ ChunkIterator CacheMediaChunkBufferImpl::SplitFragmentCacheBuffer(FragmentIterat
             return chunkPos;
         }
     }
-    auto newFragmentPos = GetFragmentIterator(currFragmentIter);
+    auto newFragmentPos = GetFragmentIterator(currFragmentIter, offset, chunkPos, splitHead, chunkInfo);
     currFragmentIter = newFragmentPos;
     if (fragmentCacheBuffer_.size() > CACHE_FRAGMENT_MAX_NUM_DEFAULT) {
         CheckThresholdFragmentCacheBuffer(currFragmentIter);
