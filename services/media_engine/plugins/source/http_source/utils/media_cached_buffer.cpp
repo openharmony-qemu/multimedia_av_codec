@@ -184,7 +184,8 @@ size_t CacheMediaChunkBufferImpl::ReadInner(void* ptr, uint64_t offset, size_t r
     uint64_t offsetChunk = offset;
     if (chunkPos != fragmentPos->chunks.end()) {
         uint64_t readOffset = offset > fragmentPos->offsetBegin ? offset - fragmentPos->offsetBegin : 0;
-        uint64_t temp = readOffset > fragmentPos->accessLength ? readOffset - fragmentPos->accessLength : 0;
+        uint64_t temp = readOffset > static_cast<uint64_t>(fragmentPos->accessLength) ?
+                            readOffset - static_cast<uint64_t>(fragmentPos->accessLength) : 0;
         if (temp >= ACCESS_OFFSET_MAX_LENGTH) {
             chunkPos = SplitFragmentCacheBuffer(fragmentPos, offset, chunkPos);
         }
@@ -399,8 +400,8 @@ bool CacheMediaChunkBufferImpl::Seek(uint64_t offset)
             }
             lruCache_.Refer(readPos->offsetBegin, readPos);
             (*readPos).accessPos = chunkPos;
-            auto tmLength = offset > (*readPos).offsetBegin ? offset - (*readPos).offsetBegin : 0;
-            (*readPos).accessLength = static_cast<int64_t>(tmLength);
+            auto tmpLength = offset > (*readPos).offsetBegin ? offset - (*readPos).offsetBegin : 0;
+            (*readPos).accessLength = static_cast<int64_t>(tmpLength);
             readPos->readTime = Clock::now();
             isSeekHit = true;
         }
@@ -825,7 +826,8 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::SplitFragmentCacheBuffer(FragmentIte
     }
     newFragmentPos->offsetBegin = offset;
     uint64_t diff = offset > currFragmentIter->offsetBegin ? offset - currFragmentIter->offsetBegin : 0;
-    newFragmentPos->dataLength = currFragmentIter->dataLength > diff ? currFragmentIter->dataLength - diff : 0;
+    newFragmentPos->dataLength = currFragmentIter->dataLength > static_cast<int64_t>(diff) ?
+                                    currFragmentIter->dataLength - static_cast<int64_t>(diff) : 0;
     newFragmentPos->accessLength = 0;
     uint64_t newReadSizeInit = static_cast<uint64_t>(1 + initReadSizeFactor_ * static_cast<double>(totalReadSize_));
     if (currFragmentIter->totalReadSize > newReadSizeInit) {
@@ -835,7 +837,7 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::SplitFragmentCacheBuffer(FragmentIte
     totalReadSize_ += newReadSizeInit;
     newFragmentPos->readTime = Clock::now();
     newFragmentPos->accessPos = newFragmentPos->chunks.begin();
-    currFragmentIter->dataLength = static_cast<uint64_t>(offset > diff ? offset - diff : 0);
+    currFragmentIter->dataLength = static_cast<int64_t>(offset > diff ? offset - diff : 0);
     currFragmentIter = newFragmentPos;
     lruCache_.Refer(newFragmentPos->offsetBegin, newFragmentPos);
     return newFragmentPos->accessPos;
@@ -991,7 +993,7 @@ bool CacheMediaChunkBufferImpl::ClearFragmentBeforeOffset(uint64_t offset)
         if (iter->offsetBegin >= offset) {
             break;
         }
-        if (iter->offsetBegin + iter->dataLength <= offset) {
+        if (iter->offsetBegin + static_cast<uint64_t>(iter->dataLength) <= offset) {
             freeChunks_.splice(freeChunks_.end(), iter->chunks);
             iter = EraseFragmentCache(iter);
             res = true;
@@ -1008,7 +1010,7 @@ bool CacheMediaChunkBufferImpl::ClearMiddleReadFragment(uint64_t minOffset, uint
     std::lock_guard lock(mutex_);
     bool res = false;
     for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end(); iter++) {
-        if (iter->offsetBegin + iter->accessLength < minOffset) {
+        if (iter->offsetBegin + static_cast<uint64_t>(iter->accessLength) < minOffset) {
             continue;
         }
         if (iter->offsetBegin > maxOffset) {
@@ -1058,8 +1060,8 @@ void CacheMediaChunkBufferImpl::CheckFragment(const FragmentCacheBuffer& fragmen
         auto accessLength = accessChunk->offset > fragment.offsetBegin ?
             accessChunk->offset - fragment.offsetBegin : 0;
         if (fragment.accessLength < accessLength ||
-            fragment.accessLength > (static_cast<int64_t>(accessLength)
-                                        + static_cast<int64_t>(accessChunk->dataLength))) {
+            fragment.accessLength >
+            (static_cast<int64_t>(accessLength) + static_cast<int64_t>(accessChunk->dataLength))) {
             checkSuccess = false;
         }
     }

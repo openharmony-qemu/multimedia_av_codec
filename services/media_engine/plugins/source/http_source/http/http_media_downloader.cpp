@@ -442,7 +442,8 @@ void HttpMediaDownloader::HandleDownloadWaterLine()
         return;
     }
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
-    size_t cachedDataSize = totalBufferSize_ > freeSize ? totalBufferSize_ - freeSize : 0;
+    size_t cachedDataSize = static_cast<size_t>(totalBufferSize_) > freeSize ?
+                                static_cast<size_t>(totalBufferSize_) - freeSize : 0;
     size_t downloadWaterLine = static_cast<size_t>(DOWNLOAD_WATER_LINE_RATIO *
         static_cast<float>(totalBufferSize_));
     if (canWrite_.load()) {
@@ -675,7 +676,7 @@ bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
     }
 
     size_t changeDownloadPosThreshold = DEFAULT_WATER_LINE_ABOVE;
-    if (offset < maxReadOffset_) {
+    if (static_cast<size_t>(offset) < maxReadOffset_) {
         changeDownloadPosThreshold = AUDIO_WATER_LINE_ABOVE;
     }
 
@@ -705,7 +706,8 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
     }
     MEDIA_LOG_I("HTTP Seek miss.");
 
-    uint64_t diff = offset > writeOffset_ ? offset - writeOffset_ : 0;
+    uint64_t diff = static_cast<size_t>(offset) > writeOffset_ ?
+                        static_cast<size_t>(offset) - writeOffset_ : 0;
     if (diff > 0 && diff < ALLOW_SEEK_MIN_SIZE) {
         MEDIA_LOG_I("HTTP Seek miss, diff is too small so return and wait.");
         return true;
