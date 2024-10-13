@@ -296,6 +296,8 @@ int32_t AudioFFMpegAacEncoderPlugin::AllocateContext(const std::string &name)
     if (avCodec_ == nullptr) {
         return AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_PROTOCOL_TYPE;
     }
+    CHECK_AND_RETURN_RET_LOG(cachedFrame_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
+        "Allocate cachedFrame_ failed.");
 
     AVCodecContext *context = nullptr;
     {
@@ -307,6 +309,8 @@ int32_t AudioFFMpegAacEncoderPlugin::AllocateContext(const std::string &name)
                 ptr = nullptr;
             }
         });
+        CHECK_AND_RETURN_RET_LOG(avCodecContext_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
+            "Allocate avCodecContext_ failed.");
         av_log_set_level(AV_LOG_ERROR);
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
@@ -556,6 +560,8 @@ int32_t AudioFFMpegAacEncoderPlugin::ReAllocateContext()
             ptr = nullptr;
         }
     });
+    CHECK_AND_RETURN_RET_LOG(tmpContext != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY
+        "Allocate tmpContext failed.");
 
     tmpContext->channels = avCodecContext_->channels;
     tmpContext->sample_rate = avCodecContext_->sample_rate;
