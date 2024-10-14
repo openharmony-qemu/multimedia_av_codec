@@ -25,7 +25,7 @@ namespace MediaAVCodec {
 class VDecCallbackTest : public AVCodecCallbackMock {
 public:
     explicit VDecCallbackTest(std::shared_ptr<VDecSignal> signal);
-    virtual ~VDecCallbackTest();
+    ~VDecCallbackTest() override;
     void OnError(int32_t errorCode) override;
     void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
     void OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data) override;
@@ -38,7 +38,7 @@ private:
 class VDecCallbackTestExt : public MediaCodecCallbackMock {
 public:
     explicit VDecCallbackTestExt(std::shared_ptr<VDecSignal> signal);
-    virtual ~VDecCallbackTestExt();
+    ~VDecCallbackTestExt() override;
     void OnError(int32_t errorCode) override;
     void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
     void OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;

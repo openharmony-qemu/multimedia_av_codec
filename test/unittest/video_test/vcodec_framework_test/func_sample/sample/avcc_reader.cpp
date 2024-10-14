@@ -106,7 +106,7 @@ int32_t AvccReader::Init(const std::shared_ptr<AvccReaderInfo> &info)
 }
 
 void AvccReader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t naluType,
-                                         bool isEosFrame)
+                                bool isEosFrame)
 {
     attr.size += frameSize;
     attr.pts = GetTimeUs();
