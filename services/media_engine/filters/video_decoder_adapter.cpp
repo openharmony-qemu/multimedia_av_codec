@@ -292,6 +292,7 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
 
 void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    AVCodecTrace trace("VideoDecoderAdapter::OnInputBufferAvailable");
     FALSE_RETURN_MSG(buffer != nullptr && buffer->meta_ != nullptr, "meta_ is nullptr.");
     buffer->meta_->SetData(Tag::REGULAR_TRACK_ID, index);
     if (inputBufferQueueConsumer_ == nullptr) {
