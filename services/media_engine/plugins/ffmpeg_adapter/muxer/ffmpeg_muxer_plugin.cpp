@@ -205,14 +205,15 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
     cachePacket_ = std::shared_ptr<AVPacket> (pkt, [] (AVPacket *packet) {av_packet_free(&packet);});
     outputFormat_ = g_pluginOutputFmt[pluginName_];
     auto fmt = avformat_alloc_context();
-    if (!fmt) {
+    if (fmt) {
+        fmt->pb = nullptr;
+        fmt->oformat = outputFormat_.get();
+        fmt->flags = static_cast<uint32_t>(fmt->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
+        fmt->io_open = IoOpen;
+        fmt->io_close = IoClose;
+    } else {
         MEDIA_LOG_E("Failed to allocate AVFormatContext, fmt is null.");
     }
-    fmt->pb = nullptr;
-    fmt->oformat = outputFormat_.get();
-    fmt->flags = static_cast<uint32_t>(fmt->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
-    fmt->io_open = IoOpen;
-    fmt->io_close = IoClose;
     formatContext_ = std::shared_ptr<AVFormatContext>(fmt, [](AVFormatContext *ptr) {
         if (ptr) {
             DeInitAvIoCtx(ptr->pb);
