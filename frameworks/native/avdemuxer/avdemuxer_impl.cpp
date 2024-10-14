@@ -38,10 +38,10 @@ std::shared_ptr<AVDemuxer> AVDemuxerFactory::CreateWithSource(std::shared_ptr<AV
     AVCODEC_SYNC_TRACE;
 
     std::shared_ptr<AVDemuxerImpl> demuxerImpl = std::make_shared<AVDemuxerImpl>();
-    CHECK_AND_RETURN_RET_LOG(demuxerImpl != nullptr, nullptr, "New AVDemuxerImpl failed");
+    CHECK_AND_RETURN_RET_LOG(demuxerImpl != nullptr, nullptr, "New avdemuxer failed");
     
     int32_t ret = demuxerImpl->Init(source);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Init AVDemuxerImpl failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Init avdemuxer failed");
 
     return demuxerImpl;
 }
@@ -50,36 +50,34 @@ int32_t AVDemuxerImpl::Init(std::shared_ptr<AVSource> source)
 {
     AVCODEC_SYNC_TRACE;
 
-    CHECK_AND_RETURN_RET_LOG(source != nullptr, AVCS_ERR_INVALID_VAL,
-        "Init AVDemuxerImpl failed because source is nullptr");
-    AVCODEC_LOGD("Init AVDemuxerImpl for source %{private}s", source->sourceUri.c_str());
+    CHECK_AND_RETURN_RET_LOG(source != nullptr, AVCS_ERR_INVALID_VAL, "AVSource is nullptr");
+    AVCODEC_LOGD("Init avdemuxer for %{private}s", source->sourceUri.c_str());
 
     demuxerEngine_ = source->demuxerEngine;
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Init demuxer engine failed");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Init mediaDemuxer failed");
     return AVCS_ERR_OK;
 }
 
 AVDemuxerImpl::AVDemuxerImpl()
 {
-    AVCODEC_LOGD("AVDemuxerImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("Create instances 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
 }
 
 AVDemuxerImpl::~AVDemuxerImpl()
 {
-    AVCODEC_LOGD("Destroy AVDemuxerImpl for source %{private}s", sourceUri_.c_str());
     if (demuxerEngine_ != nullptr) {
         demuxerEngine_ = nullptr;
     }
-    AVCODEC_LOGD("AVDemuxerImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("Destroy instances 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
 }
 
 int32_t AVDemuxerImpl::SelectTrackByID(uint32_t trackIndex)
 {
     AVCODEC_SYNC_TRACE;
 
-    AVCODEC_LOGD("select track: trackIndex=%{public}u", trackIndex);
+    AVCODEC_LOGD("Select track %{public}u", trackIndex);
 
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
     return StatusToAVCodecServiceErrCode(demuxerEngine_->SelectTrack(trackIndex));
 }
 
@@ -87,9 +85,9 @@ int32_t AVDemuxerImpl::UnselectTrackByID(uint32_t trackIndex)
 {
     AVCODEC_SYNC_TRACE;
 
-    AVCODEC_LOGD("unselect track: trackIndex=%{public}u", trackIndex);
+    AVCODEC_LOGD("Unselect track %{public}u", trackIndex);
 
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
     return StatusToAVCodecServiceErrCode(demuxerEngine_->UnselectTrack(trackIndex));
 }
 
@@ -97,12 +95,12 @@ int32_t AVDemuxerImpl::ReadSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVB
 {
     AVCODEC_SYNC_TRACE;
 
-    AVCODEC_LOGD("ReadSampleBuffer: trackIndex=%{public}u", trackIndex);
+    AVCODEC_LOGD("ReadSampleBuffer for track %{public}u", trackIndex);
 
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
 
     CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->memory_ != nullptr, AVCS_ERR_INVALID_VAL,
-        "Read sample failed because sample buffer is nullptr!");
+        "Sample buffer is nullptr");
 
     return StatusToAVCodecServiceErrCode(demuxerEngine_->ReadSample(trackIndex, sample));
 }
@@ -112,20 +110,18 @@ int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedM
 {
     AVCODEC_SYNC_TRACE;
 
-    AVCODEC_LOGD("ReadSample: trackIndex=%{public}u", trackIndex);
+    AVCODEC_LOGD("ReadSample for track %{public}u", trackIndex);
 
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
 
-    CHECK_AND_RETURN_RET_LOG(sample != nullptr, AVCS_ERR_INVALID_VAL,
-        "Read sample failed because sample buffer is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(sample != nullptr, AVCS_ERR_INVALID_VAL, "Sample buffer is nullptr");
 
-    CHECK_AND_RETURN_RET_LOG(sample->GetSize() > 0, AVCS_ERR_INVALID_VAL,
-        "Read sample failed, Memory must be greater than 0");
+    CHECK_AND_RETURN_RET_LOG(sample->GetSize() > 0, AVCS_ERR_INVALID_VAL, "Sample size must be greater than 0");
     
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(
         sample->GetBase(), sample->GetSize(), sample->GetSize());
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr, AVCS_ERR_INVALID_VAL,
-        "Read sample failed because buffer is nullptr!");
+        "Buffer is nullptr");
     Status ret = demuxerEngine_->ReadSample(trackIndex, buffer);
 
     info.presentationTimeUs = buffer->pts_;
@@ -140,12 +136,11 @@ int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedM
 {
     AVCODEC_SYNC_TRACE;
 
-    CHECK_AND_RETURN_RET_LOG(sample != nullptr, AVCS_ERR_INVALID_VAL,
-        "Read sample failed because sample buffer is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(sample != nullptr, AVCS_ERR_INVALID_VAL, "Sample buffer is nullptr");
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(
         sample->GetBase(), sample->GetSize(), sample->GetSize());
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr, AVCS_ERR_INVALID_VAL,
-        "Read sample failed because buffer is nullptr!");
+        "Buffer is nullptr");
 
     int32_t ret = ReadSampleBuffer(trackIndex, buffer);
     info.presentationTimeUs = buffer->pts_;
@@ -166,12 +161,11 @@ int32_t AVDemuxerImpl::SeekToTime(int64_t millisecond, SeekMode mode)
 {
     AVCODEC_SYNC_TRACE;
 
-    AVCODEC_LOGD("seek to time: millisecond=%{public}" PRId64 "; mode=%{public}d", millisecond, mode);
+    AVCODEC_LOGD("Seek to time: millisecond=%{public}" PRId64 "; mode=%{public}d", millisecond, mode);
 
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
 
-    CHECK_AND_RETURN_RET_LOG(millisecond >= 0, AVCS_ERR_INVALID_VAL,
-        "Seek failed because input millisecond is negative!");
+    CHECK_AND_RETURN_RET_LOG(millisecond >= 0, AVCS_ERR_INVALID_VAL, "Millisecond is negative");
     
     int64_t realTime = 0;
     return StatusToAVCodecServiceErrCode(demuxerEngine_->SeekTo(millisecond, mode, realTime));
@@ -180,11 +174,9 @@ int32_t AVDemuxerImpl::SeekToTime(int64_t millisecond, SeekMode mode)
 int32_t AVDemuxerImpl::SetCallback(const std::shared_ptr<AVDemuxerCallback> &callback)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("AVDemuxer::SetCallback");
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
-        "Demuxer engine does not exist");
-    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL,
-        "SetCallback failed because callback is nullptr!");
+    AVCODEC_LOGD("AVDemuxer::SetCallback");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "Callback is nullptr");
     demuxerEngine_->SetDrmCallback(callback);
     return AVCS_ERR_OK;
 }
@@ -192,9 +184,8 @@ int32_t AVDemuxerImpl::SetCallback(const std::shared_ptr<AVDemuxerCallback> &cal
 int32_t AVDemuxerImpl::GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("AVDemuxer::GetMediaKeySystemInfo");
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
-        "Demuxer engine does not exist");
+    AVCODEC_LOGD("AVDemuxer::GetMediaKeySystemInfo");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
     demuxerEngine_->GetMediaKeySystemInfo(infos);
     return AVCS_ERR_OK;
 }
@@ -202,24 +193,24 @@ int32_t AVDemuxerImpl::GetMediaKeySystemInfo(std::multimap<std::string, std::vec
 int32_t AVDemuxerImpl::StartReferenceParser(int64_t startTimeMs)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("AVDemuxer::StartReferenceParser");
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+    AVCODEC_LOGD("AVDemuxer::StartReferenceParser");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
     return StatusToAVCodecServiceErrCode(demuxerEngine_->StartReferenceParser(startTimeMs));
 }
 
 int32_t AVDemuxerImpl::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("AVDemuxer::GetFrameLayerInfo");
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+    AVCODEC_LOGD("AVDemuxer::GetFrameLayerInfo");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
     return StatusToAVCodecServiceErrCode(demuxerEngine_->GetFrameLayerInfo(videoSample, frameLayerInfo));
 }
 
 int32_t AVDemuxerImpl::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("AVDemuxer::GetGopLayerInfo");
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+    AVCODEC_LOGD("AVDemuxer::GetGopLayerInfo");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
     return StatusToAVCodecServiceErrCode(demuxerEngine_->GetGopLayerInfo(gopId, gopLayerInfo));
 }
 
@@ -228,8 +219,7 @@ int32_t AVDemuxerImpl::GetIndexByRelativePresentationTimeUs(const uint32_t track
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("GetIndexByRelativePresentationTimeUs");
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
-        "Demuxer engine does not exist");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
     int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetIndexByRelativePresentationTimeUs(trackIndex,
         relativePresentationTimeUs, index));
     return ret;
@@ -240,8 +230,7 @@ int32_t AVDemuxerImpl::GetRelativePresentationTimeUsByIndex(const uint32_t track
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("GetRelativePresentationTimeUsByIndex");
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
-        "Demuxer engine does not exist");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
     int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetRelativePresentationTimeUsByIndex(trackIndex,
         index, relativePresentationTimeUs));
     return ret;

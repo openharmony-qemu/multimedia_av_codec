@@ -27,26 +27,25 @@ namespace Media {
 
 BlockQueuePool::~BlockQueuePool()
 {
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " ~BlockQueuePool enter.", name_.c_str());
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
     for (auto que : quePool_) {
         FreeQueue(que.first);
     }
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " ~BlockQueuePool free finish.", name_.c_str());
+    MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S, name_.c_str());
 }
 
 Status BlockQueuePool::AddTrackQueue(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " AddTrackQueue enter, trackIndex: " PUBLIC_LOG_U32 ".",
-        name_.c_str(), trackIndex);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
         uint32_t queIndex = GetValidQueue();
         queMap_[trackIndex] = std::vector<uint32_t>({ queIndex });
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " AddTrackQueue finish, add track " PUBLIC_LOG_U32
-            ", get queue " PUBLIC_LOG_U32 "", name_.c_str(), trackIndex, queIndex);
+        MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S ", add track " PUBLIC_LOG_U32
+            ", get queue " PUBLIC_LOG_U32, name_.c_str(), trackIndex, queIndex);
         sizeMap_[trackIndex] = 0;
     } else {
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " AddTrackQueue finish, track " PUBLIC_LOG_U32 " is already in queue",
+        MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32 " is already in queue",
             name_.c_str(), trackIndex);
     }
     return Status::OK;
@@ -55,11 +54,9 @@ Status BlockQueuePool::AddTrackQueue(uint32_t trackIndex)
 Status BlockQueuePool::RemoveTrackQueue(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " RemoveTrackQueue enter, trackIndex: " PUBLIC_LOG_U32 ".",
-        name_.c_str(), trackIndex);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " RemoveTrackQueue finish, track " PUBLIC_LOG_U32 " is not in queue",
-            name_.c_str(), trackIndex);
+        MEDIA_LOG_D("Block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32 " not in queue", name_.c_str(), trackIndex);
     } else {
         for (auto queIndex : queMap_[trackIndex]) {
             ResetQueue(queIndex);
@@ -68,45 +65,43 @@ Status BlockQueuePool::RemoveTrackQueue(uint32_t trackIndex)
         queMap_.erase(trackIndex);
         sizeMap_.erase(trackIndex);
     }
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " RemoveTrackQueue finish", name_.c_str());
+    MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S, name_.c_str());
     return Status::OK;
 }
 
 size_t BlockQueuePool::GetCacheSize(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetCacheSize enter, trackIndex: " PUBLIC_LOG_U32 ".",
-        name_.c_str(), trackIndex);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     size_t size = 0;
     for (auto queIndex : queMap_[trackIndex]) {
         if (quePool_[queIndex].blockQue == nullptr) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
             continue;
         }
         if (quePool_[queIndex].blockQue->Size() > 0) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " HasCache finish, result: have cache", name_.c_str());
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " has cache", name_.c_str());
             size += quePool_[queIndex].blockQue->Size();
         }
     }
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetCacheSize = " PUBLIC_LOG_ZU, name_.c_str(), size);
+    MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S ", size = " PUBLIC_LOG_ZU, name_.c_str(), size);
     return size;
 }
 
 uint32_t BlockQueuePool::GetCacheDataSize(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetCacheDataSize enter, trackIndex: " PUBLIC_LOG_U32 ".",
-        name_.c_str(), trackIndex);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     uint32_t dataSize = 0;
     for (auto queIndex : queMap_[trackIndex]) {
         if (static_cast<uint64_t>(dataSize) + static_cast<uint64_t>(quePool_[queIndex].dataSize) > UINT32_MAX) {
-            MEDIA_LOG_D("dataSize(" PUBLIC_LOG_U64 ") is more than Maximum value of uint32",
+            MEDIA_LOG_D("DataSize(" PUBLIC_LOG_U64 ") is out of uint32",
                 static_cast<uint64_t>(dataSize) + static_cast<uint64_t>(quePool_[queIndex].dataSize));
             return UINT32_MAX;
         }
         dataSize += quePool_[queIndex].dataSize;
     }
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S "trackIndex = " PUBLIC_LOG_U32 " GetCacheDataSize = " PUBLIC_LOG_U32,
+    MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32 " cache size = " PUBLIC_LOG_U32,
         name_.c_str(), trackIndex, dataSize);
     return dataSize;
 }
@@ -114,26 +109,25 @@ uint32_t BlockQueuePool::GetCacheDataSize(uint32_t trackIndex)
 bool BlockQueuePool::HasCache(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " HasCache enter, trackIndex: " PUBLIC_LOG_U32 ".",
-        name_.c_str(), trackIndex);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     for (auto queIndex : queMap_[trackIndex]) {
         if (quePool_[queIndex].blockQue == nullptr) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
             continue;
         }
         if (quePool_[queIndex].blockQue->Size() > 0) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " HasCache finish, result: have cache", name_.c_str());
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " have cache", name_.c_str());
             return true;
         }
     }
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " HasCache finish, result: don't have cache", name_.c_str());
+    MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S " don't have cache", name_.c_str());
     return false;
 }
 
 void BlockQueuePool::ResetQueue(uint32_t queueIndex)
 {
     if (quePool_.count(queueIndex) == 0) {
-        MEDIA_LOG_D("error queueIndex makes reset queue failed");
+        MEDIA_LOG_D("Error queueIndex");
         return;
     }
     auto blockQue = quePool_[queueIndex].blockQue;
@@ -156,10 +150,10 @@ void BlockQueuePool::FreeQueue(uint32_t queueIndex)
 bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> block)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Push enter, trackIndex: " PUBLIC_LOG_U32 ".", name_.c_str(), trackIndex);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
         Status ret = AddTrackQueue(trackIndex);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, false, "add new queue error: " PUBLIC_LOG_D32 "", ret);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, false, "Add new queue error: " PUBLIC_LOG_D32, ret);
     }
     auto& queVector = queMap_[trackIndex];
     uint32_t pushIndex;
@@ -168,15 +162,15 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
     } else {
         pushIndex = GetValidQueue();
         queMap_[trackIndex].push_back(pushIndex);
-        MEDIA_LOG_D("track has no queue, will get que " PUBLIC_LOG_D32 " from pool", pushIndex);
+        MEDIA_LOG_D("Track has no queue, will request " PUBLIC_LOG_D32 " from pool", pushIndex);
     }
     if (InnerQueueIsFull(pushIndex)) {
         pushIndex = GetValidQueue();
         queMap_[trackIndex].push_back(pushIndex);
-        MEDIA_LOG_D("track que is full, will get que " PUBLIC_LOG_D32 " from pool", pushIndex);
+        MEDIA_LOG_D("Track que is full, will request " PUBLIC_LOG_D32 " from pool", pushIndex);
     }
     if (quePool_[pushIndex].blockQue == nullptr) {
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_D32 " is nullptr, failed to push data", pushIndex);
+        MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, failed to push data", pushIndex);
         return false;
     }
     sizeMap_[trackIndex] += 1;
@@ -189,16 +183,16 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
 std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Pop enter, trackIndex: " PUBLIC_LOG_U32 ".", name_.c_str(), trackIndex);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
-        MEDIA_LOG_E("trackIndex: " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
+        MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
         return nullptr;
     }
     auto& queVector = queMap_[trackIndex];
     for (auto index = 0; index < static_cast<int32_t>(queVector.size()); ++index) {
         auto queIndex = queVector[index];
         if (quePool_[queIndex].blockQue == nullptr) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
             continue;
         }
         if (quePool_[queIndex].blockQue->Size() == 0) {
@@ -206,12 +200,12 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         }
         auto block = quePool_[queIndex].blockQue->Pop();
         if (block == nullptr) {
-            MEDIA_LOG_D("block is nullptr");
+            MEDIA_LOG_D("Block is nullptr");
             continue;
         }
         for (auto pkt : block->pkts) {
             if (pkt == nullptr) {
-                MEDIA_LOG_D("pkt is nullptr, will find next");
+                MEDIA_LOG_D("Pkt is nullptr, will find next");
                 continue;
             }
             uint32_t pktSize = static_cast<uint32_t>(pkt->size);
@@ -220,34 +214,34 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         }
         if (quePool_[queIndex].blockQue->Empty()) {
             ResetQueue(queIndex);
-            MEDIA_LOG_D("track " PUBLIC_LOG_U32 " queue " PUBLIC_LOG_D32 " is empty, will return to pool.",
+            MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " queue " PUBLIC_LOG_D32 " is empty, will return to pool",
                 trackIndex, queIndex);
             queVector.erase(queVector.begin() + index);
         }
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Pop finish, trackIndex: " PUBLIC_LOG_U32 ".",
+        MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S " for track " PUBLIC_LOG_U32,
             name_.c_str(), trackIndex);
         if (sizeMap_[trackIndex] > 0) {
             sizeMap_[trackIndex] -= 1;
         }
         return block;
     }
-    MEDIA_LOG_E("trackIndex: " PUBLIC_LOG_U32 " has not cache data", trackIndex);
+    MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
     return nullptr;
 }
 
 std::shared_ptr<SamplePacket> BlockQueuePool::Front(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Front enter, trackIndex: " PUBLIC_LOG_U32 ".", name_.c_str(), trackIndex);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
-        MEDIA_LOG_E("trackIndex: " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
+        MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
         return nullptr;
     }
     auto queVector = queMap_[trackIndex];
     for (int i = 0; i < static_cast<int32_t>(queVector.size()); ++i) {
         auto queIndex = queVector[i];
         if (quePool_[queIndex].blockQue == nullptr) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
             continue;
         }
         if (quePool_[queIndex].blockQue->Size() > 0) {
@@ -255,16 +249,16 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Front(uint32_t trackIndex)
             return block;
         }
     }
-    MEDIA_LOG_E("trackIndex: " PUBLIC_LOG_U32 " has not cache data", trackIndex);
+    MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
     return nullptr;
 }
 
 std::shared_ptr<SamplePacket> BlockQueuePool::Back(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Back enter, trackIndex: " PUBLIC_LOG_U32 ".", name_.c_str(), trackIndex);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
-        MEDIA_LOG_E("trackIndex: " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
+        MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
         return nullptr;
     }
     auto queVector = queMap_[trackIndex];
@@ -275,14 +269,14 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Back(uint32_t trackIndex)
             return block;
         }
     }
-    MEDIA_LOG_E("trackIndex: " PUBLIC_LOG_U32 " has not cache data", trackIndex);
+    MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
     return nullptr;
 }
 
 uint32_t BlockQueuePool::GetValidQueue()
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetValidQueue enter.", name_.c_str());
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
     for (auto pair : quePool_) {
         if (pair.second.isValid && pair.second.blockQue != nullptr && pair.second.blockQue->Empty()) {
             quePool_[pair.first].isValid = false;
@@ -295,7 +289,7 @@ uint32_t BlockQueuePool::GetValidQueue()
         std::make_shared<BlockQueue<std::shared_ptr<SamplePacket>>>("source_que_" + std::to_string(queCount_),
             singleQueSize_)
     };
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetValidQueue finish, valid queue index: " PUBLIC_LOG_U32 ".",
+    MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S ", valid queue index: " PUBLIC_LOG_U32,
                  name_.c_str(), queCount_);
     queCount_++;
     return (queCount_ - 1);
@@ -304,10 +298,9 @@ uint32_t BlockQueuePool::GetValidQueue()
 bool BlockQueuePool::InnerQueueIsFull(uint32_t queueIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " InnerQueueIsFull enter, queueIndex: " PUBLIC_LOG_U32 ".",
-        name_.c_str(), queueIndex);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", queue " PUBLIC_LOG_U32, name_.c_str(), queueIndex);
     if (quePool_[queueIndex].blockQue == nullptr) {
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
+        MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
         return true;
     }
     return quePool_[queueIndex].blockQue->Size() >= quePool_[queueIndex].blockQue->Capacity();
@@ -315,8 +308,7 @@ bool BlockQueuePool::InnerQueueIsFull(uint32_t queueIndex)
 
 bool BlockQueuePool::HasQueue(uint32_t trackIndex)
 {
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " HasQueue enter, trackIndex: " PUBLIC_LOG_U32 ".",
-        name_.c_str(), trackIndex);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     return queMap_.count(trackIndex) > 0;
 }
 } // namespace Media
