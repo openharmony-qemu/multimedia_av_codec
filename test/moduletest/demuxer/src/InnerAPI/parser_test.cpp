@@ -49,6 +49,8 @@ string g_file_ltr_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_ltr_frame
 string g_file_2_layer_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_2_layer_frame_hevc.mp4");
 string g_file_3_layer_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_3_layer_frame_hevc.mp4");
 string g_file_4_layer_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_4_layer_frame_hevc.mp4");
+string g_file_hdr_1_hevc = TEST_FILE_PATH + string("demuxer_parser_hdr_1_hevc.mp4");
+string g_file_hdr_2_hevc = TEST_FILE_PATH + string("demuxer_parser_hdr_2_hevc.mp4");
 } // namespace
 
 namespace {
@@ -1018,6 +1020,36 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0250, TestSize.Level1)
         make_shared<InnerDemuxerParserSample>(g_file_sdtp_extended_hevc);
     parserSample->InitParameter(MP4Scene::SDTP_EXTENDED_HEVC);
     ASSERT_TRUE(parserSample->RunSpeedScene(WorkPts::RANDOM_PTS));
+}
+
+/**
+ * @tc.number    : DEMUXER_REFERENCE_HDR_0010
+ * @tc.name      : Pts corresponding to the Nth frame for startTimeMs in all I-frame seek scene
+ * @tc.desc      : func test
+ */
+HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_HDR_0010, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_hdr_1_hevc);
+    parserSample->InitParameter(MP4Scene::HDR_1_HEVC);
+    ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::RANDOM_PTS));
+}
+
+/**
+ * @tc.number    : DEMUXER_REFERENCE_HDR_0020
+ * @tc.name      : Pts corresponding to the Nth frame for startTimeMs in all I-frame seek scene
+ * @tc.desc      : func test
+ */
+HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_HDR_0020, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_hdr_2_hevc);
+    parserSample->InitParameter(MP4Scene::HDR_2_HEVC);
+    ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::RANDOM_PTS));
 }
 
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_RELI_0010, TestSize.Level3)
