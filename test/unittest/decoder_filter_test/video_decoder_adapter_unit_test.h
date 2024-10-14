@@ -234,6 +234,10 @@ public:
         return Status::OK;
     }
 
+    Status SetQueueSizeAndAttachBuffer(uint32_t size, std::shared_ptr<AVBuffer>& buffer, bool isFilled)
+    {
+        return Status::OK;
+    }
 protected:
     TestAVBufferQueueConsumer() = default;
 };
