@@ -65,13 +65,13 @@ int32_t AVCodecAudioCodecImpl::Init(AVCodecType type, bool isMimeType, const std
 
 AVCodecAudioCodecImpl::AVCodecAudioCodecImpl()
 {
-    AVCODEC_LOGD("AVCodecAudioCodecImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGI("AVCodecAudioCodecImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 AVCodecAudioCodecImpl::~AVCodecAudioCodecImpl()
 {
     codecService_ = nullptr;
-    AVCODEC_LOGD("AVCodecAudioCodecImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGI("AVCodecAudioCodecImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 int32_t AVCodecAudioCodecImpl::Configure(const Format &format)
@@ -129,13 +129,14 @@ int32_t AVCodecAudioCodecImpl::Start()
         AVCODEC_LOGE("Start failed, outputTask_ is nullptr, please check the outputTask_.");
         ret = AVCS_ERR_UNKNOWN;
     }
-    AVCODEC_LOGI("Start,ret = %{public}d", ret);
+    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Start, ret = %{public}d", FAKE_POINTER(this), ret);
     return ret;
 }
 
 int32_t AVCodecAudioCodecImpl::Stop()
 {
     AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Stop", FAKE_POINTER(this));
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     StopTaskAsync();
     int32_t ret = codecService_->Stop();
@@ -160,6 +161,7 @@ int32_t AVCodecAudioCodecImpl::Flush()
 int32_t AVCodecAudioCodecImpl::Reset()
 {
     AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Reset", FAKE_POINTER(this));
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     StopTaskAsync();
     int32_t ret = codecService_->Reset();
@@ -173,6 +175,7 @@ int32_t AVCodecAudioCodecImpl::Reset()
 int32_t AVCodecAudioCodecImpl::Release()
 {
     AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Release", FAKE_POINTER(this));
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     StopTaskAsync();
     int32_t ret = codecService_->Release();
@@ -489,17 +492,18 @@ void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnInputBufferAvailable(uint32_
 void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputBufferAvailable(uint32_t index,
                                                                           std::shared_ptr<AVBuffer> buffer)
 {
+    std::shared_ptr<AVBuffer> outputBuffer;
     if (impl_->callback_) {
-        Media::Status ret = impl_->implConsumer_->AcquireBuffer(buffer);
+        Media::Status ret = impl_->implConsumer_->AcquireBuffer(outputBuffer);
         if (ret != Media::Status::OK) {
             AVCODEC_LOGE("Consumer AcquireBuffer fail,ret=%{public}d", ret);
             return;
         }
         {
             std::unique_lock lock(impl_->outputMutex_);
-            impl_->outputBufferObjMap_[impl_->indexOutput_] = buffer;
+            impl_->outputBufferObjMap_[impl_->indexOutput_] = outputBuffer;
         }
-        impl_->callback_->OnOutputBufferAvailable(impl_->indexOutput_, buffer);
+        impl_->callback_->OnOutputBufferAvailable(impl_->indexOutput_, outputBuffer);
         impl_->indexOutput_ = (impl_->indexOutput_ >= MAX_INDEX) ? 0 : ++impl_->indexOutput_;
     }
 }
