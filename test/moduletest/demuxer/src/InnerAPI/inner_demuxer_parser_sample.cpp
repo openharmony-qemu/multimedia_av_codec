@@ -225,8 +225,6 @@ void InnerDemuxerParserSample::InitHEVCScene(MP4Scene scene)
             gopJson_ = GopInfoStdpHevc;
             frameLayerJson_ = FrameLayerInfoStdpHevc;
             break;
-        case MP4Scene::OPENGOP_FRAME_HEVC:
-            break;
         case MP4Scene::LTR_FRAME_HEVC:
             gopJson_ = GopInfoLTRHevc;
             frameLayerJson_ = FrameLayerInfoLTRHevc;
@@ -254,6 +252,8 @@ void InnerDemuxerParserSample::InitHEVCScene(MP4Scene scene)
         case MP4Scene::HDR_2_HEVC:
             gopJson_ = GopInfoHdr2Hevc;
             frameLayerJson_ = FrameLayerInfoHdr2Hevc;
+            break;
+        default:
             break;
     }
 }

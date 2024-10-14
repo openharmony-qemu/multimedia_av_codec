@@ -1024,7 +1024,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0250, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_HDR_0010
- * @tc.name      : Pts corresponding to the Nth frame for startTimeMs in all I-frame seek scene
+ * @tc.name      : Pts corresponding to the Nth frame for startTimeMs in HDR sequence seek scene
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_HDR_0010, TestSize.Level1)
@@ -1034,12 +1034,12 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_HDR_0010, TestSize.Level1)
     }
     shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_hdr_1_hevc);
     parserSample->InitParameter(MP4Scene::HDR_1_HEVC);
-    ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::RANDOM_PTS));
+    ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::END_PTS));
 }
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_HDR_0020
- * @tc.name      : Pts corresponding to the Nth frame for startTimeMs in all I-frame seek scene
+ * @tc.name      : Pts corresponding to the Nth frame for startTimeMs in HDR sequence seek scene
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_HDR_0020, TestSize.Level1)
@@ -1050,6 +1050,21 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_HDR_0020, TestSize.Level1)
     shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_hdr_2_hevc);
     parserSample->InitParameter(MP4Scene::HDR_2_HEVC);
     ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::RANDOM_PTS));
+}
+
+/**
+ * @tc.number    : DEMUXER_REFERENCE_HDR_0021
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame in HDR sequence
+ * @tc.desc      : func test
+ */
+HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_HDR_0021, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_hdr_2_hevc);
+    parserSample->InitParameter(MP4Scene::HDR_2_HEVC);
+    ASSERT_TRUE(parserSample->RunSpeedScene(WorkPts::RANDOM_PTS));
 }
 
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_RELI_0010, TestSize.Level3)
