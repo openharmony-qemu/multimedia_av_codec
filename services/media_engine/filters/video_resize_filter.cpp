@@ -496,7 +496,9 @@ void VideoResizeFilter::ReleaseBuffer()
         std::vector<std::pair<uint32_t, uint32_t>> indexs;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
-            releaseBufferCondition_.wait(lock);
+            releaseBufferCondition_.wait(lock, [this] {
+                return isThreadExit_ || !indexs_.empty();
+            });
             indexs = indexs_;
             indexs_.clear();
         }

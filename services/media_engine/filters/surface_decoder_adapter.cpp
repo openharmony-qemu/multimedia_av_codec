@@ -20,6 +20,7 @@
 #include "codec_server.h"
 #include "meta/format.h"
 #include "media_description.h"
+#include "avcodec_trace.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER,
@@ -322,6 +323,7 @@ void SurfaceDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_p
 void SurfaceDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     {
+        MediaAVCodec::AVCodecTrace trace("SurfaceDecoderAdapter::OnOutputBufferAvailable");
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
         if (buffer->flag_ == 1) {
             dropIndexs_.push_back(index);
@@ -368,7 +370,9 @@ void SurfaceDecoderAdapter::ReleaseBuffer()
         std::vector<uint32_t> dropIndexs;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
-            releaseBufferCondition_.wait(lock);
+            releaseBufferCondition_.wait(lock, [this] {
+                return isThreadExit_ || !indexs_.empty();
+            });
             indexs = indexs_;
             indexs_.clear();
             dropIndexs = dropIndexs_;
