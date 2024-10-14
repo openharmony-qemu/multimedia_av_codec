@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -44,7 +44,7 @@ constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 48 * 10 * 1024;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
-constexpr int32_t SAVE_DATA_LOG_FEQUENCE = 50;
+constexpr int32_t SAVE_DATA_LOG_FREQUENCE = 50;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int32_t DEFAULT_BIT_RATE = 1638400;
@@ -54,9 +54,8 @@ constexpr int32_t ONE_SECONDS = 1000;
 constexpr int32_t TWO_SECONDS = 2000;
 constexpr int32_t TEN_MILLISECONDS = 10;
 constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.6;
-constexpr float CACHE_LEVEL_1                   = 0.3;
-constexpr float DEFAULT_CACHE_TIME              = 5;
-constexpr uint32_t CACHED_DURATION_NOTIFY_TIME = 500; // ms
+constexpr float CACHE_LEVEL_1 = 0.3;
+constexpr float DEFAULT_CACHE_TIME = 5;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 constexpr uint32_t OFFSET_NOT_UPDATE_THRESHOLD = 8;
 constexpr float DOWNLOAD_WATER_LINE_RATIO = 0.95;
@@ -86,7 +85,6 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url)
     downloader_ = std::make_shared<Downloader>("http");
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     steadyClock_.Reset();
-    cachedDurationClock_.Reset();
     waterLineAbove_ = PLAY_WATER_LINE;
     recordData_ = std::make_shared<RecordData>();
 }
@@ -153,7 +151,6 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
     downloader_ = std::make_shared<Downloader>("http");
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     steadyClock_.Reset();
-    cachedDurationClock_.Reset();
     waterLineAbove_ = PLAY_WATER_LINE;
     recordData_ = std::make_shared<RecordData>();
 }
@@ -194,10 +191,10 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
             totalBits_, static_cast<int64_t>(downloadTime * SECOND_TO_MILLIONSECOND));
         HandleBuffering();
     };
-    RequestInfo mediaSouce;
-    mediaSouce.url = url;
-    mediaSouce.httpHeader = httpHeader;
-    downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, mediaSouce);
+    RequestInfo requestInfo;
+    requestInfo.url = url;
+    requestInfo.httpHeader = httpHeader;
+    downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloader_->Download(downloadRequest_, -1); // -1
     if (isRingBuffer_) {
@@ -215,7 +212,9 @@ void HttpMediaDownloader::Close(bool isAsync)
         ringBuffer_->SetActive(false);
     }
     isInterrupt_ = true;
-    downloader_->Stop(isAsync);
+    if (downloader_) {
+        downloader_->Stop(isAsync);
+    }
     cvReadWrite_.NotifyOne();
     if (!isDownloadFinish_) {
         int64_t nowTime = steadyClock_.ElapsedMilliseconds();
@@ -291,7 +290,7 @@ bool HttpMediaDownloader::HandleBuffering()
         isBuffering_ = false;
     }
 
-    if (isFirstFrameArrived_ && callback_ != nullptr) {
+    if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: "
         PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32,
             GetCurrentBufferSize(), waterLineAbove_, isBuffering_, canWrite_.load());
@@ -388,6 +387,7 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
 
 Status HttpMediaDownloader::ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
+    FALSE_RETURN_V(downloadRequest_ != nullptr, Status::ERROR_UNKNOWN);
     if (downloadRequest_ != nullptr) {
         readDataInfo.isEos_ = downloadRequest_->IsEos();
     }
@@ -442,7 +442,8 @@ void HttpMediaDownloader::HandleDownloadWaterLine()
         return;
     }
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
-    size_t cachedDataSize = totalBufferSize_ > freeSize ? totalBufferSize_ - freeSize : 0;
+    size_t cachedDataSize = static_cast<size_t>(totalBufferSize_) > freeSize ?
+                                static_cast<size_t>(totalBufferSize_) - freeSize : 0;
     size_t downloadWaterLine = static_cast<size_t>(DOWNLOAD_WATER_LINE_RATIO *
         static_cast<float>(totalBufferSize_));
     if (canWrite_.load()) {
@@ -476,10 +477,6 @@ void HttpMediaDownloader::CheckDownloadPos(unsigned int wantReadLength)
 
 Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    size_t remain = GetCurrentBufferSize();
-    MEDIA_LOG_D("HTTP Read in: wantReadLength " PUBLIC_LOG_D32 " isEos "
-        PUBLIC_LOG_D32 " readOffset: " PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_ZU, readDataInfo.wantReadLength_,
-        readDataInfo.isEos_, readOffset_, remain);
     if (isRingBuffer_) {
         FALSE_RETURN_V_MSG(ringBuffer_ != nullptr, Status::END_OF_STREAM, "ringBuffer_ = nullptr");
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
@@ -679,7 +676,7 @@ bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
     }
 
     size_t changeDownloadPosThreshold = DEFAULT_WATER_LINE_ABOVE;
-    if (offset < maxReadOffset_) {
+    if (static_cast<size_t>(offset) < maxReadOffset_) {
         changeDownloadPosThreshold = AUDIO_WATER_LINE_ABOVE;
     }
 
@@ -709,7 +706,8 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
     }
     MEDIA_LOG_I("HTTP Seek miss.");
 
-    uint64_t diff = offset > writeOffset_ ? offset - writeOffset_ : 0;
+    uint64_t diff = static_cast<size_t>(offset) > writeOffset_ ?
+                        static_cast<size_t>(offset) - writeOffset_ : 0;
     if (diff > 0 && diff < ALLOW_SEEK_MIN_SIZE) {
         MEDIA_LOG_I("HTTP Seek miss, diff is too small so return and wait.");
         return true;
@@ -818,14 +816,15 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
     size_t hasWriteSize = 0;
     while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_.load()) {
         if (isNeedClean_) {
-            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "isNeedClean true.");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "isNeedClean true.");
             return true;
         }
         size_t res = cacheMediaBuffer_->Write(data + hasWriteSize, writeOffset_, len - hasWriteSize);
         writeOffset_ += res;
         hasWriteSize += res;
         writeBitrateCaculator_->UpdateWriteBytes(res);
-        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "writeOffset " PUBLIC_LOG_ZU " res " PUBLIC_LOG_ZU, writeOffset_, res);
+        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "writeOffset " PUBLIC_LOG_ZU " res "
+                            PUBLIC_LOG_ZU, writeOffset_, res);
         if (canWrite_.load() && (res > 0 || hasWriteSize == len)) {
             HandleCachedDuration();
             writeBitrateCaculator_->StartClock();
@@ -840,7 +839,7 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         canWrite_ = false;
         HandleBuffering();
         while (!isInterrupt_.load() && !isNeedClean_.load() && !canWrite_.load() && !isInterruptNeeded_.load()) {
-            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "HTTP CacheMediaBuffer full, waiting seek or read.");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "HTTP CacheMediaBuffer full, waiting seek or read.");
             if (isHitSeeking_ || isNeedDropData_) {
                 canWrite_ = true;
                 return true;
@@ -949,6 +948,7 @@ void HttpMediaDownloader::SetDownloadErrorState()
             Close(true);
         }
     }
+    Close(true);
 }
 
 void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
@@ -1111,11 +1111,6 @@ void HttpMediaDownloader::HandleCachedDuration()
     if (currentBitRate_ <= 0 || callback_ == nullptr) {
         return;
     }
-    uint64_t onEventDuration = cachedDurationClock_.ElapsedMilliseconds();
-    if (onEventDuration < CACHED_DURATION_NOTIFY_TIME) {
-        return;
-    }
-    cachedDurationClock_.Reset();
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetCurrentBufferSize()) *
         BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<int64_t>(currentBitRate_));
     // Subtraction of unsigned integers requires size comparison first.

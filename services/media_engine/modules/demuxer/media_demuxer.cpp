@@ -39,7 +39,7 @@
 #include "media_core.h"
 #include "osal/utils/dump_buffer.h"
 #include "demuxer_plugin_manager.h"
-#include "media_demuxer_back.cpp"
+#include "media_demuxer_pts_functions.cpp"
 
 namespace {
 const std::string DUMP_PARAM = "a";
@@ -1791,6 +1791,7 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
             return Status::OK;
         }
+        HandleAutoMaintainPts(trackId, bufferMap_[trackId]);
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
     } else {

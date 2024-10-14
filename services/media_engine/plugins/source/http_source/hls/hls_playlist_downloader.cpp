@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -209,6 +209,7 @@ void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
     master_->bLive_ = currentVariant_->m3u8_->IsLive();
     master_->duration_ = currentVariant_->m3u8_->GetDuration();
     master_->segmentOffsets_ = currentVariant_->m3u8_->segmentOffsets_;
+    master_->hasDiscontinuity_ = currentVariant_->m3u8_->hasDiscontinuity_;
     isParseFinished_ = isPreParse ? false : true;
 }
 
@@ -367,7 +368,7 @@ size_t HlsPlayListDownloader::GetSegmentOffset(uint32_t tsIndex)
 bool HlsPlayListDownloader::GetHLSDiscontinuity()
 {
     if (master_) {
-        return master_->discontinuity;
+        return master_->hasDiscontinuity_;
     }
     return false;
 }

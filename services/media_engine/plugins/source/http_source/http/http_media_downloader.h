@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -67,9 +67,9 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
     size_t GetBufferSize() const override;
-    void SetAppUid(int32_t appUid) override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
+    void SetAppUid(int32_t appUid) override;
     Status StopBufferring(bool isAppBackground) override;
     bool IsBuffering() override;
 
@@ -83,7 +83,6 @@ private:
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool HandleSeekHit(int64_t offest);
     Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
-    Status ReadTimeOut(ReadDataInfo& readDataInfo);
     Status ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SeekRingBuffer(int64_t offset);
@@ -155,7 +154,7 @@ private:
         double downloadRate {0};
         uint64_t bufferDuring {0};
     };
-    std::shared_ptr<RecordData> recordData_;
+    std::shared_ptr<RecordData> recordData_ {};
     uint64_t currentBitrate_ {1 * 1024 * 1024};         //bps
     uint64_t lastReadCheckTime_ {0};
     uint64_t readTotalBytes_ {0};
