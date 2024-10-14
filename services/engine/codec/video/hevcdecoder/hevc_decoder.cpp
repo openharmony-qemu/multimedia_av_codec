@@ -47,7 +47,7 @@ constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_MIN_BUFFER_CNT = 2;
 constexpr int32_t DEFAULT_MAX_BUFFER_CNT = 10;
 constexpr uint32_t VIDEO_PIX_DEPTH_YUV = 3;
-constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 1382400; // 720p
+constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 1474560; // 1280*768
 constexpr int32_t VIDEO_MAX_BUFFER_SIZE = 3110400; // 1080p
 constexpr int32_t VIDEO_MIN_SIZE = 2;
 constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
@@ -837,6 +837,7 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         width_ = width;
         height_ = height;
         bitDepth_ = bitDepth;
+        ResetData();
         scale_ = nullptr;
         std::unique_lock<std::mutex> sLock(surfaceMutex_);
         sInfo_.requestConfig.width = width_;
