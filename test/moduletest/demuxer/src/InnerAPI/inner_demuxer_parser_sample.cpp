@@ -255,8 +255,6 @@ void InnerDemuxerParserSample::InitHEVCScene(MP4Scene scene)
             gopJson_ = GopInfoHdr2Hevc;
             frameLayerJson_ = FrameLayerInfoHdr2Hevc;
             break;
-        default:
-            break;
     }
 }
 
