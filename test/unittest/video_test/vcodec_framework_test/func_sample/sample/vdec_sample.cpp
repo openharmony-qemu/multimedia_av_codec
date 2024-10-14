@@ -289,8 +289,11 @@ int32_t VideoDecSample::Start()
     if (signal_ == nullptr || videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
+    int32_t ret = CreateAvccReader();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: CreateAvccReader fail");
+
     PrepareInner();
-    int32_t ret = videoDec_->Start();
+    ret = videoDec_->Start();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
     if (isAVBufferMode_) {
         RunInnerExt();

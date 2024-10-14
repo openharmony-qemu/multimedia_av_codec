@@ -224,8 +224,6 @@ void TEST_SUIT::PrepareSource(int32_t param)
     auto check = [](char it) { return it == '/'; };
     (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
     videoDec_->SetOutPath(prefix + fileName);
-    int32_t ret = videoDec_->CreateAvccReader();
-    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 void TEST_SUIT::SetFormatWithParam(int32_t param)
@@ -772,8 +770,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_002, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    int32_t ret = videoDec_->CreateAvccReader();
-    ASSERT_EQ(AV_ERR_OK, ret);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
@@ -793,8 +789,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_003, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-    int32_t ret = videoDec_->CreateAvccReader();
-    ASSERT_EQ(AV_ERR_OK, ret);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
@@ -1311,8 +1305,6 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HDR_Function_001, TestSize.Level1)
     auto check = [](char it) { return it == '/'; };
     (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
     videoDec_->SetOutPath(prefix + fileName);
-    int32_t ret = videoDec_->CreateAvccReader();
-    ASSERT_EQ(AV_ERR_OK, ret);
 
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
