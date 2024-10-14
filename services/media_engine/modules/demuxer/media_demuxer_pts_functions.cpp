@@ -57,7 +57,7 @@ void MediaDemuxer::HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuf
     int64_t curPacketPts = sample->pts_;
     std::shared_ptr<MaintainBaseInfo> baseInfo = maintainBaseInfos_[trackId];
     if (baseInfo == nullptr) {
-        MEDIA_LOG_E("HandleAutoMaintainPts baseInfo is null, trackId: " PUBLIC_LOG_U32, trackId);
+        MEDIA_LOG_E("BaseInfo is nullptr, track " PUBLIC_LOG_U32, trackId);
         return;
     }
     int64_t diff = 0;
@@ -74,8 +74,8 @@ void MediaDemuxer::HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuf
         }
     }
     sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts;
-    MEDIA_LOG_I("HandleAutoMaintainPts success, trackId: " PUBLIC_LOG_U32 ", orginal pts: "
-        PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64 ", basePts: " PUBLIC_LOG_D64, trackId,
+    MEDIA_LOG_I("Success, track:" PUBLIC_LOG_U32 ", orgPts:"
+        PUBLIC_LOG_D64 ", pts:" PUBLIC_LOG_D64 ", basePts: " PUBLIC_LOG_D64, trackId,
         curPacketPts, sample->pts_, baseInfo->basePts);
 }
 
