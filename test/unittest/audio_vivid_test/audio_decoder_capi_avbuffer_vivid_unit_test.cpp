@@ -433,7 +433,7 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_04, Tes
     EXPECT_NE(nullptr, format_);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                             OH_BitsPerSample::SAMPLE_S32LE);
-    ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
     Release();
 }
 
