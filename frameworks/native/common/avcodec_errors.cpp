@@ -141,7 +141,7 @@ const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {
     {AV_ERR_DRM_BASE,                                 "drm error base"},
     {AV_ERR_DRM_DECRYPT_FAILED,                       "decrypt failed"},
     {AV_ERR_VIDEO_BASE,                               "video error base"},
-    {AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, "video unsupported color space conversion"},  
+    {AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, "video unsupported color space conversion"},
 };
 
 const std::map<Status, AVCodecServiceErrCode> STATUS_TO_AVCSERRCODE = {
