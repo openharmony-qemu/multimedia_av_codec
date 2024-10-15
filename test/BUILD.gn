@@ -139,6 +139,9 @@ group("av_codec_fuzz_test") {
       "fuzztest/swdecoderconfigure_fuzzer:SwdecoderConfigureFuzzTest",
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
       "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
+      "fuzztest/hevcswdecoderapi11_fuzzer:HevcswdecoderApi11FuzzTest",
+      "fuzztest/hevcswdecoderconfigure_fuzzer:HevcSwdecoderConfigureFuzzTest",
+      "fuzztest/hevcswdecodersetparameter_fuzzer:HevcSwdecoderSetParameterFuzzTest",
     ]
   }
 }
