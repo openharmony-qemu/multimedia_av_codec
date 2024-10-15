@@ -123,7 +123,7 @@ const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRC
     {AVCS_ERR_CODEC_PARAM_INCORRECT,               AV_ERR_INVALID_VAL},
     {AVCS_ERR_INPUT_DATA_ERROR,                    AV_ERR_INPUT_DATA_ERROR},
     {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION},
-    };
+};
 
 const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {
     {AV_ERR_OK,                                       "success"},
