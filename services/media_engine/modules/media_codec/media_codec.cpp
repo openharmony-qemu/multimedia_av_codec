@@ -732,7 +732,7 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
         state_ = CodecState::ERROR;
         if (mediaCodecCallback_ != nullptr) {
-            mediaCodecCallback_->OnError(CodecErrorType::CODEC_ERROR_INTERNAL, MSERR_AUD_DEC_FAILED);
+            mediaCodecCallback_->OnError(CodecErrorType::CODEC_ERROR_INTERNAL, MSERR_UNSUPPORT_STREAM);
         }
     }
     return ret;
