@@ -402,10 +402,7 @@ int32_t HDecoder::SetScaleMode()
 int32_t HDecoder::SetVrrEnable(const Format &format)
 {
     int32_t vrrEnable = 0;
-    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, vrrEnable)) {
-        return AVCS_ERR_UNSUPPORT;
-    }
-    if (vrrEnable == 0) {
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, vrrEnable) || vrrEnable == 0) {
         HLOGI("VRR disabled");
         return AVCS_ERR_OK;
     }
