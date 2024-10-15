@@ -18,7 +18,7 @@
 #include "filter/filter_factory.h"
 #include "common/log.h"
 #include "common/media_core.h"
-#include "audio_sampleformat.h"
+#include "sink/audio_sampleformat.h"
 #include "avcodec_info.h"
 #include "avcodec_sysevent.h"
 #ifdef SUPPORT_DRM
@@ -280,7 +280,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
         eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
-    UpdateTrackInfoSampleFormat(meta);
+    UpdateTrackInfoSampleFormat(mime, meta);
     meta_ = meta;
     SetParameter(meta);
     mediaCodec_->Init(mime, false);
@@ -306,25 +306,24 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     return Status::OK;
 }
 
-void AudioDecoderFilter::UpdateTrackInfoSampleFormat(const std::shared_ptr<Meta> &meta)
+void AudioDecoderFilter::UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta)
 {
-    std::string mime;
-    bool mimeGetRes = meta->GetData(Tag::MIME_TYPE, mime);
-    Plugins::AudioSampleFormat sampleFormat = Plugins::SAMPLE_U8;
-    bool sampleFormatGetRes = meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
-    MEDIA_LOG_I_SHORT("Audio decoder set sampleFormat before is: " PUBLIC_LOG_D32, sampleFormat);
-    if (mimeGetRes && (mime == CodecMimeType::AUDIO_APE || mime == CodecMimeType::AUDIO_FLAC)) {
+    if (mime == CodecMimeType::AUDIO_APE || mime == CodecMimeType::AUDIO_FLAC) {
+        Plugins::AudioSampleFormat sampleFormat = Plugins::SAMPLE_U8;
+        bool sampleFormatGetRes = meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
+        MEDIA_LOG_I_SHORT("Audio decoder set sampleFormat before is: " PUBLIC_LOG_D32, sampleFormat);
+
         int32_t sampleRate = 0;
-        meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+        bool sampleRateGetRes = meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
         int32_t sampleDepth = 0;
-        bool isHasData = meta->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, sampleDepth);
-        if (!isHasData || sampleDepth <= 0) {
+        bool hasSampleDepthData = meta->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, sampleDepth);
+        if (!hasSampleDepthData || sampleDepth <= 0) {
             meta->GetData(Tag::AUDIO_BITS_PER_RAW_SAMPLE, sampleDepth);
         }
-        if (sampleDepth <= 0) {
+        if (sampleDepth <= 0 && sampleFormatGetRes) {
             sampleDepth = AudioSampleFormatToBitDepth(sampleFormat);
         }
-        if (sampleRate >= SAMPLE_RATE_48K && sampleFormatGetRes && sampleDepth > SAMPLE_FORMAT_BIT_DEPTH_16) {
+        if (sampleRateGetRes && sampleRate >= SAMPLE_RATE_48K && sampleDepth > SAMPLE_FORMAT_BIT_DEPTH_16) {
             MEDIA_LOG_I_SHORT("Audio decoder set sampleFormat is S32LE");
             meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S32LE);
             return;
