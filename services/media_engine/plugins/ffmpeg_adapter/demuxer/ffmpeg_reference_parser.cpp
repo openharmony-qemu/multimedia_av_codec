@@ -90,7 +90,7 @@ Status FFmpegDemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForwa
     std::string formatName(formatContext_.get()->iformat->name);
     FALSE_RETURN_V_MSG_E(formatName.find("mp4") != std::string::npos, Status::ERROR_UNSUPPORTED_FORMAT,
                          "Only support mp4");
-    int64_t clipTimeStampMs = std::clamp(timeStampMs, static_cast<int64_t>(0), formatContext_->duration / MS_TO_SEC);
+    int64_t clipTimeStampMs = std::max(timeStampMs, static_cast<int64_t>(0));
     if (IFramePos_.size() == 0 || referenceParser_ == nullptr) {
         MEDIA_LOG_W("Parse failed, size: " PUBLIC_LOG_ZU, IFramePos_.size());
         pendingSeekMsTime_ = clipTimeStampMs;
@@ -304,21 +304,17 @@ Status FFmpegDemuxerPlugin::SelectProGopId()
         pendingSeekMsTime_ = -1;
     }
     int64_t ptsSeek;
-    if (ptsListFromZero_.size() > IFramePos_[parserCurGopId_]) { // if pts had been parsered from box
-        ptsSeek = ConvertTimeToFFmpegByUs(ptsListFromZero_[IFramePos_[parserCurGopId_]], st->time_base);
-        MEDIA_LOG_D("get I frame pts from box parser");
-    } else if (iFramePtsMap_.find(parserCurGopId_) != iFramePtsMap_.end()) { // if I frame pts had got before decoding
+    if (iFramePtsMap_.find(parserCurGopId_) != iFramePtsMap_.end()) { // if I frame pts had got before decoding
         ptsSeek = iFramePtsMap_[parserCurGopId_];
         MEDIA_LOG_D("get I frame pts from which had been decoded");
     } else {
-        int64_t dtsFirstFrame = CalculateTimeByFrameIndex(st, 0);
         int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
-        int64_t dtsCur = CalculateTimeByFrameIndex(st, IFramePos_[parserCurGopId_]) - dtsFirstFrame;
+        int64_t dtsCur = CalculateTimeByFrameIndex(st, IFramePos_[parserCurGopId_]);
         if (parserCurGopId_ + 1 < iFramePosSize) {
-            int64_t dtsNext = CalculateTimeByFrameIndex(st, IFramePos_[parserCurGopId_ + 1]) - dtsFirstFrame;
+            int64_t dtsNext = CalculateTimeByFrameIndex(st, IFramePos_[parserCurGopId_ + 1]);
             ptsSeek = dtsCur + (dtsNext - dtsCur) / 2; // 2 middle between cur gop and next gop
         } else {
-            ptsSeek = ConvertTimeToFFmpegByUs(st->duration * MS_TO_SEC, st->time_base);
+            ptsSeek = INT64_MAX; // seek last gop
         }
         MEDIA_LOG_D("get I frame pts from simulated dts");
     }
