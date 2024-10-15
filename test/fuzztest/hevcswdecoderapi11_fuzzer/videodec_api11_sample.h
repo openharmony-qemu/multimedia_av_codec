@@ -107,6 +107,3 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 #endif // VIDEODEC_SAMPLE_H
-
-
-
