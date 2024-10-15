@@ -134,14 +134,14 @@ group("av_codec_fuzz_test") {
       "fuzztest/encoderapi11_fuzzer:EncoderAPI11FuzzTest",
       "fuzztest/encoderconfigure_fuzzer:EncoderConfigureFuzzTest",
       "fuzztest/encodersetparameter_fuzzer:EncoderSetParameterFuzzTest",
+      "fuzztest/hevcswdecoderapi11_fuzzer:HevcswdecoderApi11FuzzTest",
+      "fuzztest/hevcswdecoderconfigure_fuzzer:HevcSwdecoderConfigureFuzzTest",
+      "fuzztest/hevcswdecodersetparameter_fuzzer:HevcSwdecoderSetParameterFuzzTest",
       "fuzztest/hwdecoder_fuzzer:HwdecoderFuzzTest",
       "fuzztest/hwdecoderapi11_fuzzer:HwdecoderApi11FuzzTest",
       "fuzztest/swdecoderconfigure_fuzzer:SwdecoderConfigureFuzzTest",
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
       "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
-      "fuzztest/hevcswdecoderapi11_fuzzer:HevcswdecoderApi11FuzzTest",
-      "fuzztest/hevcswdecoderconfigure_fuzzer:HevcSwdecoderConfigureFuzzTest",
-      "fuzztest/hevcswdecodersetparameter_fuzzer:HevcSwdecoderSetParameterFuzzTest",
     ]
   }
 }
