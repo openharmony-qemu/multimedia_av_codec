@@ -102,7 +102,6 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData);
 void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
