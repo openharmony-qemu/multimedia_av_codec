@@ -48,6 +48,8 @@
 #include "layer_info_two_layer_avc.h"
 #include "layer_info_two_layer_hevc.h"
 #include "layer_info_sdtp_extended_hevc.h"
+#include "layer_info_hdr_1_hevc.h"
+#include "layer_info_hdr_2_hevc.h"
 #include <random>
 
 using namespace std;
@@ -223,8 +225,6 @@ void InnerDemuxerParserSample::InitHEVCScene(MP4Scene scene)
             gopJson_ = GopInfoStdpHevc;
             frameLayerJson_ = FrameLayerInfoStdpHevc;
             break;
-        case MP4Scene::OPENGOP_FRAME_HEVC:
-            break;
         case MP4Scene::LTR_FRAME_HEVC:
             gopJson_ = GopInfoLTRHevc;
             frameLayerJson_ = FrameLayerInfoLTRHevc;
@@ -244,6 +244,14 @@ void InnerDemuxerParserSample::InitHEVCScene(MP4Scene scene)
         case MP4Scene::SDTP_EXTENDED_HEVC:
             gopJson_ = GopInfoStdpExtendedHevc;
             frameLayerJson_ = FrameLayerInfoStdpExtendedHevc;
+            break;
+        case MP4Scene::HDR_1_HEVC:
+            gopJson_ = GopInfoHdr1Hevc;
+            frameLayerJson_ = FrameLayerInfoHdr1Hevc;
+            break;
+        case MP4Scene::HDR_2_HEVC:
+            gopJson_ = GopInfoHdr2Hevc;
+            frameLayerJson_ = FrameLayerInfoHdr2Hevc;
             break;
         default:
             break;
