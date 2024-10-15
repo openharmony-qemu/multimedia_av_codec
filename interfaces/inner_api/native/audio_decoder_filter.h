@@ -96,6 +96,7 @@ protected:
 
 private:
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
+    void UpdateTrackInfoSampleFormat(const std::shared_ptr<Meta> &meta);
 
     std::string name_;
     FilterType filterType_;
