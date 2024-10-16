@@ -407,7 +407,7 @@ Status DemuxerFilter::ResumeForSeek()
         auto filter = it->second.back();
         if (filter != nullptr) {
             MEDIA_LOG_I_SHORT("filter WaitAllState");
-            filter->WaitAllState(FilterState::RUNNING);
+            return filter->WaitAllState(FilterState::RUNNING);
         }
     }
     return Status::OK;
