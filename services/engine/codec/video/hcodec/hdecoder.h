@@ -75,6 +75,7 @@ private:
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     GSError OnBufferReleasedByConsumer(uint64_t surfaceId) override;
     void OnGetBufferFromSurface(const ParamSP& param) override;
+    bool IsWrapSurfaceBufferToSlot(SurfaceBufferItem &item);
     SurfaceBufferItem RequestBuffer();
     std::vector<BufferInfo>::iterator FindBelongTo(sptr<SurfaceBuffer>& buffer);
     void SubmitBufferToDecoder();
