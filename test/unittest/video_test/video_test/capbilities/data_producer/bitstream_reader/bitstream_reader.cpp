@@ -119,8 +119,11 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
         bufferAddr += frameSize;
         bufferInfo.attr.flags |= nalDetector_->IsXPS(naluType) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : 0;
         bufferInfo.attr.flags |= nalDetector_->IsIDR(naluType) ? AVCODEC_BUFFER_FLAGS_SYNC_FRAME : 0;
-        CHECK_AND_BREAK(!nalDetector_->IsFullVCL(
-            naluType, nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr())) && !IsEOS());
+        CHECK_AND_BREAK(
+            !nalDetector_->IsXPS(naluType) &&
+            !nalDetector_->IsFullVCL(naluType, nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr())) &&
+            !IsEOS()
+        );
     } while (true);
 
     return AVCODEC_SAMPLE_ERR_OK;
