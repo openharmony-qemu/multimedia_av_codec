@@ -54,6 +54,7 @@ public:
     int32_t FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr);
     int32_t FillBufferExt(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr);
     void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t naluType, bool isEosFrame);
+    bool CheckFillBuffer(uint8_t naluType);
     bool IsEOS();
     int32_t Init(const std::shared_ptr<AvccReaderInfo> &info);
     std::mutex mutex_;

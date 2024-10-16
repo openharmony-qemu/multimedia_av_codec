@@ -118,6 +118,20 @@ void AvccReader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, u
     }
 }
 
+bool AvccReader::CheckFillBuffer(uint8_t naluType)
+{
+    if (nalDetector_->IsXPS(naluType)) {
+        return false;
+    } else if (nalDetector_->IsFullVCL(naluType,
+                                       nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr()))) {
+        return false;
+    } else if (IsEOS()) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
 int32_t AvccReader::FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -132,9 +146,7 @@ int32_t AvccReader::FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecB
         uint8_t naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(bufferAddr));
         bufferAddr += frameSize;
         FillBufferAttr(attr, frameSize, naluType, isEosFrame);
-        UNITTEST_CHECK_AND_BREAK_LOG(!nalDetector_->IsFullVCL(
-            naluType, nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr())) && !IsEOS(),
-            "FillBuffer stop running");
+        UNITTEST_CHECK_AND_BREAK_LOG(CheckFillBuffer(naluType), "FillBuffer stop running");
     } while (true);
     frameInputCount_++;
 
@@ -156,9 +168,7 @@ int32_t AvccReader::FillBufferExt(std::shared_ptr<VDecSignal> &signal_, OH_AVCod
         bufferAddr += frameSize;
         FillBufferAttr(attr, frameSize, naluType, isEosFrame);
         buffer->SetBufferAttr(attr);
-        UNITTEST_CHECK_AND_BREAK_LOG(!nalDetector_->IsFullVCL(
-            naluType, nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr())) && !IsEOS(),
-            "FillBuffer stop running");
+        UNITTEST_CHECK_AND_BREAK_LOG(CheckFillBuffer(naluType), "FillBuffer stop running");
     } while (true);
     frameInputCount_++;
 

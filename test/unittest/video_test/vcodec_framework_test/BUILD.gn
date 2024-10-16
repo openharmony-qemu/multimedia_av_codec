@@ -507,7 +507,7 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_unit_test") {
     "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
-  defines = [ "VIDEODEC_INNER_UNIT_TEST" ]
+  defines = [ "VIDEODEC_HDRVIVID2SDR_INNER_UNIT_TEST" ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
   }
