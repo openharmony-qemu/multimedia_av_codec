@@ -316,12 +316,19 @@ Status AudioSinkFilter::SetMuted(bool isMuted)
     return audioSink_->SetMuted(isMuted);
 }
 
+Status AudioSinkFilter::SetSeekTime(int64_t seekTime)
+{
+    MEDIA_LOG_D("SetSeekTime");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->SetSeekTime(seekTime);
+}
+
 float AudioSinkFilter::GetMaxAmplitude()
 {
     FALSE_RETURN_V(audioSink_ != nullptr, 0.0f);
     return audioSink_->GetMaxAmplitude();
 }
- 
+
 int32_t AudioSinkFilter::SetMaxAmplitudeCbStatus(bool status)
 {
     FALSE_RETURN_V(audioSink_ != nullptr, MSERR_INVALID_VAL);

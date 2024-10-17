@@ -62,6 +62,8 @@ public:
     Status SetIsTransitent(bool isTransitent);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status SetMuted(bool isMuted);
+    Status SetSeekTime(int64_t seekTime);
+
     float GetMaxAmplitude();
     int32_t SetMaxAmplitudeCbStatus(bool status);
 
@@ -153,6 +155,7 @@ private:
     UnderrunDetector underrunDetector_;
     Mutex amplitudeMutex_ {};
     float maxAmplitude_ = 0;
+    std::atomic<int64_t> seekTimeUs_ {HST_TIME_NONE};
 
     bool calMaxAmplitudeCbStatus_ = false;
 };
