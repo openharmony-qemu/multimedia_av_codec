@@ -259,7 +259,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_maxInputSize, TestSiz
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
-##ifdef USE_VIDEO_PROCESSING_ENGINE
+#ifdef USE_VIDEO_PROCESSING_ENGINE
 HWTEST_F(HDecoderPreparingUnitTest, configure_vrr_ok, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));

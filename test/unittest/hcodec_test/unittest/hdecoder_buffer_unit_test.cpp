@@ -138,7 +138,8 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264_capi_old, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST(HDecoderBufferUnitTest, decode_buffer_264_codecbase, TestSize.Level1)
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+HWTEST(HDecoderBufferUnitTest, decode_buffer_264_vrr_codecbase, TestSize.Level1)
 {
     OHOS::system::SetParameter("hcodec.dump", "0101");
     CommandOpt opt = {
@@ -157,4 +158,5 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264_codecbase, TestSize.Level1)
     bool ret = TesterCommon::Run(opt);
     ASSERT_TRUE(ret);
 }
+#endif
 } // OHOS::MediaAVCodec
