@@ -31,7 +31,7 @@ public:
     int32_t Stop() override;
     int32_t Reset() override;
     std::shared_ptr<OH_AVFormat> GetFormat() override;
-    
+
 protected:
     int32_t Configure(const SampleInfo &sampleInfo) override;
 };

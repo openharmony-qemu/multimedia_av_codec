@@ -410,7 +410,7 @@ HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Configure_09, TestSize.
 {
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S32LE);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Configure(meta));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Configure(meta));
 }
 
 HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Start_01, TestSize.Level1)

@@ -95,8 +95,8 @@ private:
     std::atomic<uint32_t> indexOutput_ = 0;
     int32_t inputBufferSize_ = 0;
     std::queue<std::shared_ptr<AVBuffer>> inputIndexQueue;
-    std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inputBufferObjMap_;
-    std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferObjMap_;
+    std::map<uint32_t, std::shared_ptr<AVBuffer>> inputBufferObjMap_;
+    std::map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferObjMap_;
     sptr<Media::AVBufferQueueProducer> mediaCodecProducer_;
     sptr<Media::AVBufferQueueProducer> implProducer_;
     sptr<Media::AVBufferQueueConsumer> implConsumer_;

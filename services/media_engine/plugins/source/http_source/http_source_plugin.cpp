@@ -213,9 +213,11 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             uint32_t expectDuration = playStrategy->duration;
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(expectDuration));
+            downloader_ = std::make_shared<DownloadMonitor>(
+                            std::make_shared<HlsMediaDownloader>(expectDuration, httpHeader_));
         } else {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
+            downloader_ = std::make_shared<DownloadMonitor>(
+                            std::make_shared<HlsMediaDownloader>(httpHeader_));
         }
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
@@ -455,6 +457,11 @@ Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
     return downloader_->StopBufferring(isAppBackground);
 }
 
+bool HttpSourcePlugin::IsBuffering()
+{
+    FALSE_RETURN_V(downloader_ != nullptr, false);
+    return downloader_->IsBuffering();
+}
 }
 }
 }

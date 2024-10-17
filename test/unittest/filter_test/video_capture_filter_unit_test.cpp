@@ -586,6 +586,13 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_008, T
 
     videoCaptureFilter_->OnBufferAvailable();
 }
+
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_SetCodecFormat_001, TestSize.Level1)
+{
+    std::shared_ptr<Meta> videoMeta = std::make_shared<Meta>();
+    Status ret = videoCaptureFilter_->SetCodecFormat(videoMeta);
+    EXPECT_EQ(ret, Status::OK);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

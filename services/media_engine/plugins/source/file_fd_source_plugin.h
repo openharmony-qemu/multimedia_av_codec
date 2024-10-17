@@ -102,7 +102,6 @@ private:
     bool isCloudFile_ {false};
     std::shared_ptr<RingBuffer> ringBuffer_;
 
-    int64_t ringBufferSize_ {0};
     uint64_t downloadSize_ {0};
     SteadyClock steadyClock_;
     SteadyClock steadyClock2_;

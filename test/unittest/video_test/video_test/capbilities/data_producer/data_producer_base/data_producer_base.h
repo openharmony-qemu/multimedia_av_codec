@@ -37,7 +37,7 @@ protected:
     virtual bool IsEOS() = 0;
     void DumpInput(const CodecBufferInfo &bufferInfo);
 
-    std::unique_ptr<std::ifstream> inputFile_ = nullptr;
+    std::shared_ptr<std::ifstream> inputFile_ = nullptr;
     std::unique_ptr<std::ofstream> inputDumpFile_ = nullptr;
     std::mutex mutex_;
     std::shared_ptr<SampleInfo> sampleInfo_;

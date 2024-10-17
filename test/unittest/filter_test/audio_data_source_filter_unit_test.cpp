@@ -175,6 +175,146 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_001, Test
     audioDataSourceFilter_->ReadLoop();
     EXPECT_EQ(audioDataSourceFilter_->nextFilter_, nullptr);
 }
+
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_002, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    std::shared_ptr<TestFilter> nextFilter = std::make_shared<TestFilter>();
+    StreamType outType = StreamType::STREAMTYPE_RAW_AUDIO;
+
+    // 2. Call the function to be tested
+    Status status = audioDataSourceFilter_->UpdateNext(nextFilter, outType);
+
+    // 3. Verify the result
+    EXPECT_EQ(status, Status::OK);
+}
+
+/**
+* @tc.name    : Test AudioDataSourceFilter API
+* @tc.number  : AudioDataSourceFilter_003
+* @tc.desc    : Test UnLinkNext interface, return Status::OK.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_003, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    std::shared_ptr<TestFilter> nextFilter = std::make_shared<TestFilter>();
+    StreamType outType = StreamType::STREAMTYPE_RAW_AUDIO;
+
+    // 2. Call the function to be tested
+    Status status = audioDataSourceFilter_->UnLinkNext(nextFilter, outType);
+
+    // 3. Verify the result
+    EXPECT_EQ(status, Status::OK);
+}
+
+/**
+* @tc.name    : Test AudioDataSourceFilter API
+* @tc.number  : AudioDataSourceFilter_004
+* @tc.desc    : Test OnLinked interface, return Status::OK.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_004, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    StreamType inType = StreamType::STREAMTYPE_RAW_AUDIO;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    std::shared_ptr<TestFilterLinkCallback> callback = std::make_shared<TestFilterLinkCallback>();
+
+    // 2. Call the function to be tested
+    Status status = audioDataSourceFilter_->OnLinked(inType, meta, callback);
+
+    // 3. Verify the result
+    EXPECT_EQ(status, Status::OK);
+}
+
+/**
+* @tc.name    : Test AudioDataSourceFilter API
+* @tc.number  : AudioDataSourceFilter_005
+* @tc.desc    : Test OnUpdated interface, return Status::OK.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_005, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    StreamType inType = StreamType::STREAMTYPE_RAW_AUDIO;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    std::shared_ptr<TestFilterLinkCallback> callback = std::make_shared<TestFilterLinkCallback>();
+
+    // 2. Call the function to be tested
+    Status status = audioDataSourceFilter_->OnUpdated(inType, meta, callback);
+
+    // 3. Verify the result
+    EXPECT_EQ(status, Status::OK);
+}
+
+/**
+* @tc.name    : Test AudioDataSourceFilter API
+* @tc.number  : AudioDataSourceFilter_006
+* @tc.desc    : Test OnUnLinked interface, return Status::OK.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_006, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    StreamType inType = StreamType::STREAMTYPE_RAW_AUDIO;
+    std::shared_ptr<TestFilterLinkCallback> callback = std::make_shared<TestFilterLinkCallback>();
+
+    // 2. Call the function to be tested
+    Status status = audioDataSourceFilter_->OnUnLinked(inType, callback);
+
+    // 3. Verify the result
+    EXPECT_EQ(status, Status::OK);
+}
+/**
+* @tc.name    : Test AudioDataSourceFilter API
+* @tc.number  : AudioDataSourceFilter_001
+* @tc.desc    : Test LinkNext interface, return Status::OK.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_007, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    std::shared_ptr<TestFilter> nextFilter = std::make_shared<TestFilter>();
+    StreamType outType = StreamType::STREAMTYPE_RAW_AUDIO;
+
+    // 2. Call the function to be tested
+    Status status = audioDataSourceFilter_->LinkNext(nextFilter, outType);
+
+    // 3. Verify the result
+    EXPECT_EQ(status, Status::OK);
+}
+
+/**
+* @tc.name    : Test AudioDataSourceFilter API
+* @tc.number  : AudioDataSourceFilter_002
+* @tc.desc    : Test GetFilterType interface, return FilterType::AUDIO_CAPTURE.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_008, TestSize.Level1)
+{
+    FilterType filterType = audioDataSourceFilter_->GetFilterType();
+
+    EXPECT_EQ(filterType, FilterType::AUDIO_CAPTURE);
+}
+
+/**
+* @tc.name    : Test AudioDataSourceFilter API
+* @tc.number  : AudioDataSourceFilter_003
+* @tc.desc    : Test SetAudioDataSource interface, set audioDataSource_.
+* @tc.require : issueI5NZAQ
+*/
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_009, TestSize.Level1)
+{
+    // 1. Set up the test environment
+    std::shared_ptr<MyIAudioDataSource> audioSource = std::make_shared<MyIAudioDataSource>();
+
+    // 2. Call the function to be tested
+    audioDataSourceFilter_->SetAudioDataSource(audioSource);
+
+    // 3. Verify the result
+    EXPECT_EQ(audioDataSourceFilter_->audioDataSource_, audioSource);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

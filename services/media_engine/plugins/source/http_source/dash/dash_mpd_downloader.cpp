@@ -54,13 +54,9 @@ DashMpdDownloader::DashMpdDownloader()
 
 DashMpdDownloader::~DashMpdDownloader() noexcept
 {
-    downloadRequest_ = nullptr;
-    downloader_ = nullptr;
-    representationManager_ = nullptr;
-    adptSetManager_ = nullptr;
-    periodManager_ = nullptr;
-    mpdManager_ = nullptr;
-    mpdParser_ = nullptr;
+    if (downloader_ != nullptr) {
+        downloader_->Stop(false);
+    }
     streamDescriptions_.clear();
 }
 

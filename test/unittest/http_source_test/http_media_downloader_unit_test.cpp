@@ -360,7 +360,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4, TestSize.Level1)
     httpMediaDownloader->SetCurrentBitRate(-1, 0);
     httpMediaDownloader->SetCurrentBitRate(1000, 0);
     httpMediaDownloader->UpdateWaterLineAbove();
-    httpMediaDownloader->ChangeDownloadPos();
+    httpMediaDownloader->ChangeDownloadPos(false);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);

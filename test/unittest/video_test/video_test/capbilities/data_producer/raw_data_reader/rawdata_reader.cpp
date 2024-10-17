@@ -32,16 +32,9 @@ int32_t RawdataReader::FillBuffer(CodecBufferInfo &info)
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
 
-    uint8_t *bufferAddr = nullptr;
-    if (info.bufferAddr != nullptr) {
-        bufferAddr = info.bufferAddr;
-    } else {
-        bufferAddr = static_cast<uint8_t>(sampleInfo_->codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
-            OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(info.buffer)) :
-            OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(info.buffer));
-        CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid buffer address");
-    }
-    
+    uint8_t *bufferAddr = info.bufferAddr;
+    CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid buffer address");
+
     switch (sampleInfo_->pixelFormat) {
         case AV_PIXEL_FORMAT_RGBA:
             ReadInputBufferWithStrideRGBA(bufferAddr);
@@ -64,8 +57,8 @@ void RawdataReader::ReadInputBufferWithStrideRGBA(uint8_t *bufferAddr)
         ((sampleInfo_->codecMime == OH_AVCODEC_MIMETYPE_VIDEO_HEVC && sampleInfo_->profile == HEVC_PROFILE_MAIN_10) ?
          RATIO_10BIT : RATIO_8BIT);
     for (uint32_t row = 0; row < sampleInfo_->videoSliceHeight; row++) {
-        inputFile_->read(reinterpret_cast<char *>(bufferAddr), width);
-        bufferAddr += sampleInfo_->videoStrideWidth;
+        inputFile_->read(reinterpret_cast<char *>(bufferAddr), width * 4); // 4: RGBA 4 channels
+        bufferAddr += sampleInfo_->videoStrideWidth * 4; // 4: RGBA 4 channels;
     }
 }
 

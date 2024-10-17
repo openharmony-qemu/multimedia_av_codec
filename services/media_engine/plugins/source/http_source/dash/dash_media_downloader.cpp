@@ -40,8 +40,10 @@ DashMediaDownloader::DashMediaDownloader() noexcept
 
 DashMediaDownloader::~DashMediaDownloader()
 {
+    if (mpdDownloader_ != nullptr) {
+        mpdDownloader_->Close(false);
+    }
     segmentDownloaders_.clear();
-    mpdDownloader_ = nullptr;
 }
 
 bool DashMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
@@ -623,7 +625,7 @@ uint32_t DashMediaDownloader::GetNextBitrate(std::shared_ptr<DashSegmentDownload
     uint32_t bufferLowSize =
         static_cast<uint32_t>(static_cast<double>(curBitrate) / BYTE_TO_BIT * BUFFER_LOW_LIMIT);
     // switch to high bitrate,if buffersize less than lowsize, do not switch
-    if (curBitrate < desBitrate && segmentDownloader->GetRingBufferSize()  < bufferLowSize) {
+    if (curBitrate < desBitrate && segmentDownloader->GetBufferSize()  < bufferLowSize) {
         MEDIA_LOG_I("AutoSelectBitrate curBitrate " PUBLIC_LOG_D32 ", desBitRate " PUBLIC_LOG_D32
             ", bufferLowSize " PUBLIC_LOG_D32, curBitrate, desBitrate, bufferLowSize);
         return 0;
@@ -631,7 +633,7 @@ uint32_t DashMediaDownloader::GetNextBitrate(std::shared_ptr<DashSegmentDownload
     // high size: buffersize * 0.8
     uint32_t bufferHighSize = segmentDownloader->GetRingBufferCapacity() * BUFFER_LIMIT_FACT;
     // switch to low bitrate, if buffersize more than highsize, do not switch
-    if (curBitrate > desBitrate && segmentDownloader->GetRingBufferSize() > bufferHighSize) {
+    if (curBitrate > desBitrate && segmentDownloader->GetBufferSize() > bufferHighSize) {
         MEDIA_LOG_I("AutoSelectBitrate curBitrate " PUBLIC_LOG_D32 ", desBitRate " PUBLIC_LOG_D32
             ", bufferHighSize " PUBLIC_LOG_D32, curBitrate, desBitrate, bufferHighSize);
         return 0;
@@ -1062,7 +1064,7 @@ size_t DashMediaDownloader::GetBufferSize() const
         MEDIA_LOG_W("GetBufferSize can not get segmentDownloader.");
         return 0;
     }
-    return segmentDownloader->GetRingBufferSize();
+    return segmentDownloader->GetBufferSize();
 }
 
 void DashMediaDownloader::SetAppUid(int32_t appUid)

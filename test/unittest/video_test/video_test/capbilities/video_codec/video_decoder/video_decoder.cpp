@@ -30,7 +30,7 @@ int32_t VideoDecoder::Create(const std::string &codecMime, bool isSoftware)
     auto codecName = GetCodecName(codecMime, false, isSoftware);
     CHECK_AND_RETURN_RET_LOG(!codecName.empty(), AVCODEC_SAMPLE_ERR_ERROR,
         "Codec not supported, mime: %{public}s, software: %{public}d", codecMime.c_str(), isSoftware);
-    
+
     codec_ = std::shared_ptr<OH_AVCodec>(
         OH_VideoDecoder_CreateByName(codecName.c_str()), OH_VideoDecoder_Destroy);
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
@@ -127,7 +127,7 @@ int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
     if (sampleInfo.videoHeight < sampleInfo.videoWidth) {
         OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_ROTATION, 270);   // rotate 270°
     }
-    
+
     int ret = OH_VideoDecoder_Configure(codec_.get(), format.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
 
@@ -156,7 +156,7 @@ int32_t VideoDecoderAPI10::SetCallback(uintptr_t *const sampleContext)
 int32_t VideoDecoderAPI10Buffer::FreeOutput(uint32_t bufferIndex)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
-    
+
     int32_t ret = OH_VideoDecoder_FreeOutputData(codec_.get(), bufferIndex);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
         "Free output data failed, ret: %{public}d", ret);
@@ -166,7 +166,7 @@ int32_t VideoDecoderAPI10Buffer::FreeOutput(uint32_t bufferIndex)
 int32_t VideoDecoderAPI10Surface::FreeOutput(uint32_t bufferIndex)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
-    
+
     int32_t ret = OH_VideoDecoder_RenderOutputData(codec_.get(), bufferIndex);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
         "Render output data failed, ret: %{public}d", ret);
@@ -199,7 +199,7 @@ int32_t VideoDecoderAPI11::SetCallback(uintptr_t *const sampleContext)
 int32_t VideoDecoderAPI11Buffer::FreeOutput(uint32_t bufferIndex)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
-    
+
     int32_t ret = OH_VideoDecoder_FreeOutputBuffer(codec_.get(), bufferIndex);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
         "Free output buffer failed, ret: %{public}d", ret);
@@ -209,7 +209,7 @@ int32_t VideoDecoderAPI11Buffer::FreeOutput(uint32_t bufferIndex)
 int32_t VideoDecoderAPI11Surface::FreeOutput(uint32_t bufferIndex)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
-    
+
     int32_t ret = OH_VideoDecoder_RenderOutputBuffer(codec_.get(), bufferIndex);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
         "Render output buffer failed, ret: %{public}d", ret);

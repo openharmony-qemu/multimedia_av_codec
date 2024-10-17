@@ -242,14 +242,17 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
 Status HttpCurlClient::Close(bool isAsync)
 {
     MEDIA_LOG_I("Close client in");
+    {
+        AutoLock lock(mutex_);
+        if (easyHandle_) {
+            curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
+        }
+    }
     if (isAsync) {
         MEDIA_LOG_I("Close client Async out");
         return Status::OK;
     }
     AutoLock lock(mutex_);
-    if (easyHandle_) {
-        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
-    }
     if (easyHandle_) {
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
@@ -360,7 +363,10 @@ void HttpCurlClient::CheckRequestRange(long startPos, int len)
         }
         MEDIA_LOG_DD("RequestData: requestRange " PUBLIC_LOG_S, requestRange);
         std::string requestStr(requestRange);
-        curl_easy_setopt(easyHandle_, CURLOPT_RANGE, requestStr.c_str());
+        AutoLock lock(mutex_);
+        if (easyHandle_) {
+            curl_easy_setopt(easyHandle_, CURLOPT_RANGE, requestStr.c_str());
+        }
     }
 }
 
@@ -379,29 +385,30 @@ Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& re
         headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
         isFirstRequest_ = false;
     }
-    curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
-    MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
-    FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
-    mutex_.lock();
-    CURLcode returnCode = curl_easy_perform(easyHandle_);
     int32_t clientCode = 0;
     int32_t serverCode = 0;
     Status ret = Status::OK;
-    if (returnCode != CURLE_OK) {
-        MEDIA_LOG_E("Curl error " PUBLIC_LOG_D32, returnCode);
-        clientCode = returnCode;
-        ret = Status::ERROR_CLIENT;
-    } else {
-        int64_t httpCode = 0;
-        curl_easy_getinfo(easyHandle_, CURLINFO_RESPONSE_CODE, &httpCode);
-        if (httpCode >= HTTP_ERROR_THRESHOLD) {
-            MEDIA_LOG_E("Http error " PUBLIC_LOG_D64, httpCode);
-            serverCode = httpCode;
-            ret = Status::ERROR_SERVER;
+    {
+        AutoLock lock(mutex_);
+        FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
+        curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
+        MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
+        CURLcode returnCode = curl_easy_perform(easyHandle_);
+        if (returnCode != CURLE_OK) {
+            MEDIA_LOG_E("Curl error " PUBLIC_LOG_D32, returnCode);
+            clientCode = returnCode;
+            ret = Status::ERROR_CLIENT;
+        } else {
+            int64_t httpCode = 0;
+            curl_easy_getinfo(easyHandle_, CURLINFO_RESPONSE_CODE, &httpCode);
+            if (httpCode >= HTTP_ERROR_THRESHOLD) {
+                MEDIA_LOG_E("Http error " PUBLIC_LOG_D64, httpCode);
+                serverCode = httpCode;
+                ret = Status::ERROR_SERVER;
+            }
+            SetIp();
         }
-        SetIp();
     }
-    mutex_.unlock();
     completedCb(clientCode, serverCode, ret);
     return ret;
 }

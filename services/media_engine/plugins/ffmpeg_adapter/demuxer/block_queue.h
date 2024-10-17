@@ -53,94 +53,94 @@ public:
 
     bool Push(const T& block)
     {
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Push enter.", name_.c_str());
+        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         std::unique_lock<std::mutex> lock(mutex_);
         if (!isActive_) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is inactive for Push.", name_.c_str());
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is inactive", name_.c_str());
             return false;
         }
         if (que_.size() >= capacity_) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is full, please waiting for Pop.", name_.c_str());
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is full", name_.c_str());
             condFull_.wait(lock, [this] { return !isActive_ || que_.size() < capacity_; });
         }
         if (!isActive_) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S ": inactive: " PUBLIC_LOG_D32 ", isFull: " PUBLIC_LOG_D32 ".",
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S ": inactive: " PUBLIC_LOG_D32 ", isFull: " PUBLIC_LOG_D32,
                 name_.c_str(), isActive_.load(), que_.size() < capacity_);
             return false;
         }
         que_.push_back(block);
         condEmpty_.notify_one();
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Push ok.", name_.c_str());
+        MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S, name_.c_str());
         return true;
     }
 
     T Pop()
     {
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Pop enter.", name_.c_str());
+        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         std::unique_lock<std::mutex> lock(mutex_);
         if (que_.empty() && !isActive_) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is inactive for Pop.", name_.c_str());
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is inactive", name_.c_str());
             return {};
         }
         if (que_.empty() && isActive_) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is empty, please waiting for Push.", name_.c_str());
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is empty", name_.c_str());
             condEmpty_.wait(lock, [this] { return !isActive_ || !que_.empty(); });
         }
         if (que_.empty()) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S ": inactive: " PUBLIC_LOG_D32 ", size: " PUBLIC_LOG_ZU ".",
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S ": inactive: " PUBLIC_LOG_D32 ", size: " PUBLIC_LOG_ZU,
                 name_.c_str(), isActive_.load(), que_.size());
             return {};
         }
         T element = que_.front();
         que_.pop_front();
         condFull_.notify_one();
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Pop ok.", name_.c_str());
+        MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S, name_.c_str());
         return element;
     }
 
     T Front()
     {
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Front enter.", name_.c_str());
+        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         std::unique_lock<std::mutex> lock(mutex_);
         if (que_.empty() && !isActive_) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is inactive for Front.", name_.c_str());
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is inactive", name_.c_str());
             return {};
         }
         if (que_.empty() && isActive_) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is empty, please waiting for Push.", name_.c_str());
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is empty", name_.c_str());
             condEmpty_.wait(lock, [this] { return !isActive_ || !que_.empty(); });
         }
         if (que_.empty()) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S ": inactive: " PUBLIC_LOG_D32 ", size: " PUBLIC_LOG_ZU ".",
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S ": inactive: " PUBLIC_LOG_D32 ", size: " PUBLIC_LOG_ZU,
                 name_.c_str(), isActive_.load(), que_.size());
             return {};
         }
         T element = que_.front();
         condFull_.notify_one();
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Front ok.", name_.c_str());
+        MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S, name_.c_str());
         return element;
     }
 
     T Back()
     {
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Back enter.", name_.c_str());
+        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         std::unique_lock<std::mutex> lock(mutex_);
         if (que_.empty() && !isActive_) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is inactive for Back.", name_.c_str());
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is inactive", name_.c_str());
             return {};
         }
         if (que_.empty() && isActive_) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is empty, please waiting for Push.", name_.c_str());
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is empty", name_.c_str());
             condEmpty_.wait(lock, [this] { return !isActive_ || !que_.empty(); });
         }
         if (que_.empty()) {
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S ": inactive: " PUBLIC_LOG_D32 ", size: " PUBLIC_LOG_ZU ".",
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_S ": inactive: " PUBLIC_LOG_D32 ", size: " PUBLIC_LOG_ZU,
                 name_.c_str(), isActive_.load(), que_.size());
             return {};
         }
         T element = que_.back();
         condFull_.notify_one();
-        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Back ok.", name_.c_str());
+        MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S, name_.c_str());
         return element;
     }
 
@@ -153,7 +153,7 @@ public:
     void SetActive(bool active, bool cleanData = true)
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        MEDIA_LOG_D("SetActive " PUBLIC_LOG_S ": " PUBLIC_LOG_D32 ".", name_.c_str(), isActive_.load());
+        MEDIA_LOG_D("SetActive " PUBLIC_LOG_S ": " PUBLIC_LOG_D32, name_.c_str(), isActive_.load());
         isActive_ = active;
         if (!active) {
             if (cleanData) {

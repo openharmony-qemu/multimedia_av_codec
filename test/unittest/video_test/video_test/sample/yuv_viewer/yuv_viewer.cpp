@@ -56,7 +56,7 @@ int32_t YuvViewer::Create(SampleInfo sampleInfo)
 
     ret = CreateWindow();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create window failed");
-    
+
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -93,6 +93,13 @@ int32_t YuvViewer::CreateWindow()
     (void)OH_NativeWindow_NativeWindowHandleOpt(window_.get(), SET_FORMAT,
         ToGraphicPixelFormat(sampleInfo_->pixelFormat, sampleInfo_->profile));
 
+    int32_t strideAlignment = 0;
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window_.get(), GET_STRIDE, &strideAlignment);
+    sampleInfo_->videoStrideWidth = strideAlignment != 0 ?
+        (strideAlignment * std::ceil(static_cast<float>(sampleInfo_->videoWidth) / strideAlignment)) :
+        sampleInfo_->videoWidth;
+    sampleInfo_->videoSliceHeight = sampleInfo_->videoHeight;
+
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -105,7 +112,7 @@ void YuvViewer::InputThread()
         OHNativeWindowBuffer *buffer = nullptr;
         int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(window_.get(), &buffer, &fenceFd);
         CHECK_AND_CONTINUE_LOG(ret == 0 && buffer != nullptr, "RequestBuffer failed, ret: %{public}d", ret);
-        
+
         BufferHandle* bufferHandle = OH_NativeWindow_GetBufferHandleFromNative(buffer);
         CHECK_AND_BREAK_LOG(bufferHandle != nullptr, "Get buffer handle failed, thread out");
         uint8_t *bufferAddr = static_cast<uint8_t *>(mmap(bufferHandle->virAddr, bufferHandle->size,

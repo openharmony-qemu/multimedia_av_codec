@@ -70,6 +70,7 @@ public:
     Status Start();
     Status Stop();
     Status Pause();
+    Status PauseDragging();
     Status Resume();
     Status ResumeDragging();
     Status Flush();
@@ -126,6 +127,7 @@ public:
     Status PauseDemuxerReadLoop();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
+    bool IsBuffering();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -205,8 +207,8 @@ private:
     void HandleStopPlugin(int32_t trackId);
     void HandleStartPlugin(int32_t trackId);
     bool IsSubtitleMime(const std::string& mime);
-    Status HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
-    Status InitPtsInfo();
+    void HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
+    void InitPtsInfo();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;

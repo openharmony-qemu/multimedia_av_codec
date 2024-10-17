@@ -109,6 +109,7 @@ public:
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     size_t GetSegmentOffset();
     bool GetHLSDiscontinuity();
+    bool IsBuffering();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
@@ -116,7 +117,6 @@ private:
     bool GetProtocolByUri();
     bool ParseProtocol(const std::shared_ptr<MediaSource>& source);
     Status FindPlugin(const std::shared_ptr<MediaSource>& source);
-
     void ClearData();
 
     std::string protocol_;

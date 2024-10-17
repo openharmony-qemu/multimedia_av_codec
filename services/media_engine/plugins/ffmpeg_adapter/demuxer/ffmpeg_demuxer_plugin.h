@@ -89,6 +89,7 @@ private:
         GET_FIRST_PTS,
         INDEX_TO_RELATIVEPTS,
         RELATIVEPTS_TO_INDEX,
+        GET_ALL_FRAME_PTS,
     };
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
@@ -148,6 +149,10 @@ private:
 
     Status GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode,
         uint32_t trackIndex, int64_t absolutePTS, uint32_t index);
+    Status PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConvertMode mode,
+        const AVStream* avStream, int64_t absolutePTS, uint32_t index);
+    Status PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvertMode mode,
+        const AVStream* avStream, int64_t absolutePTS, uint32_t index);
     void InitPTSandIndexConvert();
     void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
     void RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS);
@@ -224,6 +229,11 @@ private:
     int avpacketIndex_ {0};
 
     static void Dump(const DumpParam &dumpParam);
+
+    std::vector<int64_t> ptsListOrg_;
+    std::vector<int64_t> ptsListFromZero_;
+    std::unordered_map<int32_t, int64_t> iFramePtsMap_;
+    Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
 };
 } // namespace Ffmpeg
 } // namespace Plugins

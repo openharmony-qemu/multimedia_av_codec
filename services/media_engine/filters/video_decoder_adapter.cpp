@@ -292,6 +292,7 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
 
 void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    AVCodecTrace trace("VideoDecoderAdapter::OnInputBufferAvailable");
     FALSE_RETURN_MSG(buffer != nullptr && buffer->meta_ != nullptr, "meta_ is nullptr.");
     buffer->meta_->SetData(Tag::REGULAR_TRACK_ID, index);
     if (inputBufferQueueConsumer_ == nullptr) {
@@ -313,8 +314,7 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
         uint32_t size = inputBufferQueueConsumer_->GetQueueSize() + 1;
         MEDIA_LOG_D_SHORT("AttachBuffer enter. index: %{public}u,  size: %{public}u , bufferid: %{public}" PRIu64,
             index, size, buffer->GetUniqueId());
-        inputBufferQueueConsumer_->SetQueueSize(size);
-        inputBufferQueueConsumer_->AttachBuffer(buffer, false);
+        inputBufferQueueConsumer_->SetQueueSizeAndAttachBuffer(size, buffer, false);
         bufferVector_.push_back(buffer);
     }
 }

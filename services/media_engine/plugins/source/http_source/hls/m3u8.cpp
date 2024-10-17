@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 #include <utility>
 #include <sstream>
 #include "m3u8.h"
+#include "base64_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -26,29 +27,12 @@ namespace HttpPlugin {
 namespace {
 constexpr uint32_t MAX_LOOP = 16;
 constexpr uint32_t DRM_UUID_OFFSET = 12;
-constexpr uint32_t DRM_INFO_BASE64_DATA_MULTIPLE = 4;
-constexpr uint32_t DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION = 3;
 constexpr uint32_t DRM_PSSH_TITLE_LEN = 16;
 constexpr uint32_t WAIT_KEY_SLEEP_TIME = 10;
 constexpr uint32_t MAX_DOWNLOAD_TIME = 500;
 constexpr uint64_t BAND_WIDTH_LIMIT = 3 * 1024 * 1024;
-constexpr uint32_t SECOND_TO_MILLIONSECOND = 1000;
+constexpr double SECOND_TO_MICROSECOND = 1000.0 * 1000.0;
 const char DRM_PSSH_TITLE[] = "data:text/plain;";
-
-/**
- * base64 decoding table
- */
-static const uint8_t BASE64_DECODE_TABLE[] = {
-    // 16 per row
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 1 - 16
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 17 - 32
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 0, 0, 63,  // 33 - 48
-    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0, 0, 0, 0, 0, 0,  // 49 - 64
-    0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,  // 65 - 80
-    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 0, 0, 0, 0, 0,  // 81 - 96
-    0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,  // 97 - 112
-    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 0, 0, 0, 0, 0  // 113 - 128
-};
 
 bool StrHasPrefix(const std::string &str, const std::string &prefix)
 {
@@ -205,7 +189,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 
         if (hlsTag == HlsTag::EXTXDISCONTINUITY) {
             segmentTimeOffset = duration;
-            discontinuity = true;
+            hasDiscontinuity_ = true;
             MEDIA_LOG_I("segmentTimeOffset here is: " PUBLIC_LOG_ZU, segmentTimeOffset);
             continue;
         }
@@ -225,20 +209,23 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
             if (isDecryptAble_) {
                 auto m3u8 = M3U8Fragment(info.uri, info.duration, sequence_++, info.discontinuity);
                 auto fragment = std::make_shared<M3U8Fragment>(m3u8, key_, iv_);
-                segmentOffsets_.emplace_back(duration);
-                duration += static_cast<size_t>(info.duration * SECOND_TO_MILLIONSECOND);
-                files_.emplace_back(fragment);
+                AddFile(fragment, duration);
             } else {
                 auto fragment = std::make_shared<M3U8Fragment>(info.uri, info.duration, sequence_++,
                     info.discontinuity);
-                segmentOffsets_.emplace_back(duration);
-                duration += static_cast<size_t>(info.duration * SECOND_TO_MILLIONSECOND);
-                files_.emplace_back(fragment);
+                AddFile(fragment, duration);
             }
+            duration += static_cast<size_t>(info.duration * SECOND_TO_MICROSECOND);
             info.uri = "", info.duration = 0, info.discontinuity = false;
         }
     }
     isPlayTypeFound_ = false;
+}
+
+void M3U8::AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration)
+{
+    segmentOffsets_.emplace_back(duration);
+    files_.emplace_back(fragment);
 }
 
 void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
@@ -332,52 +319,10 @@ void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &
     std::shared_ptr<DownloadRequest> &request)
 {
     // This should not be called normally
-    if (request->GetClientError() != 0 || request->GetServerError() != 0) {
+    if (request->GetClientError() != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)
+        || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
-}
-
-/**
- * @brief Base64Decode base64 decoding
- * @param src data to be decoded
- * @param srcSize The size of the data to be decoded
- * @param dest decoded output data
- * @param destSize The size of the output data after decoding
- * @return bool true: success false: invalid parameter
- * Note: The size of the decoded data must be greater than 4 and be a multiple of 4
- */
-bool M3U8::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize)
-{
-    if ((src == nullptr) || (srcSize == 0) || (dest == nullptr) || (destSize == nullptr) || (srcSize > *destSize)) {
-        MEDIA_LOG_E("parameter is err");
-        return false;
-    }
-    if ((srcSize < DRM_INFO_BASE64_DATA_MULTIPLE) || (srcSize % DRM_INFO_BASE64_DATA_MULTIPLE != 0)) {
-        MEDIA_LOG_E("srcSize is err");
-        return false;
-    }
-
-    uint32_t i;
-    uint32_t j;
-    // Calculate decoded string length
-    uint32_t len = srcSize / DRM_INFO_BASE64_DATA_MULTIPLE * DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION;
-    if (src[srcSize - 1] == '=') { // 1:last one
-        len--;
-    }
-    if (src[srcSize - 2] == '=') { // 2:second to last
-        len--;
-    }
-
-    for (i = 0, j = 0; i < srcSize;
-        i += DRM_INFO_BASE64_DATA_MULTIPLE, j += DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION) {
-        dest[j] = (BASE64_DECODE_TABLE[src[i]] << 2) | (BASE64_DECODE_TABLE[src[i + 1]] >> 4); // 2&4bits move
-        dest[j + 1] = (BASE64_DECODE_TABLE[src[i + 1]] << 4) | // 4:4bits moved
-            (BASE64_DECODE_TABLE[src[i + 2]] >> 2); // 2:index 2:2bits moved
-        dest[j + 2] = (BASE64_DECODE_TABLE[src[i + 2]] << 6) | // 2:index 6:6bits moved
-            (BASE64_DECODE_TABLE[src[i + 3]]); // 3:index
-    }
-    *destSize = len;
-    return true;
 }
 
 /**
@@ -401,7 +346,7 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
     if (psshString.length() == 0) {
         return false;
     }
-    bool ret = Base64Decode(reinterpret_cast<const uint8_t *>(psshString.c_str()),
+    bool ret = Base64Utils::Base64Decode(reinterpret_cast<const uint8_t *>(psshString.c_str()),
         static_cast<uint32_t>(psshString.length()), pssh, &psshSize);
     if (ret) {
         uint32_t uuidSize = 16; // 16: uuid len
@@ -501,10 +446,10 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
         std::copy(std::begin(iv_), std::end(iv_), std::begin(m3u8->iv_));
         m3u8->keyLen_ = keyLen_;
     }
-    segmentOffsets_ = m3u8->segmentOffsets_;
-    discontinuity = m3u8->discontinuity;
     m3u8->httpHeader_ = httpHeader_;
     isParseSuccess_ = m3u8->Update(playList_, false);
+    hasDiscontinuity_ = m3u8->hasDiscontinuity_;
+    segmentOffsets_ = m3u8->segmentOffsets_;
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();
     isSimple_ = true;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -72,6 +72,7 @@ struct M3U8 {
     void InitTagUpdatersMap();
     bool Update(const std::string& playList, bool isNeedCleanFiles);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
+    void AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration);
     void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const;
     double GetDuration() const;
     bool IsLive() const;
@@ -91,7 +92,6 @@ struct M3U8 {
     bool SaveData(uint8_t *data, uint32_t len);
     static void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,
         std::shared_ptr<DownloadRequest> &request);
-    static bool Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize);
     bool SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void ProcessDrmInfos(void);
@@ -113,7 +113,7 @@ struct M3U8 {
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
     std::atomic<bool> isPlayTypeFound_ {false};
-    bool discontinuity { false };
+    bool hasDiscontinuity_ {false};
     std::vector<size_t> segmentOffsets_;
     std::map<std::string, std::string> httpHeader_ {};
 };
@@ -163,8 +163,8 @@ struct M3U8MasterPlaylist {
     uint8_t key_[16] { 0 };
     size_t keyLen_ { 0 };
     std::atomic<bool> isParseSuccess_ {true};
+    bool hasDiscontinuity_ {false};
     std::vector<size_t> segmentOffsets_;
-    bool discontinuity { false };
     std::map<std::string, std::string> httpHeader_ {};
 };
 }

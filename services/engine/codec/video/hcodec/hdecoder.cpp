@@ -773,6 +773,28 @@ std::vector<HCodec::BufferInfo>::iterator HDecoder::FindBelongTo(sptr<SurfaceBuf
     });
 }
 
+bool HDecoder::IsWrapSurfaceBufferToSlot(SurfaceBufferItem &item)
+{
+    auto iter = FindBelongTo(item.buffer);
+    if (iter != outputBufferPool_.end()) {
+        return false;
+    }
+
+    auto nullSlot = std::find_if(outputBufferPool_.begin(), outputBufferPool_.end(), [](const BufferInfo& info) {
+        return info.surfaceBuffer == nullptr;
+    });
+    if (nullSlot == outputBufferPool_.end()) {
+        return false;
+    }
+
+    SetCallerToBuffer(item.buffer->GetFileDescriptor());
+    HLOGI("bufferId=%u, seq=%u", nullSlot->bufferId, item.buffer->GetSeqNum());
+    WrapSurfaceBufferToSlot(*nullSlot, item.buffer, 0, 0);
+    NotifyOmxToFillThisOutBuffer(*nullSlot);
+    nullSlot->omxBuffer->bufferhandle = nullptr;
+    return true;
+}
+
 void HDecoder::OnGetBufferFromSurface(const ParamSP& param)
 {
     SCOPED_TRACE();
@@ -785,6 +807,11 @@ void HDecoder::OnGetBufferFromSurface(const ParamSP& param)
     if (item.buffer == nullptr) {
         return;
     }
+
+    if (IsWrapSurfaceBufferToSlot(item)) {
+        return;
+    }
+
     ScopedTrace tracePoint("requested:" + std::to_string(item.buffer->GetSeqNum()));
     freeList_.push_back(item); // push to list, retrive it later, to avoid wait fence too early
     static constexpr size_t MAX_CACHE_CNT = 2;
@@ -921,7 +948,14 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
     BufferFlushConfig cfg {
         .damage = {.x = 0, .y = 0, .w = info.surfaceBuffer->GetWidth(), .h = info.surfaceBuffer->GetHeight() },
         .timestamp = info.omxBuffer->pts,
+        .desiredPresentTimestamp = -1,
     };
+    if (info.avBuffer->meta_->Find(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP) !=
+        info.avBuffer->meta_->end()) {
+        info.avBuffer->meta_->Get<OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP>(
+            cfg.desiredPresentTimestamp);
+        info.avBuffer->meta_->Remove(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP);
+    }
     GSError ret = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, cfg);
     if (ret != GSERROR_OK) {
         HLOGW("surface(%" PRIu64 "), FlushBuffer(seq=%u) failed, GSError=%d",
@@ -1008,6 +1042,11 @@ void HDecoder::OnEnterUninitializedState()
 {
     freeList_.clear();
     currSurface_.Release();
+}
+
+void HDecoder::ClearBufferList()
+{
+    freeList_.clear();
 }
 
 HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface)

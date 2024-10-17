@@ -232,6 +232,7 @@ void AudioDataSourceFilter::ReadLoop()
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     if (outputBufferQueue_ == nullptr) {
         MEDIA_LOG_I("AudioDataSourceFilter outputBufferQueue_ is nullptr");
+        return;
     }
     Status status = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
     if (status != Status::OK) {

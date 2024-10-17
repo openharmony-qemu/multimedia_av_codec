@@ -50,22 +50,18 @@ int32_t VideoEncoderSample::Prepare()
     } else {
         int32_t strideAlignment = 0;
         (void)OH_NativeWindow_NativeWindowHandleOpt(info.window.get(), GET_STRIDE, &strideAlignment);
-        info.videoStrideWidth = strideAlignment != 0 ?
-            (strideAlignment * std::ceil(static_cast<float>(info.videoWidth) / strideAlignment)) :
-            info.videoWidth;
+        info.videoStrideWidth = strideAlignment > 0 ?
+            (strideAlignment * std::ceil(static_cast<float>(info.videoWidth) / strideAlignment)) : info.videoWidth;
         info.videoSliceHeight = info.videoHeight;
 
         inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);
     }
     AVCODEC_LOGI("Resolution: %{public}d*%{public}d => %{public}d*%{public}d",
-        info.videoWidth, info.videoHeight,
-        info.videoStrideWidth, info.videoSliceHeight);
+        info.videoWidth, info.videoHeight, info.videoStrideWidth, info.videoSliceHeight);
 
     outputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::OutputThread, this);
-    if (inputThread_ == nullptr || outputThread_ == nullptr) {
-        AVCODEC_LOGE("Create thread failed");
-        return AVCODEC_SAMPLE_ERR_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(inputThread_->joinable() && outputThread_->joinable(),
+        AVCODEC_SAMPLE_ERR_ERROR, "Create thread failed");
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -80,6 +76,7 @@ void VideoEncoderSample::BufferInputThread()
 
         int32_t ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Read EOS frame, thread out");
         AVCODEC_LOGV("In buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
             context_->inputBufferQueue.GetFrameCount(),
             bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
@@ -88,7 +85,6 @@ void VideoEncoderSample::BufferInputThread()
 
         ret = context_->videoCodec->PushInput(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
-        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputBufferQueue.GetFrameCount());
     PushEosFrame();
@@ -97,14 +93,14 @@ void VideoEncoderSample::BufferInputThread()
 void VideoEncoderSample::SurfaceInputThread()
 {
     OHNativeWindowBuffer *buffer = nullptr;
-    OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
+    int fenceFd = -1;
     auto &info = *context_->sampleInfo;
+    OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
         uint32_t frameCount = context_->inputBufferQueue.IncFrameCount();
         uint64_t pts = static_cast<uint64_t>(frameCount) *
             ((info.frameInterval == 0) ? 1 : info.frameInterval) * 1000; // 1000: 1ms to us
         (void)OH_NativeWindow_NativeWindowHandleOpt(info.window.get(), SET_UI_TIMESTAMP, pts);
-        int fenceFd = -1;
         int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(info.window.get(), &buffer, &fenceFd);
         CHECK_AND_CONTINUE_LOG(ret == 0, "RequestBuffer failed, ret: %{public}d", ret);
 
@@ -117,7 +113,7 @@ void VideoEncoderSample::SurfaceInputThread()
         CodecBufferInfo bufferInfo(bufferAddr);
         ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
-        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Read EOS frame, thread out");
         ret = munmap(bufferAddr, bufferHandle->size);
         CHECK_AND_BREAK_LOG(ret != -1, "Unmap buffer failed, thread out");
 

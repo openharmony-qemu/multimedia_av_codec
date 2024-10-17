@@ -37,7 +37,7 @@ int32_t Demuxer::Init(const std::shared_ptr<SampleInfo> &info)
         file_ = std::shared_ptr<FILE>(fopen(sampleInfo_->inputFilePath.data(), "r"), fclose);
         CHECK_AND_RETURN_RET_LOG(file_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Open input file failed");
         int32_t fileFd = fileno(file_.get());
-        
+
         int64_t fileSize = GetFileSize(fileFd);
         source_ = std::shared_ptr<OH_AVSource>(OH_AVSource_CreateWithFD(fileFd, 0, fileSize), OH_AVSource_Destroy);
         CHECK_AND_RETURN_RET_LOG(source_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
@@ -97,7 +97,7 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat)
     OH_AVFormat_GetIntValue(sourceFormat.get(), OH_MD_KEY_TRACK_COUNT, &trackCount);
     for (int32_t index = 0; index < trackCount; index++) {
         int trackType = -1;
-        
+
         auto trackFormat =
             std::shared_ptr<OH_AVFormat>(OH_AVSource_GetTrackFormat(source_.get(), index), OH_AVFormat_Destroy);
         OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_TRACK_TYPE, &trackType);

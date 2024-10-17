@@ -1041,6 +1041,42 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, WaitPrepareFrame_001, TestSize.Level1)
     EXPECT_EQ(status, Status::OK);
     EXPECT_EQ(decoderSurfaceFilter_->doPrepareFrame_, false);
 }
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, GetDecRateUpperLimit_001, TestSize.Level1)
+{
+    decoderSurfaceFilter_->rateUpperLimit_ = 1;
+    int32_t res = decoderSurfaceFilter_->GetDecRateUpperLimit();
+    EXPECT_EQ(res, 1);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, UnLinkNext_0400, TestSize.Level1)
+{
+    std::shared_ptr<TestFilter> filter = std::make_shared<TestFilter>();
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    Status status = decoderSurfaceFilter_->UnLinkNext(filter, streamType);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, UpdateNext_0400, TestSize.Level1)
+{
+    std::shared_ptr<TestFilter> filter = std::make_shared<TestFilter>();
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    Status status = decoderSurfaceFilter_->UpdateNext(filter, streamType);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, SetCallingInfo_0400, TestSize.Level1)
+{
+    int32_t appUid = 1;
+    int32_t appPid = 1;
+    std::string bundleName = "test";
+    uint64_t instanceId = 1;
+    decoderSurfaceFilter_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    EXPECT_EQ(appUid, decoderSurfaceFilter_->appUid_);
+    EXPECT_EQ(appPid, decoderSurfaceFilter_->appPid_);
+    EXPECT_EQ(bundleName, decoderSurfaceFilter_->bundleName_);
+    EXPECT_EQ(instanceId, decoderSurfaceFilter_->instanceId_);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
