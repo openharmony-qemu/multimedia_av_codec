@@ -191,7 +191,6 @@ static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
             ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
             if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
-                cout << audioFrameAll << "    audio is end !!!!!!!!!!!!!!!" << endl;
                 continue;
             }
             audioFrameAll++;
@@ -215,7 +214,6 @@ static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
         ASSERT_EQ(count, COUNTDUAL);
         ASSERT_EQ(bitrate, BITRATEDUAL);
     }
-    cout << akeyCount << "---akeyCount---" << endl;
 }
 
 /**
