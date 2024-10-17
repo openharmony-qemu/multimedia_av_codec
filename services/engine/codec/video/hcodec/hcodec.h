@@ -109,8 +109,8 @@ protected:
     };
 
     struct PortInfo {
-        uint32_t width;
-        uint32_t height;
+        uint32_t width = 0;
+        uint32_t height = 0;
         OMX_VIDEO_CODINGTYPE codingType;
         std::optional<PixelFmt> pixelFmt;
         double frameRate;
@@ -130,7 +130,7 @@ protected:
         bool isInput = true;
         BufferOwner owner = OWNED_BY_US;
         std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
-        std::chrono::time_point<std::chrono::steady_clock> lastFlushTime;
+        int64_t lastFlushTime = 0;
         uint32_t bufferId = 0;
         std::shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
@@ -221,11 +221,12 @@ protected:
     // input buffer circulation
     virtual void NotifyUserToFillThisInBuffer(BufferInfo &info);
     virtual void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode);
-    void OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info);
+    int32_t OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info);
     virtual void OnSignalEndOfInputStream(const MsgInfo &msg);
     int32_t NotifyOmxToEmptyThisInBuffer(BufferInfo& info);
     virtual void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) = 0;
     virtual void RepeatIfNecessary(const ParamSP& param) {}
+    bool CheckBufPixFmt(const sptr<SurfaceBuffer>& buffer);
 
     // output buffer circulation
     virtual void SubmitDynamicBufferIfPossible() {}
@@ -394,6 +395,7 @@ private:
         virtual void OnCheckIfStuck(const MsgInfo &info);
         void OnForceShutDown(const MsgInfo &info);
         void OnStateExited() override { codec_->stateGeneration_++; }
+        void OnSetParameters(const MsgInfo &info);
 
     protected:
         HCodec *codec_;
@@ -442,7 +444,6 @@ private:
         void OnCodecEvent(CodecHDI::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void OnFlush(const MsgInfo &info);
-        void OnSetParameters(const MsgInfo &info);
     };
 
     struct OutputPortChangedState : BaseState {

@@ -18,6 +18,7 @@
 
 #include "gtest/gtest.h"
 #include "hcodec.h"
+#include "hcodec_api.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -44,6 +45,7 @@ public:
 
     sptr<Surface> CreateProducerSurface();
     sptr<Surface> CreateConsumerSurface();
+    int32_t GetEncoderCapabilityForMime(CapabilityData &cap, const std::string &targetMimeType);
 };
 
 class HEncoderUserCallingUnitTest : public testing::Test {
