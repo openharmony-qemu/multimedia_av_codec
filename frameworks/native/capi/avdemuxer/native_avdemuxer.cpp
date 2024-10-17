@@ -21,7 +21,6 @@
 #include "avdemuxer.h"
 #include "common/native_mfmagic.h"
 #include "native_avmagic.h"
-#include "native_mfmagic.h"
 #include "native_object.h"
 #include "native_drm_common.h"
 namespace {
@@ -120,6 +119,7 @@ private:
 struct OH_AVDemuxer *OH_AVDemuxer_CreateWithSource(OH_AVSource *source)
 {
     CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "Input source is nullptr");
+    CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, nullptr, "Magic error");
 
     struct AVSourceObject *sourceObj = reinterpret_cast<AVSourceObject *>(source);
     CHECK_AND_RETURN_RET_LOG(sourceObj != nullptr, nullptr, "Create sourceObject is nullptr");
@@ -181,6 +181,7 @@ OH_AVErrCode OH_AVDemuxer_ReadSample(OH_AVDemuxer *demuxer, uint32_t trackIndex,
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "Magic error");
     
     CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->memory_ != nullptr, AV_ERR_INVALID_VAL, "Sample is nullptr");
+    CHECK_AND_RETURN_RET_LOG(sample->magic_ == MFMagic::MFMAGIC_SHARED_MEMORY, AV_ERR_INVALID_VAL, "Magic error");
     CHECK_AND_RETURN_RET_LOG(info != nullptr, AV_ERR_INVALID_VAL, "Info is nullptr");
 
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
@@ -208,6 +209,7 @@ OH_AVErrCode OH_AVDemuxer_ReadSampleBuffer(OH_AVDemuxer *demuxer, uint32_t track
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "Magic error");
     
     CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->buffer_ != nullptr, AV_ERR_INVALID_VAL, "Sample is nullptr");
+    CHECK_AND_RETURN_RET_LOG(sample->magic_ == MFMagic::MFMAGIC_AVBUFFER, AV_ERR_INVALID_VAL, "Magic error");
 
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
     CHECK_AND_RETURN_RET_LOG(demuxerObj != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");

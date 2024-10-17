@@ -83,13 +83,13 @@ int32_t AVSourceImpl::InitWithURI(const std::string &uri)
 {
     AVCODEC_SYNC_TRACE;
 
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine == nullptr, AVCS_ERR_INVALID_OPERATION, "Has been used by demuxer");
-    demuxerEngine = std::make_shared<MediaDemuxer>();
-    demuxerEngine->SetPlayerId("AVSource_URI");
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION, "Create mediaDemuxer failed");
+    CHECK_AND_RETURN_RET_LOG(mediaDemuxer == nullptr, AVCS_ERR_INVALID_OPERATION, "Has been used by demuxer");
+    mediaDemuxer = std::make_shared<MediaDemuxer>();
+    mediaDemuxer->SetPlayerId("AVSource_URI");
+    CHECK_AND_RETURN_RET_LOG(mediaDemuxer != nullptr, AVCS_ERR_INVALID_OPERATION, "Create mediaDemuxer failed");
 
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(uri);
-    Status ret = demuxerEngine->SetDataSource(mediaSource);
+    Status ret = mediaDemuxer->SetDataSource(mediaSource);
     CHECK_AND_RETURN_RET_LOG(ret == Status::OK, StatusToAVCodecServiceErrCode(ret), "Set data source failed");
 
     sourceUri = uri;
@@ -100,7 +100,7 @@ int32_t AVSourceImpl::InitWithFD(int32_t fd, int64_t offset, int64_t size)
 {
     AVCODEC_SYNC_TRACE;
 
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine == nullptr, AVCS_ERR_INVALID_OPERATION, "Has been used by demuxer");
+    CHECK_AND_RETURN_RET_LOG(mediaDemuxer == nullptr, AVCS_ERR_INVALID_OPERATION, "Has been used by demuxer");
     CHECK_AND_RETURN_RET_LOG(fd >= 0, AVCS_ERR_INVALID_VAL, "Input fd is negative");
     if (fd <= STDERR_FILENO) {
         AVCODEC_LOGW("Using special fd: %{public}d, isatty: %{public}d", fd, isatty(fd));
@@ -124,13 +124,13 @@ int32_t AVSourceImpl::InitWithDataSource(const std::shared_ptr<Media::IMediaData
 {
     AVCODEC_SYNC_TRACE;
 
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine == nullptr, AVCS_ERR_INVALID_OPERATION, "Has been used by demuxer");
-    demuxerEngine = std::make_shared<MediaDemuxer>();
-    demuxerEngine->SetPlayerId("AVSource_Data");
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION, "Create mediaDemuxer failed");
+    CHECK_AND_RETURN_RET_LOG(mediaDemuxer == nullptr, AVCS_ERR_INVALID_OPERATION, "Has been used by demuxer");
+    mediaDemuxer = std::make_shared<MediaDemuxer>();
+    mediaDemuxer->SetPlayerId("AVSource_Data");
+    CHECK_AND_RETURN_RET_LOG(mediaDemuxer != nullptr, AVCS_ERR_INVALID_OPERATION, "Create mediaDemuxer failed");
 
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(dataSource);
-    Status ret = demuxerEngine->SetDataSource(mediaSource);
+    Status ret = mediaDemuxer->SetDataSource(mediaSource);
     CHECK_AND_RETURN_RET_LOG(ret == Status::OK, StatusToAVCodecServiceErrCode(ret), "Set data source failed");
 
     return AVCS_ERR_OK;
@@ -143,8 +143,8 @@ AVSourceImpl::AVSourceImpl()
 
 AVSourceImpl::~AVSourceImpl()
 {
-    if (demuxerEngine != nullptr) {
-        demuxerEngine = nullptr;
+    if (mediaDemuxer != nullptr) {
+        mediaDemuxer = nullptr;
     }
     AVCODEC_LOGD("Destroy instances 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
 }
@@ -154,9 +154,9 @@ int32_t AVSourceImpl::GetSourceFormat(OHOS::Media::Format &format)
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("Get source format");
 
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
+    CHECK_AND_RETURN_RET_LOG(mediaDemuxer != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
     
-    std::shared_ptr<OHOS::Media::Meta> mediaInfo = demuxerEngine->GetGlobalMetaInfo();
+    std::shared_ptr<OHOS::Media::Meta> mediaInfo = mediaDemuxer->GetGlobalMetaInfo();
     CHECK_AND_RETURN_RET_LOG(mediaInfo != nullptr, AVCS_ERR_INVALID_OPERATION, "Parse media info failed");
 
     bool set = format.SetMeta(mediaInfo);
@@ -170,9 +170,9 @@ int32_t AVSourceImpl::GetTrackFormat(OHOS::Media::Format &format, uint32_t track
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("Get track %{public}u format", trackIndex);
 
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
+    CHECK_AND_RETURN_RET_LOG(mediaDemuxer != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
 
-    std::vector<std::shared_ptr<Meta>> streamsInfo = demuxerEngine->GetStreamMetaInfo();
+    std::vector<std::shared_ptr<Meta>> streamsInfo = mediaDemuxer->GetStreamMetaInfo();
     CHECK_AND_RETURN_RET_LOG(trackIndex < streamsInfo.size(), AVCS_ERR_INVALID_VAL,
         "Just have %{public}zu tracks. index is out of range", streamsInfo.size());
 
@@ -187,9 +187,9 @@ int32_t AVSourceImpl::GetUserMeta(OHOS::Media::Format &format)
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("get user meta");
 
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
+    CHECK_AND_RETURN_RET_LOG(mediaDemuxer != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
     
-    std::shared_ptr<OHOS::Media::Meta> userDataMeta = demuxerEngine->GetUserMeta();
+    std::shared_ptr<OHOS::Media::Meta> userDataMeta = mediaDemuxer->GetUserMeta();
     CHECK_AND_RETURN_RET_LOG(userDataMeta != nullptr, AVCS_ERR_INVALID_OPERATION, "Parse user info failed");
 
     bool set = format.SetMeta(userDataMeta);

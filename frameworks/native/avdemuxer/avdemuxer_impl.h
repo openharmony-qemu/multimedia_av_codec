@@ -50,7 +50,7 @@ public:
     int32_t GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
         const uint32_t index, uint64_t &relativePresentationTimeUs) override;
 private:
-    std::shared_ptr<MediaDemuxer> demuxerEngine_ = nullptr;
+    std::shared_ptr<MediaDemuxer> mediaDemuxer_ = nullptr;
     std::string sourceUri_;
 };
 } // namespace MediaAVCodec

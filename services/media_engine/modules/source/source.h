@@ -28,7 +28,7 @@
 #include "plugin/plugin_event.h"
 #include "plugin/source_plugin.h"
 #include "meta/media_types.h"
-#include "media_demuxer.h"
+#include "demuxer/media_demuxer.h"
 
 namespace OHOS {
 namespace Media {

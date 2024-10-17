@@ -55,6 +55,7 @@ config("av_codec_client_local_config") {
     "$av_codec_root_dir/services/engine/factory",
 
     "$av_codec_root_dir/services/media_engine/modules/muxer",
+    "$av_codec_root_dir/services/media_engine/modules/demuxer",
     "$av_codec_root_dir/services/engine/plugin/common",
     "$av_codec_root_dir/services/engine/plugin/core",
     "$av_codec_root_dir/services/engine/plugin/interface",
