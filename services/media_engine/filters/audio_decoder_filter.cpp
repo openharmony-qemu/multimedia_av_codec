@@ -308,26 +308,34 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
 
 void AudioDecoderFilter::UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta)
 {
-    if (mime == CodecMimeType::AUDIO_APE || mime == CodecMimeType::AUDIO_FLAC) {
-        Plugins::AudioSampleFormat sampleFormat = Plugins::SAMPLE_U8;
-        bool sampleFormatGetRes = meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
-        MEDIA_LOG_I_SHORT("Audio decoder set sampleFormat before is: " PUBLIC_LOG_D32, sampleFormat);
+    if (mime != CodecMimeType::AUDIO_APE && mime != CodecMimeType::AUDIO_FLAC) {
+        meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
+        return;
+    }
+    int32_t sampleRate = 0;
+    bool sampleRateGetRes = meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+    if (!sampleRateGetRes || sampleRate < SAMPLE_RATE_48K) {
+        meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
+        return;
+    }
+    Plugins::AudioSampleFormat sampleFormat = Plugins::SAMPLE_U8;
+    bool sampleFormatGetRes = meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
+    MEDIA_LOG_I_SHORT("Audio decoder set sampleFormat before is: " PUBLIC_LOG_D32, sampleFormat);
+    if (sampleFormatGetRes && AudioSampleFormatToBitDepth(sampleFormat) > SAMPLE_FORMAT_BIT_DEPTH_16) {
+        meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S32LE);
+        return;
+    }
 
-        int32_t sampleRate = 0;
-        bool sampleRateGetRes = meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
-        int32_t sampleDepth = 0;
-        bool hasSampleDepthData = meta->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, sampleDepth);
-        if (!hasSampleDepthData || sampleDepth <= 0) {
-            meta->GetData(Tag::AUDIO_BITS_PER_RAW_SAMPLE, sampleDepth);
-        }
-        if (sampleDepth <= 0 && sampleFormatGetRes) {
-            sampleDepth = AudioSampleFormatToBitDepth(sampleFormat);
-        }
-        if (sampleRateGetRes && sampleRate >= SAMPLE_RATE_48K && sampleDepth > SAMPLE_FORMAT_BIT_DEPTH_16) {
-            MEDIA_LOG_I_SHORT("Audio decoder set sampleFormat is S32LE");
-            meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S32LE);
-            return;
-        }
+    int32_t sampleDepth = 0;
+    bool hasSampleDepthData = meta->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, sampleDepth);
+    if (hasSampleDepthData && sampleDepth > SAMPLE_FORMAT_BIT_DEPTH_16) {
+        meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S32LE);
+        return;
+    }
+    bool hasPerRawSampleData = meta->GetData(Tag::AUDIO_BITS_PER_RAW_SAMPLE, sampleDepth);
+    if (hasPerRawSampleData && sampleDepth > SAMPLE_FORMAT_BIT_DEPTH_16) {
+        meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S32LE);
+        return;
     }
     meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
 }
