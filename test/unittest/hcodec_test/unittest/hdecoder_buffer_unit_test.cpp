@@ -137,4 +137,24 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264_capi_old, TestSize.Level1)
     bool ret = TesterCommon::Run(opt);
     ASSERT_TRUE(ret);
 }
+
+HWTEST(HDecoderBufferUnitTest, decode_buffer_264_codecbase, TestSize.Level1)
+{
+    OHOS::system::SetParameter("hcodec.dump", "0101");
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_CODEC_BASE,
+        .isEncoder = false,
+        .inputFile = "/data/test/media/out_320_240_10s.h264",
+        .dispW = 320,
+        .dispH = 240,
+        .protocol = H264,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .timeout = TIME_OUT,
+        .isBufferMode = true,
+        .isVrrEnable = 1,
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
 } // OHOS::MediaAVCodec

@@ -65,10 +65,7 @@ int32_t HDecoder::OnConfigure(const Format &format)
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    ret = SetVrrEnable(format);
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
+    (void)SetVrrEnable(format);
 #endif
     return SetupPort(format);
 }
@@ -402,14 +399,13 @@ int32_t HDecoder::SetScaleMode()
 int32_t HDecoder::SetVrrEnable(const Format &format)
 {
     int32_t vrrEnable = 0;
-    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, vrrEnable) || vrrEnable == 0) {
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, vrrEnable) || vrrEnable != 1) {
         HLOGI("VRR disabled");
         return AVCS_ERR_OK;
     }
     optional<double> frameRate = GetFrameRateFromUser(format);
-    if (frameRate.has_value() && floor(frameRate.value()) != VRR_DEFAULT_INPUT_FRAME_RATE
-        && ceil(frameRate.value()) != VRR_DEFAULT_INPUT_FRAME_RATE) {
-        HLOGE("VRR only support for 60fps, current frameRate = %f", frameRate.value());
+    if (!frameRate.has_value()) {
+        HLOGE("VRR without frameRate");
         return AVCS_ERR_UNSUPPORT;
     }
 
