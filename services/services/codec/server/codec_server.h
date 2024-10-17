@@ -191,6 +191,9 @@ private:
     std::shared_ptr<DecodedBufferInfoQueue> postProcessingOutputBufferInfoQueue_{nullptr};
     std::unique_ptr<TaskThread> postProcessingTask_{nullptr};
     Format outputFormatChanged_;
+    std::atomic<uint64_t> decodedFrameCount_{0};
+    std::atomic<uint64_t> processedFrameCount_{0};
+    std::atomic<bool> decoderIsEOS_{false};
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

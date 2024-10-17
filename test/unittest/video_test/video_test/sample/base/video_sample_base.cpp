@@ -31,10 +31,7 @@ namespace MediaAVCodec {
 namespace Sample {
 VideoSampleBase::~VideoSampleBase()
 {
-    StartRelease();
-    if (releaseThread_ && releaseThread_->joinable()) {
-        releaseThread_->join();
-    }
+    InnerRelease();
 }
 
 int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
@@ -45,7 +42,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     context_ = std::make_shared<SampleContext>();
     context_->sampleInfo = std::make_shared<SampleInfo>(sampleInfo);
     auto &info = *context_->sampleInfo;
-    auto &videoCodec = context_->videoCodec_;
+    auto &videoCodec = context_->videoCodec;
 
     dataProducer_ = DataProducerFactory::CreateDataProducer(info.dataProducerInfo.dataProducerType);
     CHECK_AND_RETURN_RET_LOG(dataProducer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create data producer failed");
@@ -65,7 +62,6 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     ret = videoCodec->Config(info, reinterpret_cast<uintptr_t *>(context_.get()));
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec config failed");
 
-    releaseThread_ = nullptr;
     AVCODEC_LOGI("Succeed");
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -75,14 +71,14 @@ int32_t VideoSampleBase::Start()
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
     
-    auto &videoCodec = context_->videoCodec_;
+    auto &videoCodec = context_->videoCodec;
     CHECK_AND_RETURN_RET_LOG(videoCodec != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
 
     int32_t ret = videoCodec->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Codec start failed");
 
-    ret = StartThread();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Codec thread start failed");
+    ret = Prepare();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Prepare failed");
 
     AVCODEC_LOGI("Succeed");
     return AVCODEC_SAMPLE_ERR_OK;
@@ -93,7 +89,7 @@ int32_t VideoSampleBase::Init()
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoSampleBase::StartThread()
+int32_t VideoSampleBase::Prepare()
 {
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -114,15 +110,11 @@ void VideoSampleBase::Release()
     outputFile_ = nullptr;
 
     AVCODEC_LOGI("Succeed");
-    doneCond_.notify_all();
 }
 
-void VideoSampleBase::StartRelease()
+void VideoSampleBase::InnerRelease()
 {
-    if (releaseThread_ == nullptr) {
-        AVCODEC_LOGI("Start to release");
-        releaseThread_ = std::make_unique<std::thread>(&VideoSampleBase::Release, this);
-    }
+    Release();
 }
 
 void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
@@ -161,13 +153,13 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
 
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     if (!(info.codecType & 0b10)) {   // 0b10: Video encoder mask
-        WriteOutputFileWithStrideYUV420(bufferAddr, bufferInfo.attr.size);
+        WriteOutputFileWithStrideYUV420(bufferAddr);
     } else {
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
     }
 }
 
-void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint32_t size)
+void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr)
 {
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     auto &info = *context_->sampleInfo;
@@ -192,13 +184,13 @@ void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint3
 
 void VideoSampleBase::PushEosFrame()
 {
-    auto bufferInfoOpt = context_->inputBufferQueue.DequeueBuffer();
+    auto bufferInfoOpt = context_->inputBufferQueue.DequeueBuffer(100); // 100ms
     CHECK_AND_RETURN(bufferInfoOpt != std::nullopt);
     auto &bufferInfo = bufferInfoOpt.value();
 
     bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
 
-    (void)context_->videoCodec_->PushInput(bufferInfo);
+    (void)context_->videoCodec->PushInput(bufferInfo);
 }
 } // Sample
 } // MediaAVCodec

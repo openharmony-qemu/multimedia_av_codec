@@ -92,7 +92,7 @@ int32_t RunSample(const SampleInfo &info)
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
     ret = sample->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Start failed");
-    ret = sample->WaitForDone();
+    ret = sample->WaitForSampleDone();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Wait for done failed");
     return AVCODEC_SAMPLE_ERR_OK;
 }

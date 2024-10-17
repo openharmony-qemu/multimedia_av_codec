@@ -65,6 +65,11 @@ enum BitstreamType {
     BITSTREAM_TYPE_AVCC,
 };
 
+enum DemuxerSourceType {
+    DEMUXER_SOURCE_TYPE_FILE,
+    DEMUXER_SOURCE_TYPE_URI,
+};
+
 /*   CodecRunMode description
  *   +-----+-------+--------------+
  *   | Bit |   1   |      0       |
@@ -91,6 +96,7 @@ struct DataProducerInfo {
     DataProducerType dataProducerType = DATA_PRODUCER_TYPE_DEMUXER;
     BitstreamType bitstreamType = BITSTREAM_TYPE_ANNEXB;
     OH_AVSeekMode seekMode = SEEK_MODE_PREVIOUS_SYNC;
+    DemuxerSourceType demuxerSourceType = DEMUXER_SOURCE_TYPE_FILE;
 };
 
 enum CodecConsumerType {

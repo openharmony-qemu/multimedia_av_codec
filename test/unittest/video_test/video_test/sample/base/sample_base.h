@@ -29,9 +29,11 @@ public:
 
     virtual int32_t Create(SampleInfo sampleInfo) = 0;
     virtual int32_t Start() = 0;
-    virtual int32_t WaitForDone();
+    virtual int32_t WaitForSampleDone();
 
 protected:
+    virtual int32_t NotifySampleDone();
+
     std::mutex mutex_;
     std::condition_variable doneCond_;
 };
