@@ -162,6 +162,24 @@ Status FFmpegDemuxerPlugin::InitIoContext()
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::ParserRefCheckVideoValid(const AVStream *videoStream)
+{
+    if (videoStream == nullptr) {
+        MEDIA_LOG_E("videoStream is nullptr: video track id %{public}d, trackNums %{public}u",
+            parserRefVideoStreamIdx_, parserRefFormatContext_->nb_streams);
+        return Status::ERROR_UNKNOWN;
+    }
+    if (videoStream->codecpar == nullptr) {
+        MEDIA_LOG_E("videoStream->codecpar is nullptr: video track id %{public}d, trackNums %{public}u",
+            parserRefVideoStreamIdx_, parserRefFormatContext_->nb_streams);
+        return Status::ERROR_UNKNOWN;
+    }
+    FALSE_RETURN_V_MSG_E(
+        videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC || videoStream->codecpar->codec_id == AV_CODEC_ID_H264,
+        Status::ERROR_UNSUPPORTED_FORMAT, "Codec type not support " PUBLIC_LOG_D32, videoStream->codecpar->codec_id);
+    return Status::OK;
+}
+
 Status FFmpegDemuxerPlugin::ParserRefInit()
 {
     FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0 && fps_ > 0, Status::ERROR_UNKNOWN,
@@ -174,7 +192,7 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
     for (uint32_t trackIndex = 0; trackIndex < parserRefFormatContext_->nb_streams; trackIndex++) {
         AVStream *stream = parserRefFormatContext_->streams[trackIndex];
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_UNKNOWN,
-			     "AVStream or codecpar is nullptr, track " PUBLIC_LOG_U32, trackIndex);
+            "AVStream or codecpar is nullptr, track " PUBLIC_LOG_U32, trackIndex);
         if (stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
             stream->discard = AVDISCARD_ALL;
         } else {
@@ -183,10 +201,9 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
     }
     FALSE_RETURN_V_MSG_E(parserRefVideoStreamIdx_ >= 0, Status::ERROR_UNKNOWN, "Can not find video stream");
     AVStream *videoStream = parserRefFormatContext_->streams[parserRefVideoStreamIdx_];
+    FALSE_RETURN_V_MSG_E(ParserRefCheckVideoValid(videoStream) == Status::OK, Status::ERROR_UNKNOWN,
+        "ParserRefCheckVideoValid failed");
     processingIFrame_.assign(IFramePos_.begin(), IFramePos_.end());
-    FALSE_RETURN_V_MSG_E(
-        videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC || videoStream->codecpar->codec_id == AV_CODEC_ID_H264,
-        Status::ERROR_UNSUPPORTED_FORMAT, "Codec type not support " PUBLIC_LOG_D32, videoStream->codecpar->codec_id);
     ParserFirstDts();
     CodecType codecType = videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC ? CodecType::H265 : CodecType::H264;
     referenceParser_ = ReferenceParserManager::Create(codecType, IFramePos_);
@@ -289,7 +306,7 @@ Status FFmpegDemuxerPlugin::GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId)
     }
     gopId = std::upper_bound(IFramePos_.begin(), IFramePos_.end(), iFrameIdx) - IFramePos_.begin() - 1;
     if (gopId < 0) {
-        gopId = IFramePos_.size() - 1;
+        gopId = static_cast<int32_t>(IFramePos_.size()) - 1;
     }
     return Status::OK;
 }
@@ -421,7 +438,7 @@ Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId, bool off
     } else {
         frameId = 0;
     }
-    
+
     MEDIA_LOG_D("Out, frameId: " PUBLIC_LOG_D32 ", dts: " PUBLIC_LOG_D64, frameId, dts);
     return Status::OK;
 }
