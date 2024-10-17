@@ -97,6 +97,7 @@ private:
     void OnClearBufferPool(OMX_DIRTYPE portIndex) override;
     void CancelBufferToSurface(BufferInfo &info);
     void OnEnterUninitializedState() override;
+    void ClearBufferList() override;
 
     // VRR
 #ifdef USE_VIDEO_PROCESSING_ENGINE

@@ -1048,6 +1048,11 @@ void HDecoder::OnEnterUninitializedState()
     currSurface_.Release();
 }
 
+void HDecoder::ClearBufferList()
+{
+    freeList_.clear();
+}
+
 HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface)
     : surface_(surface), originalTransform_(surface->GetTransform()) {}
 
