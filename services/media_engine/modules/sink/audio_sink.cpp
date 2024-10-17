@@ -681,6 +681,13 @@ Status AudioSink::SetMuted(bool isMuted)
     return plugin_->SetMuted(isMuted);
 }
 
+Status AudioSink::SetSeekTime(int64_t seekTime)
+{
+    MEDIA_LOG_I("AudioSink SetSeekTime pts = " PUBLIC_LOG_D64, seekTime);
+    seekTimeUs_ = seekTime;
+    return Status::OK;
+}
+
 int32_t AudioSink::SetMaxAmplitudeCbStatus(bool status)
 {
     calMaxAmplitudeCbStatus_ = status;
