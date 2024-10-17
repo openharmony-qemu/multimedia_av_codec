@@ -93,6 +93,7 @@ ohos_unittest("videodec_capi_unit_test") {
     "./common/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videodec_capi_mock.cpp",
+    "./func_sample/sample/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_func_unit_test.cpp",
   ]
@@ -149,6 +150,7 @@ ohos_unittest("videodec_inner_unit_test") {
     "./common/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videodec_inner_mock.cpp",
+    "./func_sample/sample/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_func_unit_test.cpp",
   ]
@@ -455,6 +457,7 @@ ohos_unittest("videodec_hdrvivid2sdr_capi_unit_test") {
     "./common/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videodec_capi_mock.cpp",
+    "./func_sample/sample/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_hdrvivid2sdr_unit_test.cpp",
   ]
@@ -504,7 +507,7 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_unit_test") {
     "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
-  defines = [ "VIDEODEC_INNER_UNIT_TEST" ]
+  defines = [ "VIDEODEC_HDRVIVID2SDR_INNER_UNIT_TEST" ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
   }
@@ -517,6 +520,7 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_unit_test") {
     "./common/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videodec_inner_mock.cpp",
+    "./func_sample/sample/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_hdrvivid2sdr_unit_test.cpp",
   ]
