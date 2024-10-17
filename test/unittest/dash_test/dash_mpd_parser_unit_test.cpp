@@ -571,6 +571,37 @@ HWTEST_F(DashMpdParserUnitTest, Test_Base64, TestSize.Level1)
     ret = Base64Utils::Base64Decode(src, srcSize, dest, &destSize);
     EXPECT_FALSE(ret);
 }
+
+HWTEST_F(DashMpdParserUnitTest, Test_Base64_001, TestSize.Level1)
+{
+    uint8_t src[5] = {0}; // 5: srcSize
+    uint8_t dest[20]; // 20:destSize
+    uint32_t destSize = sizeof(dest);
+    bool ret = Base64Utils::Base64Decode(src, 5, dest, &destSize); // 5: srcSize
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_Base64_002, TestSize.Level1)
+{
+    const uint8_t src[] = "dGVzdCBzdHJpbmc="; // base64 编码的 "test string"
+    uint8_t dest[20];                         // 20:预期解码输出的大小
+    uint32_t destSize = sizeof(dest);
+
+    bool ret = Base64Utils::Base64Decode(src, sizeof(src) - 1, dest, &destSize);
+    ASSERT_TRUE(ret);
+    ASSERT_EQ(destSize, 11u); // 11:"test string" 的长度
+    ASSERT_EQ(std::string(reinterpret_cast<char *>(dest), destSize), "test string");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_Base64_003, TestSize.Level1)
+{
+    const uint8_t src[] = "€€€€";
+    uint8_t dest[20]; // 20:destSize
+    uint32_t destSize = sizeof(dest);
+
+    bool ret = Base64Utils::Base64Decode(src, sizeof(src) - 1, dest, &destSize);
+    EXPECT_FALSE(ret);
+}
 }
 }
 }
