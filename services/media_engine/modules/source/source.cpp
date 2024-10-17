@@ -308,13 +308,16 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     }
 }
 
-void Source::SetSelectBitRateFlag(bool flag)
+void Source::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
 {
-    mediaDemuxerCallback_->SetSelectBitRateFlag(flag);
+    if (mediaDemuxerCallback_) {
+        mediaDemuxerCallback_->SetSelectBitRateFlag(flag, desBitRate);
+    }
 }
 
 bool Source::CanAutoSelectBitRate()
 {
+    FALSE_RETURN_V_MSG_E(mediaDemuxerCallback_ != nullptr, false, "mediaDemuxerCallback_ is nullptr.");
     return mediaDemuxerCallback_->CanAutoSelectBitRate();
 }
 
