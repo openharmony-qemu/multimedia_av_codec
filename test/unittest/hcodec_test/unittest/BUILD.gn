@@ -31,7 +31,7 @@ config("hcodec_unittest_cfg") {
 ohos_unittest("hdecoder_unit_test") {
   if (defined(av_codec_support_video_processing_engine) &&
       av_codec_support_video_processing_engine) {
-    defines += [ "USE_VIDEO_PROCESSING_ENGINE" ]
+    defines = [ "USE_VIDEO_PROCESSING_ENGINE" ]
   }
   sanitize = av_codec_test_sanitize
   testonly = true
@@ -119,7 +119,7 @@ ohos_unittest("hencoder_buffer_unit_test") {
 ohos_unittest("hdecoder_buffer_unit_test") {
   if (defined(av_codec_support_video_processing_engine) &&
       av_codec_support_video_processing_engine) {
-    defines += [ "USE_VIDEO_PROCESSING_ENGINE" ]
+    defines = [ "USE_VIDEO_PROCESSING_ENGINE" ]
   }
   sanitize = av_codec_test_sanitize
   testonly = true
