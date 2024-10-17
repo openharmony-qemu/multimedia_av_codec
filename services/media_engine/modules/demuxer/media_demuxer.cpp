@@ -1789,7 +1789,6 @@ bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
         if (result) {
             targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
             streamDemuxer_->SetChangeFlag(true);
-            isSelectTrack_.store(false);
             return true;
         }
     }
