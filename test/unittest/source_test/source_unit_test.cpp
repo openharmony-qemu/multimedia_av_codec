@@ -55,9 +55,10 @@ public:
         (void)event;
     }
 
-    void SetSelectBitRateFlag(bool flag) override
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
     {
         (void)flag;
+        (void)desBitRate;
     }
 
     bool CanAutoSelectBitRate() override

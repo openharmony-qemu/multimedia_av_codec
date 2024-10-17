@@ -415,10 +415,6 @@ int32_t HCodec::SetLowLatency(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, enableLowLatency)) {
         return AVCS_ERR_OK;
     }
-    if (!caps_.port.video.isSupportLowLatency) {
-        HLOGW("platform not support LowLatency");
-        return AVCS_ERR_OK;
-    }
 
     OMX_CONFIG_BOOLEANTYPE param {};
     InitOMXParam(param);
@@ -469,6 +465,18 @@ std::optional<double> HCodec::GetFrameRateFromUser(const Format &format)
         return static_cast<double>(frameRateInt);
     }
     return nullopt;
+}
+
+bool HCodec::CheckBufPixFmt(const sptr<SurfaceBuffer>& buffer)
+{
+    int32_t dispFmt = buffer->GetFormat();
+    const std::vector<int32_t>& supportFmts = caps_.port.video.supportPixFmts;
+    if (std::find(supportFmts.begin(), supportFmts.end(), dispFmt) == supportFmts.end()) {
+        LOGE("unsupported buffer pixel format %d", dispFmt);
+        callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INPUT_DATA_ERROR);
+        return false;
+    }
+    return true;
 }
 
 int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
@@ -889,38 +897,37 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     bufferInfo->omxBuffer->flag = UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_));
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
-    OnQueueInputBuffer(mode, bufferInfo);
+    int32_t ret = OnQueueInputBuffer(mode, bufferInfo);
+    if (ret != AVCS_ERR_OK) {
+        SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
+    }
 }
 
-void HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
+int32_t HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
 {
     switch (mode) {
         case KEEP_BUFFER: {
-            return;
+            return AVCS_ERR_OK;
         }
         case RESUBMIT_BUFFER: {
             if (inputPortEos_) {
                 HLOGI("input already eos, keep this buffer");
-                return;
+                return AVCS_ERR_OK;
             }
             bool eos = (info->omxBuffer->flag & OMX_BUFFERFLAG_EOS);
             if (!eos && info->omxBuffer->filledLen == 0) {
                 HLOGI("this is not a eos buffer but not filled, ask user to re-fill it");
                 NotifyUserToFillThisInBuffer(*info);
-                return;
+                return AVCS_ERR_OK;
             }
             if (eos) {
                 inputPortEos_ = true;
             }
-            int32_t ret = NotifyOmxToEmptyThisInBuffer(*info);
-            if (ret != AVCS_ERR_OK) {
-                SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
-            }
-            return;
+            return NotifyOmxToEmptyThisInBuffer(*info);
         }
         default: {
             HLOGE("SHOULD NEVER BE HERE");
-            return;
+            return AVCS_ERR_UNKNOWN;
         }
     }
 }

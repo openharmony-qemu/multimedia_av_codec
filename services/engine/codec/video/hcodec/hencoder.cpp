@@ -115,7 +115,7 @@ int32_t HEncoder::SetRepeat(const Format &format)
         HLOGW("invalid repeatMs %d", repeatMs);
         return AVCS_ERR_INVALID_VAL;
     }
-    repeatUs_ = repeatMs * TIME_RATIO_S_TO_MS;
+    repeatUs_ = static_cast<uint64_t>(repeatMs * TIME_RATIO_S_TO_MS);
 
     int repeatMaxCnt = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatMaxCnt)) {
@@ -133,10 +133,6 @@ int32_t HEncoder::SetLTRParam(const Format &format)
 {
     int32_t ltrFrameNum = -1;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum)) {
-        return AVCS_ERR_OK;
-    }
-    if (!caps_.port.video.isSupportLTR) {
-        HLOGW("platform not support LTR");
         return AVCS_ERR_OK;
     }
     if (ltrFrameNum <= 0 || ltrFrameNum > caps_.port.video.maxLTRFrameNum) {
@@ -203,10 +199,6 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
         (enableTemporalScale == 0)) {
         return AVCS_ERR_OK;
     }
-    if (!caps_.port.video.isSupportTSVC) {
-        HLOGW("platform not support temporal scale");
-        return AVCS_ERR_OK;
-    }
     Media::Plugins::TemporalGopReferenceMode GopReferenceMode{};
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
         *reinterpret_cast<int *>(&GopReferenceMode)) ||
@@ -233,7 +225,7 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
             HLOGE("user set invalid temporal gop size %d", temporalGopSize);
             return AVCS_ERR_INVALID_VAL;
     }
-    
+
     if (!SetParameter(OMX_IndexParamTemperalLayer, temperalLayerParam)) {
         HLOGE("set temporal layer param failed");
         return AVCS_ERR_UNKNOWN;
@@ -290,7 +282,7 @@ int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
     int32_t ret = compNode_->SetParameterWithBuffer(CodecHDI::Codec_IndexParamOverlayBuffer, inVec, omxbuffer);
     if (ret != HDF_SUCCESS) {
         HLOGE("SetParameterWithBuffer failed");
-        return AVCS_ERR_UNKNOWN;
+        return AVCS_ERR_INVALID_VAL;
     }
     HLOGI("SetParameterWithBuffer succ");
     return AVCS_ERR_OK;
@@ -365,6 +357,8 @@ int32_t HEncoder::SetupPort(const Format &format, std::optional<double> frameRat
         HLOGE("format should contain height");
         return AVCS_ERR_INVALID_VAL;
     }
+    width_ = static_cast<uint32_t>(width);
+    height_ = static_cast<uint32_t>(height);
     HLOGI("user set width %d, height %d", width, height);
     if (!GetPixelFmtFromUser(format)) {
         return AVCS_ERR_INVALID_VAL;
@@ -980,6 +974,21 @@ void HEncoder::WrapIsSkipFrameIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer>
     AppendToVector(omxBuffer->alongParam, isSkip);
 }
 
+void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)
+{
+    if (width_ != newWidth || height_ != newHeight) {
+        HLOGI("resolution changed, %ux%u -> %ux%u", width_, height_, newWidth, newHeight);
+        width_ = newWidth;
+        height_ = newHeight;
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
+        HLOGI("output format changed: %s", outputFormat_->Stringify().c_str());
+        callback_->OnOutputFormatChanged(*(outputFormat_.get()));
+    }
+}
+
 void HEncoder::ExtractPerFrameParamFromOmxBuffer(
     const shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer, shared_ptr<Media::Meta> &meta)
 {
@@ -988,20 +997,22 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
     int* index = nullptr;
     while ((index = reader.Read<int>()) != nullptr) {
         switch (*index) {
+            case OMX_IndexConfigCommonOutputSize: {
+                auto *param = reader.Read<OMX_FRAMESIZETYPE>();
+                IF_TRUE_RETURN_VOID(param == nullptr);
+                DealWithResolutionChange(param->nWidth, param->nHeight);
+                break;
+            }
             case OMX_IndexParamEncOutQp: {
                 auto *averageQp = reader.Read<OMX_S32>();
-                if (averageQp == nullptr) {
-                    return;
-                }
+                IF_TRUE_RETURN_VOID(averageQp == nullptr);
                 HLOGD("pts=%" PRId64 ", averageQp=(%d)", omxBuffer->pts, *averageQp);
                 meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, *averageQp);
                 break;
             }
             case OMX_IndexParamEncOutMse: {
                 auto *averageMseLcu = reader.Read<double>();
-                if (averageMseLcu == nullptr) {
-                    return;
-                }
+                IF_TRUE_RETURN_VOID(averageMseLcu == nullptr);
                 HLOGD("pts=%" PRId64 ", averageMseLcu=(%f)", omxBuffer->pts, *averageMseLcu);
                 meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, *averageMseLcu);
                 break;
@@ -1013,9 +1024,7 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
             }
             case OMX_IndexParamEncOutFrameLayer: {
                 auto *frameLayer = reader.Read<OMX_S32>();
-                if (frameLayer == nullptr) {
-                    return;
-                }
+                IF_TRUE_RETURN_VOID(frameLayer == nullptr);
                 HLOGD("pts=%" PRId64 ", frameLayer=(%d)", omxBuffer->pts, *frameLayer);
                 meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_TEMPORAL_ID, *frameLayer);
                 break;
@@ -1109,7 +1118,11 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
     WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
-    HCodec::OnQueueInputBuffer(mode, bufferInfo);
+    int32_t err = HCodec::OnQueueInputBuffer(mode, bufferInfo);
+    if (err != AVCS_ERR_OK) {
+        ResetSlot(*bufferInfo);
+        callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INPUT_DATA_ERROR);
+    }
 }
 
 void HEncoder::OnGetBufferFromSurface(const ParamSP& param)
@@ -1127,6 +1140,9 @@ bool HEncoder::GetOneBufferFromSurface()
     GSError ret = inputSurface_->AcquireBuffer(
         entry.item->buffer, entry.item->fence, entry.pts, entry.item->damage);
     if (ret != GSERROR_OK || entry.item->buffer == nullptr) {
+        return false;
+    }
+    if (!CheckBufPixFmt(entry.item->buffer)) {
         return false;
     }
     entry.item->generation = ++currGeneration_;
@@ -1165,7 +1181,7 @@ void HEncoder::RepeatIfNecessary(const ParamSP& param)
         HLOGW("stop repeat, list size to big: %zu", avaliableBuffers_.size());
         return;
     }
-    int64_t newPts = newestBuffer_.pts + repeatUs_;
+    int64_t newPts = newestBuffer_.pts + static_cast<int64_t>(repeatUs_);
     HLOGD("generation = %" PRIu64 ", seq = %u, pts %" PRId64 " -> %" PRId64,
           generation, newestBuffer_.item->buffer->GetSeqNum(), newestBuffer_.pts, newPts);
     newestBuffer_.pts = newPts;
@@ -1213,6 +1229,8 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         HLOGI("got input eos");
         inputPortEos_ = true;
         info.omxBuffer->flag = OMX_BUFFERFLAG_EOS;
+        info.omxBuffer->bufferhandle = nullptr;
+        info.omxBuffer->filledLen = 0;
         info.surfaceBuffer = nullptr;
         NotifyOmxToEmptyThisInBuffer(info);
         return;
@@ -1230,6 +1248,7 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         int32_t err = NotifyOmxToEmptyThisInBuffer(info);
         if (err != AVCS_ERR_OK) {
             ResetSlot(info);
+            callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INPUT_DATA_ERROR);
         }
     }
 }
