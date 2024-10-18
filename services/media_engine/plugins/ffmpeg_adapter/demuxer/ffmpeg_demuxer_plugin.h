@@ -90,6 +90,7 @@ private:
         GET_FIRST_PTS,
         INDEX_TO_RELATIVEPTS,
         RELATIVEPTS_TO_INDEX,
+        GET_ALL_FRAME_PTS,
     };
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
@@ -197,6 +198,7 @@ private:
     std::vector<uint32_t> IFramePos_;
     double fps_{0};
     int64_t firstDts_ = 0;
+    uint32_t dtsOffset_ = 0;
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
     bool updatePosIsForward_ = true;
@@ -228,6 +230,11 @@ private:
     int avpacketIndex_ {0};
 
     static void Dump(const DumpParam &dumpParam);
+
+    std::vector<int64_t> ptsListOrg_;
+    std::vector<int64_t> ptsListFromZero_;
+    std::unordered_map<int32_t, int64_t> iFramePtsMap_;
+    Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
 };
 } // namespace Ffmpeg
 } // namespace Plugins

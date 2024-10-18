@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,7 +34,7 @@ using namespace Media;
 using namespace Plugins;
 using namespace std;
 
-TemporalScalability::TemporalScalability(string name) : name_(name)
+TemporalScalability::TemporalScalability(const string &name) : name_(name)
 {
     inputIndexQueue_ = make_shared<BlockQueue<uint32_t>>("inputIndexQueue");
 }
@@ -58,7 +58,7 @@ bool TemporalScalability::IsLTRSolution()
     return false;
 }
 
-int32_t TemporalScalability::LTRFrameNumCalculate(int32_t tGopSize)
+int32_t TemporalScalability::LTRFrameNumCalculate(int32_t tGopSize) const
 {
     if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         return DEFAULT_VIDEO_LTR_FRAME_NUM;
@@ -76,12 +76,14 @@ void TemporalScalability::ValidateTemporalGopParam(Format &format)
         AVCODEC_LOGI("Set temporal gop size successfully, value is %{public}d.", temporalGopSize_);
     } else {
         temporalGopSize_ = gopSize_ <= DEFAULT_TEMPORAL_GOPSIZE ? MIN_TEMPORAL_GOPSIZE : DEFAULT_TEMPORAL_GOPSIZE;
+        format.PutIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_);
         AVCODEC_LOGI("Get temporal gop size failed, use default value %{public}d.", temporalGopSize_);
     }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_)) {
         AVCODEC_LOGI("Set temporal reference mode successfully.");
     } else {
         tRefMode_ = static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE);
+        format.PutIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_);
         AVCODEC_LOGI("Get temporal reference mode failed, use default value ADJACENT_REFERENCE.");
     }
     svcLTR_ = IsLTRSolution();
@@ -194,7 +196,7 @@ void TemporalScalability::LTRDecision()
     }
 }
 
-uint32_t TemporalScalability::DisposableDecision()
+uint32_t TemporalScalability::DisposableDecision() const
 {
     if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         if (!isMarkLTR_) {
