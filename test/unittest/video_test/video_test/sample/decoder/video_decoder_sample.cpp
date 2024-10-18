@@ -35,6 +35,9 @@ namespace MediaAVCodec {
 namespace Sample {
 VideoDecoderSample::~VideoDecoderSample()
 {
+    if (context_) {
+        context_->videoCodec = nullptr;
+    }
     if (rosenWindow_) {
         rosenWindow_->Destroy();
         rosenWindow_ = nullptr;
@@ -51,13 +54,12 @@ int32_t VideoDecoderSample::Init()
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoderSample::StartThread()
+int32_t VideoDecoderSample::Prepare()
 {
     inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);
     outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
     if (inputThread_ == nullptr || outputThread_ == nullptr) {
         AVCODEC_LOGE("Create thread failed");
-        StartRelease();
         return AVCODEC_SAMPLE_ERR_ERROR;
     }
     return AVCODEC_SAMPLE_ERR_OK;
@@ -80,13 +82,12 @@ void VideoDecoderSample::InputThread()
 
         ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP, info.frameInterval);
 
-        ret = context_->videoCodec_->PushInput(bufferInfo);
+        ret = context_->videoCodec->PushInput(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputBufferQueue.GetFrameCount());
     PushEosFrame();
-    StartRelease();
 }
 
 void VideoDecoderSample::OutputThread()
@@ -104,11 +105,12 @@ void VideoDecoderSample::OutputThread()
         DumpOutput(bufferInfo);
         ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP, info.frameInterval);
 
-        int32_t ret = context_->videoCodec_->FreeOutput(bufferInfo.bufferIndex);
+        int32_t ret = context_->videoCodec->FreeOutput(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");
     }
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
     OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputBufferQueue.GetFrameCount());
+    NotifySampleDone();
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputBufferQueue.GetFrameCount());
 }
 

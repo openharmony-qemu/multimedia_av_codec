@@ -27,7 +27,7 @@ public:
 
 private:
     int32_t Init() override;
-    int32_t StartThread() override;
+    int32_t Prepare() override;
     void BufferInputThread();
     void SurfaceInputThread();
     void OutputThread();

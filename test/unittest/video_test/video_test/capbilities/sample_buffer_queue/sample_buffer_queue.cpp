@@ -29,12 +29,11 @@ int32_t SampleBufferQueue::QueueBuffer(const CodecBufferInfo& bufferInfo)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-std::optional<CodecBufferInfo> SampleBufferQueue::DequeueBuffer()
+std::optional<CodecBufferInfo> SampleBufferQueue::DequeueBuffer(int32_t timeoutMs)
 {
     std::unique_lock<std::mutex> lock(mutex_);
-    using namespace std::chrono_literals;
 
-    (void)cond_.wait_for(lock, 5s, [this]() { return !bufferQueue_.empty(); });
+    (void)cond_.wait_for(lock, std::chrono::milliseconds(timeoutMs), [this]() { return !bufferQueue_.empty(); });
     CHECK_AND_RETURN_RET(!bufferQueue_.empty(), std::nullopt);
 
     CodecBufferInfo bufferInfo = bufferQueue_.front();

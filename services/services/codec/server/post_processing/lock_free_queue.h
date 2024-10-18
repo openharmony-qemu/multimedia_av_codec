@@ -98,7 +98,7 @@ public:
         return QueueResult::OK;
     }
 
-    bool PopWait(T& data)
+    QueueResult PopWait(T& data)
     {
         CHECK_AND_RETURN_RET_LOG(data_, QueueResult::NO_MEMORY, "Queue %{public}s has no memory", name_.data());
         if (!active_.load()) {
