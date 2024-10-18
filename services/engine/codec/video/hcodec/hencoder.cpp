@@ -135,6 +135,10 @@ int32_t HEncoder::SetLTRParam(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum)) {
         return AVCS_ERR_OK;
     }
+    if (!caps_.port.video.isSupportLTR) {
+        HLOGW("platform not support LTR");
+        return AVCS_ERR_OK;
+    }
     if (ltrFrameNum <= 0 || ltrFrameNum > caps_.port.video.maxLTRFrameNum) {
         HLOGE("invalid ltrFrameNum %d", ltrFrameNum);
         return AVCS_ERR_INVALID_VAL;
@@ -197,6 +201,10 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
     int32_t enableTemporalScale = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enableTemporalScale) ||
         (enableTemporalScale == 0)) {
+        return AVCS_ERR_OK;
+    }
+    if (!caps_.port.video.isSupportTSVC) {
+        HLOGW("platform not support temporal scale");
         return AVCS_ERR_OK;
     }
     Media::Plugins::TemporalGopReferenceMode GopReferenceMode{};
