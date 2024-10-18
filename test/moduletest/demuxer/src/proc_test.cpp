@@ -166,7 +166,6 @@ static void IsHdrVivid(OH_AVFormat *paramFormat)
 
 static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
 {
-    int akeyCount = 0;
     int tarckType = 0;
     OH_AVCodecBufferAttr bufferAttr;
     bool audioIsEnd = false;
@@ -194,9 +193,6 @@ static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
                 continue;
             }
             audioFrameAll++;
-            if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                akeyCount++;
-            }
         }
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
