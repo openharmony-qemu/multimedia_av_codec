@@ -54,7 +54,7 @@ public:
     virtual int32_t GetUserMeta(OHOS::Media::Format &format) = 0;
 
     std::string sourceUri;
-    std::shared_ptr<Media::MediaDemuxer> demuxerEngine = nullptr;
+    std::shared_ptr<Media::MediaDemuxer> mediaDemuxer = nullptr;
 };
 
 class __attribute__((visibility("default"))) AVSourceFactory {
