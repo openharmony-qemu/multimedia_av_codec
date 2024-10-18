@@ -19,6 +19,7 @@
 #include "buffer/avbuffer.h"
 #include "v3_0/codec_ext_types.h"
 #include "v3_0/icodec_component_manager.h"
+#include "avcodec_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -55,7 +56,7 @@ public:
 
     Status InitComponent(const std::string &name);
 
-    bool IsSupportCodecType(const std::string &name);
+    bool IsSupportCodecType(const std::string &name, MediaAVCodec::CapabilityData *audioCapability);
 
     void InitParameter(AudioCodecOmxParam &param);
 
