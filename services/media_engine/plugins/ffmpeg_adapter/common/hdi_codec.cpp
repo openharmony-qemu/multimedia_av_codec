@@ -25,7 +25,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Hdi {
-constexpr int SAMPLE_RATE_NUM 16
 HdiCodec::HdiCodec()
     : componentId_(0),
       componentName_(""),
