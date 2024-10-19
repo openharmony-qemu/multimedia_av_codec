@@ -271,13 +271,13 @@ Status HdiCodec::Reset()
     {
         std::unique_lock lock(inMutex_);
         FreeBuffer(PortIndex::INPUT_PORT, omxInBufferInfo_->omxBuffer);
+        omxInBufferInfo_->Reset();
     }
     {
         std::unique_lock lock(outMutex_);
         FreeBuffer(PortIndex::OUTPUT_PORT, omxOutBufferInfo_->omxBuffer);
+        omxOutBufferInfo_->Reset();
     }
-    omxInBufferInfo_->Reset();
-    omxOutBufferInfo_->Reset();
     return Status::OK;
 }
 
@@ -286,13 +286,13 @@ void HdiCodec::Release()
     {
         std::unique_lock lock(inMutex_);
         FreeBuffer(PortIndex::INPUT_PORT, omxInBufferInfo_->omxBuffer);
+        omxInBufferInfo_->Reset();
     }
     {
         std::unique_lock lock(outMutex_);
         FreeBuffer(PortIndex::OUTPUT_PORT, omxOutBufferInfo_->omxBuffer);
+        omxOutBufferInfo_->Reset();
     }
-    omxInBufferInfo_->Reset();
-    omxOutBufferInfo_->Reset();
     
     if (compMgr_ != nullptr && componentId_ > 0) {
         compMgr_->DestroyComponent(componentId_);
