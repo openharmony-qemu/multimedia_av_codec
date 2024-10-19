@@ -284,36 +284,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_DoInitAfterLink_0100
     std::cout << "DoInitAfterLink " << static_cast<int32_t>(res) << std::endl;
 }
 
-HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_DoPrepareFrame_0100, TestSize.Level1)
-{
-    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
-    auto res = decoderSurfaceFilter_->DoPrepareFrame(true);
-    EXPECT_NE(res, Status::OK);
-    std::cout << "DoPrepareFrame " << static_cast<int32_t>(res) << std::endl;
-    decoderSurfaceFilter_->isPaused_ = true;
-    res = decoderSurfaceFilter_->DoPrepareFrame(false);
-    EXPECT_EQ(res, Status::OK);
-    std::cout << "DoPrepareFrame2 " << static_cast<int32_t>(res) << std::endl;
-    decoderSurfaceFilter_->isPaused_ = true;
-    res = decoderSurfaceFilter_->DoPrepareFrame(true);
-    EXPECT_EQ(res, Status::OK);
-    std::cout << "DoPrepareFrame3 " << static_cast<int32_t>(res) << std::endl;
-    decoderSurfaceFilter_->isPaused_ = true;
-    res = decoderSurfaceFilter_->DoPrepareFrame(false);
-    EXPECT_EQ(res, Status::OK);
-    std::cout << "DoPrepareFrame4 " << static_cast<int32_t>(res) << std::endl;
-    decoderSurfaceFilter_->isPaused_ = false;
-}
-
-HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_HandleInputBuffer_0100, TestSize.Level1)
-{
-    auto res = decoderSurfaceFilter_->HandleInputBuffer();
-    EXPECT_EQ(res, Status::OK);
-    decoderSurfaceFilter_->doPrepareFrame_ = true;
-    res = decoderSurfaceFilter_->HandleInputBuffer();
-    EXPECT_EQ(res, Status::OK);
-}
-
 HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_DoStart_0100, TestSize.Level1)
 {
     system::SetParameter("persist.media_service.async_filter", "0");
@@ -1032,14 +1002,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, ResetSeekInfo_001, TestSize.Level1)
 
     EXPECT_EQ(decoderSurfaceFilter_->isSeek_, false);
     EXPECT_EQ(decoderSurfaceFilter_->seekTimeUs_, 0);
-}
-
-HWTEST_F(DecoderSurfaceFilterUnitTest, WaitPrepareFrame_001, TestSize.Level1)
-{
-    Status status = decoderSurfaceFilter_->WaitPrepareFrame();
-
-    EXPECT_EQ(status, Status::OK);
-    EXPECT_EQ(decoderSurfaceFilter_->doPrepareFrame_, false);
 }
 
 HWTEST_F(DecoderSurfaceFilterUnitTest, GetDecRateUpperLimit_001, TestSize.Level1)

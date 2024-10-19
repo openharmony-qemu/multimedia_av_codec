@@ -82,7 +82,6 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_002, TestSize.Level1)
     std::shared_ptr<TestEventReceiver> eventReceive = std::make_shared<TestEventReceiver>();
     std::shared_ptr<TestFilterCallback> filterCallback = std::make_shared<TestFilterCallback>();
     audioDecoder->Init(eventReceive, filterCallback);
-    EXPECT_EQ(audioDecoder->DoPrepareFrame(false), Status::ERROR_INVALID_STATE);
     audioDecoder->SetDumpFlag(false);
     audioDecoder->OnDumpInfo(-1);
     audioDecoder->SetCallerInfo(2, "test");

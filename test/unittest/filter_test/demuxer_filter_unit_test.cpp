@@ -48,15 +48,8 @@ public:
         return metaInfo_;
     }
 
-    Status PrepareFrame(bool renderFirstFrame)
-    {
-        (void)renderFirstFrame;
-        return prepareFrame_;
-    }
-
 protected:
     std::vector<std::shared_ptr<Meta>> metaInfo_{};
-    Status prepareFrame_{ Status::OK };
 };
 
 class FilterEventReceiverMock : public EventReceiver {
@@ -476,23 +469,6 @@ HWTEST_F(DemuxerFilterUnitTest, OnDrmInfoUpdated, TestSize.Level1)
 }
 
 /**
- * @tc.name: DoPrepareFrame
- * @tc.desc: DoPrepareFrame
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerFilterUnitTest, DoPrepareFrame, TestSize.Level1)
-{
-    auto demuxer = std::make_shared<MediaDemuxerMock>();
-    demuxerFilter_->demuxer_ = demuxer;
-    auto res = demuxerFilter_->DoPrepareFrame(true);
-    std::cout << "DoPrepareFrame " << static_cast<int32_t>(res) << std::endl;
-    demuxer->prepareFrame_ = Status::ERROR_WRONG_STATE;
-    res = demuxerFilter_->DoPrepareFrame(true);
-    EXPECT_NE(res, Status::OK);
-    std::cout << "DoPrepareFrame " << static_cast<int32_t>(res) << std::endl;
-}
-
-/**
  * @tc.name: PrepareBeforeStart
  * @tc.desc: PrepareBeforeStart
  * @tc.type: FUNC
@@ -523,7 +499,6 @@ HWTEST_F(DemuxerFilterUnitTest, DoStart, TestSize.Level1)
     ASSERT_EQ(res, Status::OK);
 
     demuxerFilter_->isLoopStarted = false;
-    demuxerFilter_->isPrepareFramed = true;
     res = demuxerFilter_->DoStart();
     std::cout << "DoStart " << static_cast<int32_t>(res) << std::endl;
     ASSERT_EQ(res, Status::OK);

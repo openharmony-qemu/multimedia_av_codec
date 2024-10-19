@@ -149,13 +149,6 @@ Status AudioDecoderFilter::DoPrepare()
     return Status::OK;
 }
 
-Status AudioDecoderFilter::DoPrepareFrame(bool renderFirstFrame)
-{
-    MEDIA_LOG_I_SHORT("AudioDecoderFilter::PrepareFrame.");
-    (void)renderFirstFrame;
-    return (Status)mediaCodec_->Start();
-}
-
 Status AudioDecoderFilter::DoStart()
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::Start.");
