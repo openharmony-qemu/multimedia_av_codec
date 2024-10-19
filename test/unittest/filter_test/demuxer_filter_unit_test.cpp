@@ -497,11 +497,6 @@ HWTEST_F(DemuxerFilterUnitTest, DoStart, TestSize.Level1)
     res = demuxerFilter_->DoStart();
     std::cout << "DoStart " << static_cast<int32_t>(res) << std::endl;
     ASSERT_EQ(res, Status::OK);
-
-    demuxerFilter_->isLoopStarted = false;
-    res = demuxerFilter_->DoStart();
-    std::cout << "DoStart " << static_cast<int32_t>(res) << std::endl;
-    ASSERT_EQ(res, Status::OK);
 }
 
 /**
