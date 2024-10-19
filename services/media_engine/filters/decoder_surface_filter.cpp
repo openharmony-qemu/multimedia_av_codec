@@ -701,8 +701,8 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         }
         return;
     }
-    FALSE_RETURN(!DrainPreroll(index, outputBuffer));
-    FALSE_RETURN(!DrainSeekClosest(index, outputBuffer));
+    FALSE_RETURN_NOLOG(!DrainPreroll(index, outputBuffer));
+    FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
     if (IS_FILTER_ASYNC && outputBuffers_.empty()) {
         RenderNextOutput(index, outputBuffer);
     }
@@ -740,9 +740,9 @@ void DecoderSurfaceFilter::RenderLoop()
 
 bool DecoderSurfaceFilter::DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
-    FALSE_RETURN_V(inPreroll_.load() && !prerollDone_.load(), false);
+    FALSE_RETURN_V_NOLOG(inPreroll_.load() && !prerollDone_.load(), false);
     std::lock_guard<std::mutex> lock(prerollMutex_);
-    FALSE_RETURN_V(inPreroll_.load() && !prerollDone_.load(), false);
+    FALSE_RETURN_V_NOLOG(inPreroll_.load() && !prerollDone_.load(), false);
     outputBuffers_.push_back(make_pair(index, outputBuffer));
     bool isEOS = outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS);
     eosNext_.store(isEOS);
@@ -755,7 +755,7 @@ bool DecoderSurfaceFilter::DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer
 
 bool DecoderSurfaceFilter::DrainSeekClosest(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
-    FALSE_RETURN_V(isSeek_, false);
+    FALSE_RETURN_V_NOLOG(isSeek_, false);
     bool isEOS = outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS);
     if (outputBuffer->pts_ < seekTimeUs_ && !isEOS) {
         videoDecoder_->ReleaseOutputBuffer(index, false);
