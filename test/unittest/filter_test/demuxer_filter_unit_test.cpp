@@ -67,6 +67,41 @@ public:
     }
 };
 
+class TestFilter : public Filter {
+public:
+    TestFilter():Filter("TestFilter", FilterType::FILTERTYPE_SOURCE) {}
+    ~TestFilter() = default;
+    Status OnLinked(StreamType inType, const std::shared_ptr<Meta>& meta,
+                            const std::shared_ptr<FilterLinkCallback>& callback)
+    {
+        (void)inType;
+        (void)meta;
+        (void)callback;
+        return onLinked_;
+    }
+protected:
+    Status onLinked_;
+};
+
+class FilterLinkCallbackMock : public FilterLinkCallback {
+    void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta)
+    {
+        (void)queue;
+        (void)meta;
+        return;
+    }
+
+    void OnUnlinkedResult(std::shared_ptr<Meta> &meta)
+    {
+        (void)meta;
+    }
+
+    void OnUpdatedResult(std::shared_ptr<Meta> &meta)
+    {
+        (void)meta;
+    }
+};
+
 class FilterCallbackMock : public FilterCallback {
 public:
     Status OnCallback(const std::shared_ptr<Filter> &filter, FilterCallBackCommand cmd, StreamType outType)
@@ -717,6 +752,55 @@ HWTEST_F(DemuxerFilterUnitTest, GetBitRates_0200, TestSize.Level1)
     demuxerFilter_->mediaSource_ = std::make_shared<MediaSource>("file:////");
     demuxerFilter_->GetBitRates(bitRates);
     ASSERT_EQ(demuxerFilter_->isDump_, false);
+}
+
+HWTEST_F(DemuxerFilterUnitTest, UnLinkNext_0400, TestSize.Level1)
+{
+    std::shared_ptr<TestFilter> filter = std::make_shared<TestFilter>();
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    Status status = demuxerFilter_->UnLinkNext(filter, streamType);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(DemuxerFilterUnitTest, UpdateNext_0400, TestSize.Level1)
+{
+    std::shared_ptr<TestFilter> filter = std::make_shared<TestFilter>();
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    Status status = demuxerFilter_->UpdateNext(filter, streamType);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(DemuxerFilterUnitTest, GetFilterType_0400, TestSize.Level1)
+{
+    demuxerFilter_->filterType_ = FilterType::FILTERTYPE_DEMUXER;
+    FilterType res = demuxerFilter_->GetFilterType();
+    EXPECT_EQ(res, FilterType::FILTERTYPE_DEMUXER);
+}
+
+HWTEST_F(DemuxerFilterUnitTest, OnLinked_0400, TestSize.Level1)
+{
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    auto callback = std::make_shared<FilterLinkCallbackMock>();
+    Status res = demuxerFilter_->OnLinked(streamType, meta, callback);
+    EXPECT_EQ(res, Status::OK);
+}
+
+HWTEST_F(DemuxerFilterUnitTest, OnUpdated_0400, TestSize.Level1)
+{
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    auto callback = std::make_shared<FilterLinkCallbackMock>();
+    Status res = demuxerFilter_->OnUpdated(streamType, meta, callback);
+    EXPECT_EQ(res, Status::OK);
+}
+
+HWTEST_F(DemuxerFilterUnitTest, OnUnLinked_0400, TestSize.Level1)
+{
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    auto callback = std::make_shared<FilterLinkCallbackMock>();
+    Status res = demuxerFilter_->OnUnLinked(streamType, callback);
+    EXPECT_EQ(res, Status::OK);
 }
 }  // namespace Pipeline
 }  // namespace Media

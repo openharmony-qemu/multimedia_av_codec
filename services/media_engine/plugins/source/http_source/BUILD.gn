@@ -21,6 +21,7 @@ config("http_source_plugin_config") {
   ]
 
   cflags = [
+    "-Wno-sign-compare",
     "-fno-exceptions",
     "-fno-common",
     "-fstack-protector-all",

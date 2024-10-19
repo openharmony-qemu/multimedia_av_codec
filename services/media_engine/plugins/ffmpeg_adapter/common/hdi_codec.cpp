@@ -77,7 +77,7 @@ std::vector<CodecCompCapability> HdiCodec::GetCapabilityList()
     return capabilityList;
 }
 
-bool HdiCodec::IsSupportCodecType(const std::string &name)
+bool HdiCodec::IsSupportCodecType(const std::string &name, MediaAVCodec::CapabilityData *audioCapability)
 {
     if (compMgr_ == nullptr) {
         compMgr_ = GetComponentManager();
@@ -88,7 +88,15 @@ bool HdiCodec::IsSupportCodecType(const std::string &name)
     CHECK_AND_RETURN_RET_LOG(!capabilityList.empty(), false, "Hdi capabilityList is empty!");
 
     bool checkName = std::any_of(std::begin(capabilityList),
-        std::end(capabilityList), [name](CodecCompCapability capability) {
+        std::end(capabilityList), [name, audioCapability](CodecCompCapability capability) {
+            if (capability.compName == name) {
+                audioCapability->bitrate = MediaAVCodec::Range(capability.bitRate.min, capability.bitRate.max);
+                audioCapability->sampleRate.push_back(capability.port.audio.sampleRate[0]); //set first number so far
+                audioCapability->maxInstance = capability.maxInst;
+                audioCapability->profiles.push_back(capability.supportProfiles[0]);
+                audioCapability->channels = MediaAVCodec::Range(1, capability.port.audio.channelCount[0]);
+            }
+            
         return capability.compName == name;
     });
     return checkName;

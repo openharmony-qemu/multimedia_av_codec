@@ -68,60 +68,50 @@ private:
 
 struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
 {
-    CHECK_AND_RETURN_RET_LOG(uri != nullptr, nullptr, "Create source with uri failed because input uri is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(uri != nullptr, nullptr, "Uri is nullptr");
     
     std::shared_ptr<AVSource> source = AVSourceFactory::CreateWithURI(uri);
-    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "New source with uri failed by AVSourceFactory!");
+    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "New avsource failed");
 
     struct AVSourceObject *object = new(std::nothrow) AVSourceObject(source);
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "New AVSourceObject failed when create source with uri!");
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "New sourceObject failed");
     
     return object;
 }
 
 struct OH_AVSource *OH_AVSource_CreateWithFD(int32_t fd, int64_t offset, int64_t size)
 {
-    CHECK_AND_RETURN_RET_LOG(fd >= 0, nullptr,
-        "Create source with fd failed because input fd is negative");
-    CHECK_AND_RETURN_RET_LOG(offset >= 0, nullptr,
-        "Create source with fd failed because input offset is negative");
-    CHECK_AND_RETURN_RET_LOG(size > 0, nullptr,
-        "Create source with fd failed because input size must be greater than zero");
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, nullptr, "Fd is negative");
+    CHECK_AND_RETURN_RET_LOG(offset >= 0, nullptr, "Offset is negative");
+    CHECK_AND_RETURN_RET_LOG(size > 0, nullptr, "Size must be greater than zero");
 
     std::shared_ptr<AVSource> source = AVSourceFactory::CreateWithFD(fd, offset, size);
-    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "New source with fd failed by AVSourceFactory!");
-
+    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "New avsource failed");
     struct AVSourceObject *object = new(std::nothrow) AVSourceObject(source);
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "New AVSourceObject failed when create source with fd!");
-
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "New sourceObject failed");
     return object;
 }
 
 struct OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource *dataSource)
 {
-    CHECK_AND_RETURN_RET_LOG(dataSource != nullptr, nullptr,
-        "Create source with dataSource failed because input dataSource is nullptr");
-    CHECK_AND_RETURN_RET_LOG(dataSource->size != 0, nullptr,
-        "Create source with dataSource failed because local file input size must be greater than zero");
+    CHECK_AND_RETURN_RET_LOG(dataSource != nullptr, nullptr, "Input dataSource is nullptr");
+    CHECK_AND_RETURN_RET_LOG(dataSource->size != 0, nullptr, "Datasource size must be greater than zero");
     std::shared_ptr<NativeAVDataSource> nativeAVDataSource = std::make_shared<NativeAVDataSource>(dataSource);
-    CHECK_AND_RETURN_RET_LOG(nativeAVDataSource != nullptr, nullptr,
-        "New nativeAVDataSource with dataSource failed!");
+    CHECK_AND_RETURN_RET_LOG(nativeAVDataSource != nullptr, nullptr, "New nativeAVDataSource failed");
 
     std::shared_ptr<AVSource> source = AVSourceFactory::CreateWithDataSource(nativeAVDataSource);
-    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "New source with dataSource failed by AVSourceFactory!");
+    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "New avsource failed");
 
     struct AVSourceObject *object = new(std::nothrow) AVSourceObject(source);
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr,
-        "New AVSourceObject failed when create source with dataSource!");
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "New sourceObject failed");
 
     return object;
 }
 
 OH_AVErrCode OH_AVSource_Destroy(OH_AVSource *source)
 {
-    CHECK_AND_RETURN_RET_LOG(source != nullptr, AV_ERR_INVALID_VAL,
-        "Destroy source failed because input source is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, AV_ERR_INVALID_VAL, "magic error!");
+    CHECK_AND_RETURN_RET_LOG(source != nullptr, AV_ERR_INVALID_VAL, "Input source is nullptr");
+    CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, AV_ERR_INVALID_VAL, "Magic error");
 
     delete source;
     return AV_ERR_OK;
@@ -129,19 +119,19 @@ OH_AVErrCode OH_AVSource_Destroy(OH_AVSource *source)
 
 OH_AVFormat *OH_AVSource_GetSourceFormat(OH_AVSource *source)
 {
-    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "Get source format failed because input source is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, nullptr, "magic error!");
+    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "Input source is nullptr");
+    CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, nullptr, "Magic error");
 
     struct AVSourceObject *sourceObj = reinterpret_cast<AVSourceObject *>(source);
-    CHECK_AND_RETURN_RET_LOG(sourceObj->source_ != nullptr, nullptr,
-        "New AVSourceObject failed when get source format!");
+    CHECK_AND_RETURN_RET_LOG(sourceObj != nullptr, nullptr, "Get sourceObject failed");
+    CHECK_AND_RETURN_RET_LOG(sourceObj->source_ != nullptr, nullptr, "Get sourceObject failed");
 
     Format format;
     int32_t ret = sourceObj->source_->GetSourceFormat(format);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "source_ GetSourceFormat failed!");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Source GetSourceFormat failed");
 
     OH_AVFormat *avFormat = OH_AVFormat_Create();
-    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Get source format failed, format is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Format is nullptr");
     avFormat->format_ = format;
     
     return avFormat;
@@ -149,19 +139,19 @@ OH_AVFormat *OH_AVSource_GetSourceFormat(OH_AVSource *source)
 
 OH_AVFormat *OH_AVSource_GetTrackFormat(OH_AVSource *source, uint32_t trackIndex)
 {
-    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "Get format failed because input source is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, nullptr, "magic error!");
+    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "Input source is nullptr");
+    CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, nullptr, "Magic error");
 
     struct AVSourceObject *sourceObj = reinterpret_cast<AVSourceObject *>(source);
-    CHECK_AND_RETURN_RET_LOG(sourceObj->source_ != nullptr, nullptr,
-        "New AVSourceObject failed when get track format!");
+    CHECK_AND_RETURN_RET_LOG(sourceObj != nullptr, nullptr, "Get sourceObject failed");
+    CHECK_AND_RETURN_RET_LOG(sourceObj->source_ != nullptr, nullptr, "Get sourceObject failed");
     
     Format format;
     int32_t ret = sourceObj->source_->GetTrackFormat(format, trackIndex);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Source GetTrackFormat failed!");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Source GetTrackFormat failed");
 
     OH_AVFormat *avFormat = OH_AVFormat_Create();
-    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Get format failed, format is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Format is nullptr");
     avFormat->format_ = format;
     
     return avFormat;

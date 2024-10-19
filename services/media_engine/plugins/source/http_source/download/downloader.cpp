@@ -560,6 +560,7 @@ void Downloader::RequestData()
             currentRequest_->requestSize_ = MIN_REQUEST_SIZE;
             currentRequest_->isHeaderUpdated = false;
             currentRequest_->isFirstRangeRequestReady_ = true;
+            currentRequest_->headerInfo_.fileContentLen = 0;
             return;
         }
         if (ret == Status::OK) {
@@ -641,6 +642,9 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
     }
     if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
         info->isChunked = true;
+    }
+    if (info->fileContentLen > 0 && info->isChunked && !mediaDownloader->currentRequest_->IsM3u8Request()) {
+        info->isChunked = false;
     }
     mediaDownloader->currentRequest_->SaveHeader(info);
 }

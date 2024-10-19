@@ -325,6 +325,8 @@ Status FFmpegBaseEncoder::ReAllocateContext()
             ptr = nullptr;
         }
     });
+    CHECK_AND_RETURN_RET_LOG(tmpContext != nullptr, Status::ERROR_NO_MEMORY,
+        "Allocate tmpContext failed.");
 
     tmpContext->channels = avCodecContext_->channels;
     tmpContext->sample_rate = avCodecContext_->sample_rate;

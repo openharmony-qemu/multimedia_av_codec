@@ -75,6 +75,7 @@ private:
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     GSError OnBufferReleasedByConsumer(uint64_t surfaceId) override;
     void OnGetBufferFromSurface(const ParamSP& param) override;
+    bool IsWrapSurfaceBufferToSlot(SurfaceBufferItem &item);
     SurfaceBufferItem RequestBuffer();
     std::vector<BufferInfo>::iterator FindBelongTo(sptr<SurfaceBuffer>& buffer);
     void SubmitBufferToDecoder();
@@ -96,13 +97,14 @@ private:
     void OnClearBufferPool(OMX_DIRTYPE portIndex) override;
     void CancelBufferToSurface(BufferInfo &info);
     void OnEnterUninitializedState() override;
+    void ClearBufferList() override;
 
     // VRR
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t SetVrrEnable(const Format &format);
     int32_t VrrPrediction(BufferInfo &info) override;
     static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
-    std::unique_ptr<OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction> vrrPredictor_;
+    std::shared_ptr<OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction> vrrPredictor_;
 #endif
 
 private:

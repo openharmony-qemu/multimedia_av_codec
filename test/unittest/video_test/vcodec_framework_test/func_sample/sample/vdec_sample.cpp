@@ -50,14 +50,6 @@ uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 std::atomic<uint32_t> g_shaBufferCount = 0;
 SHA512_CTX g_ctxTest;
 
-static inline int64_t GetTimeUs()
-{
-    struct timespec now;
-    (void)clock_gettime(CLOCK_BOOTTIME, &now);
-    // 1000'000: second to micro second; 1000: nano second to micro second
-    return (static_cast<int64_t>(now.tv_sec) * 1000'000 + (now.tv_nsec / 1000));
-}
-
 void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA)
 {
     if (needCheckSHA) {
@@ -297,8 +289,11 @@ int32_t VideoDecSample::Start()
     if (signal_ == nullptr || videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
+    int32_t ret = CreateAvccReader();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: CreateAvccReader fail");
+
     PrepareInner();
-    int32_t ret = videoDec_->Start();
+    ret = videoDec_->Start();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
     if (isAVBufferMode_) {
         RunInnerExt();
@@ -441,6 +436,17 @@ void VideoDecSample::SetSource(const std::string &path)
 void VideoDecSample::SetSourceType(bool isH264Stream)
 {
     isH264Stream_ = isH264Stream;
+}
+
+int32_t VideoDecSample::CreateAvccReader()
+{
+    std::shared_ptr<AvccReaderInfo> info = std::make_shared<AvccReaderInfo>();
+    info->inPath_ = inPath_;
+    info->isH264Stream_ = isH264Stream_;
+
+    avccReader_ = std::make_shared<AvccReader>();
+    int32_t ret = avccReader_->Init(info);
+    return ret;
 }
 
 void VideoDecSample::FlushInner()
@@ -633,18 +639,10 @@ int32_t VideoDecSample::InputLoopInner()
 {
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVMemoryMock> buffer = signal_->inMemoryQueue_.front();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d",
-                                      index);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
+                                      AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-
-    auto bufferSize = ReadOneFrame(buffer->GetAddr(), attr.flags);
-    if (inFile_->eof()) {
-        attr.flags = AVCODEC_BUFFER_FLAG_EOS;
-        cout << "Input EOS Frame, frameCount = " << (frameInputCount_ + 1) << endl;
-    }
-
-    attr.size = bufferSize;
-    attr.pts = GetTimeUs();
+    avccReader_->FillBuffer(signal_, attr);
     return PushInputData(index, attr);
 }
 
@@ -829,19 +827,10 @@ int32_t VideoDecSample::InputLoopInnerExt()
 {
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVBufferMock> buffer = signal_->inBufferQueue_.front();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d",
-                                      index);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
+                                      AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-
-    auto bufferSize = ReadOneFrame(buffer->GetAddr(), attr.flags);
-    if (inFile_->eof()) {
-        attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-        cout << "Input EOS Frame, frameCount = " << (frameInputCount_ + 1) << endl;
-    }
-
-    attr.size = bufferSize;
-    attr.pts = GetTimeUs();
-    buffer->SetBufferAttr(attr);
+    avccReader_->FillBufferExt(signal_, attr);
     return PushInputBuffer(index);
 }
 

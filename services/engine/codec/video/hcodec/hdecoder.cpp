@@ -402,10 +402,7 @@ int32_t HDecoder::SetScaleMode()
 int32_t HDecoder::SetVrrEnable(const Format &format)
 {
     int32_t vrrEnable = 0;
-    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, vrrEnable)) {
-        return AVCS_ERR_UNSUPPORT;
-    }
-    if (vrrEnable == 0) {
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, vrrEnable) || vrrEnable == 0) {
         HLOGI("VRR disabled");
         return AVCS_ERR_OK;
     }
@@ -780,6 +777,28 @@ std::vector<HCodec::BufferInfo>::iterator HDecoder::FindBelongTo(sptr<SurfaceBuf
     });
 }
 
+bool HDecoder::IsWrapSurfaceBufferToSlot(SurfaceBufferItem &item)
+{
+    auto iter = FindBelongTo(item.buffer);
+    if (iter != outputBufferPool_.end()) {
+        return false;
+    }
+
+    auto nullSlot = std::find_if(outputBufferPool_.begin(), outputBufferPool_.end(), [](const BufferInfo& info) {
+        return info.surfaceBuffer == nullptr;
+    });
+    if (nullSlot == outputBufferPool_.end()) {
+        return false;
+    }
+
+    SetCallerToBuffer(item.buffer->GetFileDescriptor());
+    HLOGI("bufferId=%u, seq=%u", nullSlot->bufferId, item.buffer->GetSeqNum());
+    WrapSurfaceBufferToSlot(*nullSlot, item.buffer, 0, 0);
+    NotifyOmxToFillThisOutBuffer(*nullSlot);
+    nullSlot->omxBuffer->bufferhandle = nullptr;
+    return true;
+}
+
 void HDecoder::OnGetBufferFromSurface(const ParamSP& param)
 {
     SCOPED_TRACE();
@@ -792,6 +811,11 @@ void HDecoder::OnGetBufferFromSurface(const ParamSP& param)
     if (item.buffer == nullptr) {
         return;
     }
+
+    if (IsWrapSurfaceBufferToSlot(item)) {
+        return;
+    }
+
     ScopedTrace tracePoint("requested:" + std::to_string(item.buffer->GetSeqNum()));
     freeList_.push_back(item); // push to list, retrive it later, to avoid wait fence too early
     static constexpr size_t MAX_CACHE_CNT = 2;
@@ -1022,6 +1046,11 @@ void HDecoder::OnEnterUninitializedState()
 {
     freeList_.clear();
     currSurface_.Release();
+}
+
+void HDecoder::ClearBufferList()
+{
+    freeList_.clear();
 }
 
 HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface)

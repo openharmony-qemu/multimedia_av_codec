@@ -160,13 +160,13 @@ public:
     bool GetStartedStatus() const;
     bool IsSegmentFinish() const;
     uint64_t GetDownloadSpeed() const;
-    uint32_t GetRingBufferSize() const;
     uint32_t GetRingBufferCapacity() const;
     void GetIp(std::string& ip);
     bool GetDownloadFinishState();
     std::pair<int64_t, int64_t> GetDownloadRecordData();
     void SetAppUid(int32_t appUid);
     void SetInterruptState(bool isInterruptNeeded);
+    uint32_t GetBufferSize() const;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
