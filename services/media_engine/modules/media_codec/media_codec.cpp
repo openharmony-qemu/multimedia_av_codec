@@ -21,9 +21,6 @@
 #include "avcodec_trace.h"
 #include "plugin/plugin_manager_v2.h"
 #include "avcodec_log.h"
-#include "common/event.h"
-#include "avcodec_errors.h"
-#include "common/media_core.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
@@ -730,10 +727,6 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     } else if (ret != Status::OK) {
         MEDIA_LOG_E("QueueOutputBuffer error");
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
-        state_ = CodecState::ERROR;
-        if (mediaCodecCallback_ != nullptr) {
-            mediaCodecCallback_->OnError(CodecErrorType::CODEC_ERROR_INTERNAL, MSERR_AUD_DEC_FAILED);
-        }
     }
     return ret;
 }
