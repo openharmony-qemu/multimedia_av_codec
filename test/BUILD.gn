@@ -30,6 +30,7 @@ group("av_codec_unit_test") {
     if (av_codec_support_test) {
       deps += [
         "unittest/audio_capture_test:audio_capture_module_unit_test",
+        "unittest/audio_encoder_filter_test:audio_encoder_filter_unitest",
         "unittest/audio_test:av_audio_capi_unit_test",
         "unittest/audio_test:av_audio_codecbase_unit_test",
         "unittest/audio_test:av_audio_decode_ability_unit_test",
@@ -66,7 +67,6 @@ group("av_codec_unit_test") {
         "unittest/http_source_test:http_media_downloader_unit_test",
         "unittest/http_source_test:http_source_plugin_unit_test",
         "unittest/key_type_test:av_codec_key_type_test",
-        "unittest/media_demuxer_test:media_demuxer_unit_test",
         "unittest/media_sink_test:av_audio_sink_unit_test",
         "unittest/plugins_source_test:plugins_source_unit_test",
         "unittest/reference_parser_test:reference_parser_inner_unit_test",

@@ -12,15 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 #ifndef DEMUXER_PLUGIN_MANAGER_H
 #define DEMUXER_PLUGIN_MANAGER_H
-
+ 
 #include <atomic>
 #include <limits>
 #include <string>
 #include <shared_mutex>
-
+ 
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
@@ -33,10 +33,10 @@
 #include "plugin/plugin_time.h"
 #include "plugin/demuxer_plugin.h"
 #include "source/source.h"
-
+ 
 namespace OHOS {
 namespace Media {
-
+ 
 class BaseStreamDemuxer;
 
 enum TrackType {
@@ -45,7 +45,7 @@ enum TrackType {
     TRACK_SUBTITLE,
     TRACK_INVALID
 };
-
+ 
 class DataSourceImpl : public Plugins::DataSource {
 public:
     explicit DataSourceImpl(const std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID);
@@ -64,7 +64,7 @@ private:
     int32_t streamID_;
     bool isDash_ = false;
 };
-
+ 
 class MediaStreamInfo {
 public:
     int32_t streamID = -1;
@@ -76,19 +76,19 @@ public:
     std::shared_ptr<DataSourceImpl> dataSource = nullptr;
     Plugins::MediaInfo mediaInfo;   // dash中每个streamid只有一个track
 };
-
+ 
 class MediaTrackMap {
 public:
     int32_t trackID = -1;
     int32_t streamID = -1;
     int32_t innerTrackIndex = -1;
 };
-
+ 
 class DemuxerPluginManager {
 public:
     explicit DemuxerPluginManager();
     virtual ~DemuxerPluginManager();
-
+ 
     Status InitDefaultPlay(const std::vector<StreamInfo>& streams);
     std::shared_ptr<Plugins::DemuxerPlugin> GetPluginByStreamID(int32_t streamID);
     void GetTrackInfoByStreamID(int32_t streamID, int32_t& trackId, int32_t& innerTrackId);
@@ -116,19 +116,18 @@ public:
     int32_t GetStreamID(int32_t trackId);
     int32_t GetInnerTrackID(int32_t trackId);
     bool IsDash() const;
-    bool IsSubtitle() const;
     Status StopPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StartPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
-    Status StartAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
-    Status StopAllPlugin();
     Status UpdateDefaultStreamID(Plugins::MediaInfo& mediaInfo, StreamType type, int32_t newStreamID);
 
     std::shared_ptr<Meta> GetUserMeta();
     uint32_t GetCurrentBitRate();
-    size_t GetStreamCount() const;
     void SetResetEosStatus(bool flag);
+    size_t GetStreamCount() const;
+    Status SetCacheLimit(uint32_t limitSize);
     bool CheckTrackIsActive(int32_t trackId);
     int32_t AddExternalSubtitle();
+    Status localSubtitleSeekTo(int64_t seekTime);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
@@ -138,8 +137,8 @@ private:
     void InitSubtitleTrack(const StreamInfo& info);
     void AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo);
     static Status UpdateGeneralValue(int32_t trackCount, const Meta& format, Meta& formatNew);
-    static Status AddGeneral(const Meta& format, Meta& formatNew);
-
+    static Status AddGeneral(const MediaStreamInfo& info, Meta& formatNew);
+ 
     Status AddTrackMapInfo(int32_t streamID, int32_t trackIndex);
     Status UpdateMediaInfo(int32_t streamID);
     bool IsSubtitleMime(const std::string& mime);
@@ -150,7 +149,7 @@ private:
     int32_t curVideoStreamID_ = -1;
     int32_t curAudioStreamID_ = -1;
     int32_t curSubTitleStreamID_ = -1;
-
+ 
     Plugins::MediaInfo curMediaInfo_;
     bool isDash_ = false;
     bool needResetEosStatus_ = false;

@@ -217,11 +217,6 @@ public:
         return Status::OK;
     }
 
-    virtual Status SelectStream(int32_t streamID)
-    {
-        return Status::OK;
-    }
-
     virtual Status Pause()
     {
         return Status::OK;
@@ -231,10 +226,23 @@ public:
     {
         return Status::OK;
     }
-
+    virtual Status SelectStream(int32_t streamID)
+    {
+        return Status::OK;
+    }
     virtual void SetEnableOnlineFdCache(bool isEnableFdCache)
     {
         (void)isEnableFdCache;
+    }
+
+    virtual size_t GetSegmentOffset()
+    {
+        return 0;
+    }
+
+    virtual bool GetHLSDiscontinuity()
+    {
+        return false;
     }
 };
 

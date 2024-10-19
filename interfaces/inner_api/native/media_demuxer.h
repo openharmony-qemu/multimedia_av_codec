@@ -60,7 +60,7 @@ public:
     void SetBundleName(const std::string& bundleName);
     Status SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer);
 
-    std::shared_ptr<Meta> GetGlobalMetaInfo();
+    std::shared_ptr<Meta> GetGlobalMetaInfo() const;
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
     std::shared_ptr<Meta> GetUserMeta();
 
@@ -91,7 +91,7 @@ public:
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
-    void SetPlayerId(std::string playerId);
+    void SetPlayerId(const std::string &playerId);
     void SetDumpInfo(bool isDump, uint64_t instanceId);
 
     Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
@@ -133,6 +133,11 @@ private:
         std::shared_ptr<Meta> globalMeta;
     };
 
+    struct MaintainBaseInfo {
+        int64_t segmentOffset = -1;
+        int64_t basePts = -1;
+        int64_t lastPts = -1;
+    };
     bool isHttpSource_ = false;
     std::string videoMime_{};
 
@@ -189,7 +194,7 @@ private:
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
-    Status HandleRead(uint32_t trackId);
+    Status HandleReadSample(uint32_t trackId);
     int64_t ParserRefInfo();
     void TryRecvParserTask();
 
@@ -199,6 +204,8 @@ private:
     void HandleStopPlugin(int32_t trackId);
     void HandleStartPlugin(int32_t trackId);
     bool IsSubtitleMime(const std::string& mime);
+    Status HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
+    Status InitPtsInfo();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -255,6 +262,8 @@ private:
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
+    std::atomic<bool> isOnEventNoMemory_ = false;
+    std::mutex draggingMutex_ {};
     int64_t duration_ {0};
 
     uint32_t selectTrackTrackID_ { TRACK_ID_DUMMY };
@@ -267,6 +276,8 @@ private:
     std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
     std::atomic<bool> isDemuxerLoopExecuting_ {false};
     std::atomic<bool> isInterruptNeeded_ {false};
+    bool isAutoMaintainPts_ = false;
+    std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
     std::atomic<bool> isFirstFrameAfterSeek_ {false};
 };
 } // namespace Media

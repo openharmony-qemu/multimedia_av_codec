@@ -63,7 +63,7 @@ public:
         const bool svpFlag);
     void OnDumpInfo(int32_t fd);
 
-    void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId);
+    void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string& bundleName, uint64_t instanceId);
 
     int64_t GetCurrentMillisecond();
     Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
@@ -77,9 +77,7 @@ private:
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> callback_;
     std::shared_ptr<AVBuffer> buffer_;
     std::string mediaCodecName_;
-
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_ {nullptr};
-
     std::mutex mutex_;
     std::vector<std::shared_ptr<AVBuffer>> bufferVector_;
     int32_t lagTimes_ = 0;

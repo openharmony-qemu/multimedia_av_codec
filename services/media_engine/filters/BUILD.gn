@@ -66,14 +66,14 @@ ohos_shared_library("av_codec_media_engine_filters") {
   ]
 
   sources = [
-    "audio_capture_filter.cpp",
     "audio_data_source_filter.cpp",
     "audio_decoder_filter.cpp",
-    "audio_encoder_filter.cpp",
     "audio_sink_filter.cpp",
     "codec_capability_adapter.cpp",
     "decoder_surface_filter.cpp",
     "demuxer_filter.cpp",
+    "audio_capture_filter.cpp",
+    "audio_encoder_filter.cpp",
     "metadata_filter.cpp",
     "muxer_filter.cpp",
     "subtitle_sink_filter.cpp",
@@ -98,16 +98,15 @@ ohos_shared_library("av_codec_media_engine_filters") {
   external_deps = [
     "audio_framework:audio_capturer",
     "c_utils:utils",
-    "drm_framework:drm_framework",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "hitrace:libhitracechain",
-    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
+    "init:libbegetutil",
   ]
 
   if (av_codec_support_drm) {

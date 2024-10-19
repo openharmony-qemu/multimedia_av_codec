@@ -69,22 +69,22 @@ protected:
 
 private:
     std::string name_;
-    FilterType filterType_;
+    FilterType filterType_ = FilterType::FILTERTYPE_MAX;
 
-    std::shared_ptr<EventReceiver> eventReceiver_;
-    std::shared_ptr<FilterCallback> filterCallback_;
-    std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
-    std::shared_ptr<SurfaceDecoderAdapter> mediaCodec_;
+    std::shared_ptr<EventReceiver> eventReceiver_{nullptr};
+    std::shared_ptr<FilterCallback> filterCallback_{nullptr};
+    std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_{nullptr};
+    std::shared_ptr<SurfaceDecoderAdapter> mediaCodec_{nullptr};
 
     std::string codecMimeType_;
-    std::shared_ptr<Meta> configureParameter_;
-    Format configFormat_;
+    std::shared_ptr<Meta> configureParameter_{nullptr};
+    Format configFormat_{};
 
-    std::shared_ptr<Filter> nextFilter_;
+    std::shared_ptr<Filter> nextFilter_{nullptr};
 
-    sptr<Surface> outputSurface_;
+    sptr<Surface> outputSurface_{nullptr};
 
-    std::shared_ptr<Meta> meta_;
+    std::shared_ptr<Meta> meta_{nullptr};
 };
 } // namespace Pipeline
 } // namespace Media

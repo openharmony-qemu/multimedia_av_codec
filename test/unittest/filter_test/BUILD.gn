@@ -56,10 +56,7 @@ ohos_unittest("filter_unit_test") {
     "$av_codec_root_dir/interfaces",
     "$av_codec_root_dir/interfaces/inner_api/native",
     "$av_codec_root_dir/services/media_engine/filters",
-    "$av_codec_root_dir/services/media_engine/modules/source/audio_capture",
     "$media_foundation_root_dir/interface/inner_api",
-    "$media_foundation_root_dir/interface/inner_api/filter",
-    "$media_foundation_root_dir/interface/inner_api/buffer",
     "$video_processing_engine_root_dir/interfaces/inner_api",
   ]
   defines = []
@@ -79,8 +76,33 @@ ohos_unittest("filter_unit_test") {
 
   if (av_codec_support_test) {
     sources = [
+      "$av_codec_root_dir/services/media_engine/filters/audio_capture_filter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/audio_data_source_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/audio_sink_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/codec_capability_adapter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/decoder_surface_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/demuxer_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/muxer_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/subtitle_sink_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/surface_decoder_adapter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/surface_decoder_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/surface_encoder_adapter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/video_capture_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/video_decoder_adapter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/video_resize_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/modules/sink/subtitle_sink.cpp",
+      "./audio_capture_filter_unit_test.cpp",
       "./audio_data_source_filter_unit_test.cpp",
+      "./audio_sink_filter_unit_test.cpp",
+      "./codec_capability_adapter_unit_test.cpp",
+      "./decoder_surface_filter_unit_test.cpp",
+      "./muxer_filter_unit_test.cpp",
+      "./subtitle_sink_filter_unit_test.cpp",
+      "./surface_decoder_filter_unit_test.cpp",
+      "./surface_decoder_unit_test.cpp",
+      "./surface_encoder_adapter_unit_test.cpp",
+      "./video_capture_filter_unit_test.cpp",
+      "./video_resize_filter_unit_test.cpp",
     ]
   }
 
@@ -91,7 +113,6 @@ ohos_unittest("filter_unit_test") {
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
     "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
-    "//third_party/googletest:gmock_main",
   ]
 
   public_configs = []
