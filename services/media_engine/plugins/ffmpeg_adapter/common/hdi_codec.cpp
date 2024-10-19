@@ -180,6 +180,7 @@ Status HdiCodec::InitBuffersByPort(PortIndex portIndex, uint32_t bufferSize)
 Status HdiCodec::SendCommand(CodecCommandType cmd, uint32_t param)
 {
     std::unique_lock lock(inMutex_);
+    std::unique_lock lock(inMutex_);
     event_ = CODEC_EVENT_ERROR;
     int32_t ret = compNode_->SendCommand(cmd, param, {});
     CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_INVALID_DATA, "SendCommand failed");
@@ -194,6 +195,7 @@ Status HdiCodec::SendCommand(CodecCommandType cmd, uint32_t param)
 
 Status HdiCodec::EmptyThisBuffer(const std::shared_ptr<AVBuffer> &buffer)
 {
+    std::unique_lock lock(inMutex_);
     std::unique_lock lock(inMutex_);
     omxInBufferInfo_->omxBuffer->filledLen = static_cast<uint32_t>(buffer->memory_->GetSize());
     omxInBufferInfo_->omxBuffer->offset = static_cast<uint32_t>(buffer->memory_->GetOffset());
@@ -214,6 +216,7 @@ Status HdiCodec::EmptyThisBuffer(const std::shared_ptr<AVBuffer> &buffer)
 
 Status HdiCodec::FillThisBuffer(std::shared_ptr<AVBuffer> &buffer)
 {
+    std::unique_lock lock(outMutex_);
     std::unique_lock lock(outMutex_);
     outputOmxBuffer_ = nullptr;
     int32_t ret = compNode_->FillThisBuffer(*omxOutBufferInfo_->omxBuffer.get());
@@ -250,6 +253,7 @@ Status HdiCodec::FreeBuffer(PortIndex portIndex, const std::shared_ptr<OmxCodecB
 Status HdiCodec::OnEventHandler(CodecEventType event, const EventInfo &info)
 {
     std::unique_lock lock(inMutex_);
+    std::unique_lock lock(inMutex_);
     event_ = event;
     condition_.notify_all();
     return Status::OK;
@@ -262,6 +266,7 @@ Status HdiCodec::OnEmptyBufferDone(const OmxCodecBuffer &buffer)
 
 Status HdiCodec::OnFillBufferDone(const OmxCodecBuffer &buffer)
 {
+    std::unique_lock lock(outMutex_);
     std::unique_lock lock(outMutex_);
     outputOmxBuffer_ = std::make_shared<OmxCodecBuffer>(buffer);
     condition_.notify_all();
