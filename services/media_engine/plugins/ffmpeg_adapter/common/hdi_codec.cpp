@@ -164,9 +164,11 @@ Status HdiCodec::InitBuffersByPort(PortIndex portIndex, uint32_t bufferSize)
     omxBuffer->bufferId = outBuffer.bufferId;
     if (portIndex == PortIndex::INPUT_PORT) {
         std::unique_lock lock(inMutex_);
+        std::unique_lock lock(inMutex_);
         omxInBufferInfo_->omxBuffer = omxBuffer;
         omxInBufferInfo_->avBuffer = avBuffer;
     } else if (portIndex == PortIndex::OUTPUT_PORT) {
+        std::unique_lock lock(outMutex_);
         std::unique_lock lock(outMutex_);
         omxOutBufferInfo_->omxBuffer = omxBuffer;
         omxOutBufferInfo_->avBuffer = avBuffer;
@@ -268,7 +270,7 @@ Status HdiCodec::OnFillBufferDone(const OmxCodecBuffer &buffer)
 
 Status HdiCodec::Reset()
 {
-        {
+    {
         std::unique_lock lock(inMutex_);
         FreeBuffer(PortIndex::INPUT_PORT, omxInBufferInfo_->omxBuffer);
     }
