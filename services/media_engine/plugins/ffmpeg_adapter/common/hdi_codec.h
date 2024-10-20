@@ -125,7 +125,8 @@ private:
     std::shared_ptr<OmxBufferInfo> omxInBufferInfo_;
     std::shared_ptr<OmxBufferInfo> omxOutBufferInfo_;
     CodecEventType event_;
-    std::mutex mutex_;
+    std::mutex inMutex_;
+    std::mutex outMutex_;
     std::condition_variable condition_;
 };
 } // namespace Hdi
