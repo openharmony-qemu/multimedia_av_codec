@@ -216,6 +216,7 @@ void DecoderSurfaceFilterUnitTest::SetUp(void)
 void DecoderSurfaceFilterUnitTest::TearDown(void)
 {
     decoderSurfaceFilter_ = nullptr;
+    system::SetParameter("persist.media_service.async_filter", "0");
 }
 
 /**
