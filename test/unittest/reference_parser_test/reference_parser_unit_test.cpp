@@ -169,4 +169,88 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPB_0_0100, TestSize.Level1)
         ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(416)); // 416 is frame 30
     }
 }
+
+/**
+ * @tc.number       : RP_FUNC_VAR_SPEED_IPB_1_0100
+ * @tc.name         : do var speed
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPB_1_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPB_1));
+        ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(1133)); // 1133 is frame 36
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_VAR_SPEED_IPPP_0_0100
+ * @tc.name         : do var speed
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPPP_0_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_0));
+        ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(23966)); // 23966 is frame 1438
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_VAR_SPEED_IPPP_1_0100
+ * @tc.name         : do var speed
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPPP_1_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_1));
+        ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(23880)); // 23880 is frame 597
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_VAR_SPEED_IPPP_SCALA_0_0100
+ * @tc.name         : do var speed
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPPP_SCALA_0_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_SCALA_0));
+        ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(10680)); // 10680 is frame 267
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_VAR_SPEED_IPPP_SCALA_1_0100
+ * @tc.name         : do var speed
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPPP_SCALA_1_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_SCALA_1));
+        ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(400)); // 400 is frame 10
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_VAR_SPEED_SDTP_0100
+ * @tc.name         : do var speed
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_SDTP_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::SDTP));
+        ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(8233)); // 8233 is frame 249
+    }
+}
 } // namespace
