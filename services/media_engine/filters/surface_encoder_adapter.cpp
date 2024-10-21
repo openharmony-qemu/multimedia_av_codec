@@ -127,7 +127,7 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
         return Status::ERROR_UNKNOWN;
     }
     if (!releaseBufferTask_) {
-        releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
+        releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder",  "", TaskType::SINGLETON);
         releaseBufferTask_->RegisterJob([this] {
             ReleaseBuffer();
             return 0;
@@ -315,7 +315,7 @@ Status SurfaceEncoderAdapter::Start()
     }
     ret = codecServer_->Start();
     isStart_ = true;
-    isStartKeyFramePts_ = true;
+    isStartKeyFramePts_= true;
     if (ret == 0) {
         return Status::OK;
     } else {
@@ -551,7 +551,6 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
         indexs_.push_back(index);
     }
     releaseBufferCondition_.notify_all();
-    MEDIA_LOG_D("OnOutputBufferAvailable end");
 }
 
 void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
@@ -568,27 +567,23 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.notify_all();
     }
-
+    if (startBufferTime_ == -1 && buffer->pts_ != 0) {
+        startBufferTime_ = buffer->pts_;
+    }
     int64_t mappingTime = -1;
-    if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
+    if (startBufferTime_ != -1 || buffer->pts_ != 0) {
         std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
         if (mappingTimeQueue_.empty() || mappingTimeQueue_.front().first != buffer->pts_) {
             MEDIA_LOG_D("buffer->pts fail");
-        } else {
-            mappingTime = mappingTimeQueue_.front().second;
-            mappingTimeQueue_.pop_front();
+            return;
         }
-        if (startBufferTime_ == -1) {
-            startBufferTime_ = buffer->pts_;
-        }
+        mappingTime = mappingTimeQueue_.front().second;
+        mappingTimeQueue_.pop_front();
         // cache recent 2 pts
         preKeyFramePts_ = currentKeyFramePts_;
         currentKeyFramePts_ = buffer->pts_;
         AddStartPts(buffer->pts_);
         AddPauseResumePts(buffer->pts_);
-    } else {
-        MEDIA_LOG_D("OnOutputBufferAvailable buffer->flag_" PUBLIC_LOG_U32, buffer->flag_);
-        mappingTime = startBufferTime_ + buffer->pts_;
     }
     int32_t size = buffer->memory_->GetSize();
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
@@ -602,7 +597,10 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     FALSE_RETURN_MSG(emptyOutputBuffer->memory_ != nullptr, "emptyOutputBuffer->memory_ is nullptr");
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
-    emptyOutputBuffer->pts_ = (mappingTime - startBufferTime_) / NS_PER_US;
+    emptyOutputBuffer->pts_ = mappingTime - startBufferTime_;
+    if (!isTransCoderMode) {
+        emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / NS_PER_US;
+    }
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     {
@@ -624,7 +622,7 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
             releaseBufferCondition_.wait(lock, [this] {
-                return isThreadExit_ || !indexs_.empty();
+                return isThreadExit_||!indexs_.empty();
             });
             indexs = indexs_;
             indexs_.clear();
@@ -661,8 +659,8 @@ void SurfaceEncoderAdapter::ConfigureAboutEnableTemporalScale(MediaAVCodec::Form
             MEDIA_LOG_I("video encoder enableTemporalScale is false!");
             return;
         }
-
-        bool isSupported = true;
+        OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true);
+        bool isSupported = OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_TEMPORAL_SCALABILITY);
         if (isSupported) {
             MEDIA_LOG_I("VIDEO_ENCODER_TEMPORAL_SCALABILITY is supported!");
             format.PutIntValue(MediaAVCodec::MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY,

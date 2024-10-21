@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <string>
+
 #include "common/log.h"
 #include "common/media_core.h"
 #include "filter/filter_factory.h"
@@ -42,7 +43,6 @@ public:
         : surfaceEncoderFilter_(std::move(surfaceEncoderFilter))
     {
     }
-
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -51,7 +51,6 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
-
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -60,7 +59,6 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
-
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -69,7 +67,6 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
-
 private:
     std::weak_ptr<SurfaceEncoderFilter> surfaceEncoderFilter_;
 };
@@ -157,7 +154,7 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     MEDIA_LOG_I("Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
-    if (!mediaCodec_ || isUpdateCodecNeeded_.load()) {
+    if (!mediaCodec_ || isUpdateCodecNeeded_) {
         if (mediaCodec_) {
             mediaCodec_->Release();
         }
@@ -173,7 +170,7 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             mediaCodec_->SetEncoderAdapterKeyFramePtsCallback(encoderAdapterKeyFramePtsCallback);
         } else {
             MEDIA_LOG_I("Init mediaCodec fail");
-            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
         }
         surface_ = nullptr;
         isUpdateCodecNeeded_ = false;
@@ -263,7 +260,7 @@ Status SurfaceEncoderFilter::DoResume()
 
 Status SurfaceEncoderFilter::DoStop()
 {
-    MEDIA_LOG_I("Stop enter");
+    MEDIA_LOG_I("Stop");
     if (mediaCodec_ == nullptr) {
         return Status::OK;
     }
@@ -299,9 +296,6 @@ Status SurfaceEncoderFilter::DoRelease()
 Status SurfaceEncoderFilter::NotifyEos(int64_t pts)
 {
     MEDIA_LOG_I("NotifyEos");
-    if (mediaCodec_ == nullptr) {
-        return Status::ERROR_UNKNOWN;
-    }
     return mediaCodec_->NotifyEos(pts);
 }
 
@@ -383,9 +377,6 @@ void SurfaceEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &out
     std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnLinkedResult");
-    if (mediaCodec_ == nullptr) {
-        return;
-    }
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     if (onLinkedResultCallback_) {
         onLinkedResultCallback_->OnLinkedResult(nullptr, meta);
