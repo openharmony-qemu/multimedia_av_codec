@@ -275,7 +275,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_vrr_ok, TestSize.Level1)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 1000000);
     format.PutIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, 1);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, 0);
-    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, 1);
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_ENABLE_VRR, 1);
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 60); // 60 frame rate
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -296,7 +296,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_vrr_without_framerate, TestSize.Le
     format.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 1000000);
     format.PutIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, 1);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, 0);
-    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, 1);
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_ENABLE_VRR, 1);
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
