@@ -29,8 +29,7 @@ void VideoCaptureFilterUnitTest::TearDownTestCase(void) {}
 
 void VideoCaptureFilterUnitTest::SetUp(void)
 {
-    videoCaptureFilter_ =
-        std::make_shared<VideoCaptureFilter>("testVideoCaptureFilter", FilterType::VIDEO_CAPTURE);
+    videoCaptureFilter_ = std::make_shared<VideoCaptureFilter>("testVideoCaptureFilter", FilterType::VIDEO_CAPTURE);
 }
 
 void VideoCaptureFilterUnitTest::TearDown(void)
