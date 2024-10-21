@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,7 +34,7 @@ using namespace Media;
 using namespace Plugins;
 using namespace std;
 
-TemporalScalability::TemporalScalability(string name) : name_(name)
+TemporalScalability::TemporalScalability(const string &name) : name_(name)
 {
     inputIndexQueue_ = make_shared<BlockQueue<uint32_t>>("inputIndexQueue");
 }
@@ -58,7 +58,7 @@ bool TemporalScalability::IsLTRSolution()
     return false;
 }
 
-int32_t TemporalScalability::LTRFrameNumCalculate(int32_t tGopSize)
+int32_t TemporalScalability::LTRFrameNumCalculate(int32_t tGopSize) const
 {
     if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         return DEFAULT_VIDEO_LTR_FRAME_NUM;
@@ -194,7 +194,7 @@ void TemporalScalability::LTRDecision()
     }
 }
 
-uint32_t TemporalScalability::DisposableDecision()
+uint32_t TemporalScalability::DisposableDecision() const
 {
     if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         if (!isMarkLTR_) {

@@ -90,6 +90,7 @@ private:
         GET_FIRST_PTS,
         INDEX_TO_RELATIVEPTS,
         RELATIVEPTS_TO_INDEX,
+        GET_ALL_FRAME_PTS,
     };
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
@@ -136,12 +137,6 @@ private:
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
 
-    void ParserFirstDts();
-    Status InitIoContext();
-    Status ParserRefInit();
-    Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
-    Status SelectProGopId();
-    void ParserBoxInfo();
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
     void WebvttMP4EOSProcess(const AVPacket *pkt);
@@ -167,6 +162,12 @@ private:
     int64_t relativePTSToIndexRightDiff_ = INT64_MAX;
     int64_t relativePTSToIndexLeftDiff_ = INT64_MAX;
     int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
+    void ParserFirstDts();
+    Status InitIoContext();
+    Status ParserRefInit();
+    Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
+    Status SelectProGopId();
+    void ParserBoxInfo();
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
@@ -197,6 +198,7 @@ private:
     std::vector<uint32_t> IFramePos_;
     double fps_{0};
     int64_t firstDts_ = 0;
+    uint32_t dtsOffset_ = 0;
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
     bool updatePosIsForward_ = true;
@@ -228,6 +230,12 @@ private:
     int avpacketIndex_ {0};
 
     static void Dump(const DumpParam &dumpParam);
+
+    std::vector<int64_t> ptsListOrg_;
+    std::vector<int64_t> ptsListFromZero_;
+    std::unordered_map<int32_t, int64_t> iFramePtsMap_;
+    Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
+    Status ParserRefCheckVideoValid(const AVStream *videoStream);
 };
 } // namespace Ffmpeg
 } // namespace Plugins

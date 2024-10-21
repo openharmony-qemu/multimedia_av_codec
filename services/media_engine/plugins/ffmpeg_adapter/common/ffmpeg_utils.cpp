@@ -349,12 +349,6 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
     return codecConfig;
 }
 
-uint32_t TimeStampUs2FrameId(int64_t timeUs, double fps)
-{
-    uint32_t us2Sec = MS_TO_SEC * MS_TO_SEC;
-    return (timeUs * fps + us2Sec / 2) / us2Sec;  // 2
-}
-
 void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
 {
     (void)avcl;
