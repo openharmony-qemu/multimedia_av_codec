@@ -1371,7 +1371,9 @@ Status MediaDemuxer::ResumeDragging()
         source_->Resume();
     }
     if (taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr) {
-        streamDemuxer_->SetIsIgnoreParse(false);
+        if (streamDemuxer_) {
+            streamDemuxer_->SetIsIgnoreParse(false);
+        }
         taskMap_[videoTrackId_]->Start();
     }
     isPaused_ = false;
@@ -1659,52 +1661,23 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
     bool ret = HandleSelectTrackChangeStream(trackId, newStreamID, newTrackId);
     if (ret && eventReceiver_ != nullptr) {
         if (type == TrackType::TRACK_AUDIO) {
-            audioTrackId_ = newTrackId;
+            audioTrackId_ = static_cast<uint32_t>(newTrackId);
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, newTrackId});
             shouldCheckAudioFramePts_ = true;
         } else if (type == TrackType::TRACK_VIDEO) {
-            videoTrackId_ = newTrackId;
+            videoTrackId_ = static_cast<uint32_t>(newTrackId);
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_VIDEO_TRACK_CHANGE, newTrackId});
         } else if (type == TrackType::TRACK_SUBTITLE) {
-            subtitleTrackId_ = newTrackId;
+            subtitleTrackId_ = static_cast<uint32_t>(newTrackId);
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, newTrackId});
             shouldCheckSubtitleFramePts_ = true;
         }
  
-        if (newTrackId == selectTrackTrackID_) {
+        if (newTrackId == static_cast<int32_t>(selectTrackTrackID_)) {
             isSelectTrack_.store(false);
         }
         if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
             taskMap_[trackId]->StopAsync();   // stop self
-        }
-    }
-    return ret;
-}
-
-bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
-{
-    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "demuxerPluginManager_ is nullptr.");
-    FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr, false, "streamDemuxer_ is nullptr.");
-    if (demuxerPluginManager_->IsDash() == false) {
-        return false;
-    }
-
-    if (trackId == videoTrackId_ && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
-        auto result = SelectBitRateChangeStream(trackId);
-        if (result) {
-            streamDemuxer_->SetChangeFlag(true);
-            if (targetBitRate_ == demuxerPluginManager_->GetCurrentBitRate()) {
-                isSelectBitRate_.store(false);
-            }
-            return true;
-        }
-    } else if (isSelectTrack_) {
-        auto result = SelectTrackChangeStream(trackId);
-        if (result) {
-            targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
-            streamDemuxer_->SetChangeFlag(true);
-            isSelectTrack_.store(false);
-            return true;
         }
         return true;
     }
@@ -1783,7 +1756,7 @@ Status MediaDemuxer::HandleReadSample(uint32_t trackId)
             if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
                 taskMap_[trackId]->StopAsync();
             }
-            MEDIA_LOG_I("CopyFrameToUserQueue track eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
+            MEDIA_LOG_I("HandleReadSample track eos, track: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
                 ", pts: " PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
