@@ -167,7 +167,7 @@ private:
     std::mutex prerollMutex_ {};
     std::atomic<bool> inPreroll_ {false};
     std::condition_variable prerollDoneCond_ {};
-    std::atomic<bool> prerollDone_ {false};
+    std::atomic<bool> prerollDone_ {true};
     std::atomic<bool> eosNext_ {false};
 
     int32_t appUid_ = -1;

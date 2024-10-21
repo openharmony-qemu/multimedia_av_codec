@@ -291,6 +291,12 @@ Status DecoderSurfaceFilter::DoPauseDragging()
 Status DecoderSurfaceFilter::DoResume()
 {
     MEDIA_LOG_I("Resume");
+    // avoid mess up a-v-sink when filter reveives a frame after calling preroll-wait-1s and befroe calling resume.
+    if (!inPreroll_.load() && !prerollDone_.load()) {
+        std::lock_guard<std::mutex> lock(prerollMutex_);
+        videoSink_->ResetSyncInfo();
+        prerollDone_.store(true);
+    }
     refreshTotalPauseTime_ = true;
     isPaused_ = false;
     if (!IS_FILTER_ASYNC) {
@@ -364,7 +370,7 @@ Status DecoderSurfaceFilter::DoPreroll()
     MEDIA_LOG_I("DoPreroll enter.");
     std::lock_guard<std::mutex> lock(prerollMutex_);
     Status ret = Status::OK;
-    FALSE_RETURN_V_MSG(!inPreroll_.load(), Status::OK, "in preroll now.");
+    FALSE_RETURN_V_MSG(!inPreroll_.load(), Status::OK, "DoPreroll in preroll now.");
     inPreroll_.store(true);
     prerollDone_.store(false);
     eosNext_.store(false);
@@ -384,15 +390,18 @@ Status DecoderSurfaceFilter::DoPreroll()
 
 Status DecoderSurfaceFilter::DoWaitPrerollDone(bool render)
 {
-    MEDIA_LOG_D("DoWaitPrerollDone enter.");
+    MEDIA_LOG_I("DoWaitPrerollDone enter.");
     std::unique_lock<std::mutex> lock(prerollMutex_);
     FALSE_RETURN_V(inPreroll_.load(), Status::OK);
-    prerollDoneCond_.wait_for(lock, std::chrono::milliseconds(PREROLL_WAIT_TIME));
+    if (prerollDone_.load() || isInterruptNeeded_.load()) {
+        MEDIA_LOG_I("Receive preroll frame before DoWaitPrerollDone.");
+    } else {
+        prerollDoneCond_.wait_for(lock, std::chrono::milliseconds(PREROLL_WAIT_TIME));
+    }
     Filter::PauseFilterTask();
     DoPause();
-    FALSE_RETURN_V_MSG(prerollDone_.load() && !isInterruptNeeded_.load(), Status::OK, "no frame received in preroll!");
     std::unique_lock<std::mutex> bufferLock(mutex_);
-    prerollDone_.store(false);
+    FALSE_LOG_MSG(prerollDone_.load() && !isInterruptNeeded_.load(), Status::OK, "No preroll frame received!");
     if (render && !eosNext_.load() && !outputBuffers_.empty()) {
         std::pair<int, std::shared_ptr<AVBuffer>> nextTask = std::move(outputBuffers_.front());
         outputBuffers_.pop_front();
@@ -701,8 +710,8 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         }
         return;
     }
-    FALSE_RETURN_NOLOG(!DrainPreroll(index, outputBuffer));
     FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
+    FALSE_RETURN_NOLOG(!DrainPreroll(index, outputBuffer));
     if (IS_FILTER_ASYNC && outputBuffers_.empty()) {
         RenderNextOutput(index, outputBuffer);
     }
@@ -740,6 +749,11 @@ void DecoderSurfaceFilter::RenderLoop()
 
 bool DecoderSurfaceFilter::DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    FALSE_RETURN_V_NOLOG(inPreroll_.load(), false);
+    if (prerollDone_.load()) {
+        outputBuffers_.push_back(make_pair(index, outputBuffer));
+        return true;
+    }
     FALSE_RETURN_V_NOLOG(inPreroll_.load() && !prerollDone_.load(), false);
     std::lock_guard<std::mutex> lock(prerollMutex_);
     FALSE_RETURN_V_NOLOG(inPreroll_.load() && !prerollDone_.load(), false);

@@ -216,7 +216,7 @@ void DecoderSurfaceFilterUnitTest::SetUp(void)
 void DecoderSurfaceFilterUnitTest::TearDown(void)
 {
     decoderSurfaceFilter_ = nullptr;
-    system::SetParameter("persist.media_service.async_filter", "0");
+    system::SetParameter("persist.media_service.async_filter", "1");
 }
 
 /**
@@ -710,6 +710,7 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DrainOutputBuffer_001, TestSize.Level1)
     cout << "2" <<endl;
     decoderSurfaceFilter_->DrainOutputBuffer(index, outBuffer);
     EXPECT_EQ(decoderSurfaceFilter_->seekTimeUs_, 0);
+    system::SetParameter("persist.media_service.async_filter", "1");
 }
 
 /**
