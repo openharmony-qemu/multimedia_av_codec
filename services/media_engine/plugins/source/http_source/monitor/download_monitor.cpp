@@ -373,12 +373,10 @@ Status DownloadMonitor::StopBufferring(bool isAppBackground)
     return downloader_->StopBufferring(isAppBackground);
 }
 
-bool DownloadMonitor::IsBuffering()
+void DownloadMonitor::WaitForBufferingEnd()
 {
-    if (downloader_) {
-        return downloader_->IsBuffering();
-    }
-    return false;
+    FALSE_RETURN_MSG(downloader_ != nullptr, "WaitForBufferingEnd downloader is nullptr");
+    downloader_->WaitForBufferingEnd();
 }
 }
 }

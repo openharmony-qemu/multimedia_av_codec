@@ -495,10 +495,10 @@ bool Source::GetHLSDiscontinuity()
     return plugin_->GetHLSDiscontinuity();
 }
 
-bool Source::IsBuffering()
+void Source::WaitForBufferingEnd()
 {
-    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "IsBuffering source plugin is nullptr");
-    return plugin_->IsBuffering();
+    FALSE_RETURN_MSG(plugin_ != nullptr, "WaitForBufferingEnd source plugin is nullptr");
+    return plugin_->WaitForBufferingEnd();
 }
 } // namespace Media
 } // namespace OHOS

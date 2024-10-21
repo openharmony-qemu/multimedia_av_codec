@@ -274,34 +274,41 @@ bool HttpMediaDownloader::HandleBuffering()
             waterLineAbove_ = std::min(fileRemain, waterLineAbove_);
         }
     }
-
     UpdateWaterLineAbove();
-    if (!canWrite_) {
-        MEDIA_LOG_I("HTTP canWrite_ false");
-        isBuffering_ = false;
-    }
-    if (GetCurrentBufferSize() >= waterLineAbove_) {
-        MEDIA_LOG_I("HTTP Buffer is enough, bufferSize:" PUBLIC_LOG_ZU " waterLineAbove: " PUBLIC_LOG_ZU
-            " avgDownloadSpeed: " PUBLIC_LOG_F, GetCurrentBufferSize(), waterLineAbove_, avgDownloadSpeed_);
-        isBuffering_ = false;
-    }
-    if (HandleBreak()) {
-        MEDIA_LOG_I("HTTP HandleBreak");
-        isBuffering_ = false;
+
+    {
+        AutoLock lk(bufferingEndMutex_);
+        if (!canWrite_) {
+            MEDIA_LOG_I("HTTP canWrite_ false");
+            isBuffering_ = false;
+        }
+        if (GetCurrentBufferSize() >= waterLineAbove_) {
+            MEDIA_LOG_I("HTTP Buffer is enough, bufferSize:" PUBLIC_LOG_ZU " waterLineAbove: " PUBLIC_LOG_ZU
+                " avgDownloadSpeed: " PUBLIC_LOG_F, GetCurrentBufferSize(), waterLineAbove_, avgDownloadSpeed_);
+            isBuffering_ = false;
+        }
+        if (HandleBreak()) {
+            MEDIA_LOG_I("HTTP HandleBreak");
+            isBuffering_ = false;
+        }
+        if (!isBuffering_) {
+            MEDIA_LOG_I("HandleBuffering bufferingEndCond NotifyAll.");
+            bufferingEndCond_.NotifyAll();
+        }
     }
 
     if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: "
         PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32,
-            GetCurrentBufferSize(), waterLineAbove_, isBuffering_, canWrite_.load());
+            GetCurrentBufferSize(), waterLineAbove_, isBuffering_.load(), canWrite_.load());
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
         bufferingTime_ = 0;
     }
     MEDIA_LOG_D("HTTP HandleBuffering bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: " PUBLIC_LOG_ZU
         ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32,
-        GetCurrentBufferSize(), waterLineAbove_, isBuffering_, canWrite_.load());
-    return isBuffering_;
+        GetCurrentBufferSize(), waterLineAbove_, isBuffering_.load(), canWrite_.load());
+    return isBuffering_.load();
 }
 
 bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
@@ -953,8 +960,15 @@ void HttpMediaDownloader::SetDownloadErrorState()
 
 void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_I("SetInterruptState");
-    isInterruptNeeded_ = isInterruptNeeded;
+    MEDIA_LOG_I("SetInterruptState: " PUBLIC_LOG_D32, isInterruptNeeded);
+    {
+        AutoLock lk(bufferingEndMutex_);
+        isInterruptNeeded_ = isInterruptNeeded;
+        if (isInterruptNeeded_) {
+            MEDIA_LOG_I("SetInterruptState, bufferingEndCond NotifyAll.");
+            bufferingEndCond_.NotifyAll();
+        }
+    }
     if (ringBuffer_ != nullptr && isInterruptNeeded) {
         ringBuffer_->SetActive(false);
     }
@@ -1173,7 +1187,7 @@ bool HttpMediaDownloader::CheckBufferingOneSeconds()
         sleepTime += TEN_MILLISECONDS;
     }
     MEDIA_LOG_I("HTTP CheckBufferingOneSeconds out");
-    return isBuffering_;
+    return isBuffering_.load();
 }
 
 void HttpMediaDownloader::SetAppUid(int32_t appUid)
@@ -1280,9 +1294,16 @@ Status HttpMediaDownloader::StopBufferring(bool isAppBackground)
     return Status::OK;
 }
 
-bool HttpMediaDownloader::IsBuffering()
+void HttpMediaDownloader::WaitForBufferingEnd()
 {
-    return isBuffering_;
+    AutoLock lk(bufferingEndMutex_);
+    FALSE_RETURN_MSG(isBuffering_.load(), "isBuffering false.");
+    MEDIA_LOG_I("WaitForBufferingEnd");
+    bufferingEndCond_.Wait(lk, [this]() {
+        MEDIA_LOG_I("Wait in, isBuffering: " PUBLIC_LOG_D32 " isInterruptNeeded: " PUBLIC_LOG_D32,
+            isBuffering_.load(), isInterruptNeeded_.load());
+        return !isBuffering_.load() || isInterruptNeeded_.load();
+    });
 }
 
 bool HttpMediaDownloader::ClearHasReadBuffer()
