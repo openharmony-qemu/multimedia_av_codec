@@ -1220,7 +1220,7 @@ Status MediaDemuxer::ResumeAllTask()
         if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
             taskMap_[trackId]->Start();
         } else {
-            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " task is not exist", trackId);
+            MEDIA_LOG_W("track " PUBLIC_LOG_U32 " task is not exist, start failed.", trackId);
         }
         it++;
     }
@@ -1345,9 +1345,7 @@ Status MediaDemuxer::ResumeDragging()
         source_->Resume();
     }
     if (taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr) {
-        if (streamDemuxer_) {
-            streamDemuxer_->SetIsIgnoreParse(false);
-        }
+        streamDemuxer_->SetIsIgnoreParse(false);
         taskMap_[videoTrackId_]->Start();
     }
     isPaused_ = false;
@@ -1418,7 +1416,7 @@ Status MediaDemuxer::Start()
             if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
                 taskMap_[trackId]->Start();
             } else {
-                MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " task is not exist", trackId);
+                MEDIA_LOG_W("track " PUBLIC_LOG_U32 " task is not exist, start failed.", trackId);
             }
             it++;
         }
@@ -1670,7 +1668,10 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
         if (static_cast<uint32_t>(newTrackId) == selectTrackTrackID_) {
             isSelectTrack_.store(false);
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 84c9c376892c112eb3e40666bb247922b245098b
         if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
             taskMap_[trackId]->StopAsync();   // stop self
         }
@@ -1751,8 +1752,8 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
             if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
                 taskMap_[trackId]->StopAsync();
             }
-            MEDIA_LOG_I("Track eos, track: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
-                ", pts: " PUBLIC_LOG_D64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
+            MEDIA_LOG_I("CopyFrameToUserQueue track eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
+                ", pts: " PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
             return Status::OK;

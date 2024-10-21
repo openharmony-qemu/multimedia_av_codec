@@ -137,12 +137,6 @@ private:
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
 
-    void ParserFirstDts();
-    Status InitIoContext();
-    Status ParserRefInit();
-    Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
-    Status SelectProGopId();
-    void ParserBoxInfo();
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
     void WebvttMP4EOSProcess(const AVPacket *pkt);
@@ -168,6 +162,12 @@ private:
     int64_t relativePTSToIndexRightDiff_ = INT64_MAX;
     int64_t relativePTSToIndexLeftDiff_ = INT64_MAX;
     int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
+    void ParserFirstDts();
+    Status InitIoContext();
+    Status ParserRefInit();
+    Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
+    Status SelectProGopId();
+    void ParserBoxInfo();
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
