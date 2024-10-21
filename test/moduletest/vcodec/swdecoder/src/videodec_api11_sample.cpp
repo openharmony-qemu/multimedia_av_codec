@@ -43,7 +43,6 @@ constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
-
 SHA512_CTX g_c;
 unsigned char g_md[SHA512_DIGEST_LENGTH];
 VDecAPI11Sample *dec_sample = nullptr;
@@ -465,6 +464,7 @@ void VDecAPI11Sample::InputFuncTest()
     bool flag = true;
     while (flag) {
         if (!isRunning_.load()) {
+            flag = false;
             break;
         }
         if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
@@ -488,6 +488,7 @@ void VDecAPI11Sample::InputFuncTest()
             return signal_->inIdxQueue_.size() > 0;
         });
         if (!isRunning_.load()) {
+            flag = false;
             break;
         }
         index = signal_->inIdxQueue_.front();
@@ -499,6 +500,7 @@ void VDecAPI11Sample::InputFuncTest()
         if (!inFile_->eof()) {
             int ret = PushData(index, buffer);
             if (ret == 1) {
+                flag = false;
                 break;
             }
         }
@@ -510,7 +512,6 @@ void VDecAPI11Sample::InputFuncTest()
 
 int32_t VDecAPI11Sample::PushData(uint32_t index, OH_AVBuffer *buffer)
 {
-    static uint32_t repeat_count = 0;
     OH_AVCodecBufferAttr attr;
     if (BEFORE_EOS_INPUT && frameCount_ > TEN) {
         SetEOS(index, buffer);
@@ -524,6 +525,7 @@ int32_t VDecAPI11Sample::PushData(uint32_t index, OH_AVBuffer *buffer)
     char ch[4] = {};
     (void)inFile_->read(ch, START_CODE_SIZE);
     if (repeatRun && inFile_->eof()) {
+        static uint32_t repeat_count = 0;
         inFile_->clear();
         inFile_->seekg(0, ios::beg);
         cout << "repeat run " << repeat_count << endl;
@@ -571,7 +573,7 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
     if (memcpy_s(fileBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE) != EOK) {
         cout << "Fatal: memory copy failed" << endl;
     }
-    (void)inFile_->read((char *)fileBuffer + START_CODE_SIZE, bufferSize);
+    (void)inFile_->read(reinterpret_cast<char *>(fileBuffer) + START_CODE_SIZE, bufferSize);
     if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
         (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
         attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
@@ -665,17 +667,42 @@ void VDecAPI11Sample::AutoSwitchSurface()
         OH_AVFormat_Destroy(format);
     }
 }
+int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
+{
+    if (needCheckOutputDesc) {
+        CheckOutputDescription();
+        needCheckOutputDesc = false;
+    }
+    if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
+        cout << "AVCODEC_BUFFER_FLAGS_EOS" << endl;
+        AutoSwitchSurface();
+        SHA512_Final(g_md, &g_c);
+        OPENSSL_cleanse(&g_c, sizeof(g_c));
+        MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+        return -1;
+    }
+    if (attr.flags == AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
+        cout << "enc AVCODEC_BUFFER_FLAGS_CODEC_DATA" << attr.pts << endl;
+        return 0;
+    }
+    outFrameCount = outFrameCount + 1;
+    return 0;
+}
 
 void VDecAPI11Sample::OutputFuncTest()
 {
+    FILE *outFile = nullptr;
+    if (outputYuvFlag) {
+        outFile = fopen(OUT_DIR, "wb");
+    }
     SHA512_Init(&g_c);
     bool flag = true;
     while (flag) {
         if (!isRunning_.load()) {
+            flag = false;
             break;
         }
         OH_AVCodecBufferAttr attr;
-        uint32_t index;
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() {
             if (!isRunning_.load()) {
@@ -684,9 +711,10 @@ void VDecAPI11Sample::OutputFuncTest()
             return signal_->outIdxQueue_.size() > 0;
         });
         if (!isRunning_.load()) {
+            flag = false;
             break;
         }
-        index = signal_->outIdxQueue_.front();
+        uint32_t index = signal_->outIdxQueue_.front();
         OH_AVBuffer *buffer = signal_->outBufferQueue_.front();
         signal_->outBufferQueue_.pop();
         signal_->outIdxQueue_.pop();
@@ -694,22 +722,21 @@ void VDecAPI11Sample::OutputFuncTest()
             errCount = errCount + 1;
         }
         lock.unlock();
-        if (needCheckOutputDesc) {
-            CheckOutputDescription();
-            needCheckOutputDesc = false;
-        }
-        if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
-            cout << "AVCODEC_BUFFER_FLAGS_EOS" << endl;
-            AutoSwitchSurface();
-            SHA512_Final(g_md, &g_c);
-            OPENSSL_cleanse(&g_c, sizeof(g_c));
-            MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+        if (CheckAttrFlag(attr) == -1) {
+            flag = false;
             break;
         }
         ProcessOutputData(buffer, index, attr.size);
+        if (outFile != nullptr) {
+            fwrite(OH_AVBuffer_GetAddr(buffer), 1, attr.size, outFile);
+        }
         if (errCount > 0) {
+            flag = false;
             break;
         }
+    }
+    if (outFile) {
+        (void)fclose(outFile);
     }
 }
 
@@ -862,10 +889,9 @@ int32_t VDecAPI11Sample::SwitchSurface()
 
 int32_t VDecAPI11Sample::RepeatCallSetSurface()
 {
-    int32_t ret = AV_ERR_OK;
     for (int i = 0; i < REPEAT_CALL_TIME; i++) {
         switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
-        ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
+        int32_t ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
         if (ret != AV_ERR_OK && ret != AV_ERR_OPERATE_NOT_PERMIT && ret != AV_ERR_INVALID_STATE) {
             return AV_ERR_OPERATE_NOT_PERMIT;
         }
