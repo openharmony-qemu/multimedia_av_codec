@@ -1676,6 +1676,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
         if (newTrackId == static_cast<int32_t>(selectTrackTrackID_)) {
             isSelectTrack_.store(false);
         }
+
         if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
             taskMap_[trackId]->StopAsync();   // stop self
         }
