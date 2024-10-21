@@ -314,14 +314,14 @@ void InnerDemuxerSample::CheckLoop(int32_t metaTrack)
         }
         if (i == videoTrackIdx) {
             compaseSize = static_cast<int32_t>(avBuffer->memory_->GetSize());
-            if (metaTrack == 0 && metaSize != compaseSize) {
+            if (metaTrack == 0 && metaSize != compaseSize - 1) {
                     retForMeta = -1;
                     break;
             }
             videoIndexForMeta ++;
         } else if (i == metaTrack) {
             metaSize = static_cast<int32_t>(avBuffer->memory_->GetSize());
-            if (metaTrack != 0 && metaSize != compaseSize) {
+            if (metaTrack != 0 && metaSize != compaseSize - 1) {
                 retForMeta = -1;
                 break;
             }
