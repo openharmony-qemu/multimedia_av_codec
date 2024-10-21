@@ -574,6 +574,8 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4400, TestSize.Level0)
                 SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
                 HevcVideoParam(trackFormat);
             }
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
         }
     }
     close(fd);
@@ -629,6 +631,8 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
                 SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
                 AvcVideoParam(trackFormat);
             }
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
         }
     }
     close(fd);
@@ -683,6 +687,8 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4510, TestSize.Level0)
                 SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
                 OtherVideoParam(trackFormat);
             }
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
         }
     }
     close(fd);
@@ -748,6 +754,8 @@ HWTEST_F(DemuxerFormatNdkTest, VIDEO_DEMUXER_VVC_0600, TestSize.Level0)
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
         if (tarckType == MEDIA_TYPE_VID) {
             CheckVideoKey();
         } else if (tarckType == MEDIA_TYPE_AUD) {
