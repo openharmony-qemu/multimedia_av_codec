@@ -272,6 +272,7 @@ Status DecoderSurfaceFilter::DoPause()
 {
     MEDIA_LOG_I("Pause");
     isPaused_ = true;
+    isFirstFrameAfterResume_ = false;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
@@ -291,14 +292,9 @@ Status DecoderSurfaceFilter::DoPauseDragging()
 Status DecoderSurfaceFilter::DoResume()
 {
     MEDIA_LOG_I("Resume");
-    // avoid mess up a-v-sink when filter reveives a frame after calling preroll-wait-1s and befroe calling resume.
-    if (!inPreroll_.load() && !prerollDone_.load()) {
-        std::lock_guard<std::mutex> lock(prerollMutex_);
-        videoSink_->ResetSyncInfo();
-        prerollDone_.store(true);
-    }
     refreshTotalPauseTime_ = true;
     isPaused_ = false;
+    isFirstFrameAfterResume_ = true;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
@@ -401,7 +397,7 @@ Status DecoderSurfaceFilter::DoWaitPrerollDone(bool render)
     Filter::PauseFilterTask();
     DoPause();
     std::unique_lock<std::mutex> bufferLock(mutex_);
-    FALSE_LOG_MSG(prerollDone_.load() && !isInterruptNeeded_.load(), Status::OK, "No preroll frame received!");
+    FALSE_LOG_MSG(prerollDone_.load(), "No preroll frame received!");
     if (render && !eosNext_.load() && !outputBuffers_.empty()) {
         std::pair<int, std::shared_ptr<AVBuffer>> nextTask = std::move(outputBuffers_.front());
         outputBuffers_.pop_front();
@@ -594,13 +590,17 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
         FALSE_RETURN_V(!outputBuffers_.empty(), false);
         std::pair<int, std::shared_ptr<AVBuffer>> task = std::move(outputBuffers_.front());
         outputBuffers_.pop_front();
+        FALSE_RETURN_V(task.first >= 0, false);
+        index = static_cast<uint32_t>(task.first);
+        outBuffer = task.second;
+        if (isFirstFrameAfterResume_) {
+            videoSink_->UpdateTimeAnchorActually(outBuffer);
+            isFirstFrameAfterResume_ = false;
+        }
         if (!outputBuffers_.empty()) {
             std::pair<int, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
             RenderNextOutput(nextTask.first, nextTask.second);
         }
-        FALSE_RETURN_V(task.first >= 0, false);
-        index = static_cast<uint32_t>(task.first);
-        outBuffer = task.second;
         return true;
     }
     FALSE_RETURN_V(outputBufferMap_.find(index) != outputBufferMap_.end(), false);
@@ -775,6 +775,7 @@ bool DecoderSurfaceFilter::DrainSeekClosest(uint32_t index, std::shared_ptr<AVBu
         videoDecoder_->ReleaseOutputBuffer(index, false);
         return true;
     }
+    MEDIA_LOG_I("Seek arrive target video pts: " PUBLIC_LOG_D64, seekTimeUs_);
     isSeek_ = false;
     return false;
 }

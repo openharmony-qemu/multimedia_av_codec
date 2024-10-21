@@ -169,6 +169,7 @@ private:
     std::condition_variable prerollDoneCond_ {};
     std::atomic<bool> prerollDone_ {true};
     std::atomic<bool> eosNext_ {false};
+    bool isFirstFrameAfterResume_ {true};
 
     int32_t appUid_ = -1;
     int32_t appPid_ = -1;
