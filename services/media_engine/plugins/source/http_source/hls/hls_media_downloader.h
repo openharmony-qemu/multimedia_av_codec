@@ -31,6 +31,8 @@
 #include "utils/media_cached_buffer.h"
 #include "utils/write_bitrate_caculator.h"
 #include <utility>
+#include "osal/task/mutex.h"
+#include "osal/task/condition_variable.h"
 
 namespace OHOS {
 namespace Media {
@@ -100,6 +102,7 @@ public:
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
+    void WaitForBufferingEnd() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -248,7 +251,7 @@ private:
     std::string mimeType_;
     size_t waterLineAbove_ {0};
     bool isInterrupt_ {false};
-    bool isBuffering_ {false};
+    std::atomic<bool> isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
     std::atomic<bool> isSeekingFlag {false};
     Mutex switchMutex_ {};
@@ -275,6 +278,9 @@ private:
     FairMutex tsStorageInfoMutex_ {};
 
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
+
+    FairMutex bufferingEndMutex_ {};
+    ConditionVariable bufferingEndCond_;
 };
 }
 }

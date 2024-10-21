@@ -108,6 +108,7 @@ public:
     size_t GetSegmentOffset();
     bool GetHLSDiscontinuity();
     void SetEnableOnlineFdCache(bool isEnableFdCache);
+    void WaitForBufferingEnd();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

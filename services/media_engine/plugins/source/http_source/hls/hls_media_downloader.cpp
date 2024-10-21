@@ -308,21 +308,28 @@ bool HlsMediaDownloader::HandleBuffering()
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
     UpdateWaterLineAbove();
-    if (!canWrite_) {
-        MEDIA_LOG_I("HLS canWrite false");
-        isBuffering_ = false;
-    }
     {
-        AutoLock lock(tsStorageInfoMutex_);
-        if (tsStorageInfo_[readTsIndex_].second == true) {
-            MEDIA_LOG_I("HLS readTS download complete.");
+        AutoLock lk(bufferingEndMutex_);
+        if (!canWrite_) {
+            MEDIA_LOG_I("HLS canWrite false");
             isBuffering_ = false;
         }
-    }
-    if (GetBufferSize() >= waterLineAbove_ || CheckBreakCondition()) {
-        MEDIA_LOG_I("HLS CheckBreakCondition true, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_ZU,
-            waterLineAbove_, GetBufferSize());
-        isBuffering_ = false;
+        {
+            AutoLock lock(tsStorageInfoMutex_);
+            if (tsStorageInfo_[readTsIndex_].second == true) {
+                MEDIA_LOG_I("HLS readTS download complete.");
+                isBuffering_ = false;
+            }
+        }
+        if (GetBufferSize() >= waterLineAbove_ || CheckBreakCondition()) {
+            MEDIA_LOG_I("HLS CheckBreakCondition true, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_ZU,
+                waterLineAbove_, GetBufferSize());
+            isBuffering_ = false;
+        }
+        if (!isBuffering_) {
+            MEDIA_LOG_I("HandleBuffering bufferingEndCond NotifyAll.");
+            bufferingEndCond_.NotifyAll();
+        }
     }
 
     if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
@@ -333,7 +340,7 @@ bool HlsMediaDownloader::HandleBuffering()
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
         bufferingTime_ = 0;
     }
-    return isBuffering_;
+    return isBuffering_.load();
 }
 
 bool HlsMediaDownloader::HandleCache()
@@ -1330,7 +1337,15 @@ size_t HlsMediaDownloader::GetTotalBufferSize()
 
 void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
-    isInterruptNeeded_ = isInterruptNeeded;
+    MEDIA_LOG_I("SetInterruptState: " PUBLIC_LOG_D32, isInterruptNeeded);
+    {
+        AutoLock lk(bufferingEndMutex_);
+        isInterruptNeeded_ = isInterruptNeeded;
+        if (isInterruptNeeded_) {
+            MEDIA_LOG_I("SetInterruptState bufferingEndCond NotifyAll.");
+            bufferingEndCond_.NotifyAll();
+        }
+    }
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_->SetInterruptState(isInterruptNeeded);
     }
@@ -1534,7 +1549,7 @@ bool HlsMediaDownloader::CheckBufferingOneSeconds()
         sleepTime += TEN_MILLISECONDS;
     }
     MEDIA_LOG_I("HLS CheckBufferingOneSeconds out");
-    return isBuffering_;
+    return isBuffering_.load();
 }
 
 void HlsMediaDownloader::SetAppUid(int32_t appUid)
@@ -1612,6 +1627,17 @@ bool HlsMediaDownloader::ClearChunksOfFragment()
     return res;
 }
 
+void HlsMediaDownloader::WaitForBufferingEnd()
+{
+    AutoLock lk(bufferingEndMutex_);
+    FALSE_RETURN_MSG(isBuffering_.load(), "isBuffering false.");
+    MEDIA_LOG_I("WaitForBufferingEnd");
+    bufferingEndCond_.Wait(lk, [this]() {
+        MEDIA_LOG_I("Wait in, isBuffering: " PUBLIC_LOG_D32 " isInterruptNeeded: " PUBLIC_LOG_D32,
+            isBuffering_.load(), isInterruptNeeded_.load());
+        return !isBuffering_.load() || isInterruptNeeded_.load();
+    });
+}
 }
 }
 }

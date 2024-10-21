@@ -489,5 +489,10 @@ void Source::SetEnableOnlineFdCache(bool isEnableFdCache)
     isEnableFdCache_ = isEnableFdCache;
 }
 
+void Source::WaitForBufferingEnd()
+{
+    FALSE_RETURN_MSG(plugin_ != nullptr, "WaitForBufferingEnd source plugin is nullptr");
+    return plugin_->WaitForBufferingEnd();
+}
 } // namespace Media
 } // namespace OHOS

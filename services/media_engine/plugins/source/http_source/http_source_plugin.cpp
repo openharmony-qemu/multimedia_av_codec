@@ -448,6 +448,11 @@ bool HttpSourcePlugin::GetHLSDiscontinuity()
     return false;
 }
 
+void HttpSourcePlugin::WaitForBufferingEnd()
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "WaitForBufferingEnd downloader is nullptr");
+    downloader_->WaitForBufferingEnd();
+}
 }
 }
 }

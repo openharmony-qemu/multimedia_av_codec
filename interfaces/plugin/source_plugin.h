@@ -245,15 +245,7 @@ public:
         return false;
     }
 
-    virtual Status StopBufferring(bool isAppBackground)
-    {
-        return Status::OK;
-    }
-
-    virtual bool IsBuffering()
-    {
-        return false;
-    }
+    virtual void WaitForBufferingEnd() {}
 };
 
 /// Source plugin api major number.
