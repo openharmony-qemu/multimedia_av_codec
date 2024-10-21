@@ -28,6 +28,26 @@ namespace {
     constexpr int32_t READ_LOG_FEQUENCE = 50;
     constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
     constexpr int64_t RETRY_SEG = 50;
+    const std::set<int32_t> CLIENT_NOT_RETRY_ERROR_CODES = {
+        23,
+        992,
+    };
+    const std::set<int32_t> CLIENT_RETRY_ERROR_CODES = {
+        25, // Upload faild.
+        26, // Faild to open/read local data from file/application.
+        28, // Timeout was reached.
+    };
+
+    const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        400,
+        401,
+    };
 }
 
 DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept
@@ -178,6 +198,26 @@ bool DownloadMonitor::GetStartedStatus()
     return downloader_->GetStartedStatus();
 }
 
+void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCode)
+{
+    if (callback_ == nullptr) {
+        MEDIA_LOG_E("callback_ is nullptr, notify error failed.");
+        return;
+    }
+    if (serverErrorCode != 0) {
+        int32_t errorCode = MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR;
+        GetServerMediaServiceErrorCode(serverErrorCode, errorCode);
+        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "server error"});
+        MEDIA_LOG_I("Notify http server error, code " PUBLIC_LOG_D32, serverErrorCode);
+    }
+    if (clientErrorCode != 0) {
+        int32_t errorCode = MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR;
+        GetClientMediaServiceErrorCode(clientErrorCode, errorCode);
+        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "client error"});
+        MEDIA_LOG_I("Notify http client error, code " PUBLIC_LOG_D32, clientErrorCode);
+    }
+}
+
 bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 {
     auto clientError = request->GetClientError();
@@ -195,33 +235,34 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         return false;
     }
 
-    if (clientError == static_cast<int32_t>(NetworkClientErrorCode::ERROR_NOT_RETRY) ||
-        notRetryErrorSet.find(serverError) != notRetryErrorSet.end() ||
-        serverError >= SERVER_ERROR_THRESHOLD) {
-        if (retryTimes > RETRY_THRESHOLD && !GetPlayable()) {
-            if (downloader_ != nullptr) {
-                downloader_->SetDownloadErrorState();
-            }
-            request->Close();
-            return false;
-        }
+    if (clientError == 0 && serverError == 0) {
+        return false;
     }
-    if (clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)
-        || clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_NOT_RETRY)
-        || serverError != 0) {
-        if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR && !GetPlayable()) {
-            if (clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)) {
-                MEDIA_LOG_I("Send http client error, code: " PUBLIC_LOG_D32, static_cast<int32_t>(clientError));
-            }
-            if (serverError != 0) {
-                MEDIA_LOG_I("Send http server error, code: " PUBLIC_LOG_D32, static_cast<int32_t>(serverError));
-            }
-            if (downloader_ != nullptr) {
-                downloader_->SetDownloadErrorState();
-            }
-            request->Close();
-            return false;
+    if (CLIENT_NOT_RETRY_ERROR_CODES.find(clientError) != CLIENT_NOT_RETRY_ERROR_CODES.end()) {
+        return false;
+    }
+    if (retryTimes <= RETRY_THRESHOLD || GetPlayable()) {
+        return true;
+    }
+
+    if (CLIENT_RETRY_ERROR_CODES.find(clientError) == CLIENT_RETRY_ERROR_CODES.end() ||
+        SERVER_RETRY_ERROR_CODES.find(serverError) == SERVER_RETRY_ERROR_CODES.end() ||
+        serverError >= SERVER_ERROR_THRESHOLD) {
+        MEDIA_LOG_I("error code dont't need to retry.");
+        if (downloader_ != nullptr) {
+            downloader_->SetDownloadErrorState();
         }
+        NotifyError(clientError, serverError);
+        request->Close();
+        return false;
+    }
+    if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR) { // Report error to upper layer
+        MEDIA_LOG_I("Retry times readches the upper limit.");
+        if (downloader_ != nullptr) {
+            downloader_->SetDownloadErrorState();
+        }
+        NotifyError(clientError, serverError);
+        return false;
     }
     return true;
 }
@@ -379,6 +420,26 @@ bool DownloadMonitor::IsBuffering()
         return downloader_->IsBuffering();
     }
     return false;
+}
+
+void DownloadMonitor::GetServerMediaServiceErrorCode(int32_t errorCode, int32_t& serverCode)
+{
+    if (serverErrorCodeMap_.find(errorCode) == serverErrorCodeMap_.end()) {
+        MEDIA_LOG_W("Unknown server error code.");
+    } else {
+        serverCode = serverErrorCodeMap_[errorCode];
+        MEDIA_LOG_D("serverCode: " PUBLIC_LOG_D32, static_cast<int32_t>(serverCode));
+    }
+}
+
+void DownloadMonitor::GetClientMediaServiceErrorCode(int32_t errorCode, int32_t& clientCode)
+{
+    if (clientErrorCodeMap_.find(errorCode) == clientErrorCodeMap_.end()) {
+        MEDIA_LOG_W("Unknown client error code.");
+    } else {
+        clientCode = clientErrorCodeMap_[errorCode];
+        MEDIA_LOG_D("clientCode: " PUBLIC_LOG_D32, static_cast<int32_t>(clientCode));
+    }
 }
 }
 }
