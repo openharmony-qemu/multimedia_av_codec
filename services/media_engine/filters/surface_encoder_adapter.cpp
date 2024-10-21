@@ -551,6 +551,7 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
         indexs_.push_back(index);
     }
     releaseBufferCondition_.notify_all();
+    MEDIA_LOG_D("OnOutputBufferAvailable end");
 }
 
 void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
@@ -608,6 +609,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         indexs_.push_back(index);
     }
     releaseBufferCondition_.notify_all();
+    MEDIA_LOG_D("OnOutputBufferAvailable end");
 }
 
 void SurfaceEncoderAdapter::ReleaseBuffer()
