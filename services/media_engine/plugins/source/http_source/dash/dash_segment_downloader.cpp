@@ -17,6 +17,7 @@
 #include "dash_segment_downloader.h"
 #include <map>
 #include <algorithm>
+#include "network/network_typs.h"
 #include "dash_mpd_util.h"
 
 namespace OHOS {
@@ -83,10 +84,12 @@ DashSegmentDownloader::DashSegmentDownloader(Callback *callback, int streamId, M
 
 DashSegmentDownloader::~DashSegmentDownloader() noexcept
 {
-    downloadRequest_ = nullptr;
-    downloader_ = nullptr;
-    mediaSegment_ = nullptr;
-    buffer_ = nullptr;
+    if (buffer_ != nullptr) {
+        buffer_->SetActive(false, true);
+    }
+    if (downloader_ != nullptr) {
+        downloader_->Stop(false);
+    }
     segmentList_.clear();
 }
 
@@ -957,7 +960,7 @@ std::pair<int64_t, int64_t> DashSegmentDownloader::GetDownloadRecordData()
     return recordData;
 }
 
-uint32_t DashSegmentDownloader::GetRingBufferSize() const
+uint32_t DashSegmentDownloader::GetBufferSize() const
 {
     if (buffer_ != nullptr) {
         return buffer_->GetSize();
@@ -985,7 +988,7 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     if (startPos >= 0 && endPos > 0) {
         requestWholeFile = false;
     }
-    MediaSouce mediaSouce;
+    RequestInfo mediaSouce;
     mediaSouce.url = url;
     mediaSouce.timeoutMs = HTTP_TIME_OUT_MS;
     downloadRequest_ = std::make_shared<DownloadRequest>(duration, dataSave_,
@@ -1075,6 +1078,13 @@ std::shared_ptr<DashInitSegment> DashSegmentDownloader::GetDashInitSegment(int32
         segment = *it;
     }
     return segment;
+}
+
+void DashSegmentDownloader::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
 }
 
 void DashSegmentDownloader::SetInterruptState(bool isInterruptNeeded)

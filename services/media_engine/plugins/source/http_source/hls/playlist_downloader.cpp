@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include "network/network_typs.h"
 #include "osal/filesystem/file_system.h"
 
 namespace OHOS {
@@ -28,6 +29,8 @@ namespace HttpPlugin {
 constexpr int FDPOS = 2;
 constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
 constexpr int MIN_PRE_PARSE_CONTENT_LEN = 5 * 1024; // 5k
+constexpr int RETRY_DELTA_TIME_TO_REPORT_ERROR = 5 * 1000; // 5s
+constexpr int RETRY_TIME_TO_REPORT_ERROR = 10; // 10
 
 static bool isNumber(const std::string& str)
 {
@@ -52,15 +55,18 @@ void PlayListDownloader::PlayListDownloaderInit()
     });
 }
 
-PlayListDownloader::PlayListDownloader()
+PlayListDownloader::PlayListDownloader(const std::map<std::string, std::string>& httpHeader) noexcept
 {
     downloader_ = std::make_shared<Downloader>("hlsPlayList");
+    httpHeader_ = httpHeader;
     PlayListDownloaderInit();
 }
 
-PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader)
+PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader,
+    const std::map<std::string, std::string>& httpHeader) noexcept
 {
     downloader_ = downloader;
+    httpHeader_ = httpHeader;
     PlayListDownloaderInit();
 }
 
@@ -73,13 +79,26 @@ void PlayListDownloader::DoOpen(const std::string& url)
 {
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                       std::shared_ptr<DownloadRequest>& request) {
+        if (retryStartTime_ == 0) {
+            retryStartTime_ = request->GetNowTime();
+        }
+        int64_t nowTime = request->GetNowTime();
+        bool isNeedReportError = (nowTime - retryStartTime_) >= RETRY_DELTA_TIME_TO_REPORT_ERROR
+                                  || request->GetRetryTimes() >= RETRY_TIME_TO_REPORT_ERROR;
+        if (isNeedReportError && eventCallback_ != nullptr) {
+            MEDIA_LOG_E("fail to download m3u8.");
+            eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
+                                    {NetworkClientErrorCode::ERROR_TIME_OUT}, "download m3u8"});
+
+            return;
+        }
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
 
-    MediaSouce mediaSouce;
-    mediaSouce.url = url;
-    mediaSouce.httpHeader = httpHeader_;
-    downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSouce, true);
+    RequestInfo requestInfo;
+    requestInfo.url = url;
+    requestInfo.httpHeader = httpHeader_;
+    downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, requestInfo, true);
     if (downloadRequest_ == nullptr) {
         MEDIA_LOG_E("no enough memory downloadRequest_ is nullptr");
         return;
@@ -205,6 +224,10 @@ void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const st
 {
     ParseManifest(location);
     playList_.clear();
+    retryStartTime_ = 0;
+    if (isAppBackground_) {
+        downloader_->Pause(true);
+    }
 }
 
 void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
@@ -212,7 +235,8 @@ void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr
 {
     // This should not be called normally
     MEDIA_LOG_D("Should not call this OnDownloadStatus, should call monitor.");
-    if (request->GetClientError() != NetworkClientErrorCode::ERROR_OK || request->GetServerError() != 0) {
+    if (request->GetClientError() != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)
+        || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
 }
@@ -291,6 +315,11 @@ std::map<std::string, std::string> PlayListDownloader::GetHttpHeader()
     return httpHeader_;
 }
 
+void PlayListDownloader::SetCallback(Callback* cb)
+{
+    eventCallback_ = cb;
+}
+
 void PlayListDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
@@ -299,6 +328,24 @@ void PlayListDownloader::SetInterruptState(bool isInterruptNeeded)
     }
 }
 
+void PlayListDownloader::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+}
+
+void PlayListDownloader::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("PlayListDownloader::StopBufferring.");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("PlayListDownloader:StopBufferring error.");
+        return;
+    }
+    isAppBackground_ = isAppBackground;
+    downloader_->SetAppState(isAppBackground);
+    downloader_->StopBufferring();
+}
 }
 }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -55,7 +55,7 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
         updateTask_->Stop();
     }
     if (downloader_ != nullptr) {
-        downloader_ = nullptr;
+        downloader_->Stop(false);
     }
     MEDIA_LOG_I("~HlsPlayListDownloader out");
 }
@@ -160,8 +160,11 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         url_ = location;
     }
     if (!master_) {
-        master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_);
+        master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, httpHeader_);
         currentVariant_ = master_->defaultVariant_;
+        if (currentVariant_ && currentVariant_->m3u8_) {
+            currentVariant_->m3u8_->httpHeader_ = httpHeader_;
+        }
         if (!master_->isSimple_) {
             UpdateManifest();
         } else {
@@ -170,21 +173,34 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
             NotifyListChange();
         }
     } else {
-        if (master_->isSimple_) {
-            bool ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
-            if (ret) {
-                UpdateMasterInfo(isPreParse);
-                NotifyListChange();
-            }
-        } else {
-            currentVariant_ = master_->defaultVariant_;
-            bool ret = currentVariant_->m3u8_->Update(playList_, true);
-            if (ret) {
-                UpdateMasterInfo(isPreParse);
-                master_->isSimple_ = true;
-                NotifyListChange();
-            }
+        UpdateMasterAndNotifyList(isPreParse);
+    }
+    if (!master_->isParseSuccess_ && eventCallback_ != nullptr) {
+        MEDIA_LOG_E("ParseManifest parse failed.");
+        eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
+                                {NetworkClientErrorCode::ERROR_TIME_OUT}, "parse m3u8"});
+    }
+}
+
+void HlsPlayListDownloader::UpdateMasterAndNotifyList(bool isPreParse)
+{
+    bool ret = false;
+    if (!master_->isSimple_) {
+        currentVariant_ = master_->defaultVariant_;
+    }
+    if (currentVariant_ && currentVariant_->m3u8_) {
+        currentVariant_->m3u8_->httpHeader_ = httpHeader_;
+        ret = currentVariant_->m3u8_->Update(playList_, true);
+    }
+    if (master_->isSimple_) {
+        master_->isParseSuccess_ = ret;
+    }
+    if (ret) {
+        if (!master_->isSimple_) {
+            master_->isSimple_ = true;
         }
+        UpdateMasterInfo(isPreParse);
+        NotifyListChange();
     }
 }
 
@@ -192,6 +208,8 @@ void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
 {
     master_->bLive_ = currentVariant_->m3u8_->IsLive();
     master_->duration_ = currentVariant_->m3u8_->GetDuration();
+    master_->segmentOffsets_ = currentVariant_->m3u8_->segmentOffsets_;
+    master_->hasDiscontinuity_ = currentVariant_->m3u8_->hasDiscontinuity_;
     isParseFinished_ = isPreParse ? false : true;
 }
 
@@ -338,6 +356,23 @@ void HlsPlayListDownloader::SetMimeType(const std::string& mimeType)
 {
     mimeType_ = mimeType;
 }
+
+size_t HlsPlayListDownloader::GetSegmentOffset(uint32_t tsIndex)
+{
+    if (master_ && master_->segmentOffsets_.size() > tsIndex) {
+        return master_->segmentOffsets_[tsIndex];
+    }
+    return 0;
+}
+
+bool HlsPlayListDownloader::GetHLSDiscontinuity()
+{
+    if (master_) {
+        return master_->hasDiscontinuity_;
+    }
+    return false;
+}
+
 }
 }
 }

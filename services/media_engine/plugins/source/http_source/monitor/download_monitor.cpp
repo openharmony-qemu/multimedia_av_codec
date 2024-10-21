@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,6 @@
 
 #include "monitor/download_monitor.h"
 #include "cpp_ext/algorithm_ext.h"
-#include <set>
 
 namespace OHOS {
 namespace Media {
@@ -36,6 +35,10 @@ DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) no
 {
     auto statusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
+        if (isClosed_) {
+            MEDIA_LOG_W("Downloader monitor is already closed.");
+            return;
+        }
         OnDownloadStatus(std::forward<decltype(downloader)>(downloader), std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
@@ -86,6 +89,7 @@ void DownloadMonitor::Resume()
 
 void DownloadMonitor::Close(bool isAsync)
 {
+    isClosed_ = true;
     {
         AutoLock lock(taskMutex_);
         retryTasks_.clear();
@@ -177,41 +181,49 @@ bool DownloadMonitor::GetStartedStatus()
 bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 {
     auto clientError = request->GetClientError();
-    int serverError = static_cast<int>(request->GetServerError());
+    int serverError = request->GetServerError();
     auto retryTimes = request->GetRetryTimes();
     std::set<int> notRetryErrorSet = {400, 401, 403};
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
-    if (clientError == NetworkClientErrorCode::ERROR_NOT_RETRY ||
+    if (GetBufferingTimeOut()) {
+        MEDIA_LOG_I("Media downloader buffering timeout, don't need retry.");
+        if (downloader_ != nullptr) {
+            downloader_->SetDownloadErrorState();
+        }
+        request->Close();
+        return false;
+    }
+
+    if (clientError == static_cast<int32_t>(NetworkClientErrorCode::ERROR_NOT_RETRY) ||
         notRetryErrorSet.find(serverError) != notRetryErrorSet.end() ||
         serverError >= SERVER_ERROR_THRESHOLD) {
-        if (retryTimes > RETRY_THRESHOLD) {
-            if (callback_ != nullptr) {
-                MEDIA_LOG_I("Send http client error, code " PUBLIC_LOG_D32, static_cast<int32_t>(clientError));
+        if (retryTimes > RETRY_THRESHOLD && !GetPlayable()) {
+            if (downloader_ != nullptr) {
                 downloader_->SetDownloadErrorState();
             }
             request->Close();
             return false;
         }
-        return true;
     }
-    if ((clientError != NetworkClientErrorCode::ERROR_OK && clientError != NetworkClientErrorCode::ERROR_NOT_RETRY)
+    if (clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)
+        || clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_NOT_RETRY)
         || serverError != 0) {
-        if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR) { // Report error to upper layer
-            if (clientError != NetworkClientErrorCode::ERROR_OK && callback_ != nullptr) {
-                MEDIA_LOG_I("Send http client error, code " PUBLIC_LOG_D32, static_cast<int32_t>(clientError));
-                downloader_->SetDownloadErrorState();
+        if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR && !GetPlayable()) {
+            if (clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)) {
+                MEDIA_LOG_I("Send http client error, code: " PUBLIC_LOG_D32, static_cast<int32_t>(clientError));
             }
-            if (serverError != 0 && callback_ != nullptr) {
-                MEDIA_LOG_I("Send http server error, code " PUBLIC_LOG_D32, serverError);
+            if (serverError != 0) {
+                MEDIA_LOG_I("Send http server error, code: " PUBLIC_LOG_D32, static_cast<int32_t>(serverError));
+            }
+            if (downloader_ != nullptr) {
                 downloader_->SetDownloadErrorState();
             }
             request->Close();
             return false;
         }
-        return true;
     }
-    return false;
+    return true;
 }
 
 void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
@@ -295,6 +307,12 @@ void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     }
 }
 
+size_t DownloadMonitor::GetBufferSize() const
+{
+    FALSE_RETURN_V(downloader_ != nullptr, 0);
+    return downloader_->GetBufferSize();
+}
+
 Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate");
@@ -303,6 +321,64 @@ Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
         return Status::ERROR_INVALID_OPERATION;
     }
     return downloader_->SetCurrentBitRate(bitRate, streamID);
+}
+
+void DownloadMonitor::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+}
+
+bool DownloadMonitor::GetPlayable()
+{
+    if (downloader_) {
+        return downloader_->GetPlayable();
+    }
+    return false;
+}
+
+bool DownloadMonitor::GetBufferingTimeOut()
+{
+    if (downloader_) {
+        return downloader_->GetBufferingTimeOut();
+    } else {
+        return false;
+    }
+}
+
+size_t DownloadMonitor::GetSegmentOffset()
+{
+    if (downloader_) {
+        return downloader_->GetSegmentOffset();
+    }
+    return 0;
+}
+
+bool DownloadMonitor::GetHLSDiscontinuity()
+{
+    if (downloader_) {
+        return downloader_->GetHLSDiscontinuity();
+    }
+    return false;
+}
+
+Status DownloadMonitor::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("DownloadMonitor::StopBufferring");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("StopBufferring failed, downloader_ is nullptr");
+        return Status::ERROR_NULL_POINTER;
+    }
+    return downloader_->StopBufferring(isAppBackground);
+}
+
+bool DownloadMonitor::IsBuffering()
+{
+    if (downloader_) {
+        return downloader_->IsBuffering();
+    }
+    return false;
 }
 }
 }

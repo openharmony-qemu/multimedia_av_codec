@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -51,8 +51,12 @@ public:
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();
     std::shared_ptr<M3U8VariantStream> GetCurrentVariant();
     std::shared_ptr<M3U8VariantStream> GetNewVariant();
+    size_t GetSegmentOffset(uint32_t tsIndex) override;
+    bool GetHLSDiscontinuity() override;
+
 private:
     void UpdateMasterInfo(bool isPreParse);
+    void UpdateMasterAndNotifyList(bool isPreParse);
 private:
     std::string url_ {};
     PlayListChangeCallback* callback_ {nullptr};

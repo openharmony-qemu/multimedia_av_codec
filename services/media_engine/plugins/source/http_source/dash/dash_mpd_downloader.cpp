@@ -16,9 +16,11 @@
 #include <mutex>
 #include <unistd.h>
 #include <cstdlib>
+#include <limits>
 #include <sstream>
 #include <algorithm>
 #include "plugin/plugin_time.h"
+#include "network/network_typs.h"
 #include "dash_mpd_downloader.h"
 #include "dash_mpd_util.h"
 #include "sidx_box_parser.h"
@@ -52,13 +54,9 @@ DashMpdDownloader::DashMpdDownloader()
 
 DashMpdDownloader::~DashMpdDownloader() noexcept
 {
-    downloadRequest_ = nullptr;
-    downloader_ = nullptr;
-    representationManager_ = nullptr;
-    adptSetManager_ = nullptr;
-    periodManager_ = nullptr;
-    mpdManager_ = nullptr;
-    mpdParser_ = nullptr;
+    if (downloader_ != nullptr) {
+        downloader_->Stop(false);
+    }
     streamDescriptions_.clear();
 }
 
@@ -680,8 +678,7 @@ void DashMpdDownloader::ParseSidx()
                           currentDownloadStream_->initSegment_->rangeBegin_;
         if (initLen >= 0 && (unsigned int)initLen < downloadContent_.size()) {
             sidxContent = downloadContent_.substr((unsigned int)initLen);
-            MEDIA_LOG_I("ParseSidx update sidx segment content size is " PUBLIC_LOG_ZU ", "
-                PUBLIC_LOG_C "-" PUBLIC_LOG_C, sidxContent.size(), sidxContent[0], sidxContent[1]);
+            MEDIA_LOG_I("ParseSidx update sidx segment content size is " PUBLIC_LOG_ZU, sidxContent.size());
         }
     }
 
@@ -714,12 +711,20 @@ void DashMpdDownloader::ParseSidx()
 void DashMpdDownloader::BuildDashSegment(std::list<std::shared_ptr<SubSegmentIndex>> &subSegIndexList) const
 {
     uint64_t segDurSum = 0; // the sum of segment duration, not devide timescale
-    unsigned int segAddDuration = 0; // add all segments duration(ms) before current segment
+    uint64_t segAddDuration = 0; // add all segments duration(ms) before current segment
+    uint32_t timeScale = 1;
     int64_t segSeq = currentDownloadStream_->startNumberSeq_;
     for (const auto &subSegIndex : subSegIndexList) {
-        unsigned int durationMS = (static_cast<uint64_t>(subSegIndex->duration_) * S_2_MS) / subSegIndex->timeScale_;
+        timeScale = (subSegIndex->timeScale_ > 0) ? subSegIndex->timeScale_ : 1;
+        uint64_t durationMS = (static_cast<uint64_t>(subSegIndex->duration_) * S_2_MS) / timeScale;
         segDurSum += subSegIndex->duration_;
-        unsigned int segDurMsSum = static_cast<unsigned int>((segDurSum * S_2_MS) / subSegIndex->timeScale_);
+        uint64_t segDurMsSum = (segDurSum * S_2_MS) / timeScale;
+        if (segDurMsSum >= UINT_MAX) {
+            MEDIA_LOG_W("segDurMsSum is too large: " PUBLIC_LOG_U64 ", timeScale: "
+                PUBLIC_LOG_U32, segDurMsSum, timeScale);
+            break;
+        }
+
         if (segDurMsSum > segAddDuration) {
             durationMS = segDurMsSum - segAddDuration;
         }
@@ -729,7 +734,7 @@ void DashMpdDownloader::BuildDashSegment(std::list<std::shared_ptr<SubSegmentInd
         DashSegment srcSegment;
         srcSegment.streamId_ = currentDownloadStream_->streamId_;
         srcSegment.bandwidth_ = currentDownloadStream_->bandwidth_;
-        srcSegment.duration_ = durationMS;
+        srcSegment.duration_ = (uint32_t)durationMS;
         srcSegment.startNumberSeq_ = currentDownloadStream_->startNumberSeq_;
         srcSegment.numberSeq_ = segSeq++;
         srcSegment.startRangeValue_ = subSegIndex->startPos_;
@@ -781,7 +786,7 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
     }
 
     MEDIA_LOG_I("DoOpen:start=%{public}lld end=%{public}lld", (long long) startRange, (long long) endRange);
-    MediaSouce mediaSource;
+    RequestInfo mediaSource;
     mediaSource.url = url;
     mediaSource.timeoutMs = MPD_HTTP_TIME_OUT_MS;
     downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSource, requestWholeFile);

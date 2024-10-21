@@ -21,9 +21,11 @@
 #include <string>
 #include "osal/task/task.h"
 #include "osal/task/mutex.h"
+#include "osal/task/condition_variable.h"
 #include "osal/task/blocking_queue.h"
 #include "osal/utils/util.h"
-#include "network_client.h"
+#include "network/network_client.h"
+#include "network/network_typs.h"
 #include <chrono>
 #include "securec.h"
 
@@ -75,21 +77,15 @@ using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Do
     std::shared_ptr<DownloadRequest>&)>;
 using DownloadDoneCbFunc = std::function<void(const std::string&, const std::string&)>;
 
-struct MediaSouce {
-    std::string url;
-    std::map<std::string, std::string> httpHeader;
-    int32_t timeoutMs{-1};
-};
-
 class DownloadRequest {
 public:
     DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
     DownloadRequest(const std::string& url, double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
-    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
                     bool requestWholeFile = false);
-    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
                     bool requestWholeFile = false);
 
     size_t GetFileContentLength() const;
@@ -98,8 +94,8 @@ public:
     Seekable IsChunked(bool isInterruptNeeded);
     bool IsEos() const;
     int GetRetryTimes() const;
-    NetworkClientErrorCode GetClientError() const;
-    NetworkServerErrorCode GetServerError() const;
+    int32_t GetClientError() const;
+    int32_t GetServerError() const;
     bool IsSame(const std::shared_ptr<DownloadRequest>& other) const
     {
         return url_ == other->url_ && startPos_ == other->startPos_;
@@ -130,7 +126,7 @@ private:
 
     HeaderInfo headerInfo_;
     std::map<std::string, std::string> httpHeader_;
-    MediaSouce mediaSouce_ {};
+    RequestInfo mediaSouce_ {};
 
     bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished
@@ -141,8 +137,8 @@ private:
     bool requestWholeFile_ {false};
     int requestSize_ {0};
     int retryTimes_ {0};
-    NetworkClientErrorCode clientError_ {NetworkClientErrorCode::ERROR_OK};
-    NetworkServerErrorCode serverError_ {0};
+    int32_t clientError_ {0};
+    int32_t serverError_ {0};
     bool shouldSaveData_ {true};
     int64_t downloadStartTime_ {0};
     int64_t downloadDoneTime_ {0};
@@ -153,6 +149,7 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::atomic<bool> retryOnGoing_ {false};
     int64_t dropedDataLen_ {0};
+    std::atomic<bool> isFirstRangeRequestReady_ {false};
 };
 
 class Downloader {
@@ -170,8 +167,12 @@ public:
     bool Retry(const std::shared_ptr<DownloadRequest>& request);
     void SetRequestSize(size_t downloadRequestSize);
     void GetIp(std::string &ip);
+    void SetAppUid(int32_t appUid);
     const std::shared_ptr<DownloadRequest>& GetCurrentRequest();
     void SetInterruptState(bool isInterruptNeeded);
+    void SetAppState(bool isAppBackground);
+    void StopBufferring();
+
 private:
     bool BeginDownload();
 
@@ -185,7 +186,6 @@ private:
     static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
-    static bool HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
@@ -209,13 +209,14 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
 
     enum struct LoopStatus {
-        NORMAL,
+        IDLE,
+        START,
         PAUSE,
-        PAUSEDONE,
     };
-    std::atomic<LoopStatus> loopStatus_ {LoopStatus::NORMAL};
+    std::atomic<LoopStatus> loopStatus_ {LoopStatus::IDLE};
     FairMutex loopPauseMutex_ {};
     ConditionVariable loopPauseCond_;
+    std::atomic<bool> isAppBackground_ {false};
 };
 }
 }

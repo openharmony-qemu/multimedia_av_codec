@@ -16,7 +16,6 @@
 
 #include "avcodec_trace.h"
 #include "http_source_plugin.h"
-#include "download/http_curl_client.h"
 #include "common/log.h"
 #include "hls/hls_media_downloader.h"
 #include "dash/dash_media_downloader.h"
@@ -214,9 +213,11 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             uint32_t expectDuration = playStrategy->duration;
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(expectDuration));
+            downloader_ = std::make_shared<DownloadMonitor>(
+                            std::make_shared<HlsMediaDownloader>(expectDuration, httpHeader_));
         } else {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
+            downloader_ = std::make_shared<DownloadMonitor>(
+                            std::make_shared<HlsMediaDownloader>(httpHeader_));
         }
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
@@ -234,6 +235,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     }
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded_);
+        downloader_->SetAppUid(source->GetAppUid());
     }
 }
 
@@ -253,6 +255,8 @@ Status HttpSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, 
 
 Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
+    MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::Read, offset: "
+        + std::to_string(offset) + ", expectedLen: " + std::to_string(expectedLen));
     MEDIA_LOG_D("Read enter.");
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
@@ -277,6 +281,7 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     readDataInfo.streamId_ = streamId;
     readDataInfo.nextStreamId_ = streamId;
     readDataInfo.wantReadLength_ = expectedLen;
+    readDataInfo.ffmpegOffset = offset;
 
     auto result = downloader_->Read(bufData->GetWritableAddr(expectedLen), readDataInfo);
     buffer->streamID = readDataInfo.nextStreamId_;
@@ -425,6 +430,37 @@ Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
         return Status::ERROR_INVALID_OPERATION;
     }
     return downloader_->SetCurrentBitRate(bitRate, streamID);
+}
+
+size_t HttpSourcePlugin::GetSegmentOffset()
+{
+    if (downloader_) {
+        return downloader_->GetSegmentOffset();
+    }
+    return 0;
+}
+
+bool HttpSourcePlugin::GetHLSDiscontinuity()
+{
+    if (downloader_) {
+        return downloader_->GetHLSDiscontinuity();
+    }
+    return false;
+}
+
+Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
+{
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("StopBufferring failed, downloader_ is nullptr");
+        return Status::ERROR_NULL_POINTER;
+    }
+    return downloader_->StopBufferring(isAppBackground);
+}
+
+bool HttpSourcePlugin::IsBuffering()
+{
+    FALSE_RETURN_V(downloader_ != nullptr, false);
+    return downloader_->IsBuffering();
 }
 }
 }

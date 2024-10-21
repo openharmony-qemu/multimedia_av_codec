@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <set>
 #include "osal/task/task.h"
 #include "osal/task/mutex.h"
 #include "osal/task/blocking_queue.h"
@@ -28,6 +29,7 @@
 #include "download/downloader.h"
 #include "media_downloader.h"
 #include "common/media_source.h"
+#include "common/media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -59,7 +61,6 @@ public:
     bool SelectBitRate(uint32_t bitRate) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
-
     void SetDemuxerState(int32_t streamId) override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     void SetInterruptState(bool isInterruptNeeded) override;
@@ -69,12 +70,21 @@ public:
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+    size_t GetBufferSize() const override;
+    bool GetPlayable() override;
+    bool GetBufferingTimeOut() override;
+    void SetAppUid(int32_t appUid) override;
+    size_t GetSegmentOffset() override;
+    bool GetHLSDiscontinuity() override;
+    Status StopBufferring(bool isAppBackground) override;
+    bool IsBuffering() override;
 
 private:
     int64_t HttpMonitorLoop();
     void OnDownloadStatus(std::shared_ptr<Downloader>& downloader, std::shared_ptr<DownloadRequest>& request);
     bool NeedRetry(const std::shared_ptr<DownloadRequest>& request);
 
+    std::atomic<bool> isClosed_{false};
     std::shared_ptr<MediaDownloader> downloader_;
     std::list<RetryRequest> retryTasks_;
     std::atomic<bool> isPlaying_ {false};

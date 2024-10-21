@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -72,6 +72,7 @@ struct M3U8 {
     void InitTagUpdatersMap();
     bool Update(const std::string& playList, bool isNeedCleanFiles);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
+    void AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration);
     void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const;
     double GetDuration() const;
     bool IsLive() const;
@@ -111,6 +112,10 @@ struct M3U8 {
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
+    std::atomic<bool> isPlayTypeFound_ {false};
+    bool hasDiscontinuity_ {false};
+    std::vector<size_t> segmentOffsets_;
+    std::map<std::string, std::string> httpHeader_ {};
 };
 
 struct M3U8Media {
@@ -140,7 +145,8 @@ struct M3U8VariantStream {
 };
 
 struct M3U8MasterPlaylist {
-    M3U8MasterPlaylist(const std::string& playList, const std::string& uri);
+    M3U8MasterPlaylist(const std::string& playList, const std::string& uri,
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>());
     void UpdateMediaPlaylist();
     void UpdateMasterPlaylist();
     void DownloadSessionKey(std::shared_ptr<Tag>& tag);
@@ -156,6 +162,10 @@ struct M3U8MasterPlaylist {
     uint8_t iv_[16] { 0 };
     uint8_t key_[16] { 0 };
     size_t keyLen_ { 0 };
+    std::atomic<bool> isParseSuccess_ {true};
+    bool hasDiscontinuity_ {false};
+    std::vector<size_t> segmentOffsets_;
+    std::map<std::string, std::string> httpHeader_ {};
 };
 }
 }
