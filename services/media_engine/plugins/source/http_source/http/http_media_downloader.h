@@ -70,8 +70,6 @@ public:
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
     void SetAppUid(int32_t appUid) override;
-    Status StopBufferring(bool isAppBackground) override;
-    bool IsBuffering() override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);

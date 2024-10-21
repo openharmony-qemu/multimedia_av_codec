@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -556,6 +556,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     MEDIA_LOG_I("HLS Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, GetBufferSize(), seekTime);
     AutoLock lock(switchMutex_);
+    FALSE_RETURN_V(playlistDownloader_ != nullptr, false);
     FALSE_RETURN_V(cacheMediaBuffer_ != nullptr, false);
     isSeekingFlag = true;
     seekTime_ = static_cast<uint64_t>(seekTime);
@@ -1599,25 +1600,6 @@ bool HlsMediaDownloader::GetHLSDiscontinuity()
     return false;
 }
 
-Status HlsMediaDownloader::StopBufferring(bool isAppBackground)
-{
-    MEDIA_LOG_I("HlsMediaDownloader:StopBufferring enter");
-    if (cacheMediaBuffer_ == nullptr || downloader_ == nullptr || playlistDownloader_ == nullptr) {
-        MEDIA_LOG_E("StopBufferring error.");
-        return Status::ERROR_NULL_POINTER;
-    }
-    downloader_->SetAppState(isAppBackground);
-    if (isAppBackground) {
-        isInterrupt_ = true;
-    } else {
-        isInterrupt_ = false;
-    }
-    downloader_->StopBufferring();
-    playlistDownloader_->StopBufferring(isAppBackground);
-    MEDIA_LOG_I("HlsMediaDownloader:StopBufferring out");
-    return Status::OK;
-}
-
 bool HlsMediaDownloader::ClearChunksOfFragment()
 {
     bool res = false;
@@ -1630,10 +1612,6 @@ bool HlsMediaDownloader::ClearChunksOfFragment()
     return res;
 }
 
-bool HlsMediaDownloader::IsBuffering()
-{
-    return isBuffering_;
-}
 }
 }
 }

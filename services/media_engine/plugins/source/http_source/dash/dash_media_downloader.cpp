@@ -329,6 +329,9 @@ void DashMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
 void DashMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("Dash SetDownloadErrorState");
+    if (callback_) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetWorkClientErroeCode::ERROR_TIME_OUT}, "download"});
+    }
     downloadErrorState_ = true;
 }
 

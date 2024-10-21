@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -85,7 +85,6 @@ public:
     {
         return false;
     }
-    void StopBufferring(bool isAppBackground);
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -116,7 +115,6 @@ protected:
     int64_t retryStartTime_ {0};
     Callback* eventCallback_ {nullptr};
     std::atomic<bool> isInterruptNeeded_{false};
-    std::atomic<bool> isAppBackground_ {false};
 };
 }
 }

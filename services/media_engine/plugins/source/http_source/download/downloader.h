@@ -83,9 +83,9 @@ public:
                     bool requestWholeFile = false);
     DownloadRequest(const std::string& url, double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
-    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
+    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
                     bool requestWholeFile = false);
-    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
+    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
                     bool requestWholeFile = false);
 
     size_t GetFileContentLength() const;
@@ -94,8 +94,8 @@ public:
     Seekable IsChunked(bool isInterruptNeeded);
     bool IsEos() const;
     int GetRetryTimes() const;
-    int32_t GetClientError() const;
-    int32_t GetServerError() const;
+    NetWorkClientErrorCode GetClientError() const;
+    NetWorkServerErrorCode GetServerError() const;
     bool IsSame(const std::shared_ptr<DownloadRequest>& other) const
     {
         return url_ == other->url_ && startPos_ == other->startPos_;
@@ -126,7 +126,7 @@ private:
 
     HeaderInfo headerInfo_;
     std::map<std::string, std::string> httpHeader_;
-    RequestInfo mediaSouce_ {};
+    RequestInfo requestInfo_ {};
 
     bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished
@@ -137,8 +137,8 @@ private:
     bool requestWholeFile_ {false};
     int requestSize_ {0};
     int retryTimes_ {0};
-    int32_t clientError_ {0};
-    int32_t serverError_ {0};
+    NetWorkClientErrorCode clientError_ {NetWorkClientErrorCode::ERROR_OK};
+    NetWorkServerErrorCode serverError_ {0};
     bool shouldSaveData_ {true};
     int64_t downloadStartTime_ {0};
     int64_t downloadDoneTime_ {0};
@@ -170,8 +170,6 @@ public:
     void SetAppUid(int32_t appUid);
     const std::shared_ptr<DownloadRequest>& GetCurrentRequest();
     void SetInterruptState(bool isInterruptNeeded);
-    void SetAppState(bool isAppBackground);
-    void StopBufferring();
 
 private:
     bool BeginDownload();
@@ -216,7 +214,6 @@ private:
     std::atomic<LoopStatus> loopStatus_ {LoopStatus::IDLE};
     FairMutex loopPauseMutex_ {};
     ConditionVariable loopPauseCond_;
-    std::atomic<bool> isAppBackground_ {false};
 };
 }
 }

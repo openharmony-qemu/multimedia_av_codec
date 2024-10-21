@@ -1252,39 +1252,6 @@ bool HttpMediaDownloader::GetBufferingTimeOut()
     }
 }
 
-Status HttpMediaDownloader::StopBufferring(bool isAppBackground)
-{
-    MEDIA_LOG_I("HttpMediaDownloader:StopBufferring enter");
-    if (downloader_ == nullptr) {
-        MEDIA_LOG_E("StopBufferring error.");
-        return Status::ERROR_NULL_POINTER;
-    }
-    downloader_->SetAppState(isAppBackground);
-    if (isAppBackground) {
-        if (ringBuffer_ != nullptr) {
-            ringBuffer_->SetActive(false, false);
-        }
-        if (cacheMediaBuffer_ != nullptr) {
-            isInterrupt_ = true;
-        }
-    } else {
-        if (ringBuffer_ != nullptr) {
-            ringBuffer_->SetActive(true, false);
-        }
-        if (cacheMediaBuffer_ != nullptr) {
-            isInterrupt_ = false;
-        }
-    }
-    downloader_->StopBufferring();
-    MEDIA_LOG_I("HttpMediaDownloader:StopBufferring out");
-    return Status::OK;
-}
-
-bool HttpMediaDownloader::IsBuffering()
-{
-    return isBuffering_;
-}
-
 bool HttpMediaDownloader::ClearHasReadBuffer()
 {
     if (!isFirstFrameArrived_ || cacheMediaBuffer_ == nullptr) {

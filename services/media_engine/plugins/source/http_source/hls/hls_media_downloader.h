@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,11 +26,10 @@
 #include "openssl/aes.h"
 #include "osal/task/task.h"
 #include "common/media_source.h"
-#include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
-#include "utils/write_bitrate_caculator.h"
 #include "utils/media_cached_buffer.h"
+#include "utils/write_bitrate_caculator.h"
 #include <utility>
 
 namespace OHOS {
@@ -101,8 +100,6 @@ public:
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
-    Status StopBufferring(bool isAppBackground) override;
-    bool IsBuffering() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -184,6 +181,7 @@ private:
     uint32_t writeTsIndex_ = 0;
     bool isAutoSelectBitrate_ {true};
     uint64_t seekTime_ = 0;
+
     uint64_t readTime_ {0};
 
     bool isReadFrame_ {false};

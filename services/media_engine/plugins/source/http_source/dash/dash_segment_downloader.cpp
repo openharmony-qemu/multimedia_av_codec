@@ -988,11 +988,11 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     if (startPos >= 0 && endPos > 0) {
         requestWholeFile = false;
     }
-    RequestInfo mediaSouce;
-    mediaSouce.url = url;
-    mediaSouce.timeoutMs = HTTP_TIME_OUT_MS;
+    RequestInfo requestInfo;
+    requestInfo.url = url;
+    requestInfo.timeoutMs = HTTP_TIME_OUT_MS;
     downloadRequest_ = std::make_shared<DownloadRequest>(duration, dataSave_,
-                                                         realStatusCallback, mediaSouce, requestWholeFile);
+                                                         realStatusCallback, requestInfo, requestWholeFile);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     if (!requestWholeFile && (endPos > startPos)) {
         downloadRequest_->SetRangePos(startPos, endPos);
@@ -1080,17 +1080,17 @@ std::shared_ptr<DashInitSegment> DashSegmentDownloader::GetDashInitSegment(int32
     return segment;
 }
 
-void DashSegmentDownloader::SetAppUid(int32_t appUid)
-{
-    if (downloader_) {
-        downloader_->SetAppUid(appUid);
-    }
-}
-
 void DashSegmentDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded);
+    }
+}
+
+void DashSegmentDownloader::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
     }
 }
 

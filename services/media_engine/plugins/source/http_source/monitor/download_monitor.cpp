@@ -181,7 +181,7 @@ bool DownloadMonitor::GetStartedStatus()
 bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 {
     auto clientError = request->GetClientError();
-    int serverError = request->GetServerError();
+    int serverError = static_cast<int>(request->GetServerError());
     auto retryTimes = request->GetRetryTimes();
     std::set<int> notRetryErrorSet = {400, 401, 403};
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
@@ -195,7 +195,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         return false;
     }
 
-    if (clientError == static_cast<int32_t>(NetworkClientErrorCode::ERROR_NOT_RETRY) ||
+    if (clientError == NetworkClientErrorCode::ERROR_NOT_RETRY ||
         notRetryErrorSet.find(serverError) != notRetryErrorSet.end() ||
         serverError >= SERVER_ERROR_THRESHOLD) {
         if (retryTimes > RETRY_THRESHOLD && !GetPlayable()) {
@@ -206,11 +206,11 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
             return false;
         }
     }
-    if (clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)
-        || clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_NOT_RETRY)
+    if (clientError != NetworkClientErrorCode::ERROR_OK
+        || clientError != NetworkClientErrorCode::ERROR_NOT_RETRY
         || serverError != 0) {
         if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR && !GetPlayable()) {
-            if (clientError != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)) {
+            if (clientError != NetworkClientErrorCode::ERROR_OK) {
                 MEDIA_LOG_I("Send http client error, code: " PUBLIC_LOG_D32, static_cast<int32_t>(clientError));
             }
             if (serverError != 0) {
@@ -363,23 +363,6 @@ bool DownloadMonitor::GetHLSDiscontinuity()
     return false;
 }
 
-Status DownloadMonitor::StopBufferring(bool isAppBackground)
-{
-    MEDIA_LOG_I("DownloadMonitor::StopBufferring");
-    if (downloader_ == nullptr) {
-        MEDIA_LOG_E("StopBufferring failed, downloader_ is nullptr");
-        return Status::ERROR_NULL_POINTER;
-    }
-    return downloader_->StopBufferring(isAppBackground);
-}
-
-bool DownloadMonitor::IsBuffering()
-{
-    if (downloader_) {
-        return downloader_->IsBuffering();
-    }
-    return false;
-}
 }
 }
 }
