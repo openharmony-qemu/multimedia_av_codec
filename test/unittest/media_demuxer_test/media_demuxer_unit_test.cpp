@@ -516,29 +516,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StopAllTask_001, TestSize.Level1)
     EXPECT_EQ(Status::OK, demuxer->StopAllTask());
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_PauseForPrepareFrame_001, TestSize.Level1)
-{
-    string srtPath = "/data/test/media/drm/sm4c.ts";
-    int64_t fileSize = 0;
-    if (!srtPath.empty()) {
-        struct stat fileStatus {};
-        if (stat(srtPath.c_str(), &fileStatus) == 0) {
-            fileSize = static_cast<int64_t>(fileStatus.st_size);
-        }
-    }
-    int32_t fd = open(srtPath.c_str(), O_RDONLY);
-    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
-    int32_t trackId = 0;
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(Status::OK, demuxer->PauseForPrepareFrame());
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
-    EXPECT_EQ(Status::OK, demuxer->PauseForPrepareFrame());
-}
-
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Resume_001, TestSize.Level1)
 {
     string srtPath = "/data/test/media/drm/sm4c.ts";
@@ -560,41 +537,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Resume_001, TestSize.Level1)
         AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
-    std::shared_ptr<Pipeline::EventReceiver> receiver = std::make_shared<TestEventReceiver>();
-    demuxer->SetEventReceiver(receiver);
-    EXPECT_EQ(Status::OK, demuxer->PrepareFrame(true));
-    demuxer->taskMap_[trackId] = nullptr;
-    demuxer->doPrepareFrame_ = true;
-    EXPECT_EQ(Status::OK, demuxer->Resume());
-    std::unique_ptr<Task> task = std::make_unique<Task>("test", demuxer->playerId_, TaskType::VIDEO);
-    demuxer->taskMap_[trackId] = std::move(task);
-    EXPECT_EQ(Status::OK, demuxer->Resume());
-}
-
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Resume_002, TestSize.Level1)
-{
-    string srtPath = "/data/test/media/h264_fmp4.mp4";
-    int64_t fileSize = 0;
-    if (!srtPath.empty()) {
-        struct stat fileStatus {};
-        if (stat(srtPath.c_str(), &fileStatus) == 0) {
-            fileSize = static_cast<int64_t>(fileStatus.st_size);
-        }
-    }
-    int32_t fd = open(srtPath.c_str(), O_RDONLY);
-    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
-
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-	AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
-    demuxer->streamDemuxer_ = nullptr;
-    demuxer->source_ = nullptr;
-    demuxer->doPrepareFrame_ = true;
-    demuxer->taskMap_[0] = nullptr;
-    EXPECT_EQ(Status::OK, demuxer->Resume());
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Start_001, TestSize.Level1)
@@ -640,10 +582,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Start_002, TestSize.Level1)
         AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
-    std::shared_ptr<Pipeline::EventReceiver> receiver = std::make_shared<TestEventReceiver>();
-    demuxer->SetEventReceiver(receiver);
-    EXPECT_EQ(Status::OK, demuxer->PrepareFrame(true));
-    EXPECT_EQ(Status::OK, demuxer->Start());
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_DumpBufferToFile_001, TestSize.Level1)
@@ -1294,61 +1232,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectTrackChangeStream_016, TestSiz
     EXPECT_EQ(demuxer->SelectTrackChangeStream(0), false);
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_PrepareFrame_002, TestSize.Level1)
-{
-    string srtPath = "/data/test/media/drm/sm4c.ts";
-    int64_t fileSize = 0;
-    if (!srtPath.empty()) {
-        struct stat fileStatus {};
-        if (stat(srtPath.c_str(), &fileStatus) == 0) {
-            fileSize = static_cast<int64_t>(fileStatus.st_size);
-        }
-    }
-    int32_t fd = open(srtPath.c_str(), O_RDONLY);
-    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
-    int32_t trackId = 0;
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
-    EXPECT_EQ(Status::OK, demuxer->Resume());
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
-    std::shared_ptr<Pipeline::EventReceiver> receiver = std::make_shared<TestEventReceiver>();
-    demuxer->SetEventReceiver(receiver);
-    demuxer->isStopped_ = true;
-    demuxer->useBufferQueue_ = false;
-    EXPECT_EQ(Status::ERROR_WRONG_STATE, demuxer->PrepareFrame(true));
-}
-
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_PrepareFrame_003, TestSize.Level1)
-{
-    string srtPath = "/data/test/media/drm/sm4c.ts";
-    int64_t fileSize = 0;
-    if (!srtPath.empty()) {
-        struct stat fileStatus {};
-        if (stat(srtPath.c_str(), &fileStatus) == 0) {
-            fileSize = static_cast<int64_t>(fileStatus.st_size);
-        }
-    }
-    int32_t fd = open(srtPath.c_str(), O_RDONLY);
-    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
-    int32_t trackId = 0;
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
-    EXPECT_EQ(Status::OK, demuxer->Resume());
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
-    std::shared_ptr<Pipeline::EventReceiver> receiver = std::make_shared<TestEventReceiver>();
-    demuxer->SetEventReceiver(receiver);
-    demuxer->waitForDataFail_ = true;
-    EXPECT_EQ(Status::OK, demuxer->PrepareFrame(true));
-}
-
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectBitRate_016, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
@@ -1526,7 +1409,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ReadLoop_002, TestSize.Level1)
     demuxer->ReadLoop(0);
     std::shared_ptr<Plugins::DemuxerPlugin> pluginMock1 = std::make_shared<DemuxerPluginMock>("StatusAgain");
     demuxer->demuxerPluginManager_->streamInfoMap_[0].plugin = pluginMock1;
-    demuxer->doPrepareFrame_ = true;
     EXPECT_EQ(demuxer->AddDemuxerCopyTask(0, TaskType::VIDEO), Status::OK);
     EXPECT_EQ(demuxer->ReadLoop(0), 0);
 
@@ -1626,20 +1508,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckChangeStreamID_002, TestSize.Le
 }
 
 /**
- * @tc.name: MediaDemuxer_GetProtocolByUri_0100
- * @tc.desc: MediaDemuxer_GetProtocolByUri_0100
- * @tc.type: FUNC
- */
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetProtocolByUri_0100, TestSize.Level1)
-{
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->PauseForPrepareFrame(), Status::OK);
-    demuxer->source_ = std::shared_ptr<Source>();
-    EXPECT_EQ(demuxer->PauseForPrepareFrame(), Status::OK);
-    demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
-    EXPECT_EQ(demuxer->PauseForPrepareFrame(), Status::OK);
-}
-/**
  * @tc.name: MediaDemuxer_Resume_0100
  * @tc.desc: MediaDemuxer_Resume_0100
  * @tc.type: FUNC
@@ -1648,12 +1516,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Resume_0100, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
-    EXPECT_EQ(demuxer->Resume(), Status::OK);
-    demuxer->source_ = std::shared_ptr<Source>();
-    EXPECT_EQ(demuxer->Resume(), Status::OK);
-    demuxer->doPrepareFrame_ = false;
-    EXPECT_EQ(demuxer->Resume(), Status::OK);
-    demuxer->doPrepareFrame_ = true;
     EXPECT_EQ(demuxer->Resume(), Status::OK);
 }
 /**

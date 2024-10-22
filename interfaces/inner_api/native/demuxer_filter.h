@@ -35,7 +35,6 @@ public:
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
     Status DoPrepare() override;
-    Status DoPrepareFrame(bool renderFirstFrame) override;
     Status DoStart() override;
     Status DoStop() override;
     Status DoPause() override;
@@ -43,6 +42,8 @@ public:
     Status DoResume() override;
     Status DoResumeDragging() override;
     Status DoFlush() override;
+    Status DoPreroll() override;
+    Status DoWaitPrerollDone(bool render) override;
     Status Reset();
     Status PauseForSeek();
     Status ResumeForSeek();
@@ -125,7 +126,6 @@ private:
     std::string CollectVideoAndAudioMime();
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
-    std::atomic<bool> isPrepareFramed{false};
 
     std::shared_ptr<Filter> nextFilter_;
     std::shared_ptr<MediaDemuxer> demuxer_;

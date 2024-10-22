@@ -66,7 +66,6 @@ public:
 
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     Status Reset();
-    Status PrepareFrame(bool renderFirstFrame);
     Status Start();
     Status Stop();
     Status Pause();
@@ -74,6 +73,8 @@ public:
     Status Resume();
     Status ResumeDragging();
     Status Flush();
+    Status Preroll();
+    Status PausePreroll();
 
     Status StartTask(int32_t trackId);
     Status SelectTrack(int32_t trackId);
@@ -170,6 +171,7 @@ private:
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     void CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     bool IsTrackDisabled(Plugins::MediaType mediaType);
+    bool CheckTrackEnabledById(uint32_t trackId);
     bool HandleDashChangeStream(uint32_t trackId);
 
     Status SeekToTimePre();
@@ -177,7 +179,6 @@ private:
     bool SelectBitRateChangeStream(uint32_t trackId);
     bool SelectTrackChangeStream(uint32_t trackId);
     bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
-    Status PauseForPrepareFrame();
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
 
     Plugins::Seekable seekable_;
@@ -234,18 +235,12 @@ private:
     uint32_t subtitleTrackId_{TRACK_ID_DUMMY};
     bool firstAudio_{true};
 
-    std::atomic<bool> isStopped_ = false;
+    std::atomic<bool> isStopped_ = true;
     std::atomic<bool> isPaused_ = false;
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
     std::shared_ptr<BaseStreamDemuxer> subStreamDemuxer_;
     std::string bundleName_ {};
     std::string playerId_;
-    bool waitForDataFail_{false};
-
-    Mutex firstFrameMutex_{};
-    ConditionVariable firstFrameCond_;
-    uint64_t firstFrameCount_ = 0;
-    bool doPrepareFrame_{false};
 
     std::atomic<bool> isDecodeOptimizationEnabled_ {false};
     std::atomic<float> speed_ {1.0f};
@@ -266,6 +261,9 @@ private:
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
     int64_t duration_ {0};
+
+    std::mutex prerollMutex_ {};
+    std::atomic<bool> inPreroll_ = false;
 
     uint32_t selectTrackTrackID_ { TRACK_ID_DUMMY };
     std::atomic<bool> isSelectTrack_ = false;

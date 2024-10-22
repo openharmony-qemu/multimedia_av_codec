@@ -37,9 +37,9 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-static const uint32_t LOCK_WAIT_TIME = 1000; // Lock wait for 1000ms.
 static const int64_t PLAY_RANGE_DEFAULT_VALUE = -1;
 static const int64_t MICROSECONDS_CONVERT_UNIT = 1000; // ms change to us
+static const uint32_t PREROLL_WAIT_TIME = 1000; // Lock wait for 1000ms.
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -245,46 +245,9 @@ Status DecoderSurfaceFilter::DoPrepare()
     return Status::OK;
 }
 
-Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
-{
-    MEDIA_LOG_I("PrepareFrame");
-    doPrepareFrame_ = true;
-    renderFirstFrame_ = renderFirstFrame;
-    Status ret = Status::OK;
-    if (isPaused_.load()) {
-        ret = DoResume();
-    } else {
-        ret = DoStart();
-    }
-    FALSE_RETURN_V(ret != Status::OK, ret);
-    MEDIA_LOG_E("PrepareFrame decoder fail ret = %{public}d", ret);
-    eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
-    return ret;
-}
-
-Status DecoderSurfaceFilter::WaitPrepareFrame()
-{
-    MEDIA_LOG_D("WaitPrepareFrame");
-    {
-        AutoLock lock(firstFrameMutex_);
-        bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
-            return !doPrepareFrame_ || isInterruptNeeded_;
-        });
-        MEDIA_LOG_I("PrepareFrame res= %{public}d. isInterruptNeeded= %{public}d", res, isInterruptNeeded_.load());
-        doPrepareFrame_ = false;
-    }
-    DoPause();
-    return Status::OK;
-}
-
 Status DecoderSurfaceFilter::HandleInputBuffer()
 {
-    if (doPrepareFrame_) {
-        MEDIA_LOG_I("doPrepareFrame");
-        DoProcessInputBuffer(0, false);
-    } else {
-        ProcessInputBuffer();
-    }
+    ProcessInputBuffer();
     return Status::OK;
 }
 
@@ -308,6 +271,7 @@ Status DecoderSurfaceFilter::DoPause()
 {
     MEDIA_LOG_I("Pause");
     isPaused_ = true;
+    isFirstFrameAfterResume_ = false;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
@@ -329,6 +293,7 @@ Status DecoderSurfaceFilter::DoResume()
     MEDIA_LOG_I("Resume");
     refreshTotalPauseTime_ = true;
     isPaused_ = false;
+    isFirstFrameAfterResume_ = true;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
@@ -392,6 +357,57 @@ Status DecoderSurfaceFilter::DoRelease()
 {
     MEDIA_LOG_I("Release");
     videoDecoder_->Release();
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::DoPreroll()
+{
+    MEDIA_LOG_I("DoPreroll enter.");
+    std::lock_guard<std::mutex> lock(prerollMutex_);
+    Status ret = Status::OK;
+    FALSE_RETURN_V_MSG(!inPreroll_.load(), Status::OK, "DoPreroll in preroll now.");
+    inPreroll_.store(true);
+    prerollDone_.store(false);
+    eosNext_.store(false);
+    if (isPaused_.load()) {
+        ret = DoResume();
+    } else {
+        ret = DoStart();
+    }
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("video decoder start failed, ret = %{public}d", ret);
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR,
+            MSERR_VID_DEC_FAILED});
+    }
+    Filter::StartFilterTask();
+    return ret;
+}
+
+Status DecoderSurfaceFilter::DoWaitPrerollDone(bool render)
+{
+    MEDIA_LOG_I("DoWaitPrerollDone enter.");
+    std::unique_lock<std::mutex> lock(prerollMutex_);
+    FALSE_RETURN_V(inPreroll_.load(), Status::OK);
+    if (prerollDone_.load() || isInterruptNeeded_.load()) {
+        MEDIA_LOG_I("Receive preroll frame before DoWaitPrerollDone.");
+    } else {
+        prerollDoneCond_.wait_for(lock, std::chrono::milliseconds(PREROLL_WAIT_TIME),
+            [this] () { return prerollDone_.load() || isInterruptNeeded_.load(); });
+    }
+    Filter::PauseFilterTask();
+    DoPause();
+    std::unique_lock<std::mutex> bufferLock(mutex_);
+    FALSE_LOG_MSG(prerollDone_.load(), "No preroll frame received!");
+    if (render && !eosNext_.load() && !outputBuffers_.empty()) {
+        std::pair<int, std::shared_ptr<AVBuffer>> nextTask = std::move(outputBuffers_.front());
+        outputBuffers_.pop_front();
+        videoDecoder_->ReleaseOutputBuffer(nextTask.first, true);
+    }
+    eosNext_.store(false);
+    if (!outputBuffers_.empty()) {
+        Filter::ProcessOutputBuffer(1, 0);
+    }
+    inPreroll_.store(false);
     return Status::OK;
 }
 
@@ -475,9 +491,9 @@ void DecoderSurfaceFilter::SetCallingInfo(int32_t appUid, int32_t appPid, std::s
 
 void DecoderSurfaceFilter::SetInterruptState(bool isInterruptNeeded)
 {
-    AutoLock lock(firstFrameMutex_);
+    std::lock_guard<std::mutex> lock(prerollMutex_);
     isInterruptNeeded_ = isInterruptNeeded;
-    firstFrameCond_.NotifyAll();
+    prerollDoneCond_.notify_all();
 }
 
 Status DecoderSurfaceFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -574,13 +590,17 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
         FALSE_RETURN_V(!outputBuffers_.empty(), false);
         std::pair<int, std::shared_ptr<AVBuffer>> task = std::move(outputBuffers_.front());
         outputBuffers_.pop_front();
+        FALSE_RETURN_V(task.first >= 0, false);
+        index = static_cast<uint32_t>(task.first);
+        outBuffer = task.second;
+        if (isFirstFrameAfterResume_) {
+            videoSink_->UpdateTimeAnchorActually(outBuffer);
+            isFirstFrameAfterResume_ = false;
+        }
         if (!outputBuffers_.empty()) {
             std::pair<int, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
             RenderNextOutput(nextTask.first, nextTask.second);
         }
-        FALSE_RETURN_V(task.first >= 0, false);
-        index = static_cast<uint32_t>(task.first);
-        outBuffer = task.second;
         return true;
     }
     FALSE_RETURN_V(outputBufferMap_.find(index) != outputBufferMap_.end(), false);
@@ -645,22 +665,9 @@ Status DecoderSurfaceFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     int64_t waitTime = -1;
-    if (isSeek_) {
-        if (outputBuffer->pts_ >= seekTimeUs_) {
-            MEDIA_LOG_D("DrainOutputBuffer is seeking and render. pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
-            // In order to be compatible with live stream, audio and video synchronization uses the relative
-            // value of pts. The first frame pts must be the first frame displayed, not the first frame sent.
-            videoSink_->SetFirstPts(outputBuffer->pts_);
-            waitTime = videoSink_->DoSyncWrite(outputBuffer);
-            isSeek_ = false;
-        } else {
-            MEDIA_LOG_D("DrainOutputBuffer is seeking and not render. pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
-        }
-    } else {
-        MEDIA_LOG_D("DrainOutputBuffer not seeking and render. pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
-        videoSink_->SetFirstPts(outputBuffer->pts_);
-        waitTime = videoSink_->DoSyncWrite(outputBuffer);
-    }
+    MEDIA_LOG_D("DrainOutputBuffer not seeking and render. pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
+    videoSink_->SetFirstPts(outputBuffer->pts_);
+    waitTime = videoSink_->DoSyncWrite(outputBuffer);
     return waitTime;
 }
 
@@ -703,20 +710,8 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         }
         return;
     }
-    if (doPrepareFrame_.load()) {
-        if (renderFirstFrame_ && !(outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS))) {
-            videoDecoder_->ReleaseOutputBuffer(index, true);
-        } else {
-            outputBuffers_.push_back(make_pair(index, outputBuffer));
-            if (IS_FILTER_ASYNC) {
-                Filter::ProcessOutputBuffer(1, false); // 1 indicate to render
-            }
-        }
-        AutoLock autolock(firstFrameMutex_);
-        doPrepareFrame_ = false;
-        firstFrameCond_.NotifyAll();
-        return;
-    }
+    FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
+    FALSE_RETURN_NOLOG(!DrainPreroll(index, outputBuffer));
     if (IS_FILTER_ASYNC && outputBuffers_.empty()) {
         RenderNextOutput(index, outputBuffer);
     }
@@ -750,6 +745,38 @@ void DecoderSurfaceFilter::RenderLoop()
         }
         ReleaseOutputBuffer(nextTask.first, waitTime >= 0, nextTask.second, -1);
     }
+}
+
+bool DecoderSurfaceFilter::DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    FALSE_RETURN_V_NOLOG(inPreroll_.load(), false);
+    if (prerollDone_.load()) {
+        outputBuffers_.push_back(make_pair(index, outputBuffer));
+        return true;
+    }
+    std::lock_guard<std::mutex> lock(prerollMutex_);
+    FALSE_RETURN_V_NOLOG(inPreroll_.load() && !prerollDone_.load(), false);
+    outputBuffers_.push_back(make_pair(index, outputBuffer));
+    bool isEOS = outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS);
+    eosNext_.store(isEOS);
+    prerollDone_.store(true);
+    MEDIA_LOG_I("receive preroll output, pts: " PUBLIC_LOG_D64 " bufferIdx: " PUBLIC_LOG_D32,
+        outputBuffer->pts_, index);
+    prerollDoneCond_.notify_all();
+    return true;
+}
+
+bool DecoderSurfaceFilter::DrainSeekClosest(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    FALSE_RETURN_V_NOLOG(isSeek_, false);
+    bool isEOS = outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS);
+    if (outputBuffer->pts_ < seekTimeUs_ && !isEOS) {
+        videoDecoder_->ReleaseOutputBuffer(index, false);
+        return true;
+    }
+    MEDIA_LOG_I("Seek arrive target video pts: " PUBLIC_LOG_D64, seekTimeUs_);
+    isSeek_ = false;
+    return false;
 }
 
 Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)

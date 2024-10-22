@@ -40,6 +40,7 @@ public:
     void SetSeekFlag();
     void SetLastPts(int64_t lastPts);
     Status SetParameter(const std::shared_ptr<Meta>& meta);
+    void UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
 private:
     float GetSpeed(float speed);
     void UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
