@@ -344,6 +344,7 @@ bool HttpMediaDownloader::StartBuffering(unsigned int& wantReadLength)
     MEDIA_LOG_I("HTTP CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize "
         PUBLIC_LOG_ZU " readOffset: " PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, waterLineAbove_,
         GetCurrentBufferSize(), readOffset_, writeOffset_);
+    bufferingTime_ = 0;
     UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
     callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
     return true;
@@ -800,6 +801,7 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
         ret = SaveRingBufferData(data, len);
     } else {
         ret = SaveCacheBufferData(data, len);
+        HandleDownloadWaterLine();
     }
     HandleBuffering();
     return ret;
