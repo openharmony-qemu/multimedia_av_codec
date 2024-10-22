@@ -229,7 +229,7 @@ protected:
     bool CheckBufPixFmt(const sptr<SurfaceBuffer>& buffer);
 
     // output buffer circulation
-    virtual void SubmitDynamicBufferIfPossible() {}
+    virtual void DynamicModeSubmitBuffer() {}
     int32_t NotifyOmxToFillThisOutBuffer(BufferInfo &info);
     void OnOMXFillBufferDone(const CodecHDI::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
@@ -251,7 +251,6 @@ protected:
     virtual void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) = 0;
     void FreeOmxBuffer(OMX_DIRTYPE portIndex, const BufferInfo& info);
     virtual void OnEnterUninitializedState() {}
-    virtual void ClearBufferList() {}
 
     // template
     template <typename T>
