@@ -24,7 +24,7 @@ auto GopInfoStdpAvc = R"([
 ])"_json;
 
 auto FrameLayerInfoStdpAvc = R"([
-    {"frameId": 0, "dts": -66666, "layer": 1, "discardable": false},
+    {"frameId": 0, "dts": -66666, "layer": 2, "discardable": false},
 	{"frameId": 1, "dts": -33333, "layer": 1, "discardable": false},
 	{"frameId": 2, "dts": 0, "layer": 1, "discardable": false},
 	{"frameId": 3, "dts": 33333, "layer": 0, "discardable": true},
@@ -274,7 +274,7 @@ auto FrameLayerInfoStdpAvc = R"([
 	{"frameId": 247, "dts": 8166666, "layer": 0, "discardable": true},
 	{"frameId": 248, "dts": 8200000, "layer": 1, "discardable": false},
 	{"frameId": 249, "dts": 8233333, "layer": 0, "discardable": true},
-	{"frameId": 250, "dts": 8266666, "layer": 1, "discardable": false},
+	{"frameId": 250, "dts": 8266666, "layer": 2, "discardable": false},
 	{"frameId": 251, "dts": 8300000, "layer": 1, "discardable": false},
 	{"frameId": 252, "dts": 8333333, "layer": 1, "discardable": false},
 	{"frameId": 253, "dts": 8366666, "layer": 0, "discardable": true},
@@ -395,7 +395,7 @@ auto FrameLayerInfoStdpAvc = R"([
 	{"frameId": 368, "dts": 12200000, "layer": 1, "discardable": false},
 	{"frameId": 369, "dts": 12233333, "layer": 1, "discardable": false},
 	{"frameId": 370, "dts": 12266666, "layer": 0, "discardable": true},
-	{"frameId": 371, "dts": 12300000, "layer": 1, "discardable": false}
+	{"frameId": 371, "dts": 12300000, "layer": 0, "discardable": true}
 ])"_json;
 
 #endif //LAYER_INFO_SDTP_AVC_H
