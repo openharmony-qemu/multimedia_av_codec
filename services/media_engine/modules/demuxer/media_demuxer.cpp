@@ -1060,8 +1060,8 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     if (ret != Status::OK) {
         isSeekError_.store(true);
     }
-    MEDIA_LOG_D("Out");
     isFirstFrameAfterSeek_.store(true);
+    MEDIA_LOG_D("Out");
     return ret;
 }
 
@@ -1618,8 +1618,8 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
 
 bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
 {
-    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "demuxerPluginManager_ is nullptr.");
-    FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr, false, "streamDemuxer_ is nullptr.");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "Plugin manager is nullptr");
+    FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr, false, "Stream is nullptr");
     if (demuxerPluginManager_->IsDash() == false) {
         return false;
     }
@@ -1724,7 +1724,7 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
     } else {
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
-        MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
+        MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_U32 ", ret:" PUBLIC_LOG_D32, trackId, (int32_t)(ret));
     }
     return ret;
 }
