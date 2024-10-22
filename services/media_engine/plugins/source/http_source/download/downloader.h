@@ -94,8 +94,8 @@ public:
     Seekable IsChunked(bool isInterruptNeeded);
     bool IsEos() const;
     int GetRetryTimes() const;
-    NetWorkClientErrorCode GetClientError() const;
-    NetWorkServerErrorCode GetServerError() const;
+    NetworkClientErrorCode GetClientError() const;
+    NetworkServerErrorCode GetServerError() const;
     bool IsSame(const std::shared_ptr<DownloadRequest>& other) const
     {
         return url_ == other->url_ && startPos_ == other->startPos_;
@@ -137,8 +137,8 @@ private:
     bool requestWholeFile_ {false};
     int requestSize_ {0};
     int retryTimes_ {0};
-    NetWorkClientErrorCode clientError_ {NetWorkClientErrorCode::ERROR_OK};
-    NetWorkServerErrorCode serverError_ {0};
+    NetworkClientErrorCode clientError_ {NetworkClientErrorCode::ERROR_OK};
+    NetworkServerErrorCode serverError_ {0};
     bool shouldSaveData_ {true};
     int64_t downloadStartTime_ {0};
     int64_t downloadDoneTime_ {0};

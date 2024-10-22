@@ -206,8 +206,8 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
             return false;
         }
     }
-    if (clientError != NetworkClientErrorCode::ERROR_OK
-        || clientError != NetworkClientErrorCode::ERROR_NOT_RETRY
+    if ((clientError != NetworkClientErrorCode::ERROR_OK
+        && clientError != NetworkClientErrorCode::ERROR_NOT_RETRY)
         || serverError != 0) {
         if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR && !GetPlayable()) {
             if (clientError != NetworkClientErrorCode::ERROR_OK) {

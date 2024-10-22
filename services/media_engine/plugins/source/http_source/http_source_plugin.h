@@ -61,8 +61,6 @@ public:
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
-    Status StopBufferring(bool isAppBackground) override;
-    bool IsBuffering() override;
 
 private:
     void CloseUri(bool isAsync = false);

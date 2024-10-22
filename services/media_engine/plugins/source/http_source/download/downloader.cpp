@@ -137,12 +137,12 @@ int DownloadRequest::GetRetryTimes() const
     return retryTimes_;
 }
 
-NetWorkClientErrorCode DownloadRequest::GetClientError() const
+NetworkClientErrorCode DownloadRequest::GetClientError() const
 {
     return clientError_;
 }
 
-NetWorkServerErrorCode DownloadRequest::GetServerError() const
+NetworkServerErrorCode DownloadRequest::GetServerError() const
 {
     return serverError_;
 }
