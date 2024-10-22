@@ -37,7 +37,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-// static const uint32_t LOCK_WAIT_TIME = 1000; // Lock wait for 1000ms.
 static const int64_t PLAY_RANGE_DEFAULT_VALUE = -1;
 static const int64_t MICROSECONDS_CONVERT_UNIT = 1000; // ms change to us
 static const uint32_t PREROLL_WAIT_TIME = 1000; // Lock wait for 1000ms.
@@ -392,7 +391,8 @@ Status DecoderSurfaceFilter::DoWaitPrerollDone(bool render)
     if (prerollDone_.load() || isInterruptNeeded_.load()) {
         MEDIA_LOG_I("Receive preroll frame before DoWaitPrerollDone.");
     } else {
-        prerollDoneCond_.wait_for(lock, std::chrono::milliseconds(PREROLL_WAIT_TIME));
+        prerollDoneCond_.wait_for(lock, std::chrono::milliseconds(PREROLL_WAIT_TIME),
+            [this] () { return prerollDone_.load() || isInterruptNeeded_.load(); });
     }
     Filter::PauseFilterTask();
     DoPause();
@@ -754,7 +754,6 @@ bool DecoderSurfaceFilter::DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer
         outputBuffers_.push_back(make_pair(index, outputBuffer));
         return true;
     }
-    FALSE_RETURN_V_NOLOG(inPreroll_.load() && !prerollDone_.load(), false);
     std::lock_guard<std::mutex> lock(prerollMutex_);
     FALSE_RETURN_V_NOLOG(inPreroll_.load() && !prerollDone_.load(), false);
     outputBuffers_.push_back(make_pair(index, outputBuffer));
