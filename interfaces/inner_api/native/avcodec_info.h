@@ -465,8 +465,8 @@ public:
 
 private:
     CapabilityData *data_;
-    int32_t blockWidth_;
-    int32_t blockHeight_;
+    int32_t blockWidth_ = 0;
+    int32_t blockHeight_ = 0;
     Range horizontalBlockRange_;
     Range verticalBlockRange_;
     Range blockPerFrameRange_;
@@ -588,8 +588,8 @@ public:
     static constexpr std::string_view IMAGE_PNG = "image/png";
     static constexpr std::string_view IMAGE_BMP = "image/bmp";
     static constexpr std::string_view AUDIO_AVS3DA = "audio/av3a";
-    static constexpr std::string_view AUDIO_LBVC = "audio/lbvc";
     static constexpr std::string_view AUDIO_APE = "audio/x-ape";
+    static constexpr std::string_view AUDIO_LBVC = "audio/lbvc";
 };
 
 /**
