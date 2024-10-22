@@ -252,10 +252,7 @@ public:
         return Status::OK;
     }
 
-    virtual bool IsBuffering()
-    {
-        return false;
-    }
+    virtual void WaitForBufferingEnd() {}
 };
 
 /// Source plugin api major number.

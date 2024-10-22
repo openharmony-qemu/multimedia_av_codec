@@ -28,6 +28,8 @@
 #include <unistd.h>
 #include "common/media_core.h"
 #include "utils/write_bitrate_caculator.h"
+#include "osal/task/mutex.h"
+#include "osal/task/condition_variable.h"
 
 namespace OHOS {
 namespace Media {
@@ -71,7 +73,7 @@ public:
     bool GetBufferingTimeOut() override;
     void SetAppUid(int32_t appUid) override;
     Status StopBufferring(bool isAppBackground) override;
-    bool IsBuffering() override;
+    void WaitForBufferingEnd() override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -147,7 +149,7 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
 
     size_t waterLineAbove_ {0};
-    bool isBuffering_ {false};
+    std::atomic<bool> isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
 
     struct RecordData {
@@ -175,6 +177,9 @@ private:
     int32_t minOffsetNotUpdateCount_ {0};
     int32_t maxOffsetNotUpdateCount_ {0};
     std::atomic<bool> isMinAndMaxOffsetUpdate_ {false};
+
+    FairMutex bufferingEndMutex_ {};
+    ConditionVariable bufferingEndCond_;
 };
 }
 }
