@@ -56,7 +56,7 @@ public:
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
-    void CheckIsSizeSupported();
+
     std::shared_ptr<VideoCaps> videoCaps_ = nullptr;
     int32_t width_;
     int32_t height_;
@@ -186,14 +186,12 @@ HWTEST_F(AVCodecInfoTest, GetVideoWidthRangeForHeight_Valid_Test_002, TestSize.L
  */
 HWTEST_F(AVCodecInfoTest, GetVideoWidthRangeForHeight_Valid_Test_003, TestSize.Level1)
 {
-    constexpr int32_t rangeDefaultVal = 0;
     constexpr int32_t defaultMinVal = 8192;
     const OHOS::MediaAVCodec::Range defaultBlockRange = {0, 0};
     videoCaps_->horizontalBlockRange_ = defaultBlockRange;
     videoCaps_->verticalBlockRange_.minVal = defaultMinVal;
-    OHOS::MediaAVCodec::Range res = videoCaps_->GetVideoWidthRangeForHeight(height_);
-    EXPECT_EQ(res.minVal, rangeDefaultVal);
-    EXPECT_EQ(res.maxVal, rangeDefaultVal);
+    videoCaps_->GetVideoWidthRangeForHeight(height_);
+    EXPECT_EQ(videoCaps_->verticalBlockRange_.minVal, defaultMinVal);
 }
 
 /**
@@ -202,14 +200,12 @@ HWTEST_F(AVCodecInfoTest, GetVideoWidthRangeForHeight_Valid_Test_003, TestSize.L
  */
 HWTEST_F(AVCodecInfoTest, GetVideoWidthRangeForHeight_Valid_Test_004, TestSize.Level1)
 {
-    constexpr int32_t rangeDefaultVal = 0;
     constexpr int32_t defaultMaxVal = 1024;
     const OHOS::MediaAVCodec::Range defaultBlockRange = {0, 0};
     videoCaps_->horizontalBlockRange_ = defaultBlockRange;
     videoCaps_->verticalBlockRange_.maxVal = defaultMaxVal;
-    OHOS::MediaAVCodec::Range res = videoCaps_->GetVideoWidthRangeForHeight(height_);
-    EXPECT_EQ(res.minVal, rangeDefaultVal);
-    EXPECT_EQ(res.maxVal, rangeDefaultVal);
+    videoCaps_->GetVideoWidthRangeForHeight(height_);
+    EXPECT_EQ(videoCaps_->verticalBlockRange_.maxVal, defaultMaxVal);
 }
 
 /**
@@ -242,14 +238,12 @@ HWTEST_F(AVCodecInfoTest, GetVideoHeightRangeForWidth_Valid_Test_002, TestSize.L
  */
 HWTEST_F(AVCodecInfoTest, GetVideoHeightRangeForWidth_Valid_Test_003, TestSize.Level1)
 {
-    constexpr int32_t rangeDefaultVal = 0;
     constexpr int32_t defaultMinVal = 8192;
     const OHOS::MediaAVCodec::Range defaultBlockRange = {0, 0};
     videoCaps_->verticalBlockRange_ = defaultBlockRange;
     videoCaps_->horizontalBlockRange_.minVal = defaultMinVal;
-    OHOS::MediaAVCodec::Range res = videoCaps_->GetVideoHeightRangeForWidth(height_);
-    EXPECT_EQ(res.minVal, rangeDefaultVal);
-    EXPECT_EQ(res.maxVal, rangeDefaultVal);
+    videoCaps_->GetVideoHeightRangeForWidth(height_);
+    EXPECT_EQ(videoCaps_->horizontalBlockRange_.minVal, defaultMinVal);
 }
 
 /**
@@ -258,14 +252,12 @@ HWTEST_F(AVCodecInfoTest, GetVideoHeightRangeForWidth_Valid_Test_003, TestSize.L
  */
 HWTEST_F(AVCodecInfoTest, GetVideoHeightRangeForWidth_Valid_Test_004, TestSize.Level1)
 {
-    constexpr int32_t rangeDefaultVal = 0;
     constexpr int32_t defaultMaxVal = 1024;
     const OHOS::MediaAVCodec::Range defaultBlockRange = {0, 0};
     videoCaps_->verticalBlockRange_ = defaultBlockRange;
     videoCaps_->horizontalBlockRange_.maxVal = defaultMaxVal;
-    OHOS::MediaAVCodec::Range res = videoCaps_->GetVideoHeightRangeForWidth(height_);
-    EXPECT_EQ(res.minVal, rangeDefaultVal);
-    EXPECT_EQ(res.maxVal, rangeDefaultVal);
+    videoCaps_->GetVideoHeightRangeForWidth(height_);
+    EXPECT_EQ(videoCaps_->horizontalBlockRange_.maxVal, defaultMaxVal);
 }
 
 /**
@@ -302,9 +294,41 @@ HWTEST_F(AVCodecInfoTest, LoadMPEGLevelParams_Valid_Test_001, TestSize.Level1)
 
 /**
  * @tc.name: UpdateBlockParams_Valid_Test_001
- * @tc.desc: blockWidth equals zero
+ * @tc.desc: blockWidth_ equals zero
  */
 HWTEST_F(AVCodecInfoTest, UpdateBlockParams_Valid_Test_001, TestSize.Level1)
+{
+    constexpr int32_t videoCapsBlockWidth = 0;
+    constexpr int32_t blockWidth = 720;
+    constexpr int32_t blockHeight = 720;
+    videoCaps_->blockWidth_ = videoCapsBlockWidth;
+    OHOS::MediaAVCodec::Range range = OHOS::MediaAVCodec::Range(0, 0);
+    videoCaps_->UpdateBlockParams(blockWidth, blockHeight, range, range);
+    EXPECT_EQ(videoCaps_->blockWidth_, videoCapsBlockWidth);
+    EXPECT_EQ(videoCaps_->blockHeight_, BLOCK_SIZE_MIN);
+}
+
+/**
+ * @tc.name: UpdateBlockParams_Valid_Test_002
+ * @tc.desc: blockHeight_ equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateBlockParams_Valid_Test_002, TestSize.Level1)
+{
+    constexpr int32_t videoCapsBlockHeight = 0;
+    constexpr int32_t blockWidth = 720;
+    constexpr int32_t blockHeight = 720;
+    videoCaps_->blockHeight_ = videoCapsBlockHeight;
+    OHOS::MediaAVCodec::Range range = OHOS::MediaAVCodec::Range(0, 0);
+    videoCaps_->UpdateBlockParams(blockWidth, blockHeight, range, range);
+    EXPECT_EQ(videoCaps_->blockWidth_, BLOCK_SIZE_MIN);
+    EXPECT_EQ(videoCaps_->blockHeight_, videoCapsBlockHeight);
+}
+
+/**
+ * @tc.name: UpdateBlockParams_Valid_Test_003
+ * @tc.desc: blockWidth equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateBlockParams_Valid_Test_003, TestSize.Level1)
 {
     constexpr int32_t blockWidth = 0;
     constexpr int32_t blockHeight = 1;
@@ -315,10 +339,10 @@ HWTEST_F(AVCodecInfoTest, UpdateBlockParams_Valid_Test_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: UpdateBlockParams_Valid_Test_002
+ * @tc.name: UpdateBlockParams_Valid_Test_004
  * @tc.desc: blockHeight equals zero
  */
-HWTEST_F(AVCodecInfoTest, UpdateBlockParams_Valid_Test_002, TestSize.Level1)
+HWTEST_F(AVCodecInfoTest, UpdateBlockParams_Valid_Test_004, TestSize.Level1)
 {
     constexpr int32_t blockWidth = 1;
     constexpr int32_t blockHeight = 0;
@@ -390,132 +414,124 @@ HWTEST_F(AVCodecInfoTest, InitParams_Valid_Test_002, TestSize.Level1)
     EXPECT_EQ(videoCaps_->data_->blockSize.height, BLOCK_SIZE_MIN);
 }
 
-void AVCodecInfoTest::CheckIsSizeSupported()
-{
-    constexpr int32_t width = 0;
-    constexpr int32_t height = 0;
-    bool res = videoCaps_->IsSizeSupported(width, height);
-    EXPECT_EQ(res, false);
-}
-
 /**
  * @tc.name: UpdateParams_Valid_Test_001
- * @tc.desc: 1.IsSizeSupported -> UpdateParams
- *           2.blockSize.width equals zero
+ * @tc.desc: blockSize.width equals zero
  */
 HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_001, TestSize.Level1)
 {
     constexpr int32_t initialWidth = 0;
     videoCaps_->data_->blockSize.width = initialWidth;
-    CheckIsSizeSupported();
+    videoCaps_->UpdateParams();
+    EXPECT_EQ(videoCaps_->data_->blockSize.width, initialWidth);
 }
 
 /**
  * @tc.name: UpdateParams_Valid_Test_002
- * @tc.desc: 1.IsSizeSupported -> UpdateParams
- *           2.blockSize.height equals zero
+ * @tc.desc: blockSize.height equals zero
  */
 HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_002, TestSize.Level1)
 {
     constexpr int32_t initialHeight = 0;
     videoCaps_->data_->blockSize.height = initialHeight;
-    CheckIsSizeSupported();
+    videoCaps_->UpdateParams();
+    EXPECT_EQ(videoCaps_->data_->blockSize.height, initialHeight);
 }
 
 /**
  * @tc.name: UpdateParams_Valid_Test_003
- * @tc.desc: 1.IsSizeSupported -> UpdateParams
- *           2.blockWidth_ equals zero
+ * @tc.desc: blockWidth_ equals zero
  */
 HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_003, TestSize.Level1)
 {
     constexpr int32_t initialWidth = 0;
     videoCaps_->blockWidth_ = initialWidth;
-    CheckIsSizeSupported();
+    videoCaps_->UpdateParams();
+    EXPECT_EQ(videoCaps_->blockWidth_, initialWidth);
 }
 
 /**
  * @tc.name: UpdateParams_Valid_Test_004
- * @tc.desc: 1.IsSizeSupported -> UpdateParams
- *           2.blockHeight_ equals zero
+ * @tc.desc: blockHeight_ equals zero
  */
 HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_004, TestSize.Level1)
 {
     constexpr int32_t initialHeight = 0;
     videoCaps_->blockHeight_ = initialHeight;
-    CheckIsSizeSupported();
+    videoCaps_->UpdateParams();
+    EXPECT_EQ(videoCaps_->blockHeight_, initialHeight);
 }
 
 /**
  * @tc.name: UpdateParams_Valid_Test_005
- * @tc.desc: 1.IsSizeSupported -> UpdateParams
- *           2.verticalBlockRange_.maxVal equals zero
+ * @tc.desc: verticalBlockRange_.maxVal equals zero
  */
 HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_005, TestSize.Level1)
 {
     constexpr int32_t blockRangeMaxVal = 0;
     videoCaps_->verticalBlockRange_.maxVal = blockRangeMaxVal;
-    CheckIsSizeSupported();
+    videoCaps_->UpdateParams();
+    EXPECT_EQ(videoCaps_->verticalBlockRange_.maxVal, blockRangeMaxVal);
 }
 
 /**
  * @tc.name: UpdateParams_Valid_Test_006
- * @tc.desc: 1.IsSizeSupported -> UpdateParams
- *           2.verticalBlockRange_.minVal equals zero
+ * @tc.desc: verticalBlockRange_.minVal equals zero
  */
 HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_006, TestSize.Level1)
 {
     constexpr int32_t blockRangeMinVal = 0;
     videoCaps_->verticalBlockRange_.minVal = blockRangeMinVal;
-    CheckIsSizeSupported();
+    videoCaps_->UpdateParams();
+    EXPECT_EQ(videoCaps_->verticalBlockRange_.minVal, blockRangeMinVal);
 }
 
 /**
  * @tc.name: UpdateParams_Valid_Test_007
- * @tc.desc: 1.IsSizeSupported -> UpdateParams
- *           2.horizontalBlockRange_.maxVal equals zero
+ * @tc.desc: horizontalBlockRange_.maxVal equals zero
  */
 HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_007, TestSize.Level1)
 {
     constexpr int32_t blockRangeMaxVal = 0;
     videoCaps_->horizontalBlockRange_.maxVal = blockRangeMaxVal;
-    CheckIsSizeSupported();
+    videoCaps_->UpdateParams();
+    EXPECT_EQ(videoCaps_->horizontalBlockRange_.maxVal, blockRangeMaxVal);
 }
 
 /**
  * @tc.name: UpdateParams_Valid_Test_008
- * @tc.desc: 1.IsSizeSupported -> UpdateParams
- *           2.horizontalBlockRange_.minVal equals zero
+ * @tc.desc: horizontalBlockRange_.minVal equals zero
  */
 HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_008, TestSize.Level1)
 {
     constexpr int32_t blockRangeMinVal = 0;
     videoCaps_->horizontalBlockRange_.minVal = blockRangeMinVal;
-    CheckIsSizeSupported();
+    videoCaps_->UpdateParams();
+    EXPECT_EQ(videoCaps_->horizontalBlockRange_.minVal, blockRangeMinVal);
 }
 
 /**
  * @tc.name: UpdateParams_Valid_Test_009
- * @tc.desc: 1.IsSizeSupported -> UpdateParams
- *           2.blockPerFrameRange_.minVal equals zero
+ * @tc.desc: blockPerFrameRange_.minVal equals zero
  */
 HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_009, TestSize.Level1)
 {
     constexpr int32_t perframeRangeMinVal = 0;
     videoCaps_->blockPerFrameRange_.minVal = perframeRangeMinVal;
-    CheckIsSizeSupported();
+    videoCaps_->UpdateParams();
+    EXPECT_EQ(videoCaps_->blockPerFrameRange_.minVal, perframeRangeMinVal);
 }
 
 /**
  * @tc.name: UpdateParams_Valid_Test_010
- * @tc.desc: 1.IsSizeSupported -> UpdateParams
- *           2.blockPerFrameRange_.maxVal equals zero
+ * @tc.desc: blockPerFrameRange_.maxVal equals zero
  */
 HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_010, TestSize.Level1)
 {
     constexpr int32_t perframeRangeMaxVal = 0;
     videoCaps_->blockPerFrameRange_.maxVal = perframeRangeMaxVal;
-    CheckIsSizeSupported();
+    videoCaps_->UpdateParams();
+    EXPECT_EQ(videoCaps_->blockPerFrameRange_.maxVal, perframeRangeMaxVal);
 }
 
 /**
