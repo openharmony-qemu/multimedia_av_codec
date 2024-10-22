@@ -82,16 +82,19 @@ public:
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
+
     void SetSeekTime(int64_t seekTimeUs);
     void ResetSeekInfo();
     Status HandleInputBuffer();
     void OnDumpInfo(int32_t fd);
 
-    void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId);
-
-    Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
     void SetBitrateStart();
     void OnOutputFormatChanged(const MediaAVCodec::Format &format);
+
+    void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string& bundleName, uint64_t instanceId);
+
+    Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
+
     Status StartSeekContinous();
     Status StopSeekContinous();
     void RegisterVideoFrameReadyCallback(std::shared_ptr<VideoFrameReadyCallback> &callback);
@@ -131,8 +134,6 @@ private:
 
     std::atomic<uint64_t> renderFrameCnt_{0};
     std::atomic<uint64_t> discardFrameCnt_{0};
-    std::atomic<bool> isSeek_{false};
-    int64_t seekTimeUs_{0};
 
     bool refreshTotalPauseTime_{false};
     int64_t latestBufferTime_{HST_TIME_NONE};
@@ -144,6 +145,8 @@ private:
     sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
     bool svpFlag_ = false;
     std::atomic<bool> isPaused_{false};
+    std::atomic<bool> isSeek_{false};
+    int64_t seekTimeUs_{0};
     std::list<std::pair<int, std::shared_ptr<AVBuffer>>> outputBuffers_;
     std::mutex mutex_;
     std::unique_ptr<std::thread> readThread_ = nullptr;
@@ -154,6 +157,9 @@ private:
     ConditionVariable firstFrameCond_;
     std::atomic<bool> doPrepareFrame_{false};
     bool renderFirstFrame_{false};
+    std::atomic<int32_t> bitrateChange_{0};
+    int32_t surfaceWidth_{0};
+    int32_t surfaceHeight_{0};
     std::atomic<bool> isRenderStarted_{false};
     Mutex formatChangeMutex_{};
     int32_t rateUpperLimit_{0};
@@ -165,13 +171,10 @@ private:
     int64_t playRangeStartTime_ = -1;
     int64_t playRangeEndTime_ = -1;
 
-    std::atomic<int32_t> bitrateChange_{0};
-    int32_t surfaceWidth_{0};
-    int32_t surfaceHeight_{0};
-
     std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback_;
     bool isInSeekContinous_{false};
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferMap_;
+    std::mutex draggingMutex_ {};
 };
 } // namespace Pipeline
 } // namespace Media

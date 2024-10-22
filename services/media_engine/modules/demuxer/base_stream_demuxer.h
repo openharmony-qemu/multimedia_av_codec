@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -101,17 +101,17 @@ public:
     virtual Status ResetCache(int32_t streamID) = 0;
     virtual Status ResetAllCache() = 0;
 
-    void InitTypeFinder();
     void SetSource(const std::shared_ptr<Source>& source);
 
     virtual Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
         size_t expectedLen) = 0;
-    void SetInterruptState(bool isInterruptNeeded);
     void SetDemuxerState(int32_t streamId, DemuxerState state);
     void SetBundleName(const std::string& bundleName);
     void SetIsIgnoreParse(bool state);
     bool GetIsIgnoreParse();
     Plugins::Seekable GetSeekable();
+    void SetInterruptState(bool isInterruptNeeded);
+
     std::string SnifferMediaType(int32_t streamID);
     bool IsDash() const;
     void SetIsDash(bool flag);
@@ -124,6 +124,8 @@ public:
     int32_t GetNewSubtitleStreamID();
     bool CanDoChangeStream();
     void SetChangeFlag(bool flag);
+    bool GetIsExtSubtitle();
+    void SetIsExtSubtitle(bool flag);
 protected:
     std::shared_ptr<Source> source_;
     std::function<Status(int32_t, uint64_t, size_t)> checkRange_;
@@ -131,18 +133,20 @@ protected:
     std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
     std::map<int32_t, DemuxerState> pluginStateMap_;
     std::atomic<bool> isIgnoreParse_{false};
-    std::atomic<bool> isInterruptNeeded_{false};
+    std::atomic<bool> isIgnoreRead_{false};
     std::string bundleName_ {};
     std::string uri_ {};
+    std::atomic<bool> isInterruptNeeded_{false};
 public:
     uint64_t mediaDataSize_{0};
-    Plugins::Seekable seekable_;
+    Plugins::Seekable seekable_ = Plugins::Seekable::UNSEEKABLE;
 private:
     bool isDash_ = {false};
     std::atomic<int32_t> newVideoStreamID_ = -1;
     std::atomic<int32_t> newAudioStreamID_ = -1;
     std::atomic<int32_t> newSubtitleStreamID_ = -1;
     std::atomic<bool> changeStreamFlag_ = true;
+    std::atomic<bool> isExSubtitle_ = false;
 };
 } // namespace Media
 } // namespace OHOS

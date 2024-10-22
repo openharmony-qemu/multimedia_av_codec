@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -58,12 +58,12 @@ AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
 {
     filterType_ = filterType;
     audioSink_ = std::make_shared<AudioSink>();
-    MEDIA_LOG_D("audio sink ctor called");
+    MEDIA_LOG_I("audio sink ctor called");
 }
 
 AudioSinkFilter::~AudioSinkFilter()
 {
-    MEDIA_LOG_D("dtor called");
+    MEDIA_LOG_I("dtor called");
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -72,7 +72,7 @@ void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     Filter::Init(receiver, callback);
     eventReceiver_ = receiver;
     filterCallback_ = callback;
-    MEDIA_LOG_D("audio sink Init called");
+    MEDIA_LOG_I("audio sink Init called");
 }
 
 Status AudioSinkFilter::DoInitAfterLink()
@@ -121,12 +121,12 @@ Status AudioSinkFilter::DoStart()
 Status AudioSinkFilter::DoPause()
 {
     MEDIA_LOG_I("audio sink filter pause start");
-    if (state_ == FilterState::PAUSED) {
+    if (state_ == FilterState::PAUSED || state_ == FilterState::STOPPED) {
         return Status::OK;
     }
     // only worked when state is working
     if (state_ != FilterState::READY && state_ != FilterState::RUNNING) {
-        MEDIA_LOG_W("audio sink cannot pause when not working.");
+        MEDIA_LOG_W("audio sink cannot pause when not working");
         return Status::ERROR_INVALID_OPERATION;
     }
     state_ = FilterState::PAUSED;
@@ -138,11 +138,8 @@ Status AudioSinkFilter::DoPause()
 Status AudioSinkFilter::DoResume()
 {
     MEDIA_LOG_I("audio sink filter resume");
-    if (state_ == FilterState::RUNNING) {
-        return Status::OK;
-    }
     // only worked when state is paused
-    if (state_ == FilterState::PAUSED || state_ == FilterState::RUNNING) {
+    if (state_ == FilterState::PAUSED) {
         forceUpdateTimeAnchorNextTime_ = true;
         state_ = FilterState::RUNNING;
         if (frameCnt_ > 0) {
@@ -155,11 +152,6 @@ Status AudioSinkFilter::DoResume()
 
 Status AudioSinkFilter::DoFlush()
 {
-    // only worked when state is working
-    if (state_ != FilterState::PAUSED && state_ != FilterState::STOPPED) {
-        MEDIA_LOG_W("audio sink cannot flush when not paused or stopped");
-        return Status::ERROR_INVALID_OPERATION;
-    }
     MEDIA_LOG_I("audio sink flush start");
     if (audioSink_ != nullptr) {
         audioSink_->Flush();
@@ -170,9 +162,6 @@ Status AudioSinkFilter::DoFlush()
 
 Status AudioSinkFilter::DoStop()
 {
-    if (state_ == FilterState::STOPPED) {
-        return Status::OK;
-    }
     MEDIA_LOG_I("audio sink stop start");
     if (audioSink_ != nullptr) {
         audioSink_->Stop();
@@ -196,7 +185,7 @@ Status AudioSinkFilter::DoSetPlayRange(int64_t start, int64_t end)
 
 Status AudioSinkFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
-    audioSink_->DrainOutputBuffer();
+    audioSink_->DrainOutputBuffer(dropFrame);
     return Status::OK;
 }
 
@@ -256,20 +245,20 @@ void AudioSinkFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter
 
 Status AudioSinkFilter::SetSpeed(float speed)
 {
-    MEDIA_LOG_I("SetSpeed in, speed is " PUBLIC_LOG ".3f", speed);
+    MEDIA_LOG_I("AudioSinkFilter::SetSpeed in, speed is " PUBLIC_LOG ".3f", speed);
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     if (speed < 0) {
-        MEDIA_LOG_E("SetSpeed speed is less than 0.");
+        MEDIA_LOG_E("AudioSinkFilter::SetSpeed speed is less than 0.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     Status res = audioSink_->SetSpeed(speed);
-    MEDIA_LOG_I("SetSpeed out");
+    MEDIA_LOG_I("AudioSinkFilter::SetSpeed out");
     return res;
 }
 
 Status AudioSinkFilter::SetAudioEffectMode(int32_t effectMode)
 {
-    MEDIA_LOG_I("SetAudioEffectMode in");
+    MEDIA_LOG_I("AudioSinkFilter::SetAudioEffectMode in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
 
     Status res = audioSink_->SetAudioEffectMode(effectMode);
@@ -278,7 +267,7 @@ Status AudioSinkFilter::SetAudioEffectMode(int32_t effectMode)
 
 Status AudioSinkFilter::GetAudioEffectMode(int32_t &effectMode)
 {
-    MEDIA_LOG_I("GetAudioEffectMode in");
+    MEDIA_LOG_I("AudioSinkFilter::GetAudioEffectMode in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     Status res = audioSink_->GetAudioEffectMode(effectMode);
     return res;
@@ -286,7 +275,7 @@ Status AudioSinkFilter::GetAudioEffectMode(int32_t &effectMode)
 
 Status AudioSinkFilter::SetIsTransitent(bool isTransitent)
 {
-    MEDIA_LOG_D("SetIsTransitent in");
+    MEDIA_LOG_I("AudioSinkFilter::SetIsTransitent in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->SetIsTransitent(isTransitent);
 }
@@ -322,7 +311,6 @@ Status AudioSinkFilter::SetSeekTime(int64_t seekTime)
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->SetSeekTime(seekTime);
 }
-
 float AudioSinkFilter::GetMaxAmplitude()
 {
     FALSE_RETURN_V(audioSink_ != nullptr, 0.0f);

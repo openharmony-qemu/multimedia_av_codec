@@ -98,7 +98,6 @@ ohos_shared_library("av_codec_media_engine_filters") {
   external_deps = [
     "audio_framework:audio_capturer",
     "c_utils:utils",
-    "drm_framework:drm_framework",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",

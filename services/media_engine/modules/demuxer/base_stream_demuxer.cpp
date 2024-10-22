@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -43,18 +43,18 @@ namespace Media {
 
 BaseStreamDemuxer::BaseStreamDemuxer()
 {
-    MEDIA_LOG_D_SHORT("BaseStreamDemuxer called");
+    MEDIA_LOG_I("BaseStreamDemuxer called");
     seekable_ = Plugins::Seekable::UNSEEKABLE;
 }
 
 BaseStreamDemuxer::~BaseStreamDemuxer()
 {
-    MEDIA_LOG_D_SHORT("~BaseStreamDemuxer called");
+    MEDIA_LOG_D("~BaseStreamDemuxer called");
 }
 
 void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
 {
-    MEDIA_LOG_D_SHORT("BaseStreamDemuxer::SetSource");
+    MEDIA_LOG_I("BaseStreamDemuxer::SetSource");
     source_ = source;
     source_->GetSize(mediaDataSize_);
     seekable_ = source_->GetSeekable();
@@ -63,11 +63,11 @@ void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
 std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
 {
     MediaAVCodec::AVCodecTrace trace("BaseStreamDemuxer::SnifferMediaType");
-    MEDIA_LOG_I_SHORT("BaseStreamDemuxer::SnifferMediaType called");
+    MEDIA_LOG_I("BaseStreamDemuxer::SnifferMediaType called");
     std::shared_ptr<TypeFinder> typeFinder = std::make_shared<TypeFinder>();
     typeFinder->Init(uri_, mediaDataSize_, checkRange_, peekRange_, streamID);
     std::string type = typeFinder->FindMediaType();
-    MEDIA_LOG_D_SHORT("SnifferMediaType result type: " PUBLIC_LOG_S, type.c_str());
+    MEDIA_LOG_D("SnifferMediaType result type: " PUBLIC_LOG_S, type.c_str());
     return type;
 }
 
@@ -81,13 +81,8 @@ void BaseStreamDemuxer::SetDemuxerState(int32_t streamId, DemuxerState state)
 
 void BaseStreamDemuxer::SetBundleName(const std::string& bundleName)
 {
-    MEDIA_LOG_I_SHORT("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
+    MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
     bundleName_ = bundleName;
-}
-
-void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
-{
-    isInterruptNeeded_ = isInterruptNeeded;
 }
 
 void BaseStreamDemuxer::SetIsIgnoreParse(bool state)
@@ -105,18 +100,24 @@ Plugins::Seekable BaseStreamDemuxer::GetSeekable()
     return source_->GetSeekable();
 }
 
+void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+}
+
 bool BaseStreamDemuxer::IsDash() const
 {
     return isDash_;
 }
+
 void BaseStreamDemuxer::SetIsDash(bool flag)
 {
     isDash_ = flag;
 }
-
+ 
 Status BaseStreamDemuxer::SetNewVideoStreamID(int32_t streamID)
 {
-    MEDIA_LOG_I_SHORT("SetNewVideoStreamID id: " PUBLIC_LOG_D32, streamID);
+    MEDIA_LOG_I("SetNewVideoStreamID id: " PUBLIC_LOG_D32, streamID);
     SetChangeFlag(false);
     newVideoStreamID_.store(streamID);
     return Status::OK;
@@ -124,20 +125,20 @@ Status BaseStreamDemuxer::SetNewVideoStreamID(int32_t streamID)
 
 Status BaseStreamDemuxer::SetNewAudioStreamID(int32_t streamID)
 {
-    MEDIA_LOG_I("SetNewAudioStreamID id: " PUBLIC_LOG_D32, streamID);
+    MEDIA_LOG_I_SHORT("SetNewAudioStreamID id: " PUBLIC_LOG_D32, streamID);
     SetChangeFlag(false);
     newAudioStreamID_.store(streamID);
     return Status::OK;
 }
-
+ 
 Status BaseStreamDemuxer::SetNewSubtitleStreamID(int32_t streamID)
 {
-    MEDIA_LOG_I("SetNewSubtitleStreamID id: " PUBLIC_LOG_D32, streamID);
+    MEDIA_LOG_I_SHORT("SetNewSubtitleStreamID id: " PUBLIC_LOG_D32, streamID);
     SetChangeFlag(false);
     newSubtitleStreamID_.store(streamID);
     return Status::OK;
 }
-
+ 
 int32_t BaseStreamDemuxer::GetNewVideoStreamID()
 {
     return newVideoStreamID_.load();
@@ -147,20 +148,30 @@ int32_t BaseStreamDemuxer::GetNewAudioStreamID()
 {
     return newAudioStreamID_.load();
 }
-
+ 
 int32_t BaseStreamDemuxer::GetNewSubtitleStreamID()
 {
     return newSubtitleStreamID_.load();
 }
-
+ 
 bool BaseStreamDemuxer::CanDoChangeStream()
 {
     return changeStreamFlag_.load();
 }
-
+ 
 void BaseStreamDemuxer::SetChangeFlag(bool flag)
 {
     return changeStreamFlag_.store(flag);
+}
+
+void BaseStreamDemuxer::SetIsExtSubtitle(bool flag)
+{
+    return isExSubtitle_.store(flag);
+}
+
+bool BaseStreamDemuxer::GetIsExtSubtitle()
+{
+    return isExSubtitle_.load();
 }
 } // namespace Media
 } // namespace OHOS

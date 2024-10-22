@@ -82,7 +82,7 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::SetSource");
     MEDIA_LOG_I("SetSource enter.");
-    FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "SetSource Invalid source");
+    FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "SetSource invalid source");
 
     ClearData();
     Status ret = FindPlugin(source);
@@ -94,8 +94,7 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
     if (plugin_ != nullptr) {
         seekToTimeFlag_ = plugin_->IsSeekToTimeSupported();
     }
-    MEDIA_LOG_I("SetSource seekToTimeFlag_: " PUBLIC_LOG_D32, seekToTimeFlag_);
-
+    MEDIA_LOG_I("SetSource seekToTimeFlag: " PUBLIC_LOG_D32, seekToTimeFlag_);
     MEDIA_LOG_I("SetSource exit.");
     return Status::OK;
 }
@@ -103,6 +102,7 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 void Source::SetBundleName(const std::string& bundleName)
 {
     if (plugin_ != nullptr) {
+        MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
         plugin_->SetBundleName(bundleName);
     }
 }
@@ -116,7 +116,7 @@ Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::InitPlugin");
     MEDIA_LOG_I("InitPlugin enter");
-    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "InitPlugin, Source plugin is nullptr");
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "InitPlugin, Source plugin is nullptr!");
 
     Status ret = plugin_->Init();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "InitPlugin failed");
@@ -268,43 +268,38 @@ Status Source::SetReadBlockingFlag(bool isReadBlockingAllowed)
 void Source::OnEvent(const Plugins::PluginEvent& event)
 {
     MEDIA_LOG_D("OnEvent");
+    if (protocol_ == "http" && isInterruptNeeded_) {
+        MEDIA_LOG_I("http OnEvent isInterruptNeeded, return");
+        return;
+    }
     if (event.type == PluginEventType::ABOVE_LOW_WATERLINE) {
         if (isPluginReady_ && isAboveWaterline_) {
-            isAboveWaterline_ = false;
             isPluginReady_ = false;
+            isAboveWaterline_ = false;
         }
-    } else if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
+        return;
+    }
+    FALSE_RETURN_MSG(mediaDemuxerCallback_ != nullptr, "mediaDemuxerCallback is nullptr");
+    if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
         MEDIA_LOG_I("Error happened, need notify client by OnEvent");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::SOURCE_DRM_INFO_UPDATE) {
         MEDIA_LOG_I("Drminfo updates from source");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::BUFFERING_END || event.type == PluginEventType::BUFFERING_START) {
         MEDIA_LOG_I("Buffering start or end.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::SOURCE_BITRATE_START) {
         MEDIA_LOG_I("source bitrate start from source.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::CACHED_DURATION) {
-        MEDIA_LOG_I("Onevent cached duration.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        MEDIA_LOG_D("Onevent cached duration.");
+        mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::EVENT_BUFFER_PROGRESS) {
         MEDIA_LOG_I("buffer percent update.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
+        mediaDemuxerCallback_->OnEvent(event);
     } else {
-        MEDIA_LOG_E("on event error.");
+        MEDIA_LOG_I("on event type undefined.");
     }
 }
 
@@ -314,7 +309,7 @@ void Source::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
         mediaDemuxerCallback_->SetSelectBitRateFlag(flag, desBitRate);
     }
 }
-
+ 
 bool Source::CanAutoSelectBitRate()
 {
     FALSE_RETURN_V_MSG_E(mediaDemuxerCallback_ != nullptr, false, "mediaDemuxerCallback_ is nullptr.");
@@ -360,7 +355,7 @@ std::string Source::GetUriSuffix(const std::string& uri)
 
 Status Source::Read(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
-    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "ReadData, Source plugin is nullptr");
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "Read, Source plugin is nullptr");
     if (seekToTimeFlag_) {
         return plugin_->Read(streamID, buffer, offset, expectedLen);
     }
@@ -430,7 +425,6 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
         protocol_.append("stream");
         uri_.append("stream://");
     }
-    MEDIA_LOG_I("protocol: " PUBLIC_LOG_S, protocol_.c_str());
     return ret;
 }
 
@@ -457,10 +451,12 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
 
 int64_t Source::GetDuration()
 {
-    FALSE_RETURN_V_MSG_W(seekToTimeFlag_, Plugins::HST_TIME_NONE, "Source GetDuration return -1 for isHls false.");
+    FALSE_RETURN_V_MSG_W(seekToTimeFlag_, Plugins::HST_TIME_NONE, "Source GetDuration return -1 for isHls false");
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, Plugins::HST_TIME_NONE, "Source GetDuration error, plugin_ is nullptr");
+
     int64_t duration;
     Status ret = plugin_->GetDuration(duration);
-    FALSE_RETURN_V_MSG_W(ret == Status::OK, Plugins::HST_TIME_NONE, "Source GetDuration from source plugin failed.");
+    FALSE_RETURN_V_MSG_W(ret == Status::OK, Plugins::HST_TIME_NONE, "Source GetDuration from source plugin failed");
     return duration;
 }
 
@@ -476,9 +472,22 @@ Status Source::SelectStream(int32_t streamID)
     return plugin_->SelectStream(streamID);
 }
 
+size_t Source::GetSegmentOffset()
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, 0, "GetSegmentOffset source pulgin is nullptr!");
+    return plugin_->GetSegmentOffset();
+}
+ 
+bool Source::GetHLSDiscontinuity()
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "GetHLSDiscontinuity source pulgin is nullptr!");
+    return plugin_->GetHLSDiscontinuity();
+}
+
 void Source::SetEnableOnlineFdCache(bool isEnableFdCache)
 {
     isEnableFdCache_ = isEnableFdCache;
 }
+
 } // namespace Media
 } // namespace OHOS
