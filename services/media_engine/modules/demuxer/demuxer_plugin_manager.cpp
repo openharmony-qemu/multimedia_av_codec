@@ -46,7 +46,7 @@ namespace Media {
 
 DataSourceImpl::DataSourceImpl(const std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID)
     : stream_(stream),
-    streamID_(streamID)
+      streamID_(streamID)
 {
 }
 
@@ -147,7 +147,7 @@ void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
     }
     streamInfoMap_[info.streamId].type = AUDIO;
 }
-
+ 
 void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
 {
     if (curVideoStreamID_ == -1) {
@@ -186,7 +186,7 @@ void DemuxerPluginManager::InitSubtitleTrack(const StreamInfo& info)
 
 Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
 {
-    MEDIA_LOG_D("InitDefaultPlay begin");
+    MEDIA_LOG_I("InitDefaultPlay begin");
     for (const auto& iter : streams) {
         int32_t streamIndex = iter.streamId;
         streamInfoMap_[streamIndex].streamID = streamIndex;
@@ -208,7 +208,7 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
             MEDIA_LOG_W("streaminfo invalid type");
         }
     }
-    MEDIA_LOG_D("InitDefaultPlay end");
+    MEDIA_LOG_I("InitDefaultPlay end");
     return Status::OK;
 }
 
@@ -266,11 +266,13 @@ Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemu
         Status ret = LoadDemuxerPlugin(curVideoStreamID_, streamDemuxer);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin video plugin failed.");
     }
+
     if (curSubTitleStreamID_ != -1) {
         MEDIA_LOG_I("LoadCurrentAllPlugin subtitle plugin");
         Status ret = LoadDemuxerPlugin(curSubTitleStreamID_, streamDemuxer);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin subtitle plugin failed.");
     }
+
     for (auto& iter : streamInfoMap_) {
         AddMediaInfo(iter.first, mediaInfo);
     }
@@ -300,7 +302,7 @@ Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStrea
 void DemuxerPluginManager::AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo)
 {
     MEDIA_LOG_I("AddMediaInfo enter");
-    AddGeneral(streamInfoMap_[streamID].mediaInfo.general, mediaInfo.general);
+    AddGeneral(streamInfoMap_[streamID], mediaInfo.general);
     for (uint32_t index = 0; index < streamInfoMap_[streamID].mediaInfo.tracks.size(); index++) {
         auto trackMeta = streamInfoMap_[streamID].mediaInfo.tracks[index];
         mediaInfo.tracks.push_back(trackMeta);
@@ -318,7 +320,7 @@ Status DemuxerPluginManager::AddTrackMapInfo(int32_t streamID, int32_t trackInde
             return Status::OK;
         }
     }
-    int32_t index = static_cast<int32_t>(trackInfoMap_.size());
+    size_t index = trackInfoMap_.size();
     trackInfoMap_[index].streamID = streamID;
     trackInfoMap_[index].innerTrackIndex = trackIndex;
     return Status::OK;
@@ -335,11 +337,11 @@ void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t ne
     temp2TrackInfoMap_[oldTrackId].streamID = trackInfoMap_[newTrackId].streamID;
     if (newInnerTrackIndex == -1) {
         MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32
-            " innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, trackInfoMap_[newTrackId].innerTrackIndex);
+            "innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, trackInfoMap_[newTrackId].innerTrackIndex);
         temp2TrackInfoMap_[oldTrackId].innerTrackIndex = trackInfoMap_[newTrackId].innerTrackIndex;
     } else {
         MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32
-            " innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, newInnerTrackIndex);
+            "innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, newInnerTrackIndex);
         temp2TrackInfoMap_[oldTrackId].innerTrackIndex = newInnerTrackIndex;
     }
 }
@@ -365,19 +367,19 @@ int32_t DemuxerPluginManager::GetTmpStreamIDByTrackID(int32_t trackId)
 Status DemuxerPluginManager::UpdateGeneralValue(int32_t trackCount, const Meta& format, Meta& formatNew)
 {
     formatNew.Set<Tag::MEDIA_TRACK_COUNT>(trackCount);
-
+ 
     bool hasVideo = false;
     format.Get<Tag::MEDIA_HAS_VIDEO>(hasVideo);
     if (hasVideo) {
         formatNew.Set<Tag::MEDIA_HAS_VIDEO>(hasVideo);
     }
-
+ 
     bool hasAudio = false;
     format.Get<Tag::MEDIA_HAS_AUDIO>(hasAudio);
     if (hasAudio) {
         formatNew.Set<Tag::MEDIA_HAS_AUDIO>(hasAudio);
     }
-
+ 
     bool hasSubtitle = false;
     format.Get<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
     if (hasSubtitle) {
@@ -386,23 +388,39 @@ Status DemuxerPluginManager::UpdateGeneralValue(int32_t trackCount, const Meta& 
     return Status::OK;
 }
 
-Status DemuxerPluginManager::AddGeneral(const Meta& format, Meta& formatNew)
+Status DemuxerPluginManager::AddGeneral(const MediaStreamInfo& info, Meta& formatNew)
 {
-    if (formatNew.Empty()) {
-        formatNew = format;
-        return Status::OK;
-    }
-    // 合并
+    FileType fileType = FileType::UNKNOW;
     int32_t curTrackCount = 0;
-    int32_t newTrackCount = 0;
     formatNew.Get<Tag::MEDIA_TRACK_COUNT>(curTrackCount);
-    format.Get<Tag::MEDIA_TRACK_COUNT>(newTrackCount);
+
+    bool hasVideo = false;
+    formatNew.Get<Tag::MEDIA_HAS_VIDEO>(hasVideo);
+
+    bool hasAudio = false;
+    formatNew.Get<Tag::MEDIA_HAS_AUDIO>(hasAudio);
+
+    bool hasSubtitle = false;
+    formatNew.Get<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
+
+    if (formatNew.Get<Tag::MEDIA_FILE_TYPE>(fileType) == false && info.activated == true) {
+        formatNew = info.mediaInfo.general;
+    }
+
+    formatNew.Set<Tag::MEDIA_HAS_VIDEO>(hasVideo);
+    formatNew.Set<Tag::MEDIA_HAS_AUDIO>(hasAudio);
+    formatNew.Set<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
+
+    int32_t newTrackCount = 0;
+    if (info.mediaInfo.general.Get<Tag::MEDIA_TRACK_COUNT>(newTrackCount) == false) {
+        newTrackCount = 1;
+    }
     int32_t totalTrackCount = newTrackCount + curTrackCount;
-    UpdateGeneralValue(totalTrackCount, format, formatNew);
+    UpdateGeneralValue(totalTrackCount, info.mediaInfo.general, formatNew);
 
     return Status::OK;
 }
-
+ 
 bool DemuxerPluginManager::CheckTrackIsActive(int32_t trackId)
 {
     MEDIA_LOG_I("CheckTrackIsActive enter");
@@ -422,7 +440,7 @@ int32_t DemuxerPluginManager::GetInnerTrackIDByTrackID(int32_t trackId)
     }
     return -1;  // default
 }
-
+ 
 int32_t DemuxerPluginManager::GetStreamIDByTrackID(int32_t trackId)
 {
     auto iter = trackInfoMap_.find(trackId);
@@ -466,10 +484,18 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
     }
     MEDIA_LOG_I("InitPlugin, " PUBLIC_LOG_S " used, id " PUBLIC_LOG_D32, pluginName.c_str(), id);
     streamDemuxer->SetDemuxerState(id, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
-    streamDemuxer->SetIsDash(isDash_);
+    if (streamDemuxer->GetIsExtSubtitle() == true) {
+        streamDemuxer->SetIsDash(false);
+    } else {
+        streamDemuxer->SetIsDash(isDash_);
+    }
 
     streamInfoMap_[id].dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, id);
-    streamInfoMap_[id].dataSource->SetIsDash(isDash_);
+    if (streamDemuxer->GetIsExtSubtitle() == true) {
+        streamInfoMap_[id].dataSource->SetIsDash(false);
+    } else {
+        streamInfoMap_[id].dataSource->SetIsDash(isDash_);
+    }
 
     Status st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource);
     return st == Status::OK;
@@ -530,6 +556,17 @@ void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> str
     }
 }
 
+Status DemuxerPluginManager::localSubtitleSeekTo(int64_t seekTime)
+{
+    FALSE_RETURN_V_MSG_E(curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr,
+                         Status::ERROR_NO_MEMORY, "subtitle seek failed, no subtitle");
+    int64_t realSeekTime = 0;
+    auto plugin = streamInfoMap_[curSubTitleStreamID_].plugin;
+    auto preSeekRes = plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+    FALSE_RETURN_V(preSeekRes != Status::OK, Status::OK);
+    return plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
+}
+
 Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
     if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
@@ -546,8 +583,9 @@ Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, in
     }
     if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
-        if (ret != Status::OK) {
-            MEDIA_LOG_E("subtitle SeekTo failed, ret = " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
+        if (ret != Status::OK && mode != Plugins::SeekMode::SEEK_NEXT_SYNC) {
+            ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(
+                -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
         }
     }
     return Status::OK;
@@ -673,10 +711,10 @@ Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
             mediaInfo.tracks.push_back(trackMeta);
         }
     }
-
+ 
     UpdateGeneralValue(trackInfoMap_.size() - tempTrackInfoMap.size(),
         streamInfoMap_[streamID].mediaInfo.general, mediaInfo.general);
-
+ 
     curMediaInfo_ = mediaInfo;
     return Status::OK;
 }
@@ -693,7 +731,6 @@ Status DemuxerPluginManager::UpdateDefaultStreamID(Plugins::MediaInfo& mediaInfo
     } else {}
 
     mediaInfo = curMediaInfo_;
-
     return Status::OK;
 }
 
@@ -729,7 +766,7 @@ StreamType DemuxerPluginManager::GetStreamTypeByTrackID(int32_t trackId)
     int32_t streamID = GetStreamIDByTrackID(trackId);
     return streamInfoMap_[streamID].type;
 }
-
+ 
 bool DemuxerPluginManager::IsSubtitleMime(const std::string& mime)
 {
     if (mime == "application/x-subrip" || mime == "text/vtt") {
@@ -737,7 +774,7 @@ bool DemuxerPluginManager::IsSubtitleMime(const std::string& mime)
     }
     return false;
 }
-
+ 
 TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
 {
     std::string mimeType = "";
@@ -764,6 +801,20 @@ int32_t DemuxerPluginManager::AddExternalSubtitle()
         return streamIndex;
     }
     return -1;
+}
+
+Status DemuxerPluginManager::SetCacheLimit(uint32_t limitSize)
+{
+    if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+        streamInfoMap_[curVideoStreamID_].plugin->SetCacheLimit(limitSize);
+    }
+    if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
+        streamInfoMap_[curAudioStreamID_].plugin->SetCacheLimit(limitSize);
+    }
+    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+        streamInfoMap_[curSubTitleStreamID_].plugin->SetCacheLimit(limitSize);
+    }
+    return Status::OK;
 }
 
 } // namespace Media

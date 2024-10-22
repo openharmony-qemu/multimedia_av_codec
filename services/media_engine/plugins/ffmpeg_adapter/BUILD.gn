@@ -69,7 +69,6 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
 
   external_deps = [
     "c_utils:utils",
-    "ffmpeg:libohosffmpeg",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
@@ -115,7 +114,6 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
 
   external_deps = [
     "c_utils:utils",
-    "ffmpeg:libohosffmpeg",
     "hilog:libhilog",
     "init:libbegetutil",
     "media_foundation:media_foundation",

@@ -36,6 +36,7 @@ public:
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
     Status DoPrepare() override;
     Status DoPrepareFrame(bool renderFirstFrame) override;
+    Status WaitPrepareFrame() override;
     Status DoStart() override;
     Status DoStop() override;
     Status DoPause() override;
@@ -43,6 +44,7 @@ public:
     Status DoResumeDragging() override;
     Status DoFlush() override;
     Status Reset();
+ 
     Status PauseForSeek();
     Status ResumeForSeek();
     Status PrepareBeforeStart();
@@ -59,6 +61,7 @@ public:
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
+
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
 
@@ -75,12 +78,12 @@ public:
     Status SelectBitRate(uint32_t bitRate);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
-
     FilterType GetFilterType();
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
+
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
     bool IsRenderNextVideoFrameSupported();
@@ -89,14 +92,14 @@ public:
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
     bool GetDuration(int64_t& durationMs);
+    void SetInterruptState(bool isInterruptNeeded);
     Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
     Status SetSpeed(float speed);
-    void SetInterruptState(bool isInterruptNeeded);
+    Status DisableMediaTrack(Plugins::MediaType mediaType);
     void SetDumpFlag(bool isdump);
     void OnDumpInfo(int32_t fd);
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
     bool IsVideoEos();
-    Status DisableMediaTrack(Plugins::MediaType mediaType);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
     void DeregisterVideoStreamReadyCallback();
     Status ResumeDemuxerReadLoop();
@@ -126,6 +129,7 @@ private:
     Status HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount);
     std::string CollectVideoAndAudioMime();
     std::string uri_;
+
     std::atomic<bool> isLoopStarted{false};
     std::atomic<bool> isPrepareFramed{false};
 
@@ -137,13 +141,13 @@ private:
 
     std::map<StreamType, std::vector<int32_t>> track_id_map_;
     Mutex mapMutex_ {};
+    std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 
     bool isDump_ = false;
     std::string bundleName_;
     uint64_t instanceId_ = 0;
     std::string videoMime_;
     std::string audioMime_;
-    std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 };
 } // namespace Pipeline
 } // namespace Media

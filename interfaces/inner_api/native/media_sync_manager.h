@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -40,7 +40,6 @@ public:
     Status SetPlaybackRate(float rate) override;
     float GetPlaybackRate() override;
     void WaitAllPrerolled(bool prerolled = true);
-    Status Stop();
     Status Resume();
     Status Pause();
     Status Seek(int64_t mediaTime, bool isClosest = false);
@@ -62,7 +61,7 @@ public:
      * @param supplier which report this time anchor
      * @retval current frame Whether rendering is required
      */
-    bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime, int64_t mediaAbsTime,
+    bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime, int64_t absMediaTime,
         int64_t maxMediaTime, IMediaSynchronizer* supplier) override;
 
     /**
@@ -122,7 +121,7 @@ private:
 
     bool IsSupplierValid(IMediaSynchronizer* supplier);
 
-    void SimpleUpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, int64_t mediaAbsTime);
+    void SimpleUpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, int64_t absMediaTime);
     void SimpleUpdatePlayRate(float playRate);
     void SetMediaTimeStartEnd(int32_t trackId, int32_t index, int64_t val);
     void SetAllSyncShouldWaitNoLock();

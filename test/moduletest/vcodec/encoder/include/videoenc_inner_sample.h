@@ -40,6 +40,12 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+struct fileInfo {
+    std::string fileDir;
+    GraphicPixelFormat format;
+    uint32_t width;
+    uint32_t height;
+};
 class VEncInnerSignal {
 public:
     std::mutex inMutex_;
@@ -118,7 +124,12 @@ public:
     int32_t InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer);
     int32_t StateEOS();
     uint32_t ReturnZeroIfEOS(uint32_t expectedSize);
+    uint32_t ReadOneFrameRGBA8888(uint8_t *dst);
     uint32_t ReadOneFrameYUV420SP(uint8_t *dst);
+    uint32_t ReadOneFrameYUVP010(uint8_t *dst);
+    uint32_t ReadOneFrameFromList(uint8_t *dst, int32_t &fileIndex);
+    uint32_t ReadOneFrameByType(uint8_t *dst, std::string &fileType);
+    uint32_t ReadOneFrameByType(uint8_t *dst, GraphicPixelFormat format);
     int32_t PushInputParameter(uint32_t index);
     bool RandomEOS(uint32_t index);
     void RepeatStartBeforeEOS();
@@ -137,9 +148,15 @@ public:
     void PushRandomDiscardIndex(uint32_t count, uint32_t min, uint32_t max);
     bool IsFrameDiscard(uint32_t index);
     bool CheckOutputFrameCount();
+    void readMultiFilesFunc();
+    int32_t SetCustomBuffer(BufferRequestConfig bufferRequestConfig);
+    bool ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer);
+    bool GetWaterMarkCapability(std::string codecMimeType);
+    int32_t InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuffer, OH_NativeBuffer *&nativeBuffer, uint8_t *&dst);
 
     const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
     const char *OUT_DIR = "/data/test/media/VEncTest.h264";
+    const char *WATER_MARK_DIR = "/data/test/media/128_72_0.rgba";
     uint32_t DEFAULT_WIDTH = 1280;
     uint32_t DEFAULT_HEIGHT = 720;
     uint32_t DEFAULT_BITRATE = 10000000;
@@ -173,6 +190,19 @@ public:
     int32_t discardFrameCount = 0;
     int32_t inputFrameCount = 0;
     bool setMaxCount = false;
+    bool enableWaterMark = false;
+    int32_t videoCoordinateX = 100;
+    int32_t videoCoordinateY = 100;
+    int32_t videoCoordinateWidth = 400;
+    int32_t videoCoordinateHeight = 400;
+    std::vector<std::string> fileDirs;
+    std::vector<fileInfo> fileInfos;
+    bool readMultiFiles = false;
+    bool setFormatRbgx = false;
+    bool configMain = false;
+    bool configMain10 = false;
+    bool setFormat8Bit = false;
+    bool setFormat10Bit = false;
     
 private:
     std::atomic<bool> isRunning_ { false };

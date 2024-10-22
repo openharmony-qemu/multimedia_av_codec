@@ -45,11 +45,13 @@ private:
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};
     uint32_t frameRate_ {0};
+    bool forceRenderNextFrame_ {false};
     int64_t firstFramePts_ {0};
     int64_t firstFrameNowct_ {0};
     int64_t lastTimeStamp_ {HST_TIME_NONE};
     int64_t lastBufferTime_ {HST_TIME_NONE};
     int64_t deltaTimeAccu_ {0};
+
     VideoScaleType videoScaleType_ {VideoScaleType::VIDEO_SCALE_TYPE_FIT};
 
     void CalcFrameRate();
@@ -63,7 +65,6 @@ private:
     std::atomic<bool> lastFrameDropped_ {false};
     int64_t lastPts_ = -1;
     int64_t lastClockTime_ = -1;
-    std::atomic<bool> isRenderStarted_{false};
 };
 } // namespace Pipeline
 } // namespace Media

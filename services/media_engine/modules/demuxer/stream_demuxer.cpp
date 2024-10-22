@@ -52,7 +52,7 @@ StreamDemuxer::StreamDemuxer() : position_(0)
 
 StreamDemuxer::~StreamDemuxer()
 {
-    MEDIA_LOG_D("~VodStreamDemuxer called");
+    MEDIA_LOG_I("~VodStreamDemuxer called");
     ResetAllCache();
 }
 
@@ -123,7 +123,6 @@ Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_
     FALSE_RETURN_V_MSG_E(bufferPtr->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "bufferPtr invalid");
     auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
     FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "memory invalid");
-
     MEDIA_LOG_D("PullDataWithCache, Read data from cache data.");
     uint64_t offsetInCache = offset - cacheDataMap_[streamID].GetOffset();
     if (size <= memory->GetSize() - offsetInCache) {
@@ -236,6 +235,9 @@ Status StreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size,
     int32_t retryTimes = 0;
     while (true && !isInterruptNeeded_.load()) {
         err = source_->Read(streamID, data, offset, size);
+        if (IsDash() && streamID != data->streamID) {
+            break;
+        }
         if (err != Status::END_OF_STREAM && data->GetMemory()->GetSize() == 0) {
             OSAL::SleepFor(TRY_READ_SLEEP_TIME);
             retryTimes++;
