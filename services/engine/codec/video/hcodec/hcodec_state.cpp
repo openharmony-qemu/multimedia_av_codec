@@ -480,7 +480,7 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             break;
         case MsgWhat::QUEUE_INPUT_BUFFER:
             if (codec_->outPortHasChanged_) {
-                codec_->SubmitDynamicBufferIfPossible();
+                codec_->DynamicModeSubmitBuffer();
             }
             codec_->OnQueueInputBuffer(info, inputMode_);
             break;
@@ -945,7 +945,6 @@ void HCodec::StoppingState::ChangeOmxNodeToLoadedState(bool forceToFreeBuffer)
     if (forceToFreeBuffer || omxNodeIsChangingToLoadedState_) {
         codec_->ClearBufferPool(OMX_DirInput);
         codec_->ClearBufferPool(OMX_DirOutput);
-        codec_->ClearBufferList();
         return;
     }
     codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);

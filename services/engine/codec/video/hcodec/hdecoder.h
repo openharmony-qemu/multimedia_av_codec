@@ -32,6 +32,7 @@ private:
     struct SurfaceBufferItem {
         sptr<SurfaceBuffer> buffer;
         sptr<SyncFence> fence;
+        int32_t generation = 0;
     };
 
 private:
@@ -75,15 +76,14 @@ private:
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     GSError OnBufferReleasedByConsumer(uint64_t surfaceId) override;
     void OnGetBufferFromSurface(const ParamSP& param) override;
-    bool IsWrapSurfaceBufferToSlot(SurfaceBufferItem &item);
     SurfaceBufferItem RequestBuffer();
     std::vector<BufferInfo>::iterator FindBelongTo(sptr<SurfaceBuffer>& buffer);
-    void SubmitBufferToDecoder();
-    void SubmitOneBufferFromFreeList();
-    bool SubmitOneItem(SurfaceBufferItem& item);
-    void SubmitDynamicBufferIfPossible() override;
-    void SurfaceModeSubmitOneDynamicBuffer(std::vector<BufferInfo>::iterator nullSlot);
-    void BufferModeSubmitOneDynamicBuffer(std::vector<BufferInfo>::iterator nullSlot);
+    void SurfaceModeSubmitBuffer();
+    void SurfaceModeSubmitBufferFromFreeList();
+    bool SurfaceModeSubmitOneItem(SurfaceBufferItem& item);
+    void DynamicModeSubmitBuffer() override;
+    void SurfaceDynamicModeSubmitBuffer(std::vector<BufferInfo>::iterator nullSlot);
+    void BufferDynamicModeSubmitBuffer(std::vector<BufferInfo>::iterator nullSlot);
 
     // switch surface
     void OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface,
@@ -97,7 +97,6 @@ private:
     void OnClearBufferPool(OMX_DIRTYPE portIndex) override;
     void CancelBufferToSurface(BufferInfo &info);
     void OnEnterUninitializedState() override;
-    void ClearBufferList() override;
 
     // VRR
 #ifdef USE_VIDEO_PROCESSING_ENGINE
@@ -122,6 +121,7 @@ private:
     } currSurface_;
 
     std::list<SurfaceBufferItem> freeList_;
+    int32_t currGeneration_ = 0;
     bool isDynamic_ = false;
     uint32_t outBufferCnt_ = 0;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
