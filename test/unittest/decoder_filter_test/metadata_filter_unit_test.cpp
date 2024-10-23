@@ -29,6 +29,7 @@ namespace OHOS::Media {
 
 using namespace std;
 using namespace testing::ext;
+using namespace testing;
 void MetaDataFilterUnitTest::SetUpTestCase(void)
 {
 }
@@ -39,10 +40,12 @@ void MetaDataFilterUnitTest::TearDownTestCase(void)
 
 void MetaDataFilterUnitTest::SetUp()
 {
+    metaData_ = std::make_shared<Pipeline::MetaDataFilter>("testMetaDataFilter", Pipeline::FilterType::FILTERTYPE_AENC);
 }
 
 void MetaDataFilterUnitTest::TearDown()
 {
+    metaData_ = nullptr;
 }
 
 HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_001, TestSize.Level1)
@@ -75,6 +78,9 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_001, TestSize.Level1)
     EXPECT_EQ(metaData->NotifyEos(), Status::OK);
     metaData->SetParameter(format);
     metaData->GetParameter(format);
+
+    std::shared_ptr<TestFilter> nextFilter = std::make_shared<TestFilter>();
+    EXPECT_EQ(metaData->LinkNext(nextFilter, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
     EXPECT_EQ(metaData->UpdateNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
     EXPECT_EQ(metaData->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
     metaData->GetFilterType();
@@ -131,4 +137,179 @@ HWTEST_F(MetaDataFilterUnitTest, UpdateBufferConfig_001, TestSize.Level1)
     metaData->UpdateBufferConfig(avbuffer, 0);
     EXPECT_EQ(metaData->totalPausedTime_, 0);
 }
+
+sptr<MockConsumerSurface> MockConsumerSurface::CreateSurfaceAsConsumer(std::string name, bool isShared)
+{
+    sptr<MockConsumerSurface> surf = new MockConsumerSurface(name, isShared);
+    sptr<BufferQueue> queue_ = new BufferQueue(surf->name_, surf->isShared_);
+    surf->producer_ = new BufferQueueProducer(queue_);
+    surf->consumer_ = new BufferQueueProducer(queue_);
+    surf->uniqueId_ = surf->producer_->GetUniqueId();
+    return surf;
+}
+
+/**
+ * @tc.name: MetaDataFilter_OnBufferAvailable_001
+ * @tc.desc: ret == GSERROR_OK && buffer != nullptr, then isStop_ = true
+ * @tc.type FUNC
+ */
+HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_001, TestSize.Level1)
+{
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+
+    metaData_->isStop_ = true;
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
+    EXPECT_NE(mockBuffer, nullptr);
+    EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+    EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
+
+    metaData_->OnBufferAvailable();
+}
+
+/**
+ * @tc.name: MetaDataFilter_OnBufferAvailable_002
+ * @tc.desc: if extraData exist, timestamp <= latestBufferTime_
+ * @tc.type FUNC
+ */
+HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_002, TestSize.Level1)
+{
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+
+    metaData_->isStop_ = false;
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t) -2);
+    EXPECT_NE(mockBuffer, nullptr);
+    EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+    EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
+
+    metaData_->OnBufferAvailable();
+}
+
+/**
+ * @tc.name: MetaDataFilter_OnBufferAvailable_003
+ * @tc.desc: if extraData exist, timestamp = 0
+ * @tc.type FUNC
+ */
+HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_003, TestSize.Level1)
+{
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+
+    metaData_->isStop_ = false;
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t) 0);
+    EXPECT_NE(mockBuffer, nullptr);
+    EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+    EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
+
+    metaData_->OnBufferAvailable();
+}
+
+/**
+ * @tc.name: MetaDataFilter_OnBufferAvailable_004
+ * @tc.desc: if status != OK
+ * @tc.type FUNC
+ */
+HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_004, TestSize.Level1)
+{
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+
+    metaData_->isStop_ = false;
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t) 1);
+    EXPECT_NE(mockBuffer, nullptr);
+    EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
+    metaData_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
+    std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), testing::Return(Status::ERROR_NULL_POINTER)));
+    EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
+
+    metaData_->OnBufferAvailable();
+}
+
+/**
+ * @tc.name: MetaDataFilter_OnBufferAvailable_005
+ * @tc.desc: if status == OK, emptyOutputBuffer->memory_ == nullptr
+ * @tc.type FUNC
+ */
+HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_005, TestSize.Level1)
+{
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+
+    metaData_->isStop_ = false;
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t) 1);
+    EXPECT_NE(mockBuffer, nullptr);
+    EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
+    metaData_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
+    std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
+    mockEmptyOutputBuffer->memory_ == nullptr;
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), testing::Return(Status::OK)));
+    EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
+
+    metaData_->OnBufferAvailable();
+}
+
+/**
+ * @tc.name: MetaDataFilter_OnBufferAvailable_006
+ * @tc.desc: if status == OK, emptyOutputBuffer->memory_ != nullptr
+ * @tc.type FUNC
+ */
+HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_006, TestSize.Level1)
+{
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+
+    metaData_->isStop_ = false;
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t) 1);
+    EXPECT_NE(mockBuffer, nullptr);
+    EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
+    metaData_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
+    std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
+    mockEmptyOutputBuffer->memory_ == std::make_shared<AVMemory>();
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), testing::Return(Status::OK)));
+    EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(1);
+    EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
+
+    metaData_->OnBufferAvailable();
+}
+
 }
