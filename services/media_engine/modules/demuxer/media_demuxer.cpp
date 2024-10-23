@@ -194,7 +194,7 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
     Status ret = videoPlugin->ParserRefUpdatePos(startTimeMs, isForward);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ParserRefUpdatePos fail.");
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ParserRefUpdatePos failed");
     if (isFirstParser_) {
         isFirstParser_ = false;
         if (source_->GetSeekable() != Plugins::Seekable::SEEKABLE) {
@@ -222,7 +222,7 @@ void MediaDemuxer::TryRecvParserTask()
 int64_t MediaDemuxer::ParserRefInfo()
 {
     if (demuxerPluginManager_ == nullptr) {
-        MEDIA_LOG_D( "Plugin manager is nullptr");
+        MEDIA_LOG_D("Plugin manager is nullptr");
         return 0;
     }
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
@@ -1608,7 +1608,7 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
 
 bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
 {
-    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "invalid param.");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "Invalid param");
     TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(selectTrackTrackID_);
     int32_t newStreamID = -1;
     uint32_t oldTrackId = -1;
@@ -1679,7 +1679,7 @@ bool MediaDemuxer::SelectBitRateChangeStream(uint32_t trackId)
 
         MEDIA_LOG_I("Updata info");
         InnerSelectTrack(static_cast<int32_t>(trackId));
-        MEDIA_LOG_I("out");
+        MEDIA_LOG_I("Out");
         return true;
     }
     return false;
@@ -1716,11 +1716,11 @@ Status MediaDemuxer::HandleReadSample(uint32_t trackId)
         if (trackId == videoTrackId_ && isFirstFrameAfterSeek_.load()) {
             bool isSyncFrame = (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::SYNC_FRAME)) != 0;
             if (!isSyncFrame) {
-                MEDIA_LOG_E("The first frame after seeking is not a sync frame.");
+                MEDIA_LOG_E("The first frame after seeking is not a sync frame");
             }
             isFirstFrameAfterSeek_.store(false);
         }
-        MEDIA_LOG_I("Seeking, found idr frame track: " PUBLIC_LOG_U32, trackId);
+        MEDIA_LOG_I("Seeking, found idr frame track " PUBLIC_LOG_U32, trackId);
         isSeeked_ = false;
     }
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
@@ -1730,7 +1730,7 @@ Status MediaDemuxer::HandleReadSample(uint32_t trackId)
                 taskMap_[trackId]->StopAsync();
             }
             MEDIA_LOG_I("Track eos, track: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
-                ", pts: " PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
+                ", pts: " PUBLIC_LOG_D64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
             return Status::OK;
@@ -1834,8 +1834,8 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
     if (ret == Status::END_OF_STREAM) {
         MEDIA_LOG_I("Read eos for track " PUBLIC_LOG_U32, trackId);
     } else if (ret != Status::OK) {
-        MEDIA_LOG_I("Read buffer error for track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32,
-            trackId, static_cast<int32_t>(ret));
+        MEDIA_LOG_I("Read error for track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
+    }
     MEDIA_LOG_D("Out, track " PUBLIC_LOG_U32, trackId);
     ProcessDrmInfos();
     return ret;
