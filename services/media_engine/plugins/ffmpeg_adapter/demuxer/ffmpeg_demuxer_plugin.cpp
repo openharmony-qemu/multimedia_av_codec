@@ -1135,7 +1135,7 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
         Dump(dumpParam);
     }
 #endif
-    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "pkt is nullptr");
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Pkt is nullptr");
     auto trackId = pkt->stream_index;
     Status ret = Status::OK;
     if (NeedCombineFrame(trackId) && !GetNextFrame(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
