@@ -158,7 +158,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_001, TestSize.
     sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+    EXPECT_NE(metaData_->inputSurface_, nullptr);
 
     metaData_->isStop_ = true;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
@@ -181,7 +181,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_002, TestSize.
     sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+    EXPECT_NE(metaData_->inputSurface_, nullptr);
 
     metaData_->isStop_ = false;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
@@ -205,7 +205,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_003, TestSize.
     sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+    EXPECT_NE(metaData_->inputSurface_, nullptr);
 
     metaData_->isStop_ = false;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
@@ -229,7 +229,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_004, TestSize.
     sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+    EXPECT_NE(metaData_->inputSurface_, nullptr);
 
     metaData_->isStop_ = false;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
@@ -259,7 +259,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_005, TestSize.
     sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+    EXPECT_NE(metaData_->inputSurface_, nullptr);
 
     metaData_->isStop_ = false;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
@@ -290,7 +290,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_006, TestSize.
     sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(metaData_->inputSurface_, nullptr);
+    EXPECT_NE(metaData_->inputSurface_, nullptr);
 
     metaData_->isStop_ = false;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
