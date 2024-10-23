@@ -46,7 +46,7 @@ bool ReferenceParserManager::Init()
     std::lock_guard<std::mutex> lock(mtx_);
     if (!handler_) {
         if (!CheckSymbol(LoadPluginFile(REFERENCE_LIB_PATH))) {
-            MEDIA_LOG_E("Load Reference parser so fail");
+            MEDIA_LOG_E("Load reference parser failed");
             return false;
         }
     }
@@ -62,7 +62,7 @@ std::shared_ptr<ReferenceParserManager> ReferenceParserManager::Create(CodecType
     }
     loader->referenceParser_ = loader->createFunc_(codecType, IFramePos);
     if (!loader->referenceParser_) {
-        MEDIA_LOG_E("createFunc_ fail");
+        MEDIA_LOG_E("CreateFunc_ fail");
         return nullptr;
     }
     return loader;
@@ -70,46 +70,46 @@ std::shared_ptr<ReferenceParserManager> ReferenceParserManager::Create(CodecType
 
 Status ReferenceParserManager::ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId, int64_t dts)
 {
-    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference parser is null!");
+    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference parser is nullptr");
     return referenceParser_->ParserNalUnits(nalData, nalDataSize, frameId, dts);
 }
 
 Status ReferenceParserManager::ParserExtraData(uint8_t *extraData, int32_t extraDataSize)
 {
-    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference parser is null!");
+    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference parser is nullptr");
     return referenceParser_->ParserExtraData(extraData, extraDataSize);
 }
 
 Status ReferenceParserManager::ParserSdtpData(uint8_t *sdtpData, int32_t sdtpDataSize)
 {
-    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference parser is null!");
+    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference parser is nullptr");
     return referenceParser_->ParserSdtpData(sdtpData, sdtpDataSize);
 }
 
 Status ReferenceParserManager::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
 {
-    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference parser is null!");
+    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference parser is nullptr");
     return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
 }
 
 Status ReferenceParserManager::GetFrameLayerInfo(int64_t dts, FrameLayerInfo &frameLayerInfo)
 {
-    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference parser is null!");
+    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference parser is nullptr");
     return referenceParser_->GetFrameLayerInfo(dts, frameLayerInfo);
 }
 
 Status ReferenceParserManager::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 {
-    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference parser is null!");
+    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference parser is nullptr");
     return referenceParser_->GetGopLayerInfo(gopId, gopLayerInfo);
 }
 
 void *ReferenceParserManager::LoadPluginFile(const std::string &path)
 {
-    FALSE_RETURN_V_MSG_E(path.length() > 0, nullptr, "path is invalid.");
+    FALSE_RETURN_V_MSG_E(path.length() > 0, nullptr, "Path is invalid");
     auto ptr = ::dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (ptr == nullptr) {
-        MEDIA_LOG_E("dlopen failed due to %{public}s", ::dlerror());
+        MEDIA_LOG_E("Dlopen failed due to %{public}s", ::dlerror());
     }
     handler_ = ptr;
     return ptr;
@@ -125,8 +125,8 @@ bool ReferenceParserManager::CheckSymbol(void *handler)
         createFunc = (CreateFunc)(::dlsym(handler, createFuncName.c_str()));
         destroyFunc = (DestroyFunc)(::dlsym(handler, destroyFuncName.c_str()));
         if (createFunc && destroyFunc) {
-            MEDIA_LOG_D("CheckSymbol:  createFuncName %{public}s", createFuncName.c_str());
-            MEDIA_LOG_D("CheckSymbol:  destroyFuncName %{public}s", destroyFuncName.c_str());
+            MEDIA_LOG_D("CreateFuncName %{public}s", createFuncName.c_str());
+            MEDIA_LOG_D("DestroyFuncName %{public}s", destroyFuncName.c_str());
             createFunc_ = createFunc;
             destroyFunc_ = destroyFunc;
             return true;

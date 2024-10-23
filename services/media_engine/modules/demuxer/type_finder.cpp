@@ -79,12 +79,12 @@ TypeFinder::TypeFinder()
       peekRange_(),
       typeFound_()
 {
-    MEDIA_LOG_D("TypeFinder ctor called...");
+    MEDIA_LOG_D("In");
 }
 
 TypeFinder::~TypeFinder()
 {
-    MEDIA_LOG_D("TypeFinder dtor called...");
+    MEDIA_LOG_D("In");
     if (task_) {
         task_->Stop();
     }
@@ -134,7 +134,7 @@ std::string TypeFinder::FindMediaType()
 Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
 {
     if (!buffer || expectedLen == 0 || !IsOffsetValid(offset)) {
-        MEDIA_LOG_E("ReadAt failed, buffer empty: " PUBLIC_LOG_D32 ", expectedLen: " PUBLIC_LOG_ZU ", offset: "
+        MEDIA_LOG_E("Buffer empty: " PUBLIC_LOG_D32 ", expectedLen: " PUBLIC_LOG_ZU ", offset: "
             PUBLIC_LOG_D64, !buffer, expectedLen, offset);
         return Status::ERROR_INVALID_PARAMETER;
     }
@@ -146,11 +146,11 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
         OSAL::SleepFor(5); // 5 ms
     }
     if (i == maxTryTimes) {
-        MEDIA_LOG_E("ReadAt exceed maximum allowed try times and failed.");
+        MEDIA_LOG_E("ReadAt failed try 5 times");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
     FALSE_LOG_MSG(peekRange_(streamID_, static_cast<uint64_t>(offset), expectedLen, buffer) == Status::OK,
-        "peekRange failed.");
+        "PeekRange failed");
     return Status::OK;
 }
 

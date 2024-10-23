@@ -233,7 +233,7 @@ HEVCLevel FFMpegConverter::ConvertFFMpegToOHHEVCLevel(int ffHEVCLevel)
     auto ite = std::find_if(g_pFfHEVCLevelMap.begin(), g_pFfHEVCLevelMap.end(),
                             [&ffHEVCLevel](const auto &item) -> bool { return item.first == ffHEVCLevel; });
     if (ite == g_pFfHEVCLevelMap.end()) {
-        MEDIA_LOG_W("Convert hevc level failed: " PUBLIC_LOG_D32 "", ffHEVCLevel);
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, ffHEVCLevel);
         return HEVCLevel::HEVC_LEVEL_UNKNOW;
     }
     return ite->second;
@@ -244,7 +244,7 @@ HEVCProfile FFMpegConverter::ConvertFFMpegToOHHEVCProfile(int ffHEVCProfile)
     auto ite = std::find_if(g_pFfHEVCProfileMap.begin(), g_pFfHEVCProfileMap.end(),
                             [&ffHEVCProfile](const auto &item) -> bool { return item.first == ffHEVCProfile; });
     if (ite == g_pFfHEVCProfileMap.end()) {
-        MEDIA_LOG_W("Convert hevc profile failed: " PUBLIC_LOG_D32 "", ffHEVCProfile);
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, ffHEVCProfile);
         return HEVCProfile::HEVC_PROFILE_UNKNOW;
     }
     return ite->second;
@@ -255,7 +255,7 @@ ColorPrimary FFMpegConverter::ConvertFFMpegToOHColorPrimaries(AVColorPrimaries f
     auto ite = std::find_if(g_pFfColorPrimariesMap.begin(), g_pFfColorPrimariesMap.end(),
                             [&ffColorPrimaries](const auto &item) -> bool { return item.first == ffColorPrimaries; });
     if (ite == g_pFfColorPrimariesMap.end()) {
-        MEDIA_LOG_W("Convert color primaries failed: " PUBLIC_LOG_D32 "", static_cast<int32_t>(ffColorPrimaries));
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(ffColorPrimaries));
         return ColorPrimary::UNSPECIFIED;
     }
     return ite->second;
@@ -266,7 +266,7 @@ TransferCharacteristic FFMpegConverter::ConvertFFMpegToOHColorTrans(AVColorTrans
     auto ite = std::find_if(g_pFfTransferCharacteristicMap.begin(), g_pFfTransferCharacteristicMap.end(),
                             [&ffColorTrans](const auto &item) -> bool { return item.first == ffColorTrans; });
     if (ite == g_pFfTransferCharacteristicMap.end()) {
-        MEDIA_LOG_W("Convert color trans failed: " PUBLIC_LOG_D32 "", static_cast<int32_t>(ffColorTrans));
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(ffColorTrans));
         return TransferCharacteristic::UNSPECIFIED;
     }
     return ite->second;
@@ -277,7 +277,7 @@ MatrixCoefficient FFMpegConverter::ConvertFFMpegToOHColorMatrix(AVColorSpace ffC
     auto ite = std::find_if(g_pFfMatrixCoefficientMap.begin(), g_pFfMatrixCoefficientMap.end(),
                             [&ffColorSpace](const auto &item) -> bool { return item.first == ffColorSpace; });
     if (ite == g_pFfMatrixCoefficientMap.end()) {
-        MEDIA_LOG_W("Convert color matrix failed: " PUBLIC_LOG_D32 "", static_cast<int32_t>(ffColorSpace));
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(ffColorSpace));
         return MatrixCoefficient::UNSPECIFIED;
     }
     return ite->second;
@@ -288,7 +288,7 @@ int FFMpegConverter::ConvertFFMpegToOHColorRange(AVColorRange ffColorRange)
     auto ite = std::find_if(g_pFfColorRangeMap.begin(), g_pFfColorRangeMap.end(),
                             [&ffColorRange](const auto &item) -> bool { return item.first == ffColorRange; });
     if (ite == g_pFfColorRangeMap.end()) {
-        MEDIA_LOG_W("Convert color range failed: " PUBLIC_LOG_D32 "", static_cast<int32_t>(ffColorRange));
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(ffColorRange));
         return 0;
     }
     return ite->second;
@@ -299,7 +299,7 @@ ChromaLocation FFMpegConverter::ConvertFFMpegToOHChromaLocation(AVChromaLocation
     auto ite = std::find_if(g_pFfChromaLocationMap.begin(), g_pFfChromaLocationMap.end(),
                             [&ffChromaLocation](const auto &item) -> bool { return item.first == ffChromaLocation; });
     if (ite == g_pFfChromaLocationMap.end()) {
-        MEDIA_LOG_W("Convert chroma location failed: " PUBLIC_LOG_D32 "", static_cast<int32_t>(ffChromaLocation));
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(ffChromaLocation));
         return ChromaLocation::UNSPECIFIED;
     }
     return ite->second;
@@ -310,7 +310,7 @@ AudioSampleFormat FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(AVCodec
     auto ite = std::find_if(g_pFfCodeIDToSampleFmtMap.begin(), g_pFfCodeIDToSampleFmtMap.end(),
                             [&codecId](const auto &item) -> bool { return item.first == codecId; });
     if (ite == g_pFfCodeIDToSampleFmtMap.end()) {
-        MEDIA_LOG_W("Convert codec id failed: " PUBLIC_LOG_D32 "", static_cast<int32_t>(codecId));
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(codecId));
         return AudioSampleFormat::INVALID_WIDTH;
     }
     return ite->second;
@@ -321,7 +321,7 @@ AudioSampleFormat FFMpegConverter::ConvertFFMpegToOHAudioFormat(AVSampleFormat f
     auto ite = std::find_if(g_pFfSampleFmtMap.begin(), g_pFfSampleFmtMap.end(),
                             [&ffSampleFormat](const auto &item) -> bool { return item.first == ffSampleFormat; });
     if (ite == g_pFfSampleFmtMap.end()) {
-        MEDIA_LOG_W("Convert sample format failed: " PUBLIC_LOG_D32 "", static_cast<int32_t>(ffSampleFormat));
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(ffSampleFormat));
         return AudioSampleFormat::INVALID_WIDTH;
     }
     return ite->second;
@@ -332,7 +332,7 @@ AVSampleFormat FFMpegConverter::ConvertOHAudioFormatToFFMpeg(AudioSampleFormat s
     auto ite = std::find_if(g_pFfSampleFmtMap.begin(), g_pFfSampleFmtMap.end(),
                             [&sampleFormat](const auto &item) -> bool { return item.second == sampleFormat; });
     if (ite == g_pFfSampleFmtMap.end()) {
-        MEDIA_LOG_W("Convert sample format failed: " PUBLIC_LOG_D32 "", static_cast<int32_t>(sampleFormat));
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(sampleFormat));
         return AVSampleFormat::AV_SAMPLE_FMT_NONE;
     }
     return ite->first;
@@ -343,7 +343,7 @@ AudioChannelLayout FFMpegConverter::ConvertFFToOHAudioChannelLayout(uint64_t ffC
     auto ite = std::find_if(g_toFFMPEGChannelLayout.begin(), g_toFFMPEGChannelLayout.end(),
                             [&ffChannelLayout](const auto &item) -> bool { return item.second == ffChannelLayout; });
     if (ite == g_toFFMPEGChannelLayout.end()) {
-        MEDIA_LOG_W("Convert channel layout failed: " PUBLIC_LOG_U64, ffChannelLayout);
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_U64, ffChannelLayout);
         return AudioChannelLayout::MONO;
     }
     return ite->first;
@@ -357,7 +357,7 @@ AudioChannelLayout FFMpegConverter::GetDefaultChannelLayout(int channels)
     if (ite != g_channelLayoutDefaukltMap.end()) {
         layout = ite->second;
     }
-    MEDIA_LOG_W("Get default channel layout: " PUBLIC_LOG_S "", ConvertOHAudioChannelLayoutToString(layout).data());
+    MEDIA_LOG_W("Default: " PUBLIC_LOG_S, ConvertOHAudioChannelLayoutToString(layout).data());
     return layout;
 }
 
@@ -366,7 +366,7 @@ AudioChannelLayout FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(uint64_t f
     auto ite = std::find_if(g_toFFMPEGChannelLayout.begin(), g_toFFMPEGChannelLayout.end(),
                             [&ffChannelLayout](const auto &item) -> bool { return item.second == ffChannelLayout; });
     if (ite == g_toFFMPEGChannelLayout.end()) {
-        MEDIA_LOG_W("Convert channel layout failed: " PUBLIC_LOG_U64, ffChannelLayout);
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_U64, ffChannelLayout);
         return GetDefaultChannelLayout(channels);
     }
     return ite->first;
@@ -377,7 +377,7 @@ uint64_t FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(AudioChannelLayout
     auto ite = std::find_if(g_toFFMPEGChannelLayout.begin(), g_toFFMPEGChannelLayout.end(),
                             [&channelLayout](const auto &item) -> bool { return item.first == channelLayout; });
     if (ite == g_toFFMPEGChannelLayout.end()) {
-        MEDIA_LOG_W("Convert channel layout failed: " PUBLIC_LOG_D32 "", static_cast<int32_t>(channelLayout));
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(channelLayout));
         return AV_CH_LAYOUT_NATIVE;
     }
     return ite->second;
@@ -388,7 +388,7 @@ std::string_view FFMpegConverter::ConvertOHAudioChannelLayoutToString(AudioChann
     auto ite = std::find_if(g_ChannelLayoutToString.begin(), g_ChannelLayoutToString.end(),
                             [&layout](const auto &item) -> bool { return item.first == layout; });
     if (ite == g_ChannelLayoutToString.end()) {
-        MEDIA_LOG_W("Convert channel layout failed: " PUBLIC_LOG_D32 "", static_cast<int32_t>(layout));
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(layout));
         return g_ChannelLayoutToString[0].second;
     }
     return ite->second;
