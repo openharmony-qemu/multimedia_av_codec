@@ -675,16 +675,6 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     }
     format.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(avStream.codecpar->bits_per_coded_sample);
     format.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(avStream.codecpar->bits_per_raw_sample);
-
-    if (avStream.codecpar->codec_id == AV_CODEC_ID_AV3A) {
-        ParseAudioVividInfo(avStream, format);
-    }
-}
-
-void FFmpegFormatHelper::ParseAudioVividInfo(const AVStream& avStream, Meta &format)
-{
-    printf("avStream.codecpar->codec_id == AV_CODEC_ID_AV3A");
-    
 }
 
 void FFmpegFormatHelper::ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format)
