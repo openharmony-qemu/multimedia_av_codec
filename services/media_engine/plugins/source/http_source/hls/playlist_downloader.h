@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -38,8 +38,10 @@ struct PlayListChangeCallback {
 };
 class PlayListDownloader {
 public:
-    PlayListDownloader();
-    explicit PlayListDownloader(std::shared_ptr<Downloader> downloader);
+    explicit PlayListDownloader(
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
+    explicit PlayListDownloader(std::shared_ptr<Downloader> downloader,
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
     virtual ~PlayListDownloader() = default;
 
     virtual void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
@@ -72,6 +74,17 @@ public:
     void PlayListDownloaderInit();
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     std::map<std::string, std::string> GetHttpHeader();
+    void SetCallback(Callback* cb);
+    void SetAppUid(int32_t appUid);
+    virtual size_t GetSegmentOffset(uint32_t tsIndex)
+    {
+        return 0;
+    }
+
+    virtual bool GetHLSDiscontinuity()
+    {
+        return false;
+    }
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -99,6 +112,8 @@ protected:
     uint64_t fileSize_ {0};
     Seekable seekable_ {Seekable::SEEKABLE};
     uint64_t position_ {0};
+    int64_t retryStartTime_ {0};
+    Callback* eventCallback_ {nullptr};
     std::atomic<bool> isInterruptNeeded_{false};
 };
 }

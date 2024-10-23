@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,6 +27,7 @@
 #include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
+#include "utils/write_bitrate_caculator.h"
 
 namespace OHOS {
 namespace Media {
@@ -56,7 +57,6 @@ public:
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
-    int GetBufferSize();
     RingBuffer& GetBuffer();
     bool GetReadFrame();
     bool GetDownloadErrorState();
@@ -66,6 +66,10 @@ public:
     void DownloadReport();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
+    size_t GetBufferSize() const override;
+    bool GetPlayable() override;
+    bool GetBufferingTimeOut() override;
+    void SetAppUid(int32_t appUid) override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -76,8 +80,8 @@ private:
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool HandleSeekHit(int64_t offest);
-    Status HandleDownloadErrorState(unsigned int& realReadLength);
     Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
+    Status ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SeekRingBuffer(int64_t offset);
     bool SeekCacheBuffer(int64_t offset);
@@ -85,17 +89,24 @@ private:
     void InitCacheBuffer(uint32_t expectBufferDuration);
 
     bool HandleBuffering();
-    bool StartBuffering(int32_t wantReadLength);
-    size_t GetCurrentBufferSize();
+    bool StartBuffering(unsigned int& wantReadLength);
+    size_t GetCurrentBufferSize() const;
     bool HandleBreak();
-    void ChangeDownloadPos();
-    int32_t GetWaterLineAbove();
+    bool ChangeDownloadPos(bool isSeekHit);
+    void UpdateWaterLineAbove();
     void HandleCachedDuration();
     bool CheckBufferingOneSeconds();
     double CalculateCurrentDownloadSpeed();
+    float GetCacheDuration(float ratio);
+    void HandleDownloadWaterLine();
+    void UpdateMinAndMaxReadOffset();
+    bool StartBufferingCheck(unsigned int& wantReadLength);
+    bool ClearHasReadBuffer();
+    void ClearCacheBuffer();
+    void CheckDownloadPos(unsigned int wantReadLength);
 
 private:
-    std::shared_ptr<RingBuffer> buffer_;
+    std::shared_ptr<RingBuffer> ringBuffer_;
     std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;
@@ -105,10 +116,8 @@ private:
     StatusCallbackFunc statusCallback_ {nullptr};
     bool aboveWaterline_ {false};
     bool startedPlayStatus_ {false};
-    uint64_t readTime_ {0};
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
-    std::atomic<bool> isInterruptNeeded_{false};
     int totalBufferSize_ {0};
     SteadyClock steadyClock_;
     uint64_t totalBits_ {0};
@@ -124,7 +133,7 @@ private:
     uint32_t recordSpeedCount_ {0};
     int64_t lastReportUsageTime_ {0};
     uint64_t dataUsage_ {0};
-    bool isFlv_ {false};
+    bool isRingBuffer_ {false};
     size_t readOffset_ {0};
     size_t writeOffset_ {0};
     std::atomic<bool> canWrite_ {true};
@@ -132,8 +141,10 @@ private:
     std::atomic<bool> isHitSeeking_ {false};
     std::atomic<bool> isNeedDropData_ {false};
     std::atomic<bool> isServerAcceptRange_ {false};
+    std::atomic<bool> isInterrupt_ {false};
+    std::atomic<bool> isInterruptNeeded_{false};
+
     size_t waterLineAbove_ {0};
-    bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
 
@@ -141,7 +152,7 @@ private:
         double downloadRate {0};
         uint64_t bufferDuring {0};
     };
-    std::shared_ptr<RecordData> recordData_;
+    std::shared_ptr<RecordData> recordData_ {};
     uint64_t currentBitrate_ {1 * 1024 * 1024};         //bps
     uint64_t lastReadCheckTime_ {0};
     uint64_t readTotalBytes_ {0};
@@ -151,6 +162,17 @@ private:
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
+    std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
+
+    SteadyClock cachedDurationClock_;
+    volatile size_t wantedReadLength_ {0};
+    volatile size_t bufferingTime_ {0};
+
+    uint64_t minReadOffset_ {0};
+    uint64_t maxReadOffset_ {0};
+    int32_t minOffsetNotUpdateCount_ {0};
+    int32_t maxOffsetNotUpdateCount_ {0};
+    std::atomic<bool> isMinAndMaxOffsetUpdate_ {false};
 };
 }
 }
