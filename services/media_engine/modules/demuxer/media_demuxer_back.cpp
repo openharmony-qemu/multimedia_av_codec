@@ -75,7 +75,7 @@ Status MediaDemuxer::HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVB
     }
     sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts;
     MEDIA_LOG_D("Success, track:" PUBLIC_LOG_U32 ", orgPts:"
-        PUBLIC_LOG_D64 ", pts:" PUBLIC_LOG_D64 ", basePts: " PUBLIC_LOG_D64, trackId,
+        PUBLIC_LOG_D64 ", pts:" PUBLIC_LOG_D64 ", basePts:" PUBLIC_LOG_D64, trackId,
         curPacketPts, sample->pts_, baseInfo->basePts);
     return Status::OK;
 }
