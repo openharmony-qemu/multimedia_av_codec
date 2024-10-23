@@ -217,8 +217,8 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
 
     ret = Configure(meta_);
     if (ret != Status::OK) {
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE});
-        return Status::ERROR_UNSUPPORTED_FORMAT;
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VIDEO_DEC_INIT_FAILED});
+        return Status::ERROR_VIDEO_DEC_INIT_FAILED;
     }
     ParseDecodeRateLimit();
     videoDecoder_->SetOutputSurface(videoSurface_);
