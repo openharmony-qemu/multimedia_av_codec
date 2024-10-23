@@ -298,7 +298,8 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_006, TestSize.
     mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t) 1);
     EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
-        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence),
+                        testing::Return(OHOS::GSError::GSERROR_OK)));
 
     sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
     metaData_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
