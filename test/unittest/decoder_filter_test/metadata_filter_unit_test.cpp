@@ -143,7 +143,7 @@ sptr<MockConsumerSurface> MockConsumerSurface::CreateSurfaceAsConsumer(std::stri
     sptr<MockConsumerSurface> surf = new MockConsumerSurface(name, isShared);
     sptr<BufferQueue> queue_ = new BufferQueue(surf->name_, surf->isShared_);
     surf->producer_ = new BufferQueueProducer(queue_);
-    surf->consumer_ = new BufferQueueProducer(queue_);
+    surf->consumer_ = new BufferQueueConsumer(queue_);
     surf->uniqueId_ = surf->producer_->GetUniqueId();
     return surf;
 }
@@ -155,7 +155,7 @@ sptr<MockConsumerSurface> MockConsumerSurface::CreateSurfaceAsConsumer(std::stri
  */
 HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_001, TestSize.Level1)
 {
-    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
     EXPECT_EQ(metaData_->inputSurface_, nullptr);
@@ -178,7 +178,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_001, TestSize.
  */
 HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_002, TestSize.Level1)
 {
-    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
     EXPECT_EQ(metaData_->inputSurface_, nullptr);
@@ -202,7 +202,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_002, TestSize.
  */
 HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_003, TestSize.Level1)
 {
-    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
     EXPECT_EQ(metaData_->inputSurface_, nullptr);
@@ -226,7 +226,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_003, TestSize.
  */
 HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_004, TestSize.Level1)
 {
-    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
     EXPECT_EQ(metaData_->inputSurface_, nullptr);
@@ -256,7 +256,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_004, TestSize.
  */
 HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_005, TestSize.Level1)
 {
-    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
     EXPECT_EQ(metaData_->inputSurface_, nullptr);
@@ -272,7 +272,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_005, TestSize.
     sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
     metaData_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
     std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
-    mockEmptyOutputBuffer->memory_ == nullptr;
+    mockEmptyOutputBuffer->memory_ = nullptr;
     EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
         .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), testing::Return(Status::OK)));
     EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
@@ -287,7 +287,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_005, TestSize.
  */
 HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_006, TestSize.Level1)
 {
-    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface")
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = metaData_->SetInputMetaSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
     EXPECT_EQ(metaData_->inputSurface_, nullptr);
@@ -303,7 +303,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_006, TestSize.
     sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
     metaData_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
     std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
-    mockEmptyOutputBuffer->memory_ == std::make_shared<AVMemory>();
+    mockEmptyOutputBuffer->memory_ = std::make_shared<AVMemory>();
     EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
         .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), testing::Return(Status::OK)));
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(1);

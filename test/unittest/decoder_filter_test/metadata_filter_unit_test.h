@@ -147,13 +147,13 @@ protected:
     };
 };
 
-class TestFilter : public Filter {
+class TestFilter : public Pipeline::Filter {
 public:
-    TestFilter() : Filter("TestFilter", FilterType::FILTERTYPE_SOURCE) {}
+    TestFilter() : Filter("TestFilter", Pipeline::FilterType::FILTERTYPE_SOURCE) {}
     ~TestFilter() = default;
-    Status OnLinked(StreamType inType,
+    Status OnLinked(Pipeline::StreamType inType,
                     const std::shared_ptr<Meta> &meta,
-                    const std::shared_ptr<FilterLinkCallback> &callback)
+                    const std::shared_ptr<Pipeline::FilterLinkCallback> &callback)
     {
         (void)inType;
         (void)meta;
