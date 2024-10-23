@@ -67,11 +67,12 @@
           "ffmpeg",
           "lame",
           "libxml2",
-          "video_processing_engine",
+          "video_processing_engine"
+        ],
+        "third_party": [
           "curl",
           "openssl"
-        ],
-        "third_party": []
+        ]
       },
       "build": {
         "group_type": {
