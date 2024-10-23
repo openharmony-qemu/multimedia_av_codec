@@ -165,7 +165,8 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_001, TestSize.
     sptr<SyncFence> mockFence = new SyncFence(-1);
     EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
-        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence),
+                        testing::Return(OHOS::GSError::GSERROR_OK)));
     EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
 
     metaData_->OnBufferAvailable();
@@ -186,10 +187,11 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_002, TestSize.
     metaData_->isStop_ = false;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
     sptr<SyncFence> mockFence = new SyncFence(-1);
-    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t) -2);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t)-2);
     EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
-        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence),
+                        testing::Return(OHOS::GSError::GSERROR_OK)));
     EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
 
     metaData_->OnBufferAvailable();
@@ -210,10 +212,11 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_003, TestSize.
     metaData_->isStop_ = false;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
     sptr<SyncFence> mockFence = new SyncFence(-1);
-    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t) 0);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t)0);
     EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
-        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence),
+                        testing::Return(OHOS::GSError::GSERROR_OK)));
     EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
 
     metaData_->OnBufferAvailable();
@@ -234,10 +237,11 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_004, TestSize.
     metaData_->isStop_ = false;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
     sptr<SyncFence> mockFence = new SyncFence(-1);
-    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t) 1);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t)1);
     EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
-        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence),
+                        testing::Return(OHOS::GSError::GSERROR_OK)));
 
     sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
     metaData_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
@@ -264,10 +268,11 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_005, TestSize.
     metaData_->isStop_ = false;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
     sptr<SyncFence> mockFence = new SyncFence(-1);
-    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t) 1);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t)1);
     EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
-        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), testing::Return(OHOS::GSError::GSERROR_OK)));
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence),
+                        testing::Return(OHOS::GSError::GSERROR_OK)));
 
     sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
     metaData_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
@@ -295,7 +300,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_006, TestSize.
     metaData_->isStop_ = false;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
     sptr<SyncFence> mockFence = new SyncFence(-1);
-    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t) 1);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t)1);
     EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
         .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence),
@@ -312,5 +317,4 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_OnBufferAvailable_006, TestSize.
 
     metaData_->OnBufferAvailable();
 }
-
 }
