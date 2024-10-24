@@ -404,7 +404,6 @@ Status DecoderSurfaceFilter::DoWaitPrerollDone(bool render)
         return Status::OK;
     }
     std::unique_lock<std::mutex> bufferLock(mutex_);
-    FALSE_LOG_MSG(prerollDone_.load(), "No preroll frame received!");
     if (render && !eosNext_.load() && !outputBuffers_.empty()) {
         std::pair<int, std::shared_ptr<AVBuffer>> nextTask = std::move(outputBuffers_.front());
         outputBuffers_.pop_front();
