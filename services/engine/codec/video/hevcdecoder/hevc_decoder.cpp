@@ -519,8 +519,6 @@ void HevcDecoder::ReleaseResource()
     ReleaseBuffers();
     format_ = Format();
     if (sInfo_.surface != nullptr) {
-        sInfo_.surface->CleanCache();
-        AVCODEC_LOGI("surface cleancache success");
         int ret = UnRegisterListenerToSurface(sInfo_.surface);
         if (ret != 0) {
             callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
@@ -713,6 +711,9 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
     int32_t valBufferCnt = 0;
     CHECK_AND_RETURN_RET_LOG(SetSurfaceCfg(bufferCnt) == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "SetSurfaceCfg failed");
 
+    if (sInfo_.surface != nullptr) {
+        sInfo_.surface->CleanCache();
+    }
     for (int i = 0; i < bufferCnt; i++) {
         std::shared_ptr<HBuffer> buf = std::make_shared<HBuffer>();
         if (sInfo_.surface == nullptr) {
@@ -917,6 +918,8 @@ void HevcDecoder::ReleaseBuffers()
                 outputBuffer->owner_ = HBuffer::Owner::OWNED_BY_SURFACE;
             }
         }
+        sInfo_.surface->CleanCache();
+        AVCODEC_LOGI("surface cleancache success");
     }
     buffers_[INDEX_OUTPUT].clear();
     oLock.unlock();
