@@ -418,10 +418,8 @@ int32_t IFrameIntervalChecker(CapabilityData &capData, Format &format, CodecScen
     (void)scenario;
     int32_t iFrameInterval;
 
+    constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 1000;
     bool iFrameIntervalExist = format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
-    CHECK_AND_RETURN_RET_LOG(!(iFrameIntervalExist && iFrameInterval == 0), AVCS_ERR_INVALID_VAL,
-        "Not support all key frame in temporal scalability");
-
     if (!iFrameIntervalExist) {
         format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
     }
