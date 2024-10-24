@@ -22,6 +22,7 @@
 #include "osal/task/autolock.h"
 #include "securec.h"
 #include "net_conn_client.h"
+#include <fcntl.h>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -32,12 +33,10 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 const uint32_t MAX_STRING_LENGTH = 4096;
-const std::string USER_AGENT = "User-Agent";
-const int32_t MAX_LEN = 128;
-const std::string DISPLAYVERSION = "const.product.software.version";
 constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
 constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
 constexpr uint32_t MILLS_TO_SECOND = 1000;
+constexpr uint32_t HTTP_ERROR_THRESHOLD = 400;
 
 std::string ToString(const std::list<std::string> &lists, char tab)
 {
@@ -51,16 +50,6 @@ std::string ToString(const std::list<std::string> &lists, char tab)
     return str;
 }
 
-std::string GetSystemParam(const std::string &key)
-{
-    char value[MAX_LEN] = {0};
-    int32_t ret = GetParameter(key.c_str(), "", value, MAX_LEN);
-    if (ret < 0) {
-        return "";
-    }
-    return std::string(value);
-}
-
 std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar)
 {
     std::string output = input;
@@ -69,7 +58,7 @@ std::string InsertCharBefore(std::string input, char from, char preChar, char ne
     std::string str(arr, strSize);
     std::size_t pos = output.find(from);
     std::size_t length = output.length();
-    while (pos >= 0 && pos <= length - 1 && pos != std::string::npos) {
+    while (pos >= 0 && length >= 1 && pos <= length - 1 && pos != std::string::npos) {
         char nextCharTemp = pos >= length ? '\0' : output[pos + 1];
         if (nextChar == '\0' || nextCharTemp == '\0' || nextCharTemp != nextChar) {
             output.replace(pos, 1, str);
@@ -91,7 +80,7 @@ std::string Trim(std::string str)
     if (str.empty()) {
         return str;
     }
-    while (std::isspace(str[str.size() - 1])) {
+    while (str.size() >= 1 && std::isspace(str[str.size() - 1])) {
             str.erase(str.size() - 1, 1);
     }
     return str;
@@ -113,7 +102,6 @@ std::string GetHostnameFromURL(const std::string &url)
     }
     return tempUrl.substr(posStart);
 }
-
 bool IsRegexValid(const std::string &regex)
 {
     if (Trim(regex).empty()) {
@@ -178,6 +166,11 @@ void GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions)
     exclusions = ToString(httpProxy.GetExclusionList());
 }
 
+std::shared_ptr<NetworkClient> NetworkClient::GetInstance(RxHeader headCallback, RxBody bodyCallback, void *userParam)
+{
+    return std::make_shared<HttpCurlClient>(headCallback, bodyCallback, userParam);
+}
+
 HttpCurlClient::HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void *userParam)
     : rxHeader_(headCallback), rxBody_(bodyCallback), userParam_(userParam)
 {
@@ -220,9 +213,6 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
             std::string headerStr = setKey + ":" + setValue;
             const char* str = headerStr.c_str();
             headerList_ = curl_slist_append(headerList_, str);
-            if (setKey == USER_AGENT) {
-                isSetUA_ = true;
-            }
         } else {
             MEDIA_LOG_E("Set httpHeader fail, the length of key or value is too long, more than 512.");
             MEDIA_LOG_E("key: " PUBLIC_LOG_S " value: " PUBLIC_LOG_S, setKey.c_str(), setValue.c_str());
@@ -252,8 +242,11 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
 Status HttpCurlClient::Close(bool isAsync)
 {
     MEDIA_LOG_I("Close client in");
-    if (easyHandle_) {
-        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
+    {
+        AutoLock lock(mutex_);
+        if (easyHandle_) {
+            curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
+        }
     }
     if (isAsync) {
         MEDIA_LOG_I("Close client Async out");
@@ -275,10 +268,10 @@ Status HttpCurlClient::Close(bool isAsync)
 Status HttpCurlClient::Deinit()
 {
     MEDIA_LOG_I("Deinit in");
+    AutoLock lock(mutex_);
     if (easyHandle_) {
         curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
     }
-    AutoLock lock(mutex_);
     if (easyHandle_) {
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
@@ -319,9 +312,6 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
         auto proxyType = (host.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
         curl_easy_setopt(easyHandle_, CURLOPT_PROXYTYPE, proxyType);
     } else {
-        if (host.empty()) {
-            MEDIA_LOG_I("InitCurlEnvironment host is empty.");
-        }
         if (IsHostNameExcluded(url, exclusions, ",")) {
             MEDIA_LOG_I("InitCurlEnvironment host name is excluded.");
         }
@@ -373,25 +363,10 @@ void HttpCurlClient::CheckRequestRange(long startPos, int len)
         }
         MEDIA_LOG_DD("RequestData: requestRange " PUBLIC_LOG_S, requestRange);
         std::string requestStr(requestRange);
-        curl_easy_setopt(easyHandle_, CURLOPT_RANGE, requestStr.c_str());
-    }
-}
-
-void HttpCurlClient::HandleUserAgent()
-{
-    if (!isSetUA_) {
-        std::string displayVersion = GetSystemParam(DISPLAYVERSION);
-        std::string userAgent_ = "User-Agent: AVPlayerLib " + displayVersion;
-        char *userAgent = new char[userAgent_.size() + 1];
-        int ret = memcpy_s(userAgent, userAgent_.size(), userAgent_.c_str(), userAgent_.size());
-        userAgent[userAgent_.size()] = '\0';
-        if (ret != EOK) {
-            MEDIA_LOG_E("failed to memcpy userAgent_");
-            delete[] userAgent;
-            return;
+        AutoLock lock(mutex_);
+        if (easyHandle_) {
+            curl_easy_setopt(easyHandle_, CURLOPT_RANGE, requestStr.c_str());
         }
-        headerList_ = curl_slist_append(headerList_, userAgent);
-        delete[] userAgent;
     }
 }
 
@@ -399,8 +374,8 @@ void HttpCurlClient::HandleUserAgent()
 // Open, Close, Deinit run in other thread.
 // Should call Open before start HttpDownload thread.
 // Should Pause HttpDownload thread then Close, Deinit.
-Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCode& serverCode,
-                                   NetworkClientErrorCode& clientCode)
+Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& requestInfo,
+    HandleResponseCbFunc completedCb)
 {
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CheckRequestRange(startPos, len);
@@ -408,20 +383,21 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
         headerList_ = curl_slist_append(headerList_, "Accept: */*");
         headerList_ = curl_slist_append(headerList_, "Connection: Keep-alive");
         headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
-        HandleUserAgent();
         isFirstRequest_ = false;
     }
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
     MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
-    AutoLock lock(mutex_);
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
+    mutex_.lock();
     CURLcode returnCode = curl_easy_perform(easyHandle_);
     std::set <CURLcode> notRetrySet = {
         CURLE_COULDNT_RESOLVE_HOST, CURLE_GOT_NOTHING, CURLE_SSL_CONNECT_ERROR,
-        CURLE_SSL_CERTPROBLEM, CURLE_SSL_CACERT, CURLE_SSL_CACERT_BADFILE, CURLE_PEER_FAILED_VERIFICATION,
-        CURLE_HTTP_RETURNED_ERROR, CURLE_READ_ERROR, CURLE_HTTP_POST_ERROR};
-    clientCode = NetworkClientErrorCode::ERROR_OK;
-    serverCode = 0;
+        CURLE_SSL_CERTPROBLEM, CURLE_SSL_CACERT, CURLE_SSL_CACERT_BADFILE,
+        CURLE_PEER_FAILED_VERIFICATION, CURLE_HTTP_RETURNED_ERROR, CURLE_READ_ERROR,
+        CURLE_HTTP_POST_ERROR};
+    NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_OK;
+    NetworkServerErrorCode serverCode = 0;
+    Status ret = Status::OK;
     if (returnCode != CURLE_OK) {
         MEDIA_LOG_E("Curl error " PUBLIC_LOG_D32, returnCode);
         if (notRetrySet.find(returnCode) != notRetrySet.end()) {
@@ -431,18 +407,20 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
         } else {
             clientCode = NetworkClientErrorCode::ERROR_UNKNOWN;
         }
-        return Status::ERROR_CLIENT;
+        ret = Status::ERROR_CLIENT;
     } else {
         int64_t httpCode = 0;
         curl_easy_getinfo(easyHandle_, CURLINFO_RESPONSE_CODE, &httpCode);
-        if (httpCode >= 400) { // 400
+        if (httpCode >= HTTP_ERROR_THRESHOLD) {
             MEDIA_LOG_E("Http error " PUBLIC_LOG_D64, httpCode);
             serverCode = httpCode;
-            return Status::ERROR_SERVER;
+            ret = Status::ERROR_SERVER;
         }
         SetIp();
     }
-    return Status::OK;
+    mutex_.unlock();
+    completedCb(clientCode, serverCode, ret);
+    return ret;
 }
 
 Status HttpCurlClient::SetIp()
@@ -461,6 +439,11 @@ Status HttpCurlClient::SetIp()
         }
     }
     return retSetIp;
+}
+
+void HttpCurlClient::SetAppUid(int32_t appUid)
+{
+    appUid_ = appUid;
 }
 }
 }

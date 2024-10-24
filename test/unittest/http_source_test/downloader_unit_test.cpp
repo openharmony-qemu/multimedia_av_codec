@@ -14,7 +14,7 @@
  */
 
 #include "download/downloader.h"
-#include "download/http_curl_client.h"
+#include "download/network_client/http_curl_client.h"
 #include "gtest/gtest.h"
 
 using namespace std;

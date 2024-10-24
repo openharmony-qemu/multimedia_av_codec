@@ -635,6 +635,9 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
 {
     int sampelRate = avStream.codecpar->sample_rate;
     int channels = avStream.codecpar->channels;
+    if (channels <= 0) {
+        channels = avStream.codecpar->ch_layout.nb_channels;
+    }
     int frameSize = avStream.codecpar->frame_size;
     if (sampelRate > 0) {
         format.Set<Tag::AUDIO_SAMPLE_RATE>(static_cast<uint32_t>(sampelRate));

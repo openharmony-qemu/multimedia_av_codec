@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,7 +18,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
+#include "network/network_typs.h"
 #include "common/media_core.h"
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -40,39 +42,48 @@ constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 48 * 10 * 1024;
-constexpr int64_t SECOND_TO_MILLIONSECOND = 1000;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
-constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
-constexpr int32_t SAVE_DATA_LOG_FEQUENCE = 10;
+constexpr int32_t SAVE_DATA_LOG_FREQUENCE = 50;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
-constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
-constexpr int64_t BYTES_TO_BIT = 8;
 constexpr int32_t DEFAULT_BIT_RATE = 1638400;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 constexpr size_t MIN_WATER_LINE_ABOVE = 10 * 1024;
 constexpr int32_t ONE_SECONDS = 1000;
+constexpr int32_t TWO_SECONDS = 2000;
 constexpr int32_t TEN_MILLISECONDS = 10;
+constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.6;
+constexpr float CACHE_LEVEL_1 = 0.3;
+constexpr float DEFAULT_CACHE_TIME = 5;
+constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
+constexpr uint32_t OFFSET_NOT_UPDATE_THRESHOLD = 8;
+constexpr float DOWNLOAD_WATER_LINE_RATIO = 0.95;
+constexpr uint32_t ALLOW_SEEK_MIN_SIZE = 1 * 1024 * 1024;
+constexpr uint64_t ALLOW_CLEAR_MIDDLE_DATA_MIN_SIZE = 1 * 1024 * 1024;
+constexpr size_t AUDIO_WATER_LINE_ABOVE = 16 * 1024;
+constexpr uint32_t CLEAR_SAVE_DATA_SIZE = 64 * 1024;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
 {
     if (static_cast<int32_t>(url.find(".flv")) != -1) {
-        MEDIA_LOG_I("isflv.");
-        isFlv_ = true;
+        MEDIA_LOG_I("HTTP isflv.");
+        isRingBuffer_ = true;
     }
 
-    if (isFlv_) {
-        buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
-        buffer_->Init();
+    if (isRingBuffer_) {
+        ringBuffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
+        ringBuffer_->Init();
     } else {
         cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
         cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
-        MEDIA_LOG_I("setting buffer size: " PUBLIC_LOG_U64, MAX_CACHE_BUFFER_SIZE);
+        totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
+        MEDIA_LOG_I("HTTP setting buffer size: " PUBLIC_LOG_U64, MAX_CACHE_BUFFER_SIZE);
     }
     isBuffering_ = true;
     downloader_ = std::make_shared<Downloader>("http");
+    writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     steadyClock_.Reset();
     waterLineAbove_ = PLAY_WATER_LINE;
     recordData_ = std::make_shared<RecordData>();
@@ -82,23 +93,23 @@ void HttpMediaDownloader::InitRingBuffer(uint32_t expectBufferDuration)
 {
     int totalBufferSize = CURRENT_BIT_RATE * static_cast<int32_t>(expectBufferDuration);
     if (totalBufferSize < RING_BUFFER_SIZE) {
-        MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already lower than the min buffer size: "
+        MEDIA_LOG_I("HTTP Failed setting ring buffer size: " PUBLIC_LOG_D32 ". already lower than the min buffer size: "
         PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
         totalBufferSize, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
-        buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
+        ringBuffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
         totalBufferSize_ = RING_BUFFER_SIZE;
     } else if (totalBufferSize > MAX_BUFFER_SIZE) {
-        MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already exceed the max buffer size: "
+        MEDIA_LOG_I("HTTP Failed setting ring buffer size: " PUBLIC_LOG_D32 ". already exceed the max buffer size: "
         PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
         totalBufferSize, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
-        buffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
+        ringBuffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
         totalBufferSize_ = MAX_BUFFER_SIZE;
     } else {
-        buffer_ = std::make_shared<RingBuffer>(totalBufferSize);
+        ringBuffer_ = std::make_shared<RingBuffer>(totalBufferSize);
         totalBufferSize_ = totalBufferSize;
-        MEDIA_LOG_I("Success setted buffer size: " PUBLIC_LOG_D32, totalBufferSize);
+        MEDIA_LOG_I("HTTP Success setted ring buffer size: " PUBLIC_LOG_D32, totalBufferSize);
     }
-    buffer_->Init();
+    ringBuffer_->Init();
 }
 
 void HttpMediaDownloader::InitCacheBuffer(uint32_t expectBufferDuration)
@@ -106,13 +117,14 @@ void HttpMediaDownloader::InitCacheBuffer(uint32_t expectBufferDuration)
     int totalBufferSize = CURRENT_BIT_RATE * static_cast<int32_t>(expectBufferDuration);
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
     if (totalBufferSize < RING_BUFFER_SIZE) {
-        MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already lower than the min buffer size: "
-        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
-        totalBufferSize, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
+        MEDIA_LOG_I("HTTP Failed setting cache buffer size: " PUBLIC_LOG_D32
+                    ". already lower than the min buffer size: " PUBLIC_LOG_D32
+                    ", setting buffer size: " PUBLIC_LOG_D32 ". ", totalBufferSize,
+                    RING_BUFFER_SIZE, RING_BUFFER_SIZE);
         cacheMediaBuffer_->Init(RING_BUFFER_SIZE, CHUNK_SIZE);
         totalBufferSize_ = RING_BUFFER_SIZE;
     } else if (totalBufferSize > MAX_BUFFER_SIZE) {
-        MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already exceed the max buffer size: "
+        MEDIA_LOG_I("HTTP Failed setting cache buffer size: " PUBLIC_LOG_D32 ". already exceed the max buffer size: "
         PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
         totalBufferSize, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
         cacheMediaBuffer_->Init(MAX_BUFFER_SIZE, CHUNK_SIZE);
@@ -120,23 +132,24 @@ void HttpMediaDownloader::InitCacheBuffer(uint32_t expectBufferDuration)
     } else {
         cacheMediaBuffer_->Init(totalBufferSize, CHUNK_SIZE);
         totalBufferSize_ = totalBufferSize;
-        MEDIA_LOG_I("Success setted buffer size: " PUBLIC_LOG_D32, totalBufferSize);
+        MEDIA_LOG_I("HTTP Success setted cache buffer size: " PUBLIC_LOG_D32, totalBufferSize);
     }
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferDuration)
 {
     if (static_cast<int32_t>(url.find(".flv")) != -1) {
-        MEDIA_LOG_I("isflv.");
-        isFlv_ = true;
+        MEDIA_LOG_I("HTTP isflv.");
+        isRingBuffer_ = true;
     }
-    if (isFlv_) {
+    if (isRingBuffer_) {
         InitRingBuffer(expectBufferDuration);
     } else {
         InitCacheBuffer(expectBufferDuration);
     }
     isBuffering_ = true;
     downloader_ = std::make_shared<Downloader>("http");
+    writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     steadyClock_.Reset();
     waterLineAbove_ = PLAY_WATER_LINE;
     recordData_ = std::make_shared<RecordData>();
@@ -144,13 +157,13 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
 
 HttpMediaDownloader::~HttpMediaDownloader()
 {
-    MEDIA_LOG_I("%{public}p ~HttpMediaDownloader dtor", this);
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HttpMediaDownloader dtor", FAKE_POINTER(this));
     Close(false);
 }
 
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
-    MEDIA_LOG_I("Open download");
+    MEDIA_LOG_I("HTTP Open download");
     isDownloadFinish_ = false;
     openTime_ = steadyClock_.ElapsedMilliseconds();
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
@@ -163,42 +176,45 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     };
     auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
         if (downloadRequest_ != nullptr && downloadRequest_->IsEos()
-            && (totalBits_ / 8) >= downloadRequest_->GetFileContentLengthNoWait()) {
+            && (totalBits_ / BYTES_TO_BIT) >= downloadRequest_->GetFileContentLengthNoWait()) {
             isDownloadFinish_ = true;
-            int64_t nowTime = steadyClock_.ElapsedMilliseconds();
-            double downloadTime = (static_cast<double>(nowTime) - static_cast<double>(startDownloadTime_)) /
-                SECOND_TO_MILLIONSECOND;
-            if (downloadTime > ZERO_THRESHOLD) {
-                avgDownloadSpeed_ = totalBits_ / downloadTime;
-            }
-            MEDIA_LOG_D("Download done, average download speed: " PUBLIC_LOG_D32 " bit/s",
-                static_cast<int32_t>(avgDownloadSpeed_));
-            MEDIA_LOG_I("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
-                totalBits_, static_cast<int64_t>(downloadTime * SECOND_TO_MILLIONSECOND));
         }
+        int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+        double downloadTime = (static_cast<double>(nowTime) - static_cast<double>(startDownloadTime_)) /
+            SECOND_TO_MILLIONSECOND;
+        if (downloadTime > ZERO_THRESHOLD) {
+            avgDownloadSpeed_ = totalBits_ / downloadTime;
+        }
+        MEDIA_LOG_D("HTTP Download done, average download speed: " PUBLIC_LOG_D32 " bit/s",
+            static_cast<int32_t>(avgDownloadSpeed_));
+        MEDIA_LOG_I("HTTP Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
+            totalBits_, static_cast<int64_t>(downloadTime * SECOND_TO_MILLIONSECOND));
         HandleBuffering();
     };
-    MediaSouce mediaSouce;
-    mediaSouce.url = url;
-    mediaSouce.httpHeader = httpHeader;
-    downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, mediaSouce);
+    RequestInfo requestInfo;
+    requestInfo.url = url;
+    requestInfo.httpHeader = httpHeader;
+    downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloader_->Download(downloadRequest_, -1); // -1
-    if (isFlv_) {
-        buffer_->SetMediaOffset(0);
+    if (isRingBuffer_) {
+        ringBuffer_->SetMediaOffset(0);
     }
 
+    writeBitrateCaculator_->StartClock();
     downloader_->Start();
     return true;
 }
 
 void HttpMediaDownloader::Close(bool isAsync)
 {
-    if (isFlv_) {
-        buffer_->SetActive(false);
+    if (isRingBuffer_) {
+        ringBuffer_->SetActive(false);
     }
     isInterrupt_ = true;
-    downloader_->Stop(isAsync);
+    if (downloader_) {
+        downloader_->Stop(isAsync);
+    }
     cvReadWrite_.NotifyOne();
     if (!isDownloadFinish_) {
         int64_t nowTime = steadyClock_.ElapsedMilliseconds();
@@ -207,18 +223,18 @@ void HttpMediaDownloader::Close(bool isAsync)
         if (downloadTime > ZERO_THRESHOLD) {
             avgDownloadSpeed_ = totalBits_ / downloadTime;
         }
-        MEDIA_LOG_D("Download close, average download speed: " PUBLIC_LOG_D32 " bit/s",
+        MEDIA_LOG_D("HTTP Download close, average download speed: " PUBLIC_LOG_D32 " bit/s",
             static_cast<int32_t>(avgDownloadSpeed_));
-        MEDIA_LOG_D("Download close, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
+        MEDIA_LOG_D("HTTP Download close, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
             totalBits_, static_cast<int64_t>(downloadTime * SECOND_TO_MILLIONSECOND));
     }
 }
 
 void HttpMediaDownloader::Pause()
 {
-    if (isFlv_) {
+    if (isRingBuffer_) {
         bool cleanData = GetSeekable() != Seekable::SEEKABLE;
-        buffer_->SetActive(false, cleanData);
+        ringBuffer_->SetActive(false, cleanData);
     }
     isInterrupt_ = true;
     downloader_->Pause();
@@ -227,8 +243,8 @@ void HttpMediaDownloader::Pause()
 
 void HttpMediaDownloader::Resume()
 {
-    if (isFlv_) {
-        buffer_->SetActive(true);
+    if (isRingBuffer_) {
+        ringBuffer_->SetActive(true);
     }
     isInterrupt_ = false;
     downloader_->Resume();
@@ -238,7 +254,7 @@ void HttpMediaDownloader::Resume()
 void HttpMediaDownloader::OnClientErrorEvent()
 {
     if (callback_ != nullptr) {
-        MEDIA_LOG_I("Read time out, OnEvent");
+        MEDIA_LOG_I("HTTP Read time out, OnEvent");
         callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
     }
 }
@@ -249,39 +265,53 @@ bool HttpMediaDownloader::HandleBuffering()
         return false;
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
+
     size_t fileRemain = 0;
-    size_t fileContenLen = downloadRequest_->GetFileContentLength();
-    if (fileContenLen > readOffset_) {
-        fileRemain = fileContenLen - readOffset_;
-        waterLineAbove_ = std::min(fileRemain, waterLineAbove_);
+    if (downloadRequest_ != nullptr) {
+        size_t fileContenLen = downloadRequest_->GetFileContentLength();
+        if (fileContenLen > readOffset_) {
+            fileRemain = fileContenLen - readOffset_;
+            waterLineAbove_ = std::min(fileRemain, waterLineAbove_);
+        }
     }
+
+    UpdateWaterLineAbove();
     if (!canWrite_) {
-        MEDIA_LOG_I("canWrite_ false");
+        MEDIA_LOG_I("HTTP canWrite_ false");
         isBuffering_ = false;
     }
     if (GetCurrentBufferSize() >= waterLineAbove_) {
-        MEDIA_LOG_I("Buffer is enough");
+        MEDIA_LOG_I("HTTP Buffer is enough, bufferSize:" PUBLIC_LOG_ZU " waterLineAbove: " PUBLIC_LOG_ZU
+            " avgDownloadSpeed: " PUBLIC_LOG_F, GetCurrentBufferSize(), waterLineAbove_, avgDownloadSpeed_);
         isBuffering_ = false;
     }
     if (HandleBreak()) {
-        MEDIA_LOG_I("HandleBreak");
+        MEDIA_LOG_I("HTTP HandleBreak");
         isBuffering_ = false;
     }
 
     if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
-        MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
+        MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: "
+        PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32,
+            GetCurrentBufferSize(), waterLineAbove_, isBuffering_, canWrite_.load());
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        bufferingTime_ = 0;
     }
-    MEDIA_LOG_D("HandleBuffering bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: " PUBLIC_LOG_ZU
+    MEDIA_LOG_D("HTTP HandleBuffering bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: " PUBLIC_LOG_ZU
         ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32,
         GetCurrentBufferSize(), waterLineAbove_, isBuffering_, canWrite_.load());
     return isBuffering_;
 }
 
-bool HttpMediaDownloader::StartBuffering(int32_t wantReadLength)
+bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
 {
-    if (!canWrite_ || downloadRequest_->IsChunkedVod() || wantReadLength <= 0 || callback_ == nullptr) {
+    if (!isFirstFrameArrived_ || HandleBreak() || isBuffering_) {
+        return false;
+    }
+    if (!isRingBuffer_ && cacheMediaBuffer_ != nullptr && cacheMediaBuffer_->IsReadSplit(readOffset_)) {
+        MEDIA_LOG_D("HTTP StartBufferingCheck, change wantReadLength and return.");
+        wantReadLength = std::min(static_cast<size_t>(wantReadLength), GetCurrentBufferSize());
         return false;
     }
     size_t cacheWaterLine = 0;
@@ -292,116 +322,107 @@ bool HttpMediaDownloader::StartBuffering(int32_t wantReadLength)
         fileRemain = fileContenLen - readOffset_;
         cacheWaterLine = std::min(fileRemain, cacheWaterLine);
     }
-
-    bool isEos = false;
-    if (downloadRequest_ != nullptr) {
-        isEos = downloadRequest_->IsEos();
+    if (GetCurrentBufferSize() >= cacheWaterLine) {
+        return false;
     }
-    if (isFirstFrameArrived_ && GetCurrentBufferSize() < cacheWaterLine && !isEos && !HandleBreak()) {
-        waterLineAbove_ = std::max(MIN_WATER_LINE_ABOVE, static_cast<size_t>(GetWaterLineAbove()));
-        waterLineAbove_ = std::min(waterLineAbove_, fileRemain);
-
-        if (!isBuffering_) {
-            MEDIA_LOG_I("readOffset " PUBLIC_LOG_ZU " bufferSize " PUBLIC_LOG_ZU " wantReadLength " PUBLIC_LOG_ZU,
-                readOffset_, GetCurrentBufferSize(), waterLineAbove_);
-            isBuffering_ = true;
-            MEDIA_LOG_I("CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
-            UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
-            callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
-            return true;
-        }
+    if (!canWrite_.load() && GetCurrentBufferSize() >= wantReadLength) {
+        return false;
     }
-    return false;
+    return true;
+}
+
+bool HttpMediaDownloader::StartBuffering(unsigned int& wantReadLength)
+{
+    if (!StartBufferingCheck(wantReadLength)) {
+        return false;
+    }
+    if (!canWrite_.load()) { // Clear cacheBuffer when we can neither read nor write.
+        ClearCacheBuffer();
+        canWrite_ = true;
+    }
+    isBuffering_ = true;
+    MEDIA_LOG_I("HTTP CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize "
+        PUBLIC_LOG_ZU " readOffset: " PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, waterLineAbove_,
+        GetCurrentBufferSize(), readOffset_, writeOffset_);
+    bufferingTime_ = 0;
+    UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
+    callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+    return true;
 }
 
 Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    readTime_ = 0;
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
-    uint64_t mediaOffset = buffer_->GetMediaOffset();
+    uint64_t mediaOffset = ringBuffer_->GetMediaOffset();
     if (fileContentLength > mediaOffset) {
         uint64_t remain = fileContentLength - mediaOffset;
         readDataInfo.wantReadLength_ = remain < readDataInfo.wantReadLength_ ? remain :
             readDataInfo.wantReadLength_;
     }
-    int64_t startTime = steadyClock_.ElapsedMilliseconds();
     readDataInfo.realReadLength_ = 0;
-    while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
+    wantedReadLength_ = static_cast<size_t>(readDataInfo.wantReadLength_);
+    while (ringBuffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
         if (downloadRequest_ != nullptr) {
             readDataInfo.isEos_ = downloadRequest_->IsEos();
         }
         if (readDataInfo.isEos_) {
             return CheckIsEosRingBuffer(buff, readDataInfo);
         }
-        if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_ || isTimeOut_) {
-            isTimeOut_ = true;
-            if (downloader_ != nullptr) {
-                buffer_->SetActive(false); // avoid deadlock caused by ringbuffer write stall
-                downloader_->Pause(true); // the downloader is unavailable after this
-            }
-            if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
-                downloadRequest_->Close();
-            }
-            OnClientErrorEvent();
-            readDataInfo.realReadLength_ = 0;
-            return Status::END_OF_STREAM;
-        }
         bool isClosed = downloadRequest_->IsClosed();
-        if (isClosed && buffer_->GetSize() == 0) {
+        if (isClosed && ringBuffer_->GetSize() == 0) {
             MEDIA_LOG_I("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
             readDataInfo.realReadLength_ = 0;
             return Status::END_OF_STREAM;
         }
         Task::SleepInTask(FIVE_MICROSECOND);
-        int64_t endTime = steadyClock_.ElapsedMilliseconds();
-        readTime_ = static_cast<uint64_t>(endTime - startTime);
     }
     if (isInterruptNeeded_.load()) {
         readDataInfo.realReadLength_ = 0;
         return Status::END_OF_STREAM;
     }
-    readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
-    MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
-                PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
+    readDataInfo.realReadLength_ = ringBuffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
+    MEDIA_LOG_D("HTTP ReadRingBuffer: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
+                 PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
     return Status::OK;
+}
+
+Status HttpMediaDownloader::ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo)
+{
+    FALSE_RETURN_V(downloadRequest_ != nullptr, Status::ERROR_UNKNOWN);
+    if (downloadRequest_ != nullptr) {
+        readDataInfo.isEos_ = downloadRequest_->IsEos();
+    }
+    if (readDataInfo.isEos_ || GetDownloadErrorState()) {
+        return CheckIsEosCacheBuffer(buff, readDataInfo);
+    }
+    bool isClosed = downloadRequest_->IsClosed();
+    if (isClosed && cacheMediaBuffer_->GetBufferSize(readOffset_) == 0) {
+        MEDIA_LOG_I("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
+        readDataInfo.realReadLength_ = 0;
+        return Status::END_OF_STREAM;
+    }
+    return Status::ERROR_UNKNOWN;
 }
 
 Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     size_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
-    // This prevents the read operation from failing to read data when the seek operation is not triggered.
-    if (remain < readDataInfo.wantReadLength_ && isServerAcceptRange_ &&
-        (writeOffset_ < readOffset_ || writeOffset_ > readOffset_ + remain)) {
-        ChangeDownloadPos();
-    }
+    MediaAVCodec::AVCodecTrace trace("HttpMediaDownloader::Read, readOffset: " + std::to_string(readOffset_) +
+        ", expectedLen: " + std::to_string(readDataInfo.wantReadLength_) + ", bufferSize: " + std::to_string(remain));
     size_t hasReadSize = 0;
-    readTime_ = 0;
-    int64_t startTime = steadyClock_.ElapsedMilliseconds();
+    wantedReadLength_ = static_cast<size_t>(readDataInfo.wantReadLength_);
     while (hasReadSize < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
-        if (downloadRequest_ != nullptr) {
-            readDataInfo.isEos_ = downloadRequest_->IsEos();
-        }
-        if (readDataInfo.isEos_) {
-            return CheckIsEosCacheBuffer(buff, readDataInfo);
-        }
-        if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_) {
-            return HandleDownloadErrorState(readDataInfo.realReadLength_);
-        }
-        bool isClosed = downloadRequest_->IsClosed();
-        if (isClosed && cacheMediaBuffer_->GetBufferSize(readOffset_) == 0) {
-            MEDIA_LOG_D("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
-            readDataInfo.realReadLength_ = 0;
-            return Status::END_OF_STREAM;
+        Status tempStatus = ReadCacheBufferLoop(buff, readDataInfo);
+        if (tempStatus != Status::ERROR_UNKNOWN) {
+            return tempStatus;
         }
         auto size = cacheMediaBuffer_->Read(buff + hasReadSize, readOffset_ + hasReadSize,
-            readDataInfo.wantReadLength_ - hasReadSize);
+                                            readDataInfo.wantReadLength_ - hasReadSize);
         if (size == 0) {
             Task::SleepInTask(FIVE_MICROSECOND); // 5
         } else {
             hasReadSize += size;
         }
-        int64_t endTime = steadyClock_.ElapsedMilliseconds();
-        readTime_ = static_cast<uint64_t>(endTime - startTime);
     }
     if (isInterruptNeeded_.load()) {
         readDataInfo.realReadLength_ = hasReadSize;
@@ -409,21 +430,60 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
     }
     readDataInfo.realReadLength_ = hasReadSize;
     readOffset_ += hasReadSize;
-    canWrite_ = true;
-    MEDIA_LOG_D("Read Success: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
+    isMinAndMaxOffsetUpdate_ = false;
+    MEDIA_LOG_D("HTTP Read Success: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
         PUBLIC_LOG_D32 " readOffset_ " PUBLIC_LOG_ZU, readDataInfo.wantReadLength_,
         readDataInfo.realReadLength_, readDataInfo.isEos_, readOffset_);
     return Status::OK;
 }
 
+void HttpMediaDownloader::HandleDownloadWaterLine()
+{
+    if (downloader_ == nullptr || !isFirstFrameArrived_ || isBuffering_) {
+        return;
+    }
+    uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
+    size_t cachedDataSize = static_cast<size_t>(totalBufferSize_) > freeSize ?
+                                static_cast<size_t>(totalBufferSize_) - freeSize : 0;
+    size_t downloadWaterLine = static_cast<size_t>(DOWNLOAD_WATER_LINE_RATIO *
+        static_cast<float>(totalBufferSize_));
+    if (canWrite_.load()) {
+        if (cachedDataSize >= downloadWaterLine) {
+            canWrite_ = false;
+            MEDIA_LOG_D("HTTP downloadWaterLine above, stop write, downloadWaterLine: " PUBLIC_LOG_ZU,
+                downloadWaterLine);
+        }
+    } else {
+        if (cachedDataSize < downloadWaterLine) {
+            canWrite_ = true;
+            MEDIA_LOG_D("HTTP downloadWaterLine below, resume write, downloadWaterLine: " PUBLIC_LOG_ZU,
+                downloadWaterLine);
+        }
+    }
+}
+
+void HttpMediaDownloader::CheckDownloadPos(unsigned int wantReadLength)
+{
+    size_t writeOffsetTmp = writeOffset_;
+    size_t remain = GetCurrentBufferSize();
+    if (cacheMediaBuffer_->IsReadSplit(readOffset_)) {
+        return;
+    }
+    if (remain < wantReadLength && isServerAcceptRange_ &&
+        (writeOffsetTmp < readOffset_ || writeOffsetTmp > readOffset_ + remain)) {
+        MEDIA_LOG_I("HTTP CheckDownloadPos, change download pos.");
+        ChangeDownloadPos(remain > 0);
+    }
+}
+
 Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (isFlv_) {
-        FALSE_RETURN_V_MSG(buffer_ != nullptr, Status::END_OF_STREAM, "buffer_ = nullptr");
+    if (isRingBuffer_) {
+        FALSE_RETURN_V_MSG(ringBuffer_ != nullptr, Status::END_OF_STREAM, "ringBuffer_ = nullptr");
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
         if (isBuffering_ && !downloadRequest_->IsChunkedVod() && CheckBufferingOneSeconds()) {
-            MEDIA_LOG_I("Return error again.");
+            MEDIA_LOG_I("HTTP Return error again.");
             return Status::ERROR_AGAIN;
         }
         if (StartBuffering(readDataInfo.wantReadLength_)) {
@@ -435,9 +495,13 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
         if (isBuffering_ && !downloadRequest_->IsChunkedVod() && canWrite_ && CheckBufferingOneSeconds()) {
-            MEDIA_LOG_I("Return error again.");
+            MEDIA_LOG_I("HTTP Return error again.");
             return Status::ERROR_AGAIN;
         }
+        UpdateMinAndMaxReadOffset();
+        HandleDownloadWaterLine();
+        CheckDownloadPos(readDataInfo.wantReadLength_);
+        ClearHasReadBuffer();
         if (StartBuffering(readDataInfo.wantReadLength_)) {
             return Status::ERROR_AGAIN;
         }
@@ -457,8 +521,10 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
             double readSpeed = static_cast<double>(readTotalBytes_ * BYTES_TO_BIT) / readDuration; // bps
             currentBitrate_ = static_cast<uint64_t>(readSpeed);     // bps
             size_t curBufferSize = GetCurrentBufferSize();
-            MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
+            MEDIA_LOG_D("HTTP Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
             " KByte", static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
+            MediaAVCodec::AVCodecTrace trace("HttpMediaDownloader::Read, read speed: " +
+                std::to_string(readSpeed) + " bit/s, bufferSize: " + std::to_string(curBufferSize) + " Byte");
             readTotalBytes_ = 0;
         }
         lastReadCheckTime_ = now;
@@ -468,27 +534,13 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     return ret;
 }
 
-Status HttpMediaDownloader::HandleDownloadErrorState(unsigned int& realReadLength)
-{
-    if (downloader_ != nullptr) {
-        downloader_->Pause(true); // the downloader is unavailable after this
-    }
-    if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
-        downloadRequest_->Close();
-    }
-    OnClientErrorEvent();
-    realReadLength = 0;
-    MEDIA_LOG_I("DownloadErrorState, return eos");
-    return Status::END_OF_STREAM;
-}
-
 Status HttpMediaDownloader::CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (buffer_->GetSize() == 0) {
-        MEDIA_LOG_I("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
+    if (ringBuffer_->GetSize() == 0) {
+        MEDIA_LOG_I("HTTP read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
         return readDataInfo.realReadLength_ == 0 ? Status::END_OF_STREAM : Status::OK;
     } else {
-        readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2); // 2
+        readDataInfo.realReadLength_ = ringBuffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2); // 2
         return Status::OK;
     }
 }
@@ -496,122 +548,177 @@ Status HttpMediaDownloader::CheckIsEosRingBuffer(unsigned char* buff, ReadDataIn
 Status HttpMediaDownloader::CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     if (cacheMediaBuffer_->GetBufferSize(readOffset_) == 0) {
-        MEDIA_LOG_I("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
+        MEDIA_LOG_I("HTTP read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
         return readDataInfo.realReadLength_ == 0 ? Status::END_OF_STREAM : Status::OK;
     } else {
-        canWrite_ = true;
         readDataInfo.realReadLength_ = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
         readOffset_ += readDataInfo.realReadLength_;
+        isMinAndMaxOffsetUpdate_ = false;
+        MEDIA_LOG_D("HTTP read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
         return Status::OK;
     }
 }
 
-void HttpMediaDownloader::ChangeDownloadPos()
+bool HttpMediaDownloader::SeekRingBuffer(int64_t offset)
 {
-    MEDIA_LOG_D("ChangeDownloadPos in.");
-    isNeedDropData_ = true;
+    FALSE_RETURN_V(ringBuffer_ != nullptr, false);
+    MEDIA_LOG_I("HTTP Seek in, buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, ringBuffer_->GetSize(), offset);
+    if (ringBuffer_->Seek(offset)) {
+        MEDIA_LOG_I("HTTP ringBuffer_ seek success.");
+        return true;
+    }
+    ringBuffer_->SetActive(false); // First clear buffer, avoid no available buffer then task pause never exit.
     downloader_->Pause();
-    isNeedDropData_ = false;
-    size_t downloadOffset = static_cast<size_t>(readOffset_) + cacheMediaBuffer_->GetBufferSize(readOffset_);
-    isHitSeeking_ = true;
-    bool result = downloader_->Seek(downloadOffset);
-    isHitSeeking_ = false;
+    ringBuffer_->Clear();
+    ringBuffer_->SetActive(true);
+    bool result = downloader_->Seek(offset);
     if (result) {
-        writeOffset_ = downloadOffset;
+        ringBuffer_->SetMediaOffset(offset);
     } else {
-        MEDIA_LOG_E("Downloader seek fail.");
+        MEDIA_LOG_D("HTTP Seek failed");
     }
     downloader_->Resume();
-    MEDIA_LOG_D("ChangeDownloadPos out.");
+    return result;
+}
+
+void HttpMediaDownloader::UpdateMinAndMaxReadOffset()
+{
+    if (isMinAndMaxOffsetUpdate_) {
+        return;
+    }
+    uint64_t readOffsetTmp = static_cast<uint64_t>(readOffset_);
+    if (GetCurrentBufferSize() == 0 && readOffsetTmp < minReadOffset_) {
+        maxReadOffset_ = readOffsetTmp;
+        minReadOffset_ = readOffsetTmp;
+        maxOffsetNotUpdateCount_ = 0;
+        minOffsetNotUpdateCount_ = 0;
+        ClearCacheBuffer();
+        return;
+    }
+
+    if (maxReadOffset_ < readOffsetTmp) {
+        maxReadOffset_ = readOffsetTmp;
+        maxOffsetNotUpdateCount_ = 0;
+    } else {
+        maxOffsetNotUpdateCount_++;
+    }
+    if (maxOffsetNotUpdateCount_ > OFFSET_NOT_UPDATE_THRESHOLD) {
+        maxReadOffset_ = readOffsetTmp;
+        minReadOffset_ = readOffsetTmp;
+        maxOffsetNotUpdateCount_ = 0;
+    }
+    if (readOffsetTmp < maxReadOffset_ && readOffsetTmp > minReadOffset_) {
+        minReadOffset_ = readOffsetTmp;
+        minOffsetNotUpdateCount_ = 0;
+    } else {
+        minOffsetNotUpdateCount_++;
+    }
+    if (minOffsetNotUpdateCount_ > OFFSET_NOT_UPDATE_THRESHOLD) {
+        minReadOffset_ = readOffsetTmp;
+        minOffsetNotUpdateCount_ = 0;
+    }
+
+    minReadOffset_ = std::min(minReadOffset_, static_cast<uint64_t>(readOffsetTmp));
+    minReadOffset_ = std::min(minReadOffset_, maxReadOffset_);
+    isMinAndMaxOffsetUpdate_ = true;
+
+    MEDIA_LOG_D("HTTP UpdateMinAndMaxReadOffset, readOffset: " PUBLIC_LOG_U64 " minReadOffset_: "
+        PUBLIC_LOG_U64 " maxReadOffset_: " PUBLIC_LOG_U64, readOffsetTmp, minReadOffset_, maxReadOffset_);
+}
+
+bool HttpMediaDownloader::ChangeDownloadPos(bool isSeekHit)
+{
+    MEDIA_LOG_D("HTTP ChangeDownloadPos in, offset: " PUBLIC_LOG_ZU, readOffset_);
+
+    uint64_t seekOffset = readOffset_;
+    if (isSeekHit) {
+        isNeedDropData_ = true;
+        downloader_->Pause();
+        isNeedDropData_ = false;
+        seekOffset += GetCurrentBufferSize();
+        size_t fileContentLength = downloadRequest_->GetFileContentLength();
+        if (seekOffset >= static_cast<uint64_t>(fileContentLength)) {
+            MEDIA_LOG_W("HTTP seekOffset invalid, readOffset " PUBLIC_LOG_ZU " seekOffset " PUBLIC_LOG_U64
+                " fileContentLength " PUBLIC_LOG_ZU, readOffset_, seekOffset, fileContentLength);
+            return true;
+        }
+    } else {
+        isNeedClean_ = true;
+        downloader_->Pause();
+        isNeedClean_ = false;
+    }
+
+    isHitSeeking_ = true;
+    bool result = downloader_->Seek(seekOffset);
+    isHitSeeking_ = false;
+    if (result) {
+        writeOffset_ = static_cast<size_t>(seekOffset);
+    } else {
+        MEDIA_LOG_E("HTTP Downloader seek fail.");
+    }
+    downloader_->Resume();
+    MEDIA_LOG_D("HTTP ChangeDownloadPos out, seekOffset" PUBLIC_LOG_U64, seekOffset);
+    return result;
 }
 
 bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
 {
-    MEDIA_LOG_D("Seek hit.");
-    readOffset_ = static_cast<size_t>(offset);
-    cacheMediaBuffer_->Seek(offset);
-
-    if (!isServerAcceptRange_) {
-        MEDIA_LOG_D("Don't support range, return true.");
+    MEDIA_LOG_D("HTTP Seek hit.");
+    if (cacheMediaBuffer_->IsReadSplit(offset)) {
+        MEDIA_LOG_D("HTTP HandleSeekHit IsReadSplit, return.");
         return true;
     }
-
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
     size_t downloadOffset = static_cast<size_t>(offset) + cacheMediaBuffer_->GetBufferSize(offset);
-    if (downloadOffset > fileContentLength) {
-        MEDIA_LOG_W("downloadOffset invalid, offset " PUBLIC_LOG_D64 " downloadOffset " PUBLIC_LOG_ZU
+    if (downloadOffset >= fileContentLength) {
+        MEDIA_LOG_W("HTTP downloadOffset invalid, offset " PUBLIC_LOG_D64 " downloadOffset " PUBLIC_LOG_ZU
             " fileContentLength " PUBLIC_LOG_ZU, offset, downloadOffset, fileContentLength);
         return true;
     }
-    if (writeOffset_ != downloadOffset && cacheMediaBuffer_->GetBufferSize(offset) < DEFAULT_WATER_LINE_ABOVE) {
-        ChangeDownloadPos();
-    } else {
-        MEDIA_LOG_D("Seek hit, continue download.");
-    }
-    MEDIA_LOG_D("Seek out.");
-    return true;
-}
 
-bool HttpMediaDownloader::SeekRingBuffer(int64_t offset)
-{
-    FALSE_RETURN_V(buffer_ != nullptr, false);
-    MEDIA_LOG_I("Seek in, buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, buffer_->GetSize(), offset);
-    if (buffer_->Seek(offset)) {
-        MEDIA_LOG_I("buffer_ seek success.");
-        return true;
+    size_t changeDownloadPosThreshold = DEFAULT_WATER_LINE_ABOVE;
+    if (static_cast<size_t>(offset) < maxReadOffset_) {
+        changeDownloadPosThreshold = AUDIO_WATER_LINE_ABOVE;
     }
-    buffer_->SetActive(false); // First clear buffer, avoid no available buffer then task pause never exit.
-    downloader_->Pause();
-    buffer_->Clear();
-    buffer_->SetActive(true);
-    bool result = downloader_->Seek(offset);
-    if (result) {
-        buffer_->SetMediaOffset(offset);
+
+    if (writeOffset_ != downloadOffset && cacheMediaBuffer_->GetBufferSize(offset) < changeDownloadPosThreshold) {
+        return ChangeDownloadPos(true);
     } else {
-        MEDIA_LOG_D("Seek failed");
+        MEDIA_LOG_D("HTTP Seek hit, continue download.");
     }
-    downloader_->Resume();
-    return result;
+    return true;
 }
 
 bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
 {
-    size_t remain = cacheMediaBuffer_->GetBufferSize(offset);
-    MEDIA_LOG_D("Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, remain, offset);
-    if (remain > 0) {
-        return HandleSeekHit(offset);
-    }
-    MEDIA_LOG_D("Seek miss.");
-    cacheMediaBuffer_->Seek(offset);
     readOffset_ = static_cast<size_t>(offset);
+    cacheMediaBuffer_->Seek(offset); // Notify the cacheBuffer where to read.
+    UpdateMinAndMaxReadOffset();
 
     if (!isServerAcceptRange_) {
-        MEDIA_LOG_D("Don't support range, return true.");
+        MEDIA_LOG_D("HTTP Don't support range, return true.");
         return true;
     }
 
-    isNeedClean_ = true;
-    downloader_->Pause();
-    isNeedClean_ = false;
-    size_t downloadEndOffset = cacheMediaBuffer_->GetNextBufferOffset(offset);
-    if (downloadEndOffset > static_cast<size_t>(offset)) {
-        downloader_->SetRequestSize(downloadEndOffset - offset);
+    size_t remain = cacheMediaBuffer_->GetBufferSize(offset);
+    MEDIA_LOG_I("HTTP Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, remain, offset);
+    if (remain > 0) {
+        return HandleSeekHit(offset);
     }
-    bool result = false;
-    result = downloader_->Seek(offset);
-    if (result) {
-        writeOffset_ = static_cast<size_t>(offset);
-        MEDIA_LOG_D("Seek out.");
-    } else {
-        MEDIA_LOG_D("Download seek fail.");
+    MEDIA_LOG_I("HTTP Seek miss.");
+
+    uint64_t diff = static_cast<size_t>(offset) > writeOffset_ ?
+                        static_cast<size_t>(offset) - writeOffset_ : 0;
+    if (diff > 0 && diff < ALLOW_SEEK_MIN_SIZE) {
+        MEDIA_LOG_I("HTTP Seek miss, diff is too small so return and wait.");
+        return true;
     }
-    downloader_->Resume();
-    return result;
+    return ChangeDownloadPos(false);
 }
 
 bool HttpMediaDownloader::SeekToPos(int64_t offset)
 {
-    if (isFlv_) {
+    if (isRingBuffer_) {
         return SeekRingBuffer(offset);
     } else {
         return SeekCacheBuffer(offset);
@@ -653,30 +760,29 @@ bool HttpMediaDownloader::GetStartedStatus()
 
 void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
-    if (isFlv_) {
-        FALSE_RETURN(buffer_ != nullptr);
-        buffer_->SetReadBlocking(isReadBlockingAllowed);
+    if (isRingBuffer_) {
+        FALSE_RETURN(ringBuffer_ != nullptr);
+        ringBuffer_->SetReadBlocking(isReadBlockingAllowed);
     }
 }
 
 bool HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len)
 {
-    FALSE_RETURN_V(buffer_->WriteBuffer(data, len), false);
-    OnWriteBuffer(len);
+    FALSE_RETURN_V(ringBuffer_->WriteBuffer(data, len), false);
     cvReadWrite_.NotifyOne();
-    size_t bufferSize = buffer_->GetSize();
+    size_t bufferSize = ringBuffer_->GetSize();
     double ratio = (static_cast<double>(bufferSize)) / RING_BUFFER_SIZE;
     if ((bufferSize >= WATER_LINE ||
         bufferSize >= downloadRequest_->GetFileContentLength() / 2) && !aboveWaterline_) { // 2
         aboveWaterline_ = true;
-        MEDIA_LOG_I("Send http aboveWaterline event, ringbuffer ratio " PUBLIC_LOG_F, ratio);
+        MEDIA_LOG_I("HTTP Send http aboveWaterline event, ringbuffer ratio " PUBLIC_LOG_F, ratio);
         if (callback_ != nullptr) {
             callback_->OnEvent({PluginEventType::ABOVE_LOW_WATERLINE, {ratio}, "http"});
         }
         startedPlayStatus_ = true;
     } else if (bufferSize < WATER_LINE && aboveWaterline_) {
         aboveWaterline_ = false;
-        MEDIA_LOG_I("Send http belowWaterline event, ringbuffer ratio " PUBLIC_LOG_F, ratio);
+        MEDIA_LOG_I("HTTP Send http belowWaterline event, ringbuffer ratio " PUBLIC_LOG_F, ratio);
         if (callback_ != nullptr) {
             callback_->OnEvent({PluginEventType::BELOW_LOW_WATERLINE, {ratio}, "http"});
         }
@@ -686,11 +792,16 @@ bool HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len)
 
 bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 {
+    if (cacheMediaBuffer_ == nullptr && ringBuffer_ == nullptr) {
+        return false;
+    }
+    OnWriteBuffer(len);
     bool ret = true;
-    if (isFlv_) {
+    if (isRingBuffer_) {
         ret = SaveRingBufferData(data, len);
     } else {
         ret = SaveCacheBufferData(data, len);
+        HandleDownloadWaterLine();
     }
     HandleBuffering();
     return ret;
@@ -698,7 +809,6 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 
 bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
 {
-    OnWriteBuffer(len);
     if (isNeedClean_) {
         return true;
     }
@@ -706,24 +816,32 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
     isServerAcceptRange_ = downloadRequest_->IsServerAcceptRange();
 
     size_t hasWriteSize = 0;
-    while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_) {
+    while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_.load()) {
         if (isNeedClean_) {
-            MEDIA_LOG_D("isNeedClean true.");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "isNeedClean true.");
             return true;
         }
         size_t res = cacheMediaBuffer_->Write(data + hasWriteSize, writeOffset_, len - hasWriteSize);
         writeOffset_ += res;
         hasWriteSize += res;
-        MEDIA_LOG_D("writeOffset " PUBLIC_LOG_ZU " res " PUBLIC_LOG_ZU, writeOffset_, res);
-        if (res > 0 || hasWriteSize == len) {
+        writeBitrateCaculator_->UpdateWriteBytes(res);
+        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "writeOffset " PUBLIC_LOG_ZU " res "
+                            PUBLIC_LOG_ZU, writeOffset_, res);
+        if (canWrite_.load() && (res > 0 || hasWriteSize == len)) {
             HandleCachedDuration();
+            writeBitrateCaculator_->StartClock();
+            uint64_t writeTime  = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLIONSECOND;
+            if (writeTime > ONE_SECONDS) {
+                writeBitrateCaculator_->ResetClock();
+            }
             continue;
         }
-        MEDIA_LOG_W("CacheMediaBuffer full.");
+        MEDIA_LOG_W("HTTP CacheMediaBuffer full.");
+        writeBitrateCaculator_->StopClock();
         canWrite_ = false;
         HandleBuffering();
-        while (!isInterrupt_ && !isNeedClean_ && !canWrite_ && !isInterruptNeeded_.load()) {
-            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "CacheMediaBuffer full, waiting seek or read.");
+        while (!isInterrupt_.load() && !isNeedClean_.load() && !canWrite_.load() && !isInterruptNeeded_.load()) {
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "HTTP CacheMediaBuffer full, waiting seek or read.");
             if (isHitSeeking_ || isNeedDropData_) {
                 canWrite_ = true;
                 return true;
@@ -732,8 +850,8 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         }
         canWrite_ = true;
     }
-    if (isInterruptNeeded_.load() || isInterrupt_) {
-        MEDIA_LOG_D("isInterruptNeeded true, return false.");
+    if (isInterruptNeeded_.load() || isInterrupt_.load()) {
+        MEDIA_LOG_I("HTTP isInterruptNeeded true, return false.");
         return false;
     }
     return true;
@@ -752,7 +870,7 @@ void HttpMediaDownloader::OnWriteBuffer(uint32_t len)
     if ((totalBits_ > START_PLAY_WATER_LINE) && (playDelayTime_ == 0)) {
         auto startPlayTime = steadyClock_.ElapsedMilliseconds();
         playDelayTime_ = startPlayTime - openTime_;
-        MEDIA_LOG_D("Start play delay time: " PUBLIC_LOG_D64, playDelayTime_);
+        MEDIA_LOG_D("HTTP Start play delay time: " PUBLIC_LOG_D64, playDelayTime_);
     }
     DownloadReport();
 }
@@ -785,6 +903,8 @@ void HttpMediaDownloader::DownloadReport()
             size_t remainingBuffer = GetCurrentBufferSize();    // Byte
             MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
                 " KByte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
+            MediaAVCodec::AVCodecTrace trace("HttpMediaDownloader::DownloadReport, download speed: " +
+                std::to_string(downloadRate) + " bit/s, bufferSize: " + std::to_string(remainingBuffer) + " Byte");
             // Remaining playable time: s
             uint64_t bufferDuration = 0;
             if (currentBitrate_ > 0) {
@@ -810,16 +930,19 @@ void HttpMediaDownloader::DownloadReport()
 
 void HttpMediaDownloader::SetDemuxerState(int32_t streamId)
 {
-    MEDIA_LOG_I("SetDemuxerState");
+    MEDIA_LOG_I("HTTP SetDemuxerState");
     isFirstFrameArrived_ = true;
 }
 
 void HttpMediaDownloader::SetDownloadErrorState()
 {
-    MEDIA_LOG_I("SetDownloadErrorState");
+    MEDIA_LOG_I("HTTP SetDownloadErrorState");
     downloadErrorState_ = true;
-    if (isFlv_) {
-        if (buffer_ != nullptr && buffer_->GetSize() == 0) {
+    if (callback_ != nullptr) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+    }
+    if (isRingBuffer_) {
+        if (ringBuffer_ != nullptr && ringBuffer_->GetSize() == 0) {
             Close(true);
         }
     } else {
@@ -827,27 +950,29 @@ void HttpMediaDownloader::SetDownloadErrorState()
             Close(true);
         }
     }
+    Close(true);
 }
 
 void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
+    MEDIA_LOG_I("SetInterruptState");
     isInterruptNeeded_ = isInterruptNeeded;
-    if (buffer_ != nullptr && isInterruptNeeded) {
-        buffer_->SetActive(false);
+    if (ringBuffer_ != nullptr && isInterruptNeeded) {
+        ringBuffer_->SetActive(false);
     }
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded);
     }
 }
 
-int HttpMediaDownloader::GetBufferSize()
+size_t HttpMediaDownloader::GetBufferSize() const
 {
-    return totalBufferSize_;
+    return GetCurrentBufferSize();
 }
 
 RingBuffer& HttpMediaDownloader::GetBuffer()
 {
-    return *buffer_;
+    return *ringBuffer_;
 }
 
 bool HttpMediaDownloader::GetReadFrame()
@@ -882,7 +1007,7 @@ std::pair<int32_t, int32_t> HttpMediaDownloader::GetDownloadInfo()
 {
     MEDIA_LOG_I("HttpMediaDownloader::GetDownloadInfo.");
     if (recordSpeedCount_ == 0) {
-        MEDIA_LOG_E("recordSpeedCount_ is 0, can't get avgDownloadRate");
+        MEDIA_LOG_E("recordSpeedCount is 0, can't get avgDownloadRate");
         return std::make_pair(0, static_cast<int32_t>(avgDownloadSpeed_));
     }
     auto rateAndSpeed = std::make_pair(avgSpeedSum_ / recordSpeedCount_, static_cast<int32_t>(avgDownloadSpeed_));
@@ -893,7 +1018,7 @@ std::pair<int32_t, int32_t> HttpMediaDownloader::GetDownloadRateAndSpeed()
 {
     MEDIA_LOG_I("HttpMediaDownloader::GetDownloadRateAndSpeed.");
     if (recordSpeedCount_ == 0) {
-        MEDIA_LOG_E("recordSpeedCount_ is 0, can't get avgDownloadRate");
+        MEDIA_LOG_E("recordSpeedCount is 0, can't get avgDownloadRate");
         return std::make_pair(0, static_cast<int32_t>(avgDownloadSpeed_));
     }
     auto rateAndSpeed = std::make_pair(avgSpeedSum_ / recordSpeedCount_, static_cast<int32_t>(avgDownloadSpeed_));
@@ -931,30 +1056,38 @@ void HttpMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 bool HttpMediaDownloader::HandleBreak()
 {
     if (downloadErrorState_) {
-        MEDIA_LOG_I("downloadErrorState_ break");
+        MEDIA_LOG_I("HTTP CacheData over, downloadErrorState true.");
         return true;
     }
     if (downloadRequest_ == nullptr) {
-        MEDIA_LOG_I("downloadRequest is nullptr");
+        MEDIA_LOG_I("HTTP CacheData over, downloadRequest is nullptr.");
+        return true;
+    }
+    if (callback_ == nullptr) {
+        MEDIA_LOG_I("HTTP CacheData over, callback is nullptr.");
         return true;
     }
     if (downloadRequest_->IsEos()) {
-        MEDIA_LOG_I("CacheData over, isEos");
+        MEDIA_LOG_I("HTTP CacheData over, isEos");
         return true;
     }
     if (downloadRequest_->IsClosed()) {
-        MEDIA_LOG_I("CacheData over, IsClosed");
+        MEDIA_LOG_I("HTTP CacheData over, IsClosed");
+        return true;
+    }
+    if (downloadRequest_->IsChunkedVod()) {
+        MEDIA_LOG_I("HTTP CacheData over, IsChunkedVod");
         return true;
     }
     return false;
 }
 
-size_t HttpMediaDownloader::GetCurrentBufferSize()
+size_t HttpMediaDownloader::GetCurrentBufferSize() const
 {
     size_t bufferSize = 0;
-    if (isFlv_) {
-        if (buffer_ != nullptr) {
-            bufferSize = buffer_->GetSize();
+    if (isRingBuffer_) {
+        if (ringBuffer_ != nullptr) {
+            bufferSize = ringBuffer_->GetSize();
         }
     } else {
         if (cacheMediaBuffer_ != nullptr) {
@@ -966,25 +1099,13 @@ size_t HttpMediaDownloader::GetCurrentBufferSize()
 
 Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
-    MEDIA_LOG_I("SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
+    MEDIA_LOG_I("HTTP SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
     if (bitRate <= 0) {
         currentBitRate_ = DEFAULT_BIT_RATE;
     } else {
-        currentBitRate_ = bitRate;
+        currentBitRate_ = std::max(currentBitRate_, bitRate);
     }
     return Status::OK;
-}
-
-int32_t HttpMediaDownloader::GetWaterLineAbove()
-{
-    int32_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
-    if (currentBitRate_ > 0) {
-        waterLineAbove = static_cast<int32_t>(DEFAULT_CACHE_TIME * currentBitRate_ / BYTES_TO_BIT);
-        MEDIA_LOG_I("GetWaterLineAbove: " PUBLIC_LOG_D32, waterLineAbove);
-    } else {
-        MEDIA_LOG_I("GetWaterLineAbove default: " PUBLIC_LOG_D32, waterLineAbove);
-    }
-    return waterLineAbove;
 }
 
 void HttpMediaDownloader::HandleCachedDuration()
@@ -994,11 +1115,12 @@ void HttpMediaDownloader::HandleCachedDuration()
     }
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetCurrentBufferSize()) *
         BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<int64_t>(currentBitRate_));
+    // Subtraction of unsigned integers requires size comparison first.
     if ((cachedDuration > lastDurationReacord_ &&
         cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationReacord_ > cachedDuration &&
-        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) { // 无符号整数需要先判断大小再相减
-        MEDIA_LOG_I("OnEvet cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
+        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
+        MEDIA_LOG_D("HTTP OnEvent cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
         callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         lastDurationReacord_ = cachedDuration;
     }
@@ -1038,10 +1160,10 @@ void HttpMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
 
 bool HttpMediaDownloader::CheckBufferingOneSeconds()
 {
-    MEDIA_LOG_I("CheckBufferingOneSeconds in");
+    MEDIA_LOG_I("HTTP CheckBufferingOneSeconds in");
     int32_t sleepTime = 0;
     // return error again 1 time 1s, avoid ffmpeg error
-    while (sleepTime < ONE_SECONDS && !isInterruptNeeded_.load()) {
+    while (sleepTime < TWO_SECONDS && !isInterruptNeeded_.load()) {
         if (!isBuffering_) {
             break;
         }
@@ -1052,8 +1174,118 @@ bool HttpMediaDownloader::CheckBufferingOneSeconds()
         OSAL::SleepFor(TEN_MILLISECONDS);
         sleepTime += TEN_MILLISECONDS;
     }
-    MEDIA_LOG_I("CheckBufferingOneSeconds out");
+    MEDIA_LOG_I("HTTP CheckBufferingOneSeconds out");
     return isBuffering_;
+}
+
+void HttpMediaDownloader::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+}
+
+float HttpMediaDownloader::GetCacheDuration(float ratio)
+{
+    if (ratio >= 1) {
+        return CACHE_LEVEL_1;
+    }
+    return DEFAULT_CACHE_TIME;
+}
+
+void HttpMediaDownloader::UpdateWaterLineAbove()
+{
+    if (!isFirstFrameArrived_) {
+        return;
+    }
+    size_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
+    if (currentBitRate_ > 0) {
+        float cacheTime = 0;
+        uint64_t writeBitrate = writeBitrateCaculator_->GetWriteBitrate();
+        if (writeBitrate > 0) {
+            float ratio = static_cast<float>(writeBitrate) / currentBitRate_;
+            cacheTime = GetCacheDuration(ratio);
+        } else {
+            cacheTime = DEFAULT_CACHE_TIME;
+        }
+        waterLineAbove = static_cast<size_t>(cacheTime * currentBitRate_ / BYTES_TO_BIT);
+        waterLineAbove = std::max(MIN_WATER_LINE_ABOVE, waterLineAbove);
+    } else {
+        MEDIA_LOG_D("UpdateWaterLineAbove default: " PUBLIC_LOG_ZU, waterLineAbove);
+    }
+    waterLineAbove_ = waterLineAbove;
+
+    if (readOffset_ < maxReadOffset_) {
+        waterLineAbove_ = DEFAULT_WATER_LINE_ABOVE;
+    }
+
+    size_t fileRemain = 0;
+    if (downloadRequest_ != nullptr) {
+        size_t fileContenLen = downloadRequest_->GetFileContentLength();
+        if (fileContenLen > readOffset_) {
+            fileRemain = fileContenLen - readOffset_;
+            waterLineAbove_ = std::min(fileRemain, waterLineAbove_);
+        }
+    }
+
+    waterLineAbove_ = std::min(waterLineAbove_, static_cast<size_t>(MAX_CACHE_BUFFER_SIZE *
+        WATER_LINE_ABOVE_LIMIT_RATIO));
+    MEDIA_LOG_D("UpdateWaterLineAbove: " PUBLIC_LOG_ZU " writeBitrate: " PUBLIC_LOG_U64 " readBitrate: "
+        PUBLIC_LOG_D32, waterLineAbove_, writeBitrateCaculator_->GetWriteBitrate(), currentBitRate_);
+}
+
+bool HttpMediaDownloader::GetPlayable()
+{
+    if (!isFirstFrameArrived_) {
+        return false;
+    }
+    size_t wantedLength = wantedReadLength_;
+    size_t waterLine = wantedLength > 0 ? std::max(PLAY_WATER_LINE, wantedLength) : 0;
+    return waterLine == 0 ? GetBufferSize() > waterLine : GetBufferSize() >= waterLine;
+}
+
+bool HttpMediaDownloader::GetBufferingTimeOut()
+{
+    if (bufferingTime_ == 0) {
+        return false;
+    } else {
+        size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+        return now >= bufferingTime_ ? now - bufferingTime_ >= MAX_BUFFERING_TIME_OUT : false;
+    }
+}
+
+bool HttpMediaDownloader::ClearHasReadBuffer()
+{
+    if (!isFirstFrameArrived_ || cacheMediaBuffer_ == nullptr) {
+        return false;
+    }
+    uint64_t minOffset = std::min(minReadOffset_, static_cast<uint64_t>(writeOffset_));
+    uint64_t clearOffset = minOffset > CLEAR_SAVE_DATA_SIZE ? minOffset - CLEAR_SAVE_DATA_SIZE : 0;
+    bool res = false;
+    res = cacheMediaBuffer_->ClearFragmentBeforeOffset(clearOffset);
+    res = cacheMediaBuffer_->ClearChunksOfFragment(clearOffset) || res;
+    uint64_t minClearOffset = minOffset + CLEAR_SAVE_DATA_SIZE;
+    uint64_t maxClearOffset = maxReadOffset_ > CLEAR_SAVE_DATA_SIZE ? maxReadOffset_ - CLEAR_SAVE_DATA_SIZE : 0;
+    uint64_t diff = maxClearOffset > minClearOffset ? maxClearOffset - minClearOffset : 0;
+    if (diff > ALLOW_CLEAR_MIDDLE_DATA_MIN_SIZE) {
+        res = cacheMediaBuffer_->ClearMiddleReadFragment(minClearOffset, maxClearOffset) || res;
+    }
+    MEDIA_LOG_D("HTTP ClearHasReadBuffer, res: " PUBLIC_LOG_D32, res);
+    return res;
+}
+
+void HttpMediaDownloader::ClearCacheBuffer()
+{
+    if (cacheMediaBuffer_ == nullptr || downloader_ == nullptr) {
+        return;
+    }
+    isNeedDropData_ = true;
+    downloader_->Pause();
+    cacheMediaBuffer_->Clear();
+    isNeedDropData_ = false;
+    downloader_->Resume();
+    uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
+    MEDIA_LOG_I("HTTP ClearCacheBuffer, freeSize: " PUBLIC_LOG_U64, freeSize);
 }
 }
 }

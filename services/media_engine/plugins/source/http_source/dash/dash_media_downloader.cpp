@@ -40,8 +40,10 @@ DashMediaDownloader::DashMediaDownloader() noexcept
 
 DashMediaDownloader::~DashMediaDownloader()
 {
+    if (mpdDownloader_ != nullptr) {
+        mpdDownloader_->Close(false);
+    }
     segmentDownloaders_.clear();
-    mpdDownloader_ = nullptr;
 }
 
 bool DashMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
@@ -88,7 +90,7 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         for (auto &segmentDownloader : segmentDownloaders_) {
             segmentDownloader->Close(false, true);
         }
-        return Status::END_OF_STREAM;
+        return Status::ERROR_AGAIN;
     }
 
     std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloader(readDataInfo.streamId_);
@@ -125,7 +127,8 @@ std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader
     return GetSegmentDownloaderByType(streamDescription->type_);
 }
 
-std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloaderByType(MediaAVCodec::MediaType type)
+std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloaderByType(
+    MediaAVCodec::MediaType type) const
 {
     std::shared_ptr<DashSegmentDownloader> segmentDownloader = nullptr;
     auto iter = std::find_if(segmentDownloaders_.begin(), segmentDownloaders_.end(),
@@ -135,7 +138,6 @@ std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader
     if (iter != segmentDownloaders_.end()) {
         segmentDownloader = *iter;
     }
-
     return segmentDownloader;
 }
 
@@ -171,7 +173,7 @@ void DashMediaDownloader::UpdateDownloadFinished(int streamId)
 
 bool DashMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
 {
-    MEDIA_LOG_I("SeekToTime: " PUBLIC_LOG_D64, seekTime);
+    MEDIA_LOG_I("DashMediaDownloader SeekToTime: " PUBLIC_LOG_D64, seekTime);
     SeekToTs(seekTime);
     return true;
 }
@@ -183,13 +185,13 @@ size_t DashMediaDownloader::GetContentLength() const
 
 int64_t DashMediaDownloader::GetDuration() const
 {
-    MEDIA_LOG_I("GetDuration " PUBLIC_LOG_D64, mpdDownloader_->GetDuration());
+    MEDIA_LOG_I("DashMediaDownloader GetDuration " PUBLIC_LOG_D64, mpdDownloader_->GetDuration());
     return mpdDownloader_->GetDuration();
 }
 
 Seekable DashMediaDownloader::GetSeekable() const
 {
-    MEDIA_LOG_I("GetSeekable begin");
+    MEDIA_LOG_I("DashMediaDownloader GetSeekable begin");
     Seekable value = mpdDownloader_->GetSeekable();
     if (value == Seekable::INVALID) {
         return value;
@@ -209,11 +211,11 @@ Seekable DashMediaDownloader::GetSeekable() const
     }
 
     if (times >= RETRY_TIMES || isInterruptNeeded_) {
-        MEDIA_LOG_I("GetSeekable INVALID");
+        MEDIA_LOG_I("DashMediaDownloader GetSeekable INVALID");
         return Seekable::INVALID;
     }
 
-    MEDIA_LOG_I("GetSeekable end");
+    MEDIA_LOG_I("DashMediaDownloader GetSeekable end");
     return value;
 }
 
@@ -242,9 +244,8 @@ bool DashMediaDownloader::SelectBitRate(uint32_t bitrate)
 {
     std::lock_guard<std::mutex> sidxLock(parseSidxMutex_);
     {
-        MEDIA_LOG_I("SelectBitRate bitrate " PUBLIC_LOG_U32, bitrate);
         if (mpdDownloader_->IsBitrateSame(bitrate)) {
-            MEDIA_LOG_W("SelectBitRate is same bitrate.");
+            MEDIA_LOG_W("Dash SelectBitRate is same bitrate.");
             return true;
         }
         
@@ -274,10 +275,10 @@ bool DashMediaDownloader::SelectBitRate(uint32_t bitrate)
 
 Status DashMediaDownloader::SelectStream(int32_t streamId)
 {
-    MEDIA_LOG_I("SelectStream streamId:" PUBLIC_LOG_D32, streamId);
+    MEDIA_LOG_I("Dash SelectStream streamId:" PUBLIC_LOG_D32, streamId);
     std::shared_ptr<DashStreamDescription> streamDesc = mpdDownloader_->GetStreamByStreamId(streamId);
     if (streamDesc == nullptr) {
-        MEDIA_LOG_W("SelectStream can not find streamId");
+        MEDIA_LOG_W("Dash SelectStream can not find streamId");
         return Status::ERROR_INVALID_PARAMETER;
     }
 
@@ -296,11 +297,9 @@ void DashMediaDownloader::SeekToTs(int64_t seekTime)
     int64_t seekTimeMs;
     std::lock_guard<std::mutex> lock(parseSidxMutex_);
     {
-        MEDIA_LOG_I("SeekToTs seekTime:" PUBLIC_LOG_D64, seekTime);
         if (seekTime < 0 || seekTime >= mpdDownloader_->GetDuration()) {
             return;
         }
-
         seekTimeMs = seekTime / MS_2_NS;
         if (preparedAction_.seekPosition_ != -1 ||
             bitrateParam_.waitSidxFinish_ ||
@@ -329,7 +328,10 @@ void DashMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
 
 void DashMediaDownloader::SetDownloadErrorState()
 {
-    MEDIA_LOG_I("SetDownloadErrorState");
+    MEDIA_LOG_I("Dash SetDownloadErrorState");
+    if (callback_) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "download"});
+    }
     downloadErrorState_ = true;
 }
 
@@ -338,6 +340,8 @@ void DashMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& p
     if (playStrategy != nullptr) {
         mpdDownloader_->SetHdrStart(playStrategy->preferHDR);
         mpdDownloader_->SetInitResolution(playStrategy->width, playStrategy->height);
+        mpdDownloader_->SetDefaultLang(playStrategy->audioLanguage, MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
+        mpdDownloader_->SetDefaultLang(playStrategy->subtitleLanguage, MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
         expectDuration_ = static_cast<uint64_t>(playStrategy->duration);
     }
 }
@@ -364,7 +368,7 @@ void DashMediaDownloader::OnMpdInfoUpdate(DashMpdEvent mpdEvent)
 
 void DashMediaDownloader::ReceiveMpdStreamInitEvent()
 {
-    MEDIA_LOG_I("ReceiveMpdStreamInitEvent");
+    MEDIA_LOG_I("Dash ReceiveMpdStreamInitEvent");
     std::vector<StreamInfo> streams;
     mpdDownloader_->GetStreamInfo(streams);
     std::shared_ptr<DashStreamDescription> streamDesc = nullptr;
@@ -379,7 +383,7 @@ void DashMediaDownloader::ReceiveMpdStreamInitEvent()
             }
             
             if (seg == nullptr) {
-                MEDIA_LOG_W("get segment null in streamId " PUBLIC_LOG_D32, streamDesc->streamId_);
+                MEDIA_LOG_W("Dash get segment null in streamId " PUBLIC_LOG_D32, streamDesc->streamId_);
                 continue;
             }
 
@@ -413,7 +417,7 @@ void DashMediaDownloader::OpenInitSegment(
 
 void DashMediaDownloader::ReceiveMpdParseOkEvent()
 {
-    MEDIA_LOG_I("ReceiveMpdParseOkEvent");
+    MEDIA_LOG_I("Dash ReceiveMpdParseOkEvent");
     int streamId = -1;
     {
         std::lock_guard<std::mutex> lock(parseSidxMutex_);
@@ -422,7 +426,7 @@ void DashMediaDownloader::ReceiveMpdParseOkEvent()
             UpdateSegmentIndexAfterSidxParseOk();
 
             if (DoPreparedAction(streamId)) {
-                MEDIA_LOG_I("DoPreparedAction, no need download segment");
+                MEDIA_LOG_I("Dash DoPreparedAction, no need download segment");
                 return;
             }
         } else {
@@ -624,7 +628,7 @@ uint32_t DashMediaDownloader::GetNextBitrate(std::shared_ptr<DashSegmentDownload
     uint32_t bufferLowSize =
         static_cast<uint32_t>(static_cast<double>(curBitrate) / BYTE_TO_BIT * BUFFER_LOW_LIMIT);
     // switch to high bitrate,if buffersize less than lowsize, do not switch
-    if (curBitrate < desBitrate && segmentDownloader->GetRingBufferSize()  < bufferLowSize) {
+    if (curBitrate < desBitrate && segmentDownloader->GetBufferSize()  < bufferLowSize) {
         MEDIA_LOG_I("AutoSelectBitrate curBitrate " PUBLIC_LOG_D32 ", desBitRate " PUBLIC_LOG_D32
             ", bufferLowSize " PUBLIC_LOG_D32, curBitrate, desBitrate, bufferLowSize);
         return 0;
@@ -632,7 +636,7 @@ uint32_t DashMediaDownloader::GetNextBitrate(std::shared_ptr<DashSegmentDownload
     // high size: buffersize * 0.8
     uint32_t bufferHighSize = segmentDownloader->GetRingBufferCapacity() * BUFFER_LIMIT_FACT;
     // switch to low bitrate, if buffersize more than highsize, do not switch
-    if (curBitrate > desBitrate && segmentDownloader->GetRingBufferSize() > bufferHighSize) {
+    if (curBitrate > desBitrate && segmentDownloader->GetBufferSize() > bufferHighSize) {
         MEDIA_LOG_I("AutoSelectBitrate curBitrate " PUBLIC_LOG_D32 ", desBitRate " PUBLIC_LOG_D32
             ", bufferHighSize " PUBLIC_LOG_D32, curBitrate, desBitrate, bufferHighSize);
         return 0;
@@ -1053,6 +1057,34 @@ void DashMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
         DownloadFinishStateTmp = (DownloadFinishStateTmp && segmentDownloaders_[i]->GetDownloadFinishState());
     }
     playbackInfo.isDownloading = DownloadFinishStateTmp ? false : true;
+}
+
+size_t DashMediaDownloader::GetBufferSize() const
+{
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader =
+        GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    if (segmentDownloader == nullptr) {
+        MEDIA_LOG_W("GetBufferSize can not get segmentDownloader.");
+        return 0;
+    }
+    return segmentDownloader->GetBufferSize();
+}
+
+void DashMediaDownloader::SetAppUid(int32_t appUid)
+{
+    for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
+        segmentDownloaders_[i]->SetAppUid(appUid);
+    }
+}
+
+bool DashMediaDownloader::GetPlayable()
+{
+    return GetBufferSize() >= 0;
+}
+
+bool DashMediaDownloader::GetBufferingTimeOut()
+{
+    return false;
 }
 
 }

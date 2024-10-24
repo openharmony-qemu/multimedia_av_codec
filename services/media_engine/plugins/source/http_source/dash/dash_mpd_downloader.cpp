@@ -20,6 +20,7 @@
 #include <sstream>
 #include <algorithm>
 #include "plugin/plugin_time.h"
+#include "network/network_typs.h"
 #include "dash_mpd_downloader.h"
 #include "dash_mpd_util.h"
 #include "sidx_box_parser.h"
@@ -53,13 +54,9 @@ DashMpdDownloader::DashMpdDownloader()
 
 DashMpdDownloader::~DashMpdDownloader() noexcept
 {
-    downloadRequest_ = nullptr;
-    downloader_ = nullptr;
-    representationManager_ = nullptr;
-    adptSetManager_ = nullptr;
-    periodManager_ = nullptr;
-    mpdManager_ = nullptr;
-    mpdParser_ = nullptr;
+    if (downloader_ != nullptr) {
+        downloader_->Stop(false);
+    }
     streamDescriptions_.clear();
 }
 
@@ -789,7 +786,7 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
     }
 
     MEDIA_LOG_I("DoOpen:start=%{public}lld end=%{public}lld", (long long) startRange, (long long) endRange);
-    MediaSouce mediaSource;
+    RequestInfo mediaSource;
     mediaSource.url = url;
     mediaSource.timeoutMs = MPD_HTTP_TIME_OUT_MS;
     downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSource, requestWholeFile);

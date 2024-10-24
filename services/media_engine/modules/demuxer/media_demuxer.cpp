@@ -40,7 +40,7 @@
 #include "media_core.h"
 #include "osal/utils/dump_buffer.h"
 #include "demuxer_plugin_manager.h"
-#include "media_demuxer_back.cpp"
+#include "media_demuxer_pts_founctions.cpp"
 
 namespace {
 const std::string DUMP_PARAM = "a";
@@ -700,7 +700,11 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
 
 void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
-    isInterruptNeeded_ = isInterruptNeeded;
+    {
+        AutoLock lock(firstFrameMutex_);
+        isInterruptNeeded_ = isInterruptNeeded;
+        firstFrameCond_.NotifyAll();
+    }
     if (source_ != nullptr) {
         source_->SetInterruptState(isInterruptNeeded);
     }
@@ -1468,15 +1472,17 @@ Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
         doPrepareFrame_ = false;
         return ret;
     }
-    AutoLock lock(firstFrameMutex_);
-    bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
-         return firstFrameCount_ >= DEFAULT_PREPARE_FRAME_COUNT;
-    });
-    MEDIA_LOG_I("PrepareFrame res= %{public}d", res);
-    doPrepareFrame_ = false;
-    if (!res) {
-        waitForDataFail_ = true;
-        MEDIA_LOG_I("Timeout, not enough data");
+    {
+        AutoLock lock(firstFrameMutex_);
+        bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
+            return (firstFrameCount_ >= DEFAULT_PREPARE_FRAME_COUNT) || isInterruptNeeded_;
+        });
+        MEDIA_LOG_I("PrepareFrame res= %{public}d isInterruptNeeded= %{public}d", res, isInterruptNeeded_.load());
+        doPrepareFrame_ = false;
+        if (!res) {
+            waitForDataFail_ = true;
+            MEDIA_LOG_I("Timeout, not enough data");
+        }
     }
     return PauseForPrepareFrame();
 }

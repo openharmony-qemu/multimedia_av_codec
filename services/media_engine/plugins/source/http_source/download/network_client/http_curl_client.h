@@ -18,10 +18,15 @@
 
 #include <string>
 #include <list>
-#include "network_client.h"
+#include "network/network_client.h"
+#include "network/network_typs.h"
 #include "curl/curl.h"
 #include "osal/task/mutex.h"
-#include "syspara/parameter.h"
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <iostream>
 
 namespace OHOS {
 namespace Media {
@@ -47,14 +52,19 @@ public:
     Status Open(const std::string& url, const std::map<std::string, std::string>& httpHeader,
                 int32_t timeoutMs) override;
 
-    Status RequestData(long startPos, int len, NetworkServerErrorCode& serverCode,
-                       NetworkClientErrorCode& clientCode) override;
+    Status RequestData(long startPos, int len, const RequestInfo& requestInfo,
+        HandleResponseCbFunc completedCb) override;
 
     Status Close(bool isAsync) override;
 
     Status Deinit() override;
     Status GetIp(std::string &ip) override;
+    void SetAppUid(int32_t appUid) override;
 
+    struct SocketOwner {
+        uid_t uid;
+        gid_t gid;
+    };
 private:
     void InitCurlEnvironment(const std::string& url, int32_t timeoutMs);
     void InitCurProxy(const std::string& url);
@@ -62,7 +72,6 @@ private:
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
     void CheckRequestRange(long startPos, int len);
-    void HandleUserAgent();
     Status SetIp();
 
 private:
@@ -71,12 +80,12 @@ private:
     void *userParam_;
     CURL* easyHandle_ {nullptr};
     mutable Mutex mutex_;
-    bool isSetUA_ {false};
     struct curl_slist* headerList_ {nullptr};
     std::string ip_ {};
     bool ipFlag_ {false};
     bool isFirstRequest_ {true};
     bool isFirstOpen_ {true};
+    volatile int32_t appUid_ {-1};
 };
 }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,7 +31,7 @@ constexpr uint32_t DRM_PSSH_TITLE_LEN = 16;
 constexpr uint32_t WAIT_KEY_SLEEP_TIME = 10;
 constexpr uint32_t MAX_DOWNLOAD_TIME = 500;
 constexpr uint64_t BAND_WIDTH_LIMIT = 3 * 1024 * 1024;
-
+constexpr double SECOND_TO_MICROSECOND = 1000.0 * 1000.0;
 const char DRM_PSSH_TITLE[] = "data:text/plain;";
 
 bool StrHasPrefix(const std::string &str, const std::string &prefix)
@@ -116,7 +116,8 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
 void M3U8::InitTagUpdaters()
 {
     tagUpdatersMap_[HlsTag::EXTXPLAYLISTTYPE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        bLive_ = !info.bVod && (std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD");
+        isPlayTypeFound_ = true;
+        bLive_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD";
     };
     tagUpdatersMap_[HlsTag::EXTXTARGETDURATION] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = info;
@@ -174,10 +175,25 @@ void M3U8::InitTagUpdatersMap()
 void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 {
     M3U8Info info;
-    info.bVod = !tags.empty() && tags.back()->GetType() == HlsTag::EXTXENDLIST;
     bLive_ = !info.bVod;
+    segmentOffsets_.clear();
+    size_t segmentTimeOffset = 0;
+    size_t duration = 0;
     for (auto& tag : tags) {
         HlsTag hlsTag = tag->GetType();
+        if (hlsTag == HlsTag::EXTXENDLIST && !isPlayTypeFound_) {
+            info.bVod = true;
+            bLive_ = !info.bVod;
+            MEDIA_LOG_I("UpdateFromTags not live.");
+        }
+
+        if (hlsTag == HlsTag::EXTXDISCONTINUITY) {
+            segmentTimeOffset = duration;
+            hasDiscontinuity_ = true;
+            MEDIA_LOG_I("segmentTimeOffset here is: " PUBLIC_LOG_ZU, segmentTimeOffset);
+            continue;
+        }
+
         auto iter = tagUpdatersMap_.find(hlsTag);
         if (iter != tagUpdatersMap_.end()) {
             auto updater = iter->second;
@@ -193,15 +209,23 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
             if (isDecryptAble_) {
                 auto m3u8 = M3U8Fragment(info.uri, info.duration, sequence_++, info.discontinuity);
                 auto fragment = std::make_shared<M3U8Fragment>(m3u8, key_, iv_);
-                files_.emplace_back(fragment);
+                AddFile(fragment, duration);
             } else {
                 auto fragment = std::make_shared<M3U8Fragment>(info.uri, info.duration, sequence_++,
                     info.discontinuity);
-                files_.emplace_back(fragment);
+                AddFile(fragment, duration);
             }
+            duration += static_cast<size_t>(info.duration * SECOND_TO_MICROSECOND);
             info.uri = "", info.duration = 0, info.discontinuity = false;
         }
     }
+    isPlayTypeFound_ = false;
+}
+
+void M3U8::AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration)
+{
+    segmentOffsets_.emplace_back(duration);
+    files_.emplace_back(fragment);
 }
 
 void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
@@ -270,7 +294,10 @@ void M3U8::DownloadKey()
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
     std::string realKeyUrl = UriJoin(uri_, *keyUri_);
-    downloadRequest_ = std::make_shared<DownloadRequest>(realKeyUrl, dataSave_, realStatusCallback, true);
+    RequestInfo requestInfo;
+    requestInfo.url = realKeyUrl;
+    requestInfo.httpHeader = httpHeader_;
+    downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, requestInfo, true);
     downloader_->Download(downloadRequest_, -1);
     downloader_->Start();
 }
@@ -292,7 +319,8 @@ void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &
     std::shared_ptr<DownloadRequest> &request)
 {
     // This should not be called normally
-    if (request->GetClientError() != NetworkClientErrorCode::ERROR_OK || request->GetServerError() != 0) {
+    if (request->GetClientError() != NetworkClientErrorCode::ERROR_OK
+        || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
 }
@@ -387,12 +415,15 @@ M3U8VariantStream::M3U8VariantStream(std::string name, std::string uri, std::sha
 {
 }
 
-M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::string& uri)
+M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::string& uri,
+    const std::map<std::string, std::string>& httpHeader)
 {
     playList_ = playList;
     uri_ = uri;
+    httpHeader_ = httpHeader;
     if (!StrHasPrefix(playList_, "#EXTM3U")) {
         MEDIA_LOG_I("playlist doesn't start with #EXTM3U ");
+        isParseSuccess_ = false;
     }
     if (playList_.find("\n#EXTINF:") != std::string::npos) {
         UpdateMediaPlaylist();
@@ -415,7 +446,10 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
         std::copy(std::begin(iv_), std::end(iv_), std::begin(m3u8->iv_));
         m3u8->keyLen_ = keyLen_;
     }
-    m3u8->Update(playList_, false);
+    m3u8->httpHeader_ = httpHeader_;
+    isParseSuccess_ = m3u8->Update(playList_, false);
+    hasDiscontinuity_ = m3u8->hasDiscontinuity_;
+    segmentOffsets_ = m3u8->segmentOffsets_;
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();
     isSimple_ = true;

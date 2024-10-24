@@ -33,7 +33,9 @@
         "av_codec_support_test",
         "av_codec_support_xcollie",
         "av_codec_support_bitstream_dump",
-        "av_codec_enable_special_codec"
+        "av_codec_enable_special_codec",
+        "av_codec_support_drm",
+        "av_codec_support_video_processing_engine"
       ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",
@@ -67,11 +69,12 @@
           "ffmpeg",
           "lame",
           "libxml2",
-          "video_processing_engine"
-        ],
-        "third_party": [
+          "video_processing_engine",
           "curl",
           "openssl"
+        ],
+        "third_party": [
+          "bounds_checking_function"
         ]
       },
       "build": {
@@ -113,6 +116,9 @@
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
             }
+          },
+          {
+            "name": "//foundation/multimedia/av_codec/services/media_engine/plugins/source/http_source:media_plugin_HttpSource_static"
           },
           {
             "type": "so",

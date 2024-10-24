@@ -40,6 +40,7 @@ protected:
 };
 constexpr uint32_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr uint32_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
+constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 }
 }
 }
