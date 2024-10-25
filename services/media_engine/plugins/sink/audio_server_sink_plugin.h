@@ -126,7 +126,7 @@ private:
         void OnInterrupt(const OHOS::AudioStandard::InterruptEvent &interruptEvent) override;
         void OnStateChange(const OHOS::AudioStandard::RendererState state,
                            const OHOS::AudioStandard::StateChangeCmdType cmdType) override;
-        void OnOutputDeviceChange(const AudioStandard::DeviceInfo &deviceInfo,
+        void OnOutputDeviceChange(const AudioStandard::AudioDeviceDescriptor &deviceInfo,
             const AudioStandard::AudioStreamDeviceChangeReason reason) override;
     private:
         std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
