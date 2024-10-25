@@ -333,7 +333,6 @@ int32_t HdiCodec::HdiCallback::EmptyBufferDone(int64_t appData, const OmxCodecBu
     }
     if (buffer.fd >= 0) {
         close(buffer.fd);
-        buffer.fd = -1;
     }
     return HDF_SUCCESS;
 }
@@ -346,7 +345,6 @@ int32_t HdiCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuf
     }
     if (buffer.fd >= 0) {
         close(buffer.fd);
-        buffer.fd = -1;
     }
     return HDF_SUCCESS;
 }
