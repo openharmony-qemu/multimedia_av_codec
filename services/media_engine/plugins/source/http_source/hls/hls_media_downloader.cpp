@@ -349,12 +349,14 @@ bool HlsMediaDownloader::HandleCache()
         return false;
     }
     isBuffering_ = true;
-    UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
-    callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
-    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
-    MEDIA_LOG_D("HLS CacheData onEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " readOffset: "
-        PUBLIC_LOG_U64 " writeOffset: " PUBLIC_LOG_U64 " writeTsIndex: " PUBLIC_LOG_U32 " bufferSize: "
-        PUBLIC_LOG_ZU, waterLineAbove_, readOffset_, writeOffset_, writeTsIndex_, GetBufferSize());
+    if (isFirstFrameArrived_) {
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
+        callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+        bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+        MEDIA_LOG_I("HLS CacheData onEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " readOffset: "
+            PUBLIC_LOG_U64 " writeOffset: " PUBLIC_LOG_U64 " writeTsIndex: " PUBLIC_LOG_U32 " bufferSize: "
+            PUBLIC_LOG_ZU, waterLineAbove_, readOffset_, writeOffset_, writeTsIndex_, GetBufferSize());
+    }
     return true;
 }
 
@@ -457,7 +459,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
     wantedReadLength_ = static_cast<size_t>(readDataInfo.wantReadLength_);
     size_t waterLine = readDataInfo.wantReadLength_ > 0 ?
         std::max(PLAY_WATER_LINE, static_cast<size_t>(readDataInfo.wantReadLength_)) : 0;
-    if (isFirstFrameArrived_ && GetBufferSize() < waterLine && !CheckBreakCondition()) {
+    if (GetBufferSize() < waterLine && !CheckBreakCondition()) {
         if (HandleCache()) {
             return Status::ERROR_AGAIN;
         }
