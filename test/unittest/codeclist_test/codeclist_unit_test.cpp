@@ -708,3 +708,77 @@ HWTEST_F(CodecListUnitTest, CodecList_AreProfileAndLevelSupported_002, TestSize.
     // case 3, negative param
     EXPECT_FALSE(capability_->AreProfileAndLevelSupported(ERROR_VIDEO_AVC_PROFILE, ERROR_LEVEL));
 }
+
+/**
+ * @tc.name: CodecList_UNSUPPORTED_MIME_001
+ * @tc.desc: CodecList use unsupprted mime
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_UNSUPPORTED_MIME_001, TestSize.Level1)
+{
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(
+        DEFAULT_UNSUPPORTED_MIME, false, ::AVCodecCategory::AVCODEC_NONE);
+    if (capability_ != nullptr) {
+        EXPECT_EQ(capability_->GetName(), "");
+        EXPECT_EQ(capability_->IsHardware(), false);
+        EXPECT_EQ(capability_->IsEncoderBitrateModeSupported(OH_BitrateMode::BITRATE_MODE_CBR), false);
+        EXPECT_EQ(capability_->IsVideoSizeSupported(DEFAULT_WIDTH, DEFAULT_HEIGHT), false);
+        EXPECT_EQ(capability_->AreVideoSizeAndFrameRateSupported(
+            DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FRAMERATE), false);
+        EXPECT_EQ(capability_->AreProfileAndLevelSupported(DEFAULT_VIDEO_AVC_PROFILE, DEFAULT_LEVEL), false);
+        EXPECT_EQ(capability_->GetMaxSupportedInstances(), 0);
+        EXPECT_EQ(capability_->GetVideoWidthAlignment(), 1);
+        EXPECT_EQ(capability_->GetVideoHeightAlignment(), 1);
+        std::vector<int32_t> sampleRates = capability_->GetAudioSupportedSampleRates();
+        EXPECT_EQ(sampleRates.size(), 0);
+        std::vector<int32_t> profiles = capability_->GetSupportedProfiles();
+        EXPECT_EQ(profiles.size(), 0);
+        std::vector<int32_t> pixFormats = capability_->GetVideoSupportedPixelFormats();
+        EXPECT_EQ(pixFormats.size(), 0);
+        std::vector<int32_t> levels = capability_->GetSupportedLevelsForProfile(DEFAULT_VIDEO_AVC_PROFILE);
+        EXPECT_EQ(levels.size(), 0);
+    }
+}
+
+/**
+ * @tc.name: CodecList_UNSUPPORTED_MIME_002
+ * @tc.desc: CodecList use unsupprted mime
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_UNSUPPORTED_MIME_002, TestSize.Level1)
+{
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(
+        DEFAULT_UNSUPPORTED_MIME, false, AVCodecCategory::AVCODEC_SOFTWARE);
+    if (capability_ != nullptr) {
+        Range range = capability_->GetEncoderBitrateRange();
+        EXPECT_EQ(0, range.minVal);
+        EXPECT_EQ(0, range.maxVal);
+        range = capability_->GetEncoderQualityRange();
+        EXPECT_EQ(0, range.minVal);
+        EXPECT_EQ(0, range.maxVal);
+        range = capability_->GetEncoderComplexityRange();
+        EXPECT_EQ(0, range.minVal);
+        EXPECT_EQ(0, range.maxVal);
+        range = capability_->GetAudioChannelsRange();
+        EXPECT_EQ(0, range.minVal);
+        EXPECT_EQ(0, range.maxVal);
+        range = capability_->GetVideoWidthRangeForHeight(DEFAULT_HEIGHT);
+        EXPECT_EQ(0, range.minVal);
+        EXPECT_EQ(0, range.maxVal);
+        range = capability_->GetVideoHeightRangeForWidth(DEFAULT_WIDTH);
+        EXPECT_EQ(0, range.minVal);
+        EXPECT_EQ(0, range.maxVal);
+        range = capability_->GetVideoWidthRange();
+        EXPECT_EQ(0, range.minVal);
+        EXPECT_EQ(0, range.maxVal);
+        range = capability_->GetVideoHeightRange();
+        EXPECT_EQ(0, range.minVal);
+        EXPECT_EQ(0, range.maxVal);
+        range = capability_->GetVideoFrameRateRange();
+        EXPECT_EQ(0, range.minVal);
+        EXPECT_EQ(0, range.maxVal);
+        range = capability_->GetVideoFrameRateRangeForSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        EXPECT_EQ(0, range.minVal);
+        EXPECT_EQ(0, range.maxVal);
+    }
+}

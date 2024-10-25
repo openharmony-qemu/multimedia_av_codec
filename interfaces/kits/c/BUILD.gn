@@ -113,7 +113,6 @@ ohos_shared_library("native_media_avmuxer") {
   ]
 
   public_external_deps = [
-    "drm_framework:native_drm",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
   ]
@@ -139,7 +138,6 @@ ohos_shared_library("native_media_avdemuxer") {
   public_configs = [ ":av_codec_capi_config" ]
 
   public_external_deps = [
-    "drm_framework:native_drm",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
   ]
@@ -167,7 +165,6 @@ ohos_shared_library("native_media_avsource") {
   public_configs = [ ":av_codec_capi_config" ]
 
   public_external_deps = [
-    "drm_framework:native_drm",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
   ]
@@ -198,7 +195,6 @@ ohos_shared_library("native_media_codecbase") {
   public_configs = [ ":av_codec_capi_config" ]
 
   public_external_deps = [
-    "drm_framework:native_drm",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
   ]
@@ -228,7 +224,6 @@ ohos_shared_library("native_media_acodec") {
   public_configs = [ ":av_codec_capi_config" ]
 
   public_external_deps = [
-    "drm_framework:native_drm",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
   ]
@@ -265,7 +260,6 @@ ohos_shared_library("native_media_adec") {
   public_configs = [ ":av_codec_capi_config" ]
 
   public_external_deps = [
-    "drm_framework:native_drm",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
   ]
@@ -294,7 +288,6 @@ ohos_shared_library("native_media_aenc") {
   public_configs = [ ":av_codec_capi_config" ]
 
   public_external_deps = [
-    "drm_framework:native_drm",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
   ]
@@ -323,7 +316,6 @@ ohos_shared_library("native_media_vdec") {
   public_configs = [ ":av_codec_capi_config" ]
 
   public_external_deps = [
-    "drm_framework:native_drm",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
   ]
@@ -360,7 +352,6 @@ ohos_shared_library("native_media_venc") {
   public_configs = [ ":av_codec_capi_config" ]
 
   public_external_deps = [
-    "drm_framework:native_drm",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
   ]
