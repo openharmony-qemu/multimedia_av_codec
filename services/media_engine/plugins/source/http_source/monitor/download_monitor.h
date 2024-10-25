@@ -83,6 +83,9 @@ private:
     int64_t HttpMonitorLoop();
     void OnDownloadStatus(std::shared_ptr<Downloader>& downloader, std::shared_ptr<DownloadRequest>& request);
     bool NeedRetry(const std::shared_ptr<DownloadRequest>& request);
+    void NotifyError(int32_t clientErrorCode, int32_t serverErrorCode);
+    void GetServerMediaServiceErrorCode(int32_t errorCode, int32_t& serverCode);
+    void GetClientMediaServiceErrorCode(int32_t errorCode, int32_t& clientCode);
 
     std::atomic<bool> isClosed_{false};
     std::shared_ptr<MediaDownloader> downloader_;
@@ -93,6 +96,123 @@ private:
     Callback* callback_ {nullptr};
     Mutex taskMutex_ {};
     uint64_t haveReadData_ {0};
+
+        std::set<int32_t> clientNotRetryErrorSet = {
+        6,  // CURLE_COULDNT_RESOLVE_HOST
+        22, // CURLE_HTTP_RETURNED_ERROR
+        26, // CURLE_READ_ERROR
+        34, // CURLE_HTTP_POST_ERROR
+        35, // CURLE_SSL_CONNECT_ERROR
+        52, // CURLE_GOT_NOTHING
+        58, // CURLE_SSL_CERTPROBLM
+        60, // CURLE_SSL_CACERT
+        77, // CURLE_SSL_CACERT_BADFILE
+    };
+
+    std::set<int32_t> serverNotRetryErrorSet = {
+        400, // Bad Request
+        401, // Unauthorized
+        403, // Forbidden
+    };
+
+    std::map<int32_t, MediaServiceErrCode> clientErrorCodeMap_ = {
+        {1, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {2, MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR},
+        {4, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {5, MediaServiceErrCode::MSERR_IO_CANNOT_FIND_HOST},
+        {6, MediaServiceErrCode::MSERR_IO_CANNOT_FIND_HOST},
+        {7, MediaServiceErrCode::MSERR_IO_CANNOT_FIND_HOST},
+        {8, MediaServiceErrCode::MSERR_IO_NETWORK_ABNORMAL},
+        {9, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {10, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {11, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {12, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {13, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {14, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {15, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {16, MediaServiceErrCode::MSERR_IO_NETWORK_ABNORMAL},
+        {17, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {18, MediaServiceErrCode::MSERR_IO_NETWORK_ABNORMAL},
+        {30, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {31, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {35, MediaServiceErrCode::MSERR_IO_SSL_CONNECT_FAIL},
+        {37, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {38, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {39, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {41, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {45, MediaServiceErrCode::MSERR_IO_CONNECTION_TIMEOUT},
+        {47, MediaServiceErrCode::MSERR_IO_CANNOT_FIND_HOST},
+        {53, MediaServiceErrCode::MSERR_IO_SSL_CONNECT_FAIL},
+        {54, MediaServiceErrCode::MSERR_IO_SSL_CONNECT_FAIL},
+        {55, MediaServiceErrCode::MSERR_IO_NETWORK_ABNORMAL},
+        {56, MediaServiceErrCode::MSERR_IO_NETWORK_ABNORMAL},
+        {58, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},
+        {59, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},
+        {60, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},
+        {61, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {64, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {65, MediaServiceErrCode::MSERR_IO_NETWORK_ABNORMAL},
+        {66, MediaServiceErrCode::MSERR_IO_SSL_CONNECT_FAIL},
+        {68, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {69, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {71, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {72, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {74, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {77, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},
+        {78, MediaServiceErrCode::MSERR_IO_RESOURE_NOT_FOUND},
+        {79, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {80, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {82, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},
+        {83, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},
+        {84, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {85, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {86, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {87, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {90, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},
+        {91, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},
+        {95, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {96, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {97, MediaServiceErrCode::MSERR_IO_NETWORK_ABNORMAL},
+        {98, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},
+        {101, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+    };
+
+    std::map<int32_t, MediaServiceErrCode> serverErrorCodeMap_ = {
+        {400, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {401, MediaServiceErrCode::MSERR_IO_NO_PERMISSION},
+        {403, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {404, MediaServiceErrCode::MSERR_IO_RESOURE_NOT_FOUND},
+        {406, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {407, MediaServiceErrCode::MSERR_IO_NO_PERMISSION},
+        {408, MediaServiceErrCode::MSERR_IO_CONNECTION_TIMEOUT},
+        {409, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {410, MediaServiceErrCode::MSERR_IO_RESOURE_NOT_FOUND},
+        {411, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {412, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {413, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {415, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {416, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {417, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {421, MediaServiceErrCode::MSERR_IO_RESOURE_NOT_FOUND},
+        {422, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {424, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {425, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {428, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {429, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {431, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {451, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {500, MediaServiceErrCode::MSERR_IO_RESOURE_NOT_FOUND},
+        {501, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {502, MediaServiceErrCode::MSERR_IO_NETWORK_UNAVAILABLE},
+        {503, MediaServiceErrCode::MSERR_IO_NETWORK_UNAVAILABLE},
+        {504, MediaServiceErrCode::MSERR_IO_CONNECTION_TIMEOUT},
+        {505, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {506, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {507, MediaServiceErrCode::MSERR_IO_RESOURE_NOT_FOUND},
+        {508, MediaServiceErrCode::MSERR_IO_RESOURE_NOT_FOUND},
+        {510, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {511, MediaServiceErrCode::MSERR_IO_SSL_CLIENT_CERT_NEEDED},
+    };
 };
 }
 }
