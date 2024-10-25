@@ -181,6 +181,7 @@ private:
 
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
+    bool isSeekWait_ {false};
 };
 }
 }
