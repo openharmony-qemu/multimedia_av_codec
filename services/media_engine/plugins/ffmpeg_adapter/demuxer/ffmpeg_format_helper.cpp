@@ -155,7 +155,7 @@ std::string SwitchCase(const std::string& str)
             res += std::toupper(c);
         }
     }
-    MEDIA_LOG_D("Parse meta " PUBLIC_LOG_S " failed, try to parse " PUBLIC_LOG_S "", str.c_str(), res.c_str());
+    MEDIA_LOG_D("Parse meta " PUBLIC_LOG_S " failed, try to parse " PUBLIC_LOG_S, str.c_str(), res.c_str());
     return res;
 }
 
@@ -272,7 +272,7 @@ std::string ConvertArrayToString(const int* Array, size_t size)
 
 bool IsPCMStream(AVCodecID codecID)
 {
-    MEDIA_LOG_D("CodecID " PUBLIC_LOG_D32 "[" PUBLIC_LOG_S "].",
+    MEDIA_LOG_D("CodecID " PUBLIC_LOG_D32 "[" PUBLIC_LOG_S "]",
         static_cast<int32_t>(codecID), avcodec_get_name(codecID));
     return StartWith(avcodec_get_name(codecID), "pcm_");
 }
@@ -299,7 +299,7 @@ void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, 
     bool hasTimedMeta = false;
     for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
         if (avFormatContext.streams[i] == nullptr || avFormatContext.streams[i]->codecpar == nullptr) {
-            MEDIA_LOG_I("Track " PUBLIC_LOG_U32 " is invalid.", i);
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " is invalid", i);
             continue;
         }
         if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -343,7 +343,7 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
         format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t>(avFormatContext.start_time));
     } else {
         format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t>(0));
-        MEDIA_LOG_W("Parse container start time failed.");
+        MEDIA_LOG_W("Parse container start time failed");
     }
     ParseLocationInfo(avFormatContext, format);
     for (TagType key: g_supportSourceFormat) {
@@ -353,14 +353,14 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
 
 void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format)
 {
-    MEDIA_LOG_D("Parse location info.");
+    MEDIA_LOG_D("Parse location info");
     AVDictionaryEntry *valPtr = nullptr;
     valPtr = av_dict_get(avFormatContext.metadata, "location", nullptr, AV_DICT_MATCH_CASE);
     if (valPtr == nullptr) {
         valPtr = av_dict_get(avFormatContext.metadata, "LOCATION", nullptr, AV_DICT_MATCH_CASE);
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_D("Parse failed.");
+        MEDIA_LOG_D("Parse failed");
         return;
     }
     MEDIA_LOG_D("Get location string successfully: %{private}s", valPtr->value);
@@ -370,7 +370,7 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
     std::sregex_iterator end;
     // at least contain latitude and longitude
     if (std::distance(numbers, end) < VALID_LOCATION_LEN) {
-        MEDIA_LOG_D("Parse failed due to info format error.");
+        MEDIA_LOG_D("Info format error");
         return;
     }
     format.Set<Tag::MEDIA_LATITUDE>(std::stof(numbers->str()));
@@ -379,26 +379,26 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
 
 void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format)
 {
-    MEDIA_LOG_D("Parse user data info.");
+    MEDIA_LOG_D("Parse user data info");
     AVDictionaryEntry *valPtr = nullptr;
     while ((valPtr = av_dict_get(avFormatContext.metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)))  {
         if (StartWith(valPtr->key, "moov_level_meta_key_")) {
-            MEDIA_LOG_D("ffmpeg key: " PUBLIC_LOG_S, (valPtr->key));
+            MEDIA_LOG_D("Ffmpeg key: " PUBLIC_LOG_S, (valPtr->key));
             if (strlen(valPtr->value) <= VALUE_PREFIX_LEN) {
-                MEDIA_LOG_D("Parse user data info " PUBLIC_LOG_S " failed, value too short.", valPtr->key);
+                MEDIA_LOG_D("Parse user data info " PUBLIC_LOG_S " failed, value too short", valPtr->key);
                 continue;
             }
             if (StartWith(valPtr->value, "00000001")) { // string
-                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: string", (valPtr->key + KEY_PREFIX_LEN));
+                MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: string", (valPtr->key + KEY_PREFIX_LEN));
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
             } else if (StartWith(valPtr->value, "00000017")) { // float
-                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: float", (valPtr->key + KEY_PREFIX_LEN));
+                MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: float", (valPtr->key + KEY_PREFIX_LEN));
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::stof(valPtr->value + VALUE_PREFIX_LEN));
             } else if (StartWith(valPtr->value, "00000043") || StartWith(valPtr->value, "00000015")) { // int
-                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: int", (valPtr->key + KEY_PREFIX_LEN));
+                MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: int", (valPtr->key + KEY_PREFIX_LEN));
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::stoi(valPtr->value + VALUE_PREFIX_LEN));
             } else { // unknow
-                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: unknow", (valPtr->key + KEY_PREFIX_LEN));
+                MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: unknow", (valPtr->key + KEY_PREFIX_LEN));
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
             }
         }
@@ -407,7 +407,7 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
 
 void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, const AVFormatContext& avFormatContext)
 {
-    FALSE_RETURN_MSG(avStream.codecpar != nullptr, "Parse track info failed due to codec par is nullptr.");
+    FALSE_RETURN_MSG(avStream.codecpar != nullptr, "Codecpar is nullptr");
     ParseBaseTrackInfo(avStream, format, avFormatContext);
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         if ((static_cast<uint32_t>(avStream.disposition) & static_cast<uint32_t>(AV_DISPOSITION_ATTACHED_PIC)) ||
@@ -435,15 +435,14 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::AUDIO_RAW));
     } else {
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::INVALID_TYPE));
-        MEDIA_LOG_W("Parse mime type info failed: " PUBLIC_LOG_D32 ".",
-            static_cast<int32_t>(avStream.codecpar->codec_id));
+        MEDIA_LOG_W("Parse mime type failed: " PUBLIC_LOG_D32, static_cast<int32_t>(avStream.codecpar->codec_id));
     }
 
     AVMediaType mediaType = avStream.codecpar->codec_type;
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {
         format.Set<Tag::MEDIA_TYPE>(g_convertFfmpegTrackType[mediaType]);
     } else {
-        MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".", static_cast<int32_t>(mediaType));
+        MEDIA_LOG_W("Parse track type failed: " PUBLIC_LOG_D32, static_cast<int32_t>(mediaType));
     }
 
     if (avStream.start_time != AV_NOPTS_VALUE) {
@@ -453,13 +452,13 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         if (mediaType == AVMEDIA_TYPE_AUDIO) {
             format.SetData(Tag::MEDIA_START_TIME, GetDefaultTrackStartTime(avFormatContext));
         }
-        MEDIA_LOG_W("Parse track start time failed.");
+        MEDIA_LOG_W("Parse track start time failed");
     }
 }
 
 FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatContext)
 {
-    FALSE_RETURN_V_MSG_E(avFormatContext.iformat != nullptr, FileType::UNKNOW, "iformat is nullptr.");
+    FALSE_RETURN_V_MSG_E(avFormatContext.iformat != nullptr, FileType::UNKNOW, "Iformat is nullptr");
     const char *fileName = avFormatContext.iformat->name;
     FileType fileType = FileType::UNKNOW;
     if (StartWith(fileName, "mov,mp4,m4a")) {
@@ -478,7 +477,7 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
             fileType = g_convertFfmpegFileType[fileName];
         }
     }
-    MEDIA_LOG_D("file name [" PUBLIC_LOG_S "] file type [" PUBLIC_LOG_D32 "].",
+    MEDIA_LOG_D("File name [" PUBLIC_LOG_S "] file type [" PUBLIC_LOG_D32 "]",
         fileName, static_cast<int32_t>(fileType));
     return fileType;
 }
@@ -489,7 +488,7 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     if (bitRate > 0) {
         format.Set<Tag::MEDIA_BITRATE>(bitRate);
     } else {
-        MEDIA_LOG_D("Parse bitrate info failed: ." PUBLIC_LOG_D64, bitRate);
+        MEDIA_LOG_D("Parse bitrate failed: " PUBLIC_LOG_D64, bitRate);
     }
 
     if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata != nullptr) {
@@ -497,14 +496,14 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
         extra.assign(avStream.codecpar->extradata, avStream.codecpar->extradata + avStream.codecpar->extradata_size);
         format.Set<Tag::MEDIA_CODEC_CONFIG>(extra);
     } else {
-        MEDIA_LOG_D("Parse codec config info failed.");
+        MEDIA_LOG_D("Parse codec config failed");
     }
     AVDictionaryEntry *valPtr = nullptr;
     valPtr = av_dict_get(avStream.metadata, "language", nullptr, AV_DICT_MATCH_CASE);
     if (valPtr != nullptr) {
         format.SetData(Tag::MEDIA_LANGUAGE, std::string(valPtr->value));
     } else {
-        MEDIA_LOG_D("Parse track language info failed.");
+        MEDIA_LOG_D("Parse track language failed");
     }
 }
 
@@ -524,7 +523,7 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     if (frameRate > 0) {
         format.Set<Tag::VIDEO_FRAME_RATE>(frameRate);
     } else {
-        MEDIA_LOG_D("Parse frame rate info failed: " PUBLIC_LOG_F ".", frameRate);
+        MEDIA_LOG_D("Parse frame rate failed: " PUBLIC_LOG_F, frameRate);
     }
 
     AVDictionaryEntry *valPtr = nullptr;
@@ -533,7 +532,7 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         valPtr = av_dict_get(avStream.metadata, "ROTATE", nullptr, AV_DICT_MATCH_CASE);
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_D("Parse rotate info from meta failed.");
+        MEDIA_LOG_D("Parse rotate info from meta failed");
         ParseRotationFromMatrix(avStream, format);
     } else {
         if (g_pFfRotationMap.count(std::string(valPtr->value)) > 0) {
@@ -615,7 +614,7 @@ void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Me
         MEDIA_LOG_D("Parse orientation info from display matrix failed, set orientation as dafault 0");
     }
     format.Set<Tag::VIDEO_ORIENTATION_TYPE>(orientationType);
-    MEDIA_LOG_D("The type of matrix is: " PUBLIC_LOG_D32, static_cast<int>(orientationType));
+    MEDIA_LOG_D("Type of matrix is: " PUBLIC_LOG_D32, static_cast<int>(orientationType));
 }
 
 void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &format)
@@ -628,7 +627,7 @@ void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &for
         cover.assign(pkt.data, pkt.data + pkt.size);
         format.Set<Tag::MEDIA_COVER>(cover);
     } else {
-        MEDIA_LOG_D("Parse cover info failed: " PUBLIC_LOG_D32 ".", pkt.size);
+        MEDIA_LOG_D("Parse cover failed: " PUBLIC_LOG_D32, pkt.size);
     }
 }
 
@@ -643,18 +642,18 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     if (sampelRate > 0) {
         format.Set<Tag::AUDIO_SAMPLE_RATE>(static_cast<uint32_t>(sampelRate));
     } else {
-        MEDIA_LOG_D("Parse sample rate info failed: " PUBLIC_LOG_D32 ".", sampelRate);
+        MEDIA_LOG_D("Parse sample rate failed: " PUBLIC_LOG_D32, sampelRate);
     }
     if (channels > 0) {
         format.Set<Tag::AUDIO_OUTPUT_CHANNELS>(static_cast<uint32_t>(channels));
         format.Set<Tag::AUDIO_CHANNEL_COUNT>(static_cast<uint32_t>(channels));
     } else {
-        MEDIA_LOG_D("Parse channel count info failed: " PUBLIC_LOG_D32 ".", channels);
+        MEDIA_LOG_D("Parse channel count failed: " PUBLIC_LOG_D32, channels);
     }
     if (frameSize > 0) {
         format.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(static_cast<uint32_t>(frameSize));
     } else {
-        MEDIA_LOG_D("Parse frame rate info failed: " PUBLIC_LOG_D32 ".", frameSize);
+        MEDIA_LOG_D("Parse frame rate failed: " PUBLIC_LOG_D32, frameSize);
     }
     AudioChannelLayout channelLayout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(
         avStream.codecpar->channel_layout, channels);
@@ -683,13 +682,13 @@ void FFmpegFormatHelper::ParseTimedMetaTrackInfo(const AVStream& avStream, Meta 
     AVDictionaryEntry *valPtr = nullptr;
     valPtr = av_dict_get(avStream.metadata, "timed_metadata_key", nullptr, AV_DICT_IGNORE_SUFFIX);
     if (valPtr == nullptr) {
-        MEDIA_LOG_W("get timed metadata key failed.");
+        MEDIA_LOG_W("Get timed metadata key failed");
     } else {
         format.Set<Tag::TIMED_METADATA_KEY>(std::string(valPtr->value));
     }
     valPtr = av_dict_get(avStream.metadata, "src_track_id", nullptr, AV_DICT_MATCH_CASE);
     if (valPtr == nullptr) {
-        MEDIA_LOG_W("get src track id failed.");
+        MEDIA_LOG_W("Get src track id failed");
     } else {
         format.Set<Tag::TIMED_METADATA_SRC_TRACK>(std::stoi(valPtr->value));
     }
@@ -702,14 +701,14 @@ void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format
         format.Set<Tag::VIDEO_H265_PROFILE>(profile);
         format.Set<Tag::MEDIA_PROFILE>(profile);
     } else {
-        MEDIA_LOG_D("Parse hevc profile info failed: " PUBLIC_LOG_D32 ".", profile);
+        MEDIA_LOG_D("Parse hevc profile failed: " PUBLIC_LOG_D32, profile);
     }
     HEVCLevel level = FFMpegConverter::ConvertFFMpegToOHHEVCLevel(avStream.codecpar->level);
     if (level != HEVCLevel::HEVC_LEVEL_UNKNOW) {
         format.Set<Tag::VIDEO_H265_LEVEL>(level);
         format.Set<Tag::MEDIA_LEVEL>(level);
     } else {
-        MEDIA_LOG_D("Parse hevc level info failed: " PUBLIC_LOG_D32 ".", level);
+        MEDIA_LOG_D("Parse hevc level failed: " PUBLIC_LOG_D32, level);
     }
 }
 
@@ -760,14 +759,14 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
         format.Set<Tag::VIDEO_H265_PROFILE>(profile);
         format.Set<Tag::MEDIA_PROFILE>(profile);
     } else {
-        MEDIA_LOG_D("Parse hevc profile info failed: " PUBLIC_LOG_D32 ".", profile);
+        MEDIA_LOG_D("Parse hevc profile failed: " PUBLIC_LOG_D32, profile);
     }
     HEVCLevel level = FFMpegConverter::ConvertFFMpegToOHHEVCLevel(static_cast<int>(parse.level));
     if (level != HEVCLevel::HEVC_LEVEL_UNKNOW) {
         format.Set<Tag::VIDEO_H265_LEVEL>(level);
         format.Set<Tag::MEDIA_LEVEL>(level);
     } else {
-        MEDIA_LOG_D("Parse hevc level info failed: " PUBLIC_LOG_D32 ".", level);
+        MEDIA_LOG_D("Parse hevc level failed: " PUBLIC_LOG_D32, level);
     }
     auto FileType = GetFileTypeByName(avFormatContext);
     if (FileType == FileType::MPEGTS ||
@@ -779,7 +778,7 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
 
 void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, const TagType key, Meta &format)
 {
-    MEDIA_LOG_D("Parse " PUBLIC_LOG_S " info.", key.c_str());
+    MEDIA_LOG_D("Parse " PUBLIC_LOG_S, key.c_str());
     AVDictionaryEntry *valPtr = nullptr;
     bool parseFromMoov = false;
     valPtr = av_dict_get(metadata, g_formatToString[key].c_str(), nullptr, AV_DICT_MATCH_CASE);
@@ -792,7 +791,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         parseFromMoov = true;
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_D("Parse failed.");
+        MEDIA_LOG_D("Parse failed");
         return;
     }
     if (parseFromMoov) {

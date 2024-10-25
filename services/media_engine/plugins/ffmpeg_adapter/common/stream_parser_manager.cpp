@@ -66,7 +66,7 @@ bool StreamParserManager::Init(StreamType streamType)
         handlerMap_[streamType] = LoadPluginFile(streamParserPath);
     }
     if (!CheckSymbol(handlerMap_[streamType], streamType)) {
-        MEDIA_LOG_E("Load stream parser so fail");
+        MEDIA_LOG_E("Load stream parser failed");
         return false;
     }
     return true;
@@ -74,14 +74,14 @@ bool StreamParserManager::Init(StreamType streamType)
 
 std::shared_ptr<StreamParserManager> StreamParserManager::Create(StreamType streamType)
 {
-    MEDIA_LOG_I("Create stream parser: " PUBLIC_LOG_D32, streamType);
+    MEDIA_LOG_D("Parser " PUBLIC_LOG_D32, streamType);
     std::shared_ptr<StreamParserManager> loader = std::make_shared<StreamParserManager>();
     if (!loader->Init(streamType)) {
         return nullptr;
     }
     loader->streamParser_ = loader->createFuncMap_[streamType]();
     if (!loader->streamParser_) {
-        MEDIA_LOG_E("createFunc_ fail");
+        MEDIA_LOG_E("CreateFunc_ failed");
         return nullptr;
     }
     loader->streamType_ = streamType;
@@ -91,98 +91,98 @@ std::shared_ptr<StreamParserManager> StreamParserManager::Create(StreamType stre
 void StreamParserManager::ParseExtraData(const uint8_t *sample, int32_t size,
     uint8_t **extraDataBuf, int32_t *extraDataSize)
 {
-    FALSE_RETURN_MSG(streamParser_ != nullptr, "stream parser is null!");
+    FALSE_RETURN_MSG(streamParser_ != nullptr, "Stream parser is nullptr");
     streamParser_->ParseExtraData(sample, size, extraDataBuf, extraDataSize);
 }
 
 bool StreamParserManager::IsHdrVivid()
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, false, "stream parser is null!");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, false, "Stream parser is nullptr");
     return streamParser_->IsHdrVivid();
 }
 
 bool StreamParserManager::IsSyncFrame(const uint8_t *sample, int32_t size)
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, false, "stream parser is null!");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, false, "Stream parser is nullptr");
     return streamParser_->IsSyncFrame(sample, size);
 }
 
 bool StreamParserManager::GetColorRange()
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, false, "stream parser is null!");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, false, "Stream parser is nullptr");
     return streamParser_->GetColorRange();
 }
 
 uint8_t StreamParserManager::GetColorPrimaries()
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "stream parser is null!");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "Stream parser is nullptr");
     return streamParser_->GetColorPrimaries();
 }
 
 uint8_t StreamParserManager::GetColorTransfer()
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "stream parser is null!");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "Stream parser is nullptr");
     return streamParser_->GetColorTransfer();
 }
 
 uint8_t StreamParserManager::GetColorMatrixCoeff()
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "stream parser is null!");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "Stream parser is nullptr");
     return streamParser_->GetColorMatrixCoeff();
 }
 
 uint8_t StreamParserManager::GetProfileIdc()
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "stream parser is null!");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "Stream parser is nullptr");
     return streamParser_->GetProfileIdc();
 }
 
 uint8_t StreamParserManager::GetLevelIdc()
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "stream parser is null!");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "Stream parser is nullptr");
     return streamParser_->GetLevelIdc();
 }
 
 uint32_t StreamParserManager::GetChromaLocation()
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "stream parser is null!");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "Stream parser is nullptr");
     return streamParser_->GetChromaLocation();
 }
 
 uint32_t StreamParserManager::GetPicWidInLumaSamples()
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "stream parser is null!");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "Stream parser is nullptr");
     return streamParser_->GetPicWidInLumaSamples();
 }
 
 uint32_t StreamParserManager::GetPicHetInLumaSamples()
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "stream parser is null!");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "Stream parser is nullptr");
     return streamParser_->GetPicHetInLumaSamples();
 }
 
 void StreamParserManager::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize)
 {
-    FALSE_RETURN_MSG(streamParser_ != nullptr, "stream parser is null!");
+    FALSE_RETURN_MSG(streamParser_ != nullptr, "Stream parser is nullptr");
     streamParser_->ConvertExtraDataToAnnexb(extraData, extraDataSize);
 }
 
 void StreamParserManager::ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData,
     size_t sideDataSize, bool isExtradata)
 {
-    FALSE_RETURN_MSG(streamParser_ != nullptr, "stream parser is null!");
+    FALSE_RETURN_MSG(streamParser_ != nullptr, "Stream parser is nullptr");
     streamParser_->ConvertPacketToAnnexb(hvccPacket, hvccPacketSize, sideData, sideDataSize, isExtradata);
 }
 
 void StreamParserManager::ParseAnnexbExtraData(const uint8_t *sample, int32_t size)
 {
-    FALSE_RETURN_MSG(streamParser_ != nullptr, "stream parser is null!");
+    FALSE_RETURN_MSG(streamParser_ != nullptr, "Stream parser is nullptr");
     streamParser_->ParseAnnexbExtraData(sample, size);
 }
 
 void StreamParserManager::ResetXPSSendStatus()
 {
-    FALSE_RETURN_MSG(streamParser_ != nullptr, "stream parser is null!");
+    FALSE_RETURN_MSG(streamParser_ != nullptr, "Stream parser is nullptr");
     streamParser_->ResetXPSSendStatus();
 }
 
@@ -190,7 +190,7 @@ void *StreamParserManager::LoadPluginFile(const std::string &path)
 {
     auto ptr = ::dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (ptr == nullptr) {
-        MEDIA_LOG_E("dlopen failed due to %{public}s", ::dlerror());
+        MEDIA_LOG_E("Dlopen failed due to %{public}s", ::dlerror());
     }
     return ptr;
 }
@@ -205,8 +205,8 @@ bool StreamParserManager::CheckSymbol(void *handler, StreamType streamType)
         createFunc = (CreateFunc)(::dlsym(handler, createFuncName.c_str()));
         destroyFunc = (DestroyFunc)(::dlsym(handler, destroyFuncName.c_str()));
         if (createFunc && destroyFunc) {
-            MEDIA_LOG_D("CheckSymbol:  createFuncName %{public}s", createFuncName.c_str());
-            MEDIA_LOG_D("CheckSymbol:  destroyFuncName %{public}s", destroyFuncName.c_str());
+            MEDIA_LOG_D("CreateFuncName %{public}s", createFuncName.c_str());
+            MEDIA_LOG_D("DestroyFuncName %{public}s", destroyFuncName.c_str());
             createFuncMap_[streamType] = createFunc;
             destroyFuncMap_[streamType] = destroyFunc;
             return true;
