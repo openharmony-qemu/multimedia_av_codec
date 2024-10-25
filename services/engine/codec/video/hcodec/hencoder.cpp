@@ -1166,6 +1166,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     if (inputSurface_ && bufferInfo->avBuffer->meta_->GetData(
         OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, discard) && discard) {
         HLOGI("inBufId = %u, discard by user, pts = %" PRId64, bufferId, bufferInfo->avBuffer->pts_);
+        inputDiscardCnt_++;
         bufferInfo->avBuffer->meta_->Clear();
         ResetSlot(*bufferInfo);
         ReplyErrorCode(msg.id, AVCS_ERR_OK);

@@ -368,6 +368,10 @@ protected:
     std::array<TotalCntAndCost, OWNER_CNT> outputHoldTimeRecord_;
     std::chrono::time_point<std::chrono::steady_clock> firstInTime_;
     std::chrono::time_point<std::chrono::steady_clock> firstOutTime_;
+    uint64_t inputWaitFenceCostUs_ = 0;
+    uint64_t outputWaitFenceCostUs_ = 0;
+    uint64_t inputDiscardCnt_ = 0;
+    uint64_t outputDiscardCnt_ = 0;
 
     // used when buffer circulation stoped
     static constexpr char KEY_LAST_OWNER_CHANGE_TIME[] = "lastOwnerChangeTime";
@@ -382,7 +386,6 @@ protected:
 
     static constexpr char BUFFER_ID[] = "buffer-id";
     static constexpr uint32_t WAIT_FENCE_MS = 1000;
-    static constexpr uint32_t WARN_FENCE_MS = 30;
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
     static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
 

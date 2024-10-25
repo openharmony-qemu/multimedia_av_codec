@@ -62,8 +62,8 @@ private:
     void UpdateFormatFromSurfaceBuffer() override;
     int32_t AllocOutDynamicSurfaceBuf();
     int32_t AllocateOutputBuffersFromSurface();
-    int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
-    __attribute__((no_sanitize("cfi"))) int32_t SubmitAllBuffersOwnedByUs() override;
+    int32_t ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
+    int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
     bool ReadyToStart() override;
 
@@ -78,12 +78,12 @@ private:
     void OnGetBufferFromSurface(const ParamSP& param) override;
     SurfaceBufferItem RequestBuffer();
     std::vector<BufferInfo>::iterator FindBelongTo(sptr<SurfaceBuffer>& buffer);
+    std::vector<BufferInfo>::iterator FindNullSlotIfDynamicMode();
     void SurfaceModeSubmitBuffer();
     void SurfaceModeSubmitBufferFromFreeList();
     bool SurfaceModeSubmitOneItem(SurfaceBufferItem& item);
     void DynamicModeSubmitBuffer() override;
-    void SurfaceDynamicModeSubmitBuffer(std::vector<BufferInfo>::iterator nullSlot);
-    void BufferDynamicModeSubmitBuffer(std::vector<BufferInfo>::iterator nullSlot);
+    void DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator nullSlot);
 
     // switch surface
     void OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface,
