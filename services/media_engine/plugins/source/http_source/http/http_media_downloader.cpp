@@ -264,7 +264,6 @@ bool HttpMediaDownloader::HandleBuffering()
     if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
         return false;
     }
-    UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
 
     size_t fileRemain = 0;
     if (downloadRequest_ != nullptr) {
@@ -275,6 +274,7 @@ bool HttpMediaDownloader::HandleBuffering()
         }
     }
     UpdateWaterLineAbove();
+    UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
 
     {
         AutoLock lk(bufferingEndMutex_);
@@ -351,8 +351,8 @@ bool HttpMediaDownloader::StartBuffering(unsigned int& wantReadLength)
     MEDIA_LOG_I("HTTP CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize "
         PUBLIC_LOG_ZU " readOffset: " PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, waterLineAbove_,
         GetCurrentBufferSize(), readOffset_, writeOffset_);
-    UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
     callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+    UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
     return true;
 }
 
@@ -1145,16 +1145,16 @@ void HttpMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
         return;
     }
     if (infoType == BufferingInfoType::BUFFERING_START) {
-        callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {0}, "buffer percent"}); // 0
         lastCachedSize_ = 0;
+        isBufferingStart_ = true;
         return;
     }
     if (infoType == BufferingInfoType::BUFFERING_END) {
-        callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {100}, "buffer percent"}); // 100
         lastCachedSize_ = 0;
+        isBufferingStart_ = false;
         return;
     }
-    if (infoType != BufferingInfoType::BUFFERING_PERCENT) {
+    if (infoType != BufferingInfoType::BUFFERING_PERCENT || !isBufferingStart_) {
         return;
     }
     int32_t bufferSize = static_cast<int32_t>(GetCurrentBufferSize());

@@ -166,6 +166,7 @@ private:
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
+    std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 
     SteadyClock cachedDurationClock_;
