@@ -27,6 +27,12 @@
 namespace OHOS {
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
+int tarckType = 0;
+int32_t trackCount;
+OH_AVCodecBufferAttr attr;
+bool audioIsEnd = false;
+bool videoIsEnd = false;
+const char *file = "/data/test/media/01_video_audio.mp4";
 static int64_t GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
@@ -39,25 +45,26 @@ static int64_t GetFileSize(const char *fileName)
     return fileSize;
 }
 
-static void SetVarValue(OH_AVCodecBufferAttr attr, const int &tarckType, bool &audioIsEnd, bool &videoIsEnd)
+void resetFlag()
 {
-    if (tarckType == MEDIA_TYPE_AUD && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
-        audioIsEnd = true;
+    audioIsEnd = false;
+    videoIsEnd = false;
+}
+
+static void SetVarValue(OH_AVCodecBufferAttr setAttr, const int &setTarckType, bool &setAudioIsEnd, bool &setVideoIsEnd)
+{
+    if (setTarckType == MEDIA_TYPE_AUD && (setAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
+        setAudioIsEnd = true;
     }
 
-    if (tarckType == MEDIA_TYPE_VID && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
-        videoIsEnd = true;
+    if (setTarckType == MEDIA_TYPE_VID && (setAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
+        setVideoIsEnd = true;
     }
 }
 
 void RunNormalDemuxer()
 {
-    int tarckType = 0;
-    int32_t trackCount;
-    OH_AVCodecBufferAttr attr;
-    bool audioIsEnd = false;
-    bool videoIsEnd = false;
-    const char *file = "/data/test/media/01_video_audio.mp4";
+    resetFlag();
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -108,12 +115,7 @@ void RunNormalDemuxer()
 
 void RunNormalDemuxerApi11()
 {
-    int tarckType = 0;
-    int32_t trackCount;
-    OH_AVCodecBufferAttr attr;
-    bool audioIsEnd = false;
-    bool videoIsEnd = false;
-    const char *file = "/data/test/media/01_video_audio.mp4";
+    resetFlag();
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
