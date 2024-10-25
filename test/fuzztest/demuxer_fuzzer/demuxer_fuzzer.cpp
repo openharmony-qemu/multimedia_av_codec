@@ -27,12 +27,12 @@
 namespace OHOS {
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
-int tarckType = 0;
-int32_t trackCount;
+int track_type = 0;
+int32_t track_count;
 OH_AVCodecBufferAttr attr;
-bool audioIsEnd = false;
-bool videoIsEnd = false;
-const char *file = "/data/test/media/01_video_audio.mp4";
+bool audioIsEnd_ = false;
+bool videoIsEnd_ = false;
+const char *file_ = "/data/test/media/01_video_audio.mp4";
 static int64_t GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
@@ -47,8 +47,8 @@ static int64_t GetFileSize(const char *fileName)
 
 void resetFlag()
 {
-    audioIsEnd = false;
-    videoIsEnd = false;
+    audioIsEnd_ = false;
+    videoIsEnd_ = false;
 }
 
 static void SetVarValue(OH_AVCodecBufferAttr setAttr, const int &setTarckType, bool &setAudioIsEnd, bool &setVideoIsEnd)
@@ -65,8 +65,8 @@ static void SetVarValue(OH_AVCodecBufferAttr setAttr, const int &setTarckType, b
 void RunNormalDemuxer()
 {
     resetFlag();
-    int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
+    int fd = open(file_, O_RDONLY);
+    int64_t size = GetFileSize(file_);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!source) {
         close(fd);
@@ -80,16 +80,16 @@ void RunNormalDemuxer()
         return;
     }
     OH_AVFormat *sourceFormat = OH_AVSource_GetSourceFormat(source);
-    OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount);
-    for (int32_t index = 0; index < trackCount; index++) {
+    OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &track_count);
+    for (int32_t index = 0; index < track_count; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
     OH_AVMemory *memory = OH_AVMemory_Create(g_width * g_height);
-    while (!audioIsEnd || !videoIsEnd) {
-        for (int32_t index = 0; index < trackCount; index++) {
+    while (!audioIsEnd_ || !videoIsEnd_) {
+        for (int32_t index = 0; index < track_count; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
-            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType);
-            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &track_type);
+            if ((audioIsEnd_ && (track_type == MEDIA_TYPE_AUD)) || (videoIsEnd_ && (track_type == MEDIA_TYPE_VID))) {
                 OH_AVFormat_Destroy(trackFormat);
                 trackFormat = nullptr;
                 continue;
@@ -99,7 +99,7 @@ void RunNormalDemuxer()
                 trackFormat = nullptr;
             }
             OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr);
-            SetVarValue(attr, tarckType, audioIsEnd, videoIsEnd);
+            SetVarValue(attr, track_type, audioIsEnd_, videoIsEnd_);
         }
     }
     OH_AVDemuxer_Destroy(demuxer);
@@ -116,8 +116,8 @@ void RunNormalDemuxer()
 void RunNormalDemuxerApi11()
 {
     resetFlag();
-    int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
+    int fd = open(file_, O_RDONLY);
+    int64_t size = GetFileSize(file_);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!source) {
         close(fd);
@@ -131,16 +131,16 @@ void RunNormalDemuxerApi11()
         return;
     }
     OH_AVFormat *sourceFormat = OH_AVSource_GetSourceFormat(source);
-    OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount);
-    for (int32_t index = 0; index < trackCount; index++) {
+    OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &track_count);
+    for (int32_t index = 0; index < track_count; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
     OH_AVBuffer *buffer = OH_AVBuffer_Create(g_width * g_height);
-    while (!audioIsEnd || !videoIsEnd) {
-        for (int32_t index = 0; index < trackCount; index++) {
+    while (!audioIsEnd_ || !videoIsEnd_) {
+        for (int32_t index = 0; index < track_count; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
-            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType);
-            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &track_type);
+            if ((audioIsEnd_ && (track_type == MEDIA_TYPE_AUD)) || (videoIsEnd_ && (track_type == MEDIA_TYPE_VID))) {
                 OH_AVFormat_Destroy(trackFormat);
                 trackFormat = nullptr;
                 continue;
@@ -151,7 +151,7 @@ void RunNormalDemuxerApi11()
             }
             OH_AVDemuxer_ReadSampleBuffer(demuxer, index, buffer);
             OH_AVBuffer_GetBufferAttr(buffer, &attr);
-            SetVarValue(attr, tarckType, audioIsEnd, videoIsEnd);
+            SetVarValue(attr, track_type, audioIsEnd_, videoIsEnd_);
         }
     }
     OH_AVDemuxer_Destroy(demuxer);
