@@ -67,6 +67,8 @@ void RunNormalDemuxer()
     }
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
     if (!demuxer) {
+        OH_AVSource_Destroy(source);
+        source = nullptr;
         close(fd);
         return;
     }
@@ -81,10 +83,13 @@ void RunNormalDemuxer()
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType);
             if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                OH_AVFormat_Destroy(trackFormat);
+                trackFormat = nullptr;
                 continue;
             }
             if (trackFormat) {
                 OH_AVFormat_Destroy(trackFormat);
+                trackFormat = nullptr;
             }
             OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr);
             SetVarValue(attr, tarckType, audioIsEnd, videoIsEnd);
@@ -119,6 +124,8 @@ void RunNormalDemuxerApi11()
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
     if (!demuxer) {
         close(fd);
+        OH_AVSource_Destroy(source);
+        source = nullptr;
         return;
     }
     OH_AVFormat *sourceFormat = OH_AVSource_GetSourceFormat(source);
@@ -132,10 +139,13 @@ void RunNormalDemuxerApi11()
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType);
             if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                OH_AVFormat_Destroy(trackFormat);
+                trackFormat = nullptr;
                 continue;
             }
             if (trackFormat) {
                 OH_AVFormat_Destroy(trackFormat);
+                trackFormat = nullptr;
             }
             OH_AVDemuxer_ReadSampleBuffer(demuxer, index, buffer);
             OH_AVBuffer_GetBufferAttr(buffer, &attr);
