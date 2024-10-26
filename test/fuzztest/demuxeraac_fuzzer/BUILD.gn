@@ -28,7 +28,8 @@ ohos_fuzztest("DemuxerAacFuzzTest") {
     "-Wno-unused-variable",
     "-fno-omit-frame-pointer",
   ]
-  sources = [ "$MEDIA_ROOT_DIR/test/fuzztest/demuxer_fuzzer/demuxer_fuzzer.cpp" ]
+  sources = 
+      [ "$MEDIA_ROOT_DIR/test/fuzztest/demuxer_fuzzer/demuxer_fuzzer.cpp" ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
@@ -45,3 +46,14 @@ ohos_fuzztest("DemuxerAacFuzzTest") {
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
+
+###############################################################################
+group("fuzztest") {
+  testonly = true
+  deps = []
+  deps += [
+    # deps file
+    ":DemuxerAacFuzzTest",
+  ]
+}
+###############################################################################

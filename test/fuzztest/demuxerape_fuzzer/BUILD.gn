@@ -28,7 +28,8 @@ ohos_fuzztest("DemuxerApeFuzzTest") {
     "-Wno-unused-variable",
     "-fno-omit-frame-pointer",
   ]
-  sources = [ "$MEDIA_ROOT_DIR/test/fuzztest/demuxer_fuzzer/demuxer_fuzzer.cpp" ]
+  sources = 
+      [ "$MEDIA_ROOT_DIR/test/fuzztest/demuxer_fuzzer/demuxer_fuzzer.cpp" ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
