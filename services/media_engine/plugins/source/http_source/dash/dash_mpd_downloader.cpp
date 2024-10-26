@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <limits>
 #include <sstream>
+#include <iomanip>
 #include <algorithm>
 #include "plugin/plugin_time.h"
 #include "network/network_typs.h"
@@ -623,7 +624,7 @@ void DashMpdDownloader::ProcessDrmInfos()
             std::stringstream ssConverter;
             std::string uuidString;
             for (uint32_t i = 0; i < uuidSize; i++) {
-                ssConverter << std::hex << static_cast<int32_t>(uuid[i]);
+                ssConverter << std::hex << std::setfill('0') << std::setw(2) << static_cast<int32_t>(uuid[i]); // 2:w
                 uuidString = ssConverter.str();
             }
             drmInfoMap.insert({uuidString, std::vector<uint8_t>(pssh, pssh + psshSize)});
