@@ -45,14 +45,3 @@ ohos_fuzztest("DemuxerAacFuzzTest") {
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
-
-###############################################################################
-group("fuzztest") {
-  testonly = true
-  deps = []
-  deps += [
-    # deps file
-    ":DemuxerAacFuzzTest",
-  ]
-}
-###############################################################################

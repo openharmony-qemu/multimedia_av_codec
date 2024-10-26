@@ -32,7 +32,7 @@ int32_t g_trackCount;
 OH_AVCodecBufferAttr attr;
 bool g_audioEnd = false;
 bool g_videoEnd = false;
-const char *g_filePath = "/data/test/media/01_video_audio.mp4";
+const char *FILE_PATH = "/data/test/media/01_video_audio.mp4";
 static int64_t GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
@@ -65,8 +65,8 @@ static void SetVarValue(OH_AVCodecBufferAttr setAttr, const int &setTarckType, b
 void RunNormalDemuxer()
 {
     ResetFlag();
-    int fd = open(g_filePath, O_RDONLY);
-    int64_t size = GetFileSize(g_filePath);
+    int fd = open(FILE_PATH, O_RDONLY);
+    int64_t size = GetFileSize(FILE_PATH);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!source) {
         close(fd);
@@ -116,8 +116,8 @@ void RunNormalDemuxer()
 void RunNormalDemuxerApi11()
 {
     ResetFlag();
-    int fd = open(g_filePath, O_RDONLY);
-    int64_t size = GetFileSize(g_filePath);
+    int fd = open(FILE_PATH, O_RDONLY);
+    int64_t size = GetFileSize(FILE_PATH);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!source) {
         close(fd);
