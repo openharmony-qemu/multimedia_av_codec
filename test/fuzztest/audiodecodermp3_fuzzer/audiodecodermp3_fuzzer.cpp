@@ -18,7 +18,7 @@
 #include <queue>
 #include <string>
 #include <thread>
-#include "audio_decoder_demo.h"
+#include "audio_decoder_mp3_demo.h"
 #define FUZZ_PROJECT_NAME "audiodecoder_fuzzer"
 
 using namespace std;

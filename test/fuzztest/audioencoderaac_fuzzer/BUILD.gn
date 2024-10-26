@@ -82,7 +82,7 @@ group("fuzztest") {
   deps = []
   deps += [
     # deps file
-    ":AudioencoderFuzzAacTest",
+    ":AudioencoderAacFuzzTest",
   ]
 }
 ###############################################################################

@@ -48,7 +48,7 @@ ohos_fuzztest("AudioDecoderG711FuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "audio_decoder_G711_demo.cpp",
+    "audio_decoder_g711_demo.cpp",
     "audiodecoderg711_fuzzer.cpp",
   ]
 

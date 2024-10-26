@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "audio_decoder_demo.h"
+#include "audio_decoder_vorbis_demo.h"
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
