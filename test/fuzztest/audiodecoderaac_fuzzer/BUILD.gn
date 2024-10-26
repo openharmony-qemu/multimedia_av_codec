@@ -49,7 +49,7 @@ ohos_fuzztest("AudioDecoderAacFuzzTest") {
   ]
   sources = [
     "audio_decoder_aac_demo.cpp",
-    "audiodecoder_aac_fuzzer.cpp",
+    "audiodecoderaac_fuzzer.cpp",
   ]
 
   defines = []
