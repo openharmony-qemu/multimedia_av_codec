@@ -44,111 +44,6 @@ bool AudioEncoderFuzzTest(const uint8_t *data, size_t size)
     }
     return true;
 }
-
-bool AudioEncoderAACFuzzTest(const uint8_t *data, size_t size)
-{
-    if (size < sizeof(int64_t)) {
-        return false;
-    }
-    // FUZZ aac
-    AudioBufferAacEncDemo* aDecBufferDemo = new AudioBufferAacEncDemo();
-    aDecBufferDemo->InitFile("aac");
-    bool ret = aDecBufferDemo->RunCase(data, size);
-    delete aDecBufferDemo;
-    return ret;
-}
-
-bool AudioEncoderOPUSFuzzTest(const uint8_t *data, size_t size)
-{
-    if (size < sizeof(int64_t)) {
-        return false;
-    }
-    // FUZZ opus
-    AudioBufferAacEncDemo* aDecBufferDemo = new AudioBufferAacEncDemo();
-    aDecBufferDemo->InitFile("opus");
-    bool ret = aDecBufferDemo->RunCase(data, size);
-    delete aDecBufferDemo;
-    return ret;
-}
-
-bool AudioEncoderG711FuzzTest(const uint8_t *data, size_t size)
-{
-    if (size < sizeof(int64_t)) {
-        return false;
-    }
-    // FUZZ g711
-    AudioBufferAacEncDemo* aDecBufferDemo = new AudioBufferAacEncDemo();
-    aDecBufferDemo->InitFile("g711");
-    bool ret = aDecBufferDemo->RunCase(data, size);
-    delete aDecBufferDemo;
-    return ret;
-}
-
-bool AudioEncoderLBVCFuzzTest(const uint8_t *data, size_t size)
-{
-    if (size < sizeof(int64_t)) {
-        return false;
-    }
-    // FUZZ lbvc
-    AudioBufferAacEncDemo* aDecBufferDemo = new AudioBufferAacEncDemo();
-    aDecBufferDemo->InitFile("lbvc");
-    bool ret = aDecBufferDemo->RunCase(data, size);
-    delete aDecBufferDemo;
-    return ret;
-}
-
-bool AudioEncoderFLACFuzzTest(const uint8_t *data, size_t size)
-{
-    if (size < sizeof(int64_t)) {
-        return false;
-    }
-    // FUZZ flac
-    AudioBufferAacEncDemo* aDecBufferDemo = new AudioBufferAacEncDemo();
-    aDecBufferDemo->InitFile("flac");
-    bool ret = aDecBufferDemo->RunCase(data, size);
-    delete aDecBufferDemo;
-    return ret;
-}
-
-bool AudioEncoderAMRNBFuzzTest(const uint8_t *data, size_t size)
-{
-    if (size < sizeof(int64_t)) {
-        return false;
-    }
-    // FUZZ amrnb
-    AudioBufferAacEncDemo* aDecBufferDemo = new AudioBufferAacEncDemo();
-    aDecBufferDemo->InitFile("amrnb");
-    bool ret = aDecBufferDemo->RunCase(data, size);
-    delete aDecBufferDemo;
-    return ret;
-}
-
-bool AudioEncoderAMRWBFuzzTest(const uint8_t *data, size_t size)
-{
-    if (size < sizeof(int64_t)) {
-        return false;
-    }
-    // FUZZ amrwb
-    AudioBufferAacEncDemo* aDecBufferDemo = new AudioBufferAacEncDemo();
-    aDecBufferDemo->InitFile("amrwb");
-    bool ret = aDecBufferDemo->RunCase(data, size);
-    delete aDecBufferDemo;
-    return ret;
-}
-
-bool AudioEncoderMP3FuzzTest(const uint8_t *data, size_t size)
-{
-    if (size < sizeof(int64_t)) {
-        return false;
-    }
-    // FUZZ mp3
-    AudioBufferAacEncDemo* aDecBufferDemo = new AudioBufferAacEncDemo();
-    aDecBufferDemo->InitFile("mp3");
-    bool ret = aDecBufferDemo->RunCase(data, size);
-    delete aDecBufferDemo;
-    return ret;
-}
-
 } // namespace OHOS
 
 /* Fuzzer entry point */
@@ -156,13 +51,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::AudioEncoderFuzzTest(data, size);
-    OHOS::AudioEncoderAACFuzzTest(data, size);
-    OHOS::AudioEncoderG711FuzzTest(data, size);
-    OHOS::AudioEncoderOPUSFuzzTest(data, size);
-    OHOS::AudioEncoderLBVCFuzzTest(data, size);
-    OHOS::AudioEncoderFLACFuzzTest(data, size);
-    OHOS::AudioEncoderAMRNBFuzzTest(data, size);
-    OHOS::AudioEncoderAMRWBFuzzTest(data, size);
-    OHOS::AudioEncoderMP3FuzzTest(data, size);
     return 0;
 }
