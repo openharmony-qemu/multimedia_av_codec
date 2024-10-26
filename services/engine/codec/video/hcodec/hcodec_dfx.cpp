@@ -162,9 +162,14 @@ void HCodec::PrintStatistic(bool isInput, std::chrono::time_point<std::chrono::s
         TotalCntAndCost& holdRecord = isInput ? inputHoldTimeRecord_[owner] : outputHoldTimeRecord_[owner];
         aveHoldMs[owner] = (holdRecord.totalCnt == 0) ? -1 : (holdRecord.totalCostUs / US_TO_MS / holdRecord.totalCnt);
     }
-    HLOGI("%s:%.0f; %d/%d/%d/%d, %.0f/%.0f/%.0f/%.0f", (isInput ? " in" : "out"), fps,
+    uint64_t discardCnt = isInput ? inputDiscardCnt_ : outputDiscardCnt_;
+    uint64_t waitFenceCostUs = isInput ? inputWaitFenceCostUs_ : outputWaitFenceCostUs_;
+    HLOGI("%s:%.0f; %d/%d/%d/%d, %.0f/%.0f/%.0f/%.0f, fence %.3f, discard %.0f%%",
+        (isInput ? " in" : "out"), fps,
         arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE],
-        aveHoldMs[OWNED_BY_US], aveHoldMs[OWNED_BY_USER], aveHoldMs[OWNED_BY_OMX], aveHoldMs[OWNED_BY_SURFACE]);
+        aveHoldMs[OWNED_BY_US], aveHoldMs[OWNED_BY_USER], aveHoldMs[OWNED_BY_OMX], aveHoldMs[OWNED_BY_SURFACE],
+        waitFenceCostUs / US_TO_MS / PRINT_PER_FRAME,
+        static_cast<double>(discardCnt) / PRINT_PER_FRAME * 100); // 100: percent
 }
 
 void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
@@ -206,6 +211,8 @@ void HCodec::ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner)
             PrintStatistic(info.isInput, now);
             firstInTime_ = now;
             inputHoldTimeRecord_.fill({0, 0});
+            inputWaitFenceCostUs_ = 0;
+            inputDiscardCnt_ = 0;
         }
     }
     if (!info.isInput && oldOwner == OWNED_BY_OMX && newOwner == OWNED_BY_US) {
@@ -217,6 +224,8 @@ void HCodec::ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner)
             PrintStatistic(info.isInput, now);
             firstOutTime_ = now;
             outputHoldTimeRecord_.fill({0, 0});
+            outputWaitFenceCostUs_ = 0;
+            outputDiscardCnt_ = 0;
         }
     }
 }
