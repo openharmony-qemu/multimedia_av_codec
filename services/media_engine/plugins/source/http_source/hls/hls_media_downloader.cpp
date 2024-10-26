@@ -361,15 +361,14 @@ bool HlsMediaDownloader::HandleCache()
         return false;
     }
     isBuffering_ = true;
-    if (!isFirstFrameArrived_) {
-        return true;
+    if (isFirstFrameArrived_) {
+        callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
+        bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+        MEDIA_LOG_I("HLS CacheData onEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " readOffset: "
+            PUBLIC_LOG_U64 " writeOffset: " PUBLIC_LOG_U64 " writeTsIndex: " PUBLIC_LOG_U32 " bufferSize: "
+            PUBLIC_LOG_ZU, waterLineAbove_, readOffset_, writeOffset_, writeTsIndex_, GetBufferSize());
     }
-    callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
-    UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
-    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
-    MEDIA_LOG_D("HLS CacheData onEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " readOffset: "
-        PUBLIC_LOG_U64 " writeOffset: " PUBLIC_LOG_U64 " writeTsIndex: " PUBLIC_LOG_U32 " bufferSize: "
-        PUBLIC_LOG_ZU, waterLineAbove_, readOffset_, writeOffset_, writeTsIndex_, GetCrossTsBuffersize());
     return true;
 }
 
