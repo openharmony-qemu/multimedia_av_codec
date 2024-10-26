@@ -349,6 +349,41 @@ HWTEST_F(TestSyncManager, SimpleGetMediaTime_003, TestSize.Level0)
     ASSERT_EQ(result, anchorMediaTime);
 }
 
+// Scenario1: Test when newMediaProgressTime is greater than or equal to lastReportMediaTime_
+HWTEST_F(TestSyncManager, BoundMediaProgress_001, TestSize.Level0)
+{
+    MediaSyncManager mediaSyncManager;
+    mediaSyncManager.lastReportMediaTime_ = 100;
+    int64_t newMediaProgressTime = 200;
+    int64_t result = mediaSyncManager.BoundMediaProgress(newMediaProgressTime);
+    ASSERT_EQ(result, newMediaProgressTime);
+    ASSERT_EQ(mediaSyncManager.lastReportMediaTime_, newMediaProgressTime);
+}
+
+// Scenario2: Test when newMediaProgressTime is less than lastReportMediaTime_ and frameAfterSeeked_ is false
+HWTEST_F(TestSyncManager, BoundMediaProgress_002, TestSize.Level0)
+{
+    MediaSyncManager mediaSyncManager;
+    mediaSyncManager.lastReportMediaTime_ = 200;
+    mediaSyncManager.frameAfterSeeked_ = false;
+    int64_t newMediaProgressTime = 100;
+    int64_t result = mediaSyncManager.BoundMediaProgress(newMediaProgressTime);
+    ASSERT_EQ(result, 200);
+    ASSERT_EQ(mediaSyncManager.lastReportMediaTime_, 200);
+}
+
+// Scenario3: Test when newMediaProgressTime is less than lastReportMediaTime_ and frameAfterSeeked_ is true
+HWTEST_F(TestSyncManager, BoundMediaProgress_003, TestSize.Level0)
+{
+    MediaSyncManager mediaSyncManager;
+    mediaSyncManager.lastReportMediaTime_ = 200;
+    mediaSyncManager.frameAfterSeeked_ = true;
+    int64_t newMediaProgressTime = 100;
+    int64_t result = mediaSyncManager.BoundMediaProgress(newMediaProgressTime);
+    ASSERT_EQ(result, newMediaProgressTime);
+    ASSERT_EQ(mediaSyncManager.lastReportMediaTime_, newMediaProgressTime);
+}
+
 // Scenario1: Test case for when isSeeking_ is true
 HWTEST_F(TestSyncManager, GetMediaTimeNow_001, TestSize.Level0)
 {
@@ -357,10 +392,35 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_001, TestSize.Level0)
     EXPECT_EQ(syncManager_->GetMediaTimeNow(), 100);
 }
 
+// Scenario2: Test case for when clockState_ is PAUSED
+HWTEST_F(TestSyncManager, GetMediaTimeNow_002, TestSize.Level0)
+{
+    syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
+    syncManager_->pausedExactAbsMediaTime_ = 200;
+    EXPECT_EQ(syncManager_->GetMediaTimeNow(), 200);
+}
+
 // Scenario3: Test case for when SimpleGetMediaTimeExactly returns HST_TIME_NONE
 HWTEST_F(TestSyncManager, GetMediaTimeNow_003, TestSize.Level0)
 {
     EXPECT_EQ(syncManager_->GetMediaTimeNow(), 0);
+}
+
+HWTEST_F(TestSyncManager, GetMediaTimeNow_004, TestSize.Level0)
+{
+    syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
+    syncManager_->pausedExactAbsMediaTime_ = 50;
+    syncManager_->firstMediaTimeAfterSeek_ = 100;
+    EXPECT_EQ(syncManager_->GetMediaTimeNow(), 100);
+}
+
+// Scenario5: Test case for when startPts_ is not NONE
+HWTEST_F(TestSyncManager, GetMediaTimeNow_005, TestSize.Level0)
+{
+    syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
+    syncManager_->pausedExactAbsMediaTime_ = 150;
+    syncManager_->startPts_ = 50;
+    EXPECT_EQ(syncManager_->GetMediaTimeNow(), 100);
 }
 
 // Scenario1: Test case for when clockState_ is PAUSED

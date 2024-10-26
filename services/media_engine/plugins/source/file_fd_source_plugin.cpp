@@ -505,7 +505,7 @@ void FileFdSourcePlugin::NotifyBufferingPercent()
         if (isBuffering_ && callback_ != nullptr && !isInterrupted_) {
             MEDIA_LOG_I("NotifyBufferingPercent, ringBuffer.size() " PUBLIC_LOG_ZU ", waterLineAbove_ " PUBLIC_LOG_U64
                 ", PERCENT " PUBLIC_LOG_D32, ringBuffer_->GetSize(), waterLineAbove_, static_cast<int32_t>(bp));
-            callback_->OnEvent({PluginEventType::BUFFERING_PERCENT,
+            callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS,
                 {BufferingInfoType::BUFFERING_PERCENT}, std::to_string(bp)});
         } else {
             MEDIA_LOG_E("EVENT_BUFFER_PROGRESS callback_ is nullptr or isInterrupted_ \
