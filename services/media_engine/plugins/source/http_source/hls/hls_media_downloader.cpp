@@ -324,7 +324,8 @@ bool HlsMediaDownloader::HandleBuffering()
                 isBuffering_ = false;
             }
         }
-        if (GetCrossTsBuffersize() >= waterLineAbove_ || CheckBreakCondition()) {
+        if (GetCrossTsBuffersize() >= waterLineAbove_ || CheckBreakCondition() ||
+            tsStorageInfo_[readTsIndex_ + 1].second) {
             MEDIA_LOG_I("HLS CheckBreakCondition true, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_ZU,
                 waterLineAbove_, GetCrossTsBuffersize());
             isBuffering_ = false;
@@ -357,7 +358,13 @@ bool HlsMediaDownloader::HandleCache()
         waterLineAbove_ = waterLine;
     }
     bool isAboveLine = GetCrossTsBuffersize() >= waterLine;
-    if (isBuffering_ || callback_ == nullptr || !canWrite_ || isAboveLine) {
+    bool isNextTsReady = true;
+    if (backPlayList_.size() > 0 && readTsIndex_ >= backPlayList_.size() - 1) {
+        isNextTsReady = tsStorageInfo_[readTsIndex_].second;
+    } else {
+        isNextTsReady = tsStorageInfo_[readTsIndex_ + 1].second;
+    }
+    if (isBuffering_ || callback_ == nullptr || !canWrite_ || isAboveLine || isNextTsReady) {
         return false;
     }
     isBuffering_ = true;
