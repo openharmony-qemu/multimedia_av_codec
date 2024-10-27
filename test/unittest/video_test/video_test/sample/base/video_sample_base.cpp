@@ -24,6 +24,7 @@ namespace {
 using namespace std::string_literals;
 using namespace std::chrono_literals;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoSampleBase"};
+constexpr int8_t YUV420_SAMPLE_RATIO = 2;
 }
 
 namespace OHOS {
@@ -141,10 +142,13 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
     } else {
         switch (info.pixelFormat) {
+            case AV_PIXEL_FORMAT_YUVI420:
+                WriteOutputFileWithStrideYUV420P(bufferAddr);
+                break;
             case AV_PIXEL_FORMAT_NV12:
                 [[fallthrough]];
             case AV_PIXEL_FORMAT_NV21:
-                WriteOutputFileWithStrideYUV420(bufferAddr);
+                WriteOutputFileWithStrideYUV420SP(bufferAddr);
                 break;
             case AV_PIXEL_FORMAT_RGBA:
                 WriteOutputFileWithStrideRGBA(bufferAddr);
@@ -156,26 +160,56 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
     }
 }
 
-void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr)
+void VideoSampleBase::WriteOutputFileWithStrideYUV420P(uint8_t *bufferAddr)
 {
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     auto &info = *context_->sampleInfo;
-    constexpr int8_t yuvSampleRatio = 2;
     int32_t videoWidth = info.videoWidth *
         ((info.codecMime == OH_AVCODEC_MIMETYPE_VIDEO_HEVC && info.profile == HEVC_PROFILE_MAIN_10) ? 2 : 1);
-    int32_t &videoStrideWidth = info.videoStrideWidth;
+    int32_t &stride = info.videoStrideWidth;
+    int32_t uvWidth = videoWidth / YUV420_SAMPLE_RATIO;
+    int32_t uvStride = stride / YUV420_SAMPLE_RATIO;
 
     // copy Y
     for (int32_t row = 0; row < info.videoHeight; row++) {
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), videoWidth);
-        bufferAddr += videoStrideWidth;
+        bufferAddr += stride;
     }
-    bufferAddr += (info.videoSliceHeight - info.videoHeight) * videoStrideWidth;
+    bufferAddr += (info.videoSliceHeight - info.videoHeight) * stride;
+
+    // copy U
+    for (int32_t row = 0; row < (info.videoHeight / YUV420_SAMPLE_RATIO); row++) {
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), uvWidth);
+        bufferAddr += uvStride;
+    }
+    bufferAddr += (info.videoSliceHeight - info.videoHeight) / YUV420_SAMPLE_RATIO * uvStride;
+    // copy V
+    for (int32_t row = 0; row < (info.videoHeight / YUV420_SAMPLE_RATIO); row++) {
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), uvWidth);
+        bufferAddr += uvStride;
+    }
+    bufferAddr += (info.videoSliceHeight - info.videoHeight) / YUV420_SAMPLE_RATIO * uvStride;
+}
+
+void VideoSampleBase::WriteOutputFileWithStrideYUV420SP(uint8_t *bufferAddr)
+{
+    CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
+    auto &info = *context_->sampleInfo;
+    int32_t videoWidth = info.videoWidth *
+        ((info.codecMime == OH_AVCODEC_MIMETYPE_VIDEO_HEVC && info.profile == HEVC_PROFILE_MAIN_10) ? 2 : 1);
+    int32_t &stride = info.videoStrideWidth;
+
+    // copy Y
+    for (int32_t row = 0; row < info.videoHeight; row++) {
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), videoWidth);
+        bufferAddr += stride;
+    }
+    bufferAddr += (info.videoSliceHeight - info.videoHeight) * stride;
 
     // copy UV
-    for (int32_t row = 0; row < (info.videoHeight / yuvSampleRatio); row++) {
+    for (int32_t row = 0; row < (info.videoHeight / YUV420_SAMPLE_RATIO); row++) {
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), videoWidth);
-        bufferAddr += videoStrideWidth;
+        bufferAddr += stride;
     }
 }
 
