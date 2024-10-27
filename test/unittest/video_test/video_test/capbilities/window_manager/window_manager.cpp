@@ -86,19 +86,21 @@ std::shared_ptr<WindowWrapper> WindowManager::CreateWindowWrapper(SampleWindowTy
     return windowWrappper;
 }
 
-std::shared_ptr<WindowWrapper> WindowManager::GetWindowWrapper()
+std::shared_ptr<WindowWrapper> WindowManager::GetWindowWrapper(WindowId id)
 {
+    CHECK_AND_RETURN_RET_LOG(map_.find(id) != map_.end(), nullptr, "Unexpected window id: %{public}d", id);
     return std::shared_ptr<WindowWrapper>();
 }
 
-int32_t WindowManager::DestroyWindowWrapper(WindowId id)
+void WindowManager::DestroyWindowWrapper(WindowId id)
 {
-    return 0;
+    CHECK_AND_RETURN_LOG(map_.find(id) != map_.end(), "Unexpected window id: %{public}d", id);
+    map_.erase(id);
 }
 
-int32_t WindowManager::DestroyWindowWrapper(std::shared_ptr<WindowWrapper> wrapper)
+void WindowManager::DestroyWindowWrapper(std::shared_ptr<WindowWrapper> wrapper)
 {
-    return DestroyWindowWrapper(wrapper->GetWindowId());
+    DestroyWindowWrapper(wrapper->GetWindowId());
 }
 } // Sample
 } // MediaAVCodec

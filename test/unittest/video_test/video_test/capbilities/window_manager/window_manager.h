@@ -29,9 +29,9 @@ public:
     std::shared_ptr<WindowWrapper> CreateWindowWrapper(SampleWindowType windowType);
     std::shared_ptr<WindowWrapper> CreateWindowWrapper(
         SampleWindowType windowType, std::shared_ptr<OHNativeWindow> window);
-    std::shared_ptr<WindowWrapper> GetWindowWrapper();
-    int32_t DestroyWindowWrapper(WindowId id);
-    int32_t DestroyWindowWrapper(std::shared_ptr<WindowWrapper> wrapper);
+    std::shared_ptr<WindowWrapper> GetWindowWrapper(WindowId id);
+    void DestroyWindowWrapper(WindowId id);
+    void DestroyWindowWrapper(std::shared_ptr<WindowWrapper> wrapper);
 
 private:
     std::unordered_map<WindowId, std::shared_ptr<WindowWrapper>> map_;
