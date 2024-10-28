@@ -1690,7 +1690,7 @@ int GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& plug
     getData = bufferInfo->GetMemory()->GetSize();
     FALSE_RETURN_V_MSG_E(getData > 0, 0, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
     if (getFileSize == Status::OK && getData > ID3V2_HEADER_SIZE && IsStartWithID3(buff.data(), "ID3")) {
-        int id3Len = GetID3TagLen(buff.data());
+        int32_t id3Len = GetID3TagLen(buff.data());
         // id3 tag length is out of file, or file just contains id3 tag, no valid data.
         FALSE_RETURN_V_MSG_E(id3Len >= 0 && static_cast<uint64_t>(id3Len) < fileSize, 0,
             "File data error for " PUBLIC_LOG_S, pluginName.c_str());
