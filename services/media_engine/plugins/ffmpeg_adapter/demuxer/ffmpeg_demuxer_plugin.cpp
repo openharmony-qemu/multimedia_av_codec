@@ -1666,7 +1666,7 @@ int GetID3TagLen(const uint8_t *buf)
     return len;
 }
 
-int GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& pluginName,
+int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& pluginName,
     std::shared_ptr<DataSource> dataSource, size_t &getData)
 {
     size_t bufferSize = DEFAULT_SNIFF_SIZE;
@@ -1678,7 +1678,7 @@ int GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& plug
     std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE); // fix ffmpeg probe crash, refer to tools/probetest.c
     auto bufferInfo = std::make_shared<Buffer>();
     auto bufData = bufferInfo->WrapMemory(buff.data(), bufferSize, bufferSize);
-    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, 0,
+    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, -1,
         "Alloc buffer failed for " PUBLIC_LOG_S, pluginName.c_str());
     Status ret = Status::OK;
     {
@@ -1686,23 +1686,23 @@ int GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& plug
         MediaAVCodec::AVCodecTrace trace(traceName.c_str());
         ret = dataSource->ReadAt(0, bufferInfo, bufferSize);
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, 0, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
     getData = bufferInfo->GetMemory()->GetSize();
-    FALSE_RETURN_V_MSG_E(getData > 0, 0, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
+    FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
     if (getFileSize == Status::OK && getData > ID3V2_HEADER_SIZE && IsStartWithID3(buff.data(), "ID3")) {
         int32_t id3Len = GetID3TagLen(buff.data());
         // id3 tag length is out of file, or file just contains id3 tag, no valid data.
-        FALSE_RETURN_V_MSG_E(id3Len >= 0 && static_cast<uint64_t>(id3Len) < fileSize, 0,
+        FALSE_RETURN_V_MSG_E(id3Len >= 0 && static_cast<uint64_t>(id3Len) < fileSize, -1,
             "File data error for " PUBLIC_LOG_S, pluginName.c_str());
         if (id3Len > 0) {
             uint64_t remainSize = fileSize - static_cast<uint64_t>(id3Len);
             bufferSize = (bufferSize < remainSize) ? bufferSize : remainSize;
             int resetRet = memset_s(buff.data(), bufferSize, 0, bufferSize);
-            FALSE_RETURN_V_MSG_E(resetRet == EOK, 0, "Reset buff failed for " PUBLIC_LOG_S, pluginName.c_str());
+            FALSE_RETURN_V_MSG_E(resetRet == EOK, -1, "Reset buff failed for " PUBLIC_LOG_S, pluginName.c_str());
             ret = dataSource->ReadAt(id3Len, bufferInfo, bufferSize);
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, 0, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
             getData = bufferInfo->GetMemory()->GetSize();
-            FALSE_RETURN_V_MSG_E(getData > 0, 0, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
+            FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
         }
     }
     AVProbeData probeData{"", buff.data(), getData, ""};
@@ -1722,6 +1722,9 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
         "Get plugin for " PUBLIC_LOG_S " failed", pluginName.c_str());
     size_t getData = 0;
     int confidence = GetConfidence(plugin, pluginName, dataSource, getData);
+    if (confidence < 0) {
+        return 0;
+    }
     if (StartWith(plugin->name, "mp3") && confidence > 0 && confidence <= MP3_PROBE_SCORE_LIMIT) {
         MEDIA_LOG_W("Score " PUBLIC_LOG_D32 " is too low", confidence);
         confidence = 0;
