@@ -59,6 +59,25 @@ const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 const int32_t INIT_TIME_THRESHOLD = 1000;
 const uint32_t ID3V2_HEADER_SIZE = 10;
+
+// id3v2 tag position
+const int32_t POS_0 = 0;
+const int32_t POS_1 = 1;
+const int32_t POS_2 = 2;
+const int32_t POS_3 = 3;
+const int32_t POS_4 = 4;
+const int32_t POS_5 = 4;
+const int32_t POS_6 = 6;
+const int32_t POS_7 = 7;
+const int32_t POS_8 = 8;
+const int32_t POS_9 = 9;
+const int32_t POS_14 = 14;
+const int32_t POS_21 = 21;
+const int32_t POS_FF = 0xff;
+const int32_t LEN_MASK = 0x7f;
+const int32_t TAG_MASK = 0x80;
+const int32_t TAG_VERSION_MASK = 0x10;
+
 namespace {
 std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 std::mutex g_mtx;
@@ -1653,15 +1672,23 @@ namespace { // plugin set
 
 int IsStartWithID3(const uint8_t *buf, const char *tagName)
 {
-    return buf[0] == tagName[0] && buf[1] == tagName[1] && buf[2] == tagName[2] && buf[3] != 0xff && buf[4] != 0xff &&
-           (buf[6] & 0x80) == 0 && (buf[7] & 0x80) == 0 && (buf[8] & 0x80) == 0 && (buf[9] & 0x80) == 0;
+    return buf[POS_0] == tagName[POS_0] &&
+           buf[POS_1] == tagName[POS_1] &&
+           buf[POS_2] == tagName[POS_2] &&
+           buf[POS_3] != POS_FF &&
+           buf[POS_4] != POS_FF &&
+           (buf[POS_6] & TAG_MASK) == 0 &&
+           (buf[POS_7] & TAG_MASK) == 0 &&
+           (buf[POS_8] & TAG_MASK) == 0 &&
+           (buf[POS_9] & TAG_MASK) == 0;
 }
 
 int GetID3TagLen(const uint8_t *buf)
 {
-    int32_t len = ((buf[6] & 0x7f) << 21) + ((buf[7] & 0x7f) << 14) + ((buf[8] & 0x7f) << 7) + (buf[9] & 0x7f) +
+    int32_t len = ((buf[POS_6] & LEN_MASK) << POS_21) + ((buf[POS_7] & LEN_MASK) << POS_14) +
+                  ((buf[POS_8] & LEN_MASK) << POS_7) + (buf[POS_9] & LEN_MASK) +
                   static_cast<int32_t>(ID3V2_HEADER_SIZE);
-    if (buf[5] & 0x10)
+    if (buf[POS_5] & TAG_VERSION_MASK)
         len += static_cast<int32_t>(ID3V2_HEADER_SIZE);
     return len;
 }
