@@ -93,7 +93,7 @@ void RunNormalDemuxer()
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
     OH_AVMemory *memory = OH_AVMemory_Create(g_width * g_height);
-    while (!g_audioEnd || !g_videoEnd) {
+    while (!g_audioEnd && !g_videoEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &g_trackType);
@@ -144,7 +144,7 @@ void RunNormalDemuxerApi11()
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
     OH_AVBuffer *buffer = OH_AVBuffer_Create(g_width * g_height);
-    while (!g_audioEnd || !g_videoEnd) {
+    while (!g_audioEnd && !g_videoEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &g_trackType);
