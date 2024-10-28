@@ -32,7 +32,9 @@ int32_t g_trackCount;
 OH_AVCodecBufferAttr attr;
 bool g_audioEnd = false;
 bool g_videoEnd = false;
-const char *FILE_PATH = "/data/test/media/01_video_audio.mp4";
+const char *FILE_PATH = "/data/test/fuzz_create.mp4";
+int32_t maxReadCount = 30;
+int32_t readCount = 0;
 static int64_t GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
@@ -49,10 +51,15 @@ void ResetFlag()
 {
     g_audioEnd = false;
     g_videoEnd = false;
+    readCount = 0;
 }
 
 static void SetVarValue(OH_AVCodecBufferAttr setAttr, const int &setTarckType, bool &setAudioIsEnd, bool &setVideoIsEnd)
 {
+    if (readCount >= maxReadCount) {
+        setAudioIsEnd = true;
+        setVideoIsEnd = true;
+    }
     if (setTarckType == MEDIA_TYPE_AUD && (setAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
         setAudioIsEnd = true;
     }
@@ -60,6 +67,7 @@ static void SetVarValue(OH_AVCodecBufferAttr setAttr, const int &setTarckType, b
     if (setTarckType == MEDIA_TYPE_VID && (setAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
         setVideoIsEnd = true;
     }
+    readCount ++;
 }
 
 void RunNormalDemuxer()
@@ -170,16 +178,17 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
+    int32_t fd = open(FILE_PATH, O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd < 0) {
+        return false;
+    }
+    int len = write(fd, data, size);
+    if (len < 0) {
+        return false;
+    }
+    close(fd);
     RunNormalDemuxer();
     RunNormalDemuxerApi11();
-    // FUZZ CreateFD
-    int32_t fd = *reinterpret_cast<const int32_t *>(data);
-    int64_t offset = *reinterpret_cast<const int64_t *>(data);
-    int64_t fileSize = *reinterpret_cast<const int64_t *>(data);
-    OH_AVSource *source = OH_AVSource_CreateWithFD(fd, offset, fileSize);
-    if (source) {
-        OH_AVSource_Destroy(source);
-    }
     return true;
 }
 } // namespace OHOS

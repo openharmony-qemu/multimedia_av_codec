@@ -57,7 +57,8 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     bool result = false;
     int32_t data2 = *reinterpret_cast<const int32_t *>(data);
     VEncAPI11FuzzSample *vEncSample = new VEncAPI11FuzzSample();
-
+    vEncSample->fuzzData = data;
+    vEncSample->fuzzSize = size;
     vEncSample->CreateVideoEncoder();
     vEncSample->SetVideoEncoderCallback();
     vEncSample->fuzzMode = true;
@@ -68,6 +69,8 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     delete vEncSample;
 
     vEncSample = new VEncAPI11FuzzSample();
+    vEncSample->fuzzData = data;
+    vEncSample->fuzzSize = size;
     vEncSample->CreateVideoEncoder();
     vEncSample->SetVideoEncoderCallback();
     vEncSample->surfInput = true;
