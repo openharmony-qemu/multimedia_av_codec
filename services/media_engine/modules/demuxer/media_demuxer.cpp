@@ -1776,7 +1776,6 @@ bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
         if (result) {
             targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
             streamDemuxer_->SetChangeFlag(true);
-            isSelectTrack_.store(false);
             return true;
         }
     }
@@ -1808,6 +1807,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         "Get size failed for track " PUBLIC_LOG_U32 ", retry", trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, ret, "Get size failed for track " PUBLIC_LOG_U32, trackId);
     if (HandleDashChangeStream(trackId)) {
+        MEDIA_LOG_I("HandleDashChangeStream success");
         return Status::OK;
     }
     SetTrackNotifyFlag(trackId, true);
