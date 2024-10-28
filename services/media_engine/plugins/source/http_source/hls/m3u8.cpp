@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <utility>
 #include <sstream>
+#include <iomanip>
 #include "m3u8.h"
 #include "base64_utils.h"
 
@@ -356,7 +357,7 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
             std::stringstream ssConverter;
             std::string uuidString;
             for (uint32_t i = 0; i < uuidSize; i++) {
-                ssConverter << std::hex << static_cast<int32_t>(uuid[i]);
+                ssConverter << std::hex << std::setfill('0') << std::setw(2) << static_cast<int32_t>(uuid[i]); // 2:w
                 uuidString = ssConverter.str();
             }
             drmInfo.insert({ uuidString, std::vector<uint8_t>(pssh, pssh + psshSize) });

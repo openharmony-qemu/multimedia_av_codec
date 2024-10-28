@@ -20,6 +20,7 @@
 #include <malloc.h>
 #include <string>
 #include <sstream>
+#include <iomanip>
 #include <map>
 #include <fstream>
 #include <chrono>
@@ -1065,16 +1066,17 @@ Status FFmpegDemuxerPlugin::GetUserMeta(std::shared_ptr<Meta> meta)
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
+void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
     std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
     MEDIA_LOG_D("In");
-    uint32_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
-    for (uint32_t index = 0; index < infoCount; index++) {
+    size_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
+    for (size_t index = 0; index < infoCount; index++) {
         std::stringstream ssConverter;
         std::string uuid;
         for (uint32_t i = 0; i < metaDrmInfo[index].uuidLen; i++) {
-            ssConverter << std::hex << static_cast<int32_t>(metaDrmInfo[index].uuid[i]);
+            int32_t singleUuid = static_cast<int32_t>(metaDrmInfo[index].uuid[i]);
+            ssConverter << std::hex << std::setfill('0') << std::setw(2) << singleUuid; // 2:w
             uuid = ssConverter.str();
         }
         drmInfo.insert({ uuid, std::vector<uint8_t>(metaDrmInfo[index].pssh,

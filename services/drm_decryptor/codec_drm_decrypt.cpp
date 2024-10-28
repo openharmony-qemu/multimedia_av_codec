@@ -464,11 +464,11 @@ int CodecDrmDecrypt::DrmGetKeyIv(const uint8_t *data, uint32_t dataSize, uint32_
     CHECK_AND_RETURN_RET_LOG((offset < dataSize), -1, "cei data too short");
     uint32_t ivLen = data[offset];
     offset += 1; // 1 skip iv len
-    if (offset + ivLen > dataSize) {
+    if ((offset + ivLen > dataSize) || (ivLen > META_DRM_IV_SIZE)) {
         AVCODEC_LOGE("cei data too short");
         return -1;
     } else {
-        errno_t res = memcpy_s(cencInfo->iv, ivLen, data + offset, ivLen);
+        errno_t res = memcpy_s(cencInfo->iv, META_DRM_IV_SIZE, data + offset, ivLen);
         if (res != EOK) {
             AVCODEC_LOGE("copy iv err");
             return -1;
