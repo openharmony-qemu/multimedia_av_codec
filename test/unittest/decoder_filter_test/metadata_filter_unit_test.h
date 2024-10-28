@@ -18,6 +18,7 @@
 
 #include <cstring>
 #include "gtest/gtest.h"
+#include <gmock/gmock.h>
 
 #include "filter/filter.h"
 #include "surface.h"
@@ -28,6 +29,7 @@
 #include "buffer/avbuffer_queue_producer.h"
 #include "buffer/avbuffer_queue_consumer.h"
 #include "common/status.h"
+#include "consumer_surface.h"
 
 
 namespace OHOS {
@@ -42,6 +44,9 @@ public:
     void SetUp(void);
 
     void TearDown(void);
+
+protected:
+    std::shared_ptr<Pipeline::MetaDataFilter> metaData_{ nullptr };
 };
 
 class TestEventReceiver : public Pipeline::EventReceiver {
@@ -129,6 +134,78 @@ public:
 
 protected:
     enum: uint32_t {
+        PRODUCER_GET_QUEUE_SIZE = 0,
+        PRODUCER_SET_QUEUE_SIZE = 1,
+        PRODUCER_REQUEST_BUFFER = 2,
+        PRODUCER_PUSH_BUFFER = 3,
+        PRODUCER_RETURN_BUFFER = 4,
+        PRODUCER_ATTACH_BUFFER = 5,
+        PRODUCER_DETACH_BUFFER = 6,
+        PRODUCER_SET_FILLED_LISTENER = 7,
+        PRODUCER_REMOVE_FILLED_LISTENER = 8,
+        PRODUCER_SET_AVAILABLE_LISTENER = 9
+    };
+};
+
+class TestFilter : public Pipeline::Filter {
+public:
+    TestFilter() : Filter("TestFilter", Pipeline::FilterType::FILTERTYPE_SOURCE) {}
+    ~TestFilter() = default;
+    Status OnLinked(Pipeline::StreamType inType,
+                    const std::shared_ptr<Meta> &meta,
+                    const std::shared_ptr<Pipeline::FilterLinkCallback> &callback)
+    {
+        (void)inType;
+        (void)meta;
+        (void)callback;
+        return onLinked_;
+    }
+
+protected:
+    Status onLinked_;
+};
+
+class MockConsumerSurface : public ConsumerSurface {
+public:
+    explicit MockConsumerSurface(const std::string &name, bool isShared = false) : ConsumerSurface(name, isShared) {}
+    static sptr<MockConsumerSurface> CreateSurfaceAsConsumer(std::string name, bool isShared = false);
+    MOCK_METHOD(GSError,
+                AcquireBuffer,
+                (sptr<SurfaceBuffer> & buffer, sptr<SyncFence> &fence, int64_t &timestamp, Rect &damage),
+                (override));
+    MOCK_METHOD(GSError, ReleaseBuffer, (sptr<SurfaceBuffer> & buffer, int32_t fence), (override));
+
+private:
+    std::map<std::string, std::string> userData_;
+    sptr<BufferQueueProducer> producer_ = nullptr;
+    sptr<BufferQueueConsumer> consumer_ = nullptr;
+    std::string name_ = "not init";
+    bool isShared_ = false;
+    std::map<std::string, OnUserDataChangeFunc> onUserDataChange_;
+    std::mutex lockMutex_;
+    uint64_t uniqueId_ = 0;
+};
+
+class MockAVBufferQueueProducer : public IRemoteStub<AVBufferQueueProducer> {
+public:
+    MOCK_METHOD(uint32_t, GetQueueSize, (), (override));
+    MOCK_METHOD(Status, SetQueueSize, (uint32_t size), (override));
+    MOCK_METHOD(Status,
+                RequestBuffer,
+                (std::shared_ptr<AVBuffer> & outBuffer, const AVBufferConfig &config, int32_t timeoutMs),
+                (override));
+    MOCK_METHOD(Status, PushBuffer, (const std::shared_ptr<AVBuffer> &inBuffer, bool available), (override));
+    MOCK_METHOD(Status, ReturnBuffer, (const std::shared_ptr<AVBuffer> &inBuffer, bool available), (override));
+    MOCK_METHOD(Status, AttachBuffer, (std::shared_ptr<AVBuffer> & inBuffer, bool isFilled), (override));
+    MOCK_METHOD(Status, DetachBuffer, (const std::shared_ptr<AVBuffer> &outBuffer), (override));
+    MOCK_METHOD(Status, SetBufferFilledListener, (sptr<IBrokerListener> & listener), (override));
+    MOCK_METHOD(Status, RemoveBufferFilledListener, (sptr<IBrokerListener> & listener), (override));
+    MOCK_METHOD(Status, SetBufferAvailableListener, (sptr<IProducerListener> & listener), (override));
+    MOCK_METHOD(Status, Clear, (), (override));
+    DECLARE_INTERFACE_DESCRIPTOR(u"Media.MyAVBufferQueueProducer");
+
+protected:
+    enum : uint32_t {
         PRODUCER_GET_QUEUE_SIZE = 0,
         PRODUCER_SET_QUEUE_SIZE = 1,
         PRODUCER_REQUEST_BUFFER = 2,
