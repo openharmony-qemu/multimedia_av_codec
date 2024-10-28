@@ -972,7 +972,7 @@ void Downloader::WaitLoopPause()
     MEDIA_LOG_I("Downloader WaitLoopPause task loopStatus_ %{public}d", loopStatus_.load());
     loopStatus_ = LoopStatus::PAUSE;
     loopPauseCond_.Wait(lk, [this]() {
-        return loopStatus_ == LoopStatus::IDLE || isInterruptNeeded_;
+        return loopStatus_ != LoopStatus::PAUSE || isInterruptNeeded_;
     });
 }
 
