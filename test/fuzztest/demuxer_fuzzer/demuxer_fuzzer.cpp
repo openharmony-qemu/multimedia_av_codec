@@ -33,8 +33,8 @@ OH_AVCodecBufferAttr attr;
 bool g_audioEnd = false;
 bool g_videoEnd = false;
 const char *FILE_PATH = "/data/test/fuzz_create.mp4";
-int32_t maxReadCount = 30;
-int32_t readCount = 0;
+int32_t g_maxReadCount = 30;
+int32_t g_readCount = 0;
 static int64_t GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
@@ -51,12 +51,12 @@ void ResetFlag()
 {
     g_audioEnd = false;
     g_videoEnd = false;
-    readCount = 0;
+    g_readCount = 0;
 }
 
 static void SetVarValue(OH_AVCodecBufferAttr setAttr, const int &setTarckType, bool &setAudioIsEnd, bool &setVideoIsEnd)
 {
-    if (readCount >= maxReadCount) {
+    if (g_readCount >= g_maxReadCount) {
         setAudioIsEnd = true;
         setVideoIsEnd = true;
     }
@@ -67,7 +67,7 @@ static void SetVarValue(OH_AVCodecBufferAttr setAttr, const int &setTarckType, b
     if (setTarckType == MEDIA_TYPE_VID && (setAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
         setVideoIsEnd = true;
     }
-    readCount ++;
+    g_readCount++;
 }
 
 void RunNormalDemuxer()
