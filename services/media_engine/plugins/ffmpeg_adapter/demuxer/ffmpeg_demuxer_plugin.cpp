@@ -1688,8 +1688,9 @@ int GetID3TagLen(const uint8_t *buf)
     int32_t len = ((buf[POS_6] & LEN_MASK) << POS_21) + ((buf[POS_7] & LEN_MASK) << POS_14) +
                   ((buf[POS_8] & LEN_MASK) << POS_7) + (buf[POS_9] & LEN_MASK) +
                   static_cast<int32_t>(ID3V2_HEADER_SIZE);
-    if (buf[POS_5] & TAG_VERSION_MASK)
+    if (buf[POS_5] & TAG_VERSION_MASK) {
         len += static_cast<int32_t>(ID3V2_HEADER_SIZE);
+    }
     return len;
 }
 
