@@ -21,14 +21,20 @@ MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 ohos_fuzztest("DemuxerOggFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/demuxerogg_fuzzer"
-  include_dirs = [ "$MEDIA_ROOT_DIR/interfaces/kits/c" ]
+  include_dirs = [
+    "$MEDIA_ROOT_DIR/interfaces/kits/c",
+    "$MEDIA_ROOT_DIR/test/fuzztest/demuxer_fuzzer",
+  ]
   cflags = [
     "-g",
     "-O0",
     "-Wno-unused-variable",
     "-fno-omit-frame-pointer",
   ]
-  sources = [ "demuxerogg_fuzzer.cpp" ]
+  sources = [
+    "demuxerogg_fuzzer.cpp",
+    "$MEDIA_ROOT_DIR/test/fuzztest/demuxer_fuzzer/demuxer_sample.cpp",
+  ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
