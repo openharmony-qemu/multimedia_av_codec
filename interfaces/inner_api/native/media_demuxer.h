@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -85,6 +85,7 @@ public:
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
+
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
     bool IsRenderNextVideoFrameSupported();
@@ -92,20 +93,20 @@ public:
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
     void SetPlayerId(const std::string &playerId);
+    void SetInterruptState(bool isInterruptNeeded);
     void SetDumpInfo(bool isDump, uint64_t instanceId);
 
     Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
     Status SetDecoderFramerateUpperLimit(int32_t decoderFramerateUpperLimit, uint32_t trackId);
     Status SetSpeed(float speed);
-    Status SetFrameRate(double framerate, uint32_t trackId);
-    void SetInterruptState(bool isInterruptNeeded);
-    void OnDumpInfo(int32_t fd);
+    Status SetFrameRate(double frameRate, uint32_t trackId);
+
     bool IsLocalDrmInfosExisted();
     Status DisableMediaTrack(Plugins::MediaType mediaType);
     void OnBufferAvailable(uint32_t trackId);
-
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override;
     bool CanAutoSelectBitRate() override;
+    void OnDumpInfo(int32_t fd);
 
     Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
@@ -121,6 +122,7 @@ public:
         const uint64_t relativePresentationTimeUs, uint32_t &index);
     Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
         const uint32_t index, uint64_t &relativePresentationTimeUs);
+
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
     void SetCacheLimit(uint32_t limitSize);
@@ -128,6 +130,7 @@ public:
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
+
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;
         std::shared_ptr<Meta> globalMeta;
@@ -136,16 +139,14 @@ private:
     struct MaintainBaseInfo {
         int64_t segmentOffset = -1;
         int64_t basePts = -1;
-        int64_t lastPts = -1;
+        int64_t lastPts = 0;
     };
     bool isHttpSource_ = false;
     std::string videoMime_{};
 
-    Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
     void InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId,
         uint32_t& audioTrackId, uint32_t& subtitleTrackId, std::string& videoMime);
-    bool IsOffsetValid(int64_t offset) const;
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
     Status AddDemuxerCopyTask(uint32_t trackId, TaskType type);
 
@@ -181,7 +182,7 @@ private:
     Plugins::Seekable subSeekable_;
     std::string uri_;
     std::string SubtitleUri_;
-    uint64_t mediaDataSize_;
+    uint64_t mediaDataSize_ = 0;
     uint64_t subMediaDataSize_;
 
     std::shared_ptr<MediaSource> mediaSource_;
@@ -203,7 +204,10 @@ private:
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
     void HandleStopPlugin(int32_t trackId);
     void HandleStartPlugin(int32_t trackId);
+    bool DashCheckChangeStream(uint32_t trackId);
+
     bool IsSubtitleMime(const std::string& mime);
+    Status InnerPrepare();
     Status HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status InitPtsInfo();
 
@@ -227,6 +231,7 @@ private:
     int64_t lastSeekTime_{Plugins::HST_TIME_NONE};
     bool isSeeked_{false};
     uint32_t videoTrackId_{TRACK_ID_DUMMY};
+
     uint32_t audioTrackId_{TRACK_ID_DUMMY};
     uint32_t subtitleTrackId_{TRACK_ID_DUMMY};
     bool firstAudio_{true};
@@ -236,19 +241,20 @@ private:
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
     std::shared_ptr<BaseStreamDemuxer> subStreamDemuxer_;
     std::string bundleName_ {};
-    std::string playerId_;
-    bool waitForDataFail_{false};
 
     Mutex firstFrameMutex_{};
     ConditionVariable firstFrameCond_;
     uint64_t firstFrameCount_ = 0;
     bool doPrepareFrame_{false};
+    std::string playerId_;
+    bool waitForDataFail_{false};
+    int64_t duration_ {0};
 
     std::atomic<bool> isDecodeOptimizationEnabled_ {false};
     std::atomic<float> speed_ {1.0f};
     std::atomic<double> framerate_ {0.0};
     std::atomic<int32_t> decoderFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
-
+    std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
     std::string subtitlePluginName_;
     std::shared_ptr<Plugins::DemuxerPlugin> subtitlePlugin_;
     std::shared_ptr<MediaSource> subtitleMediaSource_;
@@ -257,28 +263,27 @@ private:
     std::atomic<bool> isSelectBitRate_ = false;
     uint32_t targetBitRate_ = 0;
     std::string dumpPrefix_ = "";
-    std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
     std::atomic<bool> isOnEventNoMemory_ = false;
+    std::atomic<bool> isSeekError_ = false;
+    std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
     std::mutex draggingMutex_ {};
-    int64_t duration_ {0};
+
+    std::atomic<bool> isDemuxerLoopExecuting_ {false};
+    std::atomic<bool> isFirstFrameAfterSeek_ {false};
 
     uint32_t selectTrackTrackID_ { TRACK_ID_DUMMY };
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;
-    std::atomic<bool> isSeekError_ = false;
     std::atomic<bool> shouldCheckSubtitleFramePts_ = false;
     int64_t lastSubtitlePts_ = 0;
-    std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
-    std::atomic<bool> isDemuxerLoopExecuting_ {false};
     std::atomic<bool> isInterruptNeeded_ {false};
     bool isAutoMaintainPts_ = false;
     std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
-    std::atomic<bool> isFirstFrameAfterSeek_ {false};
 };
 } // namespace Media
 } // namespace OHOS
