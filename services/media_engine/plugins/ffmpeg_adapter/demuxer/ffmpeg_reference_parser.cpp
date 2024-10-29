@@ -247,9 +247,6 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
         return Status::ERROR_UNKNOWN;
     }
     InsertIframePtsMap(pkt, parserCurGopId_, parserRefVideoStreamIdx_, iFramePtsMap_);
-    // if (pkt->stream_index != parserRefVideoStreamIdx_ && ffmpegRet != AVERROR_EOF) {
-    //     return Status::OK;
-    // }
     FALSE_RETURN_V_NOLOG(pkt->stream_index == parserRefVideoStreamIdx_ || ffmpegRet == AVERROR_EOF, Status::OK);
     int64_t dts = AvTime2Us(
         ConvertTimeFromFFmpeg(pkt->dts, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base));
