@@ -32,8 +32,8 @@ ohos_fuzztest("DemuxerMp3API11FuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "demuxermp3_fuzzer.cpp",
     "$MEDIA_ROOT_DIR/test/fuzztest/demuxer_fuzzer/demuxer_sample.cpp",
+    "demuxermp3_fuzzer.cpp",
   ]
   external_deps = [
     "c_utils:utils",

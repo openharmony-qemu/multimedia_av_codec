@@ -32,8 +32,8 @@ ohos_fuzztest("DemuxerAmrFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "demuxeramr_fuzzer.cpp",
     "$MEDIA_ROOT_DIR/test/fuzztest/demuxer_fuzzer/demuxer_sample.cpp",
+    "demuxeramr_fuzzer.cpp",
   ]
   external_deps = [
     "c_utils:utils",
