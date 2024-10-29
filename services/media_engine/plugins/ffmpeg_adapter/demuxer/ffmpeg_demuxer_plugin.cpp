@@ -1732,7 +1732,7 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& 
             FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
         }
     }
-    AVProbeData probeData{"", buff.data(), getData, ""};
+    AVProbeData probeData{"", buff.data(), static_cast<int32_t>(getData), ""};
     return plugin->read_probe(&probeData);
 }
 
@@ -1757,7 +1757,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
         confidence = 0;
     }
     if (getData < DEFAULT_SNIFF_SIZE || confidence > 0) {
-        MEDIA_LOG_I("Sniff:" PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]", plugin->name, getData, confidence);
+        MEDIA_LOG_I("Sniff:" PUBLIC_LOG_S "[" PUBLIC_LOG_ZU "/" PUBLIC_LOG_D32 "]", plugin->name, getData, confidence);
     }
     return confidence;
 }
