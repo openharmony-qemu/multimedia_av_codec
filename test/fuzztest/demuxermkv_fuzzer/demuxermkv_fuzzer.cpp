@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -178,12 +178,12 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    int32_t fd = open(FILE_PATH, O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    int32_t fd = open(FILE_PATH, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         return false;
     }
     int len = write(fd, data, size);
-    if (len < 0) {
+    if (len <= 0) {
         return false;
     }
     close(fd);

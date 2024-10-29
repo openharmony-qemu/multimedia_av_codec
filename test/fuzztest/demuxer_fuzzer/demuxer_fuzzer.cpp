@@ -178,12 +178,12 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    int32_t fd = open(FILE_PATH, O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    int32_t fd = open(FILE_PATH, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         return false;
     }
     int len = write(fd, data, size);
-    if (len < 0) {
+    if (len <= 0) {
         return false;
     }
     close(fd);
