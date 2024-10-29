@@ -2190,5 +2190,11 @@ void MediaDemuxer::SetEnableOnlineFdCache(bool isEnableFdCache)
     FALSE_RETURN(source_ != nullptr);
     source_->SetEnableOnlineFdCache(isEnableFdCache);
 }
+
+void MediaDemuxer::WaitForBufferingEnd()
+{
+    FALSE_RETURN_MSG(source_ != nullptr, "Source is nullptr");
+    source_->WaitForBufferingEnd();
+}
 } // namespace Media
 } // namespace OHOS

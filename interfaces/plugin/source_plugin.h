@@ -244,6 +244,8 @@ public:
     {
         return false;
     }
+
+    virtual void WaitForBufferingEnd() {}
 };
 
 /// Source plugin api major number.

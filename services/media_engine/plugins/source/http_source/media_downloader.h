@@ -135,6 +135,8 @@ public:
     {
         return false;
     }
+
+    virtual void WaitForBufferingEnd() {}
 };
 }
 }

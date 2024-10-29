@@ -363,6 +363,11 @@ bool DownloadMonitor::GetHLSDiscontinuity()
     return false;
 }
 
+void DownloadMonitor::WaitForBufferingEnd()
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "WaitForBufferingEnd downloader is nullptr");
+    downloader_->WaitForBufferingEnd();
+}
 }
 }
 }

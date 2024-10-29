@@ -127,6 +127,7 @@ public:
     Status PauseDemuxerReadLoop();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
+    void WaitForBufferingEnd();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

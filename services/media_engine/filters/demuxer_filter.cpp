@@ -768,6 +768,12 @@ bool DemuxerFilter::IsVideoEos()
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->IsVideoEos();
 }
+
+void DemuxerFilter::WaitForBufferingEnd()
+{
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    demuxer_->WaitForBufferingEnd();
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

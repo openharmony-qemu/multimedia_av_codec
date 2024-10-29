@@ -76,6 +76,7 @@ public:
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
+    void WaitForBufferingEnd() override;
 
 private:
     int64_t HttpMonitorLoop();
