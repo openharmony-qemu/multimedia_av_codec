@@ -162,7 +162,7 @@ private:
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
-    std::map<uint32_t, sptr<SurfaceBuffer>> renderSurfaceBufferMap_;
+    std::map<uint32_t, std::pair<sptr<SurfaceBuffer>, OHOS::BufferFlushConfig>> renderSurfaceBufferMap_;
     std::optional<uint32_t> synIndex_ = std::nullopt;
     SurfaceControl sInfo_;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
