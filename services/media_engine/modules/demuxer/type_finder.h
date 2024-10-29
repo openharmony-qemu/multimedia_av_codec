@@ -39,6 +39,8 @@ public:
 
     std::string FindMediaType();
 
+    void FindMediaTypeAsync(std::function<void(std::string)> typeFound);
+
     Status ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) override;
 
     Status GetSize(uint64_t& size) override;
@@ -46,10 +48,11 @@ public:
     Plugins::Seekable GetSeekable() override;
 
     int32_t GetStreamID() override;
-
+ 
     bool IsDash() override { return false; }
-
 private:
+    void DoTask();
+
     std::string SniffMediaType();
 
     std::string GuessMediaType() const;

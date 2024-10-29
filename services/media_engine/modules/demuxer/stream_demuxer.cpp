@@ -426,6 +426,7 @@ Status StreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shar
             if (ret == Status::END_OF_STREAM &&
                 pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
                 SetDemuxerState(streamID, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+                return ret;
             }
             if (ret != Status::OK) {
                 return ret;

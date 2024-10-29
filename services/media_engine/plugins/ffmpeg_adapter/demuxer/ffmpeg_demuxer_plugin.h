@@ -137,6 +137,9 @@ private:
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
 
+    int FindNaluSpliter(int size, const uint8_t *data);
+    bool CanDropAvcPkt(const AVPacket& pkt);
+    bool CanDropHevcPkt(const AVPacket& pkt);
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
     void WebvttMP4EOSProcess(const AVPacket *pkt);

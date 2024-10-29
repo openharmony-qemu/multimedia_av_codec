@@ -131,6 +131,21 @@ std::string TypeFinder::FindMediaType()
     return pluginName_;
 }
 
+/**
+ * FindMediaTypeAsync for non-seekable source
+ * @param typeFound is a callback called when media type found.
+ */
+void TypeFinder::FindMediaTypeAsync(std::function<void(std::string)> typeFound)
+{
+    typeFound_ = std::move(typeFound);
+    task_ = std::make_shared<Task>("TypeFinder");
+    task_->RegisterJob([this]() {
+        DoTask(); 
+        return 0;
+    });
+    task_->Start();
+}
+
 Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
 {
     if (!buffer || expectedLen == 0 || !IsOffsetValid(offset)) {
@@ -163,6 +178,19 @@ Status TypeFinder::GetSize(uint64_t& size)
 Plugins::Seekable TypeFinder::GetSeekable()
 {
     return Plugins::Seekable::INVALID;
+}
+
+void TypeFinder::DoTask()
+{
+    if (sniffNeeded_) {
+        pluginName_ = SniffMediaType();
+        if (pluginName_.empty()) {
+            pluginName_ = GuessMediaType();
+        }
+        sniffNeeded_ = false;
+    }
+    task_->StopAsync();
+    typeFound_(pluginName_);
 }
 
 std::string TypeFinder::SniffMediaType()
@@ -216,6 +244,5 @@ int32_t TypeFinder::GetStreamID()
 {
     return streamID_;
 }
-
 } // namespace Media
 } // namespace OHOS
