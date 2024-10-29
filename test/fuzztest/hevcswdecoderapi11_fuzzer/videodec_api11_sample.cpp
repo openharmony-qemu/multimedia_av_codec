@@ -384,7 +384,7 @@ void VDecFuzzSample::InputFuncAVCC()
 {
     frameCount_ = 1;
     errCount = 0;
-    while (true) {
+    while (isRunning_.load()) {
         if (!isRunning_.load()) {
             break;
         }

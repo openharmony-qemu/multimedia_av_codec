@@ -26,7 +26,7 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 
-static VDecFuzzSample *vDecSample = nullptr;
+static VDecFuzzSample *g_vDecSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
@@ -34,24 +34,24 @@ constexpr double DEFAULT_FRAME_RATE = 30.0;
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
-    if (!vDecSample) {
-        vDecSample = new VDecFuzzSample();
-        vDecSample->defaultWidth = DEFAULT_WIDTH;
-        vDecSample->defaultHeight = DEFAULT_HEIGHT;
-        vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-        vDecSample->CreateVideoDecoder();
-        vDecSample->ConfigureVideoDecoder();
-        vDecSample->SetVideoDecoderCallback();
-        vDecSample->Start();
+    if (!g_vDecSample) {
+        g_vDecSample = new VDecFuzzSample();
+        g_vDecSample->defaultWidth = DEFAULT_WIDTH;
+        g_vDecSample->defaultHeight = DEFAULT_HEIGHT;
+        g_vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
+        g_vDecSample->CreateVideoDecoder();
+        g_vDecSample->ConfigureVideoDecoder();
+        g_vDecSample->SetVideoDecoderCallback();
+        g_vDecSample->Start();
     }
-    OH_AVErrCode ret = vDecSample->InputFuncFUZZ(data, size);
+    OH_AVErrCode ret = g_vDecSample->InputFuncFUZZ(data, size);
     if (ret != AV_ERR_OK) {
-        vDecSample->Flush();
-        vDecSample->Stop();
-        vDecSample->Reset();
-        vDecSample->Release();
-        delete vDecSample;
-        vDecSample = nullptr;
+        g_vDecSample->Flush();
+        g_vDecSample->Stop();
+        g_vDecSample->Reset();
+        g_vDecSample->Release();
+        delete g_vDecSample;
+        g_vDecSample = nullptr;
         return false;
     }
     return true;
