@@ -44,7 +44,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     close(fd);
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
-    demuxerSample->FILE_PATH = MKV_PATH;
+    demuxerSample->filePath = MKV_PATH;
     demuxerSample->RunNormalDemuxer();
     return true;
 }

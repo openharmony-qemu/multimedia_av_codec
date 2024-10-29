@@ -44,7 +44,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     close(fd);
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
-    demuxerSample->FILE_PATH = APE_PATH;
+    demuxerSample->filePath = APE_PATH;
     demuxerSample->RunNormalDemuxerApi11();
     return true;
 }

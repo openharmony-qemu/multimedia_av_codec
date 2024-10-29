@@ -27,18 +27,18 @@ class DemuxerSample {
 public:
     DemuxerSample() = default;
     ~DemuxerSample();
-    const char *FILE_PATH = "/data/test/fuzz_create.mp4";
+    const char *filePath = "/data/test/fuzz_create.mp4";
     void RunNormalDemuxer();
     void RunNormalDemuxerApi11();
 private:
     void ResetFlag();
     int CreateDemuxer();
-    int32_t g_width = 3840;
-    int32_t g_height = 2160;
-    int g_trackType = 0;
-    int32_t g_trackCount;
+    int32_t gWidth = 3840;
+    int32_t gHeight = 2160;
+    int gTrackType = 0;
+    int32_t gTrackCount;
     OH_AVCodecBufferAttr attr;
-    bool g_readEnd = false;
+    bool gReadEnd = false;
     int fd;
     OH_AVFormat *sourceFormat;
     OH_AVSource *source;

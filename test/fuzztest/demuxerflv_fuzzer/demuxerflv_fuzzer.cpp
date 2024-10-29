@@ -44,7 +44,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     close(fd);
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
-    demuxerSample->FILE_PATH = FLV_PATH;
+    demuxerSample->filePath = FLV_PATH;
     demuxerSample->RunNormalDemuxer();
     return true;
 }

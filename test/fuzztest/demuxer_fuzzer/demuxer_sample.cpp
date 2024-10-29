@@ -64,12 +64,14 @@ static int64_t GetFileSize(const char *fileName)
     return fileSize;
 }
 
-int DemuxerSample::CreateDemuxer() {
-    fd = open(FILE_PATH, O_RDONLY);
-    int64_t size = GetFileSize(FILE_PATH);
+int DemuxerSample::CreateDemuxer()
+{
+    fd = open(filePath, O_RDONLY);
+    int64_t size = GetFileSize(filePath);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!source) {
         close(fd);
+        fd = 0;
         return -1;
     }
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -77,13 +79,15 @@ int DemuxerSample::CreateDemuxer() {
         OH_AVSource_Destroy(source);
         source = nullptr;
         close(fd);
+        fd = 0;
         return -1;
     }
     return 0;
 }
 
-void DemuxerSample::RunNormalDemuxer() {
-    g_readEnd = false;
+void DemuxerSample::RunNormalDemuxer()
+{
+    gReadEnd = false;
     int ret = CreateDemuxer();
     if (ret < 0) {
         return;
@@ -92,38 +96,39 @@ void DemuxerSample::RunNormalDemuxer() {
     if (sourceFormat == nullptr) {
         return;
     }
-    OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount);
-    for (int32_t index = 0; index < g_trackCount; index++) {
+    OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &gTrackCount);
+    for (int32_t index = 0; index < gTrackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    memory = OH_AVMemory_Create(g_width * g_height);
-    while (!g_readEnd && g_trackCount > 0) {
-        for (int32_t index = 0; index < g_trackCount; index++) {
+    memory = OH_AVMemory_Create(gWidth * gHeight);
+    while (!gReadEnd && gTrackCount > 0) {
+        for (int32_t index = 0; index < gTrackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
             if (trackFormat == nullptr) {
-                g_readEnd = true;
+                gReadEnd = true;
                 break;
             }
-            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &g_trackType);
+            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &gTrackType);
             if (trackFormat) {
                 OH_AVFormat_Destroy(trackFormat);
                 trackFormat = nullptr;
             }
             ret = OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr);
             if (ret != 0) {
-                g_readEnd = true;
+                gReadEnd = true;
                 break;
             }
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                g_readEnd = true;
+                gReadEnd = true;
                 break;
             }
         }
     }
 }
 
-void DemuxerSample::RunNormalDemuxerApi11() {
-    g_readEnd = false;
+void DemuxerSample::RunNormalDemuxerApi11()
+{
+    gReadEnd = false;
     int ret = CreateDemuxer();
     if (ret < 0) {
         return;
@@ -132,31 +137,31 @@ void DemuxerSample::RunNormalDemuxerApi11() {
     if (sourceFormat == nullptr) {
         return;
     }
-    OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount);
-    for (int32_t index = 0; index < g_trackCount; index++) {
+    OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &gTrackCount);
+    for (int32_t index = 0; index < gTrackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    buffer = OH_AVBuffer_Create(g_width * g_height);
-    while (!g_readEnd && g_trackCount > 0) {
-        for (int32_t index = 0; index < g_trackCount; index++) {
+    buffer = OH_AVBuffer_Create(gWidth * gHeight);
+    while (!gReadEnd && gTrackCount > 0) {
+        for (int32_t index = 0; index < gTrackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
             if (trackFormat == nullptr) {
-                g_readEnd = true;
+                gReadEnd = true;
                 break;
             }
-            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &g_trackType);
+            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &gTrackType);
             if (trackFormat) {
                 OH_AVFormat_Destroy(trackFormat);
                 trackFormat = nullptr;
             }
             ret = OH_AVDemuxer_ReadSampleBuffer(demuxer, index, buffer);
             if (ret != 0) {
-                g_readEnd = true;
+                gReadEnd = true;
                 break;
             }
             OH_AVBuffer_GetBufferAttr(buffer, &attr);
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                g_readEnd = true;
+                gReadEnd = true;
                 break;
             }
         }
