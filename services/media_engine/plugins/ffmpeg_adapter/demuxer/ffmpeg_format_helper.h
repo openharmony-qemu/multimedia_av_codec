@@ -85,6 +85,8 @@ private:
     static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseOrientationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseTrackType(const AVFormatContext& avFormatContext, Meta& format);
+
+    static void ParseAv3aInfo(const AVStream& avStream, Meta &format)
 };
 extern std::vector<TagType> g_supportSourceFormat;
 } // namespace Ffmpeg

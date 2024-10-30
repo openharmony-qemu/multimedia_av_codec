@@ -290,6 +290,35 @@ int64_t GetDefaultTrackStartTime(const AVFormatContext& avFormatContext)
     return dafaultTime;
 }
 
+static int FfAv3aGetNbObjects(AVchannelLayout *channel_layout)
+{
+    int nb_objects = 0;
+    if (channel_layout->order != AV_CHANNEL_ORDER_CUSTOM) {
+        return 0;
+    }
+    for (int i = 0; i < channel_layout->nb_channels; i++) {
+        if (channel_layout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
+            nb_objects++;
+        }
+    }
+    return nb_objects;
+}
+
+static uint64_t FfAv3aGetChannelLayoutMask(AVchannelLayout *channel_layout)
+{
+    uint64_t mask = 0L;
+    if (channel_layout->order != AV_CHANNEL_ORDER_CUSTOM) {
+        return 0;
+    }
+    for (int i = 0; i < channel_layout->nb_channels; i++) {
+        if (channel_layout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
+            return mask;
+        }
+        mask |= (1ULL << channel_layout->u.map[i].id);
+    }
+    return mask;
+}
+
 void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, Meta& format)
 {
     format.Set<Tag::MEDIA_TRACK_COUNT>(static_cast<int32_t>(avFormatContext.nb_streams));
@@ -659,7 +688,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
         avStream.codecpar->channel_layout, channels);
     format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(channelLayout);
     format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
-    
+
     AudioSampleFormat fmt;
     if (!IsPCMStream(avStream.codecpar->codec_id)) {
         fmt = FFMpegConverter::ConvertFFMpegToOHAudioFormat(static_cast<AVSampleFormat>(avStream.codecpar->format));
@@ -675,6 +704,57 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     }
     format.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(avStream.codecpar->bits_per_coded_sample);
     format.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(avStream.codecpar->bits_per_raw_sample);
+
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_AV3A) {
+        ParseAv3aInfo(avStream, format);
+    }
+}
+
+void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
+{
+    int channels = avStream.codecpar->channels; // 总通道数
+    AudioChannelLayout channelLayout = AudioChannelLayout::UNKNOWN;
+    int object_number = 0; // 对象数量
+    uint64_t channel_layout_mask = 0L;
+    if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM) {
+        // 获取mask（如果是纯对象模式则不包含声场，返回0L）
+        channel_layout_mask = FfAv3aGetChannelLayoutMask(&avStream.codecpar->ch_layout);
+        object_number = FfAv3aGetNbObjects(&avStream.codecpar->ch_layout); // 获取对象数量，如果不包含对象返回0
+        if (channel_layout_mask > 0L) {
+            channelLayout = FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(
+                                channel_layout_mask, chennls - object_number);
+            if (channel_layout_mask != static_cast<uint64_t>(channelLayout)) {
+                MEDIA_LOG_W("Get channel layout failed, use default channel layout.");
+            }
+        } else {
+            channelLayout = AudioChannelLayout::AUDIO_OBJECT;
+        }
+    } else if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC) {
+        int hoa_order = static_cast<int>(sqrt(channels)) - 1;
+        if (hoa_order == 1) {
+            channelLayout = AudioChannelLayout::HOA_FIRST;
+        } else if (hoa_order == 2) {
+            channelLayout = AudioChannelLayout::HOA_SECOND;
+        } else if (hoa_order == 3) {
+            channelLayout = AudioChannelLayout::HOA_THIRD;
+        } else {
+            MEDIA_LOG_W("Get hoa order failed.");
+        }
+        format.Set<Tag::AUDIO_HOA_ORDER>(hoa_order);
+    } else {
+        MEDIA_LOG_W("Get channel layout failed.");
+    }
+    format.Set<Tag::AUDIO_OBJECT_NUMBER>(object_number);
+    format.Set<Tag::AUDIO_SOUNDBED_CHANNELS_NUMBER>(channels - object_number);
+    // 设置一个整个音频内容通道总数
+    format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(channelLayout);
+    format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
+    if (channels > 0) {
+        format.Set<Tag::AUDIO_OUTPUT_CHANNELS>(static_cast<uint32_t>(channels));
+        format.Set<Tag::AUDIO_CHANNEL_COUNT>(static_cast<uint32_t>(channels));
+    } else {
+        MEDIA_LOG_D("Parse channel counnt failed: " PUBLIC_LOG_D32, channels);
+    }
 }
 
 void FFmpegFormatHelper::ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format)
