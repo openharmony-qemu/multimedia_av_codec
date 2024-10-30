@@ -58,6 +58,21 @@ const std::vector<std::pair<AudioChannelLayout, uint64_t>> g_toFFMPEGChannelLayo
     {AudioChannelLayout::STEREO_DOWNMIX, AV_CH_LAYOUT_STEREO_DOWNMIX},
 };
 
+const std::vector<std::pair<AudioChannelLayout,int>> g_AudioVividChannelLayoutMap = {
+    {AudioChannelLayout::MONO, 1},
+    {AudioChannelLayout::STEREO, 2},
+    {AudioChannelLayout::CH_4POINT0, 4},
+    {AudioChannelLayout::CH_5POINT1, 6},
+    {AudioChannelLayout::CH_7POINT1, 8},
+    {AudioChannelLayout::CH_5POINT1POINT2, 8},
+    {AudioChannelLayout::CH_5POINT1POINT4, 10},
+    {AudioChannelLayout::CH_7POINT1POINT2, 10},
+    {AudioChannelLayout::CH_7POINT1POINT4, 12},
+    {AudioChannelLayout::HOA_FIRST, 4},
+    {AudioChannelLayout::HOA_SECOND, 9},
+    {AudioChannelLayout::HOA_THIRD, 16},
+};
+
 const std::vector<std::pair<int, AudioChannelLayout>> g_channelLayoutDefaukltMap = {
     {2, AudioChannelLayout::STEREO},             // 2: STEREO
     {4, AudioChannelLayout::CH_4POINT0},         // 4: CH_4POINT0
@@ -142,6 +157,7 @@ const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayo
     {AudioChannelLayout::HOA_ORDER3_ACN_N3D, "HOA_ORDER3_ACN_N3D"},
     {AudioChannelLayout::HOA_ORDER3_ACN_SN3D, "HOA_ORDER3_ACN_SN3D"},
     {AudioChannelLayout::HOA_ORDER3_FUMA, "HOA_ORDER3_FUMA"},
+    {AudioChannelLayout::AUDIO_OBJECT, "AUDIO_OBJECT"},
 };
 
 const std::vector<std::pair<AVColorPrimaries, ColorPrimary>> g_pFfColorPrimariesMap = {
@@ -408,6 +424,17 @@ std::string FFMpegConverter::AVStrError(int errnum)
     char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
     av_strerror(errnum, errbuf, AV_ERROR_MAX_STRING_SIZE);
     return std::string(errbuf);
+}
+
+AudioChannelLayout FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(uint64_t ffChannelLayout, int channels)
+{
+    auto ite = std::find_if(g_AudioVividChannelLayoutMap.begin(), g_AudioVividChannelLayoutMap.end(),
+                            [&ffChannelLayout](const auto &item) -> bool { return item.first == ffChannelLayout;});
+    if (ite == g_AudioVividChannelLayoutMap.end() || ite -> second != channels) {
+        MEDIA_LOG_W("Convert channel layout failed: " PUBLIC_LOG_U64, ffChannelLayout);
+        return GetDefaultChannelLayout(channels);
+    }
+    return ite->first;
 }
 } // namespace Plugins
 } // namespace Media

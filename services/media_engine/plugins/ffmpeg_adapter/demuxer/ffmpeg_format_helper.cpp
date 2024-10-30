@@ -86,7 +86,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_VVC, MimeType::VIDEO_VVC},
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
-    {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
+    {AV_CODEC_ID_AV3A, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
