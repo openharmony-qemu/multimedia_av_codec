@@ -1,0 +1,12 @@
+[
+    {
+        "gopId": 0,
+        "gopSize": 30,
+        "startFrameId": 0
+    },
+    {
+        "gopId": 1,
+        "gopSize": 30,
+        "startFrameId": 30
+    }
+]
