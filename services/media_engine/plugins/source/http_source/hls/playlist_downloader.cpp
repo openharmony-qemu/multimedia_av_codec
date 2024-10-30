@@ -106,6 +106,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
     auto downloadDoneCallback = [this] (const std::string& url, const std::string& location) {
         UpdateDownloadFinished(url, location);
     };
+    downloadRequest_->SetIsM3u8Request(true);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     if (downloader_ != nullptr) {
         downloader_->Download(downloadRequest_, -1); // -1
