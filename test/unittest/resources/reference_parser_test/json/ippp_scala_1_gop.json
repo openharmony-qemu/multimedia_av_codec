@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f3eba9c703979ad45e2e2a06e9665529cd2d6a17157c2d867ac24c30080217ef
-size 442
+[
+    {
+        "gopId": 0,
+        "gopSize": 10,
+        "startFrameId": 0
+    },
+    {
+        "gopId": 1,
+        "gopSize": 10,
+        "startFrameId": 10
+    },
+    {
+        "gopId": 2,
+        "gopSize": 10,
+        "startFrameId": 20
+    },
+    {
+        "gopId": 3,
+        "gopSize": 10,
+        "startFrameId": 30
+    },
+    {
+        "gopId": 4,
+        "gopSize": 10,
+        "startFrameId": 40
+    }
+]
