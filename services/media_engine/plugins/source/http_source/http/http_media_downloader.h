@@ -182,6 +182,7 @@ private:
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
     bool isSeekWait_ {false};
+    int32_t seekHitDataNotEnoughCount_ {0};
 };
 }
 }

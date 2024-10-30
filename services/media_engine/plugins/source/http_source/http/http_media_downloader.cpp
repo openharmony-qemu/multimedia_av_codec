@@ -57,7 +57,7 @@ constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.6;
 constexpr float CACHE_LEVEL_1 = 0.3;
 constexpr float DEFAULT_CACHE_TIME = 5;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
-constexpr uint32_t MAX_WATER_LINE_ABOVE = 8 * 1024 * 1024;
+constexpr size_t MAX_WATER_LINE_ABOVE = 8 * 1024 * 1024;
 constexpr uint32_t OFFSET_NOT_UPDATE_THRESHOLD = 8;
 constexpr float DOWNLOAD_WATER_LINE_RATIO = 0.90;
 constexpr uint32_t ALLOW_SEEK_MIN_SIZE = 1 * 1024 * 1024;
@@ -330,11 +330,13 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
         fileRemain = fileContenLen - readOffset_;
         cacheWaterLine = std::min(fileRemain, cacheWaterLine);
     }
-    if (GetCurrentBufferSize() >= cacheWaterLine) {
+    if (!canWrite_.load() || GetCurrentBufferSize() >= wantReadLength) {
         return false;
     }
-    if (!canWrite_.load() && GetCurrentBufferSize() >= wantReadLength) {
-        return false;
+    if (GetCurrentBufferSize() > 0) {
+        seekHitDataNotEnoughCount_++;
+    } else {
+        seekHitDataNotEnoughCount_ = 0;
     }
     return true;
 }
@@ -349,6 +351,7 @@ bool HttpMediaDownloader::StartBuffering(unsigned int& wantReadLength)
         canWrite_ = true;
     }
     isBuffering_ = true;
+    UpdateWaterLineAbove();
     MEDIA_LOG_I("HTTP CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize "
         PUBLIC_LOG_ZU " readOffset: " PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, waterLineAbove_,
         GetCurrentBufferSize(), readOffset_, writeOffset_);
@@ -474,7 +477,7 @@ void HttpMediaDownloader::CheckDownloadPos(unsigned int wantReadLength)
 {
     size_t writeOffsetTmp = writeOffset_;
     size_t remain = GetCurrentBufferSize();
-    if (cacheMediaBuffer_->IsReadSplit(readOffset_)) {
+    if (cacheMediaBuffer_->IsReadSplit(readOffset_) || (isSeekWait_ && canWrite_)) {
         return;
     }
     if (remain < wantReadLength && isServerAcceptRange_ &&
@@ -1205,6 +1208,9 @@ void HttpMediaDownloader::SetAppUid(int32_t appUid)
 
 float HttpMediaDownloader::GetCacheDuration(float ratio)
 {
+    if (seekHitDataNotEnoughCount_ > 1) {
+        return DEFAULT_CACHE_TIME;
+    }
     if (ratio >= 1) {
         return CACHE_LEVEL_1;
     }
