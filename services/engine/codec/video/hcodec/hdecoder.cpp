@@ -649,6 +649,7 @@ int32_t HDecoder::AllocOutDynamicSurfaceBuf()
             return ret;
         }
         currGeneration_++;
+        CombineConsumerUsage();
     }
     outputBufferPool_.clear();
 
