@@ -1034,7 +1034,22 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_HDR_0010, TestSize.Level1)
     }
     shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_hdr_1_hevc);
     parserSample->InitParameter(MP4Scene::HDR_1_HEVC);
-    ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::END_PTS));
+    ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::RANDOM_PTS));
+}
+
+/**
+ * @tc.number    : DEMUXER_REFERENCE_HDR_0011
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame in HDR sequence
+ * @tc.desc      : func test
+ */
+HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_HDR_0011, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_hdr_1_hevc);
+    parserSample->InitParameter(MP4Scene::HDR_1_HEVC);
+    ASSERT_TRUE(parserSample->RunSpeedScene(WorkPts::RANDOM_PTS));
 }
 
 /**

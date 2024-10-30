@@ -39,7 +39,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegReferenceParser" };
-constexpr int32_t REFERENCE_PARSER_TIMEOUT_MS = 20000;
+constexpr int64_t REFERENCE_PARSER_TIMEOUT_MS = 20000;
 }
 
 namespace OHOS {
@@ -247,7 +247,8 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
         return Status::ERROR_UNKNOWN;
     }
     InsertIframePtsMap(pkt, parserCurGopId_, parserRefVideoStreamIdx_, iFramePtsMap_);
-    FALSE_RETURN_V_NOLOG(pkt->stream_index == parserRefVideoStreamIdx_ || ffmpegRet == AVERROR_EOF, Status::OK);
+    FALSE_RETURN_V_MSG_D(pkt->stream_index == parserRefVideoStreamIdx_ || ffmpegRet == AVERROR_EOF, Status::OK,
+                         "eos or not video");
     int64_t dts = AvTime2Us(
         ConvertTimeFromFFmpeg(pkt->dts, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base));
     Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
@@ -376,7 +377,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
         auto now =
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
         auto duration = now - std::chrono::milliseconds(start.count());
-        FALSE_RETURN_V_MSG_W(duration < std::chrono::milliseconds(REFERENCE_PARSER_TIMEOUT_MS), Status::ERROR_UNKNOWN,
+        FALSE_RETURN_V_MSG_W(duration.count() < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN,
                              "reference parser timeout");
     }
 
