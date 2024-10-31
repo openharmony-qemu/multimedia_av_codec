@@ -290,7 +290,7 @@ int64_t GetDefaultTrackStartTime(const AVFormatContext& avFormatContext)
     return dafaultTime;
 }
 
-static int FfAv3aGetNbObjects(AVchannelLayout *channel_layout)
+static int FfAv3aGetNbObjects(AVChannelLayout *channel_layout)
 {
     int nb_objects = 0;
     if (channel_layout->order != AV_CHANNEL_ORDER_CUSTOM) {
@@ -304,7 +304,7 @@ static int FfAv3aGetNbObjects(AVchannelLayout *channel_layout)
     return nb_objects;
 }
 
-static uint64_t FfAv3aGetChannelLayoutMask(AVchannelLayout *channel_layout)
+static uint64_t FfAv3aGetChannelLayoutMask(AVChannelLayout *channel_layout)
 {
     uint64_t mask = 0L;
     if (channel_layout->order != AV_CHANNEL_ORDER_CUSTOM) {
@@ -722,7 +722,7 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
         object_number = FfAv3aGetNbObjects(&avStream.codecpar->ch_layout); // 获取对象数量，如果不包含对象返回0
         if (channel_layout_mask > 0L) {
             channelLayout = FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(
-                                channel_layout_mask, chennls - object_number);
+                                channel_layout_mask, channels - object_number);
             if (channel_layout_mask != static_cast<uint64_t>(channelLayout)) {
                 MEDIA_LOG_W("Get channel layout failed, use default channel layout.");
             }
