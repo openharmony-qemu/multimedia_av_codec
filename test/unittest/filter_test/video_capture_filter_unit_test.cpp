@@ -352,10 +352,10 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UpdateBufferConfig_004, 
     EXPECT_EQ(buffer->pts_, (100 - 50 - 10) / 1000);
 }
 
-sptr<MockConsumerSurface> MockConsumerSurface::CreateSurfaceAsConsumer(std::string name, bool isShared)
+sptr<MockConsumerSurface> MockConsumerSurface::CreateSurfaceAsConsumer(std::string name)
 {
-    sptr<MockConsumerSurface> surf = new MockConsumerSurface(name, isShared);
-    sptr<BufferQueue> queue_ = new BufferQueue(surf->name_, surf->isShared_);
+    sptr<MockConsumerSurface> surf = new MockConsumerSurface(name);
+    sptr<BufferQueue> queue_ = new BufferQueue(surf->name_);
     surf->producer_ = new BufferQueueProducer(queue_);
     surf->consumer_ = new BufferQueueConsumer(queue_);
     surf->uniqueId_ = surf->producer_->GetUniqueId();

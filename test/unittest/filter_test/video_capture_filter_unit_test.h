@@ -134,8 +134,8 @@ protected:
 
 class MockConsumerSurface : public ConsumerSurface {
 public:
-    explicit MockConsumerSurface(const std::string &name, bool isShared = false) : ConsumerSurface(name, isShared) {}
-    static sptr<MockConsumerSurface> CreateSurfaceAsConsumer(std::string name, bool isShared = false);
+    explicit MockConsumerSurface(const std::string &name) : ConsumerSurface(name) {}
+    static sptr<MockConsumerSurface> CreateSurfaceAsConsumer(std::string name);
     MOCK_METHOD(GSError,
                 AcquireBuffer,
                 (sptr<SurfaceBuffer> & buffer, sptr<SyncFence> &fence, int64_t &timestamp, Rect &damage),
@@ -147,7 +147,6 @@ private:
     sptr<BufferQueueProducer> producer_ = nullptr;
     sptr<BufferQueueConsumer> consumer_ = nullptr;
     std::string name_ = "not init";
-    bool isShared_ = false;
     std::map<std::string, OnUserDataChangeFunc> onUserDataChange_;
     std::mutex lockMutex_;
     uint64_t uniqueId_ = 0;
