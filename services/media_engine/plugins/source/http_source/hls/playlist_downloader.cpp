@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -225,6 +225,9 @@ void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const st
     ParseManifest(location);
     playList_.clear();
     retryStartTime_ = 0;
+    if (isAppBackground_) {
+        downloader_->Pause(true);
+    }
 }
 
 void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
@@ -232,8 +235,7 @@ void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr
 {
     // This should not be called normally
     MEDIA_LOG_D("Should not call this OnDownloadStatus, should call monitor.");
-    if (request->GetClientError() != NetworkClientErrorCode::ERROR_OK
-        || request->GetServerError() != 0) {
+    if (request->GetClientError() != 0 || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
 }
@@ -332,6 +334,17 @@ void PlayListDownloader::SetAppUid(int32_t appUid)
     }
 }
 
+void PlayListDownloader::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("PlayListDownloader::StopBufferring.");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("PlayListDownloader:StopBufferring error.");
+        return;
+    }
+    isAppBackground_ = isAppBackground;
+    downloader_->SetAppState(isAppBackground);
+    downloader_->StopBufferring();
+}
 }
 }
 }

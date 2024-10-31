@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,10 +26,11 @@
 #include "openssl/aes.h"
 #include "osal/task/task.h"
 #include "common/media_source.h"
+#include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
-#include "utils/media_cached_buffer.h"
 #include "utils/write_bitrate_caculator.h"
+#include "utils/media_cached_buffer.h"
 #include <utility>
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
@@ -102,6 +103,7 @@ public:
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
+    Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
 
 private:
@@ -152,6 +154,7 @@ private:
     void HlsInit();
     bool SaveCacheBufferData(uint8_t* data, uint32_t len);
     bool ClearChunksOfFragment();
+    size_t GetCrossTsBuffersize();
 
 private:
     size_t totalBufferSize_ {0};
@@ -184,7 +187,6 @@ private:
     uint32_t writeTsIndex_ = 0;
     bool isAutoSelectBitrate_ {true};
     uint64_t seekTime_ = 0;
-
     uint64_t readTime_ {0};
 
     bool isReadFrame_ {false};
@@ -266,6 +268,7 @@ private:
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
+    std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     uint64_t readOffset_ {0};
     uint64_t writeOffset_ {0};

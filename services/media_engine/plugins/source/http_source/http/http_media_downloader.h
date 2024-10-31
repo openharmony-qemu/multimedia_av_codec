@@ -72,6 +72,7 @@ public:
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
     void SetAppUid(int32_t appUid) override;
+    Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
 
 private:
@@ -165,6 +166,7 @@ private:
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
+    std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 
     SteadyClock cachedDurationClock_;
@@ -179,6 +181,8 @@ private:
 
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
+    bool isSeekWait_ {false};
+    int32_t seekHitDataNotEnoughCount_ {0};
 };
 }
 }

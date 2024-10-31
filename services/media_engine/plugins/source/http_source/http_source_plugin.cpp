@@ -448,6 +448,15 @@ bool HttpSourcePlugin::GetHLSDiscontinuity()
     return false;
 }
 
+Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
+{
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("StopBufferring failed, downloader_ is nullptr");
+        return Status::ERROR_NULL_POINTER;
+    }
+    return downloader_->StopBufferring(isAppBackground);
+}
+
 void HttpSourcePlugin::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(downloader_ != nullptr, "WaitForBufferingEnd downloader is nullptr");

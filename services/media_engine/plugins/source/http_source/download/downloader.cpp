@@ -67,31 +67,31 @@ DownloadRequest::DownloadRequest(const std::string& url,
     headerInfo_.contentLen = 0;
 }
 
-DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
+DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
                                  bool requestWholeFile)
-    : saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)), requestInfo_(requestInfo),
+    : saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)), mediaSouce_(mediaSouce),
     requestWholeFile_(requestWholeFile)
 {
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
     headerInfo_.fileContentLen = 0;
     headerInfo_.contentLen = 0;
-    url_ = requestInfo.url;
-    httpHeader_ = requestInfo.httpHeader;
+    url_ = mediaSouce.url;
+    httpHeader_ = mediaSouce.httpHeader;
 }
 
 DownloadRequest::DownloadRequest(double duration,
                                  DataSaveFunc saveData,
                                  StatusCallbackFunc statusCallback,
-                                 RequestInfo requestInfo,
+                                 RequestInfo mediaSouce,
                                  bool requestWholeFile)
     : duration_(duration), saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)),
-    requestInfo_(requestInfo), requestWholeFile_(requestWholeFile)
+    mediaSouce_(mediaSouce), requestWholeFile_(requestWholeFile)
 {
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
     headerInfo_.fileContentLen = 0;
     headerInfo_.contentLen = 0;
-    url_ = requestInfo.url;
-    httpHeader_ = requestInfo.httpHeader;
+    url_ = mediaSouce.url;
+    httpHeader_ = mediaSouce.httpHeader;
 }
 
 size_t DownloadRequest::GetFileContentLength() const
@@ -137,12 +137,12 @@ int DownloadRequest::GetRetryTimes() const
     return retryTimes_;
 }
 
-NetworkClientErrorCode DownloadRequest::GetClientError() const
+int32_t DownloadRequest::GetClientError() const
 {
     return clientError_;
 }
 
-NetworkServerErrorCode DownloadRequest::GetServerError() const
+int32_t DownloadRequest::GetServerError() const
 {
     return serverError_;
 }
@@ -316,6 +316,9 @@ void Downloader::Pause(bool isAsync)
 void Downloader::Cancel()
 {
     MEDIA_LOG_I("Cancel Begin");
+    if (currentRequest_ != nullptr && currentRequest_->retryTimes_ > 0) {
+        currentRequest_->retryTimes_ = 0;
+    }
     requestQue_->SetActive(false, true);
     shouldStartNextRequest = true;
     if (client_ != nullptr) {
@@ -336,7 +339,7 @@ void Downloader::Resume()
         MEDIA_LOG_I("resume Begin");
         if (isClientClose_ && client_ != nullptr && currentRequest_ != nullptr) {
             isClientClose_ = false;
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
+            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
         }
         requestQue_->SetActive(true);
         if (currentRequest_ != nullptr) {
@@ -419,6 +422,11 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
     FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
         "not Retry, client null or isDestructor or isInterruptNeeded");
+    if (isAppBackground_) {
+        Pause(true);
+        MEDIA_LOG_I("Retry avoid, forground to background.");
+        return true;
+    }
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("Retry Begin");
@@ -438,7 +446,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
                 currentRequest_->dropedDataLen_ = 0;
                 MEDIA_LOG_D("Do retry.");
             }
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
+            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
             requestQue_->SetActive(true);
             currentRequest_->isEos_ = false;
         }
@@ -476,7 +484,7 @@ bool Downloader::BeginDownload()
         MEDIA_LOG_I("Set default UA.");
     }
     
-    int32_t timeoutMs = currentRequest_->requestInfo_.timeoutMs;
+    int32_t timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
     FALSE_RETURN_V(!url.empty(), false);
     if (client_) {
         client_->Open(url, httpHeader, timeoutMs);
@@ -537,9 +545,9 @@ void Downloader::RequestData()
     RequestInfo sourceInfo;
     sourceInfo.url = currentRequest_->url_;
     sourceInfo.httpHeader = currentRequest_->httpHeader_;
-    sourceInfo.timeoutMs = currentRequest_->requestInfo_.timeoutMs;
+    sourceInfo.timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
 
-    auto handleResponseCb = [this](NetworkClientErrorCode clientCode, NetworkServerErrorCode serverCode, Status ret) {
+    auto handleResponseCb = [this](int32_t clientCode, int32_t serverCode, Status ret) {
         currentRequest_->clientError_ = clientCode;
         currentRequest_->serverError_ = serverCode;
         if (isDestructor_) {
@@ -968,10 +976,41 @@ void Downloader::WaitLoopPause()
     MEDIA_LOG_I("Downloader WaitLoopPause task loopStatus_ %{public}d", loopStatus_.load());
     loopStatus_ = LoopStatus::PAUSE;
     loopPauseCond_.Wait(lk, [this]() {
-        return loopStatus_ == LoopStatus::IDLE || isInterruptNeeded_;
+        return loopStatus_ != LoopStatus::PAUSE || isInterruptNeeded_;
     });
 }
 
+void Downloader::SetAppState(bool isAppBackground)
+{
+    isAppBackground_ = isAppBackground;
+}
+
+void Downloader::StopBufferring()
+{
+    MediaAVCodec::AVCodecTrace trace("Downloader::StopBufferring");
+    if (task_ == nullptr || currentRequest_ == nullptr) {
+        MEDIA_LOG_E("Downloader StopBufferring error.");
+        return;
+    }
+    if (isAppBackground_) {
+        if (!task_->IsTaskRunning() && client_ != nullptr) {
+            MEDIA_LOG_I("StopBufferring: is task not running.");
+            client_->Close(false);
+        }
+    } else {
+        if (currentRequest_ != nullptr && !shouldStartNextRequest) {
+            int64_t lastStartPos = currentRequest_->startPos_; // downlaod from last pos
+            BeginDownload();
+            currentRequest_->startPos_ = lastStartPos;
+            if (currentRequest_->startPos_ > 0) {
+                currentRequest_->retryOnGoing_ = true;
+                currentRequest_->dropedDataLen_ = 0;
+            }
+            MEDIA_LOG_I("StopBufferring: begin pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
+        }
+        Start();
+    }
+}
 }
 }
 }
