@@ -85,14 +85,11 @@ bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
     }
     OH_AVErrCode ret = g_vDecSample->InputFuncFUZZ(data, size);
     g_vDecSample->SetParameter(data_);
-    if (ret == AV_ERR_NO_MEMORY) {
-        g_vDecSample->Flush();
-        g_vDecSample->Stop();
-        g_vDecSample->Reset();
-        delete g_vDecSample;
-        g_vDecSample = nullptr;
-        return false;
-    }
+    g_vDecSample->Flush();
+    g_vDecSample->Stop();
+    g_vDecSample->Reset();
+    delete g_vDecSample;
+    g_vDecSample = nullptr;
     return true;
 }
 } // namespace OHOS

@@ -149,7 +149,7 @@ void DemuxerSample::RunNormalDemuxerApi11(const uint8_t *data, size_t size)
                 gReadEnd = true;
                 break;
             }
-            OH_AVFormat_GetIntValue(trackFormat, reinterpret_cast<const char*>(data), &gTrackType);
+            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &gTrackType);
             if (trackFormat) {
                 OH_AVFormat_Destroy(trackFormat);
                 trackFormat = nullptr;
