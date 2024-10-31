@@ -910,6 +910,40 @@ void FreeContext(AVFormatContext* formatContext, AVIOContext* avioContext)
     }
 }
 
+int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputFormat> pluginImpl)
+{
+    FALSE_RETURN_V_MSG_E(formatContext && pluginImpl, nullptr, "AVFormatContext is nullptr");
+    MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
+    auto begin = std::chrono::system_clock::now();
+    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl.get(), &options);
+    if (ret < 0) {
+        FreeContext(formatContext, formatContext->pb);
+        MEDIA_LOG_E("Call avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
+            pluginImpl->name, AVStrError(ret).c_str());
+        return ret;
+    }
+
+    auto open = std::chrono::system_clock::now();
+    if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
+        formatContext->probesize = LIVE_FLV_PROBE_SIZE;
+    }
+
+    ret = avformat_find_stream_info(formatContext, NULL);
+    auto parse = std::chrono::system_clock::now();
+    int openSpend = static_cast<int>(static_cast<std::chrono::duration<double, std::milli>>(open - begin).count());
+    int parseSpend = static_cast<int>(static_cast<std::chrono::duration<double, std::milli>>(parse - open).count());
+    if (openSpend + parseSpend > INIT_TIME_THRESHOLD) {
+        MEDIA_LOG_W("Spend [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]", openSpend, parseSpend);
+    }
+    if (ret < 0) {
+        FreeContext(formatContext, formatContext->pb);
+        MEDIA_LOG_E("Parse stream info failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
+            pluginImpl->name, AVStrError(ret).c_str());
+        return ret;
+    }
+    return 0;
+}
+
 std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOContext *ioContext)
 {
     AVFormatContext* formatContext = avformat_alloc_context();
@@ -930,34 +964,10 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     if (ioContext_.dataSource->IsDash()) {
         av_dict_set(&options, "use_tfdt", "true", 0);
     }
-    MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
-    auto begin = std::chrono::system_clock::now();
-    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), &options);
-    if (ret < 0) {
-        FreeContext(formatContext, formatContext->pb);
-        MEDIA_LOG_E("Call avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
-            pluginImpl_->name, AVStrError(ret).c_str());
-        return nullptr;
-    }
+    
+    int ret = ParseHeader(formatContext, pluginImpl_);
+    FALSE_RETURN_V_MSG_E(ret >= 0, nullptr, "ParseHeader failed");
 
-    auto open = std::chrono::system_clock::now();
-    if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
-        formatContext->probesize = LIVE_FLV_PROBE_SIZE;
-    }
-
-    ret = avformat_find_stream_info(formatContext, NULL);
-    auto parse = std::chrono::system_clock::now();
-    int openSpend = static_cast<int>(static_cast<std::chrono::duration<double, std::milli>>(open - begin).count());
-    int parseSpend = static_cast<int>(static_cast<std::chrono::duration<double, std::milli>>(parse - open).count());
-    if (openSpend + parseSpend > INIT_TIME_THRESHOLD) {
-        MEDIA_LOG_W("Spend [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]", openSpend, parseSpend);
-    }
-    if (ret < 0) {
-        FreeContext(formatContext, formatContext->pb);
-        MEDIA_LOG_E("Parse stream info failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
-            pluginImpl_->name, AVStrError(ret).c_str());
-        return nullptr;
-    }
     std::shared_ptr<AVFormatContext> retFormatContext =
         std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *ptr) {
             if (ptr) {
