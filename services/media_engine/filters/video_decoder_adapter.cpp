@@ -354,7 +354,6 @@ int32_t VideoDecoderAdapter::GetOutputFormat(Format &format)
 
 int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
 {
-    MEDIA_LOG_I_SHORT("VideoDecoderAdapter::ReleaseOutputBuffer");
     mediaCodec_->ReleaseOutputBuffer(index, render);
     FALSE_RETURN_V(render, 0);
     if (currentTime_ == -1) {
