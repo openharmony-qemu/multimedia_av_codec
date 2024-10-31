@@ -173,7 +173,8 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
         MEDIA_LOG_I("HLS PutRequestIntoDownloader init readOffset." PUBLIC_LOG_U64, readOffset_);
         readTsIndex_ = writeTsIndex_;
-        MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32, readTsIndex_.load());
+        uint32_t readTsIndexTempValue = readTsIndex_.load();
+        MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32, readTsIndexTempValue);
     }
     writeOffset_ = SpliceOffset(writeTsIndex_, 0);
     MEDIA_LOG_I("HLS PutRequestIntoDwonloader update writeOffset_." PUBLIC_LOG_U64, writeOffset_);
@@ -415,9 +416,10 @@ Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& read
         ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
         canWrite_ = true;
         OnReadBuffer(readDataInfo.realReadLength_);
+        uint32_t readTsIndexTempValue = readTsIndex_.load();
         MEDIA_LOG_D("HLS Read Success: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
             PUBLIC_LOG_D32 " readOffset_ " PUBLIC_LOG_U64 " readTsIndex_ " PUBLIC_LOG_U32, readDataInfo.wantReadLength_,
-            readDataInfo.realReadLength_, readDataInfo.isEos_, readOffset_, readTsIndex_.load());
+            readDataInfo.realReadLength_, readDataInfo.isEos_, readOffset_, readTsIndexTempValue);
         return Status::OK;
     }
     if (isFinishedPlay && GetBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
