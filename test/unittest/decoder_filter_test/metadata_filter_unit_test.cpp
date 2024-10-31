@@ -138,10 +138,10 @@ HWTEST_F(MetaDataFilterUnitTest, UpdateBufferConfig_001, TestSize.Level1)
     EXPECT_EQ(metaData->totalPausedTime_, 0);
 }
 
-sptr<MockConsumerSurface> MockConsumerSurface::CreateSurfaceAsConsumer(std::string name, bool isShared)
+sptr<MockConsumerSurface> MockConsumerSurface::CreateSurfaceAsConsumer(std::string name)
 {
-    sptr<MockConsumerSurface> surf = new MockConsumerSurface(name, isShared);
-    sptr<BufferQueue> queue_ = new BufferQueue(surf->name_, surf->isShared_);
+    sptr<MockConsumerSurface> surf = new MockConsumerSurface(name);
+    sptr<BufferQueue> queue_ = new BufferQueue(surf->name_);
     surf->producer_ = new BufferQueueProducer(queue_);
     surf->consumer_ = new BufferQueueConsumer(queue_);
     surf->uniqueId_ = surf->producer_->GetUniqueId();
