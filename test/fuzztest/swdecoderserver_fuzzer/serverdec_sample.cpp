@@ -29,26 +29,26 @@ namespace {
 
 void VDecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    tester_->Flush();
-    tester_->Reset();
+    tester->Flush();
+    tester->Reset();
 }
 
 void VDecServerSample::CallBack::OnOutputFormatChanged(const Format &format)
 {
-    tester_->GetOutputFormat();
+    tester->GetOutputFormat();
 }
 
 void VDecServerSample::CallBack::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    unique_lock<mutex> lock(tester_->signal_->inMutex_);
-    tester_->signal_->inIdxQueue_.push(index);
-    tester_->signal_->inBufferQueue_.push(buffer);
-    tester_->signal_->inCond_.notify_all();
+    unique_lock<mutex> lock(tester->signal_->inMutex_);
+    tester->signal_->inIdxQueue_.push(index);
+    tester->signal_->inBufferQueue_.push(buffer);
+    tester->signal_->inCond_.notify_all();
 }
 
 void VDecServerSample::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    tester_->codec_->ReleaseOutputBuffer(index);
+    tester->codec_->ReleaseOutputBuffer(index);
 }
 
 VDecServerSample::~VDecServerSample()

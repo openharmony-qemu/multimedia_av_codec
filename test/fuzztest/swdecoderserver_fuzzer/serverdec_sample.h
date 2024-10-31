@@ -65,14 +65,14 @@ protected:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::thread> inputLoop_;
     struct CallBack : public MediaCodecCallback {
-        explicit CallBack(VDecServerSample* tester) : tester_(tester) {}
+        explicit CallBack(VDecServerSample* tester) : tester(tester) {}
         ~CallBack() override = default;
         void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
         void OnOutputFormatChanged(const Format &format) override;
         void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
         void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     private:
-        VDecServerSample* tester_;
+        VDecServerSample* tester;
     };
 };
 } // namespace Media
