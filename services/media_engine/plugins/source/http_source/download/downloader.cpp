@@ -166,8 +166,9 @@ void DownloadRequest::WaitHeaderUpdated() const
         Task::SleepInTask(SLEEP_TIME);
         times_++;
     }
+    uint32_t headerIsClosed = static_cast<uint32_t>(headerInfo_.isClosed.load());
     MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
-        isHeaderUpdated, times_, headerInfo_.isClosed.load());
+        isHeaderUpdated, times_, headerIsClosed);
 }
 
 double DownloadRequest::GetDuration() const
