@@ -41,10 +41,28 @@ public:
     void SetLastPts(int64_t lastPts);
     Status SetParameter(const std::shared_ptr<Meta>& meta);
     void UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+    Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
 private:
     float GetSpeed(float speed);
     void UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
         const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+
+    class VideoLagDetector : public LagDetector {
+    public:
+        void Reset() override;
+        bool CalcLag(std::shared_ptr<AVBuffer> buffer) override;
+        void GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
+        void ResolveLagEvent(const int64_t &lagTimeMs);
+        void SetEventReceiver(const std::shared_ptr<EventReceiver> eventReceiver);
+    private:
+        int64_t lagTimes_ = 0;
+        int64_t maxLagDuration_ = 0;
+        int64_t lastSystemTimeMs_ = 0;
+        int64_t lastBufferTimeMs_ = 0;
+        int64_t totalLagDuration_ = 0;
+        std::shared_ptr<EventReceiver> eventReceiver_ { nullptr };
+    };
+
     std::atomic<bool> needUpdateTimeAnchor_ {true};
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};
@@ -68,6 +86,7 @@ private:
     int64_t lastPts_ = -1;
     int64_t lastClockTime_ = -1;
     std::atomic<bool> isRenderStarted_{false};
+    VideoLagDetector lagDetector_ {};
 };
 } // namespace Pipeline
 } // namespace Media
