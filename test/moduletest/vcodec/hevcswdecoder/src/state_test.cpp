@@ -97,7 +97,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0100, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         int32_t ret = vDecSample->Stop();
-        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
         ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
         ret = vDecSample->SetVideoDecoderCallback();
@@ -1149,7 +1149,7 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5400, TestSize.Level2)
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Stop();
-        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
         ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
         ret = vDecSample->SetVideoDecoderCallback();

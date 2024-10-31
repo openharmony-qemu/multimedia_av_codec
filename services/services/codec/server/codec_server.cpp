@@ -340,6 +340,8 @@ int32_t CodecServer::Stop()
 {
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOGW(status_ != CONFIGURED, AVCS_ERR_OK, "Already in %{public}s state",
+                             GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM || status_ == FLUSHED,
                              AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                              GetStatusDescription(status_).data());
@@ -359,6 +361,8 @@ int32_t CodecServer::Flush()
 {
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOGW(status_ != FLUSHED, AVCS_ERR_OK, "Already in %{public}s state",
+                             GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
