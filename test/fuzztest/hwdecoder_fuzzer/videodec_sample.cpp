@@ -414,6 +414,8 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
     if (memcpy_s(bufferAddr, bufferSize, data, size) != EOK) {
         cout << "Fatal: memcpy fail" << endl;
         OH_VideoDecoder_PushInputData(vdec_, index, attr);
+        signal_->inIdxQueue_.pop();
+        signal_->inBufferQueue_.pop();
         return AV_ERR_NO_MEMORY;
     }
     attr.pts = GetSystemTimeUs();

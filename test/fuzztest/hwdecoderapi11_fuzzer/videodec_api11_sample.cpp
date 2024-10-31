@@ -219,16 +219,22 @@ OH_AVErrCode VDecApi11FuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size
     uint8_t *bufferAddr = OH_AVBuffer_GetAddr(buffer);
     if (size > bufferSize - START_CODE_SIZE) {
         OH_VideoDecoder_PushInputBuffer(vdec_, index);
+        signal_->inIdxQueue_.pop();
+        signal_->inBufferQueue_.pop();
         cout << "Fatal: memcpy fail" << endl;
         return AV_ERR_NO_MEMORY;
     }
     if (memcpy_s(bufferAddr, bufferSize, START_CODE, START_CODE_SIZE) != EOK) {
         OH_VideoDecoder_PushInputBuffer(vdec_, index);
+        signal_->inIdxQueue_.pop();
+        signal_->inBufferQueue_.pop();
         cout << "Fatal: memcpy fail" << endl;
         return AV_ERR_NO_MEMORY;
     }
     if (memcpy_s(bufferAddr + START_CODE_SIZE, bufferSize - START_CODE_SIZE, data, size) != EOK) {
         OH_VideoDecoder_PushInputBuffer(vdec_, index);
+        signal_->inIdxQueue_.pop();
+        signal_->inBufferQueue_.pop();
         cout << "Fatal: memcpy fail" << endl;
         return AV_ERR_NO_MEMORY;
     }
