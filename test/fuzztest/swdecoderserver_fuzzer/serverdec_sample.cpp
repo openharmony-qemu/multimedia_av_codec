@@ -57,7 +57,7 @@ VDecServerSample::~VDecServerSample()
         codec_->Stop();
         codec_->Release();
         FCodec *codec = reinterpret_cast<FCodec*>(codec_.get());
-        codec_->DecStrongRef(codec);
+        codec->DecStrongRef(codec);
     }
     if (signal_ != nullptr) {
         delete signal_;
