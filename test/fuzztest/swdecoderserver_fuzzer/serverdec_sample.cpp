@@ -68,10 +68,10 @@ VDecServerSample::~VDecServerSample()
 int32_t VDecServerSample::ConfigServerDecoder()
 {
     Format fmt;
-    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, Width);
-    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, Height);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, 1);
-    fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, FrameRate);
+    fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, 0);
     return codec_->Configure(fmt);
 }
@@ -119,7 +119,7 @@ void VDecServerSample::RunVideoServerDecoder()
 
 void VDecServerSample::InputFunc()
 {
-    while (sendFrameIndex < FrameIndex) {
+    while (sendFrameIndex < frameIndex) {
         if (!isRunning_.load()) {
             break;
         }

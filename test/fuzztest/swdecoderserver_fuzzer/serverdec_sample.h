@@ -56,10 +56,10 @@ public:
     const uint8_t *fuzzData;
     size_t fuzzSize;
     int sendFrameIndex = 0;
-    int32_t Width = 1920;
-    int32_t Height = 1080;
-    int32_t FrameRate = 30;
-    int32_t FrameIndex = 10;
+    int32_t width = 1920;
+    int32_t height = 1080;
+    int32_t frameRate = 30;
+    int32_t frameIndex = 10;
 protected:
     std::shared_ptr<CodecBase> codec_;
     std::atomic<bool> isRunning_ { false };
