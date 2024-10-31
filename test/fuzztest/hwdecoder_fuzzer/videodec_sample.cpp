@@ -407,16 +407,16 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
     lock.unlock();
     int32_t bufferSize = OH_AVMemory_GetSize(buffer);
     uint8_t *bufferAddr = OH_AVMemory_GetAddr(buffer);
-
-    if (memcpy_s(bufferAddr, bufferSize, data, size) != EOK) {
-        cout << "Fatal: memcpy fail" << endl;
-        return AV_ERR_NO_MEMORY;
-    }
     OH_AVCodecBufferAttr attr;
-    attr.pts = GetSystemTimeUs();
     attr.size = bufferSize;
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+    if (memcpy_s(bufferAddr, bufferSize, data, size) != EOK) {
+        cout << "Fatal: memcpy fail" << endl;
+        OH_VideoDecoder_PushInputData(vdec_, index, attr);
+        return AV_ERR_NO_MEMORY;
+    }
+    attr.pts = GetSystemTimeUs();
     OH_AVErrCode ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);
     signal_->inIdxQueue_.pop();
     signal_->inBufferQueue_.pop();
