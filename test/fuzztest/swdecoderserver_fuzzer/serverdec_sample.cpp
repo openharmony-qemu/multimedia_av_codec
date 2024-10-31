@@ -29,8 +29,9 @@ namespace {
 
 void VDecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    tester->Flush();
-    tester->Reset();
+    cout << "--OnError--" << endl;
+    tester->isRunning_.store(false);
+    tester->signal_->inCond_.notify_all();
 }
 
 void VDecServerSample::CallBack::OnOutputFormatChanged(const Format &format)
