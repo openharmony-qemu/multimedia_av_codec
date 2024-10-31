@@ -416,12 +416,14 @@ int32_t IFrameIntervalChecker(CapabilityData &capData, Format &format, CodecScen
 {
     (void)capData;
     (void)scenario;
-    int32_t iFrameInterval;
 
-    constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 1000;
+    int32_t iFrameInterval;
     bool iFrameIntervalExist = format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
     if (!iFrameIntervalExist) {
+        constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 1000;
         format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
+    } else {
+        PrintParam(iFrameIntervalExist, Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
     }
 
     return AVCS_ERR_OK;

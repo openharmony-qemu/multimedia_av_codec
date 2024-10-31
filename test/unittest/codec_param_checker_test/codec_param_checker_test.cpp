@@ -784,6 +784,46 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MATRIX_COEFFICIENTS_VALID_TEST_0902
 }
 
 /**
+ * @tc.name: ENCODE_KEY_I_FRAME_INTERVAL_VALID_TEST_1001
+ * @tc.desc: codec video configure key i frame interval set default value 1500
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_I_FRAME_INTERVAL_VALID_TEST_1001, TestSize.Level3)
+{
+    constexpr int32_t defaultIFrameInterval = 1500;
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_I_FRAME_INTERVAL, defaultIFrameInterval));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: ENCODE_KEY_I_FRAME_INTERVAL_VALID_TEST_1002
+ * @tc.desc: codec video configure key i frame interval set a negative value
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_I_FRAME_INTERVAL_VALID_TEST_1002, TestSize.Level3)
+{
+    constexpr int32_t defaultIFrameInterval = -2;
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_I_FRAME_INTERVAL, defaultIFrameInterval));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: ENCODE_KEY_I_FRAME_INTERVAL_VALID_TEST_1003
+ * @tc.desc: codec video configure key i frame interval not set
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_I_FRAME_INTERVAL_VALID_TEST_1003, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+/**
  * @tc.name: ENCODE_KEY_MATRIX_COEFFICIENTS_VALID_TEST_0903
  * @tc.desc: codec video configure matrix coefficients unsupport
  * @tc.type: FUNC
