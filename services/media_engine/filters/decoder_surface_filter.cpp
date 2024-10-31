@@ -642,6 +642,8 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         MEDIA_LOG_W("Avoid render video frame with pts=" PUBLIC_LOG_D64, outBuffer->pts_);
         videoDecoder_->ReleaseOutputBuffer(index, false);
     } else {
+        MEDIA_LOG_D("ReleaseOutputBuffer index= " PUBLIC_LOG_D32" isRender= " PUBLIC_LOG_U32" pts= " PUBLIC_LOG_D64,
+                    index, static_cast<uint32_t>(render), outBuffer->pts_);
         videoDecoder_->ReleaseOutputBuffer(index, render);
     }
     if (!isInSeekContinous_) {
