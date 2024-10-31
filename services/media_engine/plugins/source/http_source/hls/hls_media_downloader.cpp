@@ -377,9 +377,10 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
         }
         readTsIndex_--;
         uint64_t lastTsReadBack = readBack - curTsHaveRead;
+        uint32_t readTsIndexTempValue = readTsIndex_.load();
         readOffset_ = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first - lastTsReadBack);
         MEDIA_LOG_I("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
-            PUBLIC_LOG_U64, readTsIndex_.load(), readOffset_);
+            PUBLIC_LOG_U64, readTsIndexTempValue, readOffset_);
     }
 }
 
