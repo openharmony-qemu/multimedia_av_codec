@@ -190,6 +190,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/hwdecoder_fuzzer:HwdecoderFuzzTest",
       "fuzztest/hwdecoderapi11_fuzzer:HwdecoderApi11FuzzTest",
       "fuzztest/swdecoderconfigure_fuzzer:SwdecoderConfigureFuzzTest",
+      "fuzztest/swdecoderserver_fuzzer:SwdecoderServerFuzzTest",
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
       "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
     ]
