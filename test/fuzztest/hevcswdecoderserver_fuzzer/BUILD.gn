@@ -33,8 +33,8 @@ ohos_fuzztest("HevcSwdecoderServerFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "hevcswdecoderserver_fuzzer.cpp",
     "hevcserverdec_sample.cpp",
+    "hevcswdecoderserver_fuzzer.cpp",
   ]
   external_deps = [
     "c_utils:utils",
@@ -59,7 +59,7 @@ group("fuzztest") {
   deps = []
   deps += [
     # deps file
-    ":HevcSwdecoderServerFuzzTest", #引用测试套
+    ":HevcSwdecoderServerFuzzTest",  #引用测试套
   ]
 }
 ###############################################################################
