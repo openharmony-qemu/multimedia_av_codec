@@ -425,6 +425,8 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
         return AV_ERR_TIMEOUT;
     index = signal_->inIdxQueue_.front();
     auto buffer = signal_->inBufferQueue_.front();
+    signal_->inIdxQueue_.pop();
+    signal_->inBufferQueue_.pop();
     lock.unlock();
     int32_t bufferSize = OH_AVMemory_GetSize(buffer);
     uint8_t *bufferAddr = OH_AVMemory_GetAddr(buffer);
@@ -439,8 +441,6 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     OH_AVErrCode ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);
-    signal_->inIdxQueue_.pop();
-    signal_->inBufferQueue_.pop();
     return ret;
 }
 

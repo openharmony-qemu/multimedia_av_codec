@@ -28,8 +28,8 @@ public:
     DemuxerSample() = default;
     ~DemuxerSample();
     const char *filePath = "/data/test/fuzz_create.mp4";
-    void RunNormalDemuxer();
-    void RunNormalDemuxerApi11();
+    void RunNormalDemuxer(const uint8_t *data, size_t size);
+    void RunNormalDemuxerApi11(const uint8_t *data, size_t size);
 private:
     void ResetFlag();
     int CreateDemuxer();

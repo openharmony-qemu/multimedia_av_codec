@@ -85,7 +85,7 @@ int DemuxerSample::CreateDemuxer()
     return 0;
 }
 
-void DemuxerSample::RunNormalDemuxer()
+void DemuxerSample::RunNormalDemuxer(const uint8_t *data, size_t size)
 {
     gReadEnd = false;
     int ret = CreateDemuxer();
@@ -100,7 +100,7 @@ void DemuxerSample::RunNormalDemuxer()
     for (int32_t index = 0; index < gTrackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    memory = OH_AVMemory_Create(gWidth * gHeight);
+    memory = OH_AVMemory_Create(size);
     while (!gReadEnd && gTrackCount > 0) {
         for (int32_t index = 0; index < gTrackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
@@ -108,7 +108,7 @@ void DemuxerSample::RunNormalDemuxer()
                 gReadEnd = true;
                 break;
             }
-            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &gTrackType);
+            OH_AVFormat_GetIntValue(trackFormat, reinterpret_cast<const char*>(data), &gTrackType);
             if (trackFormat) {
                 OH_AVFormat_Destroy(trackFormat);
                 trackFormat = nullptr;
@@ -126,7 +126,7 @@ void DemuxerSample::RunNormalDemuxer()
     }
 }
 
-void DemuxerSample::RunNormalDemuxerApi11()
+void DemuxerSample::RunNormalDemuxerApi11(const uint8_t *data, size_t size)
 {
     gReadEnd = false;
     int ret = CreateDemuxer();
@@ -141,7 +141,7 @@ void DemuxerSample::RunNormalDemuxerApi11()
     for (int32_t index = 0; index < gTrackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    buffer = OH_AVBuffer_Create(gWidth * gHeight);
+    buffer = OH_AVBuffer_Create(size);
     while (!gReadEnd && gTrackCount > 0) {
         for (int32_t index = 0; index < gTrackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
