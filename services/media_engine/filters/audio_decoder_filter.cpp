@@ -149,13 +149,6 @@ Status AudioDecoderFilter::DoPrepare()
     return Status::OK;
 }
 
-Status AudioDecoderFilter::DoPrepareFrame(bool renderFirstFrame)
-{
-    MEDIA_LOG_I_SHORT("AudioDecoderFilter::PrepareFrame.");
-    (void)renderFirstFrame;
-    return (Status)mediaCodec_->Start();
-}
-
 Status AudioDecoderFilter::DoStart()
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::Start.");
@@ -446,9 +439,6 @@ void AudioDecoderFilter::OnError(CodecErrorType errorType, int32_t errorCode)
     switch (errorType) {
         case CodecErrorType::CODEC_DRM_DECRYTION_FAILED:
             eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_DRM_VERIFICATION_FAILED});
-            break;
-        case CodecErrorType::CODEC_ERROR_INTERNAL:
-            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, errorCode});
             break;
         default:
             break;

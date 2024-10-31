@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <utility>
 #include <sstream>
+#include <iomanip>
 #include "m3u8.h"
 #include "base64_utils.h"
 
@@ -319,8 +320,7 @@ void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &
     std::shared_ptr<DownloadRequest> &request)
 {
     // This should not be called normally
-    if (request->GetClientError() != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)
-        || request->GetServerError() != 0) {
+    if (request->GetClientError() != 0 || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
 }
@@ -356,7 +356,7 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
             std::stringstream ssConverter;
             std::string uuidString;
             for (uint32_t i = 0; i < uuidSize; i++) {
-                ssConverter << std::hex << static_cast<int32_t>(uuid[i]);
+                ssConverter << std::hex << std::setfill('0') << std::setw(2) << static_cast<int32_t>(uuid[i]); // 2:w
                 uuidString = ssConverter.str();
             }
             drmInfo.insert({ uuidString, std::vector<uint8_t>(pssh, pssh + psshSize) });

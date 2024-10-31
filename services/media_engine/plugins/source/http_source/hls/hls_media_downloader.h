@@ -32,6 +32,8 @@
 #include "utils/write_bitrate_caculator.h"
 #include "utils/media_cached_buffer.h"
 #include <utility>
+#include "osal/task/mutex.h"
+#include "osal/task/condition_variable.h"
 
 namespace OHOS {
 namespace Media {
@@ -102,7 +104,7 @@ public:
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
     Status StopBufferring(bool isAppBackground) override;
-    bool IsBuffering() override;
+    void WaitForBufferingEnd() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -152,6 +154,7 @@ private:
     void HlsInit();
     bool SaveCacheBufferData(uint8_t* data, uint32_t len);
     bool ClearChunksOfFragment();
+    size_t GetCrossTsBuffersize();
 
 private:
     size_t totalBufferSize_ {0};
@@ -250,7 +253,7 @@ private:
     std::string mimeType_;
     size_t waterLineAbove_ {0};
     bool isInterrupt_ {false};
-    bool isBuffering_ {false};
+    std::atomic<bool> isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
     std::atomic<bool> isSeekingFlag {false};
     Mutex switchMutex_ {};
@@ -265,6 +268,7 @@ private:
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
+    std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     uint64_t readOffset_ {0};
     uint64_t writeOffset_ {0};
@@ -277,6 +281,9 @@ private:
     FairMutex tsStorageInfoMutex_ {};
 
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
+
+    FairMutex bufferingEndMutex_ {};
+    ConditionVariable bufferingEndCond_;
 };
 }
 }

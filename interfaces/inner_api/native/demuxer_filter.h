@@ -20,7 +20,7 @@
 #include <unordered_set>
 #include "common/seek_callback.h"
 #include "filter/filter.h"
-#include "media_demuxer.h"
+#include "demuxer/media_demuxer.h"
 #include "meta/meta.h"
 #include "meta/media_types.h"
 #include "osal/task/mutex.h"
@@ -35,7 +35,6 @@ public:
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
     Status DoPrepare() override;
-    Status DoPrepareFrame(bool renderFirstFrame) override;
     Status DoStart() override;
     Status DoStop() override;
     Status DoPause() override;
@@ -43,6 +42,8 @@ public:
     Status DoResume() override;
     Status DoResumeDragging() override;
     Status DoFlush() override;
+    Status DoPreroll() override;
+    Status DoWaitPrerollDone(bool render) override;
     Status Reset();
     Status PauseForSeek();
     Status ResumeForSeek();
@@ -103,7 +104,7 @@ public:
     void DeregisterVideoStreamReadyCallback();
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
-    bool IsBuffering();
+    void WaitForBufferingEnd();
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -125,7 +126,6 @@ private:
     std::string CollectVideoAndAudioMime();
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
-    std::atomic<bool> isPrepareFramed{false};
 
     std::shared_ptr<Filter> nextFilter_;
     std::shared_ptr<MediaDemuxer> demuxer_;

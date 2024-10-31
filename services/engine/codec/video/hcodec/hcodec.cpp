@@ -854,16 +854,17 @@ bool HCodec::WaitFence(const sptr<SyncFence>& fence)
         return true;
     }
     SCOPED_TRACE();
+    uint64_t& waitFenceCostUs = isEncoder_ ? inputWaitFenceCostUs_ : outputWaitFenceCostUs_;
     auto before = chrono::steady_clock::now();
     int waitRes = fence->Wait(WAIT_FENCE_MS);
     if (waitRes == 0) {
-        int64_t costMs = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - before).count();
-        if (costMs >= WARN_FENCE_MS) {
-            HLOGW("wait fence succ but cost %" PRId64 " ms", costMs);
-        }
+        uint64_t costUs = static_cast<uint64_t>(
+            chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - before).count());
+        waitFenceCostUs += costUs;
         return true;
     } else {
         HLOGE("wait fence time out, cost more than %u ms", WAIT_FENCE_MS);
+        waitFenceCostUs += WAIT_FENCE_MS * TIME_RATIO_S_TO_MS;
         return false;
     }
 }

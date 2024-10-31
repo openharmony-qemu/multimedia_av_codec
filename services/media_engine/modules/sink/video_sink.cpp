@@ -79,6 +79,18 @@ void VideoSink::UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
     needUpdateTimeAnchor_ = false;
 }
 
+void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+{
+    auto syncCenter = syncCenter_.lock();
+    FALSE_RETURN(syncCenter != nullptr && buffer != nullptr);
+    syncCenter->SetLastVideoBufferPts(buffer->pts_ - firstPts_);
+    int64_t nowCt = syncCenter->GetClockTimeNow();
+    uint64_t latency = 0;
+    (void)GetLatency(latency);
+    Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_};
+    syncCenter->UpdateTimeAnchor(nowCt, latency, iMediaTime, this);
+}
+
 int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
     FALSE_RETURN_V(buffer != nullptr, false);

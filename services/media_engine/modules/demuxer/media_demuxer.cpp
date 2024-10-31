@@ -54,10 +54,8 @@ constexpr uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes 0m
 constexpr int32_t START = 1;
 constexpr int32_t PAUSE = 2;
 constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY if no buffer in avbufferqueue producer.
-constexpr uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
-constexpr uint32_t DEFAULT_PREPARE_FRAME_COUNT = 1; // Default prepare frame count 1.
 
 enum SceneCode : int32_t {
     /**
@@ -674,11 +672,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
 
 void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
-    {
-        AutoLock lock(firstFrameMutex_);
-        isInterruptNeeded_ = isInterruptNeeded;
-        firstFrameCond_.NotifyAll();
-    }
+    isInterruptNeeded_ = isInterruptNeeded;
     if (source_ != nullptr) {
         source_->SetInterruptState(isInterruptNeeded);
     }
@@ -1228,28 +1222,6 @@ Status MediaDemuxer::ResumeAllTask()
     return Status::OK;
 }
 
-Status MediaDemuxer::PauseForPrepareFrame()
-{
-    MEDIA_LOG_I("In");
-    isPaused_ = true;
-    if (streamDemuxer_ != nullptr) {
-        streamDemuxer_->SetIsIgnoreParse(true);
-        streamDemuxer_->Pause();
-    }
-    if (source_ != nullptr) {
-        source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
-        source_->Pause();
-    }
-    if (taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr) {
-        taskMap_[videoTrackId_]->PauseAsync();
-        taskMap_[videoTrackId_]->Pause();
-    }
-    if (source_ != nullptr) {
-        source_->SetReadBlockingFlag(true); // Enable source read blocking to ensure get wanted data
-    }
-    return Status::OK;
-}
-
 Status MediaDemuxer::Pause()
 {
     MEDIA_LOG_I("In");
@@ -1262,7 +1234,14 @@ Status MediaDemuxer::Pause()
         source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
         source_->Pause();
     }
-    PauseAllTask();
+    if (inPreroll_.load()) {
+        if (CheckTrackEnabledById(videoTrackId_)) {
+            taskMap_[videoTrackId_]->PauseAsync();
+            taskMap_[videoTrackId_]->Pause();
+        }
+    } else {
+        PauseAllTask();
+    }
     if (source_ != nullptr) {
         source_->SetReadBlockingFlag(true); // Enable source read blocking to ensure get wanted data
     }
@@ -1321,15 +1300,15 @@ Status MediaDemuxer::Resume()
     if (source_) {
         source_->Resume();
     }
-    if (!doPrepareFrame_) {
-        ResumeAllTask();
-    } else {
-        if (taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr) {
+    if (inPreroll_.load()) {
+        if (CheckTrackEnabledById(videoTrackId_)) {
             if (streamDemuxer_) {
                 streamDemuxer_->SetIsIgnoreParse(false);
             }
             taskMap_[videoTrackId_]->Start();
         }
+    } else {
+        ResumeAllTask();
     }
     isPaused_ = false;
     return Status::OK;
@@ -1411,7 +1390,11 @@ Status MediaDemuxer::Start()
     isThreadExit_ = false;
     isStopped_ = false;
     isDemuxerLoopExecuting_ = true;
-    if (!doPrepareFrame_) {
+    if (inPreroll_.load()) {
+        if (CheckTrackEnabledById(videoTrackId_)) {
+            taskMap_[videoTrackId_]->Start();
+        }
+    } else {
         auto it = bufferQueueMap_.begin();
         while (it != bufferQueueMap_.end()) {
             uint32_t trackId = it->first;
@@ -1422,13 +1405,45 @@ Status MediaDemuxer::Start()
             }
             it++;
         }
-    } else {
-        if (taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr) {
-            taskMap_[videoTrackId_]->Start();
-        }
     }
     source_->Start();
     return demuxerPluginManager_->Start();
+}
+
+Status MediaDemuxer::Preroll()
+{
+    std::lock_guard<std::mutex> lock(prerollMutex_);
+    if (inPreroll_.load()) {
+        return Status::OK;
+    }
+    if (!CheckTrackEnabledById(videoTrackId_)) {
+        return Status::OK;
+    }
+    inPreroll_.store(true);
+    MEDIA_LOG_D("Preroll enter.");
+    Status ret = Status::OK;
+    if (isStopped_.load()) {
+        ret = Start();
+    } else if (isPaused_.load()) {
+        ret = Resume();
+    }
+    if (ret != Status::OK) {
+        inPreroll_.store(false);
+        MEDIA_LOG_E("Preroll failed, ret: %{public}d", ret);
+    }
+    return ret;
+}
+
+Status MediaDemuxer::PausePreroll()
+{
+    std::lock_guard<std::mutex> lock(prerollMutex_);
+    if (!inPreroll_.load()) {
+        return Status::OK;
+    }
+    MEDIA_LOG_D("Preroll enter.");
+    Status ret = Pause();
+    inPreroll_.store(false);
+    return ret;
 }
 
 Status MediaDemuxer::Stop()
@@ -1457,42 +1472,6 @@ Status MediaDemuxer::Stop()
 bool MediaDemuxer::HasVideo()
 {
     return videoTrackId_ != TRACK_ID_DUMMY;
-}
-
-Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
-{
-    MEDIA_LOG_D("In");
-    doPrepareFrame_ = true;
-    Status ret = Status::OK;
-    if (isStopped_) {
-        MEDIA_LOG_D("Stop was executed before and prepareFrame");
-        firstFrameCount_ = 0;
-        ret = Start();
-    } else if (!isThreadExit_ || (firstFrameCount_ >= DEFAULT_PREPARE_FRAME_COUNT) || waitForDataFail_) {
-        waitForDataFail_ = false;
-        firstFrameCount_ = 0;
-        ret = Resume();
-    } else {
-        ret = Start();
-    }
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("PrepareFrame and start demuxer failed");
-        doPrepareFrame_ = false;
-        return ret;
-    }
-    {
-        AutoLock lock(firstFrameMutex_);
-        bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
-            return (firstFrameCount_ >= DEFAULT_PREPARE_FRAME_COUNT) || isInterruptNeeded_;
-        });
-        MEDIA_LOG_I("Wait finish, res=%{public}d isInterruptNeeded=%{public}d", res, isInterruptNeeded_.load());
-        doPrepareFrame_ = false;
-        if (!res) {
-            waitForDataFail_ = true;
-            MEDIA_LOG_I("Timeout, not enough data");
-        }
-    }
-    return PauseForPrepareFrame();
 }
 
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
@@ -1882,15 +1861,6 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
                 MEDIA_LOG_D("EventReceiver is nullptr");
             }
         }
-        if (ret == Status::OK && doPrepareFrame_) {
-            AutoLock lock(firstFrameMutex_);
-            firstFrameCount_++;
-            firstFrameCond_.NotifyAll();
-            bool isTaskExistInMap = taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr;
-            if (isTaskExistInMap) {
-                taskMap_[trackId]->Pause();
-            }
-        }
         bool isNeedRetry = ret == Status::OK || ret == Status::ERROR_AGAIN;
         if (isNeedRetry) {
             return 0; // retry next frame
@@ -2110,6 +2080,21 @@ bool MediaDemuxer::IsTrackDisabled(Plugins::MediaType mediaType)
     return !disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end();
 }
 
+bool MediaDemuxer::CheckTrackEnabledById(uint32_t trackId)
+{
+    bool hasTrack = trackId != TRACK_ID_DUMMY;
+    if (!hasTrack) {
+        return false;
+    }
+    bool hasTask = taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr;
+    if (!hasTask) {
+        return false;
+    }
+    bool linkNode = bufferQueueMap_.find(trackId) != bufferQueueMap_.end()
+        && bufferQueueMap_[trackId] != nullptr;
+    return linkNode;
+}
+
 void MediaDemuxer::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
 {
     MEDIA_LOG_I("Flag=" PUBLIC_LOG_D32 " desBitRate=" PUBLIC_LOG_U32,
@@ -2215,10 +2200,10 @@ void MediaDemuxer::SetEnableOnlineFdCache(bool isEnableFdCache)
     source_->SetEnableOnlineFdCache(isEnableFdCache);
 }
 
-bool MediaDemuxer::IsBuffering()
+void MediaDemuxer::WaitForBufferingEnd()
 {
-    FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "Source is nullptr");
-    return source_->IsBuffering();
+    FALSE_RETURN_MSG(source_ != nullptr, "Source is nullptr");
+    source_->WaitForBufferingEnd();
 }
 } // namespace Media
 } // namespace OHOS

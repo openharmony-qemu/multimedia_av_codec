@@ -303,16 +303,6 @@ void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
     }
 }
 
-Status DemuxerFilter::DoPrepareFrame(bool renderFirstFrame)
-{
-    MEDIA_LOG_I_SHORT("PrepareFrame.");
-    auto ret = demuxer_->PrepareFrame(renderFirstFrame);
-    if (ret == Status::OK) {
-        isPrepareFramed = true;
-    }
-    return ret;
-}
-
 Status DemuxerFilter::PrepareBeforeStart()
 {
     Status ret = Status::OK;
@@ -331,14 +321,11 @@ Status DemuxerFilter::DoStart()
 {
     if (isLoopStarted.load()) {
         MEDIA_LOG_I_SHORT("Loop is started. Resume only.");
-        return Filter::Resume();
+        return DoResume();
     }
     MEDIA_LOG_I_SHORT("Loop is not started. PrepareBeforeStart firstly.");
     isLoopStarted = true;
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
-    if (isPrepareFramed.load()) {
-        return demuxer_->Resume();
-    }
     return demuxer_->Start();
 }
 
@@ -424,6 +411,21 @@ Status DemuxerFilter::DoFlush()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Flush");
     MEDIA_LOG_D_SHORT("Flush entered");
     return demuxer_->Flush();
+}
+
+Status DemuxerFilter::DoPreroll()
+{
+    MEDIA_LOG_I("DoPreroll in");
+    Status ret = demuxer_->Preroll();
+    isLoopStarted.store(true);
+    return ret;
+}
+
+Status DemuxerFilter::DoWaitPrerollDone(bool render)
+{
+    (void)render;
+    MEDIA_LOG_I("DoWaitPrerollDone in.");
+    return demuxer_->PausePreroll();
 }
 
 Status DemuxerFilter::Reset()
@@ -790,10 +792,10 @@ bool DemuxerFilter::IsVideoEos()
     return demuxer_->IsVideoEos();
 }
 
-bool DemuxerFilter::IsBuffering()
+void DemuxerFilter::WaitForBufferingEnd()
 {
-    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
-    return demuxer_->IsBuffering();
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    demuxer_->WaitForBufferingEnd();
 }
 } // namespace Pipeline
 } // namespace Media

@@ -393,6 +393,13 @@ void VEncAPI11FuzzSample::InputFuncSurface()
             isRunning_.store(false);
             break;
         }
+        uint8_t *dst = (uint8_t *)virAddr;
+        if (dst == nullptr) {
+            break;
+        }
+        if (memcpy_s(dst, fuzzSize, fuzzData, fuzzSize) != EOK) {
+            break;
+        }
         if (frameCount == maxFrameInput) {
             err = OH_VideoEncoder_NotifyEndOfStream(venc_);
             if (err != 0) {
@@ -447,7 +454,11 @@ void VEncAPI11FuzzSample::InputFunc()
         if (fileBuffer == nullptr) {
             break;
         }
-        attr.size = OH_AVBuffer_GetCapacity(buffer);
+        if (memcpy_s(fileBuffer, fuzzSize, fuzzData, fuzzSize) != EOK) {
+            cout << "Fatal: memcpy fail" << endl;
+            break;
+        }
+        attr.size = fuzzSize;
         if (frameCount == maxFrameInput) {
             SetEOS(index, buffer);
             break;

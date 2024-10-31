@@ -751,7 +751,7 @@ bool HEncoder::ReadyToStart()
         return false;
     }
     if (inputSurface_) {
-        HLOGI("surface mode, surface id = " PRIu64, inputSurface_->GetUniqueId());
+        HLOGI("surface mode, surface id = %" PRIu64, inputSurface_->GetUniqueId());
     } else {
         HLOGI("buffer mode");
     }
@@ -867,7 +867,7 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
     if (inBufferCnt_ > inputSurface_->GetQueueSize()) {
         inputSurface_->SetQueueSize(inBufferCnt_);
     }
-    HLOGI("succ, surface id = " PRIu64 ", queue size %u",
+    HLOGI("succ, surface id = %" PRIu64 ", queue size %u",
           inputSurface_->GetUniqueId(), inputSurface_->GetQueueSize());
     return producerSurface;
 }
@@ -1166,6 +1166,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     if (inputSurface_ && bufferInfo->avBuffer->meta_->GetData(
         OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, discard) && discard) {
         HLOGI("inBufId = %u, discard by user, pts = %" PRId64, bufferId, bufferInfo->avBuffer->pts_);
+        inputDiscardCnt_++;
         bufferInfo->avBuffer->meta_->Clear();
         ResetSlot(*bufferInfo);
         ReplyErrorCode(msg.id, AVCS_ERR_OK);

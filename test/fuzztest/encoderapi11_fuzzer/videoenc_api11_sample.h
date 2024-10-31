@@ -63,6 +63,8 @@ public:
     OH_AVPixelFormat defaultPixFmt = AV_PIXEL_FORMAT_NV12;
     uint32_t defaultKeyFrameInterval = 1000;
     const char *inpDir = "/data/test/media/1280_720_nv.yuv";
+    const uint8_t *fuzzData;
+    size_t fuzzSize;
     int32_t CreateVideoEncoder();
     int32_t ConfigureVideoEncoderFuzz(int32_t data);
     int32_t ConfigureVideoEncoder();
