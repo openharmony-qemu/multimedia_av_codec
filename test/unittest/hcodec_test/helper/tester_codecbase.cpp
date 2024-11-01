@@ -519,7 +519,9 @@ bool TesterCodecBase::ConfigureDecoder()
     if (opt_.scaleMode.has_value()) {
         fmt.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, static_cast<int32_t>(opt_.scaleMode.value()));
     }
-
+    if (opt_.isVrrEnable.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_ENABLE_VRR, opt_.isVrrEnable.value());
+    }
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
     if (err != AVCS_ERR_OK) {

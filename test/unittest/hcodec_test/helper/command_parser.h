@@ -123,6 +123,7 @@ struct CommandOpt {
     std::optional<int32_t> repeatAfter;
     std::optional<int32_t> repeatMaxCnt;
     std::optional<uint32_t> layerCnt;
+    std::optional<int32_t> isVrrEnable;
     WaterMarkParam waterMark;
     bool paramsFeedback;
 
