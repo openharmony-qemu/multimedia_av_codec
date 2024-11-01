@@ -969,7 +969,7 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     
     int ret = ParseHeader(formatContext, pluginImpl_, options);
     if (options) {
-        av_dict_free(options);
+        av_dict_free(&options);
     }
     FALSE_RETURN_V_MSG_E(ret >= 0, nullptr, "ParseHeader failed");
 
