@@ -420,10 +420,9 @@ int32_t IFrameIntervalChecker(CapabilityData &capData, Format &format, CodecScen
 
     int32_t iFrameInterval;
     bool iFrameIntervalExist = format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
+    PrintParam(iFrameIntervalExist, Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
     if (!iFrameIntervalExist) {
         format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
-    } else {
-        PrintParam(iFrameIntervalExist, Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
     }
 
     return AVCS_ERR_OK;
