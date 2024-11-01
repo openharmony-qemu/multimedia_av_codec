@@ -282,7 +282,7 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
 {
     MEDIA_LOG_I("In");
     if (isInterruptNeeded_) {
-        request_->isInterruptNeeded_ = true;
+        request->isInterruptNeeded_ = true;
     }
     requestQue_->SetActive(true);
     if (waitMs == -1) { // wait until push success
