@@ -334,11 +334,23 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_STATE_1100, TestSize.Level2)
     vDecSample2->SF_OUTPUT = true;
     int32_t ret = vDecSample2->DecodeSetSurface();
     ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample2->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->Flush();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample2->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : HEVC_HW_HDR2SDR_STATE_1101
+ * @tc.name      : create-configure-stop-surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_STATE_1101, TestSize.Level2)
+{
+    vDecSample2->SF_OUTPUT = true;
+    int32_t ret = vDecSample2->DecodeSetSurface();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->Stop();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
 
