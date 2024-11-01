@@ -22,6 +22,7 @@
 #include "osal/task/task.h"
 #include "audio_capturer.h"
 #include "media_data_source.h"
+#include "gmock/gmock.h"
 
 
 namespace OHOS {
@@ -42,64 +43,24 @@ protected:
     std::shared_ptr<AudioDataSourceFilter> audioDataSourceFilter_{ nullptr };
 };
 
-class MyAVBufferQueueProducer : public IRemoteStub<AVBufferQueueProducer> {
+class MockAVBufferQueueProducer : public IRemoteStub<AVBufferQueueProducer> {
 public:
-    uint32_t GetQueueSize()
-    {
-        return 0;
-    }
-    Status SetQueueSize(uint32_t size)
-    {
-        return  Status::OK;
-    }
-
-    Status RequestBuffer(std::shared_ptr<AVBuffer>& outBuffer,
-                                 const AVBufferConfig& config, int32_t timeoutMs)
-    {
-        if (outBuffer == nullptr) {
-            return  Status::ERROR_NULL_POINTER;
-        } else {
-            return  Status::OK;
-        }
-    }
-    Status PushBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available)
-    {
-        return  Status::OK;
-    }
-    Status ReturnBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available)
-    {
-        return  Status::OK;
-    }
-
-    Status AttachBuffer(std::shared_ptr<AVBuffer>& inBuffer, bool isFilled)
-    {
-        return  Status::OK;
-    }
-    Status DetachBuffer(const std::shared_ptr<AVBuffer>& outBuffer)
-    {
-        return  Status::OK;
-    }
-
-    Status SetBufferFilledListener(sptr<IBrokerListener>& listener)
-    {
-        return  Status::OK;
-    }
-    Status RemoveBufferFilledListener(sptr<IBrokerListener>& listener)
-    {
-        return  Status::OK;
-    }
-    Status SetBufferAvailableListener(sptr<IProducerListener>& listener)
-    {
-        return  Status::OK;
-    }
-    Status Clear()
-    {
-        return  Status::OK;
-    }
-    DECLARE_INTERFACE_DESCRIPTOR(u"Media.MyAVBufferQueueProducer");
+    MOCK_METHOD(uint32_t, GetQueueSize, (), (override));
+    MOCK_METHOD(Status, SetQueueSize, (uin32_t size), (override));
+    MOCK_METHOD(Status, RequestBuffer,
+                (std::shared_ptr<AVBuffer> & outBuffer, const AVBufferConfig &config, int32_t timeoutMs), (override));
+    MOCK_METHOD(Status, PushBuffer, (const std::shared_ptr<AVBuffer> &inBuffer, bool available), (override));
+    MOCK_METHOD(Status, ReturnBuffer, (std::shared_ptr<AVBuffer> & inBuffer, bool available), (override));
+    MOCK_METHOD(Status, AttachBuffer, (const std::shared_ptr<AVBuffer> &inBuffer, bool isFilled), (override));
+    MOCK_METHOD(Status, DetachBuffer, (const std::shared_ptr<AVBuffer> &outBuffer), (override));
+    MOCK_METHOD(Status, SetBufferFilledListener, (sptr<IBrokerListener> & listener), (override));
+    MOCK_METHOD(Status, RemoveBufferFilledListener, (sptr<IBrokerListener> & listener), (override));
+    MOCK_METHOD(Status, SetBufferAvailableListener, (sptr<IBrokerListener> & listener), (override));
+    MOCK_METHOD(Status, Clear, (), (override));
+    DECLARE_INTERFACE_DESCRIPTOR(u "Media.MockAVBufferQueueProducer");
 
 protected:
-    enum: uint32_t {
+    enum : uint32_t {
         PRODUCER_GET_QUEUE_SIZE = 0,
         PRODUCER_SET_QUEUE_SIZE = 1,
         PRODUCER_REQUEST_BUFFER = 2,
@@ -113,26 +74,12 @@ protected:
     };
 };
 
-class MyIAudioDataSource : public IAudioDataSource {
+class MockAudioDataSource : public IAudioDataSource {
 public:
-    ~MyIAudioDataSource() = default;
-    int32_t ReadAt(std::shared_ptr<AVBuffer> buffer, uint32_t length)
-    {
-        if (buffer == nullptr) {
-            return  0;
-        } else {
-            return  1;
-        }
-    }
-    int32_t GetSize(int64_t& size)
-    {
-        if (size == 0) {
-            return 0;
-        } else {
-            return 1;
-        }
-    }
-};
+    ~MockAudioDataSource() = default;
+    MOCK_METHOD(int32_t, ReadAt, (std::shared_ptr<AVBuffer> buffer, uint32_t length), (override));
+    MOCK_METHOD(int32_t, GetSize, (int64_t &size), (override));
+}
 
 class TestEventReceiver : public Pipeline::EventReceiver {
 public:
