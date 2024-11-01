@@ -1609,29 +1609,25 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
 
 bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
 {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::SelectTrackChangeStream");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "Invalid param");
-    TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(selectTrackTrackID_);
+    TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(static_cast<int32_t>(trackId));
     int32_t newStreamID = -1;
-    uint32_t oldTrackId = -1;
     if (type == TRACK_AUDIO) {
         newStreamID = streamDemuxer_->GetNewAudioStreamID();
-        oldTrackId = audioTrackId_;
     } else if (type == TRACK_SUBTITLE) {
         newStreamID = streamDemuxer_->GetNewSubtitleStreamID();
-        oldTrackId = subtitleTrackId_;
     } else if (type == TRACK_VIDEO) {
         newStreamID = streamDemuxer_->GetNewVideoStreamID();
-        oldTrackId = videoTrackId_;
     } else {
         MEDIA_LOG_W("Invalid track " PUBLIC_LOG_U32, trackId);
         return false;
     }
 
-    if (trackId != oldTrackId) {
-        return false;
-    }
     int32_t newTrackId;
     bool ret = HandleSelectTrackChangeStream(trackId, newStreamID, newTrackId);
+    MEDIA_LOG_I("TrackType: " PUBLIC_LOG_U32 ", TrackId " PUBLIC_LOG_D32,
+        static_cast<uint32_t>(type), trackId, newTrackId);
     if (ret && eventReceiver_ != nullptr) {
         if (type == TrackType::TRACK_AUDIO) {
             audioTrackId_ = static_cast<uint32_t>(newTrackId);
