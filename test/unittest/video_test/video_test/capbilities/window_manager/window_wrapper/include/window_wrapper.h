@@ -18,10 +18,11 @@
 
 #include <memory>
 
+using OHNativeWindow = struct NativeWindow;
+
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-using OHNativeWindow = struct NativeWindow;
 using WindowId = int32_t;
 enum class SampleWindowType : int32_t {
     UNKNOWN,
@@ -46,10 +47,12 @@ public:
     std::shared_ptr<OHNativeWindow> GetWindow();
     bool SelfCheck();
 
+protected:
+    std::shared_ptr<OHNativeWindow> window_;
+
 private:
     SampleWindowType windowType_;
     WindowId windowId_ = -1;
-    std::shared_ptr<OHNativeWindow> window_;
 };
 } // Sample
 } // MediaAVCodec

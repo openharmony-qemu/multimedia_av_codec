@@ -18,7 +18,8 @@
 
 #include <memory>
 #include "window_wrapper.h"
-#include "native_image.h"
+
+using OH_NativeImage = struct OH_NativeImage;
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -26,6 +27,7 @@ namespace Sample {
 class NativeImageWindowWrapper : public WindowWrapper {
 public:
     NativeImageWindowWrapper();
+    std::shared_ptr<OH_NativeImage> GetNativeImage();
 
 private:
     std::shared_ptr<OH_NativeImage> image_ = nullptr;

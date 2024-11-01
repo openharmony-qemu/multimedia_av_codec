@@ -14,13 +14,45 @@
  */
 
 #include "native_image_window_wrapper.h"
+#include "native_image.h"
+#include "external_window.h"
+#include "av_codec_sample_log.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "NativeImageWindowWrapper"};
+}
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
+void OnFrameAvailable(void *context) {
+    CHECK_AND_RETURN_LOG(context != nullptr, "Context is nullptr");
+    OH_NativeImage *image = static_cast<NativeImageWindowWrapper *>(context)->GetNativeImage().get();
+
+    int32_t fenceId = -1;
+    OHNativeWindowBuffer *nativeWindowBuffer = nullptr;
+    OH_NativeImage_AcquireNativeWindowBuffer(image, &nativeWindowBuffer, &fenceId);
+
+    OH_NativeImage_ReleaseNativeWindowBuffer(image, nativeWindowBuffer, fenceId);
+};
+
 NativeImageWindowWrapper::NativeImageWindowWrapper()
 {
-    
+    image_ = std::shared_ptr<OH_NativeImage>(OH_ConsumerSurface_Create(),
+        [](OH_NativeImage *image) -> void {
+            OH_NativeImage_Destroy(&image);
+        }
+    );
+    window_ = std::shared_ptr<OHNativeWindow>(
+        OH_NativeImage_AcquireNativeWindow(image_.get()), OH_NativeWindow_DestroyNativeWindow);
+
+    OH_OnFrameAvailableListener listener {this, OnFrameAvailable};
+    OH_NativeImage_SetOnFrameAvailableListener(image_.get(), listener);
+}
+
+std::shared_ptr<OH_NativeImage> NativeImageWindowWrapper::GetNativeImage()
+{
+    return image_;
 }
 } // Sample
 } // MediaAVCodec

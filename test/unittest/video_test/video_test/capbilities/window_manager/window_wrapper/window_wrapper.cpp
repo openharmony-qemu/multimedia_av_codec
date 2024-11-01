@@ -47,7 +47,7 @@ std::shared_ptr<OHNativeWindow> WindowWrapper::GetWindow()
 
 bool WindowWrapper::SelfCheck()
 {
-    return (window_ == nullptr) && (windowType_ > SampleWindowType::UNKNOWN) && (windowType_ > SampleWindowType::END);
+    return (window_ != nullptr) && (windowType_ > SampleWindowType::UNKNOWN) && (windowType_ > SampleWindowType::END);
 }
 } // Sample
 } // MediaAVCodec
