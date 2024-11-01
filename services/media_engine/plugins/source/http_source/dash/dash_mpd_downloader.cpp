@@ -298,15 +298,19 @@ DashMpdGetRet DashMpdDownloader::GetNextVideoStream(DashMpdBitrateParam &param, 
 {
     std::shared_ptr<DashStreamDescription> currentStream = nullptr;
     std::shared_ptr<DashStreamDescription> destStream = nullptr;
+    bool isFirstSelect = true;
+    uint32_t maxGap = 0;
     for (const auto &stream : streamDescriptions_) {
         if (stream->type_ != MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
             continue;
         }
 
-        if (stream->bandwidth_ == param.bitrate_) {
+        uint32_t tempGap = (stream->bandwidth_ > param.bitrate_) ?
+            (stream->bandwidth_ - param.bitrate_) : (param.bitrate_ - stream->bandwidth_);
+        if (isFirstSelect || (tempGap < maxGap)) {
+            isFirstSelect = false;
+            maxGap = tempGap;
             destStream = stream;
-            MEDIA_LOG_I("switch to bandwidth:" PUBLIC_LOG_U32 ", id:" PUBLIC_LOG_D32 ", width:"
-                PUBLIC_LOG_U32, stream->bandwidth_, stream->streamId_, stream->width_);
         }
 
         if (stream->inUse_) {
@@ -322,12 +326,6 @@ DashMpdGetRet DashMpdDownloader::GetNextVideoStream(DashMpdBitrateParam &param, 
     currentStream->inUse_ = false;
     destStream->inUse_ = true;
     streamId = destStream->streamId_;
-
-    if (destStream->startNumberSeq_ != currentStream->startNumberSeq_) {
-        MEDIA_LOG_E("select bitrate:" PUBLIC_LOG_U32 " but seq:" PUBLIC_LOG_D64 " is not equal bitrate:"
-            PUBLIC_LOG_U32 ", seq:" PUBLIC_LOG_D64, destStream->bandwidth_, destStream->startNumberSeq_,
-        currentStream->bandwidth_, currentStream->startNumberSeq_);
-    }
     if (param.position_ == -1) {
         destStream->currentNumberSeq_ = currentStream->currentNumberSeq_;
     } else {
@@ -335,8 +333,10 @@ DashMpdGetRet DashMpdDownloader::GetNextVideoStream(DashMpdBitrateParam &param, 
     }
 
     param.nextSegTime_ = GetSegTimeBySeq(currentStream->mediaSegments_, destStream->currentNumberSeq_);
-    MEDIA_LOG_I("select bitrate current type:" PUBLIC_LOG_D32 ", change to:" PUBLIC_LOG_D32 ",nextSegTime:"
-        PUBLIC_LOG_U32, currentStream->videoType_, destStream->videoType_, param.nextSegTime_);
+    MEDIA_LOG_I("select bitrate from type:" PUBLIC_LOG_D32 ", to type:" PUBLIC_LOG_D32 ", nextSegTime:"
+        PUBLIC_LOG_U32 ", bandwidth:" PUBLIC_LOG_U32 ", id:" PUBLIC_LOG_D32 ", width:"
+        PUBLIC_LOG_U32, currentStream->videoType_, destStream->videoType_, param.nextSegTime_,
+        destStream->bandwidth_, destStream->streamId_, destStream->width_);
 
     DashMpdGetRet ret = GetSegmentsInNewStream(destStream);
     if (ret == DASH_MPD_GET_DONE && param.nextSegTime_ > 0) {

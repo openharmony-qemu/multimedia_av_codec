@@ -87,9 +87,10 @@ private:
     Status SelectAudioInternal(const std::shared_ptr<DashStreamDescription> &streamDesc);
     Status SelectSubtitle(const std::shared_ptr<DashStreamDescription> &streamDesc);
     Status SelectSubtitleInternal(const std::shared_ptr<DashStreamDescription> &streamDesc);
-    bool DoPreparedSwitchBitrate(bool preActionSwitchBitrate, int &streamId);
-    bool DoPreparedSwitchAudio(bool preActionSwitchAduio, int &streamId);
-    bool DoPreparedSwitchSubtitle(bool preActionSwitchSubtitle, int &streamId);
+    bool DoPreparedSwitchBitrate(bool switchBitrateOk, bool &needDownload, int &streamId);
+    bool DoPreparedSwitchAudio(int &streamId);
+    bool DoPreparedSwitchSubtitle(int &streamId);
+    bool DoPreparedSwitchAction(bool switchBitrateOk, bool switchAudioOk, bool switchSubtitleOk, int &streamId);
     bool DoPreparedAction(int &streamId);
     void UpdateSegmentIndexAfterSidxParseOk();
     void ResetBitrateParam();
