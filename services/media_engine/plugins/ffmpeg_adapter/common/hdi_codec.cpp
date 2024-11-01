@@ -363,9 +363,6 @@ int32_t HdiCodec::HdiCallback::EventHandler(CodecEventType event, const EventInf
     if (hdiCodec_) {
         hdiCodec_->OnEventHandler(event, info);
     }
-    if (buffer.fd >= 0) {
-        close(buffer.fd);
-    }
     return HDF_SUCCESS;
 }
 
@@ -385,6 +382,9 @@ int32_t HdiCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuf
     AVCODEC_LOGD("FillBufferDone");
     if (hdiCodec_) {
         hdiCodec_->OnFillBufferDone(buffer);
+    }
+    if (buffer.fd >= 0) {
+        close(buffer.fd);
     }
     return HDF_SUCCESS;
 }
