@@ -263,4 +263,5 @@ void AVCodecE2EDemo::Stop()
     OH_VideoDecoder_Stop(dec);
     OH_VideoEncoder_Stop(enc);
     OH_AVMuxer_Stop(muxer);
+    
 }
