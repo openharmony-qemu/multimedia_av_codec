@@ -914,10 +914,12 @@ int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputForma
 {
     FALSE_RETURN_V_MSG_E(formatContext && pluginImpl, -1, "AVFormatContext is nullptr");
     MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
+
+    AVIOContext* avioContext = formatContext->pb;
     auto begin = std::chrono::system_clock::now();
     int ret = avformat_open_input(&formatContext, nullptr, pluginImpl.get(), &options);
     if (ret < 0) {
-        FreeContext(formatContext, formatContext->pb);
+        FreeContext(formatContext, avioContext);
         MEDIA_LOG_E("Call avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
             pluginImpl->name, AVStrError(ret).c_str());
         return ret;
@@ -936,7 +938,7 @@ int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputForma
         MEDIA_LOG_W("Spend [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]", openSpend, parseSpend);
     }
     if (ret < 0) {
-        FreeContext(formatContext, formatContext->pb);
+        FreeContext(formatContext, avioContext);
         MEDIA_LOG_E("Parse stream info failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
             pluginImpl->name, AVStrError(ret).c_str());
         return ret;
@@ -951,7 +953,7 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
 
     formatContext->pb = AllocAVIOContext(AVIO_FLAG_READ, ioContext);
     if (formatContext->pb == nullptr) {
-        FreeContext(formatContext, formatContext->pb);
+        FreeContext(formatContext, nullptr);
         return nullptr;
     }
 
