@@ -1270,7 +1270,7 @@ HWTEST_F(CodecServerUnitTest, DumpInfo_Valid_Test_001, TestSize.Level1)
 
 /**
  * @tc.name: MergeFormat_Valid_Test_001
- * @tc.desc: MergeFormat format key type FORMAT_TYPE_INT32
+ * @tc.desc: 1. MergeFormat format key type FORMAT_TYPE_INT32
  */
 HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_001, TestSize.Level1)
 {
@@ -1293,7 +1293,7 @@ HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_001, TestSize.Level1)
 
 /**
  * @tc.name: MergeFormat_Valid_Test_002
- * @tc.desc: MergeFormat format key type FORMAT_TYPE_INT64
+ * @tc.desc: 2. MergeFormat format key type FORMAT_TYPE_INT64
  */
 HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_002, TestSize.Level1)
 {
@@ -1316,7 +1316,7 @@ HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_002, TestSize.Level1)
 
 /**
  * @tc.name: MergeFormat_Valid_Test_003
- * @tc.desc: MergeFormat format key type FORMAT_TYPE_DOUBLE
+ * @tc.desc: 3. MergeFormat format key type FORMAT_TYPE_DOUBLE
  */
 HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_003, TestSize.Level1)
 {
