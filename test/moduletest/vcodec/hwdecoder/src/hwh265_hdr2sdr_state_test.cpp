@@ -342,7 +342,7 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_STATE_1100, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_STATE_1101
- * @tc.name      : create-configure-stop-surface
+ * @tc.name      : create-configure-setsurface-stop
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_STATE_1101, TestSize.Level2)

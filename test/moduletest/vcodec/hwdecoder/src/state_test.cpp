@@ -87,7 +87,7 @@ namespace {
  */
 HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0100, TestSize.Level2)
 {
-    ret = vDecSample->Flush();
+    int32_t ret = vDecSample->Flush();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->SetVideoDecoderCallback();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -1061,7 +1061,7 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5400, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_HWDEC_STATE_5401
- * @tc.name      : create-configure-stop-surface
+ * @tc.name      : create-configure-setsurface-stop
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5401, TestSize.Level2)

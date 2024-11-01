@@ -87,7 +87,7 @@ namespace {
  */
 HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_0100, TestSize.Level2)
 {
-    ret = vEncSample->Flush();
+    int32_t ret = vEncSample->Flush();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vEncSample->SetVideoEncoderCallback();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -100,7 +100,7 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_0100, TestSize.Level2)
  */
 HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_0101, TestSize.Level2)
 {
-    ret = vEncSample->Stop();
+    int32_t ret = vEncSample->Stop();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
 
