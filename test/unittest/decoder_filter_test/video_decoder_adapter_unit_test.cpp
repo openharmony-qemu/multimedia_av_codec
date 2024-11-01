@@ -77,17 +77,9 @@ HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_002, TestSize.Level1)
     EXPECT_EQ(videoDecoder->Reset(), Status::OK);
     EXPECT_EQ(videoDecoder->Release(), Status::OK);
 
-    videoDecoder->ResetRenderTime();
-
     EXPECT_EQ(videoDecoder->GetBufferQueueProducer(), nullptr);
     EXPECT_EQ(videoDecoder->GetBufferQueueConsumer(), nullptr);
     EXPECT_EQ(videoDecoder->RenderOutputBufferAtTime(0, 0), 0);
-
-    videoDecoder->GetCurrentMillisecond();
-    int32_t lagTimes = 0;
-    int32_t maxLagDuration = 0;
-    int32_t avgLagDuration = 0;
-    EXPECT_EQ(videoDecoder->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration), Status::OK);
 
     mediaCodecTest->Init(1);
     videoDecoder->mediaCodec_ = mediaCodecTest;
@@ -107,10 +99,6 @@ HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_003, TestSize.Level1)
     EXPECT_EQ(videoDecoder->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, "name"), Status::OK);
 
     EXPECT_EQ(videoDecoder->SetOutputSurface(nullptr), 0);
-    int32_t lagTimes = 1;
-    int32_t maxLagDuration = 0;
-    int32_t avgLagDuration = 0;
-    EXPECT_EQ(videoDecoder->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration), Status::OK);
 
     std::shared_ptr<TestMediaCodecCallback> callback = std::make_shared<TestMediaCodecCallback>();
     EXPECT_EQ(videoDecoder->SetCallback(callback), 0);
@@ -260,23 +248,5 @@ HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_ReleaseOutputBuffer_00
     videoDecoder->eventReceiver_ = std::make_shared<MyEventReceiver>();
     ret = videoDecoder->ReleaseOutputBuffer(1, true);
     ASSERT_EQ(ret, 0);
-}
-
-/**
- * @tc.name: VideoDecoderAdapter_GetLagInfo_001
- * @tc.desc: GetLagInfo
- * @tc.type: FUNC
- */
-HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_GetLagInfo_001, TestSize.Level1)
-{
-    std::shared_ptr<VideoDecoderAdapter> videoDecoder = std::make_shared<VideoDecoderAdapter>();
-    int32_t lagTimes = 0;
-    int32_t maxLagDuration = 0;
-    int32_t avgLagDuration = 0;
-    videoDecoder->lagTimes_ = 0;
-    Status ret = videoDecoder->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
-    videoDecoder->lagTimes_ = 1;
-    ret = videoDecoder->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
-    EXPECT_EQ(ret, Status::OK);
 }
 }

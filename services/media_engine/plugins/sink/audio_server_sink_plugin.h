@@ -117,7 +117,10 @@ public:
     Status SetAudioEffectMode(int32_t effectMode) override;
 
     Status SetMuted(bool isMuted) override;
+
     AudioSampleFormat GetSampleFormat() override;
+
+    int64_t GetWriteDurationMs() override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
@@ -219,6 +222,7 @@ private:
     bool enableDumpSlice_ {false};
     bool audioRenderSetFlag_ {false};
     std::list<std::vector<uint8_t>> cachedBuffers_;
+    int64_t writeDuration_ = 0;
 };
 } // namespace Plugin
 } // namespace Media

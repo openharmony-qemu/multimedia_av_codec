@@ -893,16 +893,13 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, GetLagInfo_001, TestSize.Level1)
     int32_t lagTimes = 0;
     int32_t maxLagDuration = 0;
     int32_t avgLagDuration = 0;
-    decoderSurfaceFilter_->videoDecoder_ = nullptr;
-    Status status = decoderSurfaceFilter_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
 
-    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+    Status res = decoderSurfaceFilter_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    EXPECT_EQ(res, Status::OK);
 
-    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
-
-    Status statusOk = decoderSurfaceFilter_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
-
-    EXPECT_EQ(statusOk, Status::OK);
+    decoderSurfaceFilter_->videoSink_ = nullptr;
+    res = decoderSurfaceFilter_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    EXPECT_EQ(res, Status::ERROR_INVALID_OPERATION);
 }
 
 HWTEST_F(DecoderSurfaceFilterUnitTest, OnUpdated_001, TestSize.Level1)

@@ -39,6 +39,7 @@ public:
 
 protected:
     virtual int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) = 0;
+
     virtual void ResetSyncInfo() = 0;
 
     void Init();
@@ -54,6 +55,16 @@ protected:
     std::weak_ptr<IMediaSyncCenter> syncCenter_;
 
     int64_t waitPrerolledTimeout_ {0};
+};
+
+class LagDetector {
+public:
+    virtual void Reset() = 0;
+
+    /**
+     * Calc all time delays
+     */
+    virtual bool CalcLag(std::shared_ptr<AVBuffer> buffer) = 0;
 };
 } // namespace Pipeline
 } // namespace Media
