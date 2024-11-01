@@ -22,7 +22,6 @@ encoder_moduletest_native_include_dirs = [
   "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
   "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
-  "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
 ]
 
 encoder_moduletest_cflags = [
@@ -91,6 +90,7 @@ ohos_unittest("encoder_native_module_test") {
     "ipc:ipc_core",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
+    "openssl:libcrypto_shared",
     "window_manager:libwm",
   ]
 
