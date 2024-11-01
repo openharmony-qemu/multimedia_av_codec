@@ -222,12 +222,12 @@ bool DownloadRequest::IsChunkedVod() const
 
 bool DownloadRequest::IsM3u8Request() const
 {
-    if (url_.find(".ts") != std::string::npos ||
-        url_.find(".m3u8") != std::string::npos) {
-        MEDIA_LOG_I("request is m3u8.");
-        return true;
-    }
-    return false;
+    return isM3u8Request_;
+}
+
+void DownloadRequest::SetIsM3u8Request(bool isM3u8Request)
+{
+    isM3u8Request_ = isM3u8Request;
 }
 
 bool DownloadRequest::IsServerAcceptRange() const
