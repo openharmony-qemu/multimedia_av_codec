@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_SAMPLE_WINDOW_MANAGER_H
-#define AVCODEC_SAMPLE_WINDOW_MANAGER_H
+#ifndef AVCODEC_SAMPLE_SAMPLE_WINDOW_MANAGER_H
+#define AVCODEC_SAMPLE_SAMPLE_WINDOW_MANAGER_H
 
 #include <memory>
 #include <unordered_map>
@@ -39,4 +39,4 @@ private:
 } // Sample
 } // MediaAVCodec
 } // OHOS
-#endif // AVCODEC_SAMPLE_WINDOW_MANAGER_H
+#endif // AVCODEC_SAMPLE_SAMPLE_WINDOW_MANAGER_H

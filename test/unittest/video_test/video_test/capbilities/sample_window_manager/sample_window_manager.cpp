@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "window_manager.h"
+#include "sample_window_manager.h"
 #include <atomic>
 #include <string>
 #include "av_codec_sample_log.h"
