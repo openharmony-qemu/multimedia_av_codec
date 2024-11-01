@@ -168,9 +168,7 @@ ohos_unittest("videodec_inner_unit_test") {
   ]
 
   if (av_codec_support_drm) {
-    external_deps += [
-      "drm_framework:drm_framework",
-    ]
+    external_deps += [ "drm_framework:drm_framework" ]
   }
 
   resource_config_file =
