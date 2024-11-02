@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,7 +26,6 @@
 #include "openssl/aes.h"
 #include "osal/task/task.h"
 #include "common/media_source.h"
-#include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
 #include "utils/write_bitrate_caculator.h"
@@ -58,9 +57,9 @@ public:
     explicit HlsMediaDownloader(
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
     explicit HlsMediaDownloader(int expectBufferDuration,
-        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>());
     explicit HlsMediaDownloader(std::string mimeType,
-        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>());
     ~HlsMediaDownloader() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
@@ -103,7 +102,6 @@ public:
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
-    Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
 
 private:
@@ -187,6 +185,7 @@ private:
     uint32_t writeTsIndex_ = 0;
     bool isAutoSelectBitrate_ {true};
     uint64_t seekTime_ = 0;
+
     uint64_t readTime_ {0};
 
     bool isReadFrame_ {false};
@@ -264,7 +263,7 @@ private:
     uint64_t readTotalBytes_ = 0;
     uint64_t readRecordDuringTime_ = 0;
     uint64_t totalDownloadDuringTime_ {0};
-    int32_t currentBitRate_ {0};
+    uint32_t currentBitRate_ {0};
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};

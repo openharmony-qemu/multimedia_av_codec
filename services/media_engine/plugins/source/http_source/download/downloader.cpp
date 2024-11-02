@@ -67,31 +67,31 @@ DownloadRequest::DownloadRequest(const std::string& url,
     headerInfo_.contentLen = 0;
 }
 
-DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
+DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
                                  bool requestWholeFile)
-    : saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)), mediaSouce_(mediaSouce),
+    : saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)), requestInfo_(requestInfo),
     requestWholeFile_(requestWholeFile)
 {
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
     headerInfo_.fileContentLen = 0;
     headerInfo_.contentLen = 0;
-    url_ = mediaSouce.url;
-    httpHeader_ = mediaSouce.httpHeader;
+    url_ = requestInfo.url;
+    httpHeader_ = requestInfo.httpHeader;
 }
 
 DownloadRequest::DownloadRequest(double duration,
                                  DataSaveFunc saveData,
                                  StatusCallbackFunc statusCallback,
-                                 RequestInfo mediaSouce,
+                                 RequestInfo requestInfo,
                                  bool requestWholeFile)
     : duration_(duration), saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)),
-    mediaSouce_(mediaSouce), requestWholeFile_(requestWholeFile)
+    requestInfo_(requestInfo), requestWholeFile_(requestWholeFile)
 {
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
     headerInfo_.fileContentLen = 0;
     headerInfo_.contentLen = 0;
-    url_ = mediaSouce.url;
-    httpHeader_ = mediaSouce.httpHeader;
+    url_ = requestInfo.url;
+    httpHeader_ = requestInfo.httpHeader;
 }
 
 size_t DownloadRequest::GetFileContentLength() const
@@ -137,12 +137,12 @@ int DownloadRequest::GetRetryTimes() const
     return retryTimes_;
 }
 
-int32_t DownloadRequest::GetClientError() const
+NetworkClientErrorCode DownloadRequest::GetClientError() const
 {
     return clientError_;
 }
 
-int32_t DownloadRequest::GetServerError() const
+NetworkServerErrorCode DownloadRequest::GetServerError() const
 {
     return serverError_;
 }
@@ -166,8 +166,9 @@ void DownloadRequest::WaitHeaderUpdated() const
         Task::SleepInTask(SLEEP_TIME);
         times_++;
     }
+    uint32_t headerIsClosed = static_cast<uint32_t>(headerInfo_.isClosed.load());
     MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
-        isHeaderUpdated, times_, headerInfo_.isClosed.load());
+        isHeaderUpdated, times_, headerIsClosed);
 }
 
 double DownloadRequest::GetDuration() const
@@ -316,9 +317,6 @@ void Downloader::Pause(bool isAsync)
 void Downloader::Cancel()
 {
     MEDIA_LOG_I("Cancel Begin");
-    if (currentRequest_ != nullptr && currentRequest_->retryTimes_ > 0) {
-        currentRequest_->retryTimes_ = 0;
-    }
     requestQue_->SetActive(false, true);
     shouldStartNextRequest = true;
     if (client_ != nullptr) {
@@ -339,7 +337,7 @@ void Downloader::Resume()
         MEDIA_LOG_I("resume Begin");
         if (isClientClose_ && client_ != nullptr && currentRequest_ != nullptr) {
             isClientClose_ = false;
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
+            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
         }
         requestQue_->SetActive(true);
         if (currentRequest_ != nullptr) {
@@ -422,11 +420,6 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
     FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
         "not Retry, client null or isDestructor or isInterruptNeeded");
-    if (isAppBackground_) {
-        Pause(true);
-        MEDIA_LOG_I("Retry avoid, forground to background.");
-        return true;
-    }
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("Retry Begin");
@@ -446,7 +439,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
                 currentRequest_->dropedDataLen_ = 0;
                 MEDIA_LOG_D("Do retry.");
             }
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
+            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
             requestQue_->SetActive(true);
             currentRequest_->isEos_ = false;
         }
@@ -484,7 +477,7 @@ bool Downloader::BeginDownload()
         MEDIA_LOG_I("Set default UA.");
     }
     
-    int32_t timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
+    int32_t timeoutMs = currentRequest_->requestInfo_.timeoutMs;
     FALSE_RETURN_V(!url.empty(), false);
     if (client_) {
         client_->Open(url, httpHeader, timeoutMs);
@@ -545,14 +538,16 @@ void Downloader::RequestData()
     RequestInfo sourceInfo;
     sourceInfo.url = currentRequest_->url_;
     sourceInfo.httpHeader = currentRequest_->httpHeader_;
-    sourceInfo.timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
+    sourceInfo.timeoutMs = currentRequest_->requestInfo_.timeoutMs;
 
-    auto handleResponseCb = [this](int32_t clientCode, int32_t serverCode, Status ret) {
+    auto handleResponseCb = [this](NetworkClientErrorCode clientCode, NetworkServerErrorCode serverCode,
+                                   Status ret) {
         currentRequest_->clientError_ = clientCode;
         currentRequest_->serverError_ = serverCode;
         if (isDestructor_) {
             return;
         }
+
         if (currentRequest_->requestSize_ == FIRST_REQUEST_SIZE && !currentRequest_->isFirstRangeRequestReady_
             && currentRequest_->serverError_ == SERVER_RANGE_ERROR_CODE) {
             MEDIA_LOG_I("first request is above filesize, need retry.");
@@ -603,7 +598,7 @@ void Downloader::HandleRetOK()
         PauseLoop(true);
         return;
     }
-    
+
     int64_t remaining = 0;
     if (currentRequest_->endPos_ <= 0) {
         remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -

@@ -214,10 +214,9 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             uint32_t expectDuration = playStrategy->duration;
             downloader_ = std::make_shared<DownloadMonitor>(
-                            std::make_shared<HlsMediaDownloader>(expectDuration, httpHeader_));
+                                std::make_shared<HlsMediaDownloader>(expectDuration, httpHeader_));
         } else {
-            downloader_ = std::make_shared<DownloadMonitor>(
-                            std::make_shared<HlsMediaDownloader>(httpHeader_));
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(httpHeader_));
         }
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
@@ -446,15 +445,6 @@ bool HttpSourcePlugin::GetHLSDiscontinuity()
         return downloader_->GetHLSDiscontinuity();
     }
     return false;
-}
-
-Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
-{
-    if (downloader_ == nullptr) {
-        MEDIA_LOG_E("StopBufferring failed, downloader_ is nullptr");
-        return Status::ERROR_NULL_POINTER;
-    }
-    return downloader_->StopBufferring(isAppBackground);
 }
 
 void HttpSourcePlugin::WaitForBufferingEnd()
