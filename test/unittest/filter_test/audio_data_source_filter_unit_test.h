@@ -46,7 +46,7 @@ protected:
 class MockAVBufferQueueProducer : public IRemoteStub<AVBufferQueueProducer> {
 public:
     MOCK_METHOD(uint32_t, GetQueueSize, (), (override));
-    MOCK_METHOD(Status, SetQueueSize, (uin32_t size), (override));
+    MOCK_METHOD(Status, SetQueueSize, (uint32_t size), (override));
     MOCK_METHOD(Status, RequestBuffer,
                 (std::shared_ptr<AVBuffer> & outBuffer, const AVBufferConfig &config, int32_t timeoutMs), (override));
     MOCK_METHOD(Status, PushBuffer, (const std::shared_ptr<AVBuffer> &inBuffer, bool available), (override));
