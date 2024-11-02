@@ -224,7 +224,7 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_002, Test
  * @tc.desc: ReadLoop, outputBufferQueue_ == nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_002, TestSize.Level1)
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_003, TestSize.Level1)
 {
     audioDataSourceFilter_->eos_ = false;
     std::shared_ptr<MockAudioDataSource> mockAudioDataSource = std::make_shared<MockAudioDataSource>();
