@@ -30,6 +30,10 @@ namespace HttpPlugin {
 namespace {
 constexpr int DEFAULT_BUFFER_SIZE = 200 * 1024;
 constexpr int ERROR_COUNT = 5;
+const std::string M3U8_SUFFIX = ".m3u8";
+const std::string M3U8_BINARY = "/m3u8";
+const std::string DASH_SUFFIX = ".mpd";
+
 }
 
 std::shared_ptr<SourcePlugin> HttpSourcePluginCreater(const std::string& name)
@@ -136,7 +140,8 @@ Status HttpSourcePlugin::Stop()
 Status HttpSourcePlugin::Pause()
 {
     MEDIA_LOG_I("Pause enter.");
-    if (downloader_ != nullptr && uri_.find(".m3u8") != std::string::npos) {
+    if (downloader_ != nullptr && (uri_.find(M3U8_SUFFIX) != std::string::npos ||
+        uri_.find(M3U8_BINARY) != std::string::npos)) {
         downloader_->Pause();
     }
     return Status::OK;
@@ -145,7 +150,8 @@ Status HttpSourcePlugin::Pause()
 Status HttpSourcePlugin::Resume()
 {
     MEDIA_LOG_I("Resume enter.");
-    if (downloader_ != nullptr && uri_.find(".m3u8") != std::string::npos) {
+    if (downloader_ != nullptr && (uri_.find(M3U8_SUFFIX) != std::string::npos ||
+        uri_.find(M3U8_BINARY) != std::string::npos)) {
         downloader_->Resume();
     }
     return Status::OK;
@@ -242,7 +248,8 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
 bool HttpSourcePlugin::IsSeekToTimeSupported()
 {
     if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
-        return uri_.find("m3u8") != std::string::npos || uri_.find(".mpd") != std::string::npos;
+        return uri_.find(M3U8_SUFFIX) != std::string::npos || uri_.find(DASH_SUFFIX) != std::string::npos ||
+               uri_.find(M3U8_BINARY) != std::string::npos;
     }
     MEDIA_LOG_I("IsSeekToTimeSupported return true");
     return true;
