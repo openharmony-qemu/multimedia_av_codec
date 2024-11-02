@@ -116,6 +116,7 @@ public:
     bool IsM3u8Request() const;
     bool IsServerAcceptRange() const;
     void GetLocation(std::string& location) const;
+    void SetIsM3u8Request(bool isM3u8Request);
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
@@ -150,6 +151,7 @@ private:
     std::atomic<bool> retryOnGoing_ {false};
     int64_t dropedDataLen_ {0};
     std::atomic<bool> isFirstRangeRequestReady_ {false};
+    bool isM3u8Request_ {false};
 };
 
 class Downloader {

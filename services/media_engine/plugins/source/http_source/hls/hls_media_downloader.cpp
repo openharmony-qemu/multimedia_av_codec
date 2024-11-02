@@ -186,6 +186,7 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
         }
     }
 
+    downloadRequest_->SetIsM3u8Request(true);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest_->SetStartTimePos(startTimePos);
     downloader_->Download(downloadRequest_, -1); // -1
