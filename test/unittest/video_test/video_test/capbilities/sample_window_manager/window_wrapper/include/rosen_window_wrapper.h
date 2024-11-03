@@ -25,6 +25,7 @@ namespace Sample {
 class RosenWindowWrapper : public WindowWrapper {
 public:
     RosenWindowWrapper();
+    ~RosenWindowWrapper();
 
 private:
     sptr<Rosen::Window> rosenWindow_;

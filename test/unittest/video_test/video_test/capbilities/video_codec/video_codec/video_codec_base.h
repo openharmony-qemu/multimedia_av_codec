@@ -17,6 +17,7 @@
 #define AVCODEC_SAMPLE_VIDEO_CODEC_BASE_H
 
 #include "sample_info.h"
+#include "sample_window_manager.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -25,7 +26,10 @@ class VideoCodecBase {
 public:
     virtual ~VideoCodecBase() {};
     virtual int32_t Create(const std::string &codecMime, bool isSoftware = false) = 0;
-    virtual int32_t Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext) = 0;
+    virtual int32_t SetCallback(uintptr_t * const sampleContext) = 0;
+    virtual int32_t Configure(const SampleInfo &sampleInfo) = 0;
+    virtual int32_t DealWithSurface(std::shared_ptr<WindowWrapper> &windowWrapper) = 0;
+    virtual int32_t Prepare() = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Flush() = 0;
     virtual int32_t Stop() = 0;
@@ -35,8 +39,6 @@ public:
     virtual int32_t FreeOutput(uint32_t bufferIndex) = 0;
 
 protected:
-    virtual int32_t SetCallback(uintptr_t * const sampleContext) = 0;
-    virtual int32_t Configure(const SampleInfo &sampleInfo) = 0;
     static std::string GetCodecName(const std::string &codecMime, bool isEncoder, bool isSoftware);
 
     std::shared_ptr<OH_AVCodec> codec_ = nullptr;

@@ -40,7 +40,9 @@ enum class SampleWindowType : int32_t {
 class WindowWrapper {
 public:
     WindowWrapper() {}
-    WindowWrapper(SampleWindowType windowType, std::shared_ptr<OHNativeWindow> window);
+    WindowWrapper(SampleWindowType windowType, std::shared_ptr<OHNativeWindow> window)
+        : windowType_(windowType), window_(window) {};
+    virtual ~WindowWrapper() {}
     SampleWindowType GetWindowType();
     WindowId GetWindowId();
     void SetWindowId(WindowId id);
@@ -48,10 +50,10 @@ public:
     bool SelfCheck();
 
 protected:
+    SampleWindowType windowType_ = SampleWindowType::UNKNOWN;
     std::shared_ptr<OHNativeWindow> window_;
 
 private:
-    SampleWindowType windowType_;
     WindowId windowId_ = -1;
 };
 } // Sample

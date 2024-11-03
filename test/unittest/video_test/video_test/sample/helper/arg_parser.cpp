@@ -49,7 +49,6 @@ enum DemoArgumentType : int {
     DEMO_ARG_SEEK_MODE,
     DEMO_ARG_CODEC_CONSUMER,
     DEMO_ARG_THREAD_SLEEP_MODE,
-    DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER,
     DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,
     DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,
     DEMO_ARG_END,
@@ -82,7 +81,6 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_SEEK_MODE,                        "seek_mode"},
     {DEMO_ARG_CODEC_CONSUMER,                   "codec_consumer"},
     {DEMO_ARG_THREAD_SLEEP_MODE,                "thread_sleep_mode"},
-    {DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER, "encoder_surface_max_input_buffer"},
     {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          "pause_before_run_sample"},
     {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  "video_decoder_output_colorspace"},
 };
@@ -115,7 +113,6 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"seek_mode",                        required_argument,  nullptr, DEMO_ARG_SEEK_MODE},
     {"codec_consumer",                   required_argument,  nullptr, DEMO_ARG_CODEC_CONSUMER},
     {"thread_sleep_mode",                required_argument,  nullptr, DEMO_ARG_THREAD_SLEEP_MODE},
-    {"encoder_surface_max_input_buffer", required_argument,  nullptr, DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER},
     {"pause_before_run_sample",          required_argument,  nullptr, DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE},
     {"video_decoder_output_colorspace",  required_argument,  nullptr, DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE},
 };
@@ -158,7 +155,6 @@ Video codec demo help:
                                             1: SEEK_MODE_PREVIOUS_SYNC
                                             2: SEEK_MODE_CLOSEST_SYNC
     --thread_sleep_mode                 0: Input sleep;  1: Output sleep
-    --encoder_surface_max_input_buffer  set for encoder surface max input buffer count
     --pause_before_run_sample           pause before run sample, value greater than 60 then press enter to continue,
                                         greater than 0 then sleep seconds of value
     --video_decoder_output_colorspace   enable video processing and specified colorspace type
@@ -313,11 +309,6 @@ inline void SetThreadSleepMode(SampleInfo &info, const char * const value)
     info.threadSleepMode = static_cast<ThreadSleepMode>(std::stol(value));
 }
 
-inline void SetEncoderSurfaceMaxInputBufferCount(SampleInfo &info, const char * const value)
-{
-    info.encoderSurfaceMaxInputBuffer = std::stol(value);
-}
-
 inline void SetPauseBeforeRunSample(SampleInfo &info, const char * const value)
 {
     info.pauseBeforeRunSample = std::stol(value);
@@ -356,7 +347,6 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_SEEK_MODE,                        SetSeekMode},
     {DEMO_ARG_CODEC_CONSUMER,                   SetCodecConsumerType},
     {DEMO_ARG_THREAD_SLEEP_MODE,                SetThreadSleepMode},
-    {DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER, SetEncoderSurfaceMaxInputBufferCount},
     {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          SetPauseBeforeRunSample},
     {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  SetVideoDecoderOutputColorspace},
 };

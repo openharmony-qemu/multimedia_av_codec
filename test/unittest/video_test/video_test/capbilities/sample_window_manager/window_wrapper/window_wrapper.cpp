@@ -19,12 +19,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-WindowWrapper::WindowWrapper(SampleWindowType windowType, std::shared_ptr<OHNativeWindow> window)
-{
-    windowType_ = windowType;
-    window_ = window;
-}
-
 SampleWindowType WindowWrapper::GetWindowType()
 {
     return windowType_;
@@ -47,7 +41,7 @@ std::shared_ptr<OHNativeWindow> WindowWrapper::GetWindow()
 
 bool WindowWrapper::SelfCheck()
 {
-    return (window_ != nullptr) && (windowType_ > SampleWindowType::UNKNOWN) && (windowType_ > SampleWindowType::END);
+    return (window_ != nullptr) && (windowType_ > SampleWindowType::UNKNOWN) && (windowType_ < SampleWindowType::END);
 }
 } // Sample
 } // MediaAVCodec

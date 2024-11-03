@@ -61,8 +61,16 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Init failed");
     PrintSampleInfo(info);
 
-    ret = videoCodec->Config(info, reinterpret_cast<uintptr_t *>(context_.get()));
+    ret = videoCodec->SetCallback(reinterpret_cast<uintptr_t *>(context_.get()));
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec set callback failed");
+    ret = videoCodec->Configure(info);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec config failed");
+    if (!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01)) {  // 0b01: buffer mode mask
+        ret = videoCodec->DealWithSurface(context_->windowWrapper);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec deal with surface failed");
+    }
+    ret = videoCodec->Prepare();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec prepare failed");
 
     AVCODEC_LOGI("Succeed");
     return AVCODEC_SAMPLE_ERR_OK;

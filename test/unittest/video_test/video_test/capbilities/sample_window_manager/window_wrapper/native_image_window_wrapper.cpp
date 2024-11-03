@@ -38,6 +38,8 @@ void OnFrameAvailable(void *context) {
 
 NativeImageWindowWrapper::NativeImageWindowWrapper()
 {
+    windowType_ = SampleWindowType::NATIVE_IMAGE;
+
     image_ = std::shared_ptr<OH_NativeImage>(OH_ConsumerSurface_Create(),
         [](OH_NativeImage *image) -> void {
             OH_NativeImage_Destroy(&image);

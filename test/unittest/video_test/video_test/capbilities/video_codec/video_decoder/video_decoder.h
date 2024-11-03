@@ -25,7 +25,9 @@ namespace Sample {
 class VideoDecoder : public VideoCodecBase {
 public:
     int32_t Create(const std::string &codecMime, bool isSoftware = false) override;
-    int32_t Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext) override;
+    int32_t DealWithSurface(std::shared_ptr<WindowWrapper> &windowWrapper) override;
+    int32_t Configure(const SampleInfo &sampleInfo) override;
+    int32_t Prepare() override;
     int32_t Start() override;
     int32_t Flush() override;
     int32_t Stop() override;
@@ -33,15 +35,12 @@ public:
     std::shared_ptr<OH_AVFormat> GetFormat() override;
 
 protected:
-    int32_t Configure(const SampleInfo &sampleInfo) override;
 };
 
 /********************* API10 *********************/
 class VideoDecoderAPI10 : public VideoDecoder {
 public:
     int32_t PushInput(CodecBufferInfo &info) override;
-
-protected:
     int32_t SetCallback(uintptr_t * const sampleContext) override;
 };
 
@@ -59,8 +58,6 @@ public:
 class VideoDecoderAPI11 : public VideoDecoder {
 public:
     int32_t PushInput(CodecBufferInfo &info) override;
-
-private:
     int32_t SetCallback(uintptr_t * const sampleContext) override;
 };
 

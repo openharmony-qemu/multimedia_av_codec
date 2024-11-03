@@ -17,8 +17,7 @@
 #define AVCODEC_SAMPLE_YUV_VIEWER_H
 #include "sample_base.h"
 #include "data_producer_base.h"
-
-#include "../../window/window_manager/interfaces/innerkits/wm/window.h"
+#include "sample_window_manager.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -34,8 +33,7 @@ private:
     int32_t CreateWindow();
     void InputThread();
 
-    sptr<Rosen::Window> rosenWindow_;
-    std::shared_ptr<NativeWindow> window_ = nullptr;
+    std::shared_ptr<WindowWrapper> windowWrapper_ = nullptr;
     std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
     std::shared_ptr<SampleInfo> sampleInfo_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;

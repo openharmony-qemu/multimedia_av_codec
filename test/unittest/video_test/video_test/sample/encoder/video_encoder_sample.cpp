@@ -19,7 +19,6 @@
 #include <sys/mman.h>
 #include <cmath>
 #include "external_window.h"
-#include "native_buffer_inner.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
 #include "avcodec_trace.h"
@@ -48,8 +47,14 @@ int32_t VideoEncoderSample::Prepare()
 
         inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::BufferInputThread, this);
     } else {
+        auto window = context_->windowWrapper->GetWindow().get();
+        (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_BUFFER_GEOMETRY,
+            info.videoWidth, info.videoHeight);
+        (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_FORMAT,
+            ToGraphicPixelFormat(info.pixelFormat, info.profile));
+
         int32_t strideAlignment = 0;
-        (void)OH_NativeWindow_NativeWindowHandleOpt(info.window.get(), GET_STRIDE, &strideAlignment);
+        (void)OH_NativeWindow_NativeWindowHandleOpt(window, GET_STRIDE, &strideAlignment);
         info.videoStrideWidth = strideAlignment > 0 ?
             (strideAlignment * std::ceil(static_cast<float>(info.videoWidth) / strideAlignment)) : info.videoWidth;
         info.videoSliceHeight = info.videoHeight;
@@ -100,8 +105,9 @@ void VideoEncoderSample::SurfaceInputThread()
         uint32_t frameCount = context_->inputBufferQueue.IncFrameCount();
         uint64_t pts = static_cast<uint64_t>(frameCount) *
             ((info.frameInterval == 0) ? 1 : info.frameInterval) * 1000; // 1000: 1ms to us
-        (void)OH_NativeWindow_NativeWindowHandleOpt(info.window.get(), SET_UI_TIMESTAMP, pts);
-        int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(info.window.get(), &buffer, &fenceFd);
+        auto window = context_->windowWrapper->GetWindow().get();
+        (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_UI_TIMESTAMP, pts);
+        int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(window, &buffer, &fenceFd);
         CHECK_AND_CONTINUE_LOG(ret == 0, "RequestBuffer failed, ret: %{public}d", ret);
 
         BufferHandle* bufferHandle = OH_NativeWindow_GetBufferHandleFromNative(buffer);
@@ -120,7 +126,7 @@ void VideoEncoderSample::SurfaceInputThread()
         ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP, info.frameInterval);
 
         AVCodecTrace::TraceBegin("OH::Frame", pts);
-        ret = OH_NativeWindow_NativeWindowFlushBuffer(info.window.get(), buffer, fenceFd, {nullptr, 0});
+        ret = OH_NativeWindow_NativeWindowFlushBuffer(window, buffer, fenceFd, {nullptr, 0});
         CHECK_AND_BREAK_LOG(ret == 0, "Read frame failed, thread out");
 
         buffer = nullptr;

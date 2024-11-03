@@ -61,6 +61,7 @@ std::shared_ptr<WindowWrapper> WindowManager::CreateWindowWrapper(SampleWindowTy
             windowWrappper = std::static_pointer_cast<WindowWrapper>(std::make_shared<NativeImageWindowWrapper>());
             break;
         case SampleWindowType::ENCODER:
+            windowWrappper = std::make_shared<WindowWrapper>(windowType, window);
             break;
 #ifdef SAMPLE_BUILD_TO_EXECUTOR
         case SampleWindowType::ROSEN:
@@ -75,12 +76,12 @@ std::shared_ptr<WindowWrapper> WindowManager::CreateWindowWrapper(SampleWindowTy
             AVCODEC_LOGE("Unsupported window type: %{public}d", windowType);
             break;
     }
-    CHECK_AND_RETURN_RET_LOG((windowWrappper != nullptr) && windowWrappper->SelfCheck(),
-        nullptr, "Window wrapper create failed");
+    CHECK_AND_RETURN_RET_LOG((windowWrappper != nullptr) && windowWrappper->SelfCheck(), nullptr,
+        "Window wrapper create failed, window type: %{public}s",
+        ToString(static_cast<int32_t>(windowType), SAMPLE_WINDOW_TYPE_TO_STRING).c_str());
 
     WindowId windowId = windowIdCount++;
     windowWrappper->SetWindowId(windowId);
-    map_.emplace(windowId, windowWrappper);
     AVCODEC_LOGI("Succeed, window type: %{public}s, window id: %{public}d",
         ToString(static_cast<int32_t>(windowType), SAMPLE_WINDOW_TYPE_TO_STRING).c_str(), windowId);
     return windowWrappper;

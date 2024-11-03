@@ -25,7 +25,9 @@ namespace Sample {
 class VideoEncoder : public VideoCodecBase {
 public:
     int32_t Create(const std::string &codecMime, bool isSoftware = false) override;
-    int32_t Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext) override;
+    int32_t DealWithSurface(std::shared_ptr<WindowWrapper> &windowWrapper) override;
+    int32_t Configure(const SampleInfo &sampleInfo) override;
+    int32_t Prepare() override;
     int32_t Start() override;
     int32_t Flush() override;
     int32_t Stop() override;
@@ -34,16 +36,12 @@ public:
 
 private:
     int32_t NotifyEndOfStream();
-    int32_t Configure(const SampleInfo &sampleInfo) override;
-    int32_t GetSurface(SampleInfo &sampleInfo);
 };
 
 /********************* API10 *********************/
 class VideoEncoderAPI10 : public VideoEncoder {
 public:
     int32_t FreeOutput(uint32_t bufferIndex) override;
-
-protected:
     int32_t SetCallback(uintptr_t * const sampleContext) override;
 };
 
@@ -61,8 +59,6 @@ public:
 class VideoEncoderAPI11 : public VideoEncoder {
 public:
     int32_t FreeOutput(uint32_t bufferIndex) override;
-
-protected:
     int32_t SetCallback(uintptr_t * const sampleContext) override;
 };
 
