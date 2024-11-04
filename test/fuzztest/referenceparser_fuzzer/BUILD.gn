@@ -32,8 +32,8 @@ ohos_fuzztest("ReferenceparserFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "referenceparser_fuzzer.cpp",
     "parser_sample.cpp",
+    "referenceparser_fuzzer.cpp",
   ]
   external_deps = [
     "c_utils:utils",
