@@ -1626,9 +1626,9 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
 
     int32_t newTrackId;
     bool ret = HandleSelectTrackChangeStream(trackId, newStreamID, newTrackId);
-    MEDIA_LOG_I("TrackType: " PUBLIC_LOG_U32 ", TrackId " PUBLIC_LOG_D32 " >> " PUBLIC_LOG_D32,
-        static_cast<uint32_t>(type), trackId, newTrackId);
     if (ret && eventReceiver_ != nullptr) {
+        MEDIA_LOG_I("TrackType: " PUBLIC_LOG_U32 ", TrackId " PUBLIC_LOG_D32 " >> " PUBLIC_LOG_D32,
+            static_cast<uint32_t>(type), trackId, newTrackId);
         if (type == TrackType::TRACK_AUDIO) {
             audioTrackId_ = static_cast<uint32_t>(newTrackId);
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, newTrackId});
