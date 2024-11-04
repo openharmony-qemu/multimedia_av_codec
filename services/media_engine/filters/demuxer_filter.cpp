@@ -303,12 +303,6 @@ void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
     }
 }
 
-Status DemuxerFilter::WaitPrepareFrame()
-{
-    MEDIA_LOG_I("WaitPrepareFrame enter.");
-    return Filter::WaitPrepareFrame();
-}
-
 Status DemuxerFilter::PrepareBeforeStart()
 {
     if (isLoopStarted.load()) {

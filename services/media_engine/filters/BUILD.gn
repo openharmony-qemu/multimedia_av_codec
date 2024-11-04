@@ -72,7 +72,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "audio_encoder_filter.cpp",
     "audio_sink_filter.cpp",
     "codec_capability_adapter.cpp",
-    "decoder_surface_filter.cpp",
+    "decoder_surface_filter_bak.cpp",
     "demuxer_filter.cpp",
     "metadata_filter.cpp",
     "muxer_filter.cpp",
