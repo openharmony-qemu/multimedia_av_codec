@@ -116,7 +116,7 @@ public:
     bool IsM3u8Request() const;
     bool IsServerAcceptRange() const;
     void GetLocation(std::string& location) const;
-    void DownloadRequest::SetIsM3u8Request(bool isM3u8Request);
+    void SetIsM3u8Request(bool isM3u8Request);
 private:
     void WaitHeaderUpdated() const;
     std::string url_;

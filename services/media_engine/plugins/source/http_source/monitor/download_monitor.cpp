@@ -191,7 +191,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
     if (GetBufferingTimeOut()) {
-        MEDIA_LOG_I("Media downloader buffering timeout, don't need to retry.");
+        MEDIA_LOG_I("Media downloader buffering timeout, don't need retry.");
         if (downloader_ != nullptr) {
             downloader_->SetDownloadErrorState();
         }
@@ -199,33 +199,32 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         return false;
     }
 
-    if (clientError == 0 && serverError == 0) {
-        return false;
-    }
-    if (CLIENT_NOT_RETRY_ERROR_CODES.find(clientError) != CLIENT_NOT_RETRY_ERROR_CODES.end()) {
-        return false;
-    }
-    if (retryTimes <= RETRY_THRESHOLD || GetPlayable()) {
-        return true;
-    }
-
-    if (CLIENT_RETRY_ERROR_CODES.find(clientError) == CLIENT_RETRY_ERROR_CODES.end() ||
-        SERVER_RETRY_ERROR_CODES.find(serverError) == SERVER_RETRY_ERROR_CODES.end() ||
+    if (clientError == NetworkClientErrorCode::ERROR_NOT_RETRY ||
+        notRetryErrorSet.find(serverError) != notRetryErrorSet.end() ||
         serverError >= SERVER_ERROR_THRESHOLD) {
-        MEDIA_LOG_I("error code dont't need to retry.");
-        if (downloader_ != nullptr) {
-            downloader_->SetDownloadErrorState();
+        if (retryTimes > RETRY_THRESHOLD && !GetPlayable()) {
+            if (downloader_ != nullptr) {
+                downloader_->SetDownloadErrorState();
+            }
+            request->Close();
+            return false;
         }
-        NotifyError(clientError, serverError);
-        request->Close();
-        return false;
     }
-    if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR) { // Report error to upper layer
-        MEDIA_LOG_I("Retry times readches the upper limit.");
-        if (downloader_ != nullptr) {
-            downloader_->SetDownloadErrorState();
+    if ((clientError != NetworkClientErrorCode::ERROR_OK && clientError != NetworkClientErrorCode::ERROR_NOT_RETRY)
+        || serverError != 0) {
+        if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR && !GetPlayable()) {
+            if (clientError != NetworkClientErrorCode::ERROR_OK) {
+                MEDIA_LOG_I("Send http client error, code: " PUBLIC_LOG_D32, static_cast<int32_t>(clientError));
+            }
+            if (serverError != 0) {
+                MEDIA_LOG_I("Send http server error, code: " PUBLIC_LOG_D32, static_cast<int32_t>(serverError));
+            }
+            if (downloader_ != nullptr) {
+                downloader_->SetDownloadErrorState();
+            }
+            request->Close();
+            return false;
         }
-        return false;
     }
     return true;
 }
