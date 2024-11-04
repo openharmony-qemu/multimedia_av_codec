@@ -1246,7 +1246,9 @@ bool HlsMediaDownloader::CheckRiseBufferSize()
 
 bool HlsMediaDownloader::CheckPulldownBufferSize()
 {
-    FALSE_RETURN_V(recordData_ != nullptr, false);
+    if (recordData_ == nullptr) {
+        return false;
+    }
     FALSE_RETURN_V(playlistDownloader_ != nullptr, false);
     bool isPullDown = false;
     uint64_t playingBitrate = playlistDownloader_ -> GetCurrentBitRate();
