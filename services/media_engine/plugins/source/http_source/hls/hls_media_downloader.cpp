@@ -57,7 +57,7 @@ constexpr int32_t TEN_MILLISECONDS = 10;
 constexpr size_t MIN_WATER_LINE_ABOVE = 300 * 1024;
 constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.6;
 constexpr float CACHE_LEVEL_1 = 0.3;
-constexpr float DEFAULT_CACHE_TIME = 5;
+constexpr int32_t DEFAULT_CACHE_TIME = 5;
 constexpr int TRANSFER_SIZE_RATE_2 = 2;
 constexpr int TRANSFER_SIZE_RATE_3 = 3;
 constexpr int TRANSFER_SIZE_RATE_4 = 4;
@@ -83,7 +83,7 @@ HlsMediaDownloader::HlsMediaDownloader(const std::map<std::string, std::string>&
     HlsInit();
 }
 
-HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, const std::map<std::string, std::string>& httpHeader) noexcept
+HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, const std::map<std::string, std::string>& httpHeader)
 {
     expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
     userDefinedBufferDuration_ = true;
@@ -94,8 +94,7 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, const std::map<
     HlsInit();
 }
 
-HlsMediaDownloader::HlsMediaDownloader(std::string mimeType,
-    const std::map<std::string, std::string>& httpHeader) noexcept
+HlsMediaDownloader::HlsMediaDownloader(std::string mimeType, const std::map<std::string, std::string>& httpHeader)
 {
     mimeType_ = mimeType;
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
@@ -171,12 +170,13 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
     curUrl_ = playInfo.url_;
     if (writeTsIndex_ == 0) {
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
-        MEDIA_LOG_I("readOffset_, PutRequestIntoDownloader init readOffset." PUBLIC_LOG_U64, readOffset_);
+        MEDIA_LOG_I("readOffset_, PutRequestIntoDownloader init readOffset." PUBLIC_LOG_ZU, readOffset_);
         readTsIndex_ = writeTsIndex_;
-        MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32, readTsIndex_.load());
+        uint32_t readTsIndexTempValue = readTsIndex_.load();
+        MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32, readTsIndexTempValue);
     }
     writeOffset_ = SpliceOffset(writeTsIndex_, 0);
-    MEDIA_LOG_I("writeOffset_, PutRequestIntoDwonloader update writeOffset_." PUBLIC_LOG_U64, writeOffset_);
+    MEDIA_LOG_I("writeOffset_, PutRequestIntoDwonloader update writeOffset_." PUBLIC_LOG_ZU, writeOffset_);
 
     {
         AutoLock lock(tsStorageInfoMutex_);
@@ -185,6 +185,7 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
         }
     }
 
+    downloadRequest_->SetIsM3U8Request(true);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest_->SetStartTimePos(startTimePos);
     downloader_->Download(downloadRequest_, -1); // -1
@@ -326,7 +327,7 @@ bool HlsMediaDownloader::HandleBuffering()
         if (GetCrossTsBuffersize() >= waterLineAbove_ || CheckBreakCondition() ||
             tsStorageInfo_[readTsIndex_ + 1].second) {
             MEDIA_LOG_I("HLS CheckBreakCondition true, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_ZU,
-                waterLineAbove_, GetBuffersize());
+                waterLineAbove_, GetBufferSize());
             isBuffering_ = false;
         }
         if (!isBuffering_) {
@@ -389,7 +390,7 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
     uint64_t readBack = ffmpegOffset_ - ffmpegOffset;
     uint64_t curTsHaveRead = readOffset_ > SpliceOffset(readTsIndex_, 0) ?
         readOffset_ - SpliceOffset(readTsIndex_, 0) : 0;
-    AutoLock lock(tsStorageIntoMutex_);
+    AutoLock lock(tsStorageInfoMutex_);
     if (curTsHaveRead >= readBack) {
         readOffset_ -= readBack;
         MEDIA_LOG_I("Read back, current ts, update readOffset: " PUBLIC_LOG_ZU, readOffset_);
@@ -407,15 +408,16 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
         }
         readTsIndex_--;
         uint64_t lastTsReadBack = readBack - curTsHaveRead;
+        uint32_t readTsIndexTempValue = readTsIndex_.load();
         readOffset_ = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first - lastTsReadBack);
         MEDIA_LOG_I("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
-            PUBLIC_LOG_U64, readTsIndex_.load(), readOffset_);
+            PUBLIC_LOG_U64, readTsIndexTempValue, readOffset_);
     }
 }
 
 bool HlsMediaDownloader::CheckDataIntegrity()
 {
-    AutoLock lock(tsStorageIntoMutex_);
+    AutoLock lock(tsStorageInfoMutex_);
     if (tsStorageInfo_[readTsIndex_].second == false) {
         return readTsIndex_ == writeTsIndex_;
     } else {
@@ -442,10 +444,11 @@ Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& read
         readOffset_ += readDataInfo.realReadLength_;
         ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
         canWrite_ = true;
+        uint32_t readTsIndexTempValue = readTsIndex_.load();
         OnReadBuffer(readDataInfo.realReadLength_);
         MEDIA_LOG_D("HLS Read Success: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
             PUBLIC_LOG_D32 " readOffset_ " PUBLIC_LOG_U64 " readTsIndex_ " PUBLIC_LOG_U32, readDataInfo.wantReadLength_,
-            readDataInfo.realReadLength_, readDataInfo.isEos_, readOffset_, readTsIndex_.load());
+            readDataInfo.realReadLength_, readDataInfo.isEos_, readOffset_, readTsIndexTempValue);
         return Status::OK;
     }
     if (isFinishedPlay && GetBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
@@ -461,12 +464,12 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
 {
     FALSE_RETURN_V_MSG(cacheMediaBuffer_ != nullptr, Status::END_OF_STREAM, "eos, cacheMediaBuffer_ is nullptr");
     FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "eos, isInterruptNeeded");
-    MediaAVCodec::AVCodecTrace trace("HlsMediaDownloader ReadDelegate, expectedLen: " +
+    MediaAVCodec::AVCodecTrace trace("HlsMediaDownloader::ReadDelegate, expectedLen: " +
         std::to_string(readDataInfo.wantReadLength_) + ", bufferSize: " + std::to_string(GetBufferSize()));
     MEDIA_LOG_D("HLS Read in: wantReadLength " PUBLIC_LOG_D32 " readOffset_ " PUBLIC_LOG_U64 " readTsIndex_ "
         PUBLIC_LOG_U32 " bufferSize: " PUBLIC_LOG_ZU, readDataInfo.wantReadLength_, readOffset_,
         readTsIndex_.load(), GetBufferSize());
-    
+
     readDataInfo.isEos_ = CheckReadStatus();
     if (readDataInfo.isEos_ && GetBufferSize() == 0 && readTsIndex_ == backPlayList_.size() - 1
         && tsStorageInfo_[readTsIndex_].second == true) {
@@ -488,7 +491,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
     }
     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "eos, wantReadLength_ <= 0");
     ReadCacheBuffer(buff, readDataInfo);
-    MEDIA_LOG_D("HLS Read success: wantReadLength " PUBLIC_LOG_D32 " readOffset_: " PUBLIC_LOG_D32 " readOffset_ "
+    MEDIA_LOG_D("HLS Read success: wantReadLength " PUBLIC_LOG_D32 " realReadLen: " PUBLIC_LOG_D32 " readOffset_ "
         PUBLIC_LOG_U64 " readTsIndex_ " PUBLIC_LOG_U32 " bufferSize: " PUBLIC_LOG_ZU, readDataInfo.wantReadLength_,
         readDataInfo.realReadLength_, readOffset_, readTsIndex_.load(), GetBufferSize());
     OnReadBuffer(readDataInfo.realReadLength_);
@@ -714,7 +717,7 @@ bool HlsMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         canWrite_ = false;
         HandleBuffering();
         while (!isInterrupt_ && !canWrite_.load() && !isInterruptNeeded_.load()) {
-            MEDIA_LOGI_I(SAVE_DATA_LOG_FREQUENCE, "HLS CacheMediaBuffer full, waiting seek or read");
+            MEDIA_LOGI_I("CacheMediaBuffer full, waiting seek or read");
             if (isSeekingFlag.load()) {
                 MEDIA_LOG_I("HLS CacheMediaBuffer full, isSeeking, return true.");
                 return true;
@@ -1054,7 +1057,7 @@ void HlsMediaDownloader::PushPlayInfo(PlayInfo playInfo)
         writeOffset_ = readOffset_;
         readTsIndex_ = writeTsIndex_;
         {
-            AutoLock lock(tsStorageInfoMutex);
+            AutoLock lock(tsStorageInfoMutex_);
             if (tsStorageInfo_.count(writeTsIndex_) <= 0) {
                 tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
             } else {
@@ -1174,7 +1177,7 @@ void HlsMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("HLS SetDownloadErrorState");
     downloadErrorState_ = true;
-    if (callback_ != nullptr) {
+    if (callback_) {
         callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "download"});
     }
     Close(true);
@@ -1502,8 +1505,8 @@ void HlsMediaDownloader::UpdateWaterLineAbove()
     waterLineAbove_ = std::min(waterLineAbove, static_cast<size_t>(totalBufferSize_ *
         WATER_LINE_ABOVE_LIMIT_RATIO));
     MEDIA_LOG_D("HLS UpdateWaterLineAbove: " PUBLIC_LOG_ZU " writeBitrate: " PUBLIC_LOG_U64 "avgDownloadSpeed: "
-        PUBLIC_LOG_D32 "writeBitRate: " PUBLIC_LOG_D32,
-        waterLineAbove_, writeBitrateCaculator_->GetWriteBitrate(), avgDownloadSpeed_, writeBitRate_);
+        PUBLIC_LOG_D32 "currentBitRate: " PUBLIC_LOG_D32,
+        waterLineAbove_, writeBitrateCaculator_->GetWriteBitrate(), avgDownloadSpeed_, currentBitRate);
 }
 
 void HlsMediaDownloader::HandleCachedDuration()
