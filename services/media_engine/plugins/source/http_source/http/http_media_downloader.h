@@ -178,7 +178,7 @@ private:
     std::atomic<bool> isMinAndMaxOffsetUpdate_ {false};
 
     std::atomic<bool> isLargeOffsetSpan_ {false};
-    int32_t stateChaneCount_ {0};
+    int32_t stateChangeCount_ {0};
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
     bool isSeekWait_ {false};

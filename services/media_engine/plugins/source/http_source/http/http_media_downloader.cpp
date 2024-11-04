@@ -55,7 +55,7 @@ constexpr int32_t TWO_SECONDS = 2000;
 constexpr int32_t TEN_MILLISECONDS = 10;
 constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.6;
 constexpr float CACHE_LEVEL_1 = 0.3;
-constexpr int32_t DEFAULT_CACHE_TIME = 5;
+constexpr float DEFAULT_CACHE_TIME = 5;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 constexpr size_t MAX_WATER_LINE_ABOVE = 8 * 1024 * 1024;
 constexpr uint32_t OFFSET_NOT_UPDATE_THRESHOLD = 8;
@@ -321,7 +321,7 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
     }
     if (!isRingBuffer_ && cacheMediaBuffer_ != nullptr && !isLargeOffsetSpan_ &&
         cacheMediaBuffer_->IsReadSplit(readOffset_)) {
-        MEDIA_LOG_D("HTTP IsReadSplit, StartBuffering return, readOffset_ " PUBLIC_LOG_ZU, readOffset_);
+        MEDIA_LOG_D("HTTP IsReadSplit, StartBuffering return, readOffset_" PUBLIC_LOG_ZU, readOffset_);
         wantReadLength = std::min(static_cast<size_t>(wantReadLength), GetCurrentBufferSize());
         return false;
     }
@@ -336,7 +336,7 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
     if (GetCurrentBufferSize() >= cacheWaterLine) {
         return false;
     }
-    if (!canWrite_.load() || GetCurrentBufferSize() >= wantReadLength) {
+    if (!canWrite_.load() && GetCurrentBufferSize() >= wantReadLength) {
         return false;
     }
     return true;
@@ -433,10 +433,10 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
             hasReadSize += size;
         }
     }
-    if (hasReadSize > 0 && ) {
+    if (hasReadSize > 0 && isLargeOffsetSpan_) {
         canWrite_ = true;
     }
-    if (isInterruptNeeded_.load() && isLargeOffsetSpan_) {
+    if (isInterruptNeeded_.load()) {
         readDataInfo.realReadLength_ = hasReadSize;
         return Status::END_OF_STREAM;
     }
@@ -479,7 +479,7 @@ void HttpMediaDownloader::CheckDownloadPos(unsigned int wantReadLength)
 {
     size_t writeOffsetTmp = writeOffset_;
     size_t remain = GetCurrentBufferSize();
-    if (isLargeOffsetSpan_ && cacheMediaBuffer_->IsReadSplit(readOffset_) || (isSeekWait_ && canWrite_)) {
+    if ((!isLargeOffsetSpan_ && cacheMediaBuffer_->IsReadSplit(readOffset_)) || (isSeekWait_ && canWrite_)) {
         return;
     }
     if (remain < wantReadLength && isServerAcceptRange_ &&
@@ -648,10 +648,10 @@ void HttpMediaDownloader::UpdateMinAndMaxReadOffset()
         isLargeOffsetSpan_ = true;
         cacheMediaBuffer_->SetIsLargeOffsetSpan(true);
         canWrite_ = true;
-    } else if (stateChaneCount_ <= STATE_CHANGE_THRESHOLD) {
-        isLargeOffsetSpan_ = true;
+    } else if (stateChangeCount_ <= STATE_CHANGE_THRESHOLD) {
+        isLargeOffsetSpan_ = false;
         cacheMediaBuffer_->SetIsLargeOffsetSpan(false);
-        stateChaneCount_++;
+        stateChangeCount_++;
     }
     MEDIA_LOG_D("HTTP UpdateMinAndMaxReadOffset, readOffset: " PUBLIC_LOG_U64 " minReadOffset_: "
         PUBLIC_LOG_U64 " maxReadOffset_: " PUBLIC_LOG_U64, readOffsetTmp, minReadOffset_, maxReadOffset_);
@@ -696,7 +696,7 @@ bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
 {
     MEDIA_LOG_D("HTTP Seek hit.");
     if (!isLargeOffsetSpan_ && cacheMediaBuffer_->IsReadSplit(offset)) {
-        MEDIA_LOG_D("HTTP seek hit return, because IsReadSplit");
+        MEDIA_LOG_D("HTTP Seek hit return, because IsReadSplit");
         return true;
     }
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
@@ -709,13 +709,13 @@ bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
 
     size_t changeDownloadPosThreshold = DEFAULT_WATER_LINE_ABOVE;
     if (!isLargeOffsetSpan_ && static_cast<size_t>(offset) < maxReadOffset_) {
-        MEDIA_LOG_I("HTTP HandleSeekHit ChangeDownloadPos, writeOffset_: " PUBLIC_LOG_ZU " downloadOffset: "
-            PUBLIC_LOG_U64 " bufferSize: " PUBLIC_LOG_ZU, writeOffset_, downloadOffset,
-            cacheMediaBuffer_->GetBufferSize(offset));
         changeDownloadPosThreshold = AUDIO_WATER_LINE_ABOVE;
     }
 
     if (writeOffset_ != downloadOffset && cacheMediaBuffer_->GetBufferSize(offset) < changeDownloadPosThreshold) {
+        MEDIA_LOG_I("HTTP HandleSeekHit ChangeDownloadPos, writeOffset_: " PUBLIC_LOG_ZU " downloadOffset: "
+            PUBLIC_LOG_U64 " bufferSize: " PUBLIC_LOG_ZU, writeOffset_, downloadOffset,
+            cacheMediaBuffer_->GetBufferSize(offset));
         return ChangeDownloadPos(true);
     } else {
         MEDIA_LOG_D("HTTP Seek hit, continue download.");
@@ -861,7 +861,7 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         hasWriteSize += res;
         writeBitrateCaculator_->UpdateWriteBytes(res);
         MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "HTTP writeOffset " PUBLIC_LOG_ZU " res "
-                            PUBLIC_LOG_ZU, writeOffset_, res);
+            PUBLIC_LOG_ZU, writeOffset_, res);
         if ((isLargeOffsetSpan_ || canWrite_.load()) && (res > 0 || hasWriteSize == len)) {
             HandleCachedDuration();
             writeBitrateCaculator_->StartClock();
@@ -1320,7 +1320,7 @@ bool HttpMediaDownloader::ClearHasReadBuffer()
         res = cacheMediaBuffer_->ClearMiddleReadFragment(minClearOffset, maxClearOffset) || res;
     }
     MEDIA_LOG_D("ClearHasReadBuffer res: " PUBLIC_LOG_D32 " clearOffset: " PUBLIC_LOG_U64 " minClearOffset: "
-        PUBLIC_LOG_U64 " maxClearOffset: ", PUBLIC_LOG_U64, res, clearOffset, minClearOffset, maxClearOffset);
+        PUBLIC_LOG_U64 " maxClearOffset: " PUBLIC_LOG_U64, res, clearOffset, minClearOffset, maxClearOffset);
     return res;
 }
 
