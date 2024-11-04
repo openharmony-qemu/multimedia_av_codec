@@ -290,31 +290,31 @@ int64_t GetDefaultTrackStartTime(const AVFormatContext& avFormatContext)
     return dafaultTime;
 }
 
-static int FfAv3aGetNbObjects(AVChannelLayout *channel_layout)
+static int FfAv3aGetNbObjects(AVChannelLayout *channelLayout)
 {
-    int nb_objects = 0;
-    if (channel_layout->order != AV_CHANNEL_ORDER_CUSTOM) {
+    int nbObjects = 0;
+    if (channelLayout->order != AV_CHANNEL_ORDER_CUSTOM) {
         return 0;
     }
-    for (int i = 0; i < channel_layout->nb_channels; i++) {
-        if (channel_layout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
-            nb_objects++;
+    for (int i = 0; i < channelLayout->nb_channels; i++) {
+        if (channelLayout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
+            nbObjects++;
         }
     }
-    return nb_objects;
+    return nbObjects;
 }
 
-static uint64_t FfAv3aGetChannelLayoutMask(AVChannelLayout *channel_layout)
+static uint64_t FfAv3aGetChannelLayoutMask(AVChannelLayout *channelLayout)
 {
     uint64_t mask = 0L;
-    if (channel_layout->order != AV_CHANNEL_ORDER_CUSTOM) {
+    if (channelLayout->order != AV_CHANNEL_ORDER_CUSTOM) {
         return 0;
     }
-    for (int i = 0; i < channel_layout->nb_channels; i++) {
-        if (channel_layout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
+    for (int i = 0; i < channelLayout->nb_channels; i++) {
+        if (channelLayout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
             return mask;
         }
-        mask |= (1ULL << channel_layout->u.map[i].id);
+        mask |= (1ULL << channelLayout->u.map[i].id);
     }
     return mask;
 }
@@ -724,7 +724,7 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
             channelLayout = FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(
                                 channel_layout_mask, channels - object_number);
             if (channel_layout_mask != static_cast<uint64_t>(channelLayout)) {
-                MEDIA_LOG_W("Get channel layout failed, use default channel layout.");
+                MEDIA_LOG_W("Get channel layout failed, use default channel layout");
             }
         } else {
             channelLayout = AudioChannelLayout::AUDIO_OBJECT;
@@ -738,11 +738,11 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
         } else if (hoa_order == 3) {
             channelLayout = AudioChannelLayout::HOA_THIRD;
         } else {
-            MEDIA_LOG_W("Get hoa order failed.");
+            MEDIA_LOG_W("Get hoa order failed");
         }
         format.Set<Tag::AUDIO_HOA_ORDER>(hoa_order);
     } else {
-        MEDIA_LOG_W("Get channel layout failed.");
+        MEDIA_LOG_W("Get channel layout failed");
     }
     format.Set<Tag::AUDIO_OBJECT_NUMBER>(object_number);
     format.Set<Tag::AUDIO_SOUNDBED_CHANNELS_NUMBER>(channels - object_number);

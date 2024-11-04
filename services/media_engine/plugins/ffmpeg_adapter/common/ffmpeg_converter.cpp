@@ -58,7 +58,7 @@ const std::vector<std::pair<AudioChannelLayout, uint64_t>> g_toFFMPEGChannelLayo
     {AudioChannelLayout::STEREO_DOWNMIX, AV_CH_LAYOUT_STEREO_DOWNMIX},
 };
 
-const std::vector<std::pair<AudioChannelLayout,int>> g_AudioVividChannelLayoutMap = {
+const std::vector<std::pair<AudioChannelLayout,int>> g_audioVividChannelLayoutMap = {
     {AudioChannelLayout::MONO, 1},
     {AudioChannelLayout::STEREO, 2},
     {AudioChannelLayout::CH_4POINT0, 4},
@@ -428,9 +428,9 @@ std::string FFMpegConverter::AVStrError(int errnum)
 
 AudioChannelLayout FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(uint64_t ffChannelLayout, int channels)
 {
-    auto ite = std::find_if(g_AudioVividChannelLayoutMap.begin(), g_AudioVividChannelLayoutMap.end(),
+    auto ite = std::find_if(g_audioVividChannelLayoutMap.begin(), g_audioVividChannelLayoutMap.end(),
                             [&ffChannelLayout](const auto &item) -> bool { return item.first == ffChannelLayout;});
-    if (ite == g_AudioVividChannelLayoutMap.end() || ite -> second != channels) {
+    if (ite == g_audioVividChannelLayoutMap.end() || ite -> second != channels) {
         MEDIA_LOG_W("Convert channel layout failed: " PUBLIC_LOG_U64, ffChannelLayout);
         return GetDefaultChannelLayout(channels);
     }

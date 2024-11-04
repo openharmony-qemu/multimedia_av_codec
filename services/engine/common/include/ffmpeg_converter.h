@@ -54,7 +54,7 @@ public:
     static std::string_view ConvertOHAudioChannelLayoutToString(AudioChannelLayout layout);
     static int64_t ConvertAudioPtsToUs(int64_t pts, AVRational base);
     static std::string AVStrError(int errnum);
-    static AudioChannelLayout ConvertAudioVividToOHAudioChannelLayout(uint64_t ffChannelLayout, int channels);
+
 private:
     FFMpegConverter() = delete;
     ~FFMpegConverter() = delete;

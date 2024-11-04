@@ -53,22 +53,6 @@ const std::vector<std::pair<AudioChannelLayout, uint64_t>> g_toFFMPEGChannelLayo
     {AudioChannelLayout::STEREO_DOWNMIX, AV_CH_LAYOUT_STEREO_DOWNMIX},
 };
 
-// Audio Vivid Channel Layout
-const std::vector<std::pair<AudioChannelLayout,int>> g_AudioVividChannelLayoutMap = {
-    {AudioChannelLayout::MONO, 1},
-    {AudioChannelLayout::STEREO, 2},
-    {AudioChannelLayout::CH_4POINT0, 4},
-    {AudioChannelLayout::CH_5POINT1, 6},
-    {AudioChannelLayout::CH_7POINT1, 8},
-    {AudioChannelLayout::CH_5POINT1POINT2, 8},
-    {AudioChannelLayout::CH_5POINT1POINT4, 10},
-    {AudioChannelLayout::CH_7POINT1POINT2, 10},
-    {AudioChannelLayout::CH_7POINT1POINT4, 12},
-    {AudioChannelLayout::HOA_FIRST, 4},
-    {AudioChannelLayout::HOA_SECOND, 9},
-    {AudioChannelLayout::HOA_THIRD, 16},
-};
-
 const std::vector<std::pair<AVSampleFormat, AudioSampleFormat>> g_pFfSampleFmtMap = {
     {AVSampleFormat::AV_SAMPLE_FMT_U8, AudioSampleFormat::SAMPLE_U8},
     {AVSampleFormat::AV_SAMPLE_FMT_S16, AudioSampleFormat::SAMPLE_S16LE},
@@ -131,7 +115,6 @@ const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayo
     {AudioChannelLayout::HOA_FIRST, "HOA_FIRST"},
     {AudioChannelLayout::HOA_SECOND, "HOA_SECOND"},
     {AudioChannelLayout::HOA_THIRD, "HOA_THIRD"},
-    {AudioChannelLayout::AUDIO_OBJECT, "AUDIO_OBJECT"},
 };
 
 const std::vector<std::pair<AVColorPrimaries, ColorPrimary>> g_pFfColorPrimariesMap = {
@@ -448,15 +431,5 @@ std::string FFMpegConverter::AVStrError(int errnum)
     return std::string(errbuf);
 }
 
-AudioChannelLayout FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(uint64_t ffChannelLayout, int channels)
-{
-    auto ite = std::find_if(g_AudioVividChannelLayoutMap.begin(), g_AudioVividChannelLayoutMap.end(),
-                            [&ffChannelLayout](const auto &item) -> bool { return item.first == ffChannelLayout;});
-    if (ite == g_AudioVividChannelLayoutMap.end() || ite -> second != channels) {
-        AVCODEC_LOGW("Convert channel layout failed: %{public}" PRIu64, ffChannelLayout);
-        return GetDefaultChannelLayout(channels);
-    }
-    return ite->first;
-}
 } // namespace MediaAVCodec
 } // namespace OHOS
