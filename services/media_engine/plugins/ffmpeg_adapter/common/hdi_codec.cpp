@@ -14,6 +14,7 @@
  */
 #include "hdi_codec.h"
 #include "avcodec_log.h"
+#include <unistd.h>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-HdiCodec"};
@@ -370,6 +371,9 @@ int32_t HdiCodec::HdiCallback::EmptyBufferDone(int64_t appData, const OmxCodecBu
     if (hdiCodec_) {
         hdiCodec_->OnEmptyBufferDone(buffer);
     }
+    if (buffer.fd >= 0) {
+        close(buffer.fd);
+    }
     return HDF_SUCCESS;
 }
 
@@ -378,6 +382,9 @@ int32_t HdiCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuf
     AVCODEC_LOGD("FillBufferDone");
     if (hdiCodec_) {
         hdiCodec_->OnFillBufferDone(buffer);
+    }
+    if (buffer.fd >= 0) {
+        close(buffer.fd);
     }
     return HDF_SUCCESS;
 }
