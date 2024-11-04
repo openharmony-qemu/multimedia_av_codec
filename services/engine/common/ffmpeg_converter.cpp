@@ -430,6 +430,5 @@ std::string FFMpegConverter::AVStrError(int errnum)
     av_strerror(errnum, errbuf, AV_ERROR_MAX_STRING_SIZE);
     return std::string(errbuf);
 }
-
 } // namespace MediaAVCodec
 } // namespace OHOS
