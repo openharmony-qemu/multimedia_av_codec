@@ -73,7 +73,7 @@ void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBu
     uint64_t latency = 0;
     (void)GetLatency(latency);
     syncCenter->UpdateTimeAnchor(nowCt, latency, buffer->pts_ - firstPts_,
-                buffer->pts_, buffer->duration_, this);
+        buffer->pts_, buffer->duration_, this);
 }
 
 int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
