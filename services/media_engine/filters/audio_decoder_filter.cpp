@@ -286,7 +286,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     if (ret != (int32_t)Status::OK && ret != (int32_t)Status::ERROR_INVALID_STATE) {
         MEDIA_LOG_I_SHORT("AudioDecoderFilter init failed");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_AUDIO_DEC_INIT_FAILED});
+            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_IO_AUDIO_DEC_INIT_FAILED});
         }
         return Status::ERROR_AUDIO_DEC_INIT_FAILED;
     }
@@ -385,7 +385,7 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::OnLinkedResult.");
     if (mediaCodec_ == nullptr && eventReceiver_ != nullptr) {
-        eventReceiver_->OnEvent("audioDecoder", EventType::EVENT_ERROR, MSERR_AUDIO_DEC_UNAVAILABLE);
+        eventReceiver_->OnEvent("audioDecoder", EventType::EVENT_ERROR, MSERR_IO_AUDIO_DEC_UNAVAILABLE);
         return;
     }
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
