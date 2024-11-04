@@ -70,6 +70,7 @@ public:
     Status Start();
     Status Stop();
     Status Pause();
+    Status PauseDragging();
     Status Resume();
     Status ResumeDragging();
     Status Flush();

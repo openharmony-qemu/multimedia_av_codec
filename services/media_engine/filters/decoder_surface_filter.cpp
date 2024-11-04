@@ -328,6 +328,12 @@ Status DecoderSurfaceFilter::DoPause()
     return Status::OK;
 }
 
+Status DemuxerFilter::DoPauseDragging()
+{
+    MEDIA_LOG_I("DoPauseDragging in");
+    return demuxer_->PauseDragging();
+}
+
 Status DecoderSurfaceFilter::DoResume()
 {
     MEDIA_LOG_I("Resume enter.");
