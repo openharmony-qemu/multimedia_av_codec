@@ -45,7 +45,7 @@ constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t PLAY_WATER_LINE = 5 * 1024;
-constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
+constexpr int IS_DOWNLOAD_MIN_BIT = 100;
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
@@ -170,7 +170,7 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
     curUrl_ = playInfo.url_;
     if (writeTsIndex_ == 0) {
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
-        MEDIA_LOG_I("readOffset_, PutRequestIntoDownloader init readOffset." PUBLIC_LOG_ZU, readOffset_);
+        MEDIA_LOG_I("readOffset, PutRequestIntoDownloader init readOffset." PUBLIC_LOG_ZU, readOffset_);
         readTsIndex_ = writeTsIndex_;
         uint32_t readTsIndexTempValue = readTsIndex_.load();
         MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32, readTsIndexTempValue);
@@ -185,7 +185,7 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
         }
     }
 
-    downloadRequest_->SetIsM3U8Request(true);
+    downloadRequest_->SetIsM3u8Request(true);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest_->SetStartTimePos(startTimePos);
     downloader_->Download(downloadRequest_, -1); // -1
@@ -444,8 +444,8 @@ Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& read
         readOffset_ += readDataInfo.realReadLength_;
         ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
         canWrite_ = true;
-        uint32_t readTsIndexTempValue = readTsIndex_.load();
         OnReadBuffer(readDataInfo.realReadLength_);
+        uint32_t readTsIndexTempValue = readTsIndex_.load();
         MEDIA_LOG_D("HLS Read Success: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
             PUBLIC_LOG_D32 " readOffset_ " PUBLIC_LOG_U64 " readTsIndex_ " PUBLIC_LOG_U32, readDataInfo.wantReadLength_,
             readDataInfo.realReadLength_, readDataInfo.isEos_, readOffset_, readTsIndexTempValue);
@@ -717,7 +717,7 @@ bool HlsMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         canWrite_ = false;
         HandleBuffering();
         while (!isInterrupt_ && !canWrite_.load() && !isInterruptNeeded_.load()) {
-            MEDIA_LOGI_I("CacheMediaBuffer full, waiting seek or read");
+            MEDIA_LOG_I("CacheMediaBuffer full, waiting seek or read");
             if (isSeekingFlag.load()) {
                 MEDIA_LOG_I("HLS CacheMediaBuffer full, isSeeking, return true.");
                 return true;
