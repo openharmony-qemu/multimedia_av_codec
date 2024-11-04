@@ -52,6 +52,7 @@ public:
     Status WaitPrepareFrame() override;
     Status DoStart() override;
     Status DoPause() override;
+    Status DoPauseDragging() override;
     Status DoResume() override;
     Status DoResumeDragging() override;
     Status DoStop() override;
