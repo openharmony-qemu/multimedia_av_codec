@@ -222,12 +222,12 @@ bool DownloadRequest::IsChunkedVod() const
 
 bool DownloadRequest::IsM3u8Request() const
 {
-    if (url_.find(".ts") != std::string::npos ||
-        url_.find(".m3u8") != std::string::npos) {
-        MEDIA_LOG_I("request is m3u8.");
-        return true;
-    }
-    return false;
+    return isM3u8Request_;
+}
+
+void DownloadRequest::SetIsM3u8Request(bool isM3u8Request)
+{
+    isM3u8Request_ = isM3u8Request;
 }
 
 bool DownloadRequest::IsServerAcceptRange() const
@@ -281,6 +281,9 @@ Downloader::~Downloader()
 bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs)
 {
     MEDIA_LOG_I("In");
+    if (isInterruptNeeded_) {
+        request->isInterruptNeeded_ = true;
+    }
     requestQue_->SetActive(true);
     if (waitMs == -1) { // wait until push success
         requestQue_->Push(request);
@@ -975,37 +978,6 @@ void Downloader::WaitLoopPause()
     });
 }
 
-void Downloader::SetAppState(bool isAppBackground)
-{
-    isAppBackground_ = isAppBackground;
-}
-
-void Downloader::StopBufferring()
-{
-    MediaAVCodec::AVCodecTrace trace("Downloader::StopBufferring");
-    if (task_ == nullptr || currentRequest_ == nullptr) {
-        MEDIA_LOG_E("Downloader StopBufferring error.");
-        return;
-    }
-    if (isAppBackground_) {
-        if (!task_->IsTaskRunning() && client_ != nullptr) {
-            MEDIA_LOG_I("StopBufferring: is task not running.");
-            client_->Close(false);
-        }
-    } else {
-        if (currentRequest_ != nullptr && !shouldStartNextRequest) {
-            int64_t lastStartPos = currentRequest_->startPos_; // downlaod from last pos
-            BeginDownload();
-            currentRequest_->startPos_ = lastStartPos;
-            if (currentRequest_->startPos_ > 0) {
-                currentRequest_->retryOnGoing_ = true;
-                currentRequest_->dropedDataLen_ = 0;
-            }
-            MEDIA_LOG_I("StopBufferring: begin pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
-        }
-        Start();
-    }
-}
 }
 }
 }
