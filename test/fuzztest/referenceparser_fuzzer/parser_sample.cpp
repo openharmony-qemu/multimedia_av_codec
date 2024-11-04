@@ -100,7 +100,7 @@ void ParserSample::RunReferenceParser(const uint8_t *data, size_t size)
     }
     GopLayerInfo gopLayerInfo;
     ret = demuxer->GetGopLayerInfo(frameLayerInfo.gopId, gopLayerInfo);
-    if(ret != 0) {
+    if (ret != 0) {
         printf("GetGopLayerInfo fail\n");
     }
 }
