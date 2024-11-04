@@ -1506,7 +1506,7 @@ void HlsMediaDownloader::UpdateWaterLineAbove()
         WATER_LINE_ABOVE_LIMIT_RATIO));
     MEDIA_LOG_D("HLS UpdateWaterLineAbove: " PUBLIC_LOG_ZU " writeBitrate: " PUBLIC_LOG_U64 "avgDownloadSpeed: "
         PUBLIC_LOG_D32 "currentBitRate: " PUBLIC_LOG_D32,
-        waterLineAbove_, writeBitrateCaculator_->GetWriteBitrate(), avgDownloadSpeed_, currentBitRate);
+        waterLineAbove_, writeBitrateCaculator_->GetWriteBitrate(), avgDownloadSpeed_, currentBitRate_);
 }
 
 void HlsMediaDownloader::HandleCachedDuration()
