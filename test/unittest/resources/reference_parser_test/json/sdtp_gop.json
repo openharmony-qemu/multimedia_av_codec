@@ -1,3 +1,92 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3151c7b1ddb3ead81d5513a7354cdf3c43b1904cd1fd45a6034c13dd4db7a2cd
-size 1608
+[
+    {
+        "gopId": 0,
+        "gopSize": 30,
+        "startFrameId": 0
+    },
+    {
+        "gopId": 1,
+        "gopSize": 30,
+        "startFrameId": 30
+    },
+    {
+        "gopId": 2,
+        "gopSize": 30,
+        "startFrameId": 60
+    },
+    {
+        "gopId": 3,
+        "gopSize": 30,
+        "startFrameId": 90
+    },
+    {
+        "gopId": 4,
+        "gopSize": 30,
+        "startFrameId": 120
+    },
+    {
+        "gopId": 5,
+        "gopSize": 30,
+        "startFrameId": 150
+    },
+    {
+        "gopId": 6,
+        "gopSize": 30,
+        "startFrameId": 180
+    },
+    {
+        "gopId": 7,
+        "gopSize": 30,
+        "startFrameId": 210
+    },
+    {
+        "gopId": 8,
+        "gopSize": 30,
+        "startFrameId": 240
+    },
+    {
+        "gopId": 9,
+        "gopSize": 30,
+        "startFrameId": 270
+    },
+    {
+        "gopId": 10,
+        "gopSize": 30,
+        "startFrameId": 300
+    },
+    {
+        "gopId": 11,
+        "gopSize": 30,
+        "startFrameId": 330
+    },
+    {
+        "gopId": 12,
+        "gopSize": 30,
+        "startFrameId": 360
+    },
+    {
+        "gopId": 13,
+        "gopSize": 30,
+        "startFrameId": 390
+    },
+    {
+        "gopId": 14,
+        "gopSize": 30,
+        "startFrameId": 420
+    },
+    {
+        "gopId": 15,
+        "gopSize": 30,
+        "startFrameId": 450
+    },
+    {
+        "gopId": 16,
+        "gopSize": 30,
+        "startFrameId": 480
+    },
+    {
+        "gopId": 17,
+        "gopSize": 20,
+        "startFrameId": 510
+    }
+]

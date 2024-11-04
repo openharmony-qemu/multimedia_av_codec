@@ -117,7 +117,10 @@ public:
     Status SetAudioEffectMode(int32_t effectMode) override;
 
     Status SetMuted(bool isMuted) override;
+
     AudioSampleFormat GetSampleFormat() override;
+
+    int64_t GetWriteDurationMs() override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
@@ -126,7 +129,7 @@ private:
         void OnInterrupt(const OHOS::AudioStandard::InterruptEvent &interruptEvent) override;
         void OnStateChange(const OHOS::AudioStandard::RendererState state,
                            const OHOS::AudioStandard::StateChangeCmdType cmdType) override;
-        void OnOutputDeviceChange(const AudioStandard::DeviceInfo &deviceInfo,
+        void OnOutputDeviceChange(const AudioStandard::AudioDeviceDescriptor &deviceInfo,
             const AudioStandard::AudioStreamDeviceChangeReason reason) override;
     private:
         std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
@@ -219,6 +222,7 @@ private:
     bool enableDumpSlice_ {false};
     bool audioRenderSetFlag_ {false};
     std::list<std::vector<uint8_t>> cachedBuffers_;
+    int64_t writeDuration_ = 0;
 };
 } // namespace Plugin
 } // namespace Media

@@ -22,29 +22,32 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "hevcswdecoderconfigure_fuzzer"
+static VDecFuzzSample *g_vDecSample = nullptr;
 
 namespace OHOS {
-bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
+bool HevcSwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int32_t)) {
         return false;
     }
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
-    VDecFuzzSample *vDecSample = new VDecFuzzSample();
-    vDecSample->inpDir = "/data/test/media/1920_1080_30.h265";
-    vDecSample->defaultWidth = data_;
-    vDecSample->defaultHeight = data_;
-    vDecSample->defaultFrameRate = data_;
-    vDecSample->defaultRotation = data_;
-    vDecSample->defaultPixelFormat = data_;
-    vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.HEVC");
-    vDecSample->ConfigureVideoDecoder();
-    vDecSample->SetVideoDecoderCallback();
-    vDecSample->StartVideoDecoder();
-    vDecSample->WaitForEOS();
-    vDecSample->Release();
-    delete vDecSample;
+    g_vDecSample = new VDecFuzzSample();
+    g_vDecSample->inpDir = "/data/test/media/1920_1080_30.h265";
+    g_vDecSample->defaultWidth = data_;
+    g_vDecSample->defaultHeight = data_;
+    g_vDecSample->defaultFrameRate = data_;
+    g_vDecSample->defaultRotation = data_;
+    g_vDecSample->defaultPixelFormat = data_;
+    if (g_vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.HEVC") == AV_ERR_OK) {
+        g_vDecSample->ConfigureVideoDecoder();
+        g_vDecSample->SetVideoDecoderCallback();
+        g_vDecSample->StartVideoDecoder();
+        g_vDecSample->WaitForEOS();
+        g_vDecSample->Release();
+    }
+    delete g_vDecSample;
+    g_vDecSample = nullptr;
     return result;
 }
 } // namespace OHOS
@@ -53,6 +56,6 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::SwdecoderConfigureFuzzTest(data, size);
+    OHOS::HevcSwdecoderConfigureFuzzTest(data, size);
     return 0;
 }

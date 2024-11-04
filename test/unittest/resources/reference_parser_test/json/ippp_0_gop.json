@@ -1,3 +1,212 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:97b897cd4e7df1c9f1ced415d863944577e0617fcf613dc61066d777198daef3
-size 3795
+[
+    {
+        "gopId": 0,
+        "gopSize": 60,
+        "startFrameId": 0
+    },
+    {
+        "gopId": 1,
+        "gopSize": 60,
+        "startFrameId": 60
+    },
+    {
+        "gopId": 2,
+        "gopSize": 60,
+        "startFrameId": 120
+    },
+    {
+        "gopId": 3,
+        "gopSize": 60,
+        "startFrameId": 180
+    },
+    {
+        "gopId": 4,
+        "gopSize": 60,
+        "startFrameId": 240
+    },
+    {
+        "gopId": 5,
+        "gopSize": 60,
+        "startFrameId": 300
+    },
+    {
+        "gopId": 6,
+        "gopSize": 60,
+        "startFrameId": 360
+    },
+    {
+        "gopId": 7,
+        "gopSize": 60,
+        "startFrameId": 420
+    },
+    {
+        "gopId": 8,
+        "gopSize": 60,
+        "startFrameId": 480
+    },
+    {
+        "gopId": 9,
+        "gopSize": 60,
+        "startFrameId": 540
+    },
+    {
+        "gopId": 10,
+        "gopSize": 60,
+        "startFrameId": 600
+    },
+    {
+        "gopId": 11,
+        "gopSize": 60,
+        "startFrameId": 660
+    },
+    {
+        "gopId": 12,
+        "gopSize": 60,
+        "startFrameId": 720
+    },
+    {
+        "gopId": 13,
+        "gopSize": 60,
+        "startFrameId": 780
+    },
+    {
+        "gopId": 14,
+        "gopSize": 60,
+        "startFrameId": 840
+    },
+    {
+        "gopId": 15,
+        "gopSize": 60,
+        "startFrameId": 900
+    },
+    {
+        "gopId": 16,
+        "gopSize": 60,
+        "startFrameId": 960
+    },
+    {
+        "gopId": 17,
+        "gopSize": 60,
+        "startFrameId": 1020
+    },
+    {
+        "gopId": 18,
+        "gopSize": 60,
+        "startFrameId": 1080
+    },
+    {
+        "gopId": 19,
+        "gopSize": 60,
+        "startFrameId": 1140
+    },
+    {
+        "gopId": 20,
+        "gopSize": 60,
+        "startFrameId": 1200
+    },
+    {
+        "gopId": 21,
+        "gopSize": 60,
+        "startFrameId": 1260
+    },
+    {
+        "gopId": 22,
+        "gopSize": 60,
+        "startFrameId": 1320
+    },
+    {
+        "gopId": 23,
+        "gopSize": 60,
+        "startFrameId": 1380
+    },
+    {
+        "gopId": 24,
+        "gopSize": 60,
+        "startFrameId": 1440
+    },
+    {
+        "gopId": 25,
+        "gopSize": 60,
+        "startFrameId": 1500
+    },
+    {
+        "gopId": 26,
+        "gopSize": 60,
+        "startFrameId": 1560
+    },
+    {
+        "gopId": 27,
+        "gopSize": 60,
+        "startFrameId": 1620
+    },
+    {
+        "gopId": 28,
+        "gopSize": 60,
+        "startFrameId": 1680
+    },
+    {
+        "gopId": 29,
+        "gopSize": 60,
+        "startFrameId": 1740
+    },
+    {
+        "gopId": 30,
+        "gopSize": 60,
+        "startFrameId": 1800
+    },
+    {
+        "gopId": 31,
+        "gopSize": 60,
+        "startFrameId": 1860
+    },
+    {
+        "gopId": 32,
+        "gopSize": 60,
+        "startFrameId": 1920
+    },
+    {
+        "gopId": 33,
+        "gopSize": 60,
+        "startFrameId": 1980
+    },
+    {
+        "gopId": 34,
+        "gopSize": 60,
+        "startFrameId": 2040
+    },
+    {
+        "gopId": 35,
+        "gopSize": 60,
+        "startFrameId": 2100
+    },
+    {
+        "gopId": 36,
+        "gopSize": 60,
+        "startFrameId": 2160
+    },
+    {
+        "gopId": 37,
+        "gopSize": 60,
+        "startFrameId": 2220
+    },
+    {
+        "gopId": 38,
+        "gopSize": 60,
+        "startFrameId": 2280
+    },
+    {
+        "gopId": 39,
+        "gopSize": 60,
+        "startFrameId": 2340
+    },
+    {
+        "gopId": 40,
+        "gopSize": 60,
+        "startFrameId": 2400
+    },
+    {
+        "gopId": 41,
+        "gopSize": 16,
+        "startFrameId": 2460
+    }
+]

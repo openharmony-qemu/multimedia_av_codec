@@ -274,21 +274,6 @@ int32_t VDecFuzzSample::StartVideoDecoder()
 
 int32_t VDecFuzzSample::CreateVideoDecoder(string codeName)
 {
-    vdec_ = OH_VideoDecoder_CreateByName("aabbcc");
-    if (vdec_) {
-        OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = nullptr;
-    }
-    OH_AVCodec *tmpDec = OH_VideoDecoder_CreateByMime("aabbcc");
-    if (tmpDec) {
-        OH_VideoDecoder_Destroy(tmpDec);
-        tmpDec = nullptr;
-    }
-    tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    if (tmpDec) {
-        OH_VideoDecoder_Destroy(tmpDec);
-        tmpDec = nullptr;
-    }
     vdec_ = OH_VideoDecoder_CreateByName(codeName.c_str());
     g_decSample = this;
     return vdec_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;

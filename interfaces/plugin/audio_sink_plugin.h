@@ -240,6 +240,15 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
     {
         return INVALID_WIDTH;
     }
+
+    /**
+     * @brief Get time consuming of writing buffer, unit is ms
+     *
+     * The function is valid only in after RUNNING state.
+     *
+     * @return Time consuming of writing buffer, unit is ms
+     */
+    virtual int64_t GetWriteDurationMs() { return 0; };
 };
 
 /// Audio sink plugin api major number.

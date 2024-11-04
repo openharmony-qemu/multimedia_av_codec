@@ -107,7 +107,7 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
         files_.clear();
     }
     MEDIA_LOG_I("media playlist");
-    auto tags = ParseEntries(playList);
+    std::list<std::shared_ptr<Tag>> tags = ParseEntries(playList);
     UpdateFromTags(tags);
     tags.clear();
     playList_ = playList;

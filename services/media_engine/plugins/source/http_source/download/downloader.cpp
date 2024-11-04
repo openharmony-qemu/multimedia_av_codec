@@ -166,8 +166,9 @@ void DownloadRequest::WaitHeaderUpdated() const
         Task::SleepInTask(SLEEP_TIME);
         times_++;
     }
+    uint32_t headerIsClosed = static_cast<uint32_t>(headerInfo_.isClosed.load());
     MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
-        isHeaderUpdated, times_, headerInfo_.isClosed.load());
+        isHeaderUpdated, times_, headerIsClosed);
 }
 
 double DownloadRequest::GetDuration() const
@@ -221,12 +222,12 @@ bool DownloadRequest::IsChunkedVod() const
 
 bool DownloadRequest::IsM3u8Request() const
 {
-    if (url_.find(".ts") != std::string::npos ||
-        url_.find(".m3u8") != std::string::npos) {
-        MEDIA_LOG_I("request is m3u8.");
-        return true;
-    }
-    return false;
+    return isM3u8Request_;
+}
+
+void DownloadRequest::SetIsM3u8Request(bool isM3u8Request)
+{
+    isM3u8Request_ = isM3u8Request;
 }
 
 bool DownloadRequest::IsServerAcceptRange() const
@@ -280,6 +281,9 @@ Downloader::~Downloader()
 bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs)
 {
     MEDIA_LOG_I("In");
+    if (isInterruptNeeded_) {
+        request->isInterruptNeeded_ = true;
+    }
     requestQue_->SetActive(true);
     if (waitMs == -1) { // wait until push success
         requestQue_->Push(request);
@@ -976,7 +980,7 @@ void Downloader::WaitLoopPause()
     MEDIA_LOG_I("Downloader WaitLoopPause task loopStatus_ %{public}d", loopStatus_.load());
     loopStatus_ = LoopStatus::PAUSE;
     loopPauseCond_.Wait(lk, [this]() {
-        return loopStatus_ == LoopStatus::IDLE || isInterruptNeeded_;
+        return loopStatus_ != LoopStatus::PAUSE || isInterruptNeeded_;
     });
 }
 

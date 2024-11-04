@@ -277,8 +277,6 @@ Status DecoderSurfaceFilter::DoPause()
     }
     videoSink_->ResetSyncInfo();
     latestPausedTime_ = latestBufferTime_;
-    FALSE_RETURN_V(videoDecoder_ != nullptr, Status::OK);
-    videoDecoder_->ResetRenderTime();
     return Status::OK;
 }
 
@@ -478,8 +476,9 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 
 Status DecoderSurfaceFilter::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
 {
-    FALSE_RETURN_V(videoDecoder_ != nullptr, Status::ERROR_INVALID_OPERATION);
-    return videoDecoder_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    FALSE_RETURN_V(videoSink_ != nullptr, Status::ERROR_INVALID_OPERATION);
+    videoSink_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    return Status::OK;
 }
 
 void DecoderSurfaceFilter::GetParameter(std::shared_ptr<Meta> &parameter)
@@ -642,6 +641,8 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         MEDIA_LOG_W("Avoid render video frame with pts=" PUBLIC_LOG_D64, outBuffer->pts_);
         videoDecoder_->ReleaseOutputBuffer(index, false);
     } else {
+        MEDIA_LOG_D("ReleaseOutputBuffer index= " PUBLIC_LOG_D32" isRender= " PUBLIC_LOG_U32" pts= " PUBLIC_LOG_D64,
+                    index, static_cast<uint32_t>(render), outBuffer->pts_);
         videoDecoder_->ReleaseOutputBuffer(index, render);
     }
     if (!isInSeekContinous_) {

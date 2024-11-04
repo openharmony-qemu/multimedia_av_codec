@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (c) 2022 Huawei Device Co., Ltd.
+<!-- Copyright (c) 2024 Huawei Device Co., Ltd.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -81,107 +81,182 @@
     </target>
     <target name="DemuxerFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+    </target>
+	<target name="DemuxerAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
     </target>
     <target name="DemuxerTsFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+	<target name="DemuxerTsAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerAacFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerAacAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerAmrFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
+	</target>
+    <target name="DemuxerAmrAPI11FuzzTest">
+    	<preparer>
+        	<option name="shell" value="mkdir -p /data/test/"/>
+        	<option name="shell" value="restorecon /data/test/"/>
+    	</preparer>
 	</target>
 	<target name="DemuxerApeFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerApeAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerFlacFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerFlacAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerFlvFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerFlvAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerM3u8FuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerM3u8API11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerM4aFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerM4aAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerMkvFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerMkvAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerMp3FuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerMp3API11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerOggFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerOggAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerSrtFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerSrtAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerVttFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerVttAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
 	<target name="DemuxerWavFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="demuxer/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+    </target>
+	<target name="DemuxerWavAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
     </target>
     <target name="EncoderConfigureFuzzTest">
@@ -205,32 +280,59 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-        <target name="HwdecoderFuzzTest">
+    <target name="HwdecoderFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-        <target name="HwdecoderApi11FuzzTest">
+    <target name="HwdecoderApi11FuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-        <target name="SwdecoderConfigureFuzzTest">
+    <target name="HevcSwdecoderConfigureFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-        <target name="SwdecoderResourceFuzzTest">
+    <target name="HevcSwdecoderServerFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="HevcSwdecoderSetParameterFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="SwdecoderConfigureFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="SwdecoderResourceFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+	</target>
+    <target name="SwdecoderServerFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
         </preparer>
     </target>
     <target name="SwdecoderSetParameterFuzzTest">

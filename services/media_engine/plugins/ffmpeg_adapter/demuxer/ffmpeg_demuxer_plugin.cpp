@@ -58,6 +58,26 @@ const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 const int32_t INIT_TIME_THRESHOLD = 1000;
+const uint32_t ID3V2_HEADER_SIZE = 10;
+
+// id3v2 tag position
+const int32_t POS_0 = 0;
+const int32_t POS_1 = 1;
+const int32_t POS_2 = 2;
+const int32_t POS_3 = 3;
+const int32_t POS_4 = 4;
+const int32_t POS_5 = 4;
+const int32_t POS_6 = 6;
+const int32_t POS_7 = 7;
+const int32_t POS_8 = 8;
+const int32_t POS_9 = 9;
+const int32_t POS_14 = 14;
+const int32_t POS_21 = 21;
+const int32_t POS_FF = 0xff;
+const int32_t LEN_MASK = 0x7f;
+const int32_t TAG_MASK = 0x80;
+const int32_t TAG_VERSION_MASK = 0x10;
+
 namespace {
 std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 std::mutex g_mtx;
@@ -877,12 +897,66 @@ AVIOContext* FFmpegDemuxerPlugin::AllocAVIOContext(int flags, IOContext *ioConte
     return avioContext;
 }
 
+void FreeContext(AVFormatContext* formatContext, AVIOContext* avioContext)
+{
+    if (formatContext) {
+        avformat_close_input(&formatContext);
+    }
+    if (avioContext) {
+        if (avioContext->buffer) {
+            av_freep(&(avioContext->buffer));
+        }
+        avio_context_free(&avioContext);
+    }
+}
+
+int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputFormat> pluginImpl, AVDictionary *options)
+{
+    FALSE_RETURN_V_MSG_E(formatContext && pluginImpl, -1, "AVFormatContext is nullptr");
+    MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
+
+    AVIOContext* avioContext = formatContext->pb;
+    auto begin = std::chrono::system_clock::now();
+    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl.get(), &options);
+    if (ret < 0) {
+        FreeContext(formatContext, avioContext);
+        MEDIA_LOG_E("Call avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
+            pluginImpl->name, AVStrError(ret).c_str());
+        return ret;
+    }
+
+    auto open = std::chrono::system_clock::now();
+    if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
+        formatContext->probesize = LIVE_FLV_PROBE_SIZE;
+    }
+
+    ret = avformat_find_stream_info(formatContext, NULL);
+    auto parse = std::chrono::system_clock::now();
+    int openSpend = static_cast<int>(static_cast<std::chrono::duration<double, std::milli>>(open - begin).count());
+    int parseSpend = static_cast<int>(static_cast<std::chrono::duration<double, std::milli>>(parse - open).count());
+    if (openSpend + parseSpend > INIT_TIME_THRESHOLD) {
+        MEDIA_LOG_W("Spend [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]", openSpend, parseSpend);
+    }
+    if (ret < 0) {
+        FreeContext(formatContext, avioContext);
+        MEDIA_LOG_E("Parse stream info failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
+            pluginImpl->name, AVStrError(ret).c_str());
+        return ret;
+    }
+    return 0;
+}
+
 std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOContext *ioContext)
 {
     AVFormatContext* formatContext = avformat_alloc_context();
     FALSE_RETURN_V_MSG_E(formatContext != nullptr, nullptr, "AVFormatContext is nullptr");
+
     formatContext->pb = AllocAVIOContext(AVIO_FLAG_READ, ioContext);
-    FALSE_RETURN_V_MSG_E(formatContext->pb != nullptr, nullptr, "IOContext is nullptr");
+    if (formatContext->pb == nullptr) {
+        FreeContext(formatContext, nullptr);
+        return nullptr;
+    }
+
     formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
     if (std::string(pluginImpl_->name) == "mp3") {
         formatContext->flags =
@@ -892,25 +966,13 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     if (ioContext_.dataSource->IsDash()) {
         av_dict_set(&options, "use_tfdt", "true", 0);
     }
-    MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
-    auto begin = std::chrono::system_clock::now();
-    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), &options);
-    FALSE_RETURN_V_MSG_E((ret == 0), nullptr, "Call avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
-        pluginImpl_->name, AVStrError(ret).c_str());
-    auto open = std::chrono::system_clock::now();
-    if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
-        formatContext->probesize = LIVE_FLV_PROBE_SIZE;
+    
+    int ret = ParseHeader(formatContext, pluginImpl_, options);
+    if (options) {
+        av_dict_free(&options);
     }
-    FALSE_RETURN_V_MSG_E(formatContext->pb->buffer != nullptr, nullptr, "Input buffer is nullptr");
-    ret = avformat_find_stream_info(formatContext, NULL);
-    auto parse = std::chrono::system_clock::now();
-    int openSpend = static_cast<int>(static_cast<std::chrono::duration<double, std::milli>>(open - begin).count());
-    int parseSpend = static_cast<int>(static_cast<std::chrono::duration<double, std::milli>>(parse - open).count());
-    if (openSpend + parseSpend > INIT_TIME_THRESHOLD) {
-        MEDIA_LOG_W("Spend [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]", openSpend, parseSpend);
-    }
-    FALSE_RETURN_V_MSG_E((ret >= 0), nullptr, "Parse stream info failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
-        pluginImpl_->name, AVStrError(ret).c_str());
+    FALSE_RETURN_V_MSG_E(ret >= 0, nullptr, "ParseHeader failed");
+
     std::shared_ptr<AVFormatContext> retFormatContext =
         std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *ptr) {
             if (ptr) {
@@ -1649,6 +1711,74 @@ void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
 }
 
 namespace { // plugin set
+
+int IsStartWithID3(const uint8_t *buf, const char *tagName)
+{
+    return buf[POS_0] == tagName[POS_0] &&
+           buf[POS_1] == tagName[POS_1] &&
+           buf[POS_2] == tagName[POS_2] &&
+           buf[POS_3] != POS_FF &&
+           buf[POS_4] != POS_FF &&
+           (buf[POS_6] & TAG_MASK) == 0 &&
+           (buf[POS_7] & TAG_MASK) == 0 &&
+           (buf[POS_8] & TAG_MASK) == 0 &&
+           (buf[POS_9] & TAG_MASK) == 0;
+}
+
+int GetID3TagLen(const uint8_t *buf)
+{
+    int32_t len = ((buf[POS_6] & LEN_MASK) << POS_21) + ((buf[POS_7] & LEN_MASK) << POS_14) +
+                  ((buf[POS_8] & LEN_MASK) << POS_7) + (buf[POS_9] & LEN_MASK) +
+                  static_cast<int32_t>(ID3V2_HEADER_SIZE);
+    if (buf[POS_5] & TAG_VERSION_MASK) {
+        len += static_cast<int32_t>(ID3V2_HEADER_SIZE);
+    }
+    return len;
+}
+
+int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& pluginName,
+    std::shared_ptr<DataSource> dataSource, size_t &getData)
+{
+    size_t bufferSize = DEFAULT_SNIFF_SIZE;
+    uint64_t fileSize = 0;
+    Status getFileSize = dataSource->GetSize(fileSize);
+    if (getFileSize == Status::OK) {
+        bufferSize = (bufferSize < fileSize) ? bufferSize : fileSize;
+    }
+    std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE); // fix ffmpeg probe crash, refer to tools/probetest.c
+    auto bufferInfo = std::make_shared<Buffer>();
+    auto bufData = bufferInfo->WrapMemory(buff.data(), bufferSize, bufferSize);
+    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, -1,
+        "Alloc buffer failed for " PUBLIC_LOG_S, pluginName.c_str());
+    Status ret = Status::OK;
+    {
+        std::string traceName = "Sniff_" + pluginName + "_Readat";
+        MediaAVCodec::AVCodecTrace trace(traceName.c_str());
+        ret = dataSource->ReadAt(0, bufferInfo, bufferSize);
+    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
+    getData = bufferInfo->GetMemory()->GetSize();
+    FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
+    if (getFileSize == Status::OK && getData > ID3V2_HEADER_SIZE && IsStartWithID3(buff.data(), "ID3")) {
+        int32_t id3Len = GetID3TagLen(buff.data());
+        // id3 tag length is out of file, or file just contains id3 tag, no valid data.
+        FALSE_RETURN_V_MSG_E(id3Len >= 0 && static_cast<uint64_t>(id3Len) < fileSize, -1,
+            "File data error for " PUBLIC_LOG_S, pluginName.c_str());
+        if (id3Len > 0) {
+            uint64_t remainSize = fileSize - static_cast<uint64_t>(id3Len);
+            bufferSize = (bufferSize < remainSize) ? bufferSize : remainSize;
+            int resetRet = memset_s(buff.data(), bufferSize, 0, bufferSize);
+            FALSE_RETURN_V_MSG_E(resetRet == EOK, -1, "Reset buff failed for " PUBLIC_LOG_S, pluginName.c_str());
+            ret = dataSource->ReadAt(id3Len, bufferInfo, bufferSize);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
+            getData = bufferInfo->GetMemory()->GetSize();
+            FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
+        }
+    }
+    AVProbeData probeData{"", buff.data(), static_cast<int32_t>(getData), ""};
+    return plugin->read_probe(&probeData);
+}
+
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 {
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
@@ -1660,33 +1790,17 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
     }
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
         "Get plugin for " PUBLIC_LOG_S " failed", pluginName.c_str());
-    size_t bufferSize = DEFAULT_SNIFF_SIZE;
-    uint64_t fileSize = 0;
-    if (dataSource->GetSize(fileSize) == Status::OK) {
-        bufferSize = (bufferSize < fileSize) ? bufferSize : fileSize;
+    size_t getData = 0;
+    int confidence = GetConfidence(plugin, pluginName, dataSource, getData);
+    if (confidence < 0) {
+        return 0;
     }
-    std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE); // fix ffmpeg probe crash, refer to tools/probetest.c
-    auto bufferInfo = std::make_shared<Buffer>();
-    auto bufData = bufferInfo->WrapMemory(buff.data(), bufferSize, bufferSize);
-    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, 0,
-        "Alloc buffer failed for " PUBLIC_LOG_S, pluginName.c_str());
-    Status ret;
-    {
-        std::string traceName = "Sniff_" + pluginName + "_Readat";
-        MediaAVCodec::AVCodecTrace trace(traceName.c_str());
-        ret = dataSource->ReadAt(0, bufferInfo, bufferSize);
-    }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, 0, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
-    int getData = static_cast<int>(bufferInfo->GetMemory()->GetSize());
-    FALSE_RETURN_V_MSG_E(getData > 0, 0, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
-    AVProbeData probeData{"", buff.data(), getData, ""};
-    int confidence = plugin->read_probe(&probeData);
     if (StartWith(plugin->name, "mp3") && confidence > 0 && confidence <= MP3_PROBE_SCORE_LIMIT) {
         MEDIA_LOG_W("Score " PUBLIC_LOG_D32 " is too low", confidence);
         confidence = 0;
     }
-    if ((static_cast<uint32_t>(getData) < DEFAULT_SNIFF_SIZE) || confidence > 0) {
-        MEDIA_LOG_I("Sniff:" PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]", plugin->name, getData, confidence);
+    if (getData < DEFAULT_SNIFF_SIZE || confidence > 0) {
+        MEDIA_LOG_I("Sniff:" PUBLIC_LOG_S "[" PUBLIC_LOG_ZU "/" PUBLIC_LOG_D32 "]", plugin->name, getData, confidence);
     }
     return confidence;
 }

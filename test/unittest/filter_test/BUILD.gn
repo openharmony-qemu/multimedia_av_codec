@@ -124,6 +124,7 @@ ohos_unittest("filter_unit_test") {
 
   external_deps = [
     "audio_framework:audio_capturer",
+    "audio_framework:audio_client",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
