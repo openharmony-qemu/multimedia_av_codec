@@ -99,8 +99,8 @@ private:
     void OnEnterUninitializedState() override;
 
     // VRR
-#ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t SetVrrEnable(const Format &format);
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t VrrPrediction(BufferInfo &info) override;
     static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
     std::shared_ptr<OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction> vrrPredictor_;

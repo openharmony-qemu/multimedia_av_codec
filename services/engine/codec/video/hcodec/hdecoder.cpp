@@ -64,9 +64,10 @@ int32_t HDecoder::OnConfigure(const Format &format)
     SaveScaleMode(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
-#ifdef USE_VIDEO_PROCESSING_ENGINE
-    (void)SetVrrEnable(format);
-#endif
+    ret = SetVrrEnable(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     return SetupPort(format);
 }
 
@@ -395,7 +396,6 @@ int32_t HDecoder::SetScaleMode()
     return AVCS_ERR_OK;
 }
 
-#ifdef USE_VIDEO_PROCESSING_ENGINE
 int32_t HDecoder::SetVrrEnable(const Format &format)
 {
     int32_t vrrEnable = 0;
@@ -403,6 +403,7 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         HLOGI("VRR disabled");
         return AVCS_ERR_OK;
     }
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     optional<double> frameRate = GetFrameRateFromUser(format);
     if (!frameRate.has_value()) {
         HLOGE("VRR without frameRate");
@@ -429,8 +430,11 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
     isVrrEnable_ = true;
     HLOGI("VRR enabled");
     return AVCS_ERR_OK;
-}
+#else
+    HLOGE("VRR enabled");
+    return AVCS_ERR_UNSUPPORT;
 #endif
+}
 
 int32_t HDecoder::SubmitOutputBuffersToOmxNode()
 {
