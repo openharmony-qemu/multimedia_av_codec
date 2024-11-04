@@ -298,7 +298,7 @@ void M3U8::DownloadKey()
     RequestInfo requestInfo;
     requestInfo.url = realKeyUrl;
     requestInfo.httpHeader = httpHeader_;
-    // TO DO: If the fragment file is too largem should not requestWholeFile
+    // TO DO: If the fragment file is too large, should not requestWholeFile
     downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, requestInfo, true);
     downloader_->Download(downloadRequest_, -1);
     downloader_->Start();
@@ -321,7 +321,7 @@ void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &
     std::shared_ptr<DownloadRequest> &request)
 {
     // This should not be called normally
-    if (request->GetClientError() != NetWorkClientErrorCode::ERROR_OK || request->GetServerError() != 0) {
+    if (request->GetClientError() != NetworkClientErrorCode::ERROR_OK || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
 }
