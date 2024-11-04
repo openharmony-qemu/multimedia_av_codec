@@ -929,19 +929,19 @@ void CacheMediaChunkBufferImpl::Dump(uint64_t param)
 void CacheMediaChunkBufferImpl::DumpInner(uint64_t param)
 {
     (void)param;
-    MEDIA_LOG_D("cacheBuff total buffer size :" PUBLIC_LOG_U64, totalBuffSize_);
-    MEDIA_LOG_D("cacheBuff total chunk size  :" PUBLIC_LOG_U32, chunkSize_);
-    MEDIA_LOG_D("cacheBuff total chunk num   :" PUBLIC_LOG_U32, chunkMaxNum_);
-    MEDIA_LOG_D("cacheBuff total read size   :" PUBLIC_LOG_U64, totalReadSize_);
-    MEDIA_LOG_D("cacheBuff read size factor  :" PUBLIC_LOG_F, initReadSizeFactor_);
-    MEDIA_LOG_D("cacheBuff free chunk num:   :" PUBLIC_LOG_ZU, freeChunks_.size());
-    MEDIA_LOG_D("cacheBuff fragment num:     :" PUBLIC_LOG_ZU, fragmentCacheBuffer_.size());
+    MEDIA_LOG_D("cacheBuff total buffer size : " PUBLIC_LOG_U64, totalBuffSize_);
+    MEDIA_LOG_D("cacheBuff total chunk size  : " PUBLIC_LOG_U32, chunkSize_);
+    MEDIA_LOG_D("cacheBuff total chunk num   : " PUBLIC_LOG_U32, chunkMaxNum_);
+    MEDIA_LOG_D("cacheBuff total read size   : " PUBLIC_LOG_U64, totalReadSize_);
+    MEDIA_LOG_D("cacheBuff read size factor  : " PUBLIC_LOG_F, initReadSizeFactor_);
+    MEDIA_LOG_D("cacheBuff free chunk num:   : " PUBLIC_LOG_ZU, freeChunks_.size());
+    MEDIA_LOG_D("cacheBuff fragment num:     : " PUBLIC_LOG_ZU, fragmentCacheBuffer_.size());
     for (auto const & fragment : fragmentCacheBuffer_) {
-        MEDIA_LOG_D("cacheBuff - fragment offset :" PUBLIC_LOG_U64, fragment.offsetBegin);
-        MEDIA_LOG_D("cacheBuff total chunk size  :" PUBLIC_LOG_D64, fragment.dataLength);
-        MEDIA_LOG_D("cacheBuff total chunk num   :" PUBLIC_LOG_ZU, fragment.chunks.size());
-        MEDIA_LOG_D("cacheBuff total read size   :" PUBLIC_LOG_U64, fragment.accessLength);
-        MEDIA_LOG_D("cacheBuff read size factor  :" PUBLIC_LOG_U64, fragment.totalReadSize);
+        MEDIA_LOG_D("cacheBuff - fragment offset : " PUBLIC_LOG_U64, fragment.offsetBegin);
+        MEDIA_LOG_D("cacheBuff   fragment length : " PUBLIC_LOG_D64, fragment.dataLength);
+        MEDIA_LOG_D("cacheBuff   chunk num       : " PUBLIC_LOG_ZU, fragment.chunks.size());
+        MEDIA_LOG_D("cacheBuff   access length   : " PUBLIC_LOG_U64, fragment.accessLength);
+        MEDIA_LOG_D("cacheBuff   read size       : " PUBLIC_LOG_U64, fragment.totalReadSize);
         if (fragment.accessPos != fragment.chunks.end()) {
             auto &chunkInfo = *fragment.accessPos;
             MEDIA_LOG_D("cacheBuff   access offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
@@ -950,7 +950,7 @@ void CacheMediaChunkBufferImpl::DumpInner(uint64_t param)
             MEDIA_LOG_D("cacheBuff   access ended");
         }
         if (!fragment.chunks.empty()) {
-            auto &chunkInfo = *fragment.chunks.back();
+            auto &chunkInfo = fragment.chunks.back();
             MEDIA_LOG_D("cacheBuff   last chunk offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
                 chunkInfo->offset, chunkInfo->dataLength);
         }
@@ -1011,7 +1011,7 @@ bool CacheMediaChunkBufferImpl::ClearChunksOfFragment(uint64_t offset)
             (*fragmentPos).accessPos = chunkPos;
         }
 
-        MEDIA_LOG_D("ClearChunksOfFragment clear chunk, offsetBegin: " PUBLIC_LOG_U64 "offsetEnd " PUBLIC_LOG_U64,
+        MEDIA_LOG_D("ClearChunksOfFragment clear chunk, offsetBegin: " PUBLIC_LOG_U64 " offsetEnd " PUBLIC_LOG_U64,
             chunkIter->offset, chunkIter->offset + chunkIter->dataLength);
         auto tmp = UpdateFragmentCacheForDelHead(fragmentPos);
         if (tmp != nullptr) {
@@ -1032,8 +1032,8 @@ bool CacheMediaChunkBufferImpl::ClearFragmentBeforeOffset(uint64_t offset)
             break;
         }
         if (iter->offsetBegin + static_cast<uint64_t>(iter->dataLength) <= offset) {
-            MEDIA_LOG_D("ClearChunksOfFragment clear chunk, offsetBegin: " PUBLIC_LOG_U64 "offsetEnd " PUBLIC_LOG_U64,
-                iter->dataLength, iter->offsetBegin + iter->dataLength);
+            MEDIA_LOG_D("ClearFragmentBeforeOffset clear fragment, offsetBegin: " PUBLIC_LOG_U64 " offsetEnd "
+                PUBLIC_LOG_U64, iter->offsetBegin, iter->offsetBegin + iter->dataLength);
             freeChunks_.splice(freeChunks_.end(), iter->chunks);
             iter = EraseFragmentCache(iter);
             res = true;
@@ -1059,8 +1059,8 @@ bool CacheMediaChunkBufferImpl::ClearMiddleReadFragment(uint64_t minOffset, uint
         if (iter->accessLength <= chunkSize_) {
             continue;
         }
-        MEDIA_LOG_D("ClearChunksOfFragment, minOffset: " PUBLIC_LOG_U64 "maxOffset: "
-            PUBLIC_LOG_U64, " offsetBegin: ", PUBLIC_LOG_U64, "dataLength: " PUBLIC_LOG_D64 " accessLength "
+        MEDIA_LOG_D("ClearMiddleReadFragment, minOffset: " PUBLIC_LOG_U64 " maxOffset: "
+            PUBLIC_LOG_U64, " offsetBegin: " PUBLIC_LOG_U64 " dataLength: " PUBLIC_LOG_D64 " accessLength "
             PUBLIC_LOG_D64, minOffset, maxOffset, iter->offsetBegin, iter->dataLength, iter->accessLength);
         auto& fragment = *iter;
         uint32_t chunksSize = fragment.chunks.size();
@@ -1090,7 +1090,7 @@ bool CacheMediaChunkBufferImpl::IsReadSplit(uint64_t offset)
     return false;
 }
 
-bool CacheMediaChunkBufferImpl::SetIsLargeOffsetSpan(bool isLargeOffsetSpan)
+void CacheMediaChunkBufferImpl::SetIsLargeOffsetSpan(bool isLargeOffsetSpan)
 {
     isLargeOffsetSpan_ = isLargeOffsetSpan;
 }
@@ -1232,9 +1232,9 @@ bool CacheMediaChunkBuffer::IsReadSplit(uint64_t offset)
     return impl_->IsReadSplit(offset);
 }
 
-bool CacheMediaChunkBuffer::SetIsLargeOffsetSpan(bool isLargeOffsetSpan)
+void CacheMediaChunkBuffer::SetIsLargeOffsetSpan(bool isLargeOffsetSpan)
 {
-    return impl_->SetIsLargeOffsetSpan(sLargeOffsetSpan);
+    return impl_->SetIsLargeOffsetSpan(isLargeOffsetSpan);
 }
 
 void CacheMediaChunkBuffer::SetReadBlocking(bool isReadBlockingAllowed)

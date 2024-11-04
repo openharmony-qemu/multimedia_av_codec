@@ -93,7 +93,7 @@ public:
     bool ClearChunksOfFragment(uint64_t offset);
     bool ClearMiddleReadFragment(uint64_t minOffset, uint64_t maxOffset);
     bool IsReadSplit(uint64_t offset);
-    bool SetIsLargeOffsetSpan(bool isLargeOffsetSpan);
+    void SetIsLargeOffsetSpan(bool isLargeOffsetSpan);
 
 protected:
     virtual CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false);
@@ -201,7 +201,7 @@ public:
     virtual bool ClearChunksOfFragment(uint64_t offset) = 0;
     virtual bool ClearMiddleReadFragment(uint64_t minOffset, uint64_t maxOffset) = 0;
     virtual bool IsReadSplit(uint64_t offset) = 0;
-    virtual bool SetIsLargeOffsetSpan(bool isLargeOffsetSpan) = 0;
+    virtual void SetIsLargeOffsetSpan(bool isLargeOffsetSpan) = 0;
 };
 
 class CacheMediaChunkBufferImpl;
@@ -229,7 +229,7 @@ public:
     bool ClearChunksOfFragment(uint64_t offset) override;
     bool ClearMiddleReadFragment(uint64_t minOffset, uint64_t maxOffset) override;
     bool IsReadSplit(uint64_t offset) override;
-    bool SetIsLargeOffsetSpan(bool isLargeOffsetSpan) override;
+    void SetIsLargeOffsetSpan(bool isLargeOffsetSpan) override;
 private:
     std::unique_ptr<CacheMediaChunkBufferImpl> impl_;
 };
