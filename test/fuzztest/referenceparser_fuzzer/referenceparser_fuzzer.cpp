@@ -30,7 +30,7 @@ using namespace OHOS::MediaAVCodec;
 namespace OHOS {
 const char *MP4_PATH = "/data/test/fuzz_create.mp4";
 
-bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
+bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int64_t)) {
         return false;
@@ -55,6 +55,6 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::DoSomethingInterestingWithMyAPI(data, size);
+    OHOS::DoReferenceParserWithDemuxerAPI(data, size);
     return 0;
 }
