@@ -298,7 +298,7 @@ void M3U8::DownloadKey()
     RequestInfo requestInfo;
     requestInfo.url = realKeyUrl;
     requestInfo.httpHeader = httpHeader_;
-    // TO DO: If the fragment file is too large, should not requestWholeFile
+    // TO DO: If the fragment file is too large, should not requestWholeFile.
     downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, requestInfo, true);
     downloader_->Download(downloadRequest_, -1);
     downloader_->Start();
