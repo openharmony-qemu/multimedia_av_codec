@@ -30,9 +30,9 @@ namespace HttpPlugin {
 namespace {
 constexpr int DEFAULT_BUFFER_SIZE = 200 * 1024;
 constexpr int ERROR_COUNT = 5;
-constexpr std::string M3U8_SUFFIX = ".m3u8";
-constexpr std::string M3U8_BINARY = "/m3u8";
-constexpr std::string DASH_SUFFIX = ".mpd";
+const std::string M3U8_SUFFIX = ".m3u8";
+const std::string M3U8_BINARY = "/m3u8";
+const std::string DASH_SUFFIX = ".mpd";
 
 }
 
