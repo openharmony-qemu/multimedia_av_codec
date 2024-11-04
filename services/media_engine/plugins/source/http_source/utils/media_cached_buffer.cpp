@@ -88,7 +88,7 @@ CacheMediaChunkBufferImpl::~CacheMediaChunkBufferImpl()
 bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
 {
     if (isLargeOffsetSpan_) {
-         lruCache_.ReCacheSize(CACHE_FRAGMENT_MAX_NUM_LARGE);
+        lruCache_.ReCacheSize(CACHE_FRAGMENT_MAX_NUM_LARGE);
     } else {
         lruCache_.ReCacheSize(CACHE_FRAGMENT_MAX_NUM_DEFAULT);
     }
@@ -1060,7 +1060,7 @@ bool CacheMediaChunkBufferImpl::ClearMiddleReadFragment(uint64_t minOffset, uint
             continue;
         }
         MEDIA_LOG_D("ClearMiddleReadFragment, minOffset: " PUBLIC_LOG_U64 " maxOffset: "
-            PUBLIC_LOG_U64, " offsetBegin: " PUBLIC_LOG_U64 " dataLength: " PUBLIC_LOG_D64 " accessLength "
+            PUBLIC_LOG_U64 " offsetBegin: " PUBLIC_LOG_U64 " dataLength: " PUBLIC_LOG_D64 " accessLength "
             PUBLIC_LOG_D64, minOffset, maxOffset, iter->offsetBegin, iter->dataLength, iter->accessLength);
         auto& fragment = *iter;
         uint32_t chunksSize = fragment.chunks.size();
