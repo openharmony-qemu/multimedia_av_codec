@@ -48,8 +48,6 @@ public:
     Status Configure(const std::shared_ptr<Meta> &parameter);
     Status DoInitAfterLink() override;
     Status DoPrepare() override;
-    Status DoPrepareFrame(bool renderFirstFrame) override;
-    Status WaitPrepareFrame() override;
     Status DoStart() override;
     Status DoPause() override;
     Status DoResume() override;
@@ -57,6 +55,8 @@ public:
     Status DoStop() override;
     Status DoFlush() override;
     Status DoRelease() override;
+    Status DoPreroll() override;
+    Status DoWaitPrerollDone(bool render) override;
     Status DoSetPlayRange(int64_t start, int64_t end) override;
     Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
     Status DoProcessOutputBuffer(int recvArg, bool dropFrame, bool byIdx, uint32_t idx, int64_t renderTime) override;
@@ -118,6 +118,8 @@ private:
     void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer, int64_t renderTime);
     bool AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer);
+    bool DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
+    bool DrainSeekClosest(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
 
     std::string name_;
     FilterType filterType_;
@@ -154,10 +156,6 @@ private:
     std::atomic<bool> isThreadExit_ = true;
     std::condition_variable condBufferAvailable_;
 
-    Mutex firstFrameMutex_{};
-    ConditionVariable firstFrameCond_;
-    std::atomic<bool> doPrepareFrame_{false};
-    bool renderFirstFrame_{false};
     std::atomic<int32_t> bitrateChange_{0};
     int32_t surfaceWidth_{0};
     int32_t surfaceHeight_{0};
@@ -165,6 +163,13 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     Mutex formatChangeMutex_{};
     int32_t rateUpperLimit_{0};
+
+    std::mutex prerollMutex_ {};
+    std::atomic<bool> inPreroll_ {false};
+    std::condition_variable prerollDoneCond_ {};
+    std::atomic<bool> prerollDone_ {true};
+    std::atomic<bool> eosNext_ {false};
+    bool isFirstFrameAfterResume_ {true};
 
     int32_t appUid_ = -1;
     int32_t appPid_ = -1;

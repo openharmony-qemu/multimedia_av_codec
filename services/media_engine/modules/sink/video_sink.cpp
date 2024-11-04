@@ -65,6 +65,17 @@ VideoSink::~VideoSink()
     this->eventReceiver_ = nullptr;
 }
 
+void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+{
+    auto syncCenter = syncCenter_.lock();
+    FALSE_RETURN(syncCenter != nullptr && buffer != nullptr);
+    int64_t nowCt = syncCenter->GetClockTimeNow();
+    uint64_t latency = 0;
+    (void)GetLatency(latency);
+    syncCenter->UpdateTimeAnchor(nowCt, latency, buffer->pts_ - firstPts_,
+                buffer->pts_, buffer->duration_, this);
+}
+
 int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
     FALSE_RETURN_V(buffer != nullptr, false);
