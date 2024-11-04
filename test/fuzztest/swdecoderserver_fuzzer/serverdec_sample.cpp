@@ -17,7 +17,6 @@
 #include <utility>
 #include "serverdec_sample.h"
 #include <iostream>
-#include "fcodec_api.cpp"
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
@@ -57,8 +56,6 @@ VDecServerSample::~VDecServerSample()
     if (codec_ != nullptr) {
         codec_->Stop();
         codec_->Release();
-        FCodec *codec = reinterpret_cast<FCodec*>(codec_.get());
-        codec->DecStrongRef(codec);
     }
     if (signal_ != nullptr) {
         delete signal_;
@@ -85,7 +82,7 @@ int32_t VDecServerSample::SetCallback()
 
 void VDecServerSample::RunVideoServerDecoder()
 {
-    CreateFCodecByName("OH.Media.Codec.Decoder.Video.AVC", codec_);
+    codec_ = make_shared<FCodec>("OH.Media.Codec.Decoder.Video.AVC");
     if (codec_ == nullptr) {
         cout << "Create failed" << endl;
         return;
