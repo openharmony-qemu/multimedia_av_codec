@@ -125,23 +125,14 @@ public:
     }
 
     virtual void SetAppUid(int32_t appUid) = 0;
-
     virtual size_t GetSegmentOffset()
     {
         return 0;
     }
-
     virtual bool GetHLSDiscontinuity()
     {
         return false;
     }
-
-    virtual Status StopBufferring(bool isAppBackground)
-    {
-        MEDIA_LOG_W("StopBufferring is unimplemented.");
-        return Status::OK;
-    }
-
     virtual void WaitForBufferingEnd() {}
 };
 }
