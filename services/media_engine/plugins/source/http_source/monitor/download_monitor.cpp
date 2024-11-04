@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,22 +31,6 @@ namespace {
     const std::set<int32_t> CLIENT_NOT_RETRY_ERROR_CODES = {
         23,
         992,
-    };
-    const std::set<int32_t> CLIENT_RETRY_ERROR_CODES = {
-        25, // Upload faild.
-        26, // Faild to open/read local data from file/application.
-        28, // Timeout was reached.
-    };
-
-    const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
-        300,
-        301,
-        302,
-        303,
-        304,
-        305,
-        400,
-        401,
     };
 }
 
@@ -198,36 +182,16 @@ bool DownloadMonitor::GetStartedStatus()
     return downloader_->GetStartedStatus();
 }
 
-void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCode)
-{
-    if (callback_ == nullptr) {
-        MEDIA_LOG_E("callback_ is nullptr, notify error failed.");
-        return;
-    }
-    if (serverErrorCode != 0) {
-        int32_t errorCode = MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR;
-        GetServerMediaServiceErrorCode(serverErrorCode, errorCode);
-        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "server error"});
-        MEDIA_LOG_I("Notify http server error, code " PUBLIC_LOG_D32, serverErrorCode);
-    }
-    if (clientErrorCode != 0) {
-        int32_t errorCode = MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR;
-        GetClientMediaServiceErrorCode(clientErrorCode, errorCode);
-        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "client error"});
-        MEDIA_LOG_I("Notify http client error, code " PUBLIC_LOG_D32, clientErrorCode);
-    }
-}
-
 bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 {
     auto clientError = request->GetClientError();
-    int serverError = request->GetServerError();
+    int serverError = static_cast<int>(request->GetServerError());
     auto retryTimes = request->GetRetryTimes();
     std::set<int> notRetryErrorSet = {400, 401, 403};
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
     if (GetBufferingTimeOut()) {
-        MEDIA_LOG_I("Media downloader buffering timeout, don't need retry.");
+        MEDIA_LOG_I("Media downloader buffering timeout, don't need to retry.");
         if (downloader_ != nullptr) {
             downloader_->SetDownloadErrorState();
         }
@@ -261,7 +225,6 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         if (downloader_ != nullptr) {
             downloader_->SetDownloadErrorState();
         }
-        NotifyError(clientError, serverError);
         return false;
     }
     return true;
@@ -404,41 +367,12 @@ bool DownloadMonitor::GetHLSDiscontinuity()
     return false;
 }
 
-Status DownloadMonitor::StopBufferring(bool isAppBackground)
-{
-    MEDIA_LOG_I("DownloadMonitor::StopBufferring");
-    if (downloader_ == nullptr) {
-        MEDIA_LOG_E("StopBufferring failed, downloader_ is nullptr");
-        return Status::ERROR_NULL_POINTER;
-    }
-    return downloader_->StopBufferring(isAppBackground);
-}
-
 void DownloadMonitor::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(downloader_ != nullptr, "WaitForBufferingEnd downloader is nullptr");
     downloader_->WaitForBufferingEnd();
 }
 
-void DownloadMonitor::GetServerMediaServiceErrorCode(int32_t errorCode, int32_t& serverCode)
-{
-    if (serverErrorCodeMap_.find(errorCode) == serverErrorCodeMap_.end()) {
-        MEDIA_LOG_W("Unknown server error code.");
-    } else {
-        serverCode = serverErrorCodeMap_[errorCode];
-        MEDIA_LOG_D("serverCode: " PUBLIC_LOG_D32, static_cast<int32_t>(serverCode));
-    }
-}
-
-void DownloadMonitor::GetClientMediaServiceErrorCode(int32_t errorCode, int32_t& clientCode)
-{
-    if (clientErrorCodeMap_.find(errorCode) == clientErrorCodeMap_.end()) {
-        MEDIA_LOG_W("Unknown client error code.");
-    } else {
-        clientCode = clientErrorCodeMap_[errorCode];
-        MEDIA_LOG_D("clientCode: " PUBLIC_LOG_D32, static_cast<int32_t>(clientCode));
-    }
-}
 }
 }
 }
