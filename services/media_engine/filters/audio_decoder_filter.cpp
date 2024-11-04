@@ -385,7 +385,7 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::OnLinkedResult.");
     if (mediaCodec_ == nullptr && eventReceiver_ != nullptr) {
-        eventReceiver_->OnEvent("audioDecoder", EventType::EVENT_ERROR, MSERR_IO_AUDIO_DEC_UNAVAILABLE);
+        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_IO_AUDIO_DEC_UNAVAILABLE});
         return;
     }
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
