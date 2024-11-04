@@ -255,6 +255,9 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
     task_->RegisterJob([this] {
         {
             AutoLock lk(loopPauseMutex_);
+            if (loopStatus_ == LoopStatus::PAUSE) {
+                MEDIA_LOG_I("loopStatus_ PAUSE to START");
+            }
             loopStatus_ = LoopStatus::START;
         }
         HttpDownloadLoop();
@@ -525,6 +528,9 @@ void Downloader::HttpDownloadLoop()
         }
         noTaskLoopTimes_ = 0;
         currentRequest_ = tempRequest;
+        if (isInterruptNeeded_) {
+            currentRequest_->isInterruptNeeded_ = true;
+        }
         BeginDownload();
         shouldStartNextRequest = currentRequest_->IsClosed();
     }
@@ -980,6 +986,7 @@ void Downloader::WaitLoopPause()
     MEDIA_LOG_I("Downloader WaitLoopPause task loopStatus_ %{public}d", loopStatus_.load());
     loopStatus_ = LoopStatus::PAUSE;
     loopPauseCond_.Wait(lk, [this]() {
+        MEDIA_LOG_I("WaitLoopPause wake loopStatus_ %{public}d", loopStatus_.load());
         return loopStatus_ != LoopStatus::PAUSE || isInterruptNeeded_;
     });
 }
