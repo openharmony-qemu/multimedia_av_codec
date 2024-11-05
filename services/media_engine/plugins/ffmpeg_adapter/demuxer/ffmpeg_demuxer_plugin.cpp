@@ -910,14 +910,14 @@ void FreeContext(AVFormatContext* formatContext, AVIOContext* avioContext)
     }
 }
 
-int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputFormat> pluginImpl, AVDictionary *options)
+int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputFormat> pluginImpl, AVDictionary **options)
 {
     FALSE_RETURN_V_MSG_E(formatContext && pluginImpl, -1, "AVFormatContext is nullptr");
     MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
 
     AVIOContext* avioContext = formatContext->pb;
     auto begin = std::chrono::system_clock::now();
-    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl.get(), &options);
+    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl.get(), options);
     if (ret < 0) {
         FreeContext(formatContext, avioContext);
         MEDIA_LOG_E("Call avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
@@ -967,10 +967,8 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
         av_dict_set(&options, "use_tfdt", "true", 0);
     }
     
-    int ret = ParseHeader(formatContext, pluginImpl_, options);
-    if (options) {
-        av_dict_free(&options);
-    }
+    int ret = ParseHeader(formatContext, pluginImpl_, &options);
+    av_dict_free(&options);
     FALSE_RETURN_V_MSG_E(ret >= 0, nullptr, "ParseHeader failed");
 
     std::shared_ptr<AVFormatContext> retFormatContext =
