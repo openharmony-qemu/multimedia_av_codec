@@ -733,7 +733,7 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
         int hoaOrder = static_cast<int>(sqrt(channels)) - 1;
         if (hoaOrder == 1) {
             channelLayout = AudioChannelLayout::HOA_FIRST;
-        } else if (hoaOrder == 2) {// hoaOrder is 2
+        } else if (hoaOrder == 2) { // hoaOrder is 2
             channelLayout = AudioChannelLayout::HOA_SECOND;
         } else if (hoaOrder == 3) { // hoaOrder is 3
             channelLayout = AudioChannelLayout::HOA_THIRD;
