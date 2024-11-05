@@ -714,38 +714,38 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
 {
     int channels = avStream.codecpar->channels; // 总通道数
     AudioChannelLayout channelLayout = AudioChannelLayout::UNKNOWN;
-    int object_number = 0; // 对象数量
-    uint64_t channel_layout_mask = 0L;
+    int objectNumber = 0; // 对象数量
+    uint64_t channelLayoutMask = 0L;
     if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM) {
         // 获取mask（如果是纯对象模式则不包含声场，返回0L）
-        channel_layout_mask = FfAv3aGetChannelLayoutMask(&avStream.codecpar->ch_layout);
-        object_number = FfAv3aGetNbObjects(&avStream.codecpar->ch_layout); // 获取对象数量，如果不包含对象返回0
-        if (channel_layout_mask > 0L) {
+        channelLayoutMask = FfAv3aGetChannelLayoutMask(&avStream.codecpar->ch_layout);
+        objectNumber = FfAv3aGetNbObjects(&avStream.codecpar->ch_layout); // 获取对象数量，如果不包含对象返回0
+        if (channelLayoutMask > 0L) {
             channelLayout = FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(
-                channel_layout_mask, channels - object_number);
-            if (channel_layout_mask != static_cast<uint64_t>(channelLayout)) {
+                channelLayoutMask, channels - objectNumber);
+            if (channelLayoutMask != static_cast<uint64_t>(channelLayout)) {
                 MEDIA_LOG_W("Get channel layout failed, use default channel layout");
             }
         } else {
             channelLayout = AudioChannelLayout::UNKNOWN;
         }
     } else if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC) {
-        int hoa_order = static_cast<int>(sqrt(channels)) - 1;
-        if (hoa_order == 1) {
+        int hoaOrder = static_cast<int>(sqrt(channels)) - 1;
+        if (hoaOrder == 1) {
             channelLayout = AudioChannelLayout::HOA_FIRST;
-        } else if (hoa_order == 2) {// hoa_order is 2
+        } else if (hoaOrder == 2) {// hoaOrder is 2
             channelLayout = AudioChannelLayout::HOA_SECOND;
-        } else if (hoa_order == 3) { // hoa_order is 3
+        } else if (hoaOrder == 3) { // hoaOrder is 3
             channelLayout = AudioChannelLayout::HOA_THIRD;
         } else {
             MEDIA_LOG_W("Get hoa order failed");
         }
-        format.Set<Tag::AUDIO_HOA_ORDER>(hoa_order);
+        format.Set<Tag::AUDIO_HOA_ORDER>(hoaOrder);
     } else {
         MEDIA_LOG_W("Get channel layout failed");
     }
-    format.Set<Tag::AUDIO_OBJECT_NUMBER>(object_number);
-    format.Set<Tag::AUDIO_SOUNDBED_CHANNELS_NUMBER>(channels - object_number);
+    format.Set<Tag::AUDIO_OBJECT_NUMBER>(objectNumber);
+    format.Set<Tag::AUDIO_SOUNDBED_CHANNELS_NUMBER>(channels - objectNumber);
     // 设置一个整个音频内容通道总数
     format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(channelLayout);
     format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
