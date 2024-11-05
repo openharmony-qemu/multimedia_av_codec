@@ -38,11 +38,6 @@
 
 namespace OHOS {
 namespace Media {
-namespace {
-    constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
-    constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
-}
-
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 class BaseStreamDemuxer;
 class DemuxerPluginManager;
@@ -144,6 +139,9 @@ private:
     };
     bool isHttpSource_ = false;
     std::string videoMime_{};
+
+    static constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
+    static constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
 
     Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
