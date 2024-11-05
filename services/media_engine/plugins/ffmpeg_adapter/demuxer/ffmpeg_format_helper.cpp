@@ -722,8 +722,7 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
         object_number = FfAv3aGetNbObjects(&avStream.codecpar->ch_layout); // 获取对象数量，如果不包含对象返回0
         if (channel_layout_mask > 0L) {
             channelLayout = FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(
-                            channel_layout_mask,
-                            channels - object_number);
+                channel_layout_mask, channels - object_number);
             if (channel_layout_mask != static_cast<uint64_t>(channelLayout)) {
                 MEDIA_LOG_W("Get channel layout failed, use default channel layout");
             }
@@ -734,9 +733,9 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
         int hoa_order = static_cast<int>(sqrt(channels)) - 1;
         if (hoa_order == 1) {
             channelLayout = AudioChannelLayout::HOA_FIRST;
-        } else if (hoa_order == 2) {
+        } else if (hoa_order == 2) {// hoa_order is 2
             channelLayout = AudioChannelLayout::HOA_SECOND;
-        } else if (hoa_order == 3) {
+        } else if (hoa_order == 3) { // hoa_order is 3
             channelLayout = AudioChannelLayout::HOA_THIRD;
         } else {
             MEDIA_LOG_W("Get hoa order failed");

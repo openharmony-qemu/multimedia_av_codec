@@ -58,7 +58,7 @@ const std::vector<std::pair<AudioChannelLayout, uint64_t>> g_toFFMPEGChannelLayo
     {AudioChannelLayout::STEREO_DOWNMIX, AV_CH_LAYOUT_STEREO_DOWNMIX},
 };
 
-const std::vector<std::pair<AudioChannelLayout,int>> g_audioVividChannelLayoutMap = {
+const std::vector<std::pair<AudioChannelLayout, int>> g_audioVividChannelLayoutMap = {
     {AudioChannelLayout::MONO, 1},
     {AudioChannelLayout::STEREO, 2},
     {AudioChannelLayout::CH_4POINT0, 4},
