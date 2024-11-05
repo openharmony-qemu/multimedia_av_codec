@@ -157,7 +157,6 @@ const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayo
     {AudioChannelLayout::HOA_ORDER3_ACN_N3D, "HOA_ORDER3_ACN_N3D"},
     {AudioChannelLayout::HOA_ORDER3_ACN_SN3D, "HOA_ORDER3_ACN_SN3D"},
     {AudioChannelLayout::HOA_ORDER3_FUMA, "HOA_ORDER3_FUMA"},
-    {AudioChannelLayout::AUDIO_OBJECT, "AUDIO_OBJECT"},
 };
 
 const std::vector<std::pair<AVColorPrimaries, ColorPrimary>> g_pFfColorPrimariesMap = {

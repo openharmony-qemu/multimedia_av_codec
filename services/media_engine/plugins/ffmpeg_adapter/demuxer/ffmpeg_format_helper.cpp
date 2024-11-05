@@ -727,7 +727,7 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
                 MEDIA_LOG_W("Get channel layout failed, use default channel layout");
             }
         } else {
-            channelLayout = AudioChannelLayout::AUDIO_OBJECT;
+            channelLayout = AudioChannelLayout::UNKNOWN;
         }
     } else if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC) {
         int hoa_order = static_cast<int>(sqrt(channels)) - 1;
