@@ -529,9 +529,13 @@ void AudioSink::UnderrunDetector::DetectAudioUnderrun(int64_t clkTime, int64_t l
 bool AudioSink::AudioLagDetector::CalcLag(std::shared_ptr<AVBuffer> buffer)
 {
     (void)buffer;
-    int64_t maxMediaTime = lastDrainTimeGroup_.anchorDuration + lastDrainTimeGroup_.lastAnchorPts;
-    auto currentMediaTime = latency_ + lastDrainTimeGroup_.nowClockTime;
+    int64_t maxMediaTime = lastDrainTimeGroup_.anchorDuration + lastDrainTimeGroup_.lastAnchorPts + latency_;
+    auto currentMediaTime = lastDrainTimeGroup_.nowClockTime;
     auto writeTimeMs = lastDrainTimeGroup_.writeDuration;
+
+    MEDIA_LOG_D("maxMediaTime " PUBLIC_LOG_D64 " currentMediaTime " PUBLIC_LOG_D64 " latency_ " PUBLIC_LOG_D64,
+        maxMediaTime, currentMediaTime, latency_);
+
     if (maxMediaTime < currentMediaTime) {
         MEDIA_LOG_W("renderer write cost " PUBLIC_LOG_D64, writeTimeMs);
     }
