@@ -722,7 +722,8 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
         object_number = FfAv3aGetNbObjects(&avStream.codecpar->ch_layout); // 获取对象数量，如果不包含对象返回0
         if (channel_layout_mask > 0L) {
             channelLayout = FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(
-                                channel_layout_mask, channels - object_number);
+                            channel_layout_mask,
+                            channels - object_number);
             if (channel_layout_mask != static_cast<uint64_t>(channelLayout)) {
                 MEDIA_LOG_W("Get channel layout failed, use default channel layout");
             }
