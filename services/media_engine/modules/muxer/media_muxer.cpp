@@ -301,6 +301,7 @@ Status MediaMuxer::Stop()
     StopThread();
     Status ret = muxer_->Stop();
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "Stop failed!");
+    MEDIA_LOG_I("Stopped successfully.");
     return Status::NO_ERROR;
 }
 
