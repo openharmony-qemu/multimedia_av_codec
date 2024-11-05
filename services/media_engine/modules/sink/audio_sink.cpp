@@ -523,7 +523,7 @@ void AudioSink::UnderrunDetector::DetectAudioUnderrun(int64_t clkTime, int64_t l
         MEDIA_LOG_D("AudioSink maybe underrun, underrunTimeUs=" PUBLIC_LOG_D64, underrunTimeUs);
         auto eventReceiver = eventReceiver_.lock();
         FALSE_RETURN(eventReceiver != nullptr);
-        eventReceiver->OnEvent({"AudioSink", EventType::EVENT_AUDIO_LAG, underrunTimeUs / US_TO_MS});
+        eventReceiver->OnDfxEvent({"AudioSink", DfxEventType::DFX_INFO_PLAYER_AUDIO_LAG, underrunTimeUs / US_TO_MS});
     }
 }
 
@@ -593,7 +593,6 @@ bool AudioSink::UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBu
     }
     uint64_t latency = 0;
     FALSE_LOG_MSG(plugin_->GetLatency(latency) == Status::OK, "failed to get latency");
-    underrunDetector_.DetectAudioUnderrun(nowCt, latency);
     syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_,
         buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_, this);
     lagDetector_.SetLatency(latency + fixDelay_);
