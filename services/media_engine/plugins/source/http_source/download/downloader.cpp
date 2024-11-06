@@ -787,8 +787,7 @@ char* StringTrim(char* str)
 }
 }
 
-bool Downloader::HandleContentRange(HeaderInfo* info,
-    char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
         !strncmp(key, "content-range", strlen("content-range"))) {
@@ -810,8 +809,7 @@ bool Downloader::HandleContentRange(HeaderInfo* info,
     return true;
 }
 
-bool Downloader::HandleContentType(HeaderInfo* info,
-    char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Content-Type", strlen("Content-Type"))) {
         char* token = strtok_s(nullptr, ":", &next);
@@ -824,8 +822,7 @@ bool Downloader::HandleContentType(HeaderInfo* info,
     return true;
 }
 
-bool Downloader::HandleContentEncode(HeaderInfo* info,
-    char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Content-Encode", strlen("Content-Encode")) ||
         !strncmp(key, "content-encode", strlen("content-encode"))) {
@@ -837,8 +834,7 @@ bool Downloader::HandleContentEncode(HeaderInfo* info,
     return true;
 }
 
-bool Downloader::HandleContentLength(HeaderInfo* info,
-    char* key, char* next, Downloader* mediaDownloader)
+bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader)
 {
     FALSE_RETURN_V(key != nullptr, false);
     if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
@@ -857,8 +853,7 @@ bool Downloader::HandleContentLength(HeaderInfo* info,
 }
 
 // Check if this server supports range download. (HTTP)
-bool Downloader::HandleRange(HeaderInfo* info,
-    char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Accept-Ranges", strlen("Accept-Ranges")) ||
         !strncmp(key, "accept-ranges", strlen("accept-ranges"))) {
