@@ -1066,6 +1066,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     }
     if (ret != Status::OK) {
         isSeekError_.store(true);
+        eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
     }
     isFirstFrameAfterSeek_.store(true);
     MEDIA_LOG_D("Out");
