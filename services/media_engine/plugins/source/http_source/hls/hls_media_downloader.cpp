@@ -103,7 +103,7 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType,
     cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
     totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
     httpHeader_ = httpHeader;
-    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
+    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_U64, totalBufferSize_);
     HlsInit();
 }
 
@@ -328,8 +328,8 @@ bool HlsMediaDownloader::HandleBuffering()
             }
         }
         if (GetCrossTsBuffersize() >= waterLineAbove_ || CheckBreakCondition() ||
-            (tsStorageInfo_.find(readTsIndex_ + 1) == tsStorageInfo_.end() && 
-            tsStorageInfo_[readTsIndex_ + 1].second)) {
+            (tsStorageInfo_.find(readTsIndex_ + 1) == tsStorageInfo_.end() &&
+             tsStorageInfo_[readTsIndex_ + 1].second)) {
             MEDIA_LOG_I("HLS CheckBreakCondition true, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_ZU,
                 waterLineAbove_, GetCrossTsBuffersize());
             isBuffering_ = false;
