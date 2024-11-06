@@ -731,7 +731,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     size_t dataLen = size * nitems;
     int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
     int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
-    UpdateheaderInfo_(mediaDownloader);
+    UpdateHeaderInfo(mediaDownloader);
     MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData, dataLen: " + std::to_string(dataLen)
         + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
     if (mediaDownloader->currentRequest_->IsClosed()) {
