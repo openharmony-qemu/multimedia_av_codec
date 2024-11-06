@@ -87,7 +87,7 @@ public:
                     bool requestWholeFile = false);
     DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
                     bool requestWholeFile = false);
-    DownloadRequest::~DownloadRequest();
+    ~DownloadRequest();
     size_t GetFileContentLength() const;
     size_t GetFileContentLengthNoWait() const;
     void SaveHeader(const HeaderInfo* header);
