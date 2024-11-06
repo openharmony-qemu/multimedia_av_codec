@@ -103,6 +103,7 @@ private:
     int32_t SetVrrEnable(const Format &format);
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t VrrPrediction(BufferInfo &info);
+    int32_t InitVrr();
     static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
     using VrrCreate = Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* (*)();
     using VrrDestroy = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*);
