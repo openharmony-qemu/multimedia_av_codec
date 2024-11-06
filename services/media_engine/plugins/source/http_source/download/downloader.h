@@ -117,6 +117,7 @@ public:
     bool IsServerAcceptRange() const;
     void GetLocation(std::string& location) const;
     void SetIsM3u8Request(bool isM3u8Request);
+    std::atomic<bool> isHeaderUpdated_ {false};
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
@@ -125,11 +126,9 @@ private:
     StatusCallbackFunc statusCallback_;
     DownloadDoneCbFunc downloadDoneCallback_;
 
-    HeaderInfo headerInfo_;
+    std::shared_ptr<HeaderInfo> headerInfo_;
     std::map<std::string, std::string> httpHeader_;
     RequestInfo mediaSouce_ {};
-
-    bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished
     int64_t startPos_ {0};
     int64_t endPos_ {-1};
@@ -146,7 +145,7 @@ private:
     int64_t realRecvContentLen_ {0};
     friend class Downloader;
     std::string location_;
-    mutable size_t times_ {0};
+    mutable std::atomic<size_t> times_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
     std::atomic<bool> retryOnGoing_ {false};
     int64_t dropedDataLen_ {0};
