@@ -35,6 +35,15 @@ using namespace CodecHDI;
 HDecoder::~HDecoder()
 {
     MsgHandleLoop::Stop();
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+    if (VrrDestroyFunc_ != nullptr) {
+        VrrDestroyFunc_(vrrHandle_);
+    }
+    if (vpeHandle_ != nullptr) {
+        dlclose(vpeHandle_);
+        vpeHandle_ = nullptr;
+    }
+#endif
 }
 
 int32_t HDecoder::OnConfigure(const Format &format)
@@ -404,6 +413,9 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         return AVCS_ERR_OK;
     }
 #ifdef USE_VIDEO_PROCESSING_ENGINE
+    if (isVrrEnable_) {
+        return AVCS_ERR_OK;
+    }
     optional<double> frameRate = GetFrameRateFromUser(format);
     if (!frameRate.has_value()) {
         HLOGE("VRR without frameRate");
@@ -417,24 +429,52 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         HLOGE("VRR SetIsMvUploadParam SetParameter failed");
         return AVCS_ERR_UNSUPPORT;
     }
-    vrrPredictor_ = OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction::Create();
-    if (vrrPredictor_ == nullptr) {
-        HLOGE("VRR VideoRefreshRatePrediction create failed");
-        return AVCS_ERR_UNSUPPORT;
-    }
-    int32_t ret = vrrPredictor_->CheckLtpoSupport();
+    int32_t ret = InitVrr();
     if (ret != AVCS_ERR_OK) {
-        HLOGE("VRR SetParameter failed");
-        return AVCS_ERR_UNKNOWN;
+        HLOGE("VRR Init failed");
+        return ret;
     }
     isVrrEnable_ = true;
     HLOGI("VRR enabled");
     return AVCS_ERR_OK;
 #else
-    HLOGE("VRR enabled");
+    HLOGE("VRR unsupport");
     return AVCS_ERR_UNSUPPORT;
 #endif
 }
+
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+int32_t HDecoder::InitVrr()
+{
+    if (vpeHandle_ == nullptr) {
+        vpeHandle_ = dlopen("libvideoprocessingengine.z.so", RTLD_NOW);
+        if (vpeHandle_ == nullptr) {
+            HLOGE("dlopen libvideoprocessingengine.z.so failed, dlerror: %{public}s", dlerror());
+            return AVCS_ERR_UNSUPPORT;
+        }
+        HLOGI("dlopen libvideoprocessingengine.z.so success");
+    }
+    VrrCreateFunc_ = reinterpret_cast<VRRCreate>(dlsym(vpeHandle_, "VideoRefreshRatePredictionCreate"));
+    VrrCheckLtpoSupportFunc_ = reinterpret_cast<VRRCheckLtpoSupport>(dlsym(vpeHandle_,
+        "VideoRefreshRatePredictionCheckLtpoSupport"));
+    VrrProcessFunc_ = reinterpret_cast<VRRProcess>(dlsym(vpeHandle_, "VideoRefreshRatePredictionProcess"));
+    VrrDestroyFunc_ = reinterpret_cast<VRRDestroy>(dlsym(vpeHandle_, "VideoRefreshRatePredictionDestroy"));
+    if (VrrCreateFunc_ == nullptr || VrrCheckLtpoSupportFunc_ == nullptr || VrrProcessFunc_ == nullptr ||
+        VrrDestroyFunc_ == nullptr) {
+        return AVCS_ERR_UNSUPPORT;
+    }
+    vrrHandle_ = VrrCreateFunc_();
+    int32_t ret = VrrCheckLtpoSupportFunc_();
+    if (ret != AVCS_ERR_OK) {
+        HLOGE("VRR check ltpo support failed");
+        VrrDestroyFunc_(vrrHandle_);
+        dlclose(vpeHandle_);
+        vpeHandle_ = nullptr;
+        return AVCS_ERR_UNSUPPORT;
+    }
+    return AVCS_ERR_OK;
+}
+#endif
 
 int32_t HDecoder::SubmitOutputBuffersToOmxNode()
 {
@@ -1135,8 +1175,8 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
 int32_t HDecoder::VrrPrediction(BufferInfo &info)
 {
     SCOPED_TRACE();
-    if (vrrPredictor_ == nullptr) {
-        HLOGE("vrrPredictor_ is nullptr");
+    if (VrrProcessFunc_ == nullptr) {
+        HLOGE("VrrProcessFunc_ is nullptr");
         return AVCS_ERR_INVALID_OPERATION;
     }
     int vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_NONE;
@@ -1148,7 +1188,8 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
         HLOGE("VRR only support for HEVC or AVC");
         return AVCS_ERR_UNSUPPORT;
     }
-    vrrPredictor_->Process(info.surfaceBuffer, static_cast<int32_t>(codecRate_), vrrMvType);
+    VrrProcessFunc_(vrrHandle_, info.surfaceBuffer->SurfaceBufferToNativeBuffer(),
+        static_cast<int32_t>(codecRate_), vrrMvType);
     return AVCS_ERR_OK;
 }
 #endif
