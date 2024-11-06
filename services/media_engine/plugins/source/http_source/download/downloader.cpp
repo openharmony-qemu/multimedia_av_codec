@@ -50,8 +50,8 @@ DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, 
     requestWholeFile_(requestWholeFile)
 {
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
-    headerInfo_->fileContentLen = 0;
-    headerInfo_->contentLen = 0;
+    HeaderInfo.fileContentLen = 0;
+    HeaderInfo.contentLen = 0;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url,
@@ -63,8 +63,8 @@ DownloadRequest::DownloadRequest(const std::string& url,
     requestWholeFile_(requestWholeFile)
 {
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
-    headerInfo_->fileContentLen = 0;
-    headerInfo_->contentLen = 0;
+    HeaderInfo.fileContentLen = 0;
+    HeaderInfo.contentLen = 0;
 }
 
 DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
@@ -73,8 +73,8 @@ DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statu
     requestWholeFile_(requestWholeFile)
 {
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
-    headerInfo_->fileContentLen = 0;
-    headerInfo_->contentLen = 0;
+    HeaderInfo.fileContentLen = 0;
+    HeaderInfo.contentLen = 0;
     url_ = mediaSouce.url;
     httpHeader_ = mediaSouce.httpHeader;
 }
@@ -88,8 +88,8 @@ DownloadRequest::DownloadRequest(double duration,
     mediaSouce_(mediaSouce), requestWholeFile_(requestWholeFile)
 {
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
-    headerInfo_->fileContentLen = 0;
-    headerInfo_->contentLen = 0;
+    HeaderInfo.fileContentLen = 0;
+    HeaderInfo.contentLen = 0;
     url_ = mediaSouce.url;
     httpHeader_ = mediaSouce.httpHeader;
 }
@@ -97,18 +97,18 @@ DownloadRequest::DownloadRequest(double duration,
 size_t DownloadRequest::GetFileContentLength() const
 {
     WaitHeaderUpdated();
-    return headerInfo_->GetFileContentLength();
+    return HeaderInfo.GetFileContentLength();
 }
 
 size_t DownloadRequest::GetFileContentLengthNoWait() const
 {
-    return headerInfo_->fileContentLen;
+    return HeaderInfo.fileContentLen;
 }
 
 void DownloadRequest::SaveHeader(const std::shared_ptr<HeaderInfo> header)
 {
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::SaveHeader");
-    headerInfo_->Update(header);
+    HeaderInfo.Update(header);
     isHeaderUpdated_ = true;
 }
 
@@ -120,7 +120,7 @@ Seekable DownloadRequest::IsChunked(bool isInterruptNeeded)
         MEDIA_LOG_I("Canceled");
         return Seekable::INVALID;
     }
-    if (headerInfo_->isChunked) {
+    if (HeaderInfo.isChunked) {
         return GetFileContentLength() == LIVE_CONTENT_LENGTH ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
     } else {
         return Seekable::SEEKABLE;
@@ -149,12 +149,12 @@ int32_t DownloadRequest::GetServerError() const
 
 bool DownloadRequest::IsClosed() const
 {
-    return headerInfo_->isClosed;
+    return HeaderInfo.isClosed;
 }
 
 void DownloadRequest::Close()
 {
-    headerInfo_->isClosed = true;
+    HeaderInfo.isClosed = true;
 }
 
 void DownloadRequest::WaitHeaderUpdated() const
@@ -162,12 +162,12 @@ void DownloadRequest::WaitHeaderUpdated() const
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
 
     // Wait Header(fileContentLen etc.) updated
-    while (!isHeaderUpdated_ && times_ < RETRY_TIMES && !isInterruptNeeded_ && !headerInfo_->isClosed) {
+    while (!isHeaderUpdated_ && times_ < RETRY_TIMES && !isInterruptNeeded_ && !HeaderInfo.isClosed) {
         Task::SleepInTask(SLEEP_TIME);
         times_++;
     }
     MEDIA_LOG_D("isHeaderUpdated_ " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
-        isHeaderUpdated_.load(), times_.load(), headerInfo_->isClosed.load());
+        isHeaderUpdated_.load(), times_.load(), HeaderInfo.isClosed.load());
 }
 
 double DownloadRequest::GetDuration() const
@@ -216,7 +216,7 @@ uint32_t DownloadRequest::GetBitRate() const
 
 bool DownloadRequest::IsChunkedVod() const
 {
-    return headerInfo_->isChunked && headerInfo_->GetFileContentLength() == LIVE_CONTENT_LENGTH;
+    return HeaderInfo.isChunked && HeaderInfo.GetFileContentLength() == LIVE_CONTENT_LENGTH;
 }
 
 bool DownloadRequest::IsM3u8Request() const
@@ -231,10 +231,10 @@ void DownloadRequest::SetIsM3u8Request(bool isM3u8Request)
 
 bool DownloadRequest::IsServerAcceptRange() const
 {
-    if (headerInfo_->isChunked) {
+    if (HeaderInfo.isChunked) {
         return false;
     }
-    return headerInfo_->isServerAcceptRange;
+    return HeaderInfo.isServerAcceptRange;
 }
 
 void DownloadRequest::GetLocation(std::string& location) const
@@ -563,7 +563,7 @@ void Downloader::RequestData()
             currentRequest_->requestSize_ = MIN_REQUEST_SIZE;
             currentRequest_->isHeaderUpdated_ = false;
             currentRequest_->isFirstRangeRequestReady_ = true;
-            currentRequest_->headerInfo_->fileContentLen = 0;
+            currentRequest_->HeaderInfo.fileContentLen = 0;
             return;
         }
         if (ret == Status::OK) {
@@ -601,7 +601,7 @@ void Downloader::HandleRetOK()
     if (currentRequest_->retryTimes_ > 0) {
         currentRequest_->retryTimes_ = 0;
     }
-    if (currentRequest_->headerInfo_->isChunked && requestQue_->Empty()) {
+    if (currentRequest_->HeaderInfo.isChunked && requestQue_->Empty()) {
         currentRequest_->isEos_ = true;
         PauseLoop(true);
         return;
@@ -609,18 +609,18 @@ void Downloader::HandleRetOK()
     
     int64_t remaining = 0;
     if (currentRequest_->endPos_ <= 0) {
-        remaining = static_cast<int64_t>(currentRequest_->headerInfo_->fileContentLen) -
+        remaining = static_cast<int64_t>(currentRequest_->HeaderInfo.fileContentLen) -
                     currentRequest_->startPos_;
     } else {
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
     }
-    if (currentRequest_->headerInfo_->fileContentLen > 0 && remaining <= 0) { // Check whether the playback ends.
+    if (currentRequest_->HeaderInfo.fileContentLen > 0 && remaining <= 0) { // Check whether the playback ends.
         MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
         currentRequest_->isEos_ = true;
         HandlePlayingFinish();
         return;
     }
-    if (currentRequest_->headerInfo_->fileContentLen == 0 && remaining <= 0) {
+    if (currentRequest_->HeaderInfo.fileContentLen == 0 && remaining <= 0) {
         currentRequest_->isEos_ = true;
         currentRequest_->Close();
         HandlePlayingFinish();
