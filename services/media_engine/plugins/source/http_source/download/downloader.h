@@ -126,7 +126,7 @@ private:
     StatusCallbackFunc statusCallback_;
     DownloadDoneCbFunc downloadDoneCallback_;
 
-    HeaderInfo headerInfo_;;
+    HeaderInfo headerInfo_;
     std::map<std::string, std::string> httpHeader_;
     RequestInfo mediaSouce_ {};
     bool isEos_ {false}; // file download finished
