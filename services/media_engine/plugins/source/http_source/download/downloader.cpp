@@ -640,7 +640,7 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
         return;
     }
     MEDIA_LOG_I("UpdateHeaderInfo enter.");
-    HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
+    std::shared_ptr<HeaderInfo> info = mediaDownloader->currentRequest_->headerInfo_;
     if (info->contentLen > 0 && info->contentLen < LIVE_CONTENT_LENGTH) {
         info->isChunked = false;
     }
@@ -741,7 +741,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     if (IsDropDataRetryRequest(mediaDownloader)) {
         return DropRetryData(buffer, dataLen, mediaDownloader);
     }
-    HeaderInfo* header = &(mediaDownloader->currentRequest_->headerInfo_);
+    std::shared_ptr<HeaderInfo> info = mediaDownloader->currentRequest_->headerInfo_;
     if (!mediaDownloader->currentRequest_->shouldSaveData_) {
         UpdateCurRequest(mediaDownloader, header);
         return dataLen;
@@ -882,7 +882,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::RxHeaderData");
     auto mediaDownloader = reinterpret_cast<Downloader *>(userParam);
-    HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
+    std::shared_ptr<HeaderInfo> info = mediaDownloader->currentRequest_->headerInfo_;
     if (mediaDownloader->currentRequest_->isHeaderUpdated_) {
         return size * nitems;
     }

@@ -103,7 +103,7 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType,
     cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
     totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
     httpHeader_ = httpHeader;
-    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_U64, totalBufferSize_);
+    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
     HlsInit();
 }
 
