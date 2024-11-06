@@ -170,7 +170,7 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
     curUrl_ = playInfo.url_;
     if (writeTsIndex_ == 0) {
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
-        MEDIA_LOG_I("readOffset, PutRequestIntoDownloader init readOffset." PUBLIC_LOG_ZU, readOffset_);
+        MEDIA_LOG_I("readOffset, PutRequestIntoDownloader init readOffset." PUBLIC_LOG_U64, readOffset_);
         readTsIndex_ = writeTsIndex_;
         uint32_t readTsIndexTempValue = readTsIndex_.load();
         MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32, readTsIndexTempValue);
@@ -393,7 +393,7 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
     AutoLock lock(tsStorageInfoMutex_);
     if (curTsHaveRead >= readBack) {
         readOffset_ -= readBack;
-        MEDIA_LOG_I("Read back, current ts, update readOffset: " PUBLIC_LOG_ZU, readOffset_);
+        MEDIA_LOG_I("Read back, current ts, update readOffset: " PUBLIC_LOG_U64, readOffset_);
     } else {
         if (readTsIndex_ == 0) {
             readOffset_ = 0; // Cross ts readback, but this is the first ts, so reset readOffset.
