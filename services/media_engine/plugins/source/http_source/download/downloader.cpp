@@ -159,7 +159,7 @@ void DownloadRequest::Close()
 
 void DownloadRequest::WaitHeaderUpdated() const
 {
-    isHeaderUpdating_.store(true, std::memory_order_release);
+    isHeaderUpdating_.store(true);
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
     // Wait Header(fileContentLen etc.) updated
     while (!isHeaderUpdated_ && times_ < RETRY_TIMES && !isInterruptNeeded_ && !headerInfo_.isClosed) {
@@ -168,7 +168,7 @@ void DownloadRequest::WaitHeaderUpdated() const
     }
     MEDIA_LOG_D("isHeaderUpdated_ " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
         isHeaderUpdated_.load(), times_.load(), headerInfo_.isClosed.load());
-    isHeaderUpdating_.store(false, std::memory_order_release);
+    isHeaderUpdating_.store(false);
 }
 
 double DownloadRequest::GetDuration() const
@@ -242,7 +242,7 @@ DownloadRequest::~DownloadRequest()
 {
     MEDIA_LOG_D("~DownloadRequest dtor in.");
     int sleepTmpTime = 0;
-    while (isHeaderUpdating_ && sleepTmpTime < RETRY_TIMES) {
+    while (isHeaderUpdating_.load() && sleepTmpTime < RETRY_TIMES) {
         Task::SleepInTask(SLEEP_TIME);
         sleepTmpTime++;
     }
