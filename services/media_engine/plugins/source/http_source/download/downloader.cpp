@@ -159,8 +159,8 @@ void DownloadRequest::Close()
 
 void DownloadRequest::WaitHeaderUpdated() const
 {
+    isHeaderUpdating_ = true;
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
-
     // Wait Header(fileContentLen etc.) updated
     while (!isHeaderUpdated_ && times_ < RETRY_TIMES && !isInterruptNeeded_ && !headerInfo_.isClosed) {
         Task::SleepInTask(SLEEP_TIME);
@@ -168,6 +168,7 @@ void DownloadRequest::WaitHeaderUpdated() const
     }
     MEDIA_LOG_D("isHeaderUpdated_ " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
         isHeaderUpdated_.load(), times_.load(), headerInfo_.isClosed.load());
+    isHeaderUpdating_ = false;
 }
 
 double DownloadRequest::GetDuration() const
@@ -235,6 +236,17 @@ bool DownloadRequest::IsServerAcceptRange() const
         return false;
     }
     return headerInfo_.isServerAcceptRange;
+}
+
+DownloadRequest::~DownloadRequest()
+{
+    MEDIA_LOG_D("~DownloadRequest dtor in.");
+    int sleepTmpTime = 0;
+    while (isHeaderUpdating_ && sleepTmpTime < RETRY_TIMES)
+    {
+        Task::SleepInTask(SLEEP_TIME);
+        sleepTmpTime++;
+    }
 }
 
 void DownloadRequest::GetLocation(std::string& location) const
