@@ -461,7 +461,7 @@ int32_t HDecoder::InitVrr()
     VrrDestroyFunc_ = reinterpret_cast<VRRDestroy>(dlsym(vpeHandle_, "VideoRefreshRatePredictionDestroy"));
     if (VrrCreateFunc_ == nullptr || VrrCheckLtpoSupportFunc_ == nullptr || VrrProcessFunc_ == nullptr ||
         VrrDestroyFunc_ == nullptr) {
-        return AVCS_ERR_UNSUPPORT; 
+        return AVCS_ERR_UNSUPPORT;
     }
     vrrHandle_ = VrrCreateFunc_();
     int32_t ret = VrrCheckLtpoSupportFunc_();
