@@ -50,7 +50,7 @@ struct HeaderInfo {
     std::atomic<bool> isClosed {false};
     bool isServerAcceptRange {false};
 
-    void Update(const HeaderInfo* info)
+    void Update(const std::shared_ptr<HeaderInfo> info)
     {
         NZERO_LOG(memcpy_s(contentType, sizeof(contentType), info->contentType, sizeof(contentType)));
         fileContentLen = info->fileContentLen;
@@ -90,7 +90,7 @@ public:
 
     size_t GetFileContentLength() const;
     size_t GetFileContentLengthNoWait() const;
-    void SaveHeader(const HeaderInfo* header);
+    void SaveHeader(const std::shared_ptr<HeaderInfo> header);
     Seekable IsChunked(bool isInterruptNeeded);
     bool IsEos() const;
     int GetRetryTimes() const;
@@ -183,15 +183,15 @@ private:
     void HandleRetOK();
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
-    static bool HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
-    static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
-    static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
-    static bool HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
-    static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentRange(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentType(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentEncode(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentLength(std::shared_ptr<HeaderInfo> info, char* key, char* next, Downloader* mediaDownloader);
+    static bool HandleRange(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
-    static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
+    static void UpdateCurRequest(Downloader* mediaDownloader, std::shared_ptr<HeaderInfo> header);
     void PauseLoop(bool isAsync = false);
     void WaitLoopPause();
     void NotifyLoopPause();
