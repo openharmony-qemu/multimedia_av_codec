@@ -242,8 +242,7 @@ DownloadRequest::~DownloadRequest()
 {
     MEDIA_LOG_D("~DownloadRequest dtor in.");
     int sleepTmpTime = 0;
-    while (isHeaderUpdating_ && sleepTmpTime < RETRY_TIMES)
-    {
+    while (isHeaderUpdating_ && sleepTmpTime < RETRY_TIMES) {
         Task::SleepInTask(SLEEP_TIME);
         sleepTmpTime++;
     }
