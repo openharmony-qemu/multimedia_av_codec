@@ -166,9 +166,8 @@ void DownloadRequest::WaitHeaderUpdated() const
         Task::SleepInTask(SLEEP_TIME);
         times_++;
     }
-    uint32_t headerIsClosed = static_cast<uint32_t>(headerInfo_->isClosed.load());
     MEDIA_LOG_D("isHeaderUpdated_ " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
-        isHeaderUpdated_, times_, headerIsClosed);
+        isHeaderUpdated_.load(), times_.load(), headerInfo_->isClosed.load());
 }
 
 double DownloadRequest::GetDuration() const
@@ -788,7 +787,8 @@ char* StringTrim(char* str)
 }
 }
 
-bool Downloader::HandleContentRange(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleContentRange(std::shared_ptr<HeaderInfo> info,
+    char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
         !strncmp(key, "content-range", strlen("content-range"))) {
@@ -810,7 +810,8 @@ bool Downloader::HandleContentRange(std::shared_ptr<HeaderInfo> info, char* key,
     return true;
 }
 
-bool Downloader::HandleContentType(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleContentType(std::shared_ptr<HeaderInfo> info,
+    char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Content-Type", strlen("Content-Type"))) {
         char* token = strtok_s(nullptr, ":", &next);
@@ -823,7 +824,8 @@ bool Downloader::HandleContentType(std::shared_ptr<HeaderInfo> info, char* key, 
     return true;
 }
 
-bool Downloader::HandleContentEncode(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleContentEncode(std::shared_ptr<HeaderInfo> info,
+    char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Content-Encode", strlen("Content-Encode")) ||
         !strncmp(key, "content-encode", strlen("content-encode"))) {
@@ -835,7 +837,8 @@ bool Downloader::HandleContentEncode(std::shared_ptr<HeaderInfo> info, char* key
     return true;
 }
 
-bool Downloader::HandleContentLength(std::shared_ptr<HeaderInfo> info, char* key, char* next, Downloader* mediaDownloader)
+bool Downloader::HandleContentLength(std::shared_ptr<HeaderInfo> info,
+    char* key, char* next, Downloader* mediaDownloader)
 {
     FALSE_RETURN_V(key != nullptr, false);
     if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
@@ -854,7 +857,8 @@ bool Downloader::HandleContentLength(std::shared_ptr<HeaderInfo> info, char* key
 }
 
 // Check if this server supports range download. (HTTP)
-bool Downloader::HandleRange(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleRange(std::shared_ptr<HeaderInfo> info,
+    char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Accept-Ranges", strlen("Accept-Ranges")) ||
         !strncmp(key, "accept-ranges", strlen("accept-ranges"))) {

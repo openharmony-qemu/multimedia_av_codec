@@ -183,11 +183,16 @@ private:
     void HandleRetOK();
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
-    static bool HandleContentRange(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems);
-    static bool HandleContentType(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems);
-    static bool HandleContentEncode(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems);
-    static bool HandleContentLength(std::shared_ptr<HeaderInfo> info, char* key, char* next, Downloader* mediaDownloader);
-    static bool HandleRange(std::shared_ptr<HeaderInfo> info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentRange(std::shared_ptr<HeaderInfo> info,
+        char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentType(std::shared_ptr<HeaderInfo> info,
+        char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentEncode(std::shared_ptr<HeaderInfo> info,
+        char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentLength(std::shared_ptr<HeaderInfo> info,
+        char* key, char* next, Downloader* mediaDownloader);
+    static bool HandleRange(std::shared_ptr<HeaderInfo> info,
+        char* key, char* next, size_t size, size_t nitems);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
