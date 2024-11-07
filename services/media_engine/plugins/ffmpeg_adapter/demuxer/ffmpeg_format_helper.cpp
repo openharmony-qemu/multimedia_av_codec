@@ -56,6 +56,9 @@ const uint32_t KEY_PREFIX_LEN = 20;
 const uint32_t VALUE_PREFIX_LEN = 8;
 const uint32_t VALID_LOCATION_LEN = 2;
 const int32_t VIDEO_ROTATION_360 = 360;
+const int32_t AV3A_SAMPLE_8BITS = 8;
+const int32_t AV3A_SAMPLE_16BITS = 16;
+const int32_t AV3A_SAMPLE_24BITS = 24;
 
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
@@ -705,16 +708,34 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     format.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(avStream.codecpar->bits_per_coded_sample);
     format.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(avStream.codecpar->bits_per_raw_sample);
 
-    // MOV/MP4/DASH/TS/others (包含av3a)
     if (avStream.codecpar->codec_id == AV_CODEC_ID_AVS3DA) {
+        format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
+        format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
         if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM ||
             avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC) {
-            ParseAv3aInfo(avStream, format); // 标准MP4 (dca3)
-        } else {
-            format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN); // 不是标准MP4，或者是TS
-            format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
+            ParseAv3aInfo(avStream, format);
         }
     }
+}
+
+void FFmpegFormatHelper::ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format) {
+    AudioSampleFormat fmt;
+    switch (avStream.codecpar->bits_per_raw_sample)
+    {
+        case AV3A_SAMPLE_8BITS: // 8 bits
+            fmt = AudioSampleFormat::SAMPLE_U8;
+            break;
+        case AV3A_SAMPLE_16BITS: // 16 bits
+            fmt = AudioSampleFormat::SAMPLE_S16LE;
+            break;
+        case AV3A_SAMPLE_24BITS: // 24 bits
+            fmt = AudioSampleFormat::SAMPLE_S24LE;
+            break;
+        default:
+            fmt = AudioSampleFormat::INVALID_WIDTH;
+            break;
+    }
+    format.Set<Tag::AUDIO_SAMPLE_FORMAT>(fmt);
 }
 
 void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
@@ -762,6 +783,7 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
     } else {
         MEDIA_LOG_D("Parse channel count failed: " PUBLIC_LOG_D32, channels);
     }
+    ConvertAv3aSampleFormat(avStream, format);
 }
 
 void FFmpegFormatHelper::ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format)
