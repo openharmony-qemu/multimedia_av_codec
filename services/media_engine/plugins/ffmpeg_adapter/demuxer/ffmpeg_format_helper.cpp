@@ -718,10 +718,10 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     }
 }
 
-void FFmpegFormatHelper::ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format) {
+void FFmpegFormatHelper::ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format)
+{
     AudioSampleFormat fmt;
-    switch (avStream.codecpar->bits_per_raw_sample)
-    {
+    switch (avStream.codecpar->bits_per_raw_sample) {
         case AV3A_SAMPLE_8BITS: // 8 bits
             fmt = AudioSampleFormat::SAMPLE_U8;
             break;
