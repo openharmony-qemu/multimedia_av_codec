@@ -57,9 +57,9 @@ public:
     explicit HlsMediaDownloader(
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
     explicit HlsMediaDownloader(int expectBufferDuration,
-        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>());
     explicit HlsMediaDownloader(std::string mimeType,
-        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>());
     ~HlsMediaDownloader() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
@@ -152,6 +152,7 @@ private:
     void HlsInit();
     bool SaveCacheBufferData(uint8_t* data, uint32_t len);
     bool ClearChunksOfFragment();
+    size_t GetCrossTsBuffersize();
 
 private:
     size_t totalBufferSize_ {0};
@@ -262,10 +263,11 @@ private:
     uint64_t readTotalBytes_ = 0;
     uint64_t readRecordDuringTime_ = 0;
     uint64_t totalDownloadDuringTime_ {0};
-    int32_t currentBitRate_ {0};
+    uint32_t currentBitRate_ {0};
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
+    std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     uint64_t readOffset_ {0};
     uint64_t writeOffset_ {0};

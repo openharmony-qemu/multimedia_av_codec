@@ -163,8 +163,8 @@ struct M3U8MasterPlaylist {
     uint8_t key_[16] { 0 };
     size_t keyLen_ { 0 };
     std::atomic<bool> isParseSuccess_ {true};
-    bool hasDiscontinuity_ {false};
     std::vector<size_t> segmentOffsets_;
+    bool hasDiscontinuity_ {false};
     std::map<std::string, std::string> httpHeader_ {};
 };
 }

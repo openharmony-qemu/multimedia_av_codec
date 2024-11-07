@@ -102,6 +102,7 @@ std::string GetHostnameFromURL(const std::string &url)
     }
     return tempUrl.substr(posStart);
 }
+
 bool IsRegexValid(const std::string &regex)
 {
     if (Trim(regex).empty()) {
@@ -445,6 +446,7 @@ void HttpCurlClient::SetAppUid(int32_t appUid)
 {
     appUid_ = appUid;
 }
+
 }
 }
 }

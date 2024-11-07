@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -165,9 +165,9 @@ private:
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
+    std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 
-    SteadyClock cachedDurationClock_;
     volatile size_t wantedReadLength_ {0};
     volatile size_t bufferingTime_ {0};
 
@@ -177,8 +177,11 @@ private:
     int32_t maxOffsetNotUpdateCount_ {0};
     std::atomic<bool> isMinAndMaxOffsetUpdate_ {false};
 
+    std::atomic<bool> isLargeOffsetSpan_ {false};
+    int32_t stateChangeCount_ {0};
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
+    bool isSeekWait_ {false};
 };
 }
 }
