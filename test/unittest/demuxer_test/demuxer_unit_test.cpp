@@ -128,30 +128,6 @@ void DemuxerUnitTest::TearDown(void)
     selectedTrackIds_.clear();
 }
 
-void DemuxerUnitTest::TearDown_s(void)
-{
-    if (source_ != nullptr) {
-        source_->Destroy();
-        source_ = nullptr;
-    }
-    if (demuxer_ != nullptr) {
-        demuxer_->Destroy();
-        demuxer_ = nullptr;
-    }
-    if (format_ != nullptr) {
-        format_->Destroy();
-        format_ = nullptr;
-    }
-    if (sharedMem_ != nullptr) {
-        sharedMem_->Destory();
-        sharedMem_ = nullptr;
-    }
-    if (fd_ > 0) {
-        close(fd_);
-        fd_ = -1;
-    }
-}
-
 int64_t DemuxerUnitTest::GetFileSize(const string &fileName)
 {
     int64_t fileSize = 0;
