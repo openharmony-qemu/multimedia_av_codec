@@ -705,9 +705,17 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     format.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(avStream.codecpar->bits_per_coded_sample);
     format.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(avStream.codecpar->bits_per_raw_sample);
 
+    // MOV/MP4/DASH/TS/others (包含av3a)
     if (avStream.codecpar->codec_id == AV_CODEC_ID_AVS3DA) {
-        ParseAv3aInfo(avStream, format);
+        if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM ||
+            avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC) {
+            ParseAv3aInfo(avStream, format); // 标准MP4 (dca3)
+        } else {
+            format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN); // 不是标准MP4，或者是TS
+            format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
+        }
     }
+
 }
 
 void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
@@ -753,7 +761,7 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
         format.Set<Tag::AUDIO_OUTPUT_CHANNELS>(static_cast<uint32_t>(channels));
         format.Set<Tag::AUDIO_CHANNEL_COUNT>(static_cast<uint32_t>(channels));
     } else {
-        MEDIA_LOG_D("Parse channel counnt failed: " PUBLIC_LOG_D32, channels);
+        MEDIA_LOG_D("Parse channel count failed: " PUBLIC_LOG_D32, channels);
     }
 }
 
