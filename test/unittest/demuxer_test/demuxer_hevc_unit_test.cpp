@@ -970,7 +970,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1198, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_SeekToTime_2225
- * @tc.desc: seek to the specified time(h265 avi fd)
+ * @tc.desc: seek to the specified time (h265 avi fd)
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2225, TestSize.Level1)
