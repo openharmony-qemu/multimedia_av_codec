@@ -52,11 +52,12 @@ public:
     void Reset();
     void InputFunc();
     void WaitForEos();
-    constexpr int32_t WIDTH = 1920;
-    constexpr int32_t HIGHT = 1080;
-    constexpr int32_t FORMAT = 2;
-    constexpr int32_t FORMAT_RATE = 30;
-    constexpr int32_t ROTATION = 0;
+    constexpr int32_t kWidth = 1920;
+    constexpr int32_t kHeight = 1080;
+    constexpr int32_t kFormat = 2;
+    constexpr int32_t kFormatRate = 30;
+    constexpr int32_t kRotation = 0;
+    constexpr int32_t kAngle = 0;
     VDecSignal *signal_;
     const uint8_t *fuzzData = nullptr;
     size_t fuzzSize = 0;

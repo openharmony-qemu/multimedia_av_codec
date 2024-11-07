@@ -30,11 +30,11 @@ bool HevcSwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     VDecServerSample *vDecSample = new VDecServerSample();
-    vDecSample->WIDTH = data_;
-    vDecSample->HIGHT = data_;
-    vDecSample->FORMAT_RATE = data_;
-    vDecSample->ROTATION = data_;
-    vDecSample->FORMAT = data_;
+    vDecSample->kWidth = data_;
+    vDecSample->kHeight = data_;
+    vDecSample->kFormat = data_;
+    vDecSample->kRotation = data_;
+    vDecSample->kFormatRate = data_;
     vDecSample->RunVideoServerDecoder();
     vDecSample->WaitForEos();
 

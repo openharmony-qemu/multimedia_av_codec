@@ -24,7 +24,6 @@ using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::Codec;
 using namespace std;
 namespace {
-constexpr int32_t ANGLE = 0;
 constexpr int32_t TIME = 12345;
 constexpr int32_t MAX_SEND_FRAMES = 10;
 } // namespace
@@ -70,12 +69,12 @@ VDecServerSample::~VDecServerSample()
 int32_t VDecServerSample::ConfigServerDecoder()
 {
     Format fmt;
-    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, WIDTH);
-    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, HIGHT);
-    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, FORMAT);
-    fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, FORMAT_RATE);
-    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, ANGLE);
-    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_DURATION, ROTATION);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, kWidth);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, kHeight);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, kFormat);
+    fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, kFormatRate);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, kAngle);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_DURATION, kRotation);
     return codec_->Configure(fmt);
 }
 
