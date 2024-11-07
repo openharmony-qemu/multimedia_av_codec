@@ -57,11 +57,11 @@ string g_filePath;
 /**********************************source FD**************************************/
 namespace {
 /**
- * @tc.name: AVSource_GetFormat_1180
- * @tc.desc: get format when the file is audio vivid (mp4)
+ * @tc.name: AVSource_GetFormat_1200
+ * @tc.desc: get format when the file is audio vivid (2obj_44100Hz_16bit_32k.mp4)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1180, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1200, TestSize.Level1)
 {
     fd_ = OpenFile(g_audioVividPath);
     size_ = GetFileSize(g_audioVividPath);
@@ -101,11 +101,11 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1180, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_11901
- * @tc.desc: get format when the file is audio vivid (ts)
+ * @tc.name: AVSource_GetFormat_1201
+ * @tc.desc: get format when the file is audio vivid (2obj_44100Hz_16bit_32k.ts)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_11901, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1201, TestSize.Level1)
 {
     fd_ = OpenFile(g_audioVividPath2);
     size_ = GetFileSize(g_audioVividPath2);
@@ -137,7 +137,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_11901, TestSize.Level1)
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.channelLayout, 0);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
@@ -145,11 +145,11 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_11901, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_1200
- * @tc.desc: get format when the file is audio vivid (mp4)
+ * @tc.name: AVSource_GetFormat_1202
+ * @tc.desc: get format when the file is audio vivid (2obj_16bit_44100Hz_64kbps.mp4)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1200, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1202, TestSize.Level1)
 {
     fd_ = OpenFile(g_audioVividPath3);
     size_ = GetFileSize(g_audioVividPath3);
@@ -189,11 +189,11 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1200, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_1201
- * @tc.desc: get format when the file is audio vivid (mp4)
+ * @tc.name: AVSource_GetFormat_1203
+ * @tc.desc: get format when the file is audio vivid (5_1_4_4obj_16bit_48000Hz_1232kbps.mp4)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1201, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1203, TestSize.Level1)
 {
     fd_ = OpenFile(g_audioVividPath4);
     size_ = GetFileSize(g_audioVividPath4);
@@ -226,18 +226,18 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1201, TestSize.Level1)
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.channelLayout, 185871);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
-    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.sampleRate, 48000);
+    ASSERT_EQ(formatVal_.channelCount, 14);
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
-    ASSERT_EQ(formatVal_.bitRate, 64082);
+    ASSERT_EQ(formatVal_.bitRate, 1232250);
 }
 
 /**
- * @tc.name: AVSource_GetFormat_1202
- * @tc.desc: get format when the file is audio vivid (mp4)
+ * @tc.name: AVSource_GetFormat_1204
+ * @tc.desc: get format when the file is audio vivid (5_1_4_16bit_96000Hz_704kbps.mp4)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1202, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1204, TestSize.Level1)
 {
     fd_ = OpenFile(g_audioVividPath5);
     size_ = GetFileSize(g_audioVividPath5);
@@ -269,19 +269,19 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1202, TestSize.Level1)
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.channelLayout, 0);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
-    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.channelLayout, 185871);
+    ASSERT_EQ(formatVal_.sampleRate, 96000);
+    ASSERT_EQ(formatVal_.channelCount, 10);
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
-    ASSERT_EQ(formatVal_.bitRate, 64082);
+    ASSERT_EQ(formatVal_.bitRate, 704250);
 }
 
 /**
- * @tc.name: AVSource_GetFormat_1203
- * @tc.desc: get format when the file is audio vivid (mp4)
+ * @tc.name: AVSource_GetFormat_1205
+ * @tc.desc: get format when the file is audio vivid (5_1_4_24bit_48000Hz_704kbps.mp4)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1203, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1205, TestSize.Level1)
 {
     fd_ = OpenFile(g_audioVividPath6);
     size_ = GetFileSize(g_audioVividPath6);
@@ -313,19 +313,19 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1203, TestSize.Level1)
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.channelLayout, 0);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
-    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.channelLayout, 185871);
+    ASSERT_EQ(formatVal_.sampleRate, 48000);
+    ASSERT_EQ(formatVal_.channelCount, 10);
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
-    ASSERT_EQ(formatVal_.bitRate, 64082);
+    ASSERT_EQ(formatVal_.bitRate, 704250);
 }
 
 /**
- * @tc.name: AVSource_GetFormat_1204
- * @tc.desc: get format when the file is audio vivid (mp4)
+ * @tc.name: AVSource_GetFormat_1206
+ * @tc.desc: get format when the file is audio vivid (7_1_4_24bit_48000Hz_832kbps.mp4)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1204, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1206, TestSize.Level1)
 {
     fd_ = OpenFile(g_audioVividPath7);
     size_ = GetFileSize(g_audioVividPath7);
@@ -357,19 +357,19 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1204, TestSize.Level1)
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.channelLayout, 0);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
-    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.channelLayout, 185919);
+    ASSERT_EQ(formatVal_.sampleRate, 48000);
+    ASSERT_EQ(formatVal_.channelCount, 12);
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
-    ASSERT_EQ(formatVal_.bitRate, 64082);
+    ASSERT_EQ(formatVal_.bitRate, 832125);
 }
 
 /**
- * @tc.name: AVSource_GetFormat_1205
- * @tc.desc: get format when the file is audio vivid (mp4)
+ * @tc.name: AVSource_GetFormat_1207
+ * @tc.desc: get format when the file is audio vivid (hoa3_16bit_48000Hz_640kbps.mp4)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1205, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1207, TestSize.Level1)
 {
     fd_ = OpenFile(g_audioVividPath8);
     size_ = GetFileSize(g_audioVividPath8);
@@ -401,19 +401,19 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1205, TestSize.Level1)
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.channelLayout, 0);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
-    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.channelLayout, 144112989052600320);
+    ASSERT_EQ(formatVal_.sampleRate, 48000);
+    ASSERT_EQ(formatVal_.channelCount, 16);
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
-    ASSERT_EQ(formatVal_.bitRate, 64082);
+    ASSERT_EQ(formatVal_.bitRate, 640125);
 }
 
 /**
- * @tc.name: AVSource_GetFormat_1206
- * @tc.desc: get format when the file is audio vivid (mp4)
+ * @tc.name: AVSource_GetFormat_1208
+ * @tc.desc: get format when the file is audio vivid (stereo_16bit_48000Hz_32kbps.mp4)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1206, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1208, TestSize.Level1)
 {
     fd_ = OpenFile(g_audioVividPath9);
     size_ = GetFileSize(g_audioVividPath9);
@@ -445,10 +445,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1206, TestSize.Level1)
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.channelLayout, 0);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.sampleRate, 48000);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
-    ASSERT_EQ(formatVal_.bitRate, 64082);
+    ASSERT_EQ(formatVal_.bitRate, 32250);
 }
 } // namespace
