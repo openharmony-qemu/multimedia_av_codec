@@ -58,6 +58,21 @@ const std::vector<std::pair<AudioChannelLayout, uint64_t>> g_toFFMPEGChannelLayo
     {AudioChannelLayout::STEREO_DOWNMIX, AV_CH_LAYOUT_STEREO_DOWNMIX},
 };
 
+const std::vector<std::pair<AudioChannelLayout, int>> g_audioVividChannelLayoutMap = {
+    {AudioChannelLayout::MONO, 1},
+    {AudioChannelLayout::STEREO, 2},
+    {AudioChannelLayout::CH_4POINT0, 4},
+    {AudioChannelLayout::CH_5POINT1, 6},
+    {AudioChannelLayout::CH_7POINT1, 8},
+    {AudioChannelLayout::CH_5POINT1POINT2, 8},
+    {AudioChannelLayout::CH_5POINT1POINT4, 10},
+    {AudioChannelLayout::CH_7POINT1POINT2, 10},
+    {AudioChannelLayout::CH_7POINT1POINT4, 12},
+    {AudioChannelLayout::HOA_FIRST, 4},
+    {AudioChannelLayout::HOA_SECOND, 9},
+    {AudioChannelLayout::HOA_THIRD, 16},
+};
+
 const std::vector<std::pair<int, AudioChannelLayout>> g_channelLayoutDefaukltMap = {
     {2, AudioChannelLayout::STEREO},             // 2: STEREO
     {4, AudioChannelLayout::CH_4POINT0},         // 4: CH_4POINT0
@@ -408,6 +423,17 @@ std::string FFMpegConverter::AVStrError(int errnum)
     char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
     av_strerror(errnum, errbuf, AV_ERROR_MAX_STRING_SIZE);
     return std::string(errbuf);
+}
+
+AudioChannelLayout FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(uint64_t ffChannelLayout, int channels)
+{
+    auto ite = std::find_if(g_audioVividChannelLayoutMap.begin(), g_audioVividChannelLayoutMap.end(),
+                            [&ffChannelLayout](const auto &item) -> bool { return item.first == ffChannelLayout;});
+    if (ite == g_audioVividChannelLayoutMap.end() || ite -> second != channels) {
+        MEDIA_LOG_W("Convert channel layout failed: " PUBLIC_LOG_U64, ffChannelLayout);
+        return GetDefaultChannelLayout(channels);
+    }
+    return ite->first;
 }
 } // namespace Plugins
 } // namespace Media
