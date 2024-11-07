@@ -264,6 +264,7 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
         NotifyLoopPause();
         return 0;
     });
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader ctor", FAKE_POINTER(this));
 }
 
 Downloader::~Downloader()
@@ -278,7 +279,7 @@ Downloader::~Downloader()
         client_->Deinit();
         client_ = nullptr;
     }
-    MEDIA_LOG_I("%{public}p ~Downloader", this);
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~Downloader dtor", FAKE_POINTER(this));
 }
 
 bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs)
@@ -307,7 +308,7 @@ void Downloader::Start()
 void Downloader::Pause(bool isAsync)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
-    MEDIA_LOG_I("Pause Begin");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Pause Begin", FAKE_POINTER(this));
     requestQue_->SetActive(false, false);
     if (client_ != nullptr) {
         isClientClose_ = true;
@@ -317,12 +318,12 @@ void Downloader::Pause(bool isAsync)
     if (!isAsync) {
         WaitLoopPause();
     }
-    MEDIA_LOG_I("Pause End");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Pause End", FAKE_POINTER(this));
 }
 
 void Downloader::Cancel()
 {
-    MEDIA_LOG_I("Cancel Begin");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Cancel Begin", FAKE_POINTER(this));
     if (currentRequest_ != nullptr && currentRequest_->retryTimes_ > 0) {
         currentRequest_->retryTimes_ = 0;
     }
@@ -333,7 +334,7 @@ void Downloader::Cancel()
     }
     PauseLoop(true);
     WaitLoopPause();
-    MEDIA_LOG_I("Cancel End");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Cancel End", FAKE_POINTER(this));
 }
 
 
@@ -436,7 +437,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
     }
     {
         AutoLock lock(operatorMutex_);
-        MEDIA_LOG_I("Retry Begin");
+        MEDIA_LOG_I("0x%{public}06" PRIXPTR " Retry Begin", FAKE_POINTER(this));
         FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest && !isDestructor_ && !isInterruptNeeded_, false);
         requestQue_->SetActive(false, false);
     }
@@ -585,9 +586,9 @@ void Downloader::RequestData()
             currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
         }
     };
-    MEDIA_LOG_I("RequestData enter.");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData enter.", FAKE_POINTER(this));
     client_->RequestData(startPos, currentRequest_->requestSize_, sourceInfo, handleResponseCb);
-    MEDIA_LOG_I("RequestData end.");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData end.", FAKE_POINTER(this));
 }
 
 void Downloader::HandlePlayingFinish()
@@ -955,6 +956,8 @@ const std::shared_ptr<DownloadRequest>& Downloader::GetCurrentRequest()
 
 void Downloader::SetInterruptState(bool isInterruptNeeded)
 {
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader SetInterruptState %{public}d",
+        FAKE_POINTER(this), isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
     if (currentRequest_ != nullptr) {
         currentRequest_->isInterruptNeeded_ = isInterruptNeeded;
@@ -966,7 +969,7 @@ void Downloader::NotifyLoopPause()
 {
     AutoLock lk(loopPauseMutex_);
     if (loopStatus_ == LoopStatus::PAUSE || isInterruptNeeded_) {
-        MEDIA_LOG_I("Downloader NotifyLoopPause");
+        MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader NotifyLoopPause", FAKE_POINTER(this));
         loopStatus_ = LoopStatus::IDLE;
         loopPauseCond_.NotifyAll();
     } else {
@@ -980,13 +983,15 @@ void Downloader::WaitLoopPause()
 {
     AutoLock lk(loopPauseMutex_);
     if (loopStatus_ == LoopStatus::IDLE) {
-        MEDIA_LOG_I("Downloader not WaitLoopPause loopStatus is idle");
+        MEDIA_LOG_I("0x%{public}06" PRIXPTR "Downloader not WaitLoopPause loopStatus is idle", FAKE_POINTER(this));
         return;
     }
-    MEDIA_LOG_I("Downloader WaitLoopPause task loopStatus_ %{public}d", loopStatus_.load());
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR "Downloader WaitLoopPause task loopStatus_ %{public}d",
+        FAKE_POINTER(this), loopStatus_.load());
     loopStatus_ = LoopStatus::PAUSE;
     loopPauseCond_.Wait(lk, [this]() {
-        MEDIA_LOG_I("WaitLoopPause wake loopStatus_ %{public}d", loopStatus_.load());
+        MEDIA_LOG_I("0x%{public}06" PRIXPTR " WaitLoopPause wake loopStatus %{public}d",
+            FAKE_POINTER(this), loopStatus_.load());
         return loopStatus_ != LoopStatus::PAUSE || isInterruptNeeded_;
     });
 }
