@@ -18,6 +18,10 @@
 #include "surface.h"
 #include "ui/rs_surface_node.h"
 #include "window_option.h"
+#include "accesstoken_kit.h"
+#include "nativetoken_kit.h"
+#include "token_setproc.h"
+
 #include "av_codec_sample_log.h"
 
 namespace {
@@ -30,6 +34,22 @@ namespace Sample {
 RosenWindowWrapper::RosenWindowWrapper()
 {
     windowType_ = SampleWindowType::ROSEN;
+
+    const char **perms = new const char *[1];
+    perms[0] = "ohos.permission.SYSTEM_FLOAT_WINDOW";
+    TokenInfoParams tokenInfo = {
+        .dcapsNum = 0,
+        .permsNum = 1,
+        .aclsNum = 0,
+        .dcaps = nullptr,
+        .perms = perms,
+        .acls = nullptr,
+        .processName = "video_codec_demo",
+        .aplStr = "system_core",
+    };
+    SetSelfTokenID(GetAccessTokenId(&tokenInfo));
+    Security::AccessToken::AccessTokenKit::ReloadNativeTokenInfo();
+    delete[] perms;
 
     sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
     option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_FLOAT);
