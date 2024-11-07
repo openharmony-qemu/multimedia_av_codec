@@ -19,7 +19,7 @@
 #include "media_codec.h"
 #include "audio_encoder_filter.h"
 #include "plugin/codec_plugin.h"
-#include "gmock/gmock.h" 
+#include "gmock/gmock.h"
 
 namespace OHOS {
 namespace Media {
