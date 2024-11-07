@@ -278,7 +278,7 @@ Downloader::~Downloader()
         client_->Deinit();
         client_ = nullptr;
     }
-    MEDIA_LOG_I("%{public}p ~Downloader", this);
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~Downloader", FAKE_POINTER(this));
 }
 
 bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs)
