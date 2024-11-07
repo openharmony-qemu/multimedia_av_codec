@@ -30,6 +30,8 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_
 namespace OHOS {
 namespace Media {
 
+constexpr int64_t VARIABLE_INCREMENT_INTERVAL = 1;
+
 class SurfaceDecoderAdapterCallback : public MediaAVCodec::MediaCodecCallback {
 public:
     explicit SurfaceDecoderAdapterCallback(std::shared_ptr<SurfaceDecoderAdapter> surfaceDecoderAdapter)
@@ -62,11 +64,14 @@ public:
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
     {
         if (auto surfaceDecoderAdapter = surfaceDecoderAdapter_.lock()) {
-            MEDIA_LOG_D("OnOutputBuffer flag   "  PUBLIC_LOG_D32, buffer->flag_);
+            MEDIA_LOG_D("OnOutputBuffer flag " PUBLIC_LOG_D32, buffer->flag_);
             surfaceDecoderAdapter->OnOutputBufferAvailable(index, buffer);
             if (buffer->flag_ == 1) {
-                MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64, surfaceDecoderAdapter->lastBufferPts_);
-                surfaceDecoderAdapter->decoderAdapterCallback_->OnBufferEos(surfaceDecoderAdapter->lastBufferPts_);
+                int64_t lastBufferPts = surfaceDecoderAdapter->lastBufferPts_.load();
+                int64_t frameNum = surfaceDecoderAdapter->frameNum_.load();
+                MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,
+                    lastBufferPts, frameNum);
+                surfaceDecoderAdapter->decoderAdapterCallback_->OnBufferEos(lastBufferPts, frameNum);
             }
         } else {
             MEDIA_LOG_I("invalid surfaceDecoderAdapter");
@@ -327,8 +332,9 @@ void SurfaceDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
         if (buffer->flag_ == 1) {
             dropIndexs_.push_back(index);
-        } else if (buffer->pts_ > lastBufferPts_) {
+        } else if (buffer->pts_ > lastBufferPts_.load()) {
             lastBufferPts_ = buffer->pts_;
+            frameNum_.fetch_add(VARIABLE_INCREMENT_INTERVAL, std::memory_order_relaxed);
             indexs_.push_back(index);
         } else {
             MEDIA_LOG_D("OnOutputBufferAvailable drop index: %{public}u" PRIu32, index);

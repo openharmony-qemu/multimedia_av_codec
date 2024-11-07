@@ -91,8 +91,10 @@ private:
     std::mutex releaseBufferMutex_;
     std::condition_variable releaseBufferCondition_;
     std::shared_ptr<Task> releaseBufferTask_{nullptr};
-    std::vector<std::pair<uint32_t, uint32_t>> indexs_;
+    std::vector<uint32_t> indexs_;
     int64_t eosPts_ {UINT32_MAX};
+    int64_t frameNum_ {UINT32_MAX};
+    std::atomic<int64_t> currentFrameNum_ = 0;
     std::atomic<bool> isThreadExit_ = true;
 
     std::string bundleName_;
