@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,6 +28,10 @@ namespace {
     constexpr int32_t READ_LOG_FEQUENCE = 50;
     constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
     constexpr int64_t RETRY_SEG = 50;
+    const std::set<int32_t> CLIENT_NOT_RETRY_ERROR_CODES = {
+        23,
+        992,
+    };
 }
 
 DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept
@@ -206,8 +210,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
             return false;
         }
     }
-    if ((clientError != NetworkClientErrorCode::ERROR_OK
-        && clientError != NetworkClientErrorCode::ERROR_NOT_RETRY)
+    if ((clientError != NetworkClientErrorCode::ERROR_OK && clientError != NetworkClientErrorCode::ERROR_NOT_RETRY)
         || serverError != 0) {
         if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR && !GetPlayable()) {
             if (clientError != NetworkClientErrorCode::ERROR_OK) {
@@ -368,6 +371,7 @@ void DownloadMonitor::WaitForBufferingEnd()
     FALSE_RETURN_MSG(downloader_ != nullptr, "WaitForBufferingEnd downloader is nullptr");
     downloader_->WaitForBufferingEnd();
 }
+
 }
 }
 }

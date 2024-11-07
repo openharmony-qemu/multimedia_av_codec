@@ -166,8 +166,9 @@ void DownloadRequest::WaitHeaderUpdated() const
         Task::SleepInTask(SLEEP_TIME);
         times_++;
     }
+    uint32_t headerIsClosed = static_cast<uint32_t>(headerInfo_.isClosed.load());
     MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
-        isHeaderUpdated, times_, headerInfo_.isClosed.load());
+        isHeaderUpdated, times_, headerIsClosed);
 }
 
 double DownloadRequest::GetDuration() const
@@ -281,6 +282,9 @@ Downloader::~Downloader()
 bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs)
 {
     MEDIA_LOG_I("In");
+    if (isInterruptNeeded_) {
+        request->isInterruptNeeded_ = true;
+    }
     requestQue_->SetActive(true);
     if (waitMs == -1) { // wait until push success
         requestQue_->Push(request);
@@ -540,12 +544,14 @@ void Downloader::RequestData()
     sourceInfo.httpHeader = currentRequest_->httpHeader_;
     sourceInfo.timeoutMs = currentRequest_->requestInfo_.timeoutMs;
 
-    auto handleResponseCb = [this](NetworkClientErrorCode clientCode, NetworkServerErrorCode serverCode, Status ret) {
+    auto handleResponseCb = [this](NetworkClientErrorCode clientCode, NetworkServerErrorCode serverCode,
+                                   Status ret) {
         currentRequest_->clientError_ = clientCode;
         currentRequest_->serverError_ = serverCode;
         if (isDestructor_) {
             return;
         }
+
         if (currentRequest_->requestSize_ == FIRST_REQUEST_SIZE && !currentRequest_->isFirstRangeRequestReady_
             && currentRequest_->serverError_ == SERVER_RANGE_ERROR_CODE) {
             MEDIA_LOG_I("first request is above filesize, need retry.");
@@ -596,7 +602,7 @@ void Downloader::HandleRetOK()
         PauseLoop(true);
         return;
     }
-    
+
     int64_t remaining = 0;
     if (currentRequest_->endPos_ <= 0) {
         remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -
@@ -974,7 +980,7 @@ void Downloader::WaitLoopPause()
     loopPauseCond_.Wait(lk, [this]() {
         MEDIA_LOG_I("0x%{public}06" PRIXPTR " WaitLoopPause wake loopStatus %{public}d",
             FAKE_POINTER(this), loopStatus_.load());
-        return loopStatus_ == LoopStatus::IDLE || isInterruptNeeded_;
+        return loopStatus_ != LoopStatus::PAUSE || isInterruptNeeded_;
     });
 }
 
