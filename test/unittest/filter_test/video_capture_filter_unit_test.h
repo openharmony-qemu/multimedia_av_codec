@@ -19,6 +19,7 @@
 #include "consumer_surface.h"
 #include "gtest/gtest.h"
 #include "video_capture_filter.h"
+#include "buffer_producer_listener.h"
 
 namespace OHOS {
 namespace Media {

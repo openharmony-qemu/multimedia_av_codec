@@ -83,6 +83,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url)
         MEDIA_LOG_I("HTTP setting buffer size: " PUBLIC_LOG_U64, MAX_CACHE_BUFFER_SIZE);
     }
     isBuffering_ = true;
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     downloader_ = std::make_shared<Downloader>("http");
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     steadyClock_.Reset();
@@ -149,6 +150,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
         InitCacheBuffer(expectBufferDuration);
     }
     isBuffering_ = true;
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     downloader_ = std::make_shared<Downloader>("http");
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     steadyClock_.Reset();
@@ -263,9 +265,9 @@ void HttpMediaDownloader::OnClientErrorEvent()
 bool HttpMediaDownloader::HandleBuffering()
 {
     if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
+        bufferingTime_ = 0;
         return false;
     }
-
     size_t fileRemain = 0;
     if (downloadRequest_ != nullptr) {
         size_t fileContenLen = downloadRequest_->GetFileContentLength();
@@ -276,7 +278,6 @@ bool HttpMediaDownloader::HandleBuffering()
     }
     UpdateWaterLineAbove();
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
-
     {
         AutoLock lk(bufferingEndMutex_);
         if (!canWrite_) {
@@ -289,7 +290,6 @@ bool HttpMediaDownloader::HandleBuffering()
             isBuffering_ = false;
         }
         if (HandleBreak()) {
-            MEDIA_LOG_I("HTTP HandleBreak");
             isBuffering_ = false;
         }
         if (!isBuffering_) {
@@ -297,7 +297,9 @@ bool HttpMediaDownloader::HandleBuffering()
             bufferingEndCond_.NotifyAll();
         }
     }
-
+    if (!isBuffering_ && !isFirstFrameArrived_) {
+        bufferingTime_ = 0;
+    }
     if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: "
         PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32,
@@ -314,7 +316,16 @@ bool HttpMediaDownloader::HandleBuffering()
 
 bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
 {
-    if (!isFirstFrameArrived_ || HandleBreak() || isBuffering_) {
+    if (!isFirstFrameArrived_) {
+        if (GetCurrentBufferSize() >= wantReadLength || HandleBreak()) {
+            MEDIA_LOG_I("HTTP buffersize is ok.");
+            return false;
+        } else {
+            waterLineAbove_ = wantReadLength;
+            return true;
+        }
+    }
+    if (HandleBreak() || isBuffering_) {
         return false;
     }
     if (!isRingBuffer_ && cacheMediaBuffer_ != nullptr && cacheMediaBuffer_->IsReadSplit(readOffset_)) {
@@ -351,7 +362,10 @@ bool HttpMediaDownloader::StartBuffering(unsigned int& wantReadLength)
         canWrite_ = true;
     }
     isBuffering_ = true;
-    UpdateWaterLineAbove();
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+    if (!isFirstFrameArrived_) {
+        return true;
+    }
     MEDIA_LOG_I("HTTP CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize "
         PUBLIC_LOG_ZU " readOffset: " PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, waterLineAbove_,
         GetCurrentBufferSize(), readOffset_, writeOffset_);
@@ -493,6 +507,11 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
         FALSE_RETURN_V_MSG(ringBuffer_ != nullptr, Status::END_OF_STREAM, "ringBuffer_ = nullptr");
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
+        if (isBuffering_ && GetBufferingTimeOut() && callback_) {
+            MEDIA_LOG_I("HTTP ringbuffer read time out.");
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+            return Status::END_OF_STREAM;
+        }
         if (isBuffering_ && !downloadRequest_->IsChunkedVod() && CheckBufferingOneSeconds()) {
             MEDIA_LOG_I("HTTP Return error again.");
             return Status::ERROR_AGAIN;
@@ -505,6 +524,11 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
         FALSE_RETURN_V_MSG(cacheMediaBuffer_ != nullptr, Status::END_OF_STREAM, "cacheMediaBuffer_ = nullptr");
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
+        if (isBuffering_ && GetBufferingTimeOut() && callback_) {
+            MEDIA_LOG_I("HTTP cachebuffer read time out.");
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+            return Status::END_OF_STREAM;
+        }
         if (isBuffering_ && !downloadRequest_->IsChunkedVod() && canWrite_ && CheckBufferingOneSeconds()) {
             MEDIA_LOG_I("HTTP Return error again.");
             return Status::ERROR_AGAIN;

@@ -731,9 +731,9 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
                                    "output surface memory %{public}d create fail", i);
             outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
             buf->avBuffer = AVBuffer::CreateAVBuffer(buf->sMemory->GetBase(), buf->sMemory->GetSize());
-            AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}d, addr=%{public}p, size=%{public}d, "
+            AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}d, size=%{public}d, "
                          "stride=%{public}d",
-                         i, buf->sMemory->GetBase(), buf->sMemory->GetSize(),
+                         i, buf->sMemory->GetSize(),
                          buf->sMemory->GetSurfaceBufferStride());
         }
         CHECK_AND_CONTINUE_LOG(buf->avBuffer != nullptr, "Allocate output buffer failed, index=%{public}d", i);

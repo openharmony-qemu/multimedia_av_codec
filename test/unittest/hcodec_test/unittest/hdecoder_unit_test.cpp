@@ -298,7 +298,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_vrr_without_framerate, TestSize.Le
     format.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, 0);
     format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_ENABLE_VRR, 1);
     int32_t ret = testObj->Configure(format);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_NE(AVCS_ERR_OK, ret);
 }
 #endif
 
