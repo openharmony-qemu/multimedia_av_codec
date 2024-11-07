@@ -686,7 +686,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1010, TestSize.Level1)
 
 /**
  * @tc.name: AVSource_GetFormat_2222
- * @tc.desc: get source format(avi)
+ * @tc.desc: get source format (avi)
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2222, TestSize.Level1)
