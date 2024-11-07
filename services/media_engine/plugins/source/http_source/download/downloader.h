@@ -126,7 +126,7 @@ private:
     StatusCallbackFunc statusCallback_;
     DownloadDoneCbFunc downloadDoneCallback_;
 
-    std::atomic<bool> isHeaderUpdating_ {false};
+    mutable std::atomic<bool> isHeaderUpdating_ {false};
 
     HeaderInfo headerInfo_;
     std::map<std::string, std::string> httpHeader_;
