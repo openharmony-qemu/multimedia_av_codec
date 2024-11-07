@@ -127,14 +127,14 @@ void HlsMediaDownloader::HlsInit()
 
 HlsMediaDownloader::~HlsMediaDownloader()
 {
-    MEDIA_LOG_I("~HlsMediaDownloader in");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor in", FAKE_POINTER(this));
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_ = nullptr;
     }
     if (downloader_ != nullptr) {
         downloader_->Stop(false);
     }
-    MEDIA_LOG_I("~HlsMediaDownloader out");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor out", FAKE_POINTER(this));
 }
 
 size_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
@@ -235,7 +235,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
 
 void HlsMediaDownloader::Close(bool isAsync)
 {
-    MEDIA_LOG_I("HLS Close enter");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " HLS Close enter", FAKE_POINTER(this));
     isInterrupt_ = true;
     if (playList_) {
         playList_->SetActive(false);
