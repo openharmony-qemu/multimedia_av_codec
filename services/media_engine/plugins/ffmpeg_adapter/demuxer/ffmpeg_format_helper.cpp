@@ -715,7 +715,6 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
             format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
         }
     }
-
 }
 
 void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
