@@ -454,22 +454,26 @@ int32_t HDecoder::InitVrr()
         }
         HLOGI("dlopen libvideoprocessingengine.z.so success");
     }
-    VrrCreateFunc_ = reinterpret_cast<VRRCreate>(dlsym(vpeHandle_, "VideoRefreshRatePredictionCreate"));
-    VrrCheckLtpoSupportFunc_ = reinterpret_cast<VRRCheckLtpoSupport>(dlsym(vpeHandle_,
-        "VideoRefreshRatePredictionCheckLtpoSupport"));
-    VrrProcessFunc_ = reinterpret_cast<VRRProcess>(dlsym(vpeHandle_, "VideoRefreshRatePredictionProcess"));
-    VrrDestroyFunc_ = reinterpret_cast<VRRDestroy>(dlsym(vpeHandle_, "VideoRefreshRatePredictionDestroy"));
-    if (VrrCreateFunc_ == nullptr || VrrCheckLtpoSupportFunc_ == nullptr || VrrProcessFunc_ == nullptr ||
+    VrrCreateFunc_ = reinterpret_cast<VrrCreate>(dlsym(vpeHandle_, "VideoRefreshRatePredictionCreate"));
+    VrrCheckSupportFunc_ = reinterpret_cast<VrrCheckSupport>(dlsym(vpeHandle_,
+        "VideoRefreshRatePredictionCheckSupport"));
+    VrrProcessFunc_ = reinterpret_cast<VrrProcess>(dlsym(vpeHandle_, "VideoRefreshRatePredictionProcess"));
+    VrrDestroyFunc_ = reinterpret_cast<VrrDestroy>(dlsym(vpeHandle_, "VideoRefreshRatePredictionDestroy"));
+    if (VrrCreateFunc_ == nullptr || VrrCheckSupportFunc_ == nullptr || VrrProcessFunc_ == nullptr ||
         VrrDestroyFunc_ == nullptr) {
         return AVCS_ERR_UNSUPPORT;
     }
     vrrHandle_ = VrrCreateFunc_();
-    int32_t ret = VrrCheckLtpoSupportFunc_();
+    int32_t ret = VrrCheckSupportFunc_(vrrHandle_, calledByAvcodec_ ? avcodecCaller_.processName.c_str() :
+        playerCaller_.processName.c_str());
     if (ret != AVCS_ERR_OK) {
         HLOGE("VRR check ltpo support failed");
         VrrDestroyFunc_(vrrHandle_);
         dlclose(vpeHandle_);
         vpeHandle_ = nullptr;
+        if (ret == Media::VideoProcessingEngine::VPE_ALGO_ERR_INVALID_OPERATION) (
+            return AVCS_ERR_INVALID_OPERATION;
+        )
         return AVCS_ERR_UNSUPPORT;
     }
     return AVCS_ERR_OK;
