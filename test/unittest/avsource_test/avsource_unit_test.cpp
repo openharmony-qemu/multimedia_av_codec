@@ -685,47 +685,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1010, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_2222
- * @tc.desc: get source format (avi)
- * @tc.type: FUNC
- */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2222, TestSize.Level1)
-{
-    fd_ = OpenFile(g_aviPath);
-    size_ = GetFileSize(g_aviPath);
-    printf("---- %s ----\n", g_aviPath.c_str());
-    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ARTIST, formatVal_.artist));
-    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_COMMENT, formatVal_.comment));
-    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_COPYRIGHT, formatVal_.copyright));
-    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_DATE, formatVal_.date));
-    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_GENRE, formatVal_.genre));
-    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_TITLE, formatVal_.title));
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.artist, "artist");
-    ASSERT_EQ(formatVal_.comment, "comment");
-    ASSERT_EQ(formatVal_.copyright, "Copyright");
-    ASSERT_EQ(formatVal_.date, "2024");
-    ASSERT_EQ(formatVal_.genre, "Lyrical");
-    ASSERT_EQ(formatVal_.title, "test");
-    ASSERT_EQ(formatVal_.duration, 10025000);
-    ASSERT_EQ(formatVal_.trackCount, 2);
-#ifdef AVSOURCE_INNER_UNIT_TEST
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.hasVideo, 1);
-    ASSERT_EQ(formatVal_.hasAudio, 1);
-    ASSERT_EQ(formatVal_.fileType, 105);
-#endif
-}
-
-/**
  * @tc.name: AVSource_GetFormat_2221
  * @tc.desc: get track format (avi)
  * @tc.type: FUNC
@@ -774,6 +733,47 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2221, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_2222
+ * @tc.desc: get source format (avi)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2222, TestSize.Level1)
+{
+    fd_ = OpenFile(g_aviPath);
+    size_ = GetFileSize(g_aviPath);
+    printf("---- %s ----\n", g_aviPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ARTIST, formatVal_.artist));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_COMMENT, formatVal_.comment));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_COPYRIGHT, formatVal_.copyright));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_DATE, formatVal_.date));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_GENRE, formatVal_.genre));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_TITLE, formatVal_.title));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.artist, "artist");
+    ASSERT_EQ(formatVal_.comment, "comment");
+    ASSERT_EQ(formatVal_.copyright, "Copyright");
+    ASSERT_EQ(formatVal_.date, "2024");
+    ASSERT_EQ(formatVal_.genre, "Lyrical");
+    ASSERT_EQ(formatVal_.title, "test");
+    ASSERT_EQ(formatVal_.duration, 10025000);
+    ASSERT_EQ(formatVal_.trackCount, 2);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.hasVideo, 1);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.fileType, 105);
+#endif
 }
 
 /**
