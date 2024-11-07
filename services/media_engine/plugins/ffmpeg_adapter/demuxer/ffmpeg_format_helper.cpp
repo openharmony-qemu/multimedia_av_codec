@@ -692,12 +692,9 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(channelLayout);
     format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
 
-    AudioSampleFormat fmt;
-    if (!IsPCMStream(avStream.codecpar->codec_id)) {
-        fmt = FFMpegConverter::ConvertFFMpegToOHAudioFormat(static_cast<AVSampleFormat>(avStream.codecpar->format));
-    } else {
-        fmt = FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(avStream.codecpar->codec_id);
-    }
+    AudioSampleFormat fmt = (IsPCMStream(avStream.codecpar->codec_id)) ?
+        FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(avStream.codecpar->codec_id) :
+        FFMpegConverter::ConvertFFMpegToOHAudioFormat(static_cast<AVSampleFormat>(avStream.codecpar->format));
     format.Set<Tag::AUDIO_SAMPLE_FORMAT>(fmt);
 
     if (avStream.codecpar->codec_id == AV_CODEC_ID_AAC) {
@@ -715,6 +712,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
             avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC) {
             ParseAv3aInfo(avStream, format);
         }
+        ConvertAv3aSampleFormat(avStream, format);
     }
 }
 
@@ -783,7 +781,6 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
     } else {
         MEDIA_LOG_D("Parse channel count failed: " PUBLIC_LOG_D32, channels);
     }
-    ConvertAv3aSampleFormat(avStream, format);
 }
 
 void FFmpegFormatHelper::ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format)
