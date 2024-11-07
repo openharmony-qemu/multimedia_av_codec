@@ -29,7 +29,8 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
 using namespace testing::ext;
- 
+using namespace testing;
+
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
@@ -220,14 +221,18 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_Init_0100, TestSize.Level
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_Configure_0100, TestSize.Level1)
 {
-    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
-    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
     std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
-    //ret = 0
-    EXPECT_NE(audioEncoderFilter_->Configure(parameter), Status::OK);
     //ret != 0
-    mediaCodecMock->configure_ = 1;
-    EXPECT_NE(audioEncoderFilter_->Configure(parameter), Status::OK);
+    EXPECT_EQ(audioEncoderFilter_->Configure(parameter), Status::ERROR_UNKNOWN);
+    //ret = 0
+    auto mockCodecPlugin = std::make_shared<MockCodecPlugin>("video/avc");
+    audioEncoderFilter_->mediaCodec_->state_ = CodecState::INITIALIZED;
+    audioEncoderFilter_->mediaCodec_->codecPlugin_ = mockCodecPlugin;
+    EXPECT_CALL(*mockCodecPlugin, SetParameter(testing::_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockCodecPlugin, SetDataCallback(testing::_)).WillOnce(Return(Status::OK));
+    EXPECT_EQ(audioEncoderFilter_->Configure(parameter), Status::OK);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoPrepare_0100, TestSize.Level1)
@@ -248,16 +253,17 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoPrepare_0100, TestSize.
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoStart_0100, TestSize.Level1)
 {
-    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
-    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
 
-    // ret != 0
-    mediaCodecMock->start_ = 1;
-    EXPECT_NE(audioEncoderFilter_->DoStart(), Status::OK);
-
-    // ret == 0
-    mediaCodecMock->start_ = 0;
-    EXPECT_NE(audioEncoderFilter_->DoStart(), Status::OK);
+    //ret != 0
+    EXPECT_EQ(audioEncoderFilter_->Configure(parameter), Status::ERROR_UNKNOWN);
+    //ret = 0
+    auto mockCodecPlugin = std::make_shared<MockCodecPlugin>("video/avc");
+    audioEncoderFilter_->mediaCodec_->state_ = CodecState::PREPARED;
+    audioEncoderFilter_->mediaCodec_->codecPlugin_ = mockCodecPlugin;
+    EXPECT_CALL(*mockCodecPlugin, Start()).WillOnce(Return(Status::OK));
+    EXPECT_EQ(audioEncoderFilter_->DoStart(), Status::OK);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoPause_0100, TestSize.Level1)
@@ -272,58 +278,59 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoResume_0100, TestSize.L
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoStop_0100, TestSize.Level1)
 {
-    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
-    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
 
-    // ret != 0
-    mediaCodecMock->stop_ = 1;
-    EXPECT_EQ(audioEncoderFilter_->DoStop(), Status::OK);
-
-    // ret == 0
-    mediaCodecMock->stop_ = 0;
+    //ret != 0
+    auto mockCodecPlugin = std::make_shared<MockCodecPlugin>("video/avc");
+    audioEncoderFilter_->mediaCodec_->state_ = CodecState::RUNNING;
+    audioEncoderFilter_->mediaCodec_->codecPlugin_ = mockCodecPlugin;
+    EXPECT_CALL(*mockCodecPlugin, Stop()).WillOnce(Return(Status::ERROR_UNKNOWN));
+    EXPECT_EQ(audioEncoderFilter_->DoStop(), Status::ERROR_UNKNOWN);
+    //ret = 0
+    audioEncoderFilter_->mediaCodec_->state_ = CodecState::PREPARED;
     EXPECT_EQ(audioEncoderFilter_->DoStop(), Status::OK);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoFlush_0100, TestSize.Level1)
 {
-    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
-    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
 
-    // ret != 0
-    mediaCodecMock->flush_ = 1;
-    EXPECT_NE(audioEncoderFilter_->DoFlush(), Status::OK);
-
-    // ret == 0
-    mediaCodecMock->flush_ = 0;
-    EXPECT_NE(audioEncoderFilter_->DoFlush(), Status::OK);
+    //ret != 0
+    EXPECT_EQ(audioEncoderFilter_->Configure(parameter), Status::ERROR_UNKNOWN);
+    //ret = 0
+    audioEncoderFilter_->mediaCodec_->state_ = CodecState::FLUSHED;
+    EXPECT_EQ(audioEncoderFilter_->Configure(parameter), Status::OK);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoRelease_0100, TestSize.Level1)
 {
-    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
-    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
 
-    // ret != 0
-    mediaCodecMock->release_ = 1;
-    EXPECT_EQ(audioEncoderFilter_->DoRelease(), Status::OK);
-
-    // ret == 0
-    mediaCodecMock->release_ = 0;
-    EXPECT_EQ(audioEncoderFilter_->DoRelease(), Status::OK);
+    //ret != 0
+    auto mockCodecPlugin = std::make_shared<MockCodecPlugin>("video/avc");
+    audioEncoderFilter_->mediaCodec_->state_ = CodecState::RUNNING;
+    audioEncoderFilter_->mediaCodec_->codecPlugin_ = mockCodecPlugin;
+    EXPECT_CALL(*mockCodecPlugin, Release()).WillOnce(Return(Status::ERROR_UNKNOWN));
+    EXPECT_EQ(audioEncoderFilter_->DoRelease(), Status::ERROR_UNKNOWN);
+    //ret = 0
+    audioEncoderFilter_->mediaCodec_->state_ = CodecState::RELEASING;
+    EXPECT_EQ(audioEncoderFilter_->Configure(parameter), Status::OK);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_NotifyEos_0100, TestSize.Level1)
 {
-    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
-    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
 
     // ret != 0
-    mediaCodecMock->notifyEos_ = 1;
-    EXPECT_NE(audioEncoderFilter_->NotifyEos(), Status::OK);
+    EXPECT_EQ(audioEncoderFilter_->NotifyEos(), Status::ERROR_UNKNOWN);
 
     // ret == 0
-    mediaCodecMock->notifyEos_ = 0;
-    EXPECT_NE(audioEncoderFilter_->NotifyEos(), Status::OK);
+    audioEncoderFilter_->mediaCodec_->state_ = CodecState::END_OF_STREAM;
+    EXPECT_EQ(audioEncoderFilter_->NotifyEos(), Status::OK);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetParameter_0100, TestSize.Level1)
