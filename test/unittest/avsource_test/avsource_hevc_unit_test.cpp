@@ -677,10 +677,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2224, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 127407);
+    ASSERT_EQ(formatVal_.bitRate, 127400);
     ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.channelLayout, static_cast<int64_t>(AudioChannelLayout::STEREO));
     CheckHevcInfo("aviHevc");
 }
 
@@ -741,10 +741,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2234, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 127407);
+    ASSERT_EQ(formatVal_.bitRate, 127400);
     ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.channelLayout, static_cast<int64_t>(AudioChannelLayout::STEREO));
     CheckHevcInfo("aviHevc");
 }
 
