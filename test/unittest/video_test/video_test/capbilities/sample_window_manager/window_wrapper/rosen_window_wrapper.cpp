@@ -64,7 +64,7 @@ RosenWindowWrapper::RosenWindowWrapper()
     window_ = std::shared_ptr<OHNativeWindow>(
         CreateNativeWindowFromSurface(&surfaceProducer),
         [](OHNativeWindow *window) -> void {
-            (void)window; 
+            (void)window;
         }
     );
 }
