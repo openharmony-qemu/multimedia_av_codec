@@ -55,7 +55,7 @@ public:
     MOCK_METHOD(Status, Reset, (), (override));
     MOCK_METHOD(Status, Release, (), (override));
     MOCK_METHOD(Status, SetDataCallback, (Plugins::DataCallback* dataCallback), (override));
-}
+};
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
