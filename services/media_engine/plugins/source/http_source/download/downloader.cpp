@@ -109,7 +109,7 @@ void DownloadRequest::SaveHeader(const HeaderInfo* header)
 {
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::SaveHeader");
     headerInfo_.Update(header);
-    isHeaderUpdated = true;
+    isHeaderUpdated_ = true;
 }
 
 Seekable DownloadRequest::IsChunked(bool isInterruptNeeded)
@@ -159,16 +159,16 @@ void DownloadRequest::Close()
 
 void DownloadRequest::WaitHeaderUpdated() const
 {
+    isHeaderUpdating_ = true;
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
-
     // Wait Header(fileContentLen etc.) updated
-    while (!isHeaderUpdated && times_ < RETRY_TIMES && !isInterruptNeeded_ && !headerInfo_.isClosed) {
+    while (!isHeaderUpdated_ && times_ < RETRY_TIMES && !isInterruptNeeded_ && !headerInfo_.isClosed) {
         Task::SleepInTask(SLEEP_TIME);
         times_++;
     }
-    uint32_t headerIsClosed = static_cast<uint32_t>(headerInfo_.isClosed.load());
-    MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
-        isHeaderUpdated, times_, headerIsClosed);
+    MEDIA_LOG_D("isHeaderUpdated_ " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
+        isHeaderUpdated_.load(), times_.load(), headerInfo_.isClosed.load());
+    isHeaderUpdating_ = false;
 }
 
 double DownloadRequest::GetDuration() const
@@ -236,6 +236,16 @@ bool DownloadRequest::IsServerAcceptRange() const
         return false;
     }
     return headerInfo_.isServerAcceptRange;
+}
+
+DownloadRequest::~DownloadRequest()
+{
+    MEDIA_LOG_D("~DownloadRequest dtor in.");
+    int sleepTmpTime = 0;
+    while (isHeaderUpdating_.load() && sleepTmpTime < RETRY_TIMES) {
+        Task::SleepInTask(SLEEP_TIME);
+        sleepTmpTime++;
+    }
 }
 
 void DownloadRequest::GetLocation(std::string& location) const
@@ -569,7 +579,7 @@ void Downloader::RequestData()
             MEDIA_LOG_I("first request is above filesize, need retry.");
             currentRequest_->startPos_ = 0;
             currentRequest_->requestSize_ = MIN_REQUEST_SIZE;
-            currentRequest_->isHeaderUpdated = false;
+            currentRequest_->isHeaderUpdated_ = false;
             currentRequest_->isFirstRangeRequestReady_ = true;
             currentRequest_->headerInfo_.fileContentLen = 0;
             return;
@@ -643,7 +653,7 @@ void Downloader::HandleRetOK()
 
 void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
 {
-    if (mediaDownloader->currentRequest_->isHeaderUpdated) {
+    if (mediaDownloader->currentRequest_->isHeaderUpdated_) {
         return;
     }
     MEDIA_LOG_I("UpdateHeaderInfo enter.");
@@ -890,7 +900,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     MediaAVCodec::AVCodecTrace trace("Downloader::RxHeaderData");
     auto mediaDownloader = reinterpret_cast<Downloader *>(userParam);
     HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
-    if (mediaDownloader->currentRequest_->isHeaderUpdated) {
+    if (mediaDownloader->currentRequest_->isHeaderUpdated_) {
         return size * nitems;
     }
     char* next = nullptr;
