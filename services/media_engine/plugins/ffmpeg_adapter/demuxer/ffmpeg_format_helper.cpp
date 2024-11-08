@@ -56,6 +56,9 @@ const uint32_t KEY_PREFIX_LEN = 20;
 const uint32_t VALUE_PREFIX_LEN = 8;
 const uint32_t VALID_LOCATION_LEN = 2;
 const int32_t VIDEO_ROTATION_360 = 360;
+const int32_t AV3A_SAMPLE_8BITS = 8;
+const int32_t AV3A_SAMPLE_16BITS = 16;
+const int32_t AV3A_SAMPLE_24BITS = 24;
 
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
@@ -689,12 +692,9 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(channelLayout);
     format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
 
-    AudioSampleFormat fmt;
-    if (!IsPCMStream(avStream.codecpar->codec_id)) {
-        fmt = FFMpegConverter::ConvertFFMpegToOHAudioFormat(static_cast<AVSampleFormat>(avStream.codecpar->format));
-    } else {
-        fmt = FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(avStream.codecpar->codec_id);
-    }
+    AudioSampleFormat fmt = (IsPCMStream(avStream.codecpar->codec_id)) ?
+        FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(avStream.codecpar->codec_id) :
+        FFMpegConverter::ConvertFFMpegToOHAudioFormat(static_cast<AVSampleFormat>(avStream.codecpar->format));
     format.Set<Tag::AUDIO_SAMPLE_FORMAT>(fmt);
 
     if (avStream.codecpar->codec_id == AV_CODEC_ID_AAC) {
@@ -706,8 +706,34 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     format.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(avStream.codecpar->bits_per_raw_sample);
 
     if (avStream.codecpar->codec_id == AV_CODEC_ID_AVS3DA) {
-        ParseAv3aInfo(avStream, format);
+        format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
+        format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
+        if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM ||
+            avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC) {
+            ParseAv3aInfo(avStream, format);
+        }
+        ConvertAv3aSampleFormat(avStream, format);
     }
+}
+
+void FFmpegFormatHelper::ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format)
+{
+    AudioSampleFormat fmt;
+    switch (avStream.codecpar->bits_per_raw_sample) {
+        case AV3A_SAMPLE_8BITS: // 8 bits
+            fmt = AudioSampleFormat::SAMPLE_U8;
+            break;
+        case AV3A_SAMPLE_16BITS: // 16 bits
+            fmt = AudioSampleFormat::SAMPLE_S16LE;
+            break;
+        case AV3A_SAMPLE_24BITS: // 24 bits
+            fmt = AudioSampleFormat::SAMPLE_S24LE;
+            break;
+        default:
+            fmt = AudioSampleFormat::INVALID_WIDTH;
+            break;
+    }
+    format.Set<Tag::AUDIO_SAMPLE_FORMAT>(fmt);
 }
 
 void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
@@ -753,7 +779,7 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
         format.Set<Tag::AUDIO_OUTPUT_CHANNELS>(static_cast<uint32_t>(channels));
         format.Set<Tag::AUDIO_CHANNEL_COUNT>(static_cast<uint32_t>(channels));
     } else {
-        MEDIA_LOG_D("Parse channel counnt failed: " PUBLIC_LOG_D32, channels);
+        MEDIA_LOG_D("Parse channel count failed: " PUBLIC_LOG_D32, channels);
     }
 }
 
