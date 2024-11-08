@@ -17,6 +17,7 @@
 #include <utility>
 #include "serverdec_sample.h"
 #include <iostream>
+#include <chrono>
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
@@ -122,14 +123,14 @@ void VDecServerSample::InputFunc()
             break;
         }
         unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.wait(lock, [this]() {
+        signal_->inCond_.wait_for(lock, std::chrono::milliseconds(1000), [this]() {
             if (!isRunning_.load()) {
                 cout << "quit signal" << endl;
                 return true;
             }
             return signal_->inIdxQueue_.size() > 0;
         });
-        if (!isRunning_.load()) {
+        if (!isRunning_.load() || signal_->inIdxQueue_.size() == 0) {
             break;
         }
         uint32_t index = signal_->inIdxQueue_.front();
