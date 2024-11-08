@@ -45,7 +45,12 @@ void RunNormalDecoder()
     vDecSample->defaultWidth = DEFAULT_WIDTH;
     vDecSample->defaultHeight = DEFAULT_HEIGHT;
     vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-    vDecSample->CreateVideoDecoder();
+    int32_t ret = vDecSample->CreateVideoDecoder();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return;
+    }
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();
     vDecSample->StartVideoDecoder();
@@ -57,7 +62,12 @@ void RunNormalDecoder()
     vDecSample->defaultWidth = DEFAULT_WIDTH;
     vDecSample->defaultHeight = DEFAULT_HEIGHT;
     vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-    vDecSample->CreateVideoDecoder();
+    ret = vDecSample->CreateVideoDecoder();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return;
+    }
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();
     vDecSample->StartVideoDecoder();
