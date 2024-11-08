@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include <cstdint>
 #define MEDIA_PLUGIN
 #include <unistd.h>
 #include <algorithm>
