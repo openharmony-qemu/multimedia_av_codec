@@ -101,17 +101,18 @@ private:
     // VRR
     int32_t SetVrrEnable(const Format &format);
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    int32_t VrrPrediction(BufferInfo &info);
+    int32_t VrrPrediction(BufferInfo &info) override;
     int32_t InitVrr();
     static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
     using VrrCreate = Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* (*)();
     using VrrDestroy = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*);
-    using VrrCheckLtpoSupport = int32_t (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*);
+    using VrrCheckSupport = int32_t (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*,
+        const char *processName);
     using VrrProcess = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*,
         OH_NativeBuffer*, int32_t, int32_t);
     VrrCreate VrrCreateFunc_ = nullptr;
     VrrDestroy VrrDestroyFunc_ = nullptr;
-    VrrCheckLtpoSupport VrrCheckLtpoSupportFunc_ = nullptr;
+    VrrCheckSupport VrrCheckSupportFunc_ = nullptr;
     VrrProcess VrrProcessFunc_ = nullptr;
     void *vpeHandle_ = nullptr;
     Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* vrrHandle_ = nullptr;
