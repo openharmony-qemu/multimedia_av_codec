@@ -48,7 +48,7 @@ string g_audioVividPath3 = TEST_FILE_PATH + string("2obj_16bit_44100Hz_64kbps.mp
 string g_audioVividPath4 = TEST_FILE_PATH + string("5_1_4_4obj_16bit_48000Hz_1232kbps.mp4");
 string g_audioVividPath5 = TEST_FILE_PATH + string("5_1_4_16bit_96000Hz_704kbps.mp4");
 string g_audioVividPath6 = TEST_FILE_PATH + string("5_1_4_24bit_48000Hz_704kbps.mp4");
-string g_audioVividPath7 = TEST_FILE_PATH + string("7_1_4_24bit_48000Hz_832kbps.mp4");
+string g_audioVividPath7 = TEST_FILE_PATH + string("7_1_4_16bit_48000Hz_832kbps.mp4");
 string g_audioVividPath8 = TEST_FILE_PATH + string("hoa3_16bit_48000Hz_640kbps.mp4");
 string g_audioVividPath9 = TEST_FILE_PATH + string("stereo_16bit_48000Hz_32kbps.mp4");
 string g_filePath;
