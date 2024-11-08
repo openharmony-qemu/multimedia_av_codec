@@ -118,12 +118,13 @@ void VDecServerSample::RunVideoServerDecoder()
 
 void VDecServerSample::InputFunc()
 {
+    int32_t time = 1000;
     while (sendFrameIndex < frameIndex) {
         if (!isRunning_.load()) {
             break;
         }
         unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.wait_for(lock, std::chrono::milliseconds(1000), [this]() {
+        signal_->inCond_.wait_for(lock, std::chrono::milliseconds(time), [this]() {
             if (!isRunning_.load()) {
                 cout << "quit signal" << endl;
                 return true;
