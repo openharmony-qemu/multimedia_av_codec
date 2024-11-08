@@ -635,7 +635,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2224, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat(); // source
     ASSERT_NE(format_, nullptr);
-    format_->DumpInfo();
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
     ASSERT_EQ(formatVal_.duration, 10058333);
@@ -699,7 +698,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2234, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat(); // source
     ASSERT_NE(format_, nullptr);
-    format_->DumpInfo();
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
     ASSERT_EQ(formatVal_.duration, 10058333);
