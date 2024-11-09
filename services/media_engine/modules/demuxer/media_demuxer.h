@@ -65,8 +65,10 @@ public:
     Status Stop();
     Status Pause();
     Status PauseDragging();
+    Status PauseAudioAlign();
     Status Resume();
     Status ResumeDragging();
+    Status ResumeAudioAlign();
     Status Flush();
     Status Preroll();
     Status PausePreroll();
