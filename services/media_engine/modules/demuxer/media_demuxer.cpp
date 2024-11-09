@@ -1852,7 +1852,7 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
              requestBufferErrorCountMap_[trackId] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Invalid data source, can not get frame");
             if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_IO_DATA_ABNORMAL});
             } else {
                 MEDIA_LOG_D("EventReceiver is nullptr");
             }
@@ -1864,7 +1864,7 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
             MEDIA_LOG_E("Cache data size is out of limit");
             if (eventReceiver_ != nullptr && !isOnEventNoMemory_.load()) {
                 isOnEventNoMemory_.store(true);
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_BUFFER_NO_MEMORY});
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_IO_DATA_ABNORMAL});
             }
             return 0;
         } else {
