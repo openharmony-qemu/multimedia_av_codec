@@ -369,6 +369,9 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
     FALSE_RETURN_V_MSG(parserCurGopId_ != -1, Status::OK, "Reference parser end"); // 参考关系解析完毕
     FALSE_RETURN_V_MSG_E(SelectProGopId() == Status::OK, Status::ERROR_UNKNOWN, "Call selectProGopId failed");
     uint32_t curStreamId = IFramePos_[parserCurGopId_];
+    MEDIA_LOG_I("curStreamId: " PUBLIC_LOG_U32 ", parserCurGopId: " PUBLIC_LOG_D32 ", IFramePos size: " PUBLIC_LOG_ZU
+        ", processingIFrame_ size: " PUBLIC_LOG_ZU ", duration: " PUBLIC_LOG_D64, curStreamId, parserCurGopId_,
+        IFramePos_.size(), processingIFrame_.size(), duration);
     AVPacket *pkt = av_packet_alloc();
     while (formatContext_ != nullptr && parserState_ && parserCurGopId_ != -1) {
         Status rlt = ParserRefInfoLoop(pkt, curStreamId);
