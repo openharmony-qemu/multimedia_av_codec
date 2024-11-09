@@ -38,6 +38,8 @@ public:
 
     int32_t Stop() override;
 
+    int32_t Init(Media::Meta &callerInfo) override;
+
     int32_t Flush() override;
 
     int32_t Reset() override;

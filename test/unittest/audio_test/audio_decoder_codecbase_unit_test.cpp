@@ -185,8 +185,10 @@ int32_t AudioCodeDecoderUnitTest::CreateMp3CodecFunc(void)
 
     signal_ = new ADecSignal();
     adec_->SetCallback(std::shared_ptr<AVCodecCallback>(std::make_shared<BufferCallback>(signal_)));
+    Media::Meta callerInfo;
+    int32_t ret = adec_->Init(callerInfo);
     sleep(1);
-    return AVCodecServiceErrCode::AVCS_ERR_OK;
+    return ret;
 }
 
 int32_t AudioCodeDecoderUnitTest::CreateFlacCodecFunc(void)
@@ -195,8 +197,10 @@ int32_t AudioCodeDecoderUnitTest::CreateFlacCodecFunc(void)
 
     signal_ = new ADecSignal();
     adec_->SetCallback(std::shared_ptr<AVCodecCallback>(std::make_shared<BufferCallback>(signal_)));
+    Media::Meta callerInfo;
+    int32_t ret = adec_->Init(callerInfo);
     sleep(1);
-    return AVCodecServiceErrCode::AVCS_ERR_OK;
+    return ret;
 }
 
 int32_t AudioCodeDecoderUnitTest::CreateAacCodecFunc(void)
@@ -205,8 +209,10 @@ int32_t AudioCodeDecoderUnitTest::CreateAacCodecFunc(void)
 
     signal_ = new ADecSignal();
     adec_->SetCallback(std::shared_ptr<AVCodecCallback>(std::make_shared<BufferCallback>(signal_)));
+    Media::Meta callerInfo;
+    int32_t ret = adec_->Init(callerInfo);
     sleep(1);
-    return AVCodecServiceErrCode::AVCS_ERR_OK;
+    return ret;
 }
 
 int32_t AudioCodeDecoderUnitTest::CreateOpusCodecFunc(void)
@@ -215,8 +221,10 @@ int32_t AudioCodeDecoderUnitTest::CreateOpusCodecFunc(void)
 
     signal_ = new ADecSignal();
     adec_->SetCallback(std::shared_ptr<AVCodecCallback>(std::make_shared<BufferCallback>(signal_)));
+    Media::Meta callerInfo;
+    int32_t ret = adec_->Init(callerInfo);
     sleep(1);
-    return AVCodecServiceErrCode::AVCS_ERR_OK;
+    return ret;
 }
 
 int32_t AudioCodeDecoderUnitTest::CheckSoFunc()
