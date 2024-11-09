@@ -77,6 +77,7 @@ HlsMediaDownloader::HlsMediaDownloader(const std::map<std::string, std::string>&
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
     isBuffering_ = true;
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
     httpHeader_ = httpHeader;
     MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_U64, MAX_CACHE_BUFFER_SIZE);
@@ -335,7 +336,9 @@ bool HlsMediaDownloader::HandleBuffering()
             bufferingEndCond_.NotifyAll();
         }
     }
-
+    if (!isBuffering_ && !isFirstFrameArrived_) {
+        bufferingTime_ = 0;
+    }
     if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("HLS CacheData onEvent BUFFERING_END, waterLineAbove: " PUBLIC_LOG_ZU " readOffset: "
         PUBLIC_LOG_U64 " writeOffset: " PUBLIC_LOG_U64 " writeTsIndex: " PUBLIC_LOG_U32 " bufferSize: "
@@ -368,12 +371,12 @@ bool HlsMediaDownloader::HandleCache()
         return false;
     }
     isBuffering_ = true;
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     if (!isFirstFrameArrived_) {
         return true;
     }
     callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
     UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
-    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     MEDIA_LOG_I("HLS CacheData onEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " readOffset: "
         PUBLIC_LOG_U64 " writeOffset: " PUBLIC_LOG_U64 " writeTsIndex: " PUBLIC_LOG_U32 " bufferSize: "
         PUBLIC_LOG_ZU, waterLineAbove_, readOffset_, writeOffset_, writeTsIndex_, GetCrossTsBuffersize());
@@ -475,6 +478,10 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         && tsStorageInfo_[readTsIndex_].second == true) {
         readDataInfo.realReadLength_ = 0;
         MEDIA_LOG_I("HLS buffer is empty, eos.");
+        return Status::END_OF_STREAM;
+    }
+    if (isBuffering_ && GetBufferingTimeOut() && callback_) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         return Status::END_OF_STREAM;
     }
     if (isBuffering_ && CheckBufferingOneSeconds()) {

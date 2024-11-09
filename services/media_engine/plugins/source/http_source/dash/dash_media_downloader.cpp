@@ -244,6 +244,7 @@ bool DashMediaDownloader::SelectBitRate(uint32_t bitrate)
 {
     std::lock_guard<std::mutex> sidxLock(parseSidxMutex_);
     {
+        isAutoSelectBitrate_ = false;
         if (mpdDownloader_->IsBitrateSame(bitrate)) {
             MEDIA_LOG_W("Dash SelectBitRate is same bitrate.");
             return true;
@@ -469,7 +470,7 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             if (callback_ != nullptr) {
                 switchFlag = callback_->CanAutoSelectBitRate();
             }
-            if (switchFlag) {
+            if (switchFlag && isAutoSelectBitrate_) {
                 bool flag = CheckAutoSelectBitrate(streamId);
                 if (callback_ != nullptr) {
                     callback_->SetSelectBitRateFlag(flag, bitrateParam_.bitrate_);
