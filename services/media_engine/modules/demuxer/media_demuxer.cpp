@@ -222,6 +222,8 @@ int64_t MediaDemuxer::ParserRefInfo()
         parserRefInfoTask_->Stop();
         isParserTaskEnd_ = true;
         MEDIA_LOG_I("Success to stop");
+    } else {
+        MEDIA_LOG_I("ret is " PUBLIC_LOG_D32, ret);
     }
     return 0;
 }
