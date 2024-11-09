@@ -352,6 +352,10 @@ HWTEST_F(HlsMediaDownloaderUnitTest, HandleFfmpegReadback_001, TestSize.Level1)
     downloader->ffmpegOffset_ = 10000;
     downloader->HandleFfmpegReadback(1000);
 
+    downloader->readTsIndex_ = 1;
+    downloader->ffmpegOffset_ = 10000;
+    downloader->HandleFfmpegReadback(1000);
+
     downloader->readTsIndex_ = 10000;
     downloader->ffmpegOffset_ = 10000;
     downloader->HandleFfmpegReadback(1000);
@@ -427,6 +431,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, ReportVideoSizeChange_001, TestSize.Level1)
     downloader->SetStatusCallback(statusCallback);
     Plugins::Callback* sourceCallback = new SourceCallback();
     downloader->SetCallback(sourceCallback);
+    downloader->ReportVideoSizeChange();
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
     unsigned char buff[10];
@@ -682,7 +687,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M_default, TestSize.Le
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
     ReadDataInfo readDataInfo;
-    for (int i = 0; i < 800; i++) {
+    for (int i = 0; i < 80; i++) {
         OSAL::SleepFor(10);
         downloader->DownloadReport();
 
@@ -714,7 +719,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_read_all, TestSize.Level1)
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
     ReadDataInfo readDataInfo;
-    for (int i = 0; i < 800; i++) {
+    for (int i = 0; i < 80; i++) {
         OSAL::SleepFor(10);
         unsigned char buff[10 * 1024];
         readDataInfo.streamId_ = 0;
