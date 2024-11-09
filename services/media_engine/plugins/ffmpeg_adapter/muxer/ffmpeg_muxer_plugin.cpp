@@ -41,6 +41,7 @@ constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
 constexpr float LONGITUDE_MIN = -180.0f;
 constexpr float LONGITUDE_MAX = 180.0f;
+constexpr int32_t MIN_HE_AAC_SAMPLE_RATE = 16000;
 const std::string TIMED_METADATA_HANDLER_NAME = "timed_metadata";
 
 bool IsMuxerSupported(const char *name)
@@ -424,6 +425,11 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfTrack(AVStream *stream, const std::
             int32_t channels;
             trackDesc->Get<Tag::MEDIA_PROFILE>(profile);
             trackDesc->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+            if ((profile == AAC_PROFILE_HE || profile == AAC_PROFILE_HE_V2) &&
+                sampleRate < MIN_HE_AAC_SAMPLE_RATE) {
+                MEDIA_LOG_E("HE-AAC only support sample rate >= 16k, input rate:%{public}d", sampleRate);
+                return Status::ERROR_INVALID_PARAMETER;
+            }
             trackDesc->Get<Tag::AUDIO_CHANNEL_COUNT>(channels);
             codecConfig = GenerateAACCodecConfig(profile, sampleRate, channels);
             return SetCodecParameterExtra(stream, codecConfig.data(), codecConfig.size());

@@ -40,6 +40,7 @@ public:
     CapabilityData GetMP3EncoderCapability();
     CapabilityData GetLbvcDecoderCapability();
     CapabilityData GetLbvcEncoderCapability();
+    CapabilityData GetVendorAacEncoderCapability();
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
     CapabilityData GetVividDecoderCapability();
     CapabilityData GetAmrnbEncoderCapability();
