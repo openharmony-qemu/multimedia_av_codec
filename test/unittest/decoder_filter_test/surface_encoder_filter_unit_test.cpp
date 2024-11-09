@@ -24,6 +24,8 @@
 
 #include "surface_encoder_filter.h"
 #include "surface_encoder_adapter.h"
+#include "muxer_filter.h"
+#include "avcodec_video_encoder.h"
 
 namespace OHOS::Media {
 
@@ -64,6 +66,7 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, SurfaceEncoderFilter_001, TestSize.Level1
     EXPECT_EQ(surfaceEncoder->DoStop(), Status::OK);
     EXPECT_EQ(surfaceEncoder->Reset(), Status::OK);
     EXPECT_EQ(surfaceEncoder->DoRelease(), Status::OK);
+    EXPECT_EQ(surfaceEncoder->NotifyEos(UINT32_MAX), Status::ERROR_UNKNOWN);
 
     surfaceEncoder->SetParameter(nullptr);
 
@@ -133,6 +136,9 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, Init_001, TestSize.Level1)
     surfaceEncoder->Init(receiver, callback);
     surfaceEncoder->mediaCodec_ = std::make_shared<OHOS::Media::SurfaceEncoderAdapter>();
     surfaceEncoder->Init(receiver, callback);
+    surfaceEncoder->mediaCodec_->codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime("video/avc");
+    surfaceEncoder->mediaCodec_->releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
+    EXPECT_EQ(surfaceEncoder->mediaCodec_->codecServer_, nullptr);
     EXPECT_EQ(surfaceEncoder->instanceId_, 0);
 }
 
@@ -142,8 +148,12 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, GetInputSurface_001, TestSize.Level1)
         "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
     surfaceEncoder->surface_ = nullptr;
     surfaceEncoder->GetInputSurface();
+    surfaceEncoder->surface_ = Surface::CreateSurfaceAsConsumer();
+    EXPECT_NE(surfaceEncoder->GetInputSurface(), nullptr);
     surfaceEncoder->mediaCodec_ = nullptr;
     surfaceEncoder->GetInputSurface();
+    surfaceEncoder->mediaCodec_ = std::make_shared<OHOS::Media::SurfaceEncoderAdapter>();
+    EXPECT_NE(surfaceEncoder->GetInputSurface(), nullptr);
     EXPECT_EQ(surfaceEncoder->instanceId_, 0);
 }
 
@@ -167,6 +177,7 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, OnLinkedResult_001, TestSize.Level1)
         "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     sptr<AVBufferQueueProducer> outputBufferQueue = new MyAVBufferQueueProducer();
+    surfaceEncoder->OnLinkedResult(outputBufferQueue, meta);
     surfaceEncoder->mediaCodec_ = std::make_shared<OHOS::Media::SurfaceEncoderAdapter>();
     surfaceEncoder->onLinkedResultCallback_ = std::make_shared<TestFilterLinkCallback>();
     surfaceEncoder->OnLinkedResult(outputBufferQueue, meta);
@@ -188,6 +199,8 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportKeyFramePts_001, TestSize.Level1)
     surfaceEncoder->SetCallingInfo(appUid, appPid, bundleName, instanceId);
     surfaceEncoder->mediaCodec_ = nullptr;
     surfaceEncoder->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    surfaceEncoder->nextFilter_ = std::make_shared<Pipeline::MuxerFilter>("testMuxerFilter", Pipeline::FilterType::FILTERTYPE_MUXER);
+    surfaceEncoder->OnReportKeyFramePts("test");
     EXPECT_EQ(surfaceEncoder->instanceId_, 0);
 }
 }
