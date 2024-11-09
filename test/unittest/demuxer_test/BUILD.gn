@@ -262,7 +262,6 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
     "$av_codec_root_dir/services/utils/include",
-    "$av_codec_root_dir/services/media_engine/modules/demuxer",
   ]
 
   cflags = demuxer_unittest_cflags
