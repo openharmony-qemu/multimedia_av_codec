@@ -384,7 +384,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
             av_packet_unref(pkt);
             av_packet_free(&pkt);
             parserState_ = true;
-            return Status::ERROR_UNKNOWN; // 强制报错
+            return rlt;
         }
         if (pkt->stream_index == parserRefVideoStreamIdx_) {
             curStreamId++;
