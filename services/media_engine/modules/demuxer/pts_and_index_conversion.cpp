@@ -573,11 +573,6 @@ void TimeAndIndexConversion::RelativePTSToIndexProcess(int64_t pts, int64_t abso
         relativePTSToIndexPosition_++;
     }
 }
-
-void TimeAndIndexConversion::OnEvent(const Plugins::PluginEvent &event)
-{
-
-}
 } // namespace TimeAndIndex
 } // namespace Media
 } // namespace OHOS

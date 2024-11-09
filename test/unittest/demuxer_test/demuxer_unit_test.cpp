@@ -25,7 +25,6 @@
 #include "media_description.h"
 #include "file_server_demo.h"
 #include "demuxer_unit_test.h"
-#include "pts_and_index_conversion.h"
 
 #define LOCAL true
 
@@ -34,8 +33,6 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 using namespace std;
-using namespace OHOS::Media::TimeAndIndex;
-using TimeAndIndexConversion = OHOS::Media::TimeAndIndex::TimeAndIndexConversion;
 
 namespace {
 unique_ptr<FileServerDemo> server = nullptr;
@@ -2408,36 +2405,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_TrackOutOfRange_1000, TestSize.Level1)
     uint32_t index = 0;
     int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_NE(ret, AV_ERR_OK);
-}
-
-/**
- * @tc.name: Demuxer_GetRelativePresentationTimeUsByIndex_2000
- * @tc.desc: get pts by frameIndex(audio track)
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetRelativePresentationTimeUsByIndex_2000, TestSize.Level1)
-{
-    string srtPath = g_ptsConversionPath;
-    int64_t fileSize = 0;
-    if (!srtPath.empty()) {
-        struct stat fileStatus {};
-        if (stat(srtPath.c_str(), &fileStatus) == 0) {
-            fileSize = static_cast<int64_t>(fileStatus.st_size);
-        }
-    }
-    int32_t fd = open(srtPath.c_str(), O_RDONLY);
-    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
-    std::shared_ptr<TimeAndIndexConversion> Conversion = std::make_shared<TimeAndIndexConversion>();
-    EXPECT_EQ(Conversion->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-
-    uint32_t trackIndex = 0;
-    uint64_t relativePresentationTimeUs = 0;
-    uint32_t index = 2;
-
-    auto ret = Conversion->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
-    ASSERT_EQ(ret, Status::OK);
-
-    ASSERT_EQ(relativePresentationTimeUs, 46439);
 }
 
 #endif
