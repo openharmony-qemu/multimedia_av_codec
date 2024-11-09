@@ -472,4 +472,86 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0037, TestSize.Level1)
         ASSERT_EQ(nullptr, OH_AVCapability_GetFeatureProperties(capability, VIDEO_ENCODER_LONG_TERM_REFERENCE));
     }
 }
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0038
+ * @tc.name      : 能力查询是否支持LTRH266
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0038, TestSize.Level1)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_VVC, false, HARDWARE);
+    if (capability != nullptr) {
+        ASSERT_EQ(false, OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_LONG_TERM_REFERENCE));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0039
+ * @tc.name      : 能力查询是否支持低时延H266
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0039, TestSize.Level1)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_VVC, false, HARDWARE);
+    if (capability != nullptr) {
+        if (!access("/system/lib64/media/", 0)) {
+            ASSERT_EQ(true, OH_AVCapability_IsFeatureSupported(capability, VIDEO_LOW_LATENCY));
+        } else {
+            ASSERT_EQ(false, OH_AVCapability_IsFeatureSupported(capability, VIDEO_LOW_LATENCY));
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0040
+ * @tc.name      : 能力查询是否支持分层编码H266
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0040, TestSize.Level1)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_VVC, false, HARDWARE);
+    if (capability != nullptr) {
+        ASSERT_EQ(false, OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_TEMPORAL_SCALABILITY));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0041
+ * @tc.name      : 解码，查询LTR能力值H266
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0041, TestSize.Level1)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_VVC, false, HARDWARE);
+    if (capability != nullptr) {
+        ASSERT_EQ(nullptr, OH_AVCapability_GetFeatureProperties(capability, VIDEO_ENCODER_LONG_TERM_REFERENCE));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0042
+ * @tc.name      : 解码,查询低时延的能力值H266
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0042, TestSize.Level1)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_VVC, false, HARDWARE);
+    if (capability != nullptr) {
+        ASSERT_EQ(nullptr, OH_AVCapability_GetFeatureProperties(capability, VIDEO_LOW_LATENCY));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0043
+ * @tc.name      : 解码，查询分层编码的能力值H266
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0043, TestSize.Level1)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_VVC, false, HARDWARE);
+    if (capability != nullptr) {
+        ASSERT_EQ(nullptr, OH_AVCapability_GetFeatureProperties(capability, VIDEO_ENCODER_TEMPORAL_SCALABILITY));
+    }
+}
 } // namespace
