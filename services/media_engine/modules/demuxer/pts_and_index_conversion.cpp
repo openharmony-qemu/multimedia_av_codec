@@ -40,6 +40,7 @@ namespace Media {
 namespace TimeAndIndex {
 const uint32_t BOX_HEAD_SIZE = 8;
 TimeAndIndexConversion::TimeAndIndexConversion()
+    : source_(std::make_shared<Source>())
 {
 };
 
@@ -58,8 +59,9 @@ Status TimeAndIndexConversion::SetDataSource(const std::shared_ptr<MediaSource>&
 
     streamDemuxer_ = std::make_shared<StreamDemuxer>();
     streamDemuxer_->SetSource(source_);
-    streamDemuxer_->SetDemuxerState(1, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
-    dataSource_ = std::make_shared<DataSourceImpl>(streamDemuxer_, 1);
+    streamDemuxer_->Init(uri_);
+    streamDemuxer_->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
+    dataSource_ = std::make_shared<DataSourceImpl>(streamDemuxer_, 0);
 
     if (this->dataSource_ != nullptr) {
         MEDIA_LOG_D("TimeAndIndexConversion SetDataSource succeed");
@@ -570,6 +572,11 @@ void TimeAndIndexConversion::RelativePTSToIndexProcess(int64_t pts, int64_t abso
     if (pts < absolutePTS) {
         relativePTSToIndexPosition_++;
     }
+}
+
+void TimeAndIndexConversion::OnEvent(const Plugins::PluginEvent &event)
+{
+
 }
 } // namespace TimeAndIndex
 } // namespace Media

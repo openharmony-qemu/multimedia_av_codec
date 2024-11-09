@@ -141,6 +141,7 @@ ohos_unittest("demuxer_inner_unit_test") {
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
     "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/services/media_engine/modules/demuxer",
   ]
 
   cflags = demuxer_unittest_cflags
@@ -166,7 +167,10 @@ ohos_unittest("demuxer_inner_unit_test") {
   defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
   public_deps =
       [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-  deps = [ "$av_codec_root_dir/services/utils:av_codec_service_utils" ]
+  deps = [
+    "$av_codec_root_dir/services/utils:av_codec_service_utils",
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
+  ]
   external_deps = [
     "av_codec:av_codec_client",
     "c_utils:utils",
@@ -262,6 +266,7 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
     "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/services/media_engine/modules/demuxer",
   ]
 
   cflags = demuxer_unittest_cflags
@@ -287,7 +292,10 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
   defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
   public_deps =
       [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-  deps = [ "$av_codec_root_dir/services/utils:av_codec_service_utils" ]
+  deps = [
+    "$av_codec_root_dir/services/utils:av_codec_service_utils",
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
+  ]
   external_deps = [
     "av_codec:av_codec_client",
     "c_utils:utils",

@@ -55,7 +55,7 @@ using Buffer = OHOS::Media::Plugins::Buffer;
 class Source;
 
 namespace TimeAndIndex {
-class TimeAndIndexConversion{
+class TimeAndIndexConversion : public std::enable_shared_from_this<TimeAndIndexConversion>, public Plugins::Callback {
 public:
     explicit TimeAndIndexConversion();
     ~TimeAndIndexConversion() ;
@@ -64,6 +64,7 @@ public:
         const uint64_t relativePresentationTimeUs, uint32_t &index);
     Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
         const uint32_t index, uint64_t &relativePresentationTimeUs);
+    void OnEvent(const Plugins::PluginEvent &event) override;
 private:
     enum IndexAndPTSConvertMode : unsigned int {
         GET_FIRST_PTS,
@@ -103,6 +104,7 @@ private:
     std::shared_ptr<DataSource> dataSource_ {nullptr};
     std::shared_ptr<Source> source_;
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
+    std::string uri_;
     uint64_t mediaDataSize_;
     int offset_ = 0;
     uint64_t fileSize_ = 0;
