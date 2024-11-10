@@ -284,7 +284,11 @@ std::vector<std::string> CodecListCore::FindCodecNameArray(const std::string &mi
 
     for (auto index : iter->second) {
         if (capabilityArray[index].codecType == codecType) {
-            nameArray.push_back(capabilityArray[index].codecName);
+            if (capabilityArray[index].codecName == std::string("OH.Media.Codec.Encoder.Audio.Vendor.AAC")) {
+                nameArray.insert(nameArray.begin(), capabilityArray[index].codecName);
+            } else {
+                nameArray.push_back(capabilityArray[index].codecName);
+            }
         }
     }
     return nameArray;
