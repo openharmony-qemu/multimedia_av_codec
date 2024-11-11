@@ -777,6 +777,9 @@ bool DemuxerPluginManager::IsSubtitleMime(const std::string& mime)
  
 TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
 {
+    if (static_cast<size_t>(trackId) >= curMediaInfo_.tracks.size()) {
+        return TRACK_INVALID;
+    }
     std::string mimeType = "";
     bool ret = curMediaInfo_.tracks[trackId].Get<Tag::MIME_TYPE>(mimeType);
     if (ret && mimeType.find("audio") == 0) {
