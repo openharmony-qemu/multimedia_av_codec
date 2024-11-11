@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <iostream>
+#include "securec.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -100,7 +101,14 @@ void DemuxerSample::RunNormalDemuxer(const uint8_t *data, size_t size)
     for (int32_t index = 0; index < gTrackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    memory = OH_AVMemory_Create(size);
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
+    int32_t createSize = 0;
+    if (size > sizeof(int32_t) + sizeof(bool)) {
+        createSize = GetData<int32_t>();
+    }
+    memory = OH_AVMemory_Create(createSize);
     while (!gReadEnd && gTrackCount > 0) {
         for (int32_t index = 0; index < gTrackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
@@ -141,7 +149,14 @@ void DemuxerSample::RunNormalDemuxerApi11(const uint8_t *data, size_t size)
     for (int32_t index = 0; index < gTrackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    buffer = OH_AVBuffer_Create(size);
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
+    int32_t createSize = 0;
+    if (size > sizeof(int32_t) + sizeof(bool)) {
+        createSize = GetData<int32_t>();
+    }
+    buffer = OH_AVBuffer_Create(createSize);
     while (!gReadEnd && gTrackCount > 0) {
         for (int32_t index = 0; index < gTrackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
@@ -166,4 +181,19 @@ void DemuxerSample::RunNormalDemuxerApi11(const uint8_t *data, size_t size)
             }
         }
     }
+}
+
+template <class T> T DemuxerSample::GetData()
+{
+    T object{};
+    size_t objectSize = sizeof(object);
+    if (g_baseFuzzData == nullptr || objectSize > g_baseFuzzSize - g_baseFuzzPos) {
+        return object;
+    }
+    errno_t ret = memcpy_s(&object, objectSize, g_baseFuzzData + g_baseFuzzPos, objectSize);
+    if (ret != EOK) {
+        return {};
+    }
+    g_baseFuzzPos += objectSize;
+    return object;
 }
