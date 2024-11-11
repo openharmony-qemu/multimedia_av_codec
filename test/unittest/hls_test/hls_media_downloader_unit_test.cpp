@@ -472,7 +472,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, DownloadRecordHistory_001, TestSize.Level1)
     EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, CheckRiseBufferSize, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckRiseBufferSize_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
