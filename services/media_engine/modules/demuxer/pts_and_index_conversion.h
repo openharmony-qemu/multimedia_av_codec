@@ -16,12 +16,9 @@
 #define PTS_AND_INDEX_CONVERSION_H
 
 #include "securec.h"
-#include <atomic>
 #include <vector>
-#include <thread>
 #include <map>
 #include <queue>
-#include <shared_mutex>
 #include <list>
 #include "meta/meta.h"
 #include "buffer/avbuffer.h"
@@ -29,8 +26,6 @@
 #include "plugin/plugin_definition.h"
 #include "common/media_source.h"
 #include "stream_demuxer.h"
-#include "base_stream_demuxer.h"
-#include "demuxer_plugin_manager.h"
 
 #define BOX_TYPE_FTYP "ftyp"
 #define BOX_TYPE_MOOV "moov"
@@ -46,19 +41,16 @@
 
 namespace OHOS {
 namespace Media {
-using StreamDemuxer = OHOS::Media::StreamDemuxer;
-using DataSourceImpl = OHOS::Media::DataSourceImpl;
 using MediaSource = OHOS::Media::Plugins::MediaSource;
-using DataSource = OHOS::Media::Plugins::DataSource;
 using Buffer = OHOS::Media::Plugins::Buffer;
 class Source;
 
-namespace TimeAndIndex {
 class TimeAndIndexConversion {
 public:
-    explicit TimeAndIndexConversion();
+    TimeAndIndexConversion();
     ~TimeAndIndexConversion() ;
     Status SetDataSource(const std::shared_ptr<MediaSource>& source);
+    Status GetFirstVideoTrackIndex(uint32_t &trackIndex);
     Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index);
     Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
@@ -71,8 +63,9 @@ private:
     };
 
     enum TrakType : unsigned int {
-        AUDIO,
-        VIDIO,
+        TRAK_OTHER,
+        TRAK_AUDIO,
+        TRAK_VIDIO,
     };
 
     struct BoxHeader {
@@ -98,7 +91,6 @@ private:
         std::vector<CTTSEntry> cttsEntries;
     };
 
-    std::mutex mutex_ {};
     std::shared_ptr<Source> source_ {nullptr};
     uint64_t mediaDataSize_;
     int offset_ = 0;
@@ -119,11 +111,10 @@ private:
     };
 
     void StartParse();
-    std::shared_ptr<Buffer> ReadBufferFromDataSource(size_t bufSize);
+    void ReadBufferFromDataSource(size_t bufSize, std::shared_ptr<Buffer> &buffer);
     void ReadBoxHeader(std::shared_ptr<Buffer> buffer, BoxHeader &header);
     bool IsMP4orMOV();
     void ParseMoov(uint32_t boxSize);
-    void ParseMvhd(uint32_t boxSize);
     void ParseTrak(uint32_t boxSize);
     void ParseBox(uint32_t boxSize);
     void ParseCtts(uint32_t boxSize);
@@ -153,7 +144,6 @@ private:
     int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
     uint32_t curConvertTrakInfoIndex_ = 0;
 };
-} // namespace TimeAndIndex
 } // namespace Media
 } // namespace OHOS
 #endif // PTS_AND_INDEX_CONVERSION_H

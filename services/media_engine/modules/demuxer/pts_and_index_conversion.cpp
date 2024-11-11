@@ -15,17 +15,14 @@
 
 #include "pts_and_index_conversion.h"
 
-#include <unistd.h>
 #include <algorithm>
-#include <malloc.h>
 #include <string>
-#include <limits>
 #include "netinet/in.h"
 #include "avcodec_trace.h"
 #include "securec.h"
 #include "common/log.h"
 #include "meta/video_types.h"
-#include "meta/format.h"
+// #include "meta/format.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "TimeAndIndexConversion" };
@@ -33,7 +30,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "T
 
 namespace OHOS {
 namespace Media {
-namespace TimeAndIndex {
 const uint32_t BOX_HEAD_SIZE = 8;
 TimeAndIndexConversion::TimeAndIndexConversion()
     : source_(std::make_shared<Source>())
@@ -48,6 +44,7 @@ Status TimeAndIndexConversion::SetDataSource(const std::shared_ptr<MediaSource>&
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     MEDIA_LOG_I("In");
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER, "The source_ is nullptr");
     auto res = source_->SetSource(source);
     FALSE_RETURN_V_MSG_E(res == Status::OK, res, "Set source failed");
     Status ret = source_->GetSize(mediaDataSize_);
@@ -63,25 +60,48 @@ Status TimeAndIndexConversion::SetDataSource(const std::shared_ptr<MediaSource>&
     }
 };
 
-std::shared_ptr<Buffer> TimeAndIndexConversion::ReadBufferFromDataSource(size_t bufSize)
+Status TimeAndIndexConversion::GetFirstVideoTrackIndex(uint32_t &trackIndex)
 {
-    auto buffer = std::make_shared<Buffer>();
+    for (auto trakInfo : trakInfoVec_) {
+        if (trakInfo.trakType == TrakType::TRAK_VIDIO) {
+            trackIndex = trakInfo.trakId;
+            return Status::OK;
+        }
+    }
+    return Status::ERROR_INVALID_DATA;
+}
+
+void TimeAndIndexConversion::ReadBufferFromDataSource(size_t bufSize, std::shared_ptr<Buffer> &buffer)
+{
+    if (buffer == nullptr) {
+        MEDIA_LOG_E("Buffer is nullptr");
+        return;
+    }
     std::vector<uint8_t> buff(bufSize);
     auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
-    auto result = source_->Read(0, buffer, offset_, bufSize);
+    auto result = source_->SeekTo(offset_);
+    if (result != Status::OK) {
+        MEDIA_LOG_E("Seek to " PUBLIC_LOG_D32 " fail", offset_);
+        buffer = nullptr;
+        return;
+    }
+    result = source_->Read(0, buffer, offset_, bufSize);
     if (result != Status::OK) {
         MEDIA_LOG_E("Buffer read error");
+        buffer = nullptr;
+        return;
     }
-    return buffer;
 }
 
 void TimeAndIndexConversion::StartParse()
 {
     source_->GetSize(fileSize_);
-    MEDIA_LOG_D("fileSize: " PUBLIC_LOG_D64, fileSize_);
+    MEDIA_LOG_E("fileSize: " PUBLIC_LOG_D64, fileSize_);
     while (static_cast<uint64_t>(offset_) < fileSize_) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
-        auto buffer = ReadBufferFromDataSource(bufSize);
+        auto buffer = std::make_shared<Buffer>();
+        ReadBufferFromDataSource(bufSize, buffer);
+        FALSE_RETURN_MSG(buffer != nullptr, "StartParse failed due to read buffer error");
         BoxHeader header;
         ReadBoxHeader(buffer, header);
         if (strncmp(header.type, BOX_TYPE_MOOV, sizeof(header.type)) == 0) {
@@ -96,28 +116,25 @@ void TimeAndIndexConversion::StartParse()
 void TimeAndIndexConversion::ReadBoxHeader(std::shared_ptr<Buffer> buffer, BoxHeader &header)
 {
     auto memory = buffer->GetMemory();
-    if (memory) {
-        const uint8_t* ptr = memory->GetReadOnlyData();
-        size_t size = memory->GetSize();
-        if (size >= sizeof(header.size) + 4) { // 4 is used to check data
-            header.size = ntohl(*reinterpret_cast<const uint32_t*>(ptr));
-            header.type[0] = ptr[sizeof(header.size)]; // Get the 1st character of the header
-            header.type[1] = ptr[sizeof(header.size) + 1]; // Get the 2nd character of the header
-            header.type[2] = ptr[sizeof(header.size) + 2]; // Get the 3rd character of the header
-            header.type[3] = ptr[sizeof(header.size) + 3]; // Get the 4th character of the header
-            header.type[4] = '\0'; // Supplement string tail
-        } else {
-            MEDIA_LOG_E("Not enough data in buffer to read BoxHeader");
-        }
-    } else {
-        MEDIA_LOG_E("No memory in buffer");
-    }
+    FALSE_RETURN_MSG(memory != nullptr, "No memory in buffer");
+    const uint8_t* ptr = memory->GetReadOnlyData();
+    size_t size = memory->GetSize();
+    FALSE_RETURN_MSG(size >= sizeof(header.size) + 4,  // 4 is used to check data
+        "Not enough data in buffer to read BoxHeader");
+    header.size = ntohl(*reinterpret_cast<const uint32_t*>(ptr));
+    header.type[0] = ptr[sizeof(header.size)]; // Get the 1st character of the header
+    header.type[1] = ptr[sizeof(header.size) + 1]; // Get the 2nd character of the header
+    header.type[2] = ptr[sizeof(header.size) + 2]; // Get the 3rd character of the header
+    header.type[3] = ptr[sizeof(header.size) + 3]; // Get the 4th character of the header
+    header.type[4] = '\0'; // Supplement string tail
 }
 
 bool TimeAndIndexConversion::IsMP4orMOV()
 {
     int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
-    auto buffer = ReadBufferFromDataSource(bufSize);
+    auto buffer = std::make_shared<Buffer>();
+    ReadBufferFromDataSource(bufSize, buffer);
+    FALSE_RETURN_V_MSG_E(buffer != nullptr, false, "IsMP4orMOV failed due to read buffer error");
     BoxHeader header;
     ReadBoxHeader(buffer, header);
     offset_ = 0; // init offset_
@@ -129,15 +146,14 @@ void TimeAndIndexConversion::ParseMoov(uint32_t boxSize)
     uint64_t parentSize = offset_ + boxSize;
     while (static_cast<uint64_t>(offset_) < parentSize) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
-        auto buffer = ReadBufferFromDataSource(bufSize);
+        auto buffer = std::make_shared<Buffer>();
+        ReadBufferFromDataSource(bufSize, buffer);
+        FALSE_RETURN_MSG(buffer != nullptr, "ParseMoov failed due to read buffer error");
         BoxHeader header;
         ReadBoxHeader(buffer, header);
         if (strncmp(header.type, BOX_TYPE_TRAK, sizeof(header.type)) == 0) {
             offset_ += BOX_HEAD_SIZE;
             ParseTrak(header.size - BOX_HEAD_SIZE);
-        } else if (strncmp(header.type, BOX_TYPE_MVHD, sizeof(header.type)) == 0) {
-            offset_ += BOX_HEAD_SIZE;
-            ParseMvhd(header.size - BOX_HEAD_SIZE);
         } else if (header.size > BOX_HEAD_SIZE) {
             offset_ += header.size;
         }
@@ -160,7 +176,9 @@ void TimeAndIndexConversion::ParseBox(uint32_t boxSize)
     uint64_t parentSize = offset_ + boxSize;
     while (static_cast<uint64_t>(offset_) < parentSize) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
-        auto buffer = ReadBufferFromDataSource(bufSize);
+        auto buffer = std::make_shared<Buffer>();
+        ReadBufferFromDataSource(bufSize, buffer);
+        FALSE_RETURN_MSG(buffer != nullptr, "ParseBox failed due to read buffer error");
         BoxHeader header;
         ReadBoxHeader(buffer, header);
         auto it = boxParsers.find(std::string(header.type));
@@ -179,19 +197,12 @@ void TimeAndIndexConversion::ParseCtts(uint32_t boxSize)
     std::vector<uint8_t> buff(boxSize);
     auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
     auto result = source_->Read(0, buffer, offset_, boxSize);
-    if (result != Status::OK) {
-        MEDIA_LOG_E("Buffer read error");
-    }
+    FALSE_RETURN_MSG(result == Status::OK, "ParseCtts failed due to read buffer error");
     auto memory = buffer->GetMemory();
-    if (!memory) {
-        MEDIA_LOG_E("No memory in buffer");
-        return;
-    }
+    FALSE_RETURN_MSG(memory != nullptr, "ParseCtts failed due to no memory in buffer");
     const uint8_t* ptr = memory->GetReadOnlyData();
+    FALSE_RETURN_MSG(ptr != nullptr, "ParseCtts failed due to nullptr");
     size_t size = memory->GetSize();
-    if (ptr == nullptr) {
-        MEDIA_LOG_E("ptr is nullptr");
-    }
     if (size < sizeof(uint32_t) * 2) { // 2 is used to check data
         MEDIA_LOG_E("Not enough data in buffer to read CTTS header");
         return;
@@ -222,18 +233,11 @@ void TimeAndIndexConversion::ParseStts(uint32_t boxSize)
     std::vector<uint8_t> buff(boxSize);
     auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
     auto result = source_->Read(0, buffer, offset_, boxSize);
-    if (result != Status::OK) {
-        MEDIA_LOG_E("Buffer read error");
-    }
+    FALSE_RETURN_MSG(result == Status::OK, "ParseStts failed due to read buffer error");
     auto memory = buffer->GetMemory();
-    if (!memory) {
-        MEDIA_LOG_E("No memory in buffer");
-        return;
-    }
+    FALSE_RETURN_MSG(memory != nullptr, "ParseStts failed due to no memory in buffer");
     const uint8_t* ptr = memory->GetReadOnlyData();
-    if (ptr == nullptr) {
-        MEDIA_LOG_E("ptr is nullptr");
-    }
+    FALSE_RETURN_MSG(ptr != nullptr, "ParseStts failed due to nullptr");
     size_t size = memory->GetSize();
     if (size < sizeof(uint32_t) * 2) { // 2 is used to check data
         MEDIA_LOG_E("Not enough data in buffer to read STTS header");
@@ -265,19 +269,12 @@ void TimeAndIndexConversion::ParseHdlr(uint32_t boxSize)
     std::vector<uint8_t> buff(boxSize);
     auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
     auto result = source_->Read(0, buffer, offset_, boxSize);
-    if (result != Status::OK) {
-        MEDIA_LOG_E("Buffer read error");
-    }
+    FALSE_RETURN_MSG(result == Status::OK, "ParseHdlr failed due to read buffer error");
     auto memory = buffer->GetMemory();
-    if (!memory) {
-        MEDIA_LOG_E("No memory in buffer");
-        return;
-    }
+    FALSE_RETURN_MSG(memory != nullptr, "ParseHdlr failed due to no memory in buffer");
     const uint8_t* ptr = memory->GetReadOnlyData();
+    FALSE_RETURN_MSG(ptr != nullptr, "ParseHdlr failed due to nullptr");
     size_t size = memory->GetSize();
-    if (ptr == nullptr) {
-        MEDIA_LOG_E("ptr is nullptr");
-    }
     if (size < sizeof(uint32_t) * 3) { // 3 is versionAndFlags + entryCount + handlerType
         MEDIA_LOG_E("Not enough data in buffer to read HDLR header");
         return;
@@ -293,42 +290,12 @@ void TimeAndIndexConversion::ParseHdlr(uint32_t boxSize)
     handlerType.append(std::string(1, static_cast<char>(ptr[2]))); // Get the 3rd character of the handlerType
     handlerType.append(std::string(1, static_cast<char>(ptr[3]))); // Get the 4th character of the handlerType
     if (handlerType == "soun") {
-        curTrakInfo_.trakType = TrakType::AUDIO;
+        curTrakInfo_.trakType = TrakType::TRAK_AUDIO;
     } else if (handlerType == "vide") {
-        curTrakInfo_.trakType = TrakType::VIDIO;
+        curTrakInfo_.trakType = TrakType::TRAK_VIDIO;
+    } else {
+        curTrakInfo_.trakType = TrakType::TRAK_OTHER;
     }
-    offset_ += boxSize;
-}
-
-void TimeAndIndexConversion::ParseMvhd(uint32_t boxSize)
-{
-    auto buffer = std::make_shared<Buffer>();
-    std::vector<uint8_t> buff(boxSize);
-    auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
-    auto result = source_->Read(0, buffer, offset_, boxSize);
-    if (result != Status::OK) {
-        MEDIA_LOG_E("Buffer read error");
-    }
-    auto memory = buffer->GetMemory();
-    if (!memory) {
-        MEDIA_LOG_E("No memory in buffer");
-        return;
-    }
-    const uint8_t* ptr = memory->GetReadOnlyData();
-    size_t size = memory->GetSize();
-    // version + flags + creation_time + modification_time + timescale + duration +
-    // rate + volume + reserved + matrix + pre_defined + next_track_id
-    if (size < sizeof(uint32_t) * 3 + sizeof(uint64_t) + sizeof(uint32_t) * 6) { // 3 and 6 is used to check data
-        MEDIA_LOG_E("Not enough data in buffer to read MVHD header");
-        return;
-    }
-    ptr += sizeof(uint32_t); // skip version and flags
-    ptr += sizeof(uint32_t) * 2; // 2 is used to skip creation_time and modification_time
-    // read timescale and duration
-    uint32_t timescale = *reinterpret_cast<const uint32_t*>(ptr);
-    uint32_t duration = *reinterpret_cast<const uint32_t*>(ptr + sizeof(uint32_t));
-    timescale = ntohl(timescale);
-    duration = ntohl(duration);
     offset_ += boxSize;
 }
 
@@ -338,18 +305,11 @@ void TimeAndIndexConversion::ParseMdhd(uint32_t boxSize)
     std::vector<uint8_t> buff(boxSize);
     auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
     auto result = source_->Read(0, buffer, offset_, boxSize);
-    if (result != Status::OK) {
-        MEDIA_LOG_E("Buffer read error");
-    }
+    FALSE_RETURN_MSG(result == Status::OK, "ParseMdhd failed due to read buffer error");
     auto memory = buffer->GetMemory();
-    if (!memory) {
-        MEDIA_LOG_E("No memory in buffer");
-        return;
-    }
+    FALSE_RETURN_MSG(memory != nullptr, "ParseMdhd failed due to no memory in buffer");
     const uint8_t* ptr = memory->GetReadOnlyData();
-    if (ptr == nullptr) {
-        MEDIA_LOG_E("ptr is nullptr");
-    }
+    FALSE_RETURN_MSG(ptr != nullptr, "ParseMdhd failed due to nullptr");
     size_t size = memory->GetSize();
     if (size < sizeof(uint32_t) * 3) { // 3 is used to check for version, flags, and creation_time
         MEDIA_LOG_E("Not enough data in buffer to read MDHD header");
@@ -559,6 +519,5 @@ void TimeAndIndexConversion::RelativePTSToIndexProcess(int64_t pts, int64_t abso
         relativePTSToIndexPosition_++;
     }
 }
-} // namespace TimeAndIndex
 } // namespace Media
 } // namespace OHOS
