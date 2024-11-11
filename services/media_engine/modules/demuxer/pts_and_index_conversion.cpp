@@ -19,9 +19,6 @@
 #include <algorithm>
 #include <malloc.h>
 #include <string>
-#include <sstream>
-#include <fstream>
-#include <chrono>
 #include <limits>
 #include "netinet/in.h"
 #include "avcodec_trace.h"
@@ -29,7 +26,6 @@
 #include "common/log.h"
 #include "meta/video_types.h"
 #include "meta/format.h"
-#include "syspara/parameters.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "TimeAndIndexConversion" };
@@ -57,32 +53,22 @@ Status TimeAndIndexConversion::SetDataSource(const std::shared_ptr<MediaSource>&
     Status ret = source_->GetSize(mediaDataSize_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get file size failed");
 
-    streamDemuxer_ = std::make_shared<StreamDemuxer>();
-    streamDemuxer_->SetSource(source_);
-    streamDemuxer_->Init(uri_);
-    streamDemuxer_->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
-    dataSource_ = std::make_shared<DataSourceImpl>(streamDemuxer_, 0);
-
-    if (this->dataSource_ != nullptr) {
-        MEDIA_LOG_D("TimeAndIndexConversion SetDataSource succeed");
-    }
     if (!IsMP4orMOV()) {
         MEDIA_LOG_E("Not a valid MP4 or MOV file");
         return Status::ERROR_UNSUPPORTED_FORMAT;
     } else {
         MEDIA_LOG_D("It is a MP4 or MOV file");
-        this->StartParse();
+        StartParse();
         return Status::OK;
     }
 };
 
 std::shared_ptr<Buffer> TimeAndIndexConversion::ReadBufferFromDataSource(size_t bufSize)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
     auto buffer = std::make_shared<Buffer>();
     std::vector<uint8_t> buff(bufSize);
     auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
-    auto result = dataSource_->ReadAt(offset_, buffer, bufSize);
+    auto result = source_->Read(0, buffer, offset_, bufSize);
     if (result != Status::OK) {
         MEDIA_LOG_E("Buffer read error");
     }
@@ -91,7 +77,7 @@ std::shared_ptr<Buffer> TimeAndIndexConversion::ReadBufferFromDataSource(size_t 
 
 void TimeAndIndexConversion::StartParse()
 {
-    dataSource_->GetSize(fileSize_);
+    source_->GetSize(fileSize_);
     MEDIA_LOG_D("fileSize: " PUBLIC_LOG_D64, fileSize_);
     while (static_cast<uint64_t>(offset_) < fileSize_) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
@@ -192,7 +178,7 @@ void TimeAndIndexConversion::ParseCtts(uint32_t boxSize)
     auto buffer = std::make_shared<Buffer>();
     std::vector<uint8_t> buff(boxSize);
     auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
-    auto result = dataSource_->ReadAt(offset_, buffer, boxSize);
+    auto result = source_->Read(0, buffer, offset_, boxSize);
     if (result != Status::OK) {
         MEDIA_LOG_E("Buffer read error");
     }
@@ -235,7 +221,7 @@ void TimeAndIndexConversion::ParseStts(uint32_t boxSize)
     auto buffer = std::make_shared<Buffer>();
     std::vector<uint8_t> buff(boxSize);
     auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
-    auto result = dataSource_->ReadAt(offset_, buffer, boxSize);
+    auto result = source_->Read(0, buffer, offset_, boxSize);
     if (result != Status::OK) {
         MEDIA_LOG_E("Buffer read error");
     }
@@ -278,7 +264,7 @@ void TimeAndIndexConversion::ParseHdlr(uint32_t boxSize)
     auto buffer = std::make_shared<Buffer>();
     std::vector<uint8_t> buff(boxSize);
     auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
-    auto result = dataSource_->ReadAt(offset_, buffer, boxSize);
+    auto result = source_->Read(0, buffer, offset_, boxSize);
     if (result != Status::OK) {
         MEDIA_LOG_E("Buffer read error");
     }
@@ -319,7 +305,7 @@ void TimeAndIndexConversion::ParseMvhd(uint32_t boxSize)
     auto buffer = std::make_shared<Buffer>();
     std::vector<uint8_t> buff(boxSize);
     auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
-    auto result = dataSource_->ReadAt(offset_, buffer, boxSize);
+    auto result = source_->Read(0, buffer, offset_, boxSize);
     if (result != Status::OK) {
         MEDIA_LOG_E("Buffer read error");
     }
@@ -351,7 +337,7 @@ void TimeAndIndexConversion::ParseMdhd(uint32_t boxSize)
     auto buffer = std::make_shared<Buffer>();
     std::vector<uint8_t> buff(boxSize);
     auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
-    auto result = dataSource_->ReadAt(offset_, buffer, boxSize);
+    auto result = source_->Read(0, buffer, offset_, boxSize);
     if (result != Status::OK) {
         MEDIA_LOG_E("Buffer read error");
     }

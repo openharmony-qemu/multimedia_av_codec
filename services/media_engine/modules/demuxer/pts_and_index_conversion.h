@@ -23,7 +23,6 @@
 #include <queue>
 #include <shared_mutex>
 #include <list>
-#include <iostream>
 #include "meta/meta.h"
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_buffer.h"
@@ -100,10 +99,7 @@ private:
     };
 
     std::mutex mutex_ {};
-    std::shared_ptr<DataSource> dataSource_ {nullptr};
-    std::shared_ptr<Source> source_;
-    std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
-    std::string uri_;
+    std::shared_ptr<Source> source_ {nullptr};
     uint64_t mediaDataSize_;
     int offset_ = 0;
     uint64_t fileSize_ = 0;
