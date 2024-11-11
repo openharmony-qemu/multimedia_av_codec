@@ -73,10 +73,7 @@ Status TimeAndIndexConversion::GetFirstVideoTrackIndex(uint32_t &trackIndex)
 
 void TimeAndIndexConversion::ReadBufferFromDataSource(size_t bufSize, std::shared_ptr<Buffer> &buffer)
 {
-    if (buffer == nullptr) {
-        MEDIA_LOG_E("Buffer is nullptr");
-        return;
-    }
+    FALSE_RETURN_MSG(buffer != nullptr, "Buffer is nullptr");
     std::vector<uint8_t> buff(bufSize);
     auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
     auto result = source_->SeekTo(offset_);
