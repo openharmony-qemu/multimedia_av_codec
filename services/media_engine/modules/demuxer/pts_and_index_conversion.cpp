@@ -22,7 +22,6 @@
 #include "securec.h"
 #include "common/log.h"
 #include "meta/video_types.h"
-// #include "meta/format.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "TimeAndIndexConversion" };
