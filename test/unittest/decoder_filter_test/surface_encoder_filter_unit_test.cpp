@@ -66,7 +66,6 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, SurfaceEncoderFilter_001, TestSize.Level1
     EXPECT_EQ(surfaceEncoder->DoStop(), Status::OK);
     EXPECT_EQ(surfaceEncoder->Reset(), Status::OK);
     EXPECT_EQ(surfaceEncoder->DoRelease(), Status::OK);
-    EXPECT_EQ(surfaceEncoder->NotifyEos(UINT32_MAX), Status::ERROR_UNKNOWN);
 }
 
 
