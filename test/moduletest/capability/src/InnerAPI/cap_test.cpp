@@ -673,4 +673,119 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0037, TestSiz
             codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE, featureFormat));
     }
 }
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0038
+ * @tc.name      : 能力查询是否支持LTRH266
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0038, TestSize.Level1)
+{
+    auto codeclist = AVCodecListFactory::CreateAVCodecList();
+    ASSERT_NE(nullptr, codeclist);
+    CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_VVC),
+        false, AVCodecCategory::AVCODEC_HARDWARE);
+    if (capabilityData != nullptr) {
+        std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
+        ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0039
+ * @tc.name      : 能力查询是否支持低时延H266
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0039, TestSize.Level1)
+{
+    auto codeclist = AVCodecListFactory::CreateAVCodecList();
+    ASSERT_NE(nullptr, codeclist);
+    CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_VVC),
+        false, AVCodecCategory::AVCODEC_HARDWARE);
+    if (capabilityData != nullptr) {
+        std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
+        if (!access("/system/lib64/media/", 0)) {
+            ASSERT_EQ(true, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_LOW_LATENCY));
+        } else {
+            ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_LOW_LATENCY));
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0040
+ * @tc.name      : 能力查询是否支持分层编码H266
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0040, TestSize.Level1)
+{
+    auto codeclist = AVCodecListFactory::CreateAVCodecList();
+    ASSERT_NE(nullptr, codeclist);
+    CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_VVC),
+        false, AVCodecCategory::AVCODEC_HARDWARE);
+    if (capabilityData != nullptr) {
+        std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
+        ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0041
+ * @tc.name      : 解码，查询LTR能力值H266
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0041, TestSize.Level1)
+{
+    Format featureFormat;
+    auto codeclist = AVCodecListFactory::CreateAVCodecList();
+    ASSERT_NE(nullptr, codeclist);
+    CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_VVC),
+        false, AVCodecCategory::AVCODEC_HARDWARE);
+    if (capabilityData != nullptr) {
+        std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
+        ASSERT_EQ(AVCS_ERR_INVALID_OPERATION,
+            codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY, featureFormat));
+    }
+}
+
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0042
+ * @tc.name      : 解码,查询低时延的能力值H266
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0042, TestSize.Level1)
+{
+    Format featureFormat;
+    auto codeclist = AVCodecListFactory::CreateAVCodecList();
+    ASSERT_NE(nullptr, codeclist);
+    CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_VVC),
+        false, AVCodecCategory::AVCODEC_HARDWARE);
+    if (capabilityData != nullptr) {
+        std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
+        ASSERT_EQ(AVCS_ERR_OK,
+            codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_LOW_LATENCY, featureFormat));
+        Format::FormatDataMap formatMap = featureFormat.GetFormatMap();
+        ASSERT_EQ(0, formatMap.size());
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_TEMPORAL_ENCODE_INNER_API_0043
+ * @tc.name      : 解码，查询分层编码的能力值H266
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0043, TestSize.Level1)
+{
+    Format featureFormat;
+    auto codeclist = AVCodecListFactory::CreateAVCodecList();
+    ASSERT_NE(nullptr, codeclist);
+    CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_VVC),
+        false, AVCodecCategory::AVCODEC_HARDWARE);
+    if (capabilityData != nullptr) {
+        std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
+        ASSERT_EQ(AVCS_ERR_INVALID_OPERATION,
+            codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY, featureFormat));
+    }
+}
 } // namespace
