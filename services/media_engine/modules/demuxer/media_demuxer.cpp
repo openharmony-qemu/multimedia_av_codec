@@ -1066,6 +1066,9 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     for (auto item : requestBufferErrorCountMap_) {
         requestBufferErrorCountMap_[item.first] = 0;
     }
+    if (isInterruptNeeded_.load()) {
+        ret = Status::OK;
+    }
     if (ret != Status::OK) {
         isSeekError_.store(true);
     }
