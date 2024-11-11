@@ -41,6 +41,7 @@ DataSinkFd::~DataSinkFd()
 {
     if (fd_ > 0) {
         MEDIA_LOG_D("close fd is %{public}d", fd_);
+        MEDIA_LOG_I("current pos is: " PUBLIC_LOG_U64 ", file end at: " PUBLIC_LOG_U64, pos_, end_);
         close(fd_);
         fd_ = -1;
     }
