@@ -67,9 +67,21 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, SurfaceEncoderFilter_001, TestSize.Level1
     EXPECT_EQ(surfaceEncoder->Reset(), Status::OK);
     EXPECT_EQ(surfaceEncoder->DoRelease(), Status::OK);
     EXPECT_EQ(surfaceEncoder->NotifyEos(UINT32_MAX), Status::ERROR_UNKNOWN);
+}
 
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, SurfaceEncoderFilter_002, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+
+    std::shared_ptr<Meta> format = std::make_shared<Meta>();
+    format->Set<Tag::MIME_TYPE>("test");
+    format->Set<Tag::MEDIA_END_OF_STREAM>(true);
+    EXPECT_EQ(surfaceEncoder->SetCodecFormat(format), Status::OK);
+
+    std::shared_ptr<AVBuffer> waterMarkBuffer = std::make_shared<AVBuffer>();
     surfaceEncoder->SetParameter(nullptr);
-
     surfaceEncoder->isUpdateCodecNeeded_ = true;
 
     std::shared_ptr<TestEventReceiver> eventReceive = std::make_shared<TestEventReceiver>();
@@ -199,7 +211,8 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportKeyFramePts_001, TestSize.Level1)
     surfaceEncoder->SetCallingInfo(appUid, appPid, bundleName, instanceId);
     surfaceEncoder->mediaCodec_ = nullptr;
     surfaceEncoder->SetCallingInfo(appUid, appPid, bundleName, instanceId);
-    surfaceEncoder->nextFilter_ = std::make_shared<Pipeline::MuxerFilter>("testMuxerFilter", Pipeline::FilterType::FILTERTYPE_MUXER);
+    surfaceEncoder->nextFilter_ = std::make_shared<Pipeline::MuxerFilter>(
+        "testMuxerFilter", Pipeline::FilterType::FILTERTYPE_MUXER);
     surfaceEncoder->OnReportKeyFramePts("test");
     EXPECT_EQ(surfaceEncoder->instanceId_, 0);
 }
