@@ -56,13 +56,10 @@ config("media_demuxer_unittest_cfg") {
     "$av_codec_root_dir/interfaces",
     "$av_codec_root_dir/interfaces/inner_api",
     "$av_codec_root_dir/interfaces/inner_api/native",
-    "$media_foundation_root_dir/src",
     "$av_codec_root_dir/services/drm_decryptor",
     "$av_codec_root_dir/services/media_engine/modules",
     "$av_codec_root_dir/services/media_engine/modules/demuxer",
     "$av_codec_root_dir/test/unittest/common",
-    "$media_foundation_root_dir/interface/inner_api",
-    "//commonlibrary/c_utils/base/include/",
   ]
 }
 
@@ -78,7 +75,6 @@ ohos_unittest("media_demuxer_unit_test") {
   sources = media_demuxer_test_sources + [ "media_demuxer_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/googletest:gmock_main",
   ]
 
   external_deps = [

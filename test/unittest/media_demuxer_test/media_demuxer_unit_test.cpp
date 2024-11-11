@@ -308,7 +308,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_001, TestSize.
         AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
-    EXPECT_EQ(Status::ERROR_INVALID_PARAMETER, demuxer->HandleRead(trackId));
+    EXPECT_EQ(Status::ERROR_INVALID_PARAMETER, demuxer->HandleReadSample(trackId));
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_AddDemuxerCopyTask_001, TestSize.Level1)

@@ -52,64 +52,64 @@ public:
     ~DemuxerPluginMock()
     {
     }
-    virtual Status Reset()
+    virtual Status Reset() override
     {
         return mapStatus_[name_];
     }
-    virtual Status Start()
+    virtual Status Start() override
     {
         return mapStatus_[name_];
     }
-    virtual Status Stop()
+    virtual Status Stop() override
     {
         return mapStatus_[name_];
     }
-    virtual Status Flush()
+    virtual Status Flush() override
     {
         return mapStatus_[name_];
     }
-    virtual Status SetDataSource(const std::shared_ptr<DataSource>& source)
+    virtual Status SetDataSource(const std::shared_ptr<DataSource>& source) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetMediaInfo(MediaInfo& mediaInfo)
+    virtual Status GetMediaInfo(MediaInfo& mediaInfo) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetUserMeta(std::shared_ptr<Meta> meta)
+    virtual Status GetUserMeta(std::shared_ptr<Meta> meta) override
     {
         return mapStatus_[name_];
     }
-    virtual Status SelectTrack(uint32_t trackId)
+    virtual Status SelectTrack(uint32_t trackId) override
     {
         return mapStatus_[name_];
     }
-    virtual Status UnselectTrack(uint32_t trackId)
+    virtual Status UnselectTrack(uint32_t trackId) override
     {
         return mapStatus_[name_];
     }
     virtual Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode,
-        int64_t& realSeekTime)
+        int64_t& realSeekTime) override
     {
         return mapStatus_[name_];
     }
-    virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
+    virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size)
+    virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
+    virtual Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override
     {
         return mapStatus_[name_];
     }
-    virtual void ResetEosStatus()
+    virtual void ResetEosStatus() override
     {
         return;
     }
-    virtual Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true)
+    virtual Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override
     {
         return mapStatus_[name_];
     }
@@ -118,37 +118,37 @@ public:
         return mapStatus_[name_];
     }
     virtual Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample,
-        FrameLayerInfo &frameLayerInfo)
+        FrameLayerInfo &frameLayerInfo) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
+    virtual Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
+    virtual Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetIFramePos(std::vector<uint32_t> &IFramePos)
+    virtual Status GetIFramePos(std::vector<uint32_t> &IFramePos) override
     {
         return mapStatus_[name_];
     }
-    virtual Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true)
+    virtual Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) override
     {
         return mapStatus_[name_];
     }
     virtual Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
-        const uint64_t relativePresentationTimeUs, uint32_t &index)
+        const uint64_t relativePresentationTimeUs, uint32_t &index) override
     {
         return mapStatus_[name_];
     }
     virtual  Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
-        const uint32_t index, uint64_t &relativePresentationTimeUs)
+        const uint32_t index, uint64_t &relativePresentationTimeUs) override
     {
         return mapStatus_[name_];
     }
-    virtual void SetCacheLimit(uint32_t limitSize)
+    virtual void SetCacheLimit(uint32_t limitSize) override
     {
         return;
     }
