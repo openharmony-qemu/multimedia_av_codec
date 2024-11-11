@@ -55,7 +55,7 @@ using Buffer = OHOS::Media::Plugins::Buffer;
 class Source;
 
 namespace TimeAndIndex {
-class TimeAndIndexConversion{
+class TimeAndIndexConversion {
 public:
     explicit TimeAndIndexConversion();
     ~TimeAndIndexConversion() ;
