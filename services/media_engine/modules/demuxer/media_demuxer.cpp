@@ -1616,7 +1616,7 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
 
 bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
 {
-    MediaAVCodec::AVCodeTrace trace("MediaDemuxer::SelectTrackChangeStream");
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::SelectTrackChangeStream");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "Invalid param");
     TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(static_cast<int32_t>(trackId));
     int32_t newStreamID = -1;
