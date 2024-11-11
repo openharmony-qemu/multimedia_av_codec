@@ -47,6 +47,8 @@ const int64_t SOURCE_OFFSET = 0;
 
 string g_aviPath = TEST_FILE_PATH + string("h264_aac_metadata.avi");
 string g_aviUri = TEST_URI_PATH + string("h264_aac_metadata.avi");
+string g_aviAvcMp3Path = TEST_FILE_PATH + string("h264_mp3.avi");
+string g_aviAvcMp3Uri = TEST_URI_PATH + string("h264_mp3.avi");
 string g_avi263AacPath = TEST_FILE_PATH + string("test_263_aac_B_Gop25_4sec_cover.avi");
 string g_avi263AacUri = TEST_URI_PATH + string("test_263_aac_B_Gop25_4sec_cover.avi");
 string g_aviMpeg2Mp2Path = TEST_FILE_PATH + string("test_mpeg2_mp2_B_Gop25_4sec_cover.avi");
@@ -64,9 +66,9 @@ namespace {
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2221, TestSize.Level1)
 {
-    fd_ = OpenFile(g_aviPath);
-    size_ = GetFileSize(g_aviPath);
-    printf("---- %s ------\n", g_aviPath.c_str());
+    fd_ = OpenFile(g_aviAvcMp3Path);
+    size_ = GetFileSize(g_aviAvcMp3Path);
+    printf("---- %s ------\n", g_aviAvcMp3Path.c_str());
     source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(source_, nullptr);
     trackIndex_ = 0;
@@ -83,8 +85,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2221, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "video/avc");
     ASSERT_EQ(formatVal_.width, 720);
     ASSERT_EQ(formatVal_.height, 480);
-    ASSERT_EQ(formatVal_.bitRate, 1269765);
-    ASSERT_DOUBLE_EQ(formatVal_.frameRate, 120.000000);
+    ASSERT_EQ(formatVal_.bitRate, 1175235);
+    ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -94,29 +96,27 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2221, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, formatVal_.aacIsAdts));
     ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 128248);
-    ASSERT_EQ(formatVal_.aacIsAdts, 1);
-    ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
+    ASSERT_EQ(formatVal_.bitRate, 128332);
+    ASSERT_EQ(formatVal_.codecMime, "audio/mpeg");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
 
 /**
  * @tc.name: AVSource_GetFormat_2231
- * @tc.desc: get track format when the file is avi (video: h264, audio:aac)
+ * @tc.desc: get track format when the file is avi (video: h264, audio: mp3)
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2231, TestSize.Level1)
 {
-    printf("---- %s ------\n", g_aviUri.data());
-    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_aviUri.data()));
+    printf("---- %s ------\n", g_aviAvcMp3Uri.data());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_aviAvcMp3Uri.data()));
     ASSERT_NE(source_, nullptr);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -132,8 +132,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2231, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "video/avc");
     ASSERT_EQ(formatVal_.width, 720);
     ASSERT_EQ(formatVal_.height, 480);
-    ASSERT_EQ(formatVal_.bitRate, 1269765);
-    ASSERT_DOUBLE_EQ(formatVal_.frameRate, 120.000000);
+    ASSERT_EQ(formatVal_.bitRate, 1175235);
+    ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -143,16 +143,14 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2231, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, formatVal_.aacIsAdts));
     ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 128248);
-    ASSERT_EQ(formatVal_.aacIsAdts, 1);
-    ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
+    ASSERT_EQ(formatVal_.bitRate, 128332);
+    ASSERT_EQ(formatVal_.codecMime, "audio/mpeg");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
