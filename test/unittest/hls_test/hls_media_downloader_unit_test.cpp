@@ -445,6 +445,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, ReportVideoSizeChange_001, TestSize.Level1)
     downloader->ReportVideoSizeChange();
     downloader->Close(true);
     downloader = nullptr;
+    delete sourceCallback;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
