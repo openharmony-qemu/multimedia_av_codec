@@ -35,7 +35,7 @@ public:
     void InitResource(const std::string &path, Status code);
 
 protected:
-    std::shared_ptr<TimeAndIndex::TimeAndIndexConversion> TimeAndIndexConversions_ = nullptr;
+    std::shared_ptr<TimeAndIndexConversion> TimeAndIndexConversions_ = nullptr;
     int32_t fd_ = -1;
     uint32_t index_ = 0;
     uint32_t trackIndex_ = 0;

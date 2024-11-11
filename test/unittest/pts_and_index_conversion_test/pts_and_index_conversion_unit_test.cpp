@@ -32,11 +32,11 @@ namespace OHOS::Media {
 
 using namespace std;
 using namespace testing::ext;
-using namespace OHOS::Media::TimeAndIndex;
-using TimeAndIndexConversion = OHOS::Media::TimeAndIndex::TimeAndIndexConversion;
+using MediaSource = OHOS::Media::Plugins::MediaSource;
 
-string g_flvPath = string("/data/test/media/h264.flv");
-string g_ptsConversionPath = string("/data/test/media/camera_info_parser.mp4");
+string g_flvPath            = string("/data/test/media/h264.flv");
+string g_ptsConversionPath  = string("/data/test/media/camera_info_parser.mp4");
+string g_ptsdoublevideoPath = string("/data/test/media/h264_double_video_audio.mp4");
 
 void PtsAndIndexConversionTest::SetUpTestCase(void)
 {
@@ -270,5 +270,47 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_TrackOutOfRange_1000, TestSize.Level
     ASSERT_NE(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
     ASSERT_EQ(relativePresentationTimeUs_, 0);
     ASSERT_EQ(index_, 0);
+}
+
+/**
+ * @tc.name: Demuxer_GetVideoTrackIndex_1000
+ * @tc.desc: Get video track index
+ * @tc.type: FUNC
+ */
+HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetVideoTrackIndex_1000, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, Status::OK);
+    ASSERT_TRUE(initStatus_);
+    trackIndex_ = -1;
+    ASSERT_EQ(TimeAndIndexConversions_->GetFirstVideoTrackIndex(&trackIndex_), Status::OK);
+    ASSERT_EQ(trackIndex_, 1);
+}
+
+/**
+ * @tc.name: Demuxer_GetVideoTrackIndex_1001
+ * @tc.desc: Get video track index(double video track index)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetVideoTrackIndex_1001, TestSize.Level1)
+{
+    InitResource(g_ptsdoublevideoPath, Status::OK);
+    ASSERT_TRUE(initStatus_);
+    trackIndex_ = -1;
+    ASSERT_EQ(TimeAndIndexConversions_->GetFirstVideoTrackIndex(&trackIndex_), Status::OK);
+    ASSERT_EQ(trackIndex_, 0);
+}
+
+/**
+ * @tc.name: Demuxer_GetVideoTrackIndex_1002
+ * @tc.desc: Get video track index(not MP4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetVideoTrackIndex_1002, TestSize.Level1)
+{
+    InitResource(g_flvPath, Status::ERROR_UNSUPPORTED_FORMAT);
+    ASSERT_TRUE(initStatus_);
+    trackIndex_ = -1;
+    ASSERT_NE(TimeAndIndexConversions_->GetFirstVideoTrackIndex(&trackIndex_), Status::OK);
+    ASSERT_EQ(trackIndex_, -1);
 }
 }

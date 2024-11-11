@@ -703,7 +703,8 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="demuxer_res/camera_info_parser.mp4 -> /data/test/media" src="res"/>
-            <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/h264_double_video_audio.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>  
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

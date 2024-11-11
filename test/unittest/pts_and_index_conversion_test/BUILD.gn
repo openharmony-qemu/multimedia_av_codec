@@ -16,10 +16,7 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 module_output_path = "av_codec/unittest"
 pts_and_index_conversion_test_sources = [
-  "$av_codec_root_dir/services/media_engine/modules/demuxer/base_stream_demuxer.cpp",
-  "$av_codec_root_dir/services/media_engine/modules/demuxer/demuxer_plugin_manager.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/pts_and_index_conversion.cpp",
-  "$av_codec_root_dir/services/media_engine/modules/demuxer/stream_demuxer.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/type_finder.cpp",
   "$av_codec_root_dir/services/media_engine/modules/source/source.cpp",
 ]
@@ -88,7 +85,6 @@ ohos_unittest("pts_and_index_conversion_unit_test") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "ipc:ipc_single",
-    "init:libbegetutil",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
