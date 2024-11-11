@@ -135,8 +135,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2231, TestSize.Level1)
     ASSERT_EQ(formatVal_.bitRate, 1269765);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 120.000000);
     trackIndex_ = 1;
-    format_ = source_->GetTrackFormat(trackIndex_);
     format_->Destroy();
+    format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
