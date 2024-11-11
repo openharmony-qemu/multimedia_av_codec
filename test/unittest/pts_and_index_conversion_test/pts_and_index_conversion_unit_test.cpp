@@ -282,7 +282,7 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetVideoTrackIndex_1000, TestSize.Le
     InitResource(g_ptsConversionPath, Status::OK);
     ASSERT_TRUE(initStatus_);
     trackIndex_ = -1;
-    ASSERT_EQ(TimeAndIndexConversions_->GetFirstVideoTrackIndex(&trackIndex_), Status::OK);
+    ASSERT_EQ(TimeAndIndexConversions_->GetFirstVideoTrackIndex(trackIndex_), Status::OK);
     ASSERT_EQ(trackIndex_, 1);
 }
 
@@ -296,7 +296,7 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetVideoTrackIndex_1001, TestSize.Le
     InitResource(g_ptsdoublevideoPath, Status::OK);
     ASSERT_TRUE(initStatus_);
     trackIndex_ = -1;
-    ASSERT_EQ(TimeAndIndexConversions_->GetFirstVideoTrackIndex(&trackIndex_), Status::OK);
+    ASSERT_EQ(TimeAndIndexConversions_->GetFirstVideoTrackIndex(trackIndex_), Status::OK);
     ASSERT_EQ(trackIndex_, 0);
 }
 
@@ -310,7 +310,7 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetVideoTrackIndex_1002, TestSize.Le
     InitResource(g_flvPath, Status::ERROR_UNSUPPORTED_FORMAT);
     ASSERT_TRUE(initStatus_);
     trackIndex_ = -1;
-    ASSERT_NE(TimeAndIndexConversions_->GetFirstVideoTrackIndex(&trackIndex_), Status::OK);
+    ASSERT_NE(TimeAndIndexConversions_->GetFirstVideoTrackIndex(trackIndex_), Status::OK);
     ASSERT_EQ(trackIndex_, -1);
 }
 }
