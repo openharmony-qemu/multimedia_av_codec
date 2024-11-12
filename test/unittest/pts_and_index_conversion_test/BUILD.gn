@@ -72,11 +72,12 @@ ohos_unittest("pts_and_index_conversion_unit_test") {
     ":pts_and_index_conversio_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
-  sources = pts_and_index_conversion_test_sources + [ "pts_and_index_conversion_unit_test.cpp" ]
+  sources = pts_and_index_conversion_test_sources +
+            [ "pts_and_index_conversion_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/googletest:gmock_main",
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
+    "//third_party/googletest:gmock_main",
   ]
 
   external_deps = [
