@@ -757,13 +757,16 @@ bool DecoderSurfaceFilter::DrainSeekContinuous(uint32_t index, std::shared_ptr<A
     bool isEOS = outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS);
     FALSE_RETURN_V_NOLOG(!isEOS, false);
     outputBufferMap_.insert(std::make_pair(index, outputBuffer));
-    std::unique_lock<std::mutex> draggingLock(draggingMutex_);
-    FALSE_RETURN_V_NOLOG(videoFrameReadyCallback_ != nullptr, false);
-    MEDIA_LOG_D("[drag_debug]DrainSeekContinuous dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
-                " bufferIdx: " PUBLIC_LOG_D32,
-                outputBuffer->dts_, outputBuffer->pts_, index);
-    std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback = videoFrameReadyCallback_;
-    draggingLock.unlock();
+    std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback = nullptr;
+    {
+        std::unique_lock<std::mutex> draggingLock(draggingMutex_);
+        FALSE_RETURN_V_NOLOG(videoFrameReadyCallback_ != nullptr, false);
+        MEDIA_LOG_D("[drag_debug]DrainSeekContinuous dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
+            " bufferIdx: " PUBLIC_LOG_D32,
+            outputBuffer->dts_, outputBuffer->pts_, index);
+        videoFrameReadyCallback = videoFrameReadyCallback_;
+    }
+    FALSE_RETURN_V_NOLOG(videoFrameReadyCallback != nullptr, false);
     videoFrameReadyCallback->ConsumeVideoFrame(outputBuffer, index);
     return true;
 }
