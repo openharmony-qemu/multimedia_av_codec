@@ -188,7 +188,6 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, OnLinkedResult_001, TestSize.Level1)
         "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     sptr<AVBufferQueueProducer> outputBufferQueue = new MyAVBufferQueueProducer();
-    surfaceEncoder->OnLinkedResult(outputBufferQueue, meta);
     surfaceEncoder->mediaCodec_ = std::make_shared<OHOS::Media::SurfaceEncoderAdapter>();
     surfaceEncoder->onLinkedResultCallback_ = std::make_shared<TestFilterLinkCallback>();
     surfaceEncoder->OnLinkedResult(outputBufferQueue, meta);
