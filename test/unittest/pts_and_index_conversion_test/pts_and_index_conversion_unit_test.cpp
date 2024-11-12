@@ -102,7 +102,8 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetIndexByRelativePresentationTimeUs
     InitResource(g_ptsConversionPath, Status::OK);
     ASSERT_TRUE(initStatus_);
     relativePresentationTimeUs_ = 69659;
-    ASSERT_EQ(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
+    ASSERT_EQ(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(
+        trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
     ASSERT_EQ(index_, 3);
 }
 
@@ -117,7 +118,8 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetIndexByRelativePresentationTimeUs
     ASSERT_TRUE(initStatus_);
     trackIndex_ = 1;
     relativePresentationTimeUs_ = 66666;
-    ASSERT_EQ(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
+    ASSERT_EQ(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(
+        trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
     ASSERT_EQ(index_, 4);
 }
 
@@ -131,7 +133,8 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetIndexByRelativePresentationTimeUs
     InitResource(g_flvPath, Status::ERROR_UNSUPPORTED_FORMAT);
     ASSERT_TRUE(initStatus_);
     relativePresentationTimeUs_ = 69659;
-    ASSERT_NE(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
+    ASSERT_NE(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(
+        trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
     ASSERT_EQ(index_, 0);
 }
 
@@ -146,7 +149,8 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetIndexByRelativePresentationTimeUs
     ASSERT_TRUE(initStatus_);
     trackIndex_ = 1;
     relativePresentationTimeUs_ = 166666;
-    ASSERT_EQ(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
+    ASSERT_EQ(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(
+        trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
     ASSERT_EQ(index_, 10);
 }
 
@@ -160,7 +164,8 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetRelativePresentationTimeUsByIndex
     InitResource(g_ptsConversionPath, Status::OK);
     ASSERT_TRUE(initStatus_);
     index_ = 2;
-    ASSERT_EQ(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
+    ASSERT_EQ(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(
+        trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
     ASSERT_EQ(relativePresentationTimeUs_, 46439);
 }
 
@@ -175,7 +180,8 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetRelativePresentationTimeUsByIndex
     ASSERT_TRUE(initStatus_);
     index_ = 2;
     trackIndex_ = 1;
-    ASSERT_EQ(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
+    ASSERT_EQ(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(
+        trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
     ASSERT_EQ(relativePresentationTimeUs_, 33333);
 }
 
@@ -189,7 +195,8 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetRelativePresentationTimeUsByIndex
     InitResource(g_flvPath, Status::ERROR_UNSUPPORTED_FORMAT);
     ASSERT_TRUE(initStatus_);
     index_ = 10;
-    ASSERT_NE(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
+    ASSERT_NE(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(
+        trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
     ASSERT_EQ(relativePresentationTimeUs_, 0);
 }
 
@@ -203,11 +210,13 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_PtsAndFrameIndexConversion_1000, Tes
     InitResource(g_ptsConversionPath, Status::OK);
     ASSERT_TRUE(initStatus_);
     relativePresentationTimeUs_ = 92879;
-    ASSERT_EQ(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
+    ASSERT_EQ(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(
+        trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
     ASSERT_EQ(index_, 4);
 
     relativePresentationTimeUs_ = 0;
-    ASSERT_EQ(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
+    ASSERT_EQ(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(
+        trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
     ASSERT_EQ(relativePresentationTimeUs_, 92879);
 }
 
@@ -221,11 +230,13 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_PtsAndFrameIndexConversion_1001, Tes
     InitResource(g_ptsConversionPath, Status::OK);
     ASSERT_TRUE(initStatus_);
     index_ = 4;
-    ASSERT_EQ(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
+    ASSERT_EQ(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(
+        trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
     ASSERT_EQ(relativePresentationTimeUs_, 92879);
 
     index_ = 0;
-    ASSERT_EQ(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
+    ASSERT_EQ(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(
+        trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
     ASSERT_EQ(index_, 4);
 }
 
@@ -239,7 +250,8 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_PTSOutOfRange_1000, TestSize.Level1)
     InitResource(g_ptsConversionPath, Status::OK);
     ASSERT_TRUE(initStatus_);
     relativePresentationTimeUs_ = 999999999;
-    ASSERT_NE(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
+    ASSERT_NE(TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(
+        trackIndex_, relativePresentationTimeUs_, index_), Status::OK);
     ASSERT_EQ(index_, 0);
 }
 
@@ -253,7 +265,8 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_IndexOutOfRange_1000, TestSize.Level
     InitResource(g_ptsConversionPath, Status::OK);
     ASSERT_TRUE(initStatus_);
     index_ = 9999999;
-    ASSERT_NE(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
+    ASSERT_NE(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(
+        trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
     ASSERT_EQ(relativePresentationTimeUs_, 0);
 }
 
@@ -267,7 +280,8 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_TrackOutOfRange_1000, TestSize.Level
     InitResource(g_ptsConversionPath, Status::OK);
     ASSERT_TRUE(initStatus_);
     trackIndex_ = 99;
-    ASSERT_NE(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
+    ASSERT_NE(TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(
+        trackIndex_, index_, relativePresentationTimeUs_), Status::OK);
     ASSERT_EQ(relativePresentationTimeUs_, 0);
     ASSERT_EQ(index_, 0);
 }
