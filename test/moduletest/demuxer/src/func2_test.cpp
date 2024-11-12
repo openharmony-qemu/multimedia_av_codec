@@ -119,8 +119,7 @@ static int64_t GetFileSize(const char *fileName)
 }
 
 static void OpenFile(const char *fileName, int fd, OH_AVSource **src, OH_AVDemuxer **audioDemuxer)
-{
-    
+{  
     int64_t size = GetFileSize(fileName);
     cout << fileName << "----------------------" << fd << "---------" << size << endl;
     *src = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -153,7 +152,8 @@ static void CheckTrackSelect(int32_t trackCount, OH_AVDemuxer *audioDemuxer)
     }
 }
 
-static void CountAudioFrames(OH_AVDemuxer *audioDemuxer, OH_AVMemory *mem, int32_t trackCount, int audioFrameNum, int audioKeyNum)
+static void CountAudioFrames(OH_AVDemuxer *audioDemuxer, OH_AVMemory *mem, 
+                             int32_t trackCount, int audioFrameNum, int audioKeyNum)
 {
     int audioFrame = 0;
     int keyCount = 0;
@@ -178,8 +178,6 @@ static void CountAudioFrames(OH_AVDemuxer *audioDemuxer, OH_AVMemory *mem, int32
     ASSERT_EQ(audioFrame, audioFrameNum);
     ASSERT_EQ(keyCount, audioKeyNum);
 }
-
-
 
 /**
  * @tc.number    : SUB_MEDIA_DEMUXER_VTT_4800
@@ -1304,7 +1302,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0200, TestSize.Level0)
     CheckTrackSelect(g_trackCount, demuxer);
     CountAudioFrames(demuxer, memory, g_trackCount, 3432, 3432);
 
-    close(fd);   
+    close(fd);
 }
 
 /**
@@ -1323,7 +1321,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0300, TestSize.Level0)
     CheckTrackSelect(g_trackCount, demuxer);
     CountAudioFrames(demuxer, memory, g_trackCount, 5147, 5147);
 
-    close(fd);   
+    close(fd);
 }
 
 /**
