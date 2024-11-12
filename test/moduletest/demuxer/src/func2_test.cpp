@@ -119,7 +119,7 @@ static int64_t GetFileSize(const char *fileName)
 }
 
 static void OpenFile(const char *fileName, int fd, OH_AVSource **src, OH_AVDemuxer **audioDemuxer)
-{  
+{
     int64_t size = GetFileSize(fileName);
     cout << fileName << "----------------------" << fd << "---------" << size << endl;
     *src = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -152,7 +152,7 @@ static void CheckTrackSelect(int32_t trackCount, OH_AVDemuxer *audioDemuxer)
     }
 }
 
-static void CountAudioFrames(OH_AVDemuxer *audioDemuxer, OH_AVMemory *mem, 
+static void CountAudioFrames(OH_AVDemuxer *audioDemuxer, OH_AVMemory *mem,
                              int32_t trackCount, int audioFrameNum, int audioKeyNum)
 {
     int audioFrame = 0;
