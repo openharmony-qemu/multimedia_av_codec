@@ -14,21 +14,11 @@
  */
 
 #include <string>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <cinttypes>
-#include <fstream>
 #include "meta/meta_key.h"
 #include "meta/meta.h"
-#include "gtest/gtest.h"
-#include "avcodec_errors.h"
-#include "avcodec_audio_common.h"
 #include "avcodec_info.h"
 #include "media_description.h"
-#include "file_server_demo.h"
 #include "avsource_unit_test.h"
-#include "media_data_source.h"
-#include "native_avsource.h"
 
 #define LOCAL true
 #define URI false
@@ -39,7 +29,6 @@ using namespace testing::ext;
 using namespace std;
 
 namespace {
-unique_ptr<FileServerDemo> server = nullptr;
 const int64_t SOURCE_OFFSET = 0;
 static const string TEST_FILE_PATH = "/data/test/media/";
 string g_audioVividPath = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.mp4");
@@ -56,50 +45,6 @@ string g_filePath;
 
 /**********************************source FD**************************************/
 namespace {
-/**
- * @tc.name: AVSource_GetFormat_1200
- * @tc.desc: get format when the file is audio vivid (2obj_44100Hz_16bit_32k.mp4)
- * @tc.type: FUNC
- */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1200, TestSize.Level1)
-{
-    fd_ = OpenFile(g_audioVividPath);
-    size_ = GetFileSize(g_audioVividPath);
-    printf("---- %s ----\n", g_audioVividPath.c_str());
-    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 32044000);
-    ASSERT_EQ(formatVal_.trackCount, 1);
-#ifdef AVSOURCE_INNER_UNIT_TEST
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
-    ASSERT_EQ(formatVal_.fileType, 101);
-    ASSERT_EQ(formatVal_.hasVideo, 0);
-    ASSERT_EQ(formatVal_.hasAudio, 1);
-#endif
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
-    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
-    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.channelLayout, 0);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
-    ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
-    ASSERT_EQ(formatVal_.bitRate, 64082);
-}
-
 /**
  * @tc.name: AVSource_GetFormat_1201
  * @tc.desc: get format when the file is audio vivid (2obj_44100Hz_16bit_32k.ts)
@@ -322,7 +267,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1205, TestSize.Level1)
 
 /**
  * @tc.name: AVSource_GetFormat_1206
- * @tc.desc: get format when the file is audio vivid (7_1_4_24bit_48000Hz_832kbps.mp4)
+ * @tc.desc: get format when the file is audio vivid (7_1_4_16bit_48000Hz_832kbps.mp4)
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1206, TestSize.Level1)
@@ -450,5 +395,49 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1208, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
     ASSERT_EQ(formatVal_.bitRate, 32250);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1209
+ * @tc.desc: get format when the file is audio vivid (2obj_44100Hz_16bit_32k.mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1209, TestSize.Level1)
+{
+    fd_ = OpenFile(g_audioVividPath);
+    size_ = GetFileSize(g_audioVividPath);
+    printf("---- %s ----\n", g_audioVividPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 32044000);
+    ASSERT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_EQ(formatVal_.fileType, 101);
+    ASSERT_EQ(formatVal_.hasVideo, 0);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+#endif
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.channelLayout, 0);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
+    ASSERT_EQ(formatVal_.bitRate, 64082);
 }
 } // namespace
