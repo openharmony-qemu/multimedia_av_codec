@@ -165,7 +165,7 @@ void DecoderSurfaceFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int
     MEDIA_LOG_E("AVCodec error happened. ErrorType: %{public}d, errorCode: %{public}d",
         static_cast<int32_t>(errorType), errorCode);
     FALSE_RETURN(eventReceiver_ != nullptr);
-    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_IO_VIDEO_DEC_FAILED});
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
 }
 
 void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
