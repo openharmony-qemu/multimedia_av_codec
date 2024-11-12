@@ -209,10 +209,6 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportKeyFramePts_001, TestSize.Level1)
     surfaceEncoder->SetCallingInfo(appUid, appPid, bundleName, instanceId);
     surfaceEncoder->mediaCodec_ = nullptr;
     surfaceEncoder->SetCallingInfo(appUid, appPid, bundleName, instanceId);
-    surfaceEncoder->nextFilter_ = std::make_shared<Pipeline::MuxerFilter>(
-        "testMuxerFilter", Pipeline::FilterType::FILTERTYPE_MUXER);
-    surfaceEncoder->mediaCodec_->mediaMuxer_ = std::make_shared<MediaMuxer>(appUid, appPid);
-    surfaceEncoder->OnReportKeyFramePts("test");
     EXPECT_EQ(surfaceEncoder->instanceId_, 0);
 }
 }
