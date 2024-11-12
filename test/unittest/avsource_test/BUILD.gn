@@ -59,10 +59,10 @@ ohos_unittest("avsource_capi_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "./avsource_format_unit_test.cpp",
       "./avsource_hevc_unit_test.cpp",
       "./avsource_unit_test.cpp",
       "./avsource_uri_unit_test.cpp",
-      "./avsource_format_unit_test.cpp",
       "./capi/avsource_capi_mock.cpp",
       "./capi/avsource_capi_mock_factory.cpp",
     ]
@@ -123,10 +123,10 @@ ohos_unittest("avsource_inner_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "./avsource_format_unit_test.cpp",
       "./avsource_hevc_unit_test.cpp",
       "./avsource_unit_test.cpp",
       "./avsource_uri_unit_test.cpp",
-      "./avsource_format_unit_test.cpp",
       "./inner/avsource_inner_mock.cpp",
       "./inner/avsource_inner_mock_factory.cpp",
     ]
