@@ -167,7 +167,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         }
         sleepForRetry();
         retryTimes_++;
-    } while (realLen < 0 && retryTimes_ < DEFAULT_RETRY_TIMES);
+    } while (realLen <= 0 && retryTimes_ < DEFAULT_RETRY_TIMES);
     FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN, "read data error!");
     FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
     offset_ += static_cast<uint64_t>(realLen);
