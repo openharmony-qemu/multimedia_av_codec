@@ -169,4 +169,4 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2065, TestSize.Level1)
         }
     }
 }
-}
+} // namespace
