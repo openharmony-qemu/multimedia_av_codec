@@ -346,7 +346,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1207, TestSize.Level1)
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.channelLayout, 144112989052600320);
+    ASSERT_EQ(formatVal_.channelLayout, 17592186048515);
     ASSERT_EQ(formatVal_.sampleRate, 48000);
     ASSERT_EQ(formatVal_.channelCount, 16);
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
