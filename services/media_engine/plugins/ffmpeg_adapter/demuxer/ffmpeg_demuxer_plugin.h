@@ -197,6 +197,7 @@ private:
     std::shared_ptr<ReferenceParserManager> referenceParser_{nullptr};
     int32_t parserCurGopId_ = 0;
     int64_t pendingSeekMsTime_ = -1;
+    int64_t parserRefStartTime_ = -1;
     std::list<uint32_t> processingIFrame_;
     std::vector<uint32_t> IFramePos_;
     double fps_{0};

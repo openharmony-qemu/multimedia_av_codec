@@ -39,7 +39,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegReferenceParser" };
-constexpr int64_t REFERENCE_PARSER_TIMEOUT_MS = 20000;
+constexpr int64_t REFERENCE_PARSER_TIMEOUT_MS = 10000;
 }
 
 namespace OHOS {
@@ -183,6 +183,11 @@ Status FFmpegDemuxerPlugin::ParserRefCheckVideoValid(const AVStream *videoStream
 
 Status FFmpegDemuxerPlugin::ParserRefInit()
 {
+    parserRefStartTime_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    std::string suffix = std::to_string(parserRefStartTime_) + "_" + std::to_string(IFramePos_.size());
+    MediaAVCodec::AVCodecTrace trace("ParserRefCost_1_" + suffix);
+    MEDIA_LOG_I("Parser ref start time: " PUBLIC_LOG_D64, parserRefStartTime_);
     FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0 && fps_ > 0, Status::ERROR_UNKNOWN,
                          "Init failed, IFramePos size:" PUBLIC_LOG_ZU ", fps:" PUBLIC_LOG_F, IFramePos_.size(), fps_);
     FALSE_RETURN_V_MSG_E(InitIoContext() == Status::OK, Status::ERROR_UNKNOWN, "Init IOContext failed");
@@ -252,12 +257,12 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
     int64_t dts = AvTime2Us(
         ConvertTimeFromFFmpeg(pkt->dts, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base));
     Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
+    FALSE_RETURN_V_MSG_E(result == Status::OK, Status::ERROR_UNKNOWN, "parse nal units error!");
     int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
     if (ffmpegRet == AVERROR_EOF || result != Status::OK ||
         (parserCurGopId_ + 1 < iFramePosSize && curStreamId == IFramePos_[parserCurGopId_ + 1] - 1)) { // 处理完一个GOP
-        MEDIA_LOG_I("IFramePos size:" PUBLIC_LOG_ZU ", processingIFrame size:" PUBLIC_LOG_ZU
-                    ", curStreamId:" PUBLIC_LOG_U32 ", parserCurGopId:" PUBLIC_LOG_U32,
-                    IFramePos_.size(), processingIFrame_.size(), curStreamId, parserCurGopId_);
+        MEDIA_LOG_I("IFramePos: " PUBLIC_LOG_ZU ", processingIFrame: " PUBLIC_LOG_ZU ", curStreamId: " PUBLIC_LOG_U32
+            ", curGopId: " PUBLIC_LOG_U32, IFramePos_.size(), processingIFrame_.size(), curStreamId, parserCurGopId_);
         processingIFrame_.remove(IFramePos_[parserCurGopId_]);
         if (processingIFrame_.size() == 0) {
             parserCurGopId_ = -1;
@@ -356,14 +361,25 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
             return Status::ERROR_UNKNOWN;
         }
     }
+    int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count() - parserRefStartTime_;
+    std::string suffix = std::to_string(duration) + "_" + std::to_string(parserCurGopId_);
+    MediaAVCodec::AVCodecTrace trace("ParserRefCost_2_" + suffix);
+    FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Reference parser timeout");
     FALSE_RETURN_V_MSG(parserCurGopId_ != -1, Status::OK, "Reference parser end"); // 参考关系解析完毕
     FALSE_RETURN_V_MSG_E(SelectProGopId() == Status::OK, Status::ERROR_UNKNOWN, "Call selectProGopId failed");
     uint32_t curStreamId = IFramePos_[parserCurGopId_];
+    MEDIA_LOG_I("curStreamId: " PUBLIC_LOG_U32 ", parserCurGopId: " PUBLIC_LOG_D32 ", IFramePos size: " PUBLIC_LOG_ZU
+        ", processingIFrame_ size: " PUBLIC_LOG_ZU ", duration: " PUBLIC_LOG_D64, curStreamId, parserCurGopId_,
+        IFramePos_.size(), processingIFrame_.size(), duration);
     AVPacket *pkt = av_packet_alloc();
-    auto start =
-        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
     while (formatContext_ != nullptr && parserState_ && parserCurGopId_ != -1) {
         Status rlt = ParserRefInfoLoop(pkt, curStreamId);
+        duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count() - parserRefStartTime_;
+        suffix = std::to_string(duration) + "_" + std::to_string(parserCurGopId_) + "_" + std::to_string(curStreamId);
+        MediaAVCodec::AVCodecTrace traceInLoop("ParserRefCost_3_" + suffix);
+        FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Reference parser timeout");
         if (rlt != Status::OK) {
             av_packet_unref(pkt);
             av_packet_free(&pkt);
@@ -374,11 +390,6 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
             curStreamId++;
         }
         av_packet_unref(pkt);
-        auto now =
-            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-        auto duration = now - std::chrono::milliseconds(start.count());
-        FALSE_RETURN_V_MSG_W(duration.count() < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN,
-                             "reference parser timeout");
     }
 
     av_packet_free(&pkt);
