@@ -851,8 +851,8 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1900, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_FUNCTION_2000
- * @tc.name      : OH_AVSource_CreateWithFD test
- * @tc.desc      : Test the size parameter of the OH_AVSource_CreateWithFD interface
+ * @tc.name      : Test the size parameter of the OH_AVSource_CreateWithFD interface
+ * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2000, TestSize.Level0)
 {
@@ -904,8 +904,8 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2000, TestSize.Level0)
 
 /**
  * @tc.number    : DEMUXER_FUNCTION_2100
- * @tc.name      : OH_AVSource_CreateWithFD test
- * @tc.desc      : Test the size and offset parameter of the OH_AVSource_CreateWithFD interface
+ * @tc.name      : Test the size and offset parameter of the OH_AVSource_CreateWithFD interface
+ * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2100, TestSize.Level0)
 {
@@ -962,8 +962,8 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2100, TestSize.Level0)
 
 /**
  * @tc.number    : DEMUXER_FUNCTION_2200
- * @tc.name      : OH_AVSource_CreateWithFD test
- * @tc.desc      : Test the size parameter of the OH_AVSource_CreateWithFD interface
+ * @tc.name      : Test the size parameter of the OH_AVSource_CreateWithFD interface
+ * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2200, TestSize.Level0)
 {
@@ -1015,8 +1015,8 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2200, TestSize.Level0)
 
 /**
  * @tc.number    : DEMUXER_FUNCTION_2300
- * @tc.name      : OH_AVSource_CreateWithFD test
- * @tc.desc      : Test the size and offset parameter of the OH_AVSource_CreateWithFD interface
+ * @tc.name      : Test the size and offset parameter of the OH_AVSource_CreateWithFD interface
+ * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2300, TestSize.Level0)
 {
@@ -1071,8 +1071,8 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2300, TestSize.Level0)
 
 /**
  * @tc.number    : DEMUXER_FUNCTION_2400
- * @tc.name      : OH_AVSource_CreateWithFD test
- * @tc.desc      : Test the size parameter of the OH_AVsource_CreateWithFD interface
+ * @tc.name      : Test the size parameter of the OH_AVsource_CreateWithFD interface
+ * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2400, TestSize.Level0)
 {
