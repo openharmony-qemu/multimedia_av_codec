@@ -85,35 +85,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2222, TestSize.Level1)
     RemoveValue();
 }
 
-// /**
-//  * @tc.name: Demuxer_ReadSample_2232
-//  * @tc.desc: copy current sample to buffer, uri
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2232, TestSize.Level1)
-// {
-//     InitResource(g_aviAvcAacUri, URI);
-//     ASSERT_TRUE(initStatus_);
-//     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-//     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-//     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
-//     ASSERT_NE(sharedMem_, nullptr);
-//     SetInitValue();
-//     while (!isEOS(eosFlag_)) {
-//         for (auto idx : selectedTrackIds_) {
-//             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-//             CountFrames(idx);
-//         }
-//     }
-//     printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
-//     printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
-//     ASSERT_EQ(frames_[0], 602);
-//     ASSERT_EQ(frames_[1], 433);
-//     ASSERT_EQ(keyFrames_[0], 3);
-//     ASSERT_EQ(keyFrames_[1], 433);
-//     RemoveValue();
-// }
-
 /**
  * @tc.name: Demuxer_ReadSample_2232
  * @tc.desc: copy current sample to buffer, uri
