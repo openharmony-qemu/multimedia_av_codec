@@ -160,12 +160,9 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         }
         if (realLen == 0) {
             HandleBufferingStart();
-            MEDIA_LOG_D("Read length is 0, read again.");
         }
-        if (realLen == MediaDataSourceError::SOURCE_ERROR_EOF) {
-            return Status::END_OF_STREAM;
-        }
-        sleepForRetry();
+        FALSE_RETURN_V(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM);
+        SleepForRetry();
         retryTimes_++;
     } while (realLen <= 0 && retryTimes_ < DEFAULT_RETRY_TIMES);
     FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN, "read data error!");
@@ -184,7 +181,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     return Status::OK;
 }
 
-void DataStreamSourcePlugin::sleepForRetry()
+void DataStreamSourcePlugin::SleepForRetry()
 {
     MEDIA_LOG_I("read again.");
     uint32_t retryTimesOneRight = 5;

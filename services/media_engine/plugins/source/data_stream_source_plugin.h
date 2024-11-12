@@ -45,7 +45,7 @@ private:
     void InitPool();
     void HandleBufferingStart();
     void HandleBufferingEnd();
-    void sleepForRetry();
+    void SleepForRetry();
     std::shared_ptr<AVSharedMemory> GetMemory();
     void ResetPool();
     Plugins::Seekable seekable_ {Plugins::Seekable::INVALID};
