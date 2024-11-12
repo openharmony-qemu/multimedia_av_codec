@@ -149,7 +149,7 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, Init_001, TestSize.Level1)
     surfaceEncoder->Init(receiver, callback);
     surfaceEncoder->mediaCodec_->codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime("video/avc");
     surfaceEncoder->mediaCodec_->releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
-    EXPECT_EQ(surfaceEncoder->mediaCodec_->codecServer_, nullptr);
+    EXPECT_NE(surfaceEncoder->mediaCodec_->codecServer_, nullptr);
     EXPECT_EQ(surfaceEncoder->instanceId_, 0);
 }
 
