@@ -502,7 +502,7 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
             StartWith(type->value, "m4v") || StartWith(type->value, "M4V")) {
             fileType = FileType::M4A;
         }   
-        if (StartWith(type->value, "qt") || StartWith(type->value, "QT")){
+        else if (StartWith(type->value, "qt") || StartWith(type->value, "QT")){
             fileType = FileType::MOV ;
         } else {
             fileType = FileType::MP4;
