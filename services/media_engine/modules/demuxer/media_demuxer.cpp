@@ -1632,7 +1632,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
         MEDIA_LOG_W("Invalid track " PUBLIC_LOG_U32, trackId);
         return false;
     }
- 
+
     int32_t newTrackId;
     bool ret = HandleSelectTrackChangeStream(trackId, newStreamID, newTrackId);
     if (ret && eventReceiver_ != nullptr) {

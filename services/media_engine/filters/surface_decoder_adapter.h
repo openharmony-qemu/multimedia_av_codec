@@ -43,7 +43,7 @@ public:
     virtual ~DecoderAdapterCallback() = default;
     virtual void OnError(MediaAVCodec::AVCodecErrorType type, int32_t errorCode) = 0;
     virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
-    virtual void OnBufferEos(int64_t pts) = 0;
+    virtual void OnBufferEos(int64_t pts, int64_t frameNum) = 0;
 };
 
 class SurfaceDecoderAdapter : public std::enable_shared_from_this<SurfaceDecoderAdapter>  {
@@ -67,9 +67,10 @@ public:
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void AcquireAvailableInputBuffer();
+    int64_t GetFrameNum();
+    int64_t GetLastBufferPts();
 
     std::shared_ptr<DecoderAdapterCallback> decoderAdapterCallback_;
-    int64_t lastBufferPts_ = INT64_MIN;
 
 private:
     void ReleaseBuffer();
@@ -84,6 +85,8 @@ private:
     std::condition_variable releaseBufferCondition_;
     std::vector<uint32_t> indexs_;
     std::vector<uint32_t> dropIndexs_;
+    std::atomic<int64_t> frameNum_ = 0;
+    std::atomic<int64_t> lastBufferPts_ = INT64_MIN;
     std::atomic<bool> isThreadExit_ = true;
 };
 } // namespace MediaAVCodec
