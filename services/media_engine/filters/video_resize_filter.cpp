@@ -30,6 +30,7 @@ namespace OHOS {
 namespace Media {
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 using namespace VideoProcessingEngine;
+constexpr int64_t VARIABLE_INCREMENT_INTERVAL = 1;
 #endif
 namespace Pipeline {
 
@@ -365,15 +366,21 @@ void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     bool isEos = false;
     if (parameter->Find(Tag::MEDIA_END_OF_STREAM) != parameter->end() &&
         parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos) &&
-        parameter->Get<Tag::USER_FRAME_PTS>(eosPts_)) {
+        parameter->Get<Tag::USER_FRAME_PTS>(eosPts_) &&
+        parameter->Get<Tag::USER_PUSH_DATA_TIME>(frameNum_)) {
         if (isEos) {
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-            MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64, eosPts_);
+            MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,
+                eosPts_, frameNum_);
             if (videoEnhancer_ == nullptr) {
                 MEDIA_LOG_E("videoEnhancer is null");
                 return;
             }
-            videoEnhancer_->NotifyEos();
+            if (currentFrameNum_.load() >= frameNum_) {
+                MEDIA_LOG_I("currentFrameNum: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,
+                    currentFrameNum_.load(), frameNum_);
+                videoEnhancer_->NotifyEos();
+            }
 #endif
             return;
         }
@@ -481,19 +488,30 @@ void VideoResizeFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 
 void VideoResizeFilter::OnOutputBufferAvailable(uint32_t index, uint32_t flag)
 {
-    MEDIA_LOG_D("OnOutputBufferAvailable enter. index: %{public}u", index);
+    MEDIA_LOG_D("OnOutputBufferAvailable enter. index: " PUBLIC_LOG_U32, index);
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     {
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
+        if (flag != static_cast<uint32_t>(DETAIL_ENH_BUFFER_FLAG_EOS)) {
+            currentFrameNum_.fetch_add(VARIABLE_INCREMENT_INTERVAL, std::memory_order_relaxed);
+            indexs_.push_back(index);
+            if(videoEnhancer_ && currentFrameNum_.load() >= frameNum_) {
+                MEDIA_LOG_I("currentFrameNum: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,
+                    currentFrameNum_.load(), frameNum_);
+                videoEnhancer_->NotifyEos();
+            }
+        }
         indexs_.push_back(std::make_pair(index, flag));
     }
     releaseBufferCondition_.notify_all();
+#endif
 }
 
 void VideoResizeFilter::ReleaseBuffer()
 {
     MEDIA_LOG_I("ReleaseBuffer");
     while (!isThreadExit_) {
-        std::vector<std::pair<uint32_t, uint32_t>> indexs;
+        std::vector<uint32_t> indexs;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
             releaseBufferCondition_.wait(lock, [this] {
@@ -505,8 +523,7 @@ void VideoResizeFilter::ReleaseBuffer()
 #ifdef USE_VIDEO_PROCESSING_ENGINE
         if (videoEnhancer_) {
             for (auto &index : indexs) {
-                bool isRender = (index.second != static_cast<uint32_t>(DETAIL_ENH_BUFFER_FLAG_EOS));
-                videoEnhancer_->ReleaseOutputBuffer(index.first, isRender);
+                videoEnhancer_->ReleaseOutputBuffer(index, true);
             }
         }
 #endif
