@@ -682,6 +682,24 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER;
 extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT;
 
 /**
+ * @brief Key for describing if enable QPMap or not, value type is int32_t (0 or 1): 1 is enabled, 0 otherwise.
+ * This is an optional key that applies only to video encoder. It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_QP_MAP;
+
+/**
+ * @brief Key for describing the QPMap, value type is a uint8_t pointer.
+ * This is an optional key that applies only to video encoder input loop. It takes effect per frame when it's set.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_QP_MAP;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9

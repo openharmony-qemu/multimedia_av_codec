@@ -73,6 +73,10 @@ typedef enum OH_AVCapabilityFeature {
     VIDEO_ENCODER_LONG_TERM_REFERENCE = 1,
     /** Feature for codec supports low latency. It is used in video encoder and video decoder. */
     VIDEO_LOW_LATENCY = 2,
+    /** Feature for codec supports quantization parameter map. It is only used in video encoder.
+    * @since 14
+    */
+    VIDEO_ENCODER_QP_MAP = 3,
 } OH_AVCapabilityFeature;
 
 /**

@@ -195,6 +195,7 @@ private:
     sptr<Surface> producer_ = nullptr;
     OHNativeWindow *nativeWindow_ = nullptr;
     LtrParam ltrParam;
+    bool enableQPMapCapability = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
