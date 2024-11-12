@@ -71,7 +71,6 @@ public:
     int64_t GetLastBufferPts();
 
     std::shared_ptr<DecoderAdapterCallback> decoderAdapterCallback_;
-    int64_t lastBufferPts_ = INT64_MIN;
 
 private:
     void ReleaseBuffer();
