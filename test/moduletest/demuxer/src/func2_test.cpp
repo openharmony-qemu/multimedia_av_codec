@@ -118,6 +118,69 @@ static int64_t GetFileSize(const char *fileName)
     return fileSize;
 }
 
+static void OpenFile(const char *fileName, int fd, OH_AVSource **src, OH_AVDemuxer **audioDemuxer)
+{
+    
+    int64_t size = GetFileSize(fileName);
+    cout << fileName << "----------------------" << fd << "---------" << size << endl;
+    *src = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(*src, nullptr);
+
+    *audioDemuxer = OH_AVDemuxer_CreateWithSource(*src);
+    ASSERT_NE(*audioDemuxer, nullptr);
+}
+
+static void CheckTrackCount(OH_AVFormat **srcFormat, OH_AVSource *src, int32_t *trackCount, int trackNum)
+{
+    *srcFormat = OH_AVSource_GetSourceFormat(src);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(*srcFormat, OH_MD_KEY_TRACK_COUNT, trackCount));
+    ASSERT_EQ(trackNum, *trackCount);
+}
+
+static void CheckChannelCount(OH_AVFormat **trkFormat, OH_AVSource *src, int channelNum)
+{
+    int cc = 0;
+    *trkFormat = OH_AVSource_GetTrackFormat(src, 0);
+    ASSERT_NE(trkFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(*trkFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &cc));
+    ASSERT_EQ(channelNum, cc);
+}
+
+static void CheckTrackSelect(int32_t trackCount, OH_AVDemuxer *audioDemuxer)
+{
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+}
+
+static void CountAudioFrames(OH_AVDemuxer *audioDemuxer, OH_AVMemory *mem, int32_t trackCount, int audioFrameNum, int audioKeyNum)
+{
+    int audioFrame = 0;
+    int keyCount = 0;
+    bool audioIsEnd = false;
+    OH_AVCodecBufferAttr attr;
+
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(audioDemuxer, index, mem, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                audioIsEnd = true;
+                cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, audioFrameNum);
+    ASSERT_EQ(keyCount, audioKeyNum);
+}
+
+
+
 /**
  * @tc.number    : SUB_MEDIA_DEMUXER_VTT_4800
  * @tc.name      : create vtt demuxer with file and read
@@ -1203,5 +1266,470 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1029, TestSize.Level3)
     ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, Media::Tag::VIDEO_ORIENTATION_TYPE, &rotation));
     ASSERT_EQ(rotation, OHOS::MediaAVCodec::ROTATE_NONE);
     OH_AVFormat_Destroy(trackFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_0100
+ * @tc.name      : demux AAC_8K_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0100, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/AAC_8K_1.aac";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 1717, 1717);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_0200
+ * @tc.name      : demux AAC_16K_2
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0200, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/AAC_16K_2.aac";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 2);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 3432, 3432);
+
+    close(fd);   
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_0300
+ * @tc.name      : demux AAC_24K_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0300, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/AAC_24K_1.aac";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 5147, 5147);
+
+    close(fd);   
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_0400
+ * @tc.name      : demux AAC_48K_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0400, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/AAC_48K_1.aac";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 10293, 10293);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_0500
+ * @tc.name      : demux AAC_88.2K_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0500, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/AAC_88.2K_1.aac";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 18912, 18912);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_0600
+ * @tc.name      : demux AAC_96K_1_main
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0600, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/AAC_96K_1_main.aac";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 20585, 20585);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_0700
+ * @tc.name      : demux FLAC_16K_24b_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0700, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/FLAC_16K_24b_1.flac";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 3050, 3050);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_0800
+ * @tc.name      : demux FLAC_96K_24b_2
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0800, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/FLAC_96K_24b_2.flac";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 2);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 704, 704);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_0900
+ * @tc.name      : demux FLAC_192K_24b_2
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0900, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/FLAC_192K_24b_2.flac";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 2);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 352, 352);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_1000
+ * @tc.name      : demux M4A_24K_2
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1000, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/M4A_24K_2.m4a";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 2);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 5147, 5147);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_1100
+ * @tc.name      : demux M4A_48K_2_AC3
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1100, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/M4A_48K_2_AC3.m4a";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 2);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 6862, 6862);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_1200
+ * @tc.name      : demux M4A_64K_2_main
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1200, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/M4A_64K_2_main.m4a";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 2);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 13724, 13724);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_1300
+ * @tc.name      : demux M4A_96K_1_cbr
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1300, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/M4A_96K_1_cbr.m4a";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 20585, 20585);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_1400
+ * @tc.name      : demux MP3_8K_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1400, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/MP3_8K_1.mp3";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 3052, 3052);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_1500
+ * @tc.name      : demux MP3_16K_2
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1500, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/MP3_16K_2.mp3";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 2);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 6101, 6101);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_1600
+ * @tc.name      : demux MP3_24K_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1600, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/MP3_24K_1.mp3";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 9151, 9151);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_1700
+ * @tc.name      : demux OGG_8K_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1700, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/OGG_8K_1.ogg";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 6863, 6863);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_1800
+ * @tc.name      : demux OGG_16K_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1800, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/OGG_16K_1.ogg";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 7198, 7198);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_1900
+ * @tc.name      : demux OGG_24K_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1900, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/OGG_24K_1.ogg";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 10722, 10722);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_2000
+ * @tc.name      : demux OGG_96K_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2000, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/OGG_96K_1.ogg";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 23223, 23223);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_2100
+ * @tc.name      : demux OGG_192K_2
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2100, TestSize.Level0)
+{
+    const char *file = "/data/test/media/audio/OGG_192K_2.ogg";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 2);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 42629, 42629);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_2200
+ * @tc.name      : demux WAV_24K_32b_1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2200, TestSize.Level0)
+{
+    int32_t bps = 0;
+    const char *file = "/data/test/media/audio/WAV_24K_32b_1.wav";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 1);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bps));
+    ASSERT_EQ(32, bps);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 2110, 2110);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_2300
+ * @tc.name      : demux WAV_96K_24b_2
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2300, TestSize.Level0)
+{
+    int32_t bps = 0;
+    const char *file = "/data/test/media/audio/WAV_96K_24b_2.wav";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 2);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bps));
+    ASSERT_EQ(24, bps);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 2112, 2112);
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : AUDIO_DEMUXER_FUNCTION_2400
+ * @tc.name      : demux WAV_192K_32b_2
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2400, TestSize.Level0)
+{
+    int32_t bps = 0;
+    const char *file = "/data/test/media/audio/WAV_192K_32b_2.wav";
+    int fd = open(file, O_RDONLY);
+
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
+    CheckChannelCount(&trackFormat, source, 2);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bps));
+    ASSERT_EQ(32, bps);
+    CheckTrackSelect(g_trackCount, demuxer);
+    CountAudioFrames(demuxer, memory, g_trackCount, 1875, 1875);
+
     close(fd);
 }
