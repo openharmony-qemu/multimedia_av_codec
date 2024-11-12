@@ -501,7 +501,6 @@ void VideoResizeFilter::OnOutputBufferAvailable(uint32_t index, uint32_t flag)
                 videoEnhancer_->NotifyEos();
             }
         }
-        indexs_.push_back(std::make_pair(index, flag));
     }
     releaseBufferCondition_.notify_all();
 #endif
