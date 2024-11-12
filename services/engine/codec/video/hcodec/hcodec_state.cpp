@@ -685,6 +685,12 @@ void HCodec::OutputPortChangedState::OnCodecEvent(CodecEventType event, uint32_t
             }
             return;
         }
+        case CODEC_EVENT_PORT_SETTINGS_CHANGED: {
+            if (data2 == OMX_IndexColorAspects) {
+                codec_->UpdateColorAspects();
+            }
+            break;
+        }
         default: {
             BaseState::OnCodecEvent(event, data1, data2);
         }

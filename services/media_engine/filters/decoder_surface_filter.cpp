@@ -283,7 +283,18 @@ Status DecoderSurfaceFilter::DoPause()
 Status DecoderSurfaceFilter::DoPauseDragging()
 {
     MEDIA_LOG_I("DoPauseDragging enter.");
-    return DoPause();
+    DoPause();
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (!outputBufferMap_.empty()) {
+            MEDIA_LOG_E("DoPauseDragging outputBufferMap_ size = %{public}zu", outputBufferMap_.size());
+            for (auto it = outputBufferMap_.begin(); it != outputBufferMap_.end(); ++it) {
+                videoDecoder_->ReleaseOutputBuffer(it->first, false);
+            }
+            outputBufferMap_.clear();
+        }
+    }
+    return Status::OK;
 }
 
 Status DecoderSurfaceFilter::DoResume()
@@ -375,7 +386,7 @@ Status DecoderSurfaceFilter::DoPreroll()
     if (ret != Status::OK) {
         MEDIA_LOG_E("video decoder start failed, ret = %{public}d", ret);
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR,
-            MSERR_VID_DEC_FAILED});
+            MSERR_IO_VIDEO_DEVICE_ERROR});
     }
     Filter::StartFilterTask();
     return ret;
@@ -702,21 +713,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         MEDIA_LOG_I("Decoder output EOS");
     }
     std::unique_lock<std::mutex> lock(mutex_);
-    MEDIA_LOG_D("DrainOutputBuffer pts: " PUBLIC_LOG_D64"  outputSize:%{public}zu",
-        outputBuffer->pts_, outputBuffers_.size());
-    if (isInSeekContinous_) {
-        outputBufferMap_.insert(std::make_pair(index, outputBuffer));
-        std::unique_lock<std::mutex> draggingLock(draggingMutex_);
-        if (videoFrameReadyCallback_ != nullptr) {
-            MEDIA_LOG_D("[drag_debug]DrainOutputBuffer2 dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
-                        " bufferIdx: " PUBLIC_LOG_D32,
-                        outputBuffer->dts_, outputBuffer->pts_, index);
-            std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback = videoFrameReadyCallback_;
-            draggingLock.unlock();
-            videoFrameReadyCallback->ConsumeVideoFrame(outputBuffer, index);
-        }
-        return;
-    }
+    FALSE_RETURN_NOLOG(!DrainSeekContinuous(index, outputBuffer));
     FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
     FALSE_RETURN_NOLOG(!DrainPreroll(index, outputBuffer));
     if (IS_FILTER_ASYNC && outputBuffers_.empty()) {
@@ -752,6 +749,23 @@ void DecoderSurfaceFilter::RenderLoop()
         }
         ReleaseOutputBuffer(nextTask.first, waitTime >= 0, nextTask.second, -1);
     }
+}
+
+bool DecoderSurfaceFilter::DrainSeekContinuous(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    FALSE_RETURN_V_NOLOG(isInSeekContinous_, false);
+    bool isEOS = outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS);
+    FALSE_RETURN_V_NOLOG(!isEOS, false);
+    outputBufferMap_.insert(std::make_pair(index, outputBuffer));
+    std::unique_lock<std::mutex> draggingLock(draggingMutex_);
+    FALSE_RETURN_V_NOLOG(videoFrameReadyCallback_ != nullptr, false);
+    MEDIA_LOG_D("[drag_debug]DrainSeekContinuous dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
+                " bufferIdx: " PUBLIC_LOG_D32,
+                outputBuffer->dts_, outputBuffer->pts_, index);
+    std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback = videoFrameReadyCallback_;
+    draggingLock.unlock();
+    videoFrameReadyCallback->ConsumeVideoFrame(outputBuffer, index);
+    return true;
 }
 
 bool DecoderSurfaceFilter::DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)

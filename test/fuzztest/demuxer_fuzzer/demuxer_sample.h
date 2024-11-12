@@ -33,6 +33,7 @@ public:
 private:
     void ResetFlag();
     int CreateDemuxer();
+    template <class T> T GetData();
     int32_t gWidth = 3840;
     int32_t gHeight = 2160;
     int gTrackType = 0;
@@ -45,6 +46,9 @@ private:
     OH_AVDemuxer *demuxer;
     OH_AVMemory *memory;
     OH_AVBuffer *buffer;
+    const uint8_t *g_baseFuzzData = nullptr;
+    size_t g_baseFuzzSize = 0;
+    size_t g_baseFuzzPos;
 };
 } // namespace Media
 } // namespace OHOS
