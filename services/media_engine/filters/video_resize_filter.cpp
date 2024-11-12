@@ -495,7 +495,7 @@ void VideoResizeFilter::OnOutputBufferAvailable(uint32_t index, uint32_t flag)
         if (flag != static_cast<uint32_t>(DETAIL_ENH_BUFFER_FLAG_EOS)) {
             currentFrameNum_.fetch_add(VARIABLE_INCREMENT_INTERVAL, std::memory_order_relaxed);
             indexs_.push_back(index);
-            if(videoEnhancer_ && currentFrameNum_.load() >= frameNum_) {
+            if (videoEnhancer_ && currentFrameNum_.load() >= frameNum_) {
                 MEDIA_LOG_I("currentFrameNum: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,
                     currentFrameNum_.load(), frameNum_);
                 videoEnhancer_->NotifyEos();
