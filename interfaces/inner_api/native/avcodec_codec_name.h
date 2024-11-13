@@ -46,6 +46,8 @@ public:
 
     static constexpr std::string_view VIDEO_DECODER_AVC_NAME = "OH.Media.Codec.Decoder.Video.AVC";
     static constexpr std::string_view VIDEO_DECODER_HEVC_NAME = "OH.Media.Codec.Decoder.Video.HEVC";
+    static constexpr std::string_view VIDEO_DECODER_MPEG2_NAME = "OH.Media.Codec.Decoder.Video.MPEG2";
+    static constexpr std::string_view VIDEO_DECODER_MPEG4_NAME = "OH.Media.Codec.Decoder.Video.MPEG4";
 
 private:
     AVCodecCodecName() = delete;
