@@ -663,9 +663,7 @@ void VideoEncSample::InputQPMap(std::shared_ptr<FormatMock> format,
     size_t qp_map_size = ((DEFAULT_WIDTH_VENC + 15) / 16) * ((DEFAULT_HEIGHT_VENC + 15) / 16);
     uint8_t *qp_map = new uint8_t[qp_map_size];
     (void)memset_s(qp_map, qp_map_size, 10, qp_map_size);
-
     format->PutBuffer(Media::Tag::VIDEO_ENCODER_PER_FRAME_QP_MAP, qp_map, qp_map_size);
-
     if (buffer) {
         buffer->SetParameter(format);
     }
