@@ -25,7 +25,6 @@
 #include "avcodec_info.h"
 #include "avcodec_common.h"
 #include "avcodec_list.h"
-#include "video_decoder_adapter.h"
 #include "osal/utils/util.h"
 #include "parameters.h"
 #include "scope_guard.h"
@@ -196,6 +195,11 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     Status ret;
     // create secure decoder for drm.
     MEDIA_LOG_I("DoInit enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
+    } else {
+        return Status::ERROR_UNKNOWN;
+    }
     videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
     if (isDrmProtected_ && svpFlag_) {
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder for drm-protected videos");
@@ -539,10 +543,7 @@ std::string DecoderSurfaceFilter::GetCodecName(std::string mimeType)
     MEDIA_LOG_I("GetCodecName.");
     std::string codecName;
     auto codeclist = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
-    if (codeclist == nullptr) {
-        MEDIA_LOG_E("GetCodecName failed due to codeclist nullptr.");
-        return codecName;
-    }
+    FALSE_RETURN_V_MSG_E(codeclist != nullptr, codecName, "GetCodecName failed due to codeclist nullptr.");
     MediaAVCodec::Format format;
     format.PutStringValue("codec_mime", mimeType);
     codecName = codeclist->FindDecoder(format);
