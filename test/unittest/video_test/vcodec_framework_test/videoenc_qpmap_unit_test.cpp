@@ -165,7 +165,7 @@ INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
  * @tc.desc: configure to enable QPMap Capability for video encode, buffer mode
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_001, TestSize.level)
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_001, TestSize.level1)
 {
     if (!GetQPMapCapability(getParam())) {
         return;
@@ -225,7 +225,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_003, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_QPMapCapability_004
- * @tc.desc: set QP Map per frame for video encode, buffer mode
+ * @tc.desc: enable qp and set QP Map per frame for video encode, buffer mode
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_004, TestSize.level1)
@@ -245,11 +245,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_004, TestSize.level1)
 }
 
 /**
- * @tc.name: VideoEncoder_QPMapCapability_004
- * @tc.desc: set QP Map per frame for video encode, surface mode（AVMemory）
+ * @tc.name: VideoEncoder_QPMapCapability_005
+ * @tc.desc: enable qp and set QP Map per frame for video encode, surface mode（AVMemory）
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_005, TestSize.Level1)
 {
     if (!GetQPMapCapability(getParam())) {
         return;
@@ -267,11 +267,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_004, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_QPMapCapability_004
- * @tc.desc: set QP Map per frame for video encode, surface mode（AVBuffer）
+ * @tc.name: VideoEncoder_QPMapCapability_006
+ * @tc.desc: enable qp and set QP Map per frame for video encode, surface mode（AVBuffer）
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_006, TestSize.Level1)
 {
     if (!GetQPMapCapability(getParam())) {
         return;
@@ -283,6 +283,72 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_004, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
     videoEnc_->enableQPMapCapability = true;
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_QPMapCapability_007
+ * @tc.desc: disable qp and set QP Map per frame for video encode, buffer mode
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_007, TestSize.level1)
+{
+    if (!GetQPMapCapability(getParam())) {
+        return;
+    }
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    videoEnc_->enableQPMapCapability = true;
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 0);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_QPMapCapability_008
+ * @tc.desc: disable qp and set QP Map per frame for video encode, surface mode（AVMemory）
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_008, TestSize.Level1)
+{
+    if (!GetQPMapCapability(getParam())) {
+        return;
+    }
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    videoEnc_->enableQPMapCapability = true;
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 0);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_QPMapCapability_009
+ * @tc.desc: disable qp and set QP Map per frame for video encode, surface mode（AVBuffer）
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_009, TestSize.Level1)
+{
+    if (!GetQPMapCapability(getParam())) {
+        return;
+    }
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    videoEnc_->enableQPMapCapability = true;
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 0);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
