@@ -406,7 +406,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_011, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_012, TestSize.Level1)
 {
-    if (!GetQPMapCapability(getParam())) {
+    if (GetQPMapCapability(getParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
