@@ -28,6 +28,7 @@ void CreateFCodecByName(const std::string &name, std::shared_ptr<CodecBase> &cod
 {
     sptr<FCodec> fcodec = new (std::nothrow) FCodec(name);
     if (fcodec == nullptr) {
+        codec = nullptr;
         return;
     }
     fcodec->IncStrongRef(fcodec.GetRefPtr());
