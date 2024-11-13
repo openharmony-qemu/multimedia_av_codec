@@ -394,10 +394,7 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::OnLinkedResult.");
-    if (mediaCodec_ == nullptr && eventReceiver_ != nullptr) {
-        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_IO_AUDIO_DEC_UNAVAILABLE});
-        return;
-    }
+    FALSE_RETURN(mediaCodec_ != nullptr);
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     mediaCodec_->Prepare();
     inputBufferQueueProducer_ = mediaCodec_->GetInputBufferQueue();
