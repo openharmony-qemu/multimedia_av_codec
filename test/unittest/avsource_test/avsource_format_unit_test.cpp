@@ -484,6 +484,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2304, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.bitRate, 191862);
 }
+
 /**
  * @tc.name: AVSource_GetFormat_2305
  * @tc.desc: get track format, local (mpeg4-mp2)
