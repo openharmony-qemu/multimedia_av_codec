@@ -22,7 +22,7 @@ av_codec_unittest_include_dirs = [
 ]
 
 av_codec_unittest_cflags = [
-  "-std=c17",
+  "-std=c++17",
   "-fno-rtti",
   "-fno-exceptions",
   "-Wall",
@@ -44,7 +44,7 @@ ohos_unittest("media_engine_filter_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = av_codec_unittest_include_dirs
-  include_dirs = [
+  include_dirs += [
     "./",
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/engine/common/include",
@@ -60,7 +60,7 @@ ohos_unittest("media_engine_filter_unit_test") {
   defines = []
   if (defined(av_codec_support_video_processing_engine) &&
       av_codec_support_video_processing_engine) {
-    defines = [ "USE_VIDEO_PROCESSING_ENGINE" ]
+    defines += [ "USE_VIDEO_PROCESSING_ENGINE" ]
   }
 
   cflags = av_codec_unittest_cflags
@@ -73,9 +73,7 @@ ohos_unittest("media_engine_filter_unit_test") {
   ]
 
   if (av_codec_support_test) {
-    sources = [
-      "./decoder_surface_filter_unit_test.cpp",
-    ]
+    sources = [ "./decoder_surface_filter_unit_test.cpp" ]
   }
 
   deps = [
@@ -105,7 +103,7 @@ ohos_unittest("media_engine_filter_unit_test") {
 
   if (defined(av_codec_support_video_processing_engine) &&
       av_codec_support_video_processing_engine) {
-    external_deps = [ "video_processing_engine:videoprocessingengine" ]
+    external_deps += [ "video_processing_engine:videoprocessingengine" ]
   }
 
   resource_config_file =
