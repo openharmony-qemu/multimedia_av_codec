@@ -18,30 +18,22 @@
 
 namespace OHOS {
 namespace Media {
-
 class AVBufferQueueConsumer : public RefBase {
 public:
     ~AVBufferQueueConsumer() override = default;
     AVBufferQueueConsumer(const AVBufferQueueConsumer &) = delete;
+    AVBufferQueueConsumer operator=(const AVBufferQueueConsumer &) = delete;
 
-    virtual uint32_t GetQueueSize(){ return 0; };
-
-    virtual Status SetQueueSize(uint32_t size){ return Status::OK; };
-
-    virtual bool IsBufferInQueue(const std::shared_ptr<AVBuffer> &buffer){ return true; };
-
-    virtual Status AcquireBuffer(std::shared_ptr<AVBuffer> &outBuffer){ return Status::OK; };
-
-    virtual Status ReleaseBuffer(const std::shared_ptr<AVBuffer> &inBuffer){ return Status::OK; };
-
-    virtual Status AttachBuffer(std::shared_ptr<AVBuffer> &inBuffer, bool isFilled){ return Status::OK; };
-
-    virtual Status DetachBuffer(const std::shared_ptr<AVBuffer> &outBuffer){ return Status::OK; };
-
-    virtual Status SetBufferAvailableListener(sptr<IConsumerListener> &listener){ return Status::OK; };
-
-    virtual Status SetQueueSizeAndAttachBuffer(
-        uint32_t size, std::shared_ptr<AVBuffer> &buffer, bool isFilled){ return Status::OK; };
+    MOCK_METHOD(uint32_t, GetQueueSize, (), ());
+    MOCK_METHOD(Status, SetQueueSize, (uint32_t size), ());
+    MOCK_METHOD(bool, IsBufferInQueue, (const std::shared_ptr<AVBuffer> &buffer), ());
+    MOCK_METHOD(Status, AcquireBuffer, (std::shared_ptr<AVBuffer> & outBuffer), ());
+    MOCK_METHOD(Status, ReleaseBuffer, (const std::shared_ptr<AVBuffer> &inBuffer), ());
+    MOCK_METHOD(Status, AttachBuffer, (std::shared_ptr<AVBuffer> & inBuffer, bool isFilled), ());
+    MOCK_METHOD(Status, DetachBuffer, (const std::shared_ptr<AVBuffer> &outBuffer), ());
+    MOCK_METHOD(Status, SetBufferAvailableListener, (sptr<IConsumerListener> & listener), ());
+    MOCK_METHOD(
+        Status, SetQueueSizeAndAttachBuffer, (uint32_t size, std::shared_ptr<AVBuffer> &buffer, bool isFilled), ());
 
 protected:
     AVBufferQueueConsumer() = default;
