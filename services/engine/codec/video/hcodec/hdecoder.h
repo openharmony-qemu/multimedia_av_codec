@@ -83,6 +83,7 @@ private:
     void SurfaceModeSubmitBufferFromFreeList();
     bool SurfaceModeSubmitOneItem(SurfaceBufferItem& item);
     void DynamicModeSubmitBuffer() override;
+    void DynamicModeSubmitIfEos() override;
     void DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator nullSlot);
 
     // switch surface
