@@ -15,7 +15,6 @@
  * Description: header of Type converter from framework to OMX
  */
 
-#include "fcodec_api.h"
 #include "fcodec.h"
 
 namespace OHOS::MediaAVCodec::Codec {
@@ -28,6 +27,9 @@ int32_t GetFCodecCapabilityList(std::vector<CapabilityData> &caps)
 void CreateFCodecByName(const std::string &name, std::shared_ptr<CodecBase> &codec)
 {
     sptr<FCodec> fcodec = new (std::nothrow) FCodec(name);
+    if (fcodec == nullptr) {
+        return;
+    }
     fcodec->IncStrongRef(fcodec.GetRefPtr());
     codec = std::shared_ptr<FCodec>(fcodec.GetRefPtr(), [](FCodec *ptr) { (void)ptr; });
 }
