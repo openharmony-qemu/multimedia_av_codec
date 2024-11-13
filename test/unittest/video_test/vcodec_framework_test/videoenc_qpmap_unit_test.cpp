@@ -354,6 +354,73 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_009, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
+
+/**
+ * @tc.name: VideoEncoder_QPMapCapability_010
+ * @tc.desc: unsupport platform, configure to enable QPMap Capability for video encode, buffer mode
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_010, TestSize.level1)
+{
+    if (GetQPMapCapability(getParam())) {
+        return;
+    }
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 1);
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+    ASSERT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#else
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#endif
+}
+
+/**
+ * @tc.name: VideoEncoder_QPMapCapability_011
+ * @tc.desc: unsupport platform, configure to enable QPMap Capability for video encode, surface mode（AVMemory)
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_011, TestSize.Level1)
+{
+    if (GetQPMapCapability(getParam())) {
+        return;
+    }
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 1);
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+    ASSERT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#else
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#endif
+}
+
+/**
+ * @tc.name: VideoEncoder_QPMapCapability_012
+ * @tc.desc: unsupport platform, configure to enable QPMap Capability for video encode, surface mode（AVBuffer）
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_012, TestSize.Level1)
+{
+    if (!GetQPMapCapability(getParam())) {
+        return;
+    }
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 1);
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+    ASSERT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#else
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#endif
+}
 } // namespace
 
 int main(int argc, char **argv)
