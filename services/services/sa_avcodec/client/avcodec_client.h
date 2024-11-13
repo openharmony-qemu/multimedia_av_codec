@@ -48,6 +48,9 @@ public:
 #endif
 
 private:
+    int32_t CreateInstanceAndRetryInTimes(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
+                                          sptr<IRemoteObject> &object,
+                                          int32_t tryTimes = 5);
     sptr<IStandardAVCodecService> GetAVCodecProxy();
     bool IsAlived();
     static void AVCodecServerDied(pid_t pid);

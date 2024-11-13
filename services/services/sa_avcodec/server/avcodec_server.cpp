@@ -47,7 +47,8 @@ void AVCodecServer::OnDump()
 
 void AVCodecServer::OnStart()
 {
-    AVCODEC_LOGD("AVCodecServer OnStart");
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
+    AVCODEC_LOGI("In");
     struct timeval start = {};
     struct timeval end = {};
     (void)gettimeofday(&start, nullptr);
@@ -62,16 +63,23 @@ void AVCodecServer::OnStart()
     ServiceStartEventWrite(useTime, "AV_CODEC service");
 }
 
+int32_t AVCodecServer::OnIdle([[maybe_unused]] const SystemAbilityOnDemandReason &idleReason)
+{
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
+    AVCODEC_LOGI("In");
+    return 0;
+}
+
 void AVCodecServer::OnStop()
 {
-    AVCODEC_LOGD("AVCodecServer OnStop");
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
+    AVCODEC_LOGI("In");
     AVCodecServerManager::GetInstance().NotifyProcessStatus(0);
 }
 
 void AVCodecServer::OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
 {
-    AVCODEC_LOGI("AVCodecServer OnAddSystemAbility, systemAbilityId:%{public}d, deviceId:%s", systemAbilityId,
-                 deviceId.c_str());
+    AVCODEC_LOGI("systemAbilityId:%{public}d, deviceId:%s", systemAbilityId, deviceId.c_str());
     if (systemAbilityId == MEMORY_MANAGER_SA_ID) {
         AVCodecServerManager::GetInstance().SetMemMgrStatus(true);
         AVCodecServerManager::GetInstance().NotifyProcessStatus(1);
@@ -102,6 +110,11 @@ std::optional<AVCodecServerManager::StubType> AVCodecServer::SwitchSystemId(
 int32_t AVCodecServer::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
                                            const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject)
 {
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
+    if (GetAbilityState() == SystemAbilityState::IDLE) {
+        CancelIdle();
+    }
+
     std::optional<AVCodecServerManager::StubType> stubType = SwitchSystemId(subSystemId);
     CHECK_AND_RETURN_RET_LOG(stubType != std::nullopt, AVCS_ERR_INVALID_OPERATION, "Get sub system type failed");
 
