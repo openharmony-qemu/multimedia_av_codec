@@ -1454,7 +1454,10 @@ void FCodec::GetMpeg2CapProf(std::vector<CapabilityData> &capaArray)
         capsData.profiles = {static_cast<int32_t>(MPEG2_PROFILE_422), static_cast<int32_t>(MPEG2_PROFILE_HIGH),
                             static_cast<int32_t>(MPEG2_PROFILE_MAIN),static_cast<int32_t>(MPEG2_PROFILE_SNR),
                             static_cast<int32_t>(MPEG2_PROFILE_SIMPLE),static_cast<int32_t>(MPEG2_PROFILE_SPATIAL)};
-        std::vector<int32_t> levels_sp, levels_mp, levels_snr,levels_422p;
+        std::vector<int32_t> levels_sp;
+        std::vector<int32_t> levels_mp;
+        std::vector<int32_t> levels_snr;
+        std::vector<int32_t> levels_422p;
         for (int32_t j = 0; j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_ML); ++j) {
             levels_sp.emplace_back(j);
         }
