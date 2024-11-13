@@ -632,12 +632,12 @@ enum HEVCProfile : int32_t {
  * @version 4.0
  */
 enum MPEG2Profile : int32_t {
-    MPEG2_PROFILE_422 = 0,
-    MPEG2_PROFILE_HIGH = 1,
-    MPEG2_PROFILE_MAIN = 2,
-    MPEG2_PROFILE_SNR = 3,
-    MPEG2_PROFILE_SIMPLE = 4,
-    MPEG2_PROFILE_SPATIAL = 5,
+    MPEG2_PROFILE_SIMPLE   = 0,
+    MPEG2_PROFILE_MAIN     = 1,
+    MPEG2_PROFILE_SNR      = 2,
+    MPEG2_PROFILE_SPATIAL  = 3,
+    MPEG2_PROFILE_HIGH     = 4,
+    MPEG2_PROFILE_422      = 5,
 };
 
 /**
