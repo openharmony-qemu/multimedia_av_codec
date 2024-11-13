@@ -1265,7 +1265,7 @@ Status MediaDemuxer::PauseDragging()
         source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
         source_->Pause();
     }
-    if (taskMap_[videoTrackId_] != nullptr) {
+    if (taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr) {
         taskMap_[videoTrackId_]->PauseAsync();
         taskMap_[videoTrackId_]->Pause();
     }
@@ -1288,7 +1288,7 @@ Status MediaDemuxer::PauseAudioAlign()
         source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
         source_->Pause();
     }
-    if (taskMap_[audioTrackId_] != nullptr) {
+    if (taskMap_.find(audioTrackId_) != taskMap_.end() && taskMap_[audioTrackId_] != nullptr) {
         taskMap_[audioTrackId_]->PauseAsync();
         taskMap_[audioTrackId_]->Pause();
     }
@@ -1373,7 +1373,7 @@ Status MediaDemuxer::ResumeAudioAlign()
     if (source_) {
         source_->Resume();
     }
-    if (taskMap_[audioTrackId_] != nullptr) {
+    if (taskMap_.find(audioTrackId_) != taskMap_.end() && taskMap_[audioTrackId_] != nullptr) {
         streamDemuxer_->SetIsIgnoreParse(false);
         taskMap_[audioTrackId_]->Start();
     }
