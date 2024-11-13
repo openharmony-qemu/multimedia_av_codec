@@ -484,6 +484,12 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             }
             codec_->OnQueueInputBuffer(info, inputMode_);
             break;
+        case MsgWhat::SUBMIT_DYNAMIC_IF_EOS:
+            if (codec_->inputPortEos_ && !codec_->outputPortEos_) {
+                codec_->DynamicModeSubmitBuffer();
+                codec_->DynamicModeSubmitIfEos();
+            }
+            break;
         case MsgWhat::NOTIFY_EOS:
             codec_->OnSignalEndOfInputStream(info);
             break;
@@ -493,14 +499,12 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
         case MsgWhat::RELEASE_OUTPUT_BUFFER:
             codec_->OnReleaseOutputBuffer(info, outputMode_);
             break;
-        case MsgWhat::SET_OUTPUT_SURFACE: {
+        case MsgWhat::SET_OUTPUT_SURFACE:
             codec_->OnSetOutputSurface(info, outputMode_);
             return;
-        }
-        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER:
             codec_->OnPrintAllBufferOwner(info);
             return;
-        }
         default:
             BaseState::OnMsgReceived(info);
             break;
