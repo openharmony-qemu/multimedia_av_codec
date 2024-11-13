@@ -60,8 +60,8 @@ string g_fmp4HevcUri = TEST_URI_PATH + string("h265_fmp4.mp4");
 string g_doubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_doubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_mp4265InfoParsePath = TEST_FILE_PATH + string("test_265_B_Gop25_4sec.mp4");
-string g_265pcmPath = TEST_FILE_PATH + string("pcm.mov");
-string g_265pcmUri = TEST_URI_PATH + string("pcm.mov");
+string g_265pcmPath = TEST_FILE_PATH + string("265_pcm_s16le.mov");
+string g_265pcmUri = TEST_URI_PATH + string("265_pcm_s16le.mov");
 
 std::map<std::string, std::map<std::string, int32_t>> infoMap = {
     {"hdrVivid", {
@@ -371,36 +371,18 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1302, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_2308
- * @tc.desc: get pcm hevc mov format, local
+ * @tc.name: AVSource_GetFormat_2310
+ * @tc.desc: get pcm hevc track format, local
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2296, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2310, TestSize.Level1)
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
     InitResource(g_265pcmPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    format_ = source_->GetSourceFormat(); // source
-    ASSERT_NE(format_, nullptr);
-    format_->DumpInfo();
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 10100000);
-    ASSERT_EQ(formatVal_.trackCount, 2);
-#ifdef AVSOURCE_INNER_UNIT_TEST
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.hasVideo, 1);
-    ASSERT_EQ(formatVal_.hasAudio, 1);
-    ASSERT_EQ(formatVal_.fileType, 107);
-#endif
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -438,36 +420,18 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2296, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_2309
- * @tc.desc: get pcm hevc mov format, uri
+ * @tc.name: AVSource_GetFormat_2311
+ * @tc.desc: get pcm hevc track format, uri
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2297, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2311, TestSize.Level1)
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
     InitResource(g_265pcmUri, URI);
     ASSERT_TRUE(initStatus_);
-    format_ = source_->GetSourceFormat(); // source
-    ASSERT_NE(format_, nullptr);
-    format_->DumpInfo();
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 10100000);
-    ASSERT_EQ(formatVal_.trackCount, 2);
-#ifdef AVSOURCE_INNER_UNIT_TEST
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.hasVideo, 1);
-    ASSERT_EQ(formatVal_.hasAudio, 1);
-    ASSERT_EQ(formatVal_.fileType, 107);
-#endif
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());

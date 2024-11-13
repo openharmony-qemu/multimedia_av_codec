@@ -43,20 +43,20 @@ static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
 string g_h264aacPath = TEST_FILE_PATH + string("h264_aac.mov");
-string g_h264mp3Path = TEST_FILE_PATH + string("mp3.mov");
-string g_h264vorPath = TEST_FILE_PATH + string("vo.mov");
-string g_mpg4mp2Path = TEST_FILE_PATH + string("MPEG4.mov");
+string g_h264mp3Path = TEST_FILE_PATH + string("h264_mp3.mov");
+string g_h264vorPath = TEST_FILE_PATH + string("h264_vorbis.mov");
+string g_mpg4mp2Path = TEST_FILE_PATH + string("MPEG4_mp2.mov");
 string g_h264aacUri = TEST_URI_PATH + string("h264_aac.mov");
-string g_h264mp3Uri = TEST_URI_PATH + string("mp3.mov");
-string g_h264vorUri = TEST_URI_PATH + string("vo.mov");
-string g_mpg4mp2Uri = TEST_URI_PATH + string("MPEG4.mov");
+string g_h264mp3Uri = TEST_URI_PATH + string("h264_mp3.mov");
+string g_h264vorUri = TEST_URI_PATH + string("h264_vorbis.mov");
+string g_mpg4mp2Uri = TEST_URI_PATH + string("MPEG4_mp2.mov");
 } // namespace
 
 /**********************************demuxer fd**************************************/
 namespace {
 /**
  * @tc.name: Demuxer_ReadSample_2280
- * @tc.desc: copy current sample to buffer(h264-aac)
+ * @tc.desc: copy current sample to buffer (h264-aac) local
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2280, TestSize.Level1)
@@ -85,7 +85,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2280, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_ReadSample_2281
- * @tc.desc: copy current sample to buffer(h264-aac)
+ * @tc.desc: copy current sample to buffer (h264-aac) uri
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2281, TestSize.Level1)
@@ -114,7 +114,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2281, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_ReadSample_2282
- * @tc.desc: copy current sample to buffer(h264-mp3)
+ * @tc.desc: copy current sample to buffer (h264-mp3) local
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2282, TestSize.Level1)
@@ -143,7 +143,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2282, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_ReadSample_2283
- * @tc.desc: copy current sample to buffer(h264-mp3)uri
+ * @tc.desc: copy current sample to buffer (h264-mp3) uri
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2283, TestSize.Level1)
@@ -172,7 +172,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2283, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_ReadSample_2284
- * @tc.desc: copy current sample to buffer(h264-vorbis)
+ * @tc.desc: copy current sample to buffer (h264-vorbis) local
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2284, TestSize.Level1)
@@ -201,7 +201,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2284, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_ReadSample_2285
- * @tc.desc: copy current sample to buffer(h264-vorbis) uri
+ * @tc.desc: copy current sample to buffer (h264-vorbis) uri
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2285, TestSize.Level1)
@@ -230,7 +230,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2285, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_ReadSample_2286
- * @tc.desc: copy current sample to buffer(MPEG4-mp2)
+ * @tc.desc: copy current sample to buffer (MPEG4-mp2) local
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2286, TestSize.Level1)
@@ -259,7 +259,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2286, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_ReadSample_2287
- * @tc.desc: copy current sample to buffer(MPEG4-mp2) uri
+ * @tc.desc: copy current sample to buffer (MPEG4-mp2) uri
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2287, TestSize.Level1)
@@ -288,7 +288,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2287, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_SeekToTime_2288
- * @tc.desc: seek to the specified time(h264-aac)
+ * @tc.desc: seek to the specified time (h264-aac) local
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2281, TestSize.Level1)
@@ -327,7 +327,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2281, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_SeekToTime_2289
- * @tc.desc: seek to the specified time(h264-aac)
+ * @tc.desc: seek to the specified time (h264-aac) uri
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2289, TestSize.Level1)
@@ -366,7 +366,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2289, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_SeekToTime_2290
- * @tc.desc: seek to the specified time(h264-mp3)
+ * @tc.desc: seek to the specified time (h264-mp3) local
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2290, TestSize.Level1)
@@ -405,7 +405,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2290, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_SeekToTime_2291
- * @tc.desc: seek to the specified time(h264-mp3)
+ * @tc.desc: seek to the specified time (h264-mp3) uri
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2291, TestSize.Level1)
@@ -444,7 +444,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2291, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_SeekToTime_2292
- * @tc.desc: seek to the specified time(h264-vorbis)
+ * @tc.desc: seek to the specified time (h264-vorbis) local
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2292, TestSize.Level1)
@@ -483,7 +483,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2292, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_SeekToTime_2293
- * @tc.desc: seek to the specified time(h264-vorbis)
+ * @tc.desc: seek to the specified time (h264-vorbis) uri
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2293, TestSize.Level1)
@@ -522,7 +522,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2293, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_SeekToTime_2294
- * @tc.desc: seek to the specified time(mpeg4-mp2)
+ * @tc.desc: seek to the specified time (mpeg4-mp2) local
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2294, TestSize.Level1)
@@ -561,7 +561,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2294, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_SeekToTime_2295
- * @tc.desc: seek to the specified time(mpeg4-mp2)
+ * @tc.desc: seek to the specified time (mpeg4-mp2) uri
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2295, TestSize.Level1)

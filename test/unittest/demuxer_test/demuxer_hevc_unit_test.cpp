@@ -68,8 +68,8 @@ string g_doubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4")
 string g_doubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_hls = TEST_URI_PATH2 + string("index_265.m3u8");
 string g_mp4265InfoParsePath = TEST_FILE_PATH + string("test_265_B_Gop25_4sec.mp4");
-string g_265pcmPath = TEST_FILE_PATH + string("pcm.mov");
-string g_265pcmUri = TEST_URI_PATH + string("pcm.mov");
+string g_265pcmPath = TEST_FILE_PATH + string("265_pcm_s16le.mov");
+string g_265pcmUri = TEST_URI_PATH + string("265_pcm_s16le.mov");
 
 std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"hdrVivid",   {{"frames", {76,   125}}, {"kFrames", {3, 125}}}},
@@ -77,9 +77,9 @@ std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"mkvHevcAcc", {{"frames", {242,  173}}, {"kFrames", {1, 173}}}},
     {"mkvAvcOpus", {{"frames", {240,  199}}, {"kFrames", {4, 199}}}},
     {"mkvAvcMp3",  {{"frames", {239,  153}}, {"kFrames", {4, 153}}}},
+    {"movHevc",    {{"frames", {604,  433}}, {"kFrames", {3, 433}}}},
     {"tsHevcAac",  {{"frames", {303,  433}}, {"kFrames", {11, 433}}}},
     {"fmp4Hevc",  {{"frames", {604,  433}}, {"kFrames", {3, 433}}}},
-    {"movHevc",  {{"frames", {604,  433}}, {"kFrames", {3, 433}}}},
     {"doubleVivid",  {{"frames", {76,  116}}, {"kFrames", {3, 116}}}},
     {"mp4265InfoParse",  {{"frames", {103,  174}}, {"kFrames", {5, 174}}}},
 };
@@ -313,11 +313,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1215, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_ReadSample_2304
+ * @tc.name: Demuxer_ReadSample_2306
  * @tc.desc: copy current sample to buffer(265-pcm), local
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2292, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2306, TestSize.Level1)
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
@@ -332,11 +332,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2292, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_ReadSample_2305
+ * @tc.name: Demuxer_ReadSample_2307
  * @tc.desc: copy current sample to buffer(265-pcm), uri
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2293, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2307, TestSize.Level1)
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
@@ -667,11 +667,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1182, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_SeekToTime_2306
+ * @tc.name: Demuxer_SeekToTime_2308
  * @tc.desc: seek to the specified time(h265-pcm), local
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2294, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2308, TestSize.Level1)
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
@@ -709,11 +709,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2294, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_SeekToTime_2307
+ * @tc.name: Demuxer_SeekToTime_2309+
  * @tc.desc: seek to the specified time(h265-pcm), uri
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2295, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2309, TestSize.Level1)
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
