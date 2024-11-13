@@ -119,7 +119,7 @@ Status VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType
         MEDIA_LOG_I_SHORT("VideoDecoderAdapter::Init CreateByName errorCode %{public}d", ret);
     }
 
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_VIDEO_DEC_UNAVAILABLE, "mediaCodec_ is nullptr");
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     mediaCodecName_ = name;
     return Status::OK;
 }

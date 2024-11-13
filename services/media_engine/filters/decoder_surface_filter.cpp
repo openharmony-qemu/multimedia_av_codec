@@ -164,7 +164,7 @@ void DecoderSurfaceFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int
     MEDIA_LOG_E("AVCodec error happened. ErrorType: %{public}d, errorCode: %{public}d",
         static_cast<int32_t>(errorType), errorCode);
     FALSE_RETURN(eventReceiver_ != nullptr);
-    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_IO_VIDEO_DEC_FAILED});
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
 }
 
 void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -215,14 +215,14 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
 
     if (ret != Status::OK && eventReceiver_ != nullptr) {
         MEDIA_LOG_E("Init decoder fail ret = %{public}d", ret);
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_IO_VIDEO_DEC_UNAVAILABLE});
-        return Status::ERROR_VIDEO_DEC_UNAVAILABLE;
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
     }
 
     ret = Configure(meta_);
     if (ret != Status::OK) {
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_IO_VIDEO_DEC_INIT_FAILED});
-        return Status::ERROR_VIDEO_DEC_INIT_FAILED;
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     ParseDecodeRateLimit();
     videoDecoder_->SetOutputSurface(videoSurface_);

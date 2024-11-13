@@ -1912,7 +1912,7 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
             MEDIA_LOG_E("Cache data size is out of limit");
             if (eventReceiver_ != nullptr && !isOnEventNoMemory_.load()) {
                 isOnEventNoMemory_.store(true);
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_IO_DATA_ABNORMAL});
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_BUFFER_NO_MEMORY});
             }
             return 0;
         } else {

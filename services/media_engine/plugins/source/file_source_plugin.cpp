@@ -284,7 +284,7 @@ Status FileSourcePlugin::CheckFileStat()
     struct stat fileStat;
     if (stat(fileName_.c_str(), &fileStat) < 0) {
         MEDIA_LOG_E("Cannot get info from " PUBLIC_LOG_S, fileName_.c_str());
-        return Status::ERROR_FILE_NOT_FOUND;
+        return Status::ERROR_NOT_EXISTED;
     }
     if (S_ISDIR(fileStat.st_mode)) {
         MEDIA_LOG_E(PUBLIC_LOG_S " is directory", fileName_.c_str());
