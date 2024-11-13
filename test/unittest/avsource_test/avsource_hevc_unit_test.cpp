@@ -413,7 +413,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2310, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
+    ASSERT_EQ(formatVal_.codecMime, "audio/raw");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16LE);
     ASSERT_EQ(formatVal_.channelLayout, 3);
     CheckHevcInfo("Hevcmov");
@@ -462,7 +462,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2311, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
+    ASSERT_EQ(formatVal_.codecMime, "audio/raw");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16LE);
     ASSERT_EQ(formatVal_.channelLayout, 3);
     CheckHevcInfo("Hevcmov");
