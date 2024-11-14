@@ -1597,6 +1597,10 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
             MEDIA_LOG_E("dts overflow");
             return Status::ERROR_INVALID_DATA;
         }
+        if (sttsCurNum == 0) {
+            sttsIndex++;
+            sttsCurNum = sttsIndex < avStream->stts_count ?
+                         static_cast<int32_t>(avStream->stts_data[sttsIndex].count) : 0;
     }
     return Status::OK;
 }
