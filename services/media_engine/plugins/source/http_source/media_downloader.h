@@ -143,7 +143,12 @@ public:
     }
 
     virtual void WaitForBufferingEnd() {}
+    virtual void SetIsReportedErrorCode() {}
     
+    virtual bool GetReadTimeOut()
+    {
+        return false;
+    }
 };
 }
 }
