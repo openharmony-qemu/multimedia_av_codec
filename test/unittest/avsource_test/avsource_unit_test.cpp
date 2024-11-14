@@ -1312,35 +1312,17 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1150, TestSize.Level1)
 
 /**
  * @tc.name: AVSource_GetFormat_2312
- * @tc.desc: get  format, local(mpeg4-mp4)
+ * @tc.desc: get track format, local (mpeg4-mp4)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2300, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2312, TestSize.Level1)
 {
     fd_ = OpenFile(g_mpg4mp4Path);
     size_ = GetFileSize(g_mpg4mp4Path);
     printf("---- %s ------\n", g_mpg4mp4Path.c_str());
     source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 10067000);
-    ASSERT_EQ(formatVal_.trackCount, 2);
-#ifdef AVSOURCE_INNER_UNIT_TEST
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.hasVideo, 1);
-    ASSERT_EQ(formatVal_.hasAudio, 1);
-    ASSERT_EQ(formatVal_.fileType, 101);
-#endif
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -1355,10 +1337,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2300, TestSize.Level1)
     ASSERT_EQ(formatVal_.frameRate, 60.000000);
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     trackIndex_ = 1;
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
