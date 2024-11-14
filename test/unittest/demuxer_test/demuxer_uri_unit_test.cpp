@@ -548,11 +548,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1235, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_ReadSample_2310
+ * @tc.name: Demuxer_ReadSample_2313
  * @tc.desc: copy current sample to buffer, uri (MPEG4 aac)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2310, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2313, TestSize.Level1)
 {
     InitResource(g_mpg4mp4Uri, URI);
     ASSERT_TRUE(initStatus_);
@@ -888,11 +888,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2090, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_SeekToTime_2311
+ * @tc.name: Demuxer_SeekToTime_2314
  * @tc.desc: seek to the specified time uri (MPEG4 aac)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2311, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2314, TestSize.Level1)
 {
     InitResource(g_mpg4mp4Uri, URI);
     ASSERT_TRUE(initStatus_);
