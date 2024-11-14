@@ -175,6 +175,10 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     FALSE_RETURN_V(statusCallback_ != nullptr, false);
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
+        if (isRingBuffer_ && callback_ && request->GetFileContentLengthNoWait() == 0) {
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+            return;
+        }
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
     auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {

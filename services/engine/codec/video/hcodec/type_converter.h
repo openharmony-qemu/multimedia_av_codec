@@ -56,8 +56,12 @@ public:
     static std::optional<AVCLevel> OmxAvcLevelToInnerLevel(OMX_VIDEO_AVCLEVELTYPE level);
     static std::optional<HEVCProfile> OmxHevcProfileToInnerProfile(CodecHevcProfile profile);
     static std::optional<HEVCLevel> OmxHevcLevelToInnerLevel(CodecHevcLevel level);
+    static std::optional<VVCProfile> OmxVvcProfileToInnerProfile(CodecVvcProfile profile);
+    static std::optional<VVCLevel> OmxVvcLevelToInnerLevel(CodecVvcLevel level);
     static std::optional<OMX_VIDEO_AVCPROFILETYPE> InnerAvcProfileToOmxProfile(AVCProfile profile);
     static std::optional<CodecHevcProfile> InnerHevcProfileToOmxProfile(HEVCProfile profile);
+    static std::optional<CodecVvcProfile> InnerVvcProfileToOmxProfile(VVCProfile profile);
+    static std::optional<std::vector<int32_t>> InnerVvcMaxLevelToAllLevels(VVCLevel maxLevel);
     // bitrate mode
     static std::optional<VideoEncodeBitrateMode> HdiBitrateModeToInnerMode(CodecHDI::BitRateMode mode);
     static std::optional<OMX_VIDEO_CONTROLRATETYPE> InnerModeToOmxBitrateMode(VideoEncodeBitrateMode mode);

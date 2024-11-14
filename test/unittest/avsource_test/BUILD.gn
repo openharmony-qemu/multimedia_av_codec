@@ -124,6 +124,7 @@ ohos_unittest("avsource_inner_unit_test") {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
       "./avsource_format_unit_test.cpp",
+      "./avsource_audio_vivid_unit_test.cpp",
       "./avsource_hevc_unit_test.cpp",
       "./avsource_unit_test.cpp",
       "./avsource_uri_unit_test.cpp",

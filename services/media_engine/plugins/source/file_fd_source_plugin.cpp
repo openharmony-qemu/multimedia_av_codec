@@ -160,7 +160,7 @@ Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset
 
 Status FileFdSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
-    FALSE_RETURN_V_MSG_E(fd_ != -1, Status::ERROR_FILE_INVALID_DATA, "no valid fd");
+    FALSE_RETURN_V_MSG_E(fd_ != -1, Status::ERROR_WRONG_STATE, "no valid fd");
     if (isCloudFile_) {
         return ReadOnlineFile(0, buffer, offset, expectedLen);
     } else {
@@ -243,7 +243,7 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
 Status FileFdSourcePlugin::SeekTo(uint64_t offset)
 {
     FALSE_RETURN_V_MSG_E(fd_ != -1 && seekable_ == Seekable::SEEKABLE,
-        Status::ERROR_FILE_INVALID_DATA, "no valid fd or no seekable.");
+        Status::ERROR_WRONG_STATE, "no valid fd or no seekable.");
 
     MEDIA_LOG_I("SeekTo offset: " PUBLIC_LOG_U64, offset);
     if (isCloudFile_) {
@@ -311,12 +311,12 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
 {
     if (uri.empty()) {
         MEDIA_LOG_E("uri is empty");
-        return Status::ERROR_FILE_NOT_FOUND;
+        return Status::ERROR_INVALID_PARAMETER;
     }
     std::smatch fdUriMatch;
     FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
-        Status::ERROR_FILE_BAD_HANDLE, "Invalid fd uri format");
+        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format");
     FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
         Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format");
     fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript

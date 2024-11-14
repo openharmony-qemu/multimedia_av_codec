@@ -222,6 +222,8 @@ int64_t MediaDemuxer::ParserRefInfo()
         parserRefInfoTask_->Stop();
         isParserTaskEnd_ = true;
         MEDIA_LOG_I("Success to stop");
+    } else {
+        MEDIA_LOG_I("ret is " PUBLIC_LOG_D32, ret);
     }
     return 0;
 }
@@ -1064,9 +1066,11 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     for (auto item : requestBufferErrorCountMap_) {
         requestBufferErrorCountMap_[item.first] = 0;
     }
+    if (isInterruptNeeded_.load()) {
+        ret = Status::OK;
+    }
     if (ret != Status::OK) {
         isSeekError_.store(true);
-        eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
     }
     isFirstFrameAfterSeek_.store(true);
     MEDIA_LOG_D("Out");
@@ -1261,9 +1265,32 @@ Status MediaDemuxer::PauseDragging()
         source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
         source_->Pause();
     }
-    if (taskMap_[videoTrackId_] != nullptr) {
+    if (taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr) {
         taskMap_[videoTrackId_]->PauseAsync();
         taskMap_[videoTrackId_]->Pause();
+    }
+ 
+    if (source_ != nullptr) {
+        source_->SetReadBlockingFlag(true); // Enable source read blocking to ensure get wanted data
+    }
+    return Status::OK;
+}
+
+Status MediaDemuxer::PauseAudioAlign()
+{
+    MEDIA_LOG_I("PauseDragging");
+    isPaused_ = true;
+    if (streamDemuxer_) {
+        streamDemuxer_->SetIsIgnoreParse(true);
+        streamDemuxer_->Pause();
+    }
+    if (source_) {
+        source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
+        source_->Pause();
+    }
+    if (taskMap_.find(audioTrackId_) != taskMap_.end() && taskMap_[audioTrackId_] != nullptr) {
+        taskMap_[audioTrackId_]->PauseAsync();
+        taskMap_[audioTrackId_]->Pause();
     }
  
     if (source_ != nullptr) {
@@ -1318,6 +1345,9 @@ Status MediaDemuxer::Resume()
 Status MediaDemuxer::ResumeDragging()
 {
     MEDIA_LOG_I("In");
+    for (auto item : eosMap_) {
+        eosMap_[item.first] = false;
+    }
     if (streamDemuxer_) {
         streamDemuxer_->Resume();
     }
@@ -1329,6 +1359,23 @@ Status MediaDemuxer::ResumeDragging()
             streamDemuxer_->SetIsIgnoreParse(false);
         }
         taskMap_[videoTrackId_]->Start();
+    }
+    isPaused_ = false;
+    return Status::OK;
+}
+
+Status MediaDemuxer::ResumeAudioAlign()
+{
+    MEDIA_LOG_I("Resume");
+    if (streamDemuxer_) {
+        streamDemuxer_->Resume();
+    }
+    if (source_) {
+        source_->Resume();
+    }
+    if (taskMap_.find(audioTrackId_) != taskMap_.end() && taskMap_[audioTrackId_] != nullptr) {
+        streamDemuxer_->SetIsIgnoreParse(false);
+        taskMap_[audioTrackId_]->Start();
     }
     isPaused_ = false;
     return Status::OK;
@@ -1853,7 +1900,7 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
              requestBufferErrorCountMap_[trackId] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Invalid data source, can not get frame");
             if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_IO_DATA_ABNORMAL});
             } else {
                 MEDIA_LOG_D("EventReceiver is nullptr");
             }
@@ -2189,6 +2236,16 @@ bool MediaDemuxer::IsVideoEos()
         return true;
     }
     return eosMap_[videoTrackId_];
+}
+
+bool MediaDemuxer::HasEosTrack()
+{
+    for (auto it = eosMap_.begin(); it != eosMap_.end(); it++) {
+        if (it->second) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void MediaDemuxer::SetEnableOnlineFdCache(bool isEnableFdCache)
