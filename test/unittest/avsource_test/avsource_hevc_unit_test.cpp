@@ -397,10 +397,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2310, TestSize.Level1)
     ASSERT_EQ(formatVal_.height, 480);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
     trackIndex_ = 1;
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -446,10 +443,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2311, TestSize.Level1)
     ASSERT_EQ(formatVal_.height, 480);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
     trackIndex_ = 1;
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
