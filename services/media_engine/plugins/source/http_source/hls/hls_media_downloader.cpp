@@ -1714,6 +1714,7 @@ void HlsMediaDownloader::WaitForBufferingEnd()
         return !isBuffering_.load() || isInterruptNeeded_.load();
     });
 }
+
 }
 }
 }

@@ -207,12 +207,14 @@ void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCo
     if (serverErrorCode != 0) {
         int32_t errorCode = MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR;
         GetServerMediaServiceErrorCode(serverErrorCode, errorCode);
+
         callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "server error"});
         MEDIA_LOG_I("Notify http server error, code " PUBLIC_LOG_D32, serverErrorCode);
     }
     if (clientErrorCode != 0) {
         int32_t errorCode = MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR;
         GetClientMediaServiceErrorCode(clientErrorCode, errorCode);
+        
         callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "client error"});
         MEDIA_LOG_I("Notify http client error, code " PUBLIC_LOG_D32, clientErrorCode);
     }

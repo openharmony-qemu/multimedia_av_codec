@@ -1380,6 +1380,7 @@ void HttpMediaDownloader::ClearCacheBuffer()
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
     MEDIA_LOG_I("HTTP ClearCacheBuffer, freeSize: " PUBLIC_LOG_U64, freeSize);
 }
+
 }
 }
 }

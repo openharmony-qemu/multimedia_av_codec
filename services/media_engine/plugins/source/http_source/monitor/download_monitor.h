@@ -73,6 +73,7 @@ public:
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
+    
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;

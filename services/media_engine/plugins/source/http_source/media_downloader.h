@@ -143,6 +143,7 @@ public:
     }
 
     virtual void WaitForBufferingEnd() {}
+    
 };
 }
 }
