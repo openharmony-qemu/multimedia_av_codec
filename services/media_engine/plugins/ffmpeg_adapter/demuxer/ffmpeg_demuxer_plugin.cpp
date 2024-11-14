@@ -1580,9 +1580,9 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
                          static_cast<int32_t>(avStream->ctts_data[cttsIndex].count) : 0;
         }
         cttsCurNum--;
-        if ((avStream->ctts_data[cttsIndex].duration > 0) &&
-            (INT64_MAX / 1000 / 1000) >= // 1000 is used for converting pts to us
-            (dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration))) {
+        if ((INT64_MAX / 1000 / 1000) >= // 1000 is used for converting pts to us
+            ((dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) /
+            static_cast<int64_t>(avStream->time_scale))) {
             pts = (dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) *
                   1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
         } else {
@@ -1591,8 +1591,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
         }
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
         sttsCurNum--;
-        if ((avStream->stts_data[sttsIndex].duration > 0) &&
-            (INT64_MAX - dts) >= (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {
+        if ((INT64_MAX - dts) >= (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {
             dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
         } else {
             MEDIA_LOG_E("dts overflow");
@@ -1612,11 +1611,16 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
 
     while (sttsIndex < avStream->stts_count && sttsCurNum >= 0) {
-        pts = dts * 1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is for converting pts to us
+        if ((INT64_MAX / 1000 / 1000) >= // 1000 is used for converting pts to us
+            (dts / static_cast<int64_t>(avStream->time_scale))) {
+            pts = dts * 1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is for converting pts to us
+        } else {
+            MEDIA_LOG_E("pts overflow");
+            return Status::ERROR_INVALID_DATA;
+        }
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
         sttsCurNum--;
-        if ((avStream->stts_data[sttsIndex].duration > 0) &&
-            (INT64_MAX - dts) >= (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {
+        if ((INT64_MAX - dts) >= (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {
             dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
         } else {
             MEDIA_LOG_E("dts overflow");
