@@ -64,8 +64,8 @@ constexpr struct {
     const bool isEncoder;
 } SUPPORT_VCODEC[] = {
     {AVCodecCodecName::VIDEO_DECODER_AVC_NAME, CodecMimeType::VIDEO_AVC, "h264", false},
-    {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME,CodecMimeType::VIDEO_MPEG2,"mpeg2video", false},
-    {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME,CodecMimeType::VIDEO_MPEG4,"mpeg4", false}
+    {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME,CodecMimeType::VIDEO_MPEG2, "mpeg2video", false},
+    {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME,CodecMimeType::VIDEO_MPEG4, "mpeg4", false}
 };
 constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
 } // namespace
