@@ -77,6 +77,12 @@ void SystemAbility::OnStart()
     UNITTEST_INFO_LOG("");
 }
 
+int32_t SystemAbility::OnIdle(const SystemAbilityOnDemandReason& idleReason)
+{
+    UNITTEST_INFO_LOG("");
+    return 0;
+}
+
 void SystemAbility::OnStop()
 {
     UNITTEST_INFO_LOG("");
@@ -93,5 +99,15 @@ bool SystemAbility::AddSystemAbilityListener(int32_t systemAbilityId)
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, false, "mock object is nullptr");
     return mock->AddSystemAbilityListener(systemAbilityId);
+}
+
+SystemAbilityState SystemAbility::GetAbilityState()
+{
+    return SystemAbilityState();
+}
+
+bool SystemAbility::CancelIdle()
+{
+    return true;
 }
 } // namespace OHOS
