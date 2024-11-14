@@ -1660,7 +1660,7 @@ bool HlsMediaDownloader::GetBufferingTimeOut()
 bool HlsMediaDownloader::GetReadTimeOut()
 {
     size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
-    return now >= readTime_ ? now - readTime_ >= MAX_BUFFERING_TIME_OUT : false;
+    return (now >= readTime_) ? (now - readTime_ >= MAX_BUFFERING_TIME_OUT) : false;
 }
 
 size_t HlsMediaDownloader::GetSegmentOffset()
