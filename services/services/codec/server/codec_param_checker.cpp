@@ -605,10 +605,10 @@ int32_t QPMapChecker(CapabilityData &capData, Format &format, CodecScenario scen
     (void)scenario;
     int32_t qpMapEnable = false;
     bool qpMapEnableExists = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_QP_MAP, qpMapEnable);
-    if (!qpMapEnableExists) {
+    PrintParam(qpMapEnableExists, Tag::VIDEO_ENCODER_ENABLE_QP_MAP, qpMapEnable);
+    if (!qpMapEnableExists || !qpMapEnable) {
         return AVCS_ERR_OK;
     }
-    PrintParam(qpMapEnableExists, Tag::VIDEO_ENCODER_ENABLE_QP_MAP, qpMapEnable);
 
     CHECK_AND_RETURN_RET_LOGW(capData.featuresMap.count(
         static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_ENABLE_QP_MAP)),
