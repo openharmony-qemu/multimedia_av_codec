@@ -73,8 +73,6 @@ Status TimeAndIndexConversion::GetFirstVideoTrackIndex(uint32_t &trackIndex)
 void TimeAndIndexConversion::ReadBufferFromDataSource(size_t bufSize, std::shared_ptr<Buffer> &buffer)
 {
     FALSE_RETURN_MSG(buffer != nullptr, "Buffer is nullptr");
-    std::vector<uint8_t> buff(bufSize);
-    auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
     auto result = source_->SeekTo(offset_);
     if (result != Status::OK) {
         MEDIA_LOG_E("Seek to " PUBLIC_LOG_D32 " fail", offset_);
@@ -96,6 +94,9 @@ void TimeAndIndexConversion::StartParse()
     while (static_cast<uint64_t>(offset_) < fileSize_) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
         auto buffer = std::make_shared<Buffer>();
+        FALSE_RETURN_MSG(buffer != nullptr, "StartParse failed due to read buffer error");
+        std::vector<uint8_t> buff(bufSize);
+        auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
         ReadBufferFromDataSource(bufSize, buffer);
         FALSE_RETURN_MSG(buffer != nullptr, "StartParse failed due to read buffer error");
         BoxHeader header;
@@ -129,6 +130,9 @@ bool TimeAndIndexConversion::IsMP4orMOV()
 {
     int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
     auto buffer = std::make_shared<Buffer>();
+    FALSE_RETURN_MSG(buffer != nullptr, "IsMP4orMOV failed due to read buffer error");
+    std::vector<uint8_t> buff(bufSize);
+    auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
     ReadBufferFromDataSource(bufSize, buffer);
     FALSE_RETURN_V_MSG_E(buffer != nullptr, false, "IsMP4orMOV failed due to read buffer error");
     BoxHeader header;
@@ -143,6 +147,9 @@ void TimeAndIndexConversion::ParseMoov(uint32_t boxSize)
     while (static_cast<uint64_t>(offset_) < parentSize) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
         auto buffer = std::make_shared<Buffer>();
+        FALSE_RETURN_MSG(buffer != nullptr, "ParseMoov failed due to read buffer error");
+        std::vector<uint8_t> buff(bufSize);
+        auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
         ReadBufferFromDataSource(bufSize, buffer);
         FALSE_RETURN_MSG(buffer != nullptr, "ParseMoov failed due to read buffer error");
         BoxHeader header;
@@ -173,6 +180,9 @@ void TimeAndIndexConversion::ParseBox(uint32_t boxSize)
     while (static_cast<uint64_t>(offset_) < parentSize) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
         auto buffer = std::make_shared<Buffer>();
+        FALSE_RETURN_MSG(buffer != nullptr, "ParseBox failed due to read buffer error");
+        std::vector<uint8_t> buff(bufSize);
+        auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
         ReadBufferFromDataSource(bufSize, buffer);
         FALSE_RETURN_MSG(buffer != nullptr, "ParseBox failed due to read buffer error");
         BoxHeader header;
