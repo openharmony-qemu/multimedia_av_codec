@@ -1601,6 +1601,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
             sttsIndex++;
             sttsCurNum = sttsIndex < avStream->stts_count ?
                          static_cast<int32_t>(avStream->stts_data[sttsIndex].count) : 0;
+        }
     }
     return Status::OK;
 }
