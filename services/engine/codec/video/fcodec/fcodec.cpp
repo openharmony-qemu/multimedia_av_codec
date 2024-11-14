@@ -1655,7 +1655,7 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.pixFormat = {
             static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
-            GetM2vCapProf(capaArray);
+            GetMpeg2CapProf(capaArray);
         } else if (capsData.mimeType == "video/mp4v-es") {
             GetMpeg4esCapProf(capaArray);
         } else {
