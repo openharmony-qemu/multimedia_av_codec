@@ -69,7 +69,7 @@ int32_t AVCodecClient::CreateInstanceAndRetryInTimes(IStandardAVCodecService::AV
 {
     int32_t ret = AVCS_ERR_OK;
     while (tryTimes--) {
-        if (IsAlived()) {
+        if (!IsAlived()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50)); // sleep for 50ms
             continue;
         }

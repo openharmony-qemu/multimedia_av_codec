@@ -111,9 +111,8 @@ int32_t AVCodecServer::GetSubSystemAbility(IStandardAVCodecService::AVCodecSyste
                                            const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject)
 {
     std::lock_guard<std::mutex> stateLock(stateMutex_);
-    if (GetAbilityState() == SystemAbilityState::IDLE) {
-        CancelIdle();
-    }
+    CHECK_AND_RETURN_RET_LOG((GetAbilityState() != SystemAbilityState::IDLE) || CancelIdle(),
+        AVCS_ERR_INVALID_STATE, "AVCodecService in idle state, but cancel idle failed");
 
     std::optional<AVCodecServerManager::StubType> stubType = SwitchSystemId(subSystemId);
     CHECK_AND_RETURN_RET_LOG(stubType != std::nullopt, AVCS_ERR_INVALID_OPERATION, "Get sub system type failed");
