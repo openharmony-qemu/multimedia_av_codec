@@ -130,7 +130,7 @@ bool TimeAndIndexConversion::IsMP4orMOV()
 {
     int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
     auto buffer = std::make_shared<Buffer>();
-    FALSE_RETURN_MSG(buffer != nullptr, "IsMP4orMOV failed due to read buffer error");
+    FALSE_RETURN_V_MSG_E(buffer != nullptr, false, "IsMP4orMOV failed due to read buffer error");
     std::vector<uint8_t> buff(bufSize);
     auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
     ReadBufferFromDataSource(bufSize, buffer);
