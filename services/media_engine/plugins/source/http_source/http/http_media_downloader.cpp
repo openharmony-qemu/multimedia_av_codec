@@ -175,10 +175,6 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     FALSE_RETURN_V(statusCallback_ != nullptr, false);
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
-        if (isRingBuffer_ && callback_ && request->GetFileContentLengthNoWait() == 0) {
-            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-            return;
-        }
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
     auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
@@ -511,7 +507,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
         FALSE_RETURN_V_MSG(ringBuffer_ != nullptr, Status::END_OF_STREAM, "ringBuffer_ = nullptr");
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
-        if (isBuffering_ && GetBufferingTimeOut() && callback_) {
+        if (isBuffering_ && GetBufferingTimeOut() && callback_ && !isReportedErrorCode_) {
             MEDIA_LOG_I("HTTP ringbuffer read time out.");
             callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
             return Status::END_OF_STREAM;
@@ -528,7 +524,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
         FALSE_RETURN_V_MSG(cacheMediaBuffer_ != nullptr, Status::END_OF_STREAM, "cacheMediaBuffer_ = nullptr");
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
-        if (isBuffering_ && GetBufferingTimeOut() && callback_) {
+        if (isBuffering_ && GetBufferingTimeOut() && callback_ && !isReportedErrorCode_) {
             MEDIA_LOG_I("HTTP cachebuffer read time out.");
             callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
             return Status::END_OF_STREAM;
@@ -552,6 +548,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
 Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
+    readTime_ = now;
     auto ret = ReadDelegate(buff, readDataInfo);
     readTotalBytes_ += readDataInfo.realReadLength_;
     if (now > lastReadCheckTime_ && now - lastReadCheckTime_ > SAMPLE_INTERVAL) {
@@ -980,8 +977,8 @@ void HttpMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("HTTP SetDownloadErrorState");
     downloadErrorState_ = true;
-    if (callback_ != nullptr) {
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+    if (callback_ != nullptr && !isReportedErrorCode_) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_NOT_RETRY}, "read"});
     }
     if (isRingBuffer_) {
         if (ringBuffer_ != nullptr && ringBuffer_->GetSize() == 0) {
@@ -1307,6 +1304,12 @@ bool HttpMediaDownloader::GetBufferingTimeOut()
     }
 }
 
+bool HttpMediaDownloader::GetReadTimeOut()
+{
+    size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+    return now >= readTime_ ? now - readTime_ >= MAX_BUFFERING_TIME_OUT : false;
+}
+
 Status HttpMediaDownloader::StopBufferring(bool isAppBackground)
 {
     MEDIA_LOG_I("HttpMediaDownloader:StopBufferring enter");
@@ -1381,6 +1384,11 @@ void HttpMediaDownloader::ClearCacheBuffer()
     MEDIA_LOG_I("HTTP ClearCacheBuffer, freeSize: " PUBLIC_LOG_U64, freeSize);
 }
 
+
+void HttpMediaDownloader::SetIsReportedErrorCode()
+{
+    isReportedErrorCode_ = true;
+}
 }
 }
 }
