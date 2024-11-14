@@ -420,6 +420,83 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_012, TestSize.Level1)
 #else
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
 #endif
+
+/**
+ * @tc.name: VideoEncoder_QPMapCapability_013
+ * @tc.desc: unsupport platform, ignore configure error and start encoder, buffer mode
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_013, TestSize.Level1)
+{
+    if (GetQPMapCapability(getParam())) {
+        return;
+    }
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 1);
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+    EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#else
+    EXPECT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#endif
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_QPMapCapability_014
+ * @tc.desc: unsupport platform, ignore configure error and start encoder, surface mode（AVMemoey）
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_014, TestSize.Level1)
+{
+    if (GetQPMapCapability(getParam())) {
+        return;
+    }
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 1);
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+    EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#else
+    EXPECT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#endif
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_QPMapCapability_015
+ * @tc.desc: unsupport platform, ignore configure error and start encoder, surface mode（AVBuffer）
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_015, TestSize.Level1)
+{
+    if (GetQPMapCapability(getParam())) {
+        return;
+    }
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 1);
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+    EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#else
+    EXPECT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+#endif
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
 }
 } // namespace
 
