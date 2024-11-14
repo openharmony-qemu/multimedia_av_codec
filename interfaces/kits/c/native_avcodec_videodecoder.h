@@ -409,7 +409,7 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBufferAtTime(OH_AVCodec *codec, uint32_
 /**
  * @brief Return the processed output buffer to the decoder.
  * Need to call this interface to release output buffer immediately after using.
- * otherwise, the decoding process will be blocked.
+ * Otherwise, the decoding process will be blocked.
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param index The index value corresponding to the output buffer,
