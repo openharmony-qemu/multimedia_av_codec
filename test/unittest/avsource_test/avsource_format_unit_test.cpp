@@ -170,10 +170,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2298, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     ASSERT_EQ(formatVal_.bitRate, 1187898);
     trackIndex_ = 1;
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -220,10 +217,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2299, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     ASSERT_EQ(formatVal_.bitRate, 1187898);
     trackIndex_ = 1;
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -270,10 +264,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2300, TestSize.Level1)
     ASSERT_EQ(formatVal_.frameRate, 60.000000);
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     trackIndex_ = 1;
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -316,10 +307,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2301, TestSize.Level1)
     ASSERT_EQ(formatVal_.frameRate, 60.000000);
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     trackIndex_ = 1;
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -364,10 +352,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2302, TestSize.Level1)
     ASSERT_EQ(formatVal_.frameRate, 60.000000);
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     trackIndex_ = 1;
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -412,10 +397,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2303, TestSize.Level1)
     ASSERT_EQ(formatVal_.frameRate, 60.000000);
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     trackIndex_ = 1;
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -462,10 +444,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2304, TestSize.Level1)
     ASSERT_EQ(formatVal_.frameRate, 60.000000);
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     trackIndex_ = 1;
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -510,10 +489,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2305, TestSize.Level1)
     ASSERT_EQ(formatVal_.frameRate, 60.000000);
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     trackIndex_ = 1;
-    if(format_ != nullptr){
-        format_->Destroy();
-        format_= nullptr;
-    }
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
