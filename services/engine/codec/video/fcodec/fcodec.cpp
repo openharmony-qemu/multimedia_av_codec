@@ -64,8 +64,8 @@ constexpr struct {
     const bool isEncoder;
 } SUPPORT_VCODEC[] = {
     {AVCodecCodecName::VIDEO_DECODER_AVC_NAME, CodecMimeType::VIDEO_AVC, "h264", false},
-    {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME,CodecMimeType::VIDEO_MPEG2,"mpeg2video",false},
-    {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME,CodecMimeType::VIDEO_MPEG4,"mpeg4",false}
+    {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME,CodecMimeType::VIDEO_MPEG2,"mpeg2video", false},
+    {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME,CodecMimeType::VIDEO_MPEG4,"mpeg4", false}
 };
 constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
 } // namespace
@@ -1447,13 +1447,13 @@ int32_t FCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
     return AVCS_ERR_OK;
 }
 
-void FCodec::GetMpeg2CapProf(std::vector<CapabilityData> &capaArray) 
+void FCodec::GetMpeg2CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
         capsData.profiles = {static_cast<int32_t>(MPEG2_PROFILE_422), static_cast<int32_t>(MPEG2_PROFILE_HIGH),
-                            static_cast<int32_t>(MPEG2_PROFILE_MAIN),static_cast<int32_t>(MPEG2_PROFILE_SNR),
-                            static_cast<int32_t>(MPEG2_PROFILE_SIMPLE),static_cast<int32_t>(MPEG2_PROFILE_SPATIAL)};
+                            static_cast<int32_t>(MPEG2_PROFILE_MAIN), static_cast<int32_t>(MPEG2_PROFILE_SNR),
+                            static_cast<int32_t>(MPEG2_PROFILE_SIMPLE), static_cast<int32_t>(MPEG2_PROFILE_SPATIAL)};
         std::vector<int32_t> levels_sp;
         std::vector<int32_t> levels_mp;
         std::vector<int32_t> levels_snr;
@@ -1467,7 +1467,8 @@ void FCodec::GetMpeg2CapProf(std::vector<CapabilityData> &capaArray)
         for (int32_t j = 0; j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_H14); ++j) {
             levels_snr.emplace_back(j);
         }
-        for (int32_t j = static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_ML); j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_HL); ++j) {
+        for (int32_t j = static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_ML);
+                j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_HL); ++j) {
             levels_422p.emplace_back(j);
         }
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_SIMPLE), levels_sp));
@@ -1482,7 +1483,7 @@ void FCodec::GetMpeg2CapProf(std::vector<CapabilityData> &capaArray)
 void FCodec::SetMpeg4Profiles(CapabilityData& capsData)
 {
     capsData.profiles = {
-        static_cast<int32_t>(MPEG4_PROFILE_SIMPLE), 
+        static_cast<int32_t>(MPEG4_PROFILE_SIMPLE),
         static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_SCALABLE),
         static_cast<int32_t>(MPEG4_PROFILE_CORE),
         static_cast<int32_t>(MPEG4_PROFILE_MAIN),
@@ -1611,7 +1612,7 @@ void FCodec::GetAvcCapProf(std::vector<CapabilityData> &capaArray)
         }
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_MAIN), levels));
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_HIGH), levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_BASELINE), levels));        
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_BASELINE), levels));
     }
 }
 
@@ -1650,17 +1651,17 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
             static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
         capaArray.emplace_back(capsData);
-        if ( capsData.mimeType == "video/mpeg2") {
+        if (capsData.mimeType == "video/mpeg2") {
         capsData.pixFormat = {
             static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
-            static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};            
+            static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
             GetM2vCapProf(capaArray);
         } else if (capsData.mimeType == "video/mp4v-es") {
             GetMpeg4esCapProf(capaArray);
         } else {
             GetAvcCapProf(capaArray);
-        } 
-    } 
+        }
+    }
     return AVCS_ERR_OK;
 }
 } // namespace Codec
