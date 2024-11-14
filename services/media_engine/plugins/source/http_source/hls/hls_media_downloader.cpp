@@ -488,7 +488,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         MEDIA_LOG_I("HLS HlsMediaDownloader: buffer is empty, eos.");
         return Status::END_OF_STREAM;
     }
-    if (isBuffering_ && GetBufferingTimeOut() && callback_) {
+    if (isBuffering_ && GetBufferingTimeOut() && callback_ && !isReportedErrorCode_) {
         callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         return Status::END_OF_STREAM;
     }
@@ -541,6 +541,7 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
 Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
+    readTime_ = now;
 
     if (!CheckDataIntegrity()) {
         MEDIA_LOG_W("HLS Read in, fix download.");
@@ -1194,7 +1195,7 @@ void HlsMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("HLS SetDownloadErrorState");
     downloadErrorState_ = true;
-    if (callback_ != nullptr) {
+    if (callback_ != nullptr && !isReportedErrorCode_) {
         callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
     }
     Close(true);
@@ -1656,6 +1657,12 @@ bool HlsMediaDownloader::GetBufferingTimeOut()
     }
 }
 
+bool HlsMediaDownloader::GetReadTimeOut()
+{
+    size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+    return now >= readTime_ ? now - readTime_ >= MAX_BUFFERING_TIME_OUT : false;
+}
+
 size_t HlsMediaDownloader::GetSegmentOffset()
 {
     if (playlistDownloader_) {
@@ -1715,6 +1722,10 @@ void HlsMediaDownloader::WaitForBufferingEnd()
     });
 }
 
+void HlsMediaDownloader::SetIsReportedErrorCode()
+{
+    isReportedErrorCode_ = true;
+}
 }
 }
 }
