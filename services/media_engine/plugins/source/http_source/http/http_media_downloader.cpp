@@ -1307,7 +1307,7 @@ bool HttpMediaDownloader::GetBufferingTimeOut()
 bool HttpMediaDownloader::GetReadTimeOut()
 {
     size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
-    return now >= readTime_ ? now - readTime_ >= MAX_BUFFERING_TIME_OUT : false;
+    return (now >= readTime_) ? (now - readTime_ >= MAX_BUFFERING_TIME_OUT) : false;
 }
 
 Status HttpMediaDownloader::StopBufferring(bool isAppBackground)
