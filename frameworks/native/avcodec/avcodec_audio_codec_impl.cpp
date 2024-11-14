@@ -381,8 +381,12 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
 void AVCodecAudioCodecImpl::ClearCache()
 {
     for (auto iter = outputBufferObjMap_.begin(); iter != outputBufferObjMap_.end();) {
-        std::shared_ptr<AVBuffer> buffer = iter->second;
-        iter = outputBufferObjMap_.erase(iter);
+        std::shared_ptr<AVBuffer> buffer;
+        {
+            std::unique_lock lock(outputMutex_);
+            buffer = iter->second;
+            iter = outputBufferObjMap_.erase(iter);
+        }
         implConsumer_->ReleaseBuffer(buffer);
     }
 }
@@ -392,18 +396,29 @@ void AVCodecAudioCodecImpl::ReturnInputBuffer()
     for (const auto &inputMap : inputBufferObjMap_) {
         mediaCodecProducer_->PushBuffer(inputMap.second, false);
     }
-    inputBufferObjMap_.clear();
+    {
+        std::unique_lock lock(inputMutex_);
+        inputBufferObjMap_.clear();
+    }
     while (!inputIndexQueue.empty()) {
-        std::shared_ptr<AVBuffer> buffer = inputIndexQueue.front();
+        std::shared_ptr<AVBuffer> buffer;
+        {
+            std::unique_lock lock(outputMutex_2);
+            buffer = inputIndexQueue.front();
+            inputIndexQueue.pop();
+        }
         mediaCodecProducer_->PushBuffer(buffer, false);
-        inputIndexQueue.pop();
     }
 }
 
 void AVCodecAudioCodecImpl::ClearInputBuffer()
 {
-    inputBufferObjMap_.clear();
+    {
+        std::unique_lock lock(inputMutex_);
+        inputBufferObjMap_.clear();
+    }
     while (!inputIndexQueue.empty()) {
+        std::unique_lock lock(outputMutex_2);
         inputIndexQueue.pop();
     }
 }

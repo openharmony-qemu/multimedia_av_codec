@@ -41,12 +41,6 @@ void clearIntqueue(std::queue<uint32_t> &q)
     swap(empty, q);
 }
 
-void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
-{
-    std::queue<OH_AVCodecBufferAttr> empty;
-    swap(empty, q);
-}
-
 void clearAvBufferQueue(std::queue<OH_AVMemory *> &q)
 {
     std::queue<OH_AVMemory *> empty;
@@ -442,11 +436,6 @@ int32_t VDecFuzzSample::Flush()
     clearIntqueue(signal_->inIdxQueue_);
     signal_->inCond_.notify_all();
     inLock.unlock();
-    unique_lock<mutex> outLock(signal_->outMutex_);
-    clearIntqueue(signal_->outIdxQueue_);
-    clearBufferqueue(signal_->attrQueue_);
-    signal_->outCond_.notify_all();
-    outLock.unlock();
     isRunning_.store(false);
     return OH_VideoDecoder_Flush(vdec_);
 }
@@ -478,8 +467,6 @@ int32_t VDecFuzzSample::Release()
 int32_t VDecFuzzSample::Stop()
 {
     StopInLoop();
-    clearIntqueue(signal_->outIdxQueue_);
-    clearBufferqueue(signal_->attrQueue_);
     ReleaseInFile();
     return OH_VideoDecoder_Stop(vdec_);
 }

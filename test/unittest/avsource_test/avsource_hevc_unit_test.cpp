@@ -665,7 +665,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1314, TestSize.Level1)
     ASSERT_EQ(formatVal_.bitRate, 64083);
     ASSERT_EQ(formatVal_.codecMime, "audio/av3a");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
-    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.channelLayout, 0);
     CheckHevcInfo("doubleVivid");
 }
 
@@ -726,7 +726,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1315, TestSize.Level1)
     ASSERT_EQ(formatVal_.bitRate, 64083);
     ASSERT_EQ(formatVal_.codecMime, "audio/av3a");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
-    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.channelLayout, 0);
     CheckHevcInfo("doubleVivid");
 }
 

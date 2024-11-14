@@ -128,14 +128,14 @@ void HlsMediaDownloader::HlsInit()
 
 HlsMediaDownloader::~HlsMediaDownloader()
 {
-    MEDIA_LOG_I("~HlsMediaDownloader in");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor in", FAKE_POINTER(this));
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_ = nullptr;
     }
     if (downloader_ != nullptr) {
         downloader_->Stop(false);
     }
-    MEDIA_LOG_I("~HlsMediaDownloader out");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor out", FAKE_POINTER(this));
 }
 
 size_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
@@ -183,7 +183,7 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
 
     {
         AutoLock lock(tsStorageInfoMutex_);
-        if (tsStorageInfo_.count(writeTsIndex_) <= 0) {
+        if (tsStorageInfo_.find(writeTsIndex_) == tsStorageInfo_.end()) {
             tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
         }
     }
@@ -237,7 +237,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
 
 void HlsMediaDownloader::Close(bool isAsync)
 {
-    MEDIA_LOG_I("HLS Close enter");
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " HLS Close enter", FAKE_POINTER(this));
     isInterrupt_ = true;
     if (playList_) {
         playList_->SetActive(false);
@@ -321,14 +321,16 @@ bool HlsMediaDownloader::HandleBuffering()
         }
         {
             AutoLock lock(tsStorageInfoMutex_);
-            if (tsStorageInfo_[readTsIndex_].second == true && backPlayList_.size() > 0 &&
-                readTsIndex_ >= backPlayList_.size() - 1) {
+            if (tsStorageInfo_.find(readTsIndex_) == tsStorageInfo_.end() &&
+                tsStorageInfo_[readTsIndex_].second &&
+                !backPlayList_.empty() && readTsIndex_ >= backPlayList_.size() - 1) {
                 MEDIA_LOG_I("HLS readTS download complete.");
                 isBuffering_ = false;
             }
         }
         if (GetCrossTsBuffersize() >= waterLineAbove_ || CheckBreakCondition() ||
-            tsStorageInfo_[readTsIndex_ + 1].second) {
+            (tsStorageInfo_.find(readTsIndex_ + 1) == tsStorageInfo_.end() &&
+             tsStorageInfo_[readTsIndex_ + 1].second)) {
             MEDIA_LOG_I("HLS CheckBreakCondition true, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_ZU,
                 waterLineAbove_, GetCrossTsBuffersize());
             isBuffering_ = false;
@@ -364,7 +366,7 @@ bool HlsMediaDownloader::HandleCache()
     }
     bool isAboveLine = GetCrossTsBuffersize() >= waterLine;
     bool isNextTsReady = true;
-    if (backPlayList_.size() > 0 && readTsIndex_ >= backPlayList_.size() - 1) {
+    if (!backPlayList_.empty() && readTsIndex_ >= backPlayList_.size() - 1) {
         isNextTsReady = tsStorageInfo_[readTsIndex_].second;
     } else {
         isNextTsReady = tsStorageInfo_[readTsIndex_ + 1].second;
@@ -403,7 +405,7 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
             MEDIA_LOG_W("HLS Read back, this is the first ts: " PUBLIC_LOG_U64, readOffset_);
             return;
         }
-        if (tsStorageInfo_.count(readTsIndex_ - 1) <= 0) {
+        if (tsStorageInfo_.find(readTsIndex_ - 1) != tsStorageInfo_.end()) {
             readOffset_ = readOffset_ > curTsHaveRead ? readOffset_ - curTsHaveRead : 0;
             MEDIA_LOG_W("HLS Read back, last ts is not ready, update readOffset to readTsIndex head: "
                 PUBLIC_LOG_U64, readOffset_);
@@ -412,23 +414,30 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
         readTsIndex_--;
         uint64_t lastTsReadBack = readBack - curTsHaveRead;
         uint32_t readTsIndexTempValue = readTsIndex_.load();
-        readOffset_ = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first - lastTsReadBack);
-        MEDIA_LOG_I("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
-            PUBLIC_LOG_U64, readTsIndexTempValue, readOffset_);
+        uint32_t offset32 = 0;
+        if (tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end()) {
+            offset32 = tsStorageInfo_[readTsIndex_].first >= lastTsReadBack ?
+                tsStorageInfo_[readTsIndex_].first - lastTsReadBack : 0;
+            readOffset_ = SpliceOffset(readTsIndex_, offset32);
+            MEDIA_LOG_I("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32
+                " update readOffset: " PUBLIC_LOG_U64, readTsIndexTempValue, readOffset_);
+        }
     }
 }
 
 bool HlsMediaDownloader::CheckDataIntegrity()
 {
-    if (tsStorageInfo_[readTsIndex_].second == false) {
+    if (tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
+        !tsStorageInfo_[readTsIndex_].second) {
         return readTsIndex_ == writeTsIndex_;
     } else {
         uint64_t head = SpliceOffset(readTsIndex_, 0);
-        uint64_t hasRead = readOffset_ > head ? readOffset_ - head : 0;
-        size_t bufferSize = tsStorageInfo_[readTsIndex_].first > hasRead ?
+        uint64_t hasRead = readOffset_ >= head ? readOffset_ - head : 0;
+        size_t bufferSize = tsStorageInfo_[readTsIndex_].first >= hasRead ?
             tsStorageInfo_[readTsIndex_].first - hasRead : 0;
+        size_t tmpBufferSize = GetBufferSize();
         MEDIA_LOG_I("HLS CheckDataIntegrity, bufferSize " PUBLIC_LOG_ZU " GetBufferSize "
-            PUBLIC_LOG_ZU, bufferSize, GetBufferSize());
+            PUBLIC_LOG_ZU, bufferSize, tmpBufferSize);
         return bufferSize == GetBufferSize();
     }
 }
@@ -439,7 +448,7 @@ Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& read
     if (downloadRequest_ != nullptr) {
         readDataInfo.isEos_ = downloadRequest_->IsEos();
     }
-    if (isFinishedPlay && readTsIndex_ < backPlayList_.size() - 1) {
+    if (isFinishedPlay && readTsIndex_ + 1 < backPlayList_.size()) {
         return Status::ERROR_UNKNOWN;
     }
     if (isFinishedPlay && GetBufferSize() > 0) {
@@ -456,7 +465,8 @@ Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& read
         return Status::OK;
     }
     if (isFinishedPlay && GetBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
-        tsStorageInfo_[writeTsIndex_].second == true) {
+        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
+        tsStorageInfo_[writeTsIndex_].second) {
         readDataInfo.realReadLength_ = 0;
         MEDIA_LOG_I("HLS CheckPlaylist, eos.");
         return Status::END_OF_STREAM;
@@ -471,8 +481,9 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
     MediaAVCodec::AVCodecTrace trace("HLS ReadDelegate, expectedLen: " +
         std::to_string(readDataInfo.wantReadLength_) + ", bufferSize: " + std::to_string(GetBufferSize()));
     readDataInfo.isEos_ = CheckReadStatus();
-    if (readDataInfo.isEos_ && GetBufferSize() == 0 && readTsIndex_ == backPlayList_.size() - 1 &&
-        tsStorageInfo_[readTsIndex_].second == true) {
+    if (readDataInfo.isEos_ && GetBufferSize() == 0 && readTsIndex_ + 1 == backPlayList_.size() &&
+        tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
+        tsStorageInfo_[readTsIndex_].second) {
         readDataInfo.realReadLength_ = 0;
         MEDIA_LOG_I("HLS HlsMediaDownloader: buffer is empty, eos.");
         return Status::END_OF_STREAM;
@@ -506,7 +517,8 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
     readOffset_ += readDataInfo.realReadLength_;
     ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
 
-    if (tsStorageInfo_[readTsIndex_].second == true) {
+    if (tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
+        tsStorageInfo_[readTsIndex_].second == true) {
         size_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
         if (readOffset_ >= tsEndOffset) {
             cacheMediaBuffer_->ClearFragmentBeforeOffset(SpliceOffset(readTsIndex_, 0));
@@ -598,8 +610,10 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     if (seekTime_ < static_cast<uint64_t>(playlistDownloader_->GetDuration())) {
         SeekToTs(seekTime, mode);
     } else {
-        readTsIndex_ = backPlayList_.size() > 0 ? backPlayList_.size() - 1 : 0; // 0
-        tsStorageInfo_[readTsIndex_].second = true;
+        readTsIndex_ = !backPlayList_.empty() ? backPlayList_.size() - 1 : 0; // 0
+        if (tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end()) {
+            tsStorageInfo_[readTsIndex_].second = true;
+        }
     }
     MEDIA_LOG_I("HLS SeekToTime end\n");
     isSeekingFlag = false;
@@ -700,7 +714,9 @@ bool HlsMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         hasWriteSize += res;
         {
             AutoLock lock(tsStorageInfoMutex_);
-            tsStorageInfo_[writeTsIndex_].first += res;
+            if (tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end()) {
+                tsStorageInfo_[writeTsIndex_].first += res;
+            }
         }
         writeBitrateCaculator_->UpdateWriteBytes(res);
         MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "writeOffset " PUBLIC_LOG_U64 " res "
@@ -1060,7 +1076,7 @@ void HlsMediaDownloader::PushPlayInfo(PlayInfo playInfo)
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
         writeOffset_ = readOffset_;
         readTsIndex_ = writeTsIndex_;
-        if (tsStorageInfo_.count(writeTsIndex_) <= 0) {
+        if (tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end()) {
             tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
         } else {
             tsStorageInfo_[writeTsIndex_].first = 0;
@@ -1612,7 +1628,7 @@ size_t HlsMediaDownloader::GetCrossTsBuffersize()
         return bufferSize;
     }
     bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
-    if (backPlayList_.size() > 0 && readTsIndex_ < backPlayList_.size() - 1) {
+    if (!backPlayList_.empty() && readTsIndex_ < backPlayList_.size() - 1) {
         size_t nextTsOffset = SpliceOffset(readTsIndex_ + 1, 0);
         size_t nextTsBuffersize = cacheMediaBuffer_->GetBufferSize(nextTsOffset);
         bufferSize += nextTsBuffersize;

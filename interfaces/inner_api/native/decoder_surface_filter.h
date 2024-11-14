@@ -26,6 +26,7 @@
 #include "video_sink.h"
 #include "sink/media_synchronous_sink.h"
 #include "common/status.h"
+#include "video_decoder_adapter.h"
 #include "meta/meta.h"
 #include "meta/format.h"
 #include "filter/filter.h"
@@ -39,7 +40,6 @@
 
 namespace OHOS {
 namespace Media {
-class VideoDecoderAdapter;
 namespace Pipeline {
 class DecoderSurfaceFilter : public Filter, public std::enable_shared_from_this<DecoderSurfaceFilter> {
 public:
@@ -119,6 +119,7 @@ private:
     void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer, int64_t renderTime);
     bool AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer);
+    bool DrainSeekContinuous(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     bool DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     bool DrainSeekClosest(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
 
