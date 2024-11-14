@@ -31,7 +31,11 @@ void RunNormalEncoder()
     vEncSample->inpDir = "/data/test/media/1280_720_nv.yuv";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
     string tmpCodecName = OH_AVCapability_GetName(cap);
-    vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
+    int32_t ret = vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
+    if (ret != 0) {
+        delete vEncSample;
+        return;
+    }
     vEncSample->SetVideoEncoderCallback();
     vEncSample->ConfigureVideoEncoder();
     vEncSample->StartVideoEncoder();
@@ -55,7 +59,11 @@ bool EncoderConfigureFuzzTest(const uint8_t *data, size_t size)
     vEncSample->inpDir = "/data/test/media/1280_720_nv.yuv";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
     string tmpCodecName = OH_AVCapability_GetName(cap);
-    vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
+    int32_t ret = vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
+    if (ret != 0) {
+        delete vEncSample;
+        return true;
+    }
     vEncSample->SetVideoEncoderCallback();
     vEncSample->fuzzMode = true;
     vEncSample->ConfigureVideoEncoderFuzz(data_);

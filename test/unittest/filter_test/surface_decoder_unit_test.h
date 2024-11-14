@@ -137,7 +137,7 @@ public:
     {
         return;
     }
-    void OnBufferEos(int64_t pts)
+    void OnBufferEos(int64_t pts, int64_t frameNum)
     {
         return;
     }

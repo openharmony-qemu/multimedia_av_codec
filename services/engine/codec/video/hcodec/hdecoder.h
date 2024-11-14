@@ -62,8 +62,8 @@ private:
     void UpdateFormatFromSurfaceBuffer() override;
     int32_t AllocOutDynamicSurfaceBuf();
     int32_t AllocateOutputBuffersFromSurface();
-    int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
-    __attribute__((no_sanitize("cfi"))) int32_t SubmitAllBuffersOwnedByUs() override;
+    int32_t ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
+    int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
     bool ReadyToStart() override;
 
@@ -78,12 +78,13 @@ private:
     void OnGetBufferFromSurface(const ParamSP& param) override;
     SurfaceBufferItem RequestBuffer();
     std::vector<BufferInfo>::iterator FindBelongTo(sptr<SurfaceBuffer>& buffer);
+    std::vector<BufferInfo>::iterator FindNullSlotIfDynamicMode();
     void SurfaceModeSubmitBuffer();
     void SurfaceModeSubmitBufferFromFreeList();
     bool SurfaceModeSubmitOneItem(SurfaceBufferItem& item);
     void DynamicModeSubmitBuffer() override;
-    void SurfaceDynamicModeSubmitBuffer(std::vector<BufferInfo>::iterator nullSlot);
-    void BufferDynamicModeSubmitBuffer(std::vector<BufferInfo>::iterator nullSlot);
+    void DynamicModeSubmitIfEos() override;
+    void DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator nullSlot);
 
     // switch surface
     void OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface,
@@ -99,11 +100,23 @@ private:
     void OnEnterUninitializedState() override;
 
     // VRR
-#ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t SetVrrEnable(const Format &format);
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t VrrPrediction(BufferInfo &info) override;
+    int32_t InitVrr();
     static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
-    std::shared_ptr<OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction> vrrPredictor_;
+    using VrrCreate = Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* (*)();
+    using VrrDestroy = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*);
+    using VrrCheckSupport = int32_t (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*,
+        const char *processName);
+    using VrrProcess = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*,
+        OH_NativeBuffer*, int32_t, int32_t);
+    VrrCreate VrrCreateFunc_ = nullptr;
+    VrrDestroy VrrDestroyFunc_ = nullptr;
+    VrrCheckSupport VrrCheckSupportFunc_ = nullptr;
+    VrrProcess VrrProcessFunc_ = nullptr;
+    void *vpeHandle_ = nullptr;
+    Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* vrrHandle_ = nullptr;
 #endif
 
 private:

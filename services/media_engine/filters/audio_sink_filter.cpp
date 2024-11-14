@@ -110,7 +110,7 @@ Status AudioSinkFilter::DoStart()
     forceUpdateTimeAnchorNextTime_ = true;
     auto err = audioSink_->Start();
     if (err != Status::OK) {
-        eventReceiver_->OnEvent({"audio_sink_filter", EventType::EVENT_ERROR, MSERR_AUD_RENDER_FAILED});
+        eventReceiver_->OnEvent({"audio_sink_filter", EventType::EVENT_ERROR, MSERR_IO_AUDIO_DEVICE_ERROR});
         return err;
     }
     state_ = FilterState::RUNNING;
@@ -121,7 +121,7 @@ Status AudioSinkFilter::DoStart()
 Status AudioSinkFilter::DoPause()
 {
     MEDIA_LOG_I("audio sink filter pause start");
-    if (state_ == FilterState::PAUSED) {
+    if (state_ == FilterState::PAUSED || state_ == FilterState::STOPPED) {
         return Status::OK;
     }
     // only worked when state is working
@@ -155,11 +155,6 @@ Status AudioSinkFilter::DoResume()
 
 Status AudioSinkFilter::DoFlush()
 {
-    // only worked when state is working
-    if (state_ != FilterState::PAUSED && state_ != FilterState::STOPPED) {
-        MEDIA_LOG_W("audio sink cannot flush when not paused or stopped");
-        return Status::ERROR_INVALID_OPERATION;
-    }
     MEDIA_LOG_I("audio sink flush start");
     if (audioSink_ != nullptr) {
         audioSink_->Flush();

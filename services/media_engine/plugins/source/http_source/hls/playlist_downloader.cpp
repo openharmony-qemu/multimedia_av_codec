@@ -106,6 +106,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
     auto downloadDoneCallback = [this] (const std::string& url, const std::string& location) {
         UpdateDownloadFinished(url, location);
     };
+    downloadRequest_->SetIsM3u8Request(true);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     if (downloader_ != nullptr) {
         downloader_->Download(downloadRequest_, -1); // -1
@@ -235,8 +236,7 @@ void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr
 {
     // This should not be called normally
     MEDIA_LOG_D("Should not call this OnDownloadStatus, should call monitor.");
-    if (request->GetClientError() != static_cast<int32_t>(NetworkClientErrorCode::ERROR_OK)
-        || request->GetServerError() != 0) {
+    if (request->GetClientError() != 0 || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
 }

@@ -494,9 +494,6 @@ int32_t AEncDemoAuto::Release()
     }
     if (signal_) {
         ClearQueue();
-        delete signal_;
-        signal_ = nullptr;
-        std::cout << "signal_Release" <<endl;
     }
     int32_t ret = OH_AudioEncoder_Destroy(audioEnc_);
     audioEnc_ = nullptr;

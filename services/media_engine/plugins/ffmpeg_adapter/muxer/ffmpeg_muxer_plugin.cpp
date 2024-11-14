@@ -41,6 +41,7 @@ constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
 constexpr float LONGITUDE_MIN = -180.0f;
 constexpr float LONGITUDE_MAX = 180.0f;
+constexpr int32_t MIN_HE_AAC_SAMPLE_RATE = 16000;
 const std::string TIMED_METADATA_HANDLER_NAME = "timed_metadata";
 
 bool IsMuxerSupported(const char *name)
@@ -167,6 +168,35 @@ Status RegisterMuxerPlugins(const std::shared_ptr<Register>& reg)
     return Status::OK;
 }
 
+void FfmpegLogPrintWithLevel(void* avcl, int level, const char* fmt, va_list vl)
+{
+    (void)avcl;
+    char buf[500] = {0}; // 500
+    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
+    if (ret < 0) {
+        return;
+    }
+    switch (level) {
+        case AV_LOG_WARNING:
+            MEDIA_LOG_W("[FFmpeg Log " PUBLIC_LOG_D32 " WARN] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_ERROR:
+            MEDIA_LOG_E("[FFmpeg Log " PUBLIC_LOG_D32 " ERROR] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_FATAL:
+            MEDIA_LOG_F("[FFmpeg Log " PUBLIC_LOG_D32 " FATAL] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_INFO:
+            MEDIA_LOG_I("[FFmpeg Log " PUBLIC_LOG_D32 " INFO] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_DEBUG:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " DEBUG] " PUBLIC_LOG_S, level, buf);
+            break;
+        default:
+            break;
+    }
+}
+
 PLUGIN_DEFINITION(FFmpegMuxer, LicenseType::LGPL, RegisterMuxerPlugins, [] {g_pluginOutputFmt.clear();})
 
 void ResetCodecParameter(AVCodecParameters *par)
@@ -200,7 +230,7 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 #endif
-    av_log_set_callback(FfmpegLogPrint);
+    av_log_set_callback(FfmpegLogPrintWithLevel);
     auto pkt = av_packet_alloc();
     cachePacket_ = std::shared_ptr<AVPacket> (pkt, [] (AVPacket *packet) {av_packet_free(&packet);});
     outputFormat_ = g_pluginOutputFmt[pluginName_];
@@ -395,6 +425,11 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfTrack(AVStream *stream, const std::
             int32_t channels;
             trackDesc->Get<Tag::MEDIA_PROFILE>(profile);
             trackDesc->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+            if ((profile == AAC_PROFILE_HE || profile == AAC_PROFILE_HE_V2) &&
+                sampleRate < MIN_HE_AAC_SAMPLE_RATE) {
+                MEDIA_LOG_E("HE-AAC only support sample rate >= 16k, input rate:%{public}d", sampleRate);
+                return Status::ERROR_INVALID_PARAMETER;
+            }
             trackDesc->Get<Tag::AUDIO_CHANNEL_COUNT>(channels);
             codecConfig = GenerateAACCodecConfig(profile, sampleRate, channels);
             return SetCodecParameterExtra(stream, codecConfig.data(), codecConfig.size());
@@ -795,6 +830,7 @@ Status FFmpegMuxerPlugin::Stop()
         MEDIA_LOG_E("write trailer failed, %{public}s", AVStrError(ret).c_str());
     }
     avio_flush(formatContext_->pb);
+    MEDIA_LOG_I("write trailer successfully");
 
     return Status::NO_ERROR;
 }

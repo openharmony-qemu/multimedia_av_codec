@@ -38,11 +38,6 @@
 
 namespace OHOS {
 namespace Media {
-namespace {
-    constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
-    constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
-}
-
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 class BaseStreamDemuxer;
 class DemuxerPluginManager;
@@ -70,8 +65,10 @@ public:
     Status Stop();
     Status Pause();
     Status PauseDragging();
+    Status PauseAudioAlign();
     Status Resume();
     Status ResumeDragging();
+    Status ResumeAudioAlign();
     Status Flush();
     Status Preroll();
     Status PausePreroll();
@@ -115,6 +112,7 @@ public:
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
     bool IsVideoEos();
+    bool HasEosTrack();
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
@@ -144,6 +142,9 @@ private:
     };
     bool isHttpSource_ = false;
     std::string videoMime_{};
+
+    static constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
+    static constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
 
     Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);

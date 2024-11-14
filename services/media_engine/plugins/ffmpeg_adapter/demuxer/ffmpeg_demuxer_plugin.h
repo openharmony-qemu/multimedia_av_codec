@@ -127,7 +127,7 @@ private:
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, int32_t writeSize);
-    void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
+    void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     bool GetNextFrame(const uint8_t *data, const uint32_t size);
     bool NeedCombineFrame(uint32_t trackId);
@@ -193,6 +193,7 @@ private:
     std::shared_ptr<ReferenceParserManager> referenceParser_{nullptr};
     int32_t parserCurGopId_ = 0;
     int64_t pendingSeekMsTime_ = -1;
+    int64_t parserRefStartTime_ = -1;
     std::list<uint32_t> processingIFrame_;
     std::vector<uint32_t> IFramePos_;
     double fps_{0};

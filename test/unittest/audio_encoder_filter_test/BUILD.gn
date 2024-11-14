@@ -88,6 +88,7 @@ ohos_unittest("audio_encoder_filter_unitest") {
 
   external_deps = [
     "audio_framework:audio_capturer",
+    "audio_framework:audio_client",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",

@@ -1048,7 +1048,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_016, TestSize.
 
     std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
     sample->pts_ = 100;
-    EXPECT_EQ(demuxer->DoSelectTrack(0, TRACK_ID_DUMMY), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(demuxer->DoSelectTrack(0, MediaDemuxer::TRACK_ID_DUMMY), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.Level1)
@@ -1268,7 +1268,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartReferenceParser_001, TestSize.L
     EXPECT_EQ(demuxer->StartReferenceParser(1, false), Status::ERROR_NULL_POINTER);
     demuxer->demuxerPluginManager_ = nullptr;
     EXPECT_EQ(demuxer->StartReferenceParser(1, false), Status::ERROR_NULL_POINTER);
-    demuxer->videoTrackId_ = TRACK_ID_DUMMY;
+    demuxer->videoTrackId_ = MediaDemuxer::TRACK_ID_DUMMY;
     EXPECT_EQ(demuxer->StartReferenceParser(1, false), Status::ERROR_UNKNOWN);
     demuxer->source_ = nullptr;
     EXPECT_EQ(demuxer->StartReferenceParser(1, false), Status::ERROR_NULL_POINTER);

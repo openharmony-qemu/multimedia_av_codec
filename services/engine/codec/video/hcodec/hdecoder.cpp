@@ -35,6 +35,15 @@ using namespace CodecHDI;
 HDecoder::~HDecoder()
 {
     MsgHandleLoop::Stop();
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+    if (VrrDestroyFunc_ != nullptr) {
+        VrrDestroyFunc_(vrrHandle_);
+    }
+    if (vpeHandle_ != nullptr) {
+        dlclose(vpeHandle_);
+        vpeHandle_ = nullptr;
+    }
+#endif
 }
 
 int32_t HDecoder::OnConfigure(const Format &format)
@@ -64,12 +73,10 @@ int32_t HDecoder::OnConfigure(const Format &format)
     SaveScaleMode(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
-#ifdef USE_VIDEO_PROCESSING_ENGINE
     ret = SetVrrEnable(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-#endif
     return SetupPort(format);
 }
 
@@ -398,18 +405,20 @@ int32_t HDecoder::SetScaleMode()
     return AVCS_ERR_OK;
 }
 
-#ifdef USE_VIDEO_PROCESSING_ENGINE
 int32_t HDecoder::SetVrrEnable(const Format &format)
 {
     int32_t vrrEnable = 0;
-    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, vrrEnable) || vrrEnable == 0) {
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_ENABLE_VRR, vrrEnable) || vrrEnable != 1) {
         HLOGI("VRR disabled");
         return AVCS_ERR_OK;
     }
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+    if (isVrrEnable_) {
+        return AVCS_ERR_OK;
+    }
     optional<double> frameRate = GetFrameRateFromUser(format);
-    if (frameRate.has_value() && floor(frameRate.value()) != VRR_DEFAULT_INPUT_FRAME_RATE
-        && ceil(frameRate.value()) != VRR_DEFAULT_INPUT_FRAME_RATE) {
-        HLOGE("VRR only support for 60fps, current frameRate = %f", frameRate.value());
+    if (!frameRate.has_value()) {
+        HLOGE("VRR without frameRate");
         return AVCS_ERR_UNSUPPORT;
     }
 
@@ -420,18 +429,53 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         HLOGE("VRR SetIsMvUploadParam SetParameter failed");
         return AVCS_ERR_UNSUPPORT;
     }
-    vrrPredictor_ = OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction::Create();
-    if (vrrPredictor_ == nullptr) {
-        HLOGE("VRR VideoRefreshRatePrediction create failed");
-        return AVCS_ERR_UNSUPPORT;
-    }
-    int32_t ret = vrrPredictor_->CheckLtpoSupport();
+    int32_t ret = InitVrr();
     if (ret != AVCS_ERR_OK) {
-        HLOGE("VRR SetParameter failed");
-        return AVCS_ERR_UNKNOWN;
+        HLOGE("VRR Init failed");
+        return ret;
     }
     isVrrEnable_ = true;
     HLOGI("VRR enabled");
+    return AVCS_ERR_OK;
+#else
+    HLOGE("VRR unsupport");
+    return AVCS_ERR_UNSUPPORT;
+#endif
+}
+
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+int32_t HDecoder::InitVrr()
+{
+    if (vpeHandle_ == nullptr) {
+        vpeHandle_ = dlopen("libvideoprocessingengine.z.so", RTLD_NOW);
+        if (vpeHandle_ == nullptr) {
+            HLOGE("dlopen libvideoprocessingengine.z.so failed, dlerror: %{public}s", dlerror());
+            return AVCS_ERR_UNSUPPORT;
+        }
+        HLOGI("dlopen libvideoprocessingengine.z.so success");
+    }
+    VrrCreateFunc_ = reinterpret_cast<VrrCreate>(dlsym(vpeHandle_, "VideoRefreshRatePredictionCreate"));
+    VrrCheckSupportFunc_ = reinterpret_cast<VrrCheckSupport>(dlsym(vpeHandle_,
+        "VideoRefreshRatePredictionCheckSupport"));
+    VrrProcessFunc_ = reinterpret_cast<VrrProcess>(dlsym(vpeHandle_, "VideoRefreshRatePredictionProcess"));
+    VrrDestroyFunc_ = reinterpret_cast<VrrDestroy>(dlsym(vpeHandle_, "VideoRefreshRatePredictionDestroy"));
+    if (VrrCreateFunc_ == nullptr || VrrCheckSupportFunc_ == nullptr || VrrProcessFunc_ == nullptr ||
+        VrrDestroyFunc_ == nullptr) {
+        return AVCS_ERR_UNSUPPORT;
+    }
+    vrrHandle_ = VrrCreateFunc_();
+    int32_t ret = VrrCheckSupportFunc_(vrrHandle_, calledByAvcodec_ ? avcodecCaller_.processName.c_str() :
+        playerCaller_.processName.c_str());
+    if (ret != AVCS_ERR_OK) {
+        HLOGE("VRR check ltpo support failed");
+        VrrDestroyFunc_(vrrHandle_);
+        dlclose(vpeHandle_);
+        vpeHandle_ = nullptr;
+        if (ret == Media::VideoProcessingEngine::VPE_ALGO_ERR_INVALID_OPERATION) (
+            return AVCS_ERR_INVALID_OPERATION;
+        )
+        return AVCS_ERR_UNSUPPORT;
+    }
     return AVCS_ERR_OK;
 }
 #endif
@@ -449,6 +493,9 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
             }
         }
     }
+    if (!isDynamic_) {
+        return AVCS_ERR_OK;
+    }
     auto inCnt = std::count_if(inputBufferPool_.begin(), inputBufferPool_.end(), [](const BufferInfo& info) {
         return info.owner == BufferOwner::OWNED_BY_OMX;
     });
@@ -457,7 +504,16 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
         DynamicModeSubmitBuffer();
         inCnt--;
     }
+    DynamicModeSubmitIfEos();
     return AVCS_ERR_OK;
+}
+
+void HDecoder::DynamicModeSubmitIfEos()
+{
+    auto nullSlot = FindNullSlotIfDynamicMode();
+    if (nullSlot != outputBufferPool_.end() && inputPortEos_ && !outputPortEos_) {
+        SendAsyncMsg(MsgWhat::SUBMIT_DYNAMIC_IF_EOS, nullptr);
+    }
 }
 
 bool HDecoder::UseHandleOnOutputPort(bool isDynamic)
@@ -626,8 +682,10 @@ void HDecoder::CombineConsumerUsage()
     requestCfg_.usage = finalUsage;
 }
 
-int32_t HDecoder::SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize)
+int32_t HDecoder::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, uint32_t targetSize)
 {
+    surface->Connect(); // cleancache will work only if the surface is connected by us
+    surface->CleanCache();
     GSError err = surface->SetQueueSize(targetSize);
     if (err != GSERROR_OK) {
         HLOGE("surface(%" PRIu64 "), SetQueueSize to %u failed, GSError=%d",
@@ -642,12 +700,12 @@ int32_t HDecoder::AllocOutDynamicSurfaceBuf()
 {
     SCOPED_TRACE();
     if (currSurface_.surface_) {
-        currGeneration_++;
-        currSurface_.surface_->CleanCache();
-        int32_t ret = SetQueueSize(currSurface_.surface_, outBufferCnt_);
+        int32_t ret = ClearSurfaceAndSetQueueSize(currSurface_.surface_, outBufferCnt_);
         if (ret != AVCS_ERR_OK) {
             return ret;
         }
+        currGeneration_++;
+        CombineConsumerUsage();
     }
     outputBufferPool_.clear();
 
@@ -675,12 +733,11 @@ int32_t HDecoder::AllocOutDynamicSurfaceBuf()
 int32_t HDecoder::AllocateOutputBuffersFromSurface()
 {
     SCOPED_TRACE();
-    currGeneration_++;
-    currSurface_.surface_->CleanCache();
-    int32_t ret = SetQueueSize(currSurface_.surface_, outBufferCnt_);
+    int32_t ret = ClearSurfaceAndSetQueueSize(currSurface_.surface_, outBufferCnt_);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+    currGeneration_++;
     outputBufferPool_.clear();
     CombineConsumerUsage();
     for (uint32_t i = 0; i < outBufferCnt_; ++i) {
@@ -781,6 +838,16 @@ std::vector<HCodec::BufferInfo>::iterator HDecoder::FindBelongTo(sptr<SurfaceBuf
     });
 }
 
+std::vector<HCodec::BufferInfo>::iterator HDecoder::FindNullSlotIfDynamicMode()
+{
+    if (!isDynamic_) {
+        return outputBufferPool_.end();
+    }
+    return std::find_if(outputBufferPool_.begin(), outputBufferPool_.end(), [](const BufferInfo& info) {
+        return info.surfaceBuffer == nullptr;
+    });
+}
+
 void HDecoder::OnGetBufferFromSurface(const ParamSP& param)
 {
     SCOPED_TRACE();
@@ -797,27 +864,26 @@ void HDecoder::OnGetBufferFromSurface(const ParamSP& param)
     freeList_.push_back(item); // push to list, retrive it later, to avoid wait fence too early
     static constexpr size_t MAX_CACHE_CNT = 2;
     if (item.fence == nullptr || !item.fence->IsValid() || freeList_.size() > MAX_CACHE_CNT) {
-        SurfaceModeSubmitBuffer();
+        SurfaceModeSubmitBufferFromFreeList();
+    }
+}
+
+void HDecoder::DynamicModeSubmitBuffer()
+{
+    auto nullSlot = FindNullSlotIfDynamicMode();
+    if (nullSlot != outputBufferPool_.end()) {
+        DynamicModeSubmitBufferToSlot(nullSlot);
     }
 }
 
 void HDecoder::SurfaceModeSubmitBuffer()
 {
-    if (!isDynamic_) {
-        // in surface normal mode, just get one surfacebuffer
+    auto nullSlot = FindNullSlotIfDynamicMode();
+    if (nullSlot != outputBufferPool_.end()) {
+        DynamicModeSubmitBufferToSlot(nullSlot);
+    } else {
         SurfaceModeSubmitBufferFromFreeList();
-        return;
     }
-    // in dynamic mode, find slot which has null surfacebuffer
-    auto nullSlot = std::find_if(outputBufferPool_.begin(), outputBufferPool_.end(), [](const BufferInfo& info) {
-        return info.surfaceBuffer == nullptr;
-    });
-    if (nullSlot == outputBufferPool_.end()) {
-        // if every slot is not null, just get one surfacebuffer
-        SurfaceModeSubmitBufferFromFreeList();
-        return;
-    }
-    SurfaceDynamicModeSubmitBuffer(nullSlot);
 }
 
 void HDecoder::SurfaceModeSubmitBufferFromFreeList()
@@ -849,80 +915,26 @@ bool HDecoder::SurfaceModeSubmitOneItem(SurfaceBufferItem& item)
     return true;
 }
 
-void HDecoder::DynamicModeSubmitBuffer()
-{
-    if (!isDynamic_) {
-        return;
-    }
-    auto nullSlot = std::find_if(outputBufferPool_.begin(), outputBufferPool_.end(), [](const BufferInfo& info) {
-        return info.surfaceBuffer == nullptr;
-    });
-    if (nullSlot == outputBufferPool_.end()) {
-        return;
-    }
-    if (currSurface_.surface_) {
-        SurfaceDynamicModeSubmitBuffer(nullSlot);
-    } else {
-        BufferDynamicModeSubmitBuffer(nullSlot);
-    }
-}
-
-void HDecoder::SurfaceDynamicModeSubmitBuffer(std::vector<BufferInfo>::iterator nullSlot)
-{
-    SCOPED_TRACE();
-    for (size_t i = 0; i < outputBufferPool_.size(); i++) {
-        SurfaceBufferItem item{};
-        if (!freeList_.empty()) {
-            item = freeList_.front();
-            freeList_.pop_front();
-        } else {
-            item = RequestBuffer();
-            if (item.buffer == nullptr) {
-                return;
-            }
-        }
-        if (item.generation != currGeneration_) {
-            HLOGI("buffer generation %d != current generation %d, ignore", item.generation, currGeneration_);
-            continue;
-        }
-        auto iter = FindBelongTo(item.buffer);
-        WaitFence(item.fence);
-        if (iter != outputBufferPool_.end()) {
-            // familiar buffer
-            ChangeOwner(*iter, BufferOwner::OWNED_BY_US);
-            NotifyOmxToFillThisOutBuffer(*iter);
-            continue; // keep request until we got a new surfacebuffer
-        }
-        // unfamiliar buffer
-        SetCallerToBuffer(item.buffer->GetFileDescriptor());
-        HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, nullSlot->bufferId, item.buffer->GetSeqNum());
-        WrapSurfaceBufferToSlot(*nullSlot, item.buffer, 0, 0);
-        if (nullSlot == outputBufferPool_.begin()) {
-            UpdateFormatFromSurfaceBuffer();
-        }
-        NotifyOmxToFillThisOutBuffer(*nullSlot);
-        nullSlot->omxBuffer->bufferhandle = nullptr;
-        return;
-    }
-}
-
-void HDecoder::BufferDynamicModeSubmitBuffer(std::vector<BufferInfo>::iterator nullSlot)
+void HDecoder::DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator nullSlot)
 {
     SCOPED_TRACE();
     sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
     IF_TRUE_RETURN_VOID_WITH_MSG(buffer == nullptr, "CreateSurfaceBuffer failed");
     GSError err = buffer->Alloc(requestCfg_);
     IF_TRUE_RETURN_VOID_WITH_MSG(err != GSERROR_OK, "AllocSurfaceBuffer failed");
-    std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(buffer);
-    if (avBuffer == nullptr || avBuffer->memory_ == nullptr) {
-        HLOGE("CreateAVBuffer failed");
-        return;
+    if (currSurface_.surface_) {
+        err = currSurface_.surface_->AttachBufferToQueue(buffer);
+        IF_TRUE_RETURN_VOID_WITH_MSG(err != GSERROR_OK, "AttachBufferToQueue failed");
+        HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, nullSlot->bufferId, buffer->GetSeqNum());
+    } else {
+        std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(buffer);
+        IF_TRUE_RETURN_VOID_WITH_MSG(avBuffer == nullptr || avBuffer->memory_ == nullptr, "CreateAVBuffer failed");
+        nullSlot->avBuffer = avBuffer;
+        nullSlot->needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
+        HLOGI("bufferId=%u, seq=%u", nullSlot->bufferId, buffer->GetSeqNum());
     }
     SetCallerToBuffer(buffer->GetFileDescriptor());
-    HLOGI("bufferId=%u, seq=%u", nullSlot->bufferId, buffer->GetSeqNum());
     WrapSurfaceBufferToSlot(*nullSlot, buffer, 0, 0);
-    nullSlot->avBuffer = avBuffer;
-    nullSlot->needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
     if (nullSlot == outputBufferPool_.begin()) {
         UpdateFormatFromSurfaceBuffer();
     }
@@ -932,7 +944,6 @@ void HDecoder::BufferDynamicModeSubmitBuffer(std::vector<BufferInfo>::iterator n
 
 int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
 {
-    SCOPED_TRACE_WITH_ID(info.omxBuffer->pts);
     info.lastFlushTime = GetNowUs();
     if (std::abs(lastFlushRate_ - codecRate_) > std::numeric_limits<float>::epsilon()) {
         sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
@@ -941,6 +952,7 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
         lastFlushRate_ = codecRate_;
         HLOGI("flush video rate(%d)", static_cast<int32_t>(codecRate_));
     }
+    int64_t finalPts = info.omxBuffer->pts;
     BufferFlushConfig cfg {
         .damage = {.x = 0, .y = 0, .w = info.surfaceBuffer->GetWidth(), .h = info.surfaceBuffer->GetHeight() },
         .timestamp = info.omxBuffer->pts,
@@ -951,7 +963,9 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
         info.avBuffer->meta_->Get<OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP>(
             cfg.desiredPresentTimestamp);
         info.avBuffer->meta_->Remove(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP);
+        finalPts = cfg.desiredPresentTimestamp;
     }
+    SCOPED_TRACE_WITH_ID(finalPts);
     GSError ret = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, cfg);
     if (ret != GSERROR_OK) {
         HLOGW("surface(%" PRIu64 "), FlushBuffer(seq=%u) failed, GSError=%d",
@@ -995,7 +1009,11 @@ void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 void HDecoder::OnReleaseOutputBuffer(const BufferInfo &info)
 {
     if (currSurface_.surface_) {
-        HLOGI("outBufId = %u, discard by user, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
+        if (debugMode_) {
+            HLOGI("outBufId = %u, discard by user, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
+        } else {
+            outputDiscardCnt_++;
+        }
     }
 }
 
@@ -1087,7 +1105,7 @@ void HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface,
         ReplyErrorCode(msg.id, ret);
         return;
     }
-    ret = SetQueueSize(newSurface, outBufferCnt_);
+    ret = ClearSurfaceAndSetQueueSize(newSurface, outBufferCnt_);
     if (ret != AVCS_ERR_OK) {
         ReplyErrorCode(msg.id, ret);
         return;
@@ -1117,8 +1135,6 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     const MsgInfo &msg, BufferOperationMode mode)
 {
     SCOPED_TRACE();
-    newSurface->Connect(); // cleancache will work only if the surface is connected by us
-    newSurface->CleanCache(); // make sure new surface is empty
     uint64_t newId = newSurface->GetUniqueId();
     for (size_t i = 0; i < outputBufferPool_.size(); i++) {
         BufferInfo& info = outputBufferPool_[i];
@@ -1175,8 +1191,8 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
 int32_t HDecoder::VrrPrediction(BufferInfo &info)
 {
     SCOPED_TRACE();
-    if (vrrPredictor_ == nullptr) {
-        HLOGE("vrrPredictor_ is nullptr");
+    if (VrrProcessFunc_ == nullptr) {
+        HLOGE("VrrProcessFunc_ is nullptr");
         return AVCS_ERR_INVALID_OPERATION;
     }
     int vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_NONE;
@@ -1188,7 +1204,8 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
         HLOGE("VRR only support for HEVC or AVC");
         return AVCS_ERR_UNSUPPORT;
     }
-    vrrPredictor_->Process(info.surfaceBuffer, static_cast<int32_t>(codecRate_), vrrMvType);
+    VrrProcessFunc_(vrrHandle_, info.surfaceBuffer->SurfaceBufferToNativeBuffer(),
+        static_cast<int32_t>(codecRate_), vrrMvType);
     return AVCS_ERR_OK;
 }
 #endif

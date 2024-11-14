@@ -349,6 +349,12 @@ Status DemuxerFilter::DoPauseDragging()
     return demuxer_->PauseDragging();
 }
 
+Status DemuxerFilter::DoPauseAudioAlign()
+{
+    MEDIA_LOG_I("DoPauseAudioAlign in");
+    return demuxer_->PauseAudioAlign();
+}
+
 Status DemuxerFilter::PauseForSeek()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::PauseForSeek");
@@ -377,6 +383,12 @@ Status DemuxerFilter::DoResumeDragging()
 {
     MEDIA_LOG_I("DoResumeDragging in");
     return demuxer_->ResumeDragging();
+}
+
+Status DemuxerFilter::DoResumeAudioAlign()
+{
+    MEDIA_LOG_I("DoResumeAudioAlign in");
+    return demuxer_->ResumeAudioAlign();
 }
 
 Status DemuxerFilter::ResumeForSeek()
@@ -790,6 +802,12 @@ bool DemuxerFilter::IsVideoEos()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->IsVideoEos();
+}
+
+bool DemuxerFilter::HasEosTrack()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->HasEosTrack();
 }
 
 void DemuxerFilter::WaitForBufferingEnd()

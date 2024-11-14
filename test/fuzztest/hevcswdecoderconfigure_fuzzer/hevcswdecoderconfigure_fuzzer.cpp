@@ -14,36 +14,30 @@
  */
 #include <cstddef>
 #include <cstdint>
-#include "native_avcodec_videodecoder.h"
-#include "native_averrors.h"
-#include "native_avcodec_base.h"
-#include "videodec_sample.h"
+#include "hevcserverdec_sample.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
+using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "hevcswdecoderconfigure_fuzzer"
 
 namespace OHOS {
-bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
+bool HevcSwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int32_t)) {
         return false;
     }
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
-    VDecFuzzSample *vDecSample = new VDecFuzzSample();
-    vDecSample->inpDir = "/data/test/media/1920_1080_30.h265";
-    vDecSample->defaultWidth = data_;
-    vDecSample->defaultHeight = data_;
-    vDecSample->defaultFrameRate = data_;
-    vDecSample->defaultRotation = data_;
-    vDecSample->defaultPixelFormat = data_;
-    vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.HEVC");
-    vDecSample->ConfigureVideoDecoder();
-    vDecSample->SetVideoDecoderCallback();
-    vDecSample->StartVideoDecoder();
-    vDecSample->WaitForEOS();
-    vDecSample->Release();
+    VDecServerSample *vDecSample = new VDecServerSample();
+    vDecSample->kWidth = data_;
+    vDecSample->kHeight = data_;
+    vDecSample->kFormat = data_;
+    vDecSample->kRotation = data_;
+    vDecSample->kFormatRate = data_;
+    vDecSample->RunVideoServerDecoder();
+    vDecSample->WaitForEos();
+
     delete vDecSample;
     return result;
 }
@@ -53,6 +47,6 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::SwdecoderConfigureFuzzTest(data, size);
+    OHOS::HevcSwdecoderConfigureFuzzTest(data, size);
     return 0;
 }

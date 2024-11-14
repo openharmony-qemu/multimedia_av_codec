@@ -35,8 +35,9 @@ namespace {
     constexpr uint32_t MAX_MEM_CNT = 10 * 1024;
     constexpr size_t DEFAULT_PREDOWNLOAD_SIZE_BYTE = 10 * 1024 * 1024;
     constexpr uint32_t DEFAULT_RETRY_TIMES = 20;
-    constexpr uint32_t READ_AGAIN_RETRY_TIME = 100;
-    constexpr uint32_t READ_ERROR_RETRY_TIME = 50;
+    constexpr uint32_t READ_AGAIN_RETRY_TIME_ONE = 100;
+    constexpr uint32_t READ_AGAIN_RETRY_TIME_TWO = 200;
+    constexpr uint32_t READ_AGAIN_RETRY_TIME_THREE = 500;
 }
 std::shared_ptr<Plugins::SourcePlugin> DataStreamSourcePluginCreator(const std::string& name)
 {
@@ -138,6 +139,11 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     FALSE_RETURN_V_MSG(memory != nullptr, Status::ERROR_NO_MEMORY, "allocate memory failed!");
     int32_t realLen;
     do {
+        if (isInterrupted_) {
+            retryTimes_ = 0;
+            isBufferingStart = false;
+            return Status::OK;
+        }
         if (seekable_ == Plugins::Seekable::SEEKABLE) {
             FALSE_RETURN_V(static_cast<int64_t>(offset_) <= size_, Status::END_OF_STREAM);
             expectedLen = std::min(static_cast<size_t>(size_ - offset_), expectedLen);
@@ -154,16 +160,11 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         }
         if (realLen == 0) {
             HandleBufferingStart();
-            OSAL::SleepFor(READ_AGAIN_RETRY_TIME);
-            MEDIA_LOG_D("Read length is 0, read again.");
-            break;
         }
-        if (realLen == MediaDataSourceError::SOURCE_ERROR_EOF) {
-            return Status::END_OF_STREAM;
-        }
-        OSAL::SleepFor(READ_ERROR_RETRY_TIME); // 50ms sleep time for connect
+        FALSE_RETURN_V(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM);
+        SleepForRetry();
         retryTimes_++;
-    } while (realLen < 0 && retryTimes_ < DEFAULT_RETRY_TIMES);
+    } while (realLen <= 0 && retryTimes_ < DEFAULT_RETRY_TIMES);
     FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN, "read data error!");
     FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
     offset_ += static_cast<uint64_t>(realLen);
@@ -178,6 +179,21 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         buffer->GetMemory()->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
     FALSE_RETURN_V(realLen != 0, Status::ERROR_AGAIN);
     return Status::OK;
+}
+
+void DataStreamSourcePlugin::SleepForRetry()
+{
+    MEDIA_LOG_I("read again.");
+    uint32_t retryTimesOneRight = 5;
+    uint32_t retryTimesTwoRight = 15;
+    FALSE_RETURN_V(retryTimes_ > retryTimesOneRight, OSAL::SleepFor(READ_AGAIN_RETRY_TIME_ONE));
+    FALSE_RETURN_V(retryTimes_ > retryTimesTwoRight, OSAL::SleepFor(READ_AGAIN_RETRY_TIME_TWO));
+    OSAL::SleepFor(READ_AGAIN_RETRY_TIME_THREE);
+}
+
+void DataStreamSourcePlugin::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterrupted_ = isInterruptNeeded;
 }
 
 void DataStreamSourcePlugin::HandleBufferingStart()

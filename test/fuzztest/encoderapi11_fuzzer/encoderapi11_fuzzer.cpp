@@ -28,7 +28,10 @@ using namespace OHOS::Media;
 void RunNormalEncoder()
 {
     auto vEncSample = make_unique<VEncAPI11FuzzSample>();
-    vEncSample->CreateVideoEncoder();
+    int32_t ret = vEncSample->CreateVideoEncoder();
+    if (ret != 0) {
+        return;
+    }
     vEncSample->SetVideoEncoderCallback();
     vEncSample->ConfigureVideoEncoder();
     vEncSample->StartVideoEncoder();
@@ -36,7 +39,10 @@ void RunNormalEncoder()
 
     auto vEncSampleSurf = make_unique<VEncAPI11FuzzSample>();
     vEncSample->surfInput = true;
-    vEncSampleSurf->CreateVideoEncoder();
+    ret = vEncSampleSurf->CreateVideoEncoder();
+    if (ret != 0) {
+        return;
+    }
     vEncSampleSurf->SetVideoEncoderCallback();
     vEncSampleSurf->ConfigureVideoEncoder();
     vEncSampleSurf->StartVideoEncoder();
@@ -57,8 +63,13 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     bool result = false;
     int32_t data2 = *reinterpret_cast<const int32_t *>(data);
     VEncAPI11FuzzSample *vEncSample = new VEncAPI11FuzzSample();
-
-    vEncSample->CreateVideoEncoder();
+    vEncSample->fuzzData = data;
+    vEncSample->fuzzSize = size;
+    int32_t ret = vEncSample->CreateVideoEncoder();
+    if (ret != 0) {
+        delete vEncSample;
+        return true;
+    }
     vEncSample->SetVideoEncoderCallback();
     vEncSample->fuzzMode = true;
     vEncSample->ConfigureVideoEncoderFuzz(data2);
@@ -68,7 +79,13 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     delete vEncSample;
 
     vEncSample = new VEncAPI11FuzzSample();
-    vEncSample->CreateVideoEncoder();
+    vEncSample->fuzzData = data;
+    vEncSample->fuzzSize = size;
+    ret = vEncSample->CreateVideoEncoder();
+    if (ret != 0) {
+        delete vEncSample;
+        return true;
+    }
     vEncSample->SetVideoEncoderCallback();
     vEncSample->surfInput = true;
     vEncSample->ConfigureVideoEncoderFuzz(data2);

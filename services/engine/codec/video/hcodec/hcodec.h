@@ -90,6 +90,7 @@ protected:
         OMX_FILL_BUFFER_DONE,
         GET_BUFFER_FROM_SURFACE,
         CHECK_IF_REPEAT,
+        SUBMIT_DYNAMIC_IF_EOS,
         CHECK_IF_STUCK,
         FORCE_SHUTDOWN,
     };
@@ -230,6 +231,7 @@ protected:
 
     // output buffer circulation
     virtual void DynamicModeSubmitBuffer() {}
+    virtual void DynamicModeSubmitIfEos() {}
     int32_t NotifyOmxToFillThisOutBuffer(BufferInfo &info);
     void OnOMXFillBufferDone(const CodecHDI::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
@@ -368,6 +370,10 @@ protected:
     std::array<TotalCntAndCost, OWNER_CNT> outputHoldTimeRecord_;
     std::chrono::time_point<std::chrono::steady_clock> firstInTime_;
     std::chrono::time_point<std::chrono::steady_clock> firstOutTime_;
+    uint64_t inputWaitFenceCostUs_ = 0;
+    uint64_t outputWaitFenceCostUs_ = 0;
+    uint64_t inputDiscardCnt_ = 0;
+    uint64_t outputDiscardCnt_ = 0;
 
     // used when buffer circulation stoped
     static constexpr char KEY_LAST_OWNER_CHANGE_TIME[] = "lastOwnerChangeTime";
@@ -382,7 +388,6 @@ protected:
 
     static constexpr char BUFFER_ID[] = "buffer-id";
     static constexpr uint32_t WAIT_FENCE_MS = 1000;
-    static constexpr uint32_t WARN_FENCE_MS = 30;
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
     static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
 

@@ -24,6 +24,12 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
 constexpr int64_t US_TO_MS = 1000; // 1000 us per ms
 constexpr int64_t ANCHOR_UPDATE_PERIOD_US = 200000; // Update time anchor every 200 ms
+constexpr int64_t DRAIN_TIME_DIFF_WARN_MS = 40;
+constexpr int64_t DRAIN_TIME_DIFF_INFO_MS = 20;
+constexpr int64_t AUDIO_SAMPLE_8_BIT = 1;
+constexpr int64_t AUDIO_SAMPLE_16_BIT = 2;
+constexpr int64_t AUDIO_SAMPLE_24_BIT = 3;
+constexpr int64_t AUDIO_SAMPLE_32_BIT = 4;
 }
 
 namespace OHOS {
@@ -69,6 +75,7 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     plugin_->SetMuted(isMuted_);
     meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
+    meta->GetData(Tag::AUDIO_CHANNEL_COUNT, audioChannelCount_);
     if (samplePerFrame_ > 0 && sampleRate_ > 0) {
         playingBufferDurationUs_ = samplePerFrame_ * 1000000 / sampleRate_; // 1000000 usec per sec
     }
@@ -150,6 +157,7 @@ Status AudioSink::Stop()
     playRangeEndTime_ = DEFAULT_PLAY_RANGE_VALUE;
     Status ret = plugin_->Stop();
     underrunDetector_.Reset();
+    lagDetector_.Reset();
     forceUpdateTimeAnchorNextTime_ = true;
     if (ret != Status::OK) {
         return ret;
@@ -166,6 +174,7 @@ Status AudioSink::Pause()
 {
     Status ret = Status::OK;
     underrunDetector_.Reset();
+    lagDetector_.Reset();
     if (isTransitent_ || isEos_) {
         ret = plugin_->PauseTransitent();
     } else {
@@ -185,6 +194,7 @@ Status AudioSink::Pause()
 
 Status AudioSink::Resume()
 {
+    lagDetector_.Reset();
     Status ret = plugin_->Resume();
     if (ret != Status::OK) {
         MEDIA_LOG_I("AudioSink resume error " PUBLIC_LOG_D32, ret);
@@ -207,6 +217,7 @@ Status AudioSink::Flush()
 {
     Status ret = Status::OK;
     underrunDetector_.Reset();
+    lagDetector_.Reset();
     ret = plugin_->Flush();
     {
         AutoLock lock(eosMutex_);
@@ -220,6 +231,7 @@ Status AudioSink::Flush()
 Status AudioSink::Release()
 {
     underrunDetector_.Reset();
+    lagDetector_.Reset();
     return plugin_->Deinit();
 }
 
@@ -417,15 +429,10 @@ bool AudioSink::DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
 void AudioSink::DrainOutputBuffer()
 {
     std::lock_guard<std::mutex> lock(pluginMutex_);
-    Status ret;
     std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
-    if (plugin_ == nullptr || inputBufferQueueConsumer_ == nullptr) {
-        return;
-    }
-    ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
-    if (ret != Status::OK || filledOutputBuffer == nullptr) {
-        return;
-    }
+    FALSE_RETURN(plugin_ != nullptr && inputBufferQueueConsumer_ != nullptr);
+    Status ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
+    FALSE_RETURN(ret == Status::OK && filledOutputBuffer != nullptr);
     if (state_ != Pipeline::FilterState::RUNNING) {
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         return;
@@ -435,10 +442,8 @@ void AudioSink::DrainOutputBuffer()
         (filledOutputBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNITS))) {
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         AutoLock eosLock(eosMutex_);
-        if (eosDraining_) {
-            // avoid submit handle eos task multiple times
-            return;
-        }
+        // avoid submit handle eos task multiple times
+        FALSE_RETURN(!eosDraining_);
         eosInterruptType_ = EosInterruptState::INITIAL;
         if (eosTask_ == nullptr) {
             DrainAndReportEosEvent();
@@ -458,6 +463,11 @@ void AudioSink::DrainOutputBuffer()
         maxAmplitude_ = 0.0f;
     }
     lastBufferWriteSuccess_ = (plugin_->Write(filledOutputBuffer) == Status::OK);
+    int64_t nowClockTime = 0;
+    GetSyncCenterClockTime(nowClockTime);
+    lagDetector_.UpdateDrainTimeGroup(
+        { lastAnchorClockTime_, bufferDurationSinceLastAnchor_, plugin_->GetWriteDurationMs(), nowClockTime });
+    lagDetector_.CalcLag(filledOutputBuffer);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
@@ -512,8 +522,64 @@ void AudioSink::UnderrunDetector::DetectAudioUnderrun(int64_t clkTime, int64_t l
         MEDIA_LOG_D("AudioSink maybe underrun, underrunTimeUs=" PUBLIC_LOG_D64, underrunTimeUs);
         auto eventReceiver = eventReceiver_.lock();
         FALSE_RETURN(eventReceiver != nullptr);
-        eventReceiver->OnEvent({"AudioSink", EventType::EVENT_AUDIO_LAG, underrunTimeUs / US_TO_MS});
+        eventReceiver->OnDfxEvent({"AudioSink", DfxEventType::DFX_INFO_PLAYER_AUDIO_LAG, underrunTimeUs / US_TO_MS});
     }
+}
+
+bool AudioSink::AudioLagDetector::CalcLag(std::shared_ptr<AVBuffer> buffer)
+{
+    (void)buffer;
+    int64_t maxMediaTime = lastDrainTimeGroup_.anchorDuration + lastDrainTimeGroup_.lastAnchorPts + latency_;
+    auto currentMediaTime = lastDrainTimeGroup_.nowClockTime;
+    auto writeTimeMs = lastDrainTimeGroup_.writeDuration;
+
+    MEDIA_LOG_D("maxMediaTime " PUBLIC_LOG_D64 " currentMediaTime " PUBLIC_LOG_D64 " latency_ " PUBLIC_LOG_D64,
+        maxMediaTime, currentMediaTime, latency_);
+
+    if (maxMediaTime < currentMediaTime) {
+        MEDIA_LOG_W("renderer write cost " PUBLIC_LOG_D64, writeTimeMs);
+    }
+    
+    // Calc time delays except plugin write
+    auto currentTimeMs = Plugins::GetCurrentMillisecond();
+    auto totalTimeDiff = lastDrainTimeMs_ == 0 ? 0 : currentTimeMs - lastDrainTimeMs_;
+    lastDrainTimeMs_ = currentTimeMs;
+    auto drainTimeDiff = totalTimeDiff - writeTimeMs;
+    if (drainTimeDiff > DRAIN_TIME_DIFF_WARN_MS) {
+        MEDIA_LOG_W("Audio drain cost " PUBLIC_LOG_D64, drainTimeDiff);
+    } else if (drainTimeDiff > DRAIN_TIME_DIFF_INFO_MS) {
+        MEDIA_LOG_I("Audio drain cost " PUBLIC_LOG_D64, drainTimeDiff);
+    } else {
+        MEDIA_LOG_D("Audio drain cost " PUBLIC_LOG_D64, drainTimeDiff);
+    }
+
+    return maxMediaTime < currentMediaTime;
+}
+
+void AudioSink::AudioLagDetector::Reset()
+{
+    latency_ = 0;
+    lastDrainTimeMs_ = 0;
+    lastDrainTimeGroup_.lastAnchorPts = 0;
+    lastDrainTimeGroup_.anchorDuration = 0;
+    lastDrainTimeGroup_.writeDuration = 0;
+    lastDrainTimeGroup_.nowClockTime = 0;
+}
+
+bool AudioSink::GetSyncCenterClockTime(int64_t &clockTime)
+{
+    auto syncCenter = syncCenter_.lock();
+    FALSE_RETURN_V(syncCenter != nullptr, false);
+    clockTime = syncCenter->GetClockTimeNow();
+    return true;
+}
+
+void AudioSink::AudioLagDetector::UpdateDrainTimeGroup(AudioDrainTimeGroup group)
+{
+    lastDrainTimeGroup_.lastAnchorPts = group.lastAnchorPts;
+    lastDrainTimeGroup_.anchorDuration = group.anchorDuration;
+    lastDrainTimeGroup_.writeDuration = group.writeDuration;
+    lastDrainTimeGroup_.nowClockTime = group.nowClockTime;
 }
 
 bool AudioSink::UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
@@ -530,9 +596,9 @@ bool AudioSink::UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBu
     }
     uint64_t latency = 0;
     FALSE_LOG_MSG(plugin_->GetLatency(latency) == Status::OK, "failed to get latency");
-    underrunDetector_.DetectAudioUnderrun(nowCt, latency);
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_};
     syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_, iMediaTime, this);
+    lagDetector_.SetLatency(latency + fixDelay_);
     MEDIA_LOG_I("AudioSink fixDelay_: " PUBLIC_LOG_D64
         " us, latency: " PUBLIC_LOG_D64
         " us, pts-f: " PUBLIC_LOG_D64
@@ -557,7 +623,7 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         MEDIA_LOG_I("audio DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
     }
     bool anchorUpdated = UpdateTimeAnchorIfNeeded(buffer);
-    latestBufferDuration_ = (playingBufferDurationUs_ > 0 ? playingBufferDurationUs_ : buffer->duration_) / speed_;
+    latestBufferDuration_ = CalcBufferDuration(buffer) / speed_;
     if (anchorUpdated) {
         bufferDurationSinceLastAnchor_ = latestBufferDuration_;
     } else {
@@ -568,6 +634,31 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         syncCenter->SetLastAudioBufferDuration(bufferDurationSinceLastAnchor_);
     }
     return render ? 0 : -1;
+}
+
+int64_t AudioSink::CalcBufferDuration(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+{
+    FALSE_RETURN_V(buffer != nullptr && buffer->memory_ != nullptr && sampleRate_ != 0 && audioChannelCount_ != 0, 0);
+    int64_t size = static_cast<int64_t>(buffer->memory_->GetSize());
+    int32_t format = 0;
+    switch (plugin_->GetSampleFormat()) {
+        case AudioSampleFormat::SAMPLE_U8:
+            format = AUDIO_SAMPLE_8_BIT;
+            break;
+        case AudioSampleFormat::SAMPLE_S16LE:
+            format = AUDIO_SAMPLE_16_BIT;
+            break;
+        case AudioSampleFormat::SAMPLE_S24LE:
+            format = AUDIO_SAMPLE_24_BIT;
+            break;
+        case AudioSampleFormat::SAMPLE_S32LE:
+            format = AUDIO_SAMPLE_32_BIT;
+            break;
+        default:
+            break;
+    }
+    FALSE_RETURN_V(format > 0, 0);
+    return HST_MSECOND * size / format / sampleRate_ / audioChannelCount_;
 }
 
 Status AudioSink::SetSpeed(float speed)
@@ -685,6 +776,7 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     plugin_->SetMuted(isMuted_);
     meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
+    meta->GetData(Tag::AUDIO_CHANNEL_COUNT, audioChannelCount_);
     if (volume_ >= 0) {
         plugin_->SetVolume(volume_);
     }
