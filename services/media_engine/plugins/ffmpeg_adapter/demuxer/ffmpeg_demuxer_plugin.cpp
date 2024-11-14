@@ -1580,15 +1580,22 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
                          static_cast<int32_t>(avStream->ctts_data[cttsIndex].count) : 0;
         }
         cttsCurNum--;
-        pts = (dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) *
-                1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
+        if (avStream->ctts_data[cttsIndex].duration > 0 &&
+            INT64_MAX / avStream->time_scale >= static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) {
+            pts = (dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) *
+                  1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
+        } else {
+            MEDIA_LOG_E("pts overflow");
+            return Status::ERROR_INVALID_DATA;
+        }
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
         sttsCurNum--;
-        dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
-        if (sttsCurNum == 0) {
-            sttsIndex++;
-            sttsCurNum = sttsIndex < avStream->stts_count ?
-                         static_cast<int32_t>(avStream->stts_data[sttsIndex].count) : 0;
+        if (avStream->stts_data[sttsIndex].duration > 0 &&
+            INT64_MAX / avStream->time_scale >= static_cast<int64_t>(avStream->stts_data[sttsIndex].duration)) {
+            dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
+        } else {
+            MEDIA_LOG_E("dts overflow");
+            return Status::ERROR_INVALID_DATA;
         }
     }
     return Status::OK;
@@ -1607,7 +1614,13 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
         pts = dts * 1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is for converting pts to us
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
         sttsCurNum--;
-        dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
+        if (avStream->stts_data[sttsIndex].duration > 0 &&
+            INT64_MAX / avStream->time_scale >= static_cast<int64_t>(avStream->stts_data[sttsIndex].duration)) {
+            dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
+        } else {
+            MEDIA_LOG_E("dts overflow");
+            return Status::ERROR_INVALID_DATA;
+        }
         if (sttsCurNum == 0) {
             sttsIndex++;
             sttsCurNum = sttsIndex < avStream->stts_count ?
