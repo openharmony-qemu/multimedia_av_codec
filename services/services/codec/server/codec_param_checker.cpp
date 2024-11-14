@@ -611,8 +611,8 @@ int32_t QPMapChecker(CapabilityData &capData, Format &format, CodecScenario scen
     }
 
     CHECK_AND_RETURN_RET_LOGW(capData.featuresMap.count(
-        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_ENABLE_QP_MAP)),
-        AVCS_ERR_INVALID_VAL, "Not support qp map capbility");
+        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_QP_MAP)),
+        AVCS_ERR_UNSUPPORT, "Not support qp map capbility");
 
     return AVCS_ERR_OK;
 }

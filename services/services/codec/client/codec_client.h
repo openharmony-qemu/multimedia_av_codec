@@ -99,6 +99,7 @@ private:
     } CodecMode;
 
     bool hasOnceConfigured_ = false;
+    int32_t isEnableQpMap_ = 0;
     uint32_t callbackMode_ = INVALID_CALLBACK;
     uint32_t codecMode_ = CODEC_BUFFER_MODE;
     AVCodecType type_ = AVCODEC_TYPE_NONE;

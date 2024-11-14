@@ -173,6 +173,8 @@ private:
     void CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer);
     void InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount,
                        std::shared_ptr<AVBufferMock> buffer);
+    void InputQPMap(std::shared_ptr<FormatMock> format,
+                       std::shared_ptr<AVBufferMock> buffer);
     void CheckSHA();
     void PerformEosFrameAndVerifiedSHA();
     std::shared_ptr<VideoEncMock> videoEnc_ = nullptr;

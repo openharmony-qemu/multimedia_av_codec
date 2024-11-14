@@ -47,7 +47,7 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
-    bool GetQPMapCapability(int32 param);
+    bool GetQPMapCapability(int32_t param);
 
 protected:
     std::shared_ptr<VideoEncSample> videoEnc_ = nullptr;//
@@ -108,6 +108,31 @@ bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
     return true;
 }
 
+void TEST_SUIT::CreateByNameWithParam(int32_t param)
+{
+    std::string codecName = "";
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    switch (param) {
+        case VCodecTestCode::HW_AVC:
+            capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
+                                                            AVCodecCategory::AVCODEC_HARDWARE);
+            break;
+        case VCodecTestCode::HW_HEVC:
+            capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_HEVC.data(), true,
+                                                            AVCodecCategory::AVCODEC_HARDWARE);
+            break;
+        default:
+            capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
+                                                            AVCodecCategory::AVCODEC_SOFTWARE);
+            break;
+    }
+    ASSERT_NE(capabilityData, nullptr);
+    codecName = capabilityData->codecName;
+    std::cout << "CodecName: " << codecName << "\n";
+    ASSERT_TRUE(CreateVideoCodecByName(codecName));
+}
+
 void TEST_SUIT::PrepareSource(int32_t param)
 {
     const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
@@ -165,9 +190,9 @@ INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
  * @tc.desc: configure to enable QPMap Capability for video encode, buffer mode
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_001, TestSize.level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_001, TestSize.Level1)
 {
-    if (!GetQPMapCapability(getParam())) {
+    if (!GetQPMapCapability(GetParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
@@ -187,7 +212,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_001, TestSize.level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_002, TestSize.Level1)
 {
-    if (!GetQPMapCapability(getParam())) {
+    if (!GetQPMapCapability(GetParam())) {
         return;
     }
     CreateByNameWithParam(GetParam());
@@ -208,7 +233,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_002, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_003, TestSize.Level1)
 {
-    if (!GetQPMapCapability(getParam())) {
+    if (!GetQPMapCapability(GetParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
@@ -228,9 +253,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_003, TestSize.Level1)
  * @tc.desc: enable qp and set QP Map per frame for video encode, buffer mode
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_004, TestSize.level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_004, TestSize.Level1)
 {
-    if (!GetQPMapCapability(getParam())) {
+    if (!GetQPMapCapability(GetParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
@@ -251,7 +276,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_004, TestSize.level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_005, TestSize.Level1)
 {
-    if (!GetQPMapCapability(getParam())) {
+    if (!GetQPMapCapability(GetParam())) {
         return;
     }
     CreateByNameWithParam(GetParam());
@@ -273,7 +298,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_005, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_006, TestSize.Level1)
 {
-    if (!GetQPMapCapability(getParam())) {
+    if (!GetQPMapCapability(GetParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
@@ -294,9 +319,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_006, TestSize.Level1)
  * @tc.desc: disable qp and set QP Map per frame for video encode, buffer mode
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_007, TestSize.level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_007, TestSize.Level1)
 {
-    if (!GetQPMapCapability(getParam())) {
+    if (!GetQPMapCapability(GetParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
@@ -317,7 +342,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_007, TestSize.level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_008, TestSize.Level1)
 {
-    if (!GetQPMapCapability(getParam())) {
+    if (!GetQPMapCapability(GetParam())) {
         return;
     }
     CreateByNameWithParam(GetParam());
@@ -339,7 +364,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_008, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_009, TestSize.Level1)
 {
-    if (!GetQPMapCapability(getParam())) {
+    if (!GetQPMapCapability(GetParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
@@ -360,9 +385,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_009, TestSize.Level1)
  * @tc.desc: unsupport platform, configure to enable QPMap Capability for video encode, buffer mode
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_010, TestSize.level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_010, TestSize.Level1)
 {
-    if (GetQPMapCapability(getParam())) {
+    if (GetQPMapCapability(GetParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
@@ -384,7 +409,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_010, TestSize.level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_011, TestSize.Level1)
 {
-    if (GetQPMapCapability(getParam())) {
+    if (GetQPMapCapability(GetParam())) {
         return;
     }
     CreateByNameWithParam(GetParam());
@@ -406,7 +431,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_011, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_012, TestSize.Level1)
 {
-    if (GetQPMapCapability(getParam())) {
+    if (GetQPMapCapability(GetParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
@@ -420,6 +445,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_012, TestSize.Level1)
 #else
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
 #endif
+}
 
 /**
  * @tc.name: VideoEncoder_QPMapCapability_013
@@ -428,7 +454,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_012, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_013, TestSize.Level1)
 {
-    if (GetQPMapCapability(getParam())) {
+    if (GetQPMapCapability(GetParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
@@ -453,7 +479,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_013, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_014, TestSize.Level1)
 {
-    if (GetQPMapCapability(getParam())) {
+    if (GetQPMapCapability(GetParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
@@ -479,7 +505,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_014, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_015, TestSize.Level1)
 {
-    if (GetQPMapCapability(getParam())) {
+    if (GetQPMapCapability(GetParam())) {
         return;
     }
     videoEnc_->isAVBufferMode_ = true;
@@ -496,7 +522,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_QPMapCapability_015, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-}
 }
 } // namespace
 
