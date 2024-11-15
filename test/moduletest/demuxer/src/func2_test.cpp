@@ -1272,7 +1272,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1029, TestSize.Level3)
  * @tc.name      : demux AAC_8K_1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0100, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0100, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/AAC_8K_1.aac";
     int fd = open(file, O_RDONLY);
@@ -1291,7 +1291,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0100, TestSize.Level0)
  * @tc.name      : demux AAC_16K_2
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0200, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0200, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/AAC_16K_2.aac";
     int fd = open(file, O_RDONLY);
@@ -1310,7 +1310,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0200, TestSize.Level0)
  * @tc.name      : demux AAC_24K_1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0300, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0300, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/AAC_24K_1.aac";
     int fd = open(file, O_RDONLY);
@@ -1348,7 +1348,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0400, TestSize.Level0)
  * @tc.name      : demux AAC_88.2K_1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0500, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0500, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/AAC_88.2K_1.aac";
     int fd = open(file, O_RDONLY);
@@ -1367,7 +1367,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0500, TestSize.Level0)
  * @tc.name      : demux AAC_96K_1_main
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0600, TestSize.Level1)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0600, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/AAC_96K_1_main.aac";
     int fd = open(file, O_RDONLY);
@@ -1386,7 +1386,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0600, TestSize.Level1)
  * @tc.name      : demux FLAC_16K_24b_1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0700, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0700, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/FLAC_16K_24b_1.flac";
     int fd = open(file, O_RDONLY);
@@ -1405,7 +1405,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0700, TestSize.Level0)
  * @tc.name      : demux FLAC_96K_24b_2
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0800, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0800, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/FLAC_96K_24b_2.flac";
     int fd = open(file, O_RDONLY);
@@ -1424,7 +1424,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0800, TestSize.Level0)
  * @tc.name      : demux FLAC_192K_24b_2
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0900, TestSize.Level1)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0900, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/FLAC_192K_24b_2.flac";
     int fd = open(file, O_RDONLY);
@@ -1443,7 +1443,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0900, TestSize.Level1)
  * @tc.name      : demux M4A_24K_2
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1000, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1000, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/M4A_24K_2.m4a";
     int fd = open(file, O_RDONLY);
@@ -1462,7 +1462,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1000, TestSize.Level0)
  * @tc.name      : demux M4A_48K_2_AC3
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1100, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1100, TestSize.Level1)
 {
     const char *file = "/data/test/media/audio/M4A_48K_2_AC3.m4a";
     int fd = open(file, O_RDONLY);
@@ -1481,7 +1481,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1100, TestSize.Level0)
  * @tc.name      : demux M4A_64K_2_main
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1200, TestSize.Level1)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1200, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/M4A_64K_2_main.m4a";
     int fd = open(file, O_RDONLY);
@@ -1500,7 +1500,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1200, TestSize.Level1)
  * @tc.name      : demux M4A_96K_1_cbr
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1300, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1300, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/M4A_96K_1_cbr.m4a";
     int fd = open(file, O_RDONLY);
@@ -1519,7 +1519,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1300, TestSize.Level0)
  * @tc.name      : demux MP3_8K_1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1400, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1400, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/MP3_8K_1.mp3";
     int fd = open(file, O_RDONLY);
@@ -1538,7 +1538,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1400, TestSize.Level0)
  * @tc.name      : demux MP3_16K_2
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1500, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1500, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/MP3_16K_2.mp3";
     int fd = open(file, O_RDONLY);
@@ -1557,7 +1557,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1500, TestSize.Level0)
  * @tc.name      : demux MP3_24K_1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1600, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1600, TestSize.Level1)
 {
     const char *file = "/data/test/media/audio/MP3_24K_1.mp3";
     int fd = open(file, O_RDONLY);
@@ -1576,7 +1576,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1600, TestSize.Level0)
  * @tc.name      : demux OGG_8K_1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1700, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1700, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/OGG_8K_1.ogg";
     int fd = open(file, O_RDONLY);
@@ -1595,7 +1595,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1700, TestSize.Level0)
  * @tc.name      : demux OGG_16K_1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1800, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1800, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/OGG_16K_1.ogg";
     int fd = open(file, O_RDONLY);
@@ -1633,7 +1633,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1900, TestSize.Level0)
  * @tc.name      : demux OGG_96K_1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2000, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2000, TestSize.Level1)
 {
     const char *file = "/data/test/media/audio/OGG_96K_1.ogg";
     int fd = open(file, O_RDONLY);
@@ -1652,7 +1652,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2000, TestSize.Level0)
  * @tc.name      : demux OGG_192K_2
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2100, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2100, TestSize.Level2)
 {
     const char *file = "/data/test/media/audio/OGG_192K_2.ogg";
     int fd = open(file, O_RDONLY);
@@ -1671,7 +1671,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2100, TestSize.Level0)
  * @tc.name      : demux WAV_24K_32b_1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2200, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2200, TestSize.Level2)
 {
     int32_t bps = 0;
     const char *file = "/data/test/media/audio/WAV_24K_32b_1.wav";
@@ -1693,7 +1693,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2200, TestSize.Level0)
  * @tc.name      : demux WAV_96K_24b_2
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2300, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2300, TestSize.Level2)
 {
     int32_t bps = 0;
     const char *file = "/data/test/media/audio/WAV_96K_24b_2.wav";
@@ -1715,7 +1715,7 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2300, TestSize.Level0)
  * @tc.name      : demux WAV_192K_32b_2
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2400, TestSize.Level1)
+HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2400, TestSize.Level2)
 {
     int32_t bps = 0;
     const char *file = "/data/test/media/audio/WAV_192K_32b_2.wav";
