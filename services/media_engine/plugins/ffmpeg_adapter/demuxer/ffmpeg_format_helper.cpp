@@ -109,6 +109,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"ogg", FileType::OGG},
     {"wav", FileType::WAV},
     {"flv", FileType::FLV},
+    {"avi", FileType::AVI},
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
     {"webvtt", FileType::VTT},
@@ -760,11 +761,11 @@ void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
     } else if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC) {
         int hoaOrder = static_cast<int>(sqrt(channels)) - 1;
         if (hoaOrder == 1) {
-            channelLayout = AudioChannelLayout::HOA_FIRST;
+            channelLayout = AudioChannelLayout::HOA_ORDER1_ACN_SN3D;
         } else if (hoaOrder == 2) { // hoaOrder is 2
-            channelLayout = AudioChannelLayout::HOA_SECOND;
+            channelLayout = AudioChannelLayout::HOA_ORDER2_ACN_SN3D;
         } else if (hoaOrder == 3) { // hoaOrder is 3
-            channelLayout = AudioChannelLayout::HOA_THIRD;
+            channelLayout = AudioChannelLayout::HOA_ORDER3_ACN_SN3D;
         } else {
             MEDIA_LOG_W("Get hoa order failed");
         }

@@ -90,6 +90,7 @@ protected:
         OMX_FILL_BUFFER_DONE,
         GET_BUFFER_FROM_SURFACE,
         CHECK_IF_REPEAT,
+        SUBMIT_DYNAMIC_IF_EOS,
         CHECK_IF_STUCK,
         FORCE_SHUTDOWN,
     };
@@ -230,6 +231,7 @@ protected:
 
     // output buffer circulation
     virtual void DynamicModeSubmitBuffer() {}
+    virtual void DynamicModeSubmitIfEos() {}
     int32_t NotifyOmxToFillThisOutBuffer(BufferInfo &info);
     void OnOMXFillBufferDone(const CodecHDI::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);

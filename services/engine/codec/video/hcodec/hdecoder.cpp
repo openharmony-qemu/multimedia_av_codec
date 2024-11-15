@@ -493,6 +493,9 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
             }
         }
     }
+    if (!isDynamic_) {
+        return AVCS_ERR_OK;
+    }
     auto inCnt = std::count_if(inputBufferPool_.begin(), inputBufferPool_.end(), [](const BufferInfo& info) {
         return info.owner == BufferOwner::OWNED_BY_OMX;
     });
@@ -501,7 +504,16 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
         DynamicModeSubmitBuffer();
         inCnt--;
     }
+    DynamicModeSubmitIfEos();
     return AVCS_ERR_OK;
+}
+
+void HDecoder::DynamicModeSubmitIfEos()
+{
+    auto nullSlot = FindNullSlotIfDynamicMode();
+    if (nullSlot != outputBufferPool_.end() && inputPortEos_ && !outputPortEos_) {
+        SendAsyncMsg(MsgWhat::SUBMIT_DYNAMIC_IF_EOS, nullptr);
+    }
 }
 
 bool HDecoder::UseHandleOnOutputPort(bool isDynamic)
