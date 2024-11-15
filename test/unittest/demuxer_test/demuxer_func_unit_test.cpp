@@ -42,6 +42,8 @@ static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
+string g_tsMpeg4Path = TEST_FILE_PATH + string("test_mpeg4_Gop25_4sec.ts");
+string g_tsMpeg4Uri = TEST_URI_PATH + string("test_mpeg4_Gop25_4sec.ts");
 string g_h264aacPath = TEST_FILE_PATH + string("h264_aac.mov");
 string g_h264mp3Path = TEST_FILE_PATH + string("h264_mp3.mov");
 string g_h264vorPath = TEST_FILE_PATH + string("h264_vorbis.mov");
@@ -66,6 +68,64 @@ string g_mpg4mp4Uri = TEST_URI_PATH + string("MPEG4.mp4");
 
 /**********************************demuxer fd**************************************/
 namespace {
+/**
+ * @tc.name: Demuxer_ReadSample_1075
+ * @tc.desc: copy current sample to buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1075, TestSize.Level1)
+{
+    InitResource(g_tsMpeg4Path, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 103);
+    ASSERT_EQ(frames_[1], 155);
+    ASSERT_EQ(keyFrames_[0], 9);
+    ASSERT_EQ(keyFrames_[1], 155);
+    RemoveValue();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_2075
+ * @tc.desc: copy current sample to buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2075, TestSize.Level1)
+{
+    InitResource(g_tsMpeg4Uri, URI);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 103);
+    ASSERT_EQ(frames_[1], 155);
+    ASSERT_EQ(keyFrames_[0], 9);
+    ASSERT_EQ(keyFrames_[1], 155);
+    RemoveValue();
+}
+
 /**
  * @tc.name: Demuxer_ReadSample_2222
  * @tc.desc: copy current sample to buffer, local
