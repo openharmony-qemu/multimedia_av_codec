@@ -320,7 +320,8 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputData(OH_AVCodec *codec, uint32_t index)
  * @brief Return the processed output buffer to the decoder.
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
  * @param codec Pointer to an OH_AVCodec instance
- * @param index The index value corresponding to the output buffer, should be given by {@link OH_AVCodecOnNewOutputData}.
+ * @param index The index value corresponding to the output buffer,
+ * should be given by {@link OH_AVCodecOnNewOutputData}.
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
  * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
@@ -337,14 +338,14 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputData(OH_AVCodec *codec, uint32_t index);
 
 /**
  * @brief Notify the video decoder that the buffer corresponding to the index has been filled with input data.
- * {@link OH_AVCodecOnNeedInputBuffer} callback will report the available input buffer and the corresponding index value.
- * Once the buffer with the specified index is submitted to the video decoder, the buffer cannot be accessed again
- * until the {@link OH_AVCodecOnNeedInputBuffer} callback is received again reporting that the buffer with 
- * the same index is available. In addition, for some decoders, it is required to input Codec-Specific-Data to
- * the decoder at the beginning to initialize the decoding process of the decoder, such as PPS/SPS data in H264 format.
- * The invoker can use this interface to transfer the parameters required for decoding to the decoder, 
- * such as PPS/SPS data in H264 format. The parameters can be sent to the decoder independently 
- * or together with the data to be decoded.
+ * {@link OH_AVCodecOnNeedInputBuffer} callback will report the available input buffer and
+ * the corresponding index value. Once the buffer with the specified index is submitted to the video decoder,
+ * the buffer cannot be accessed again until the {@link OH_AVCodecOnNeedInputBuffer} callback is received again
+ * reporting that the buffer with the same index is available. In addition, for some decoders, it is required
+ * to input Codec-Specific-Data to the decoder at the beginning to initialize the decoding process of the decoder,
+ * such as PPS/SPS data in H264 format. The invoker can use this interface to transfer the parameters required
+ * for decoding to the decoder, such as PPS/SPS data in H264 format.
+ * The parameters can be sent to the decoder independently or together with the data to be decoded.
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param index The index of the input buffer, should be given by {@link OH_AVCodecOnNeedInputBuffer}.

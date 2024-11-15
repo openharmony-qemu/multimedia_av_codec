@@ -428,9 +428,9 @@ extern const char *OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT;
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY;
 /**
- * @brief Key for describing the interval size at the base layer in temporal group of picture, value type is int32_t.
- * It takes effect only when temporal level scale is enable. This is an optional key that applies only to video encoding.
- * It is used in Configure state.
+ * @brief Key for describing the interval size at the base layer in temporal group of picture,
+ * value type is int32_t. It takes effect only when temporal level scale is enable.
+ * This is an optional key that applies only to video encoding. It is used in Configure state.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
