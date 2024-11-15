@@ -74,6 +74,57 @@ namespace {
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1075, TestSize.Level1)
 {
     InitResource(g_tsMpeg4Path, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 103);
+    ASSERT_EQ(frames_[1], 155);
+    ASSERT_EQ(keyFrames_[0], 9);
+    ASSERT_EQ(keyFrames_[1], 155);
+    RemoveValue();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_2075
+ * @tc.desc: copy current sample to buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2075, TestSize.Level1)
+{
+    InitResource(g_tsMpeg4Uri, URI);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 103);
+    ASSERT_EQ(frames_[1], 155);
+    ASSERT_EQ(keyFrames_[0], 9);
+    ASSERT_EQ(keyFrames_[1], 155);
+    RemoveValue();
+}
+
+/**
  * @tc.name: Demuxer_ReadSample_2222
  * @tc.desc: copy current sample to buffer, local
  * @tc.type: FUNC
@@ -161,13 +212,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2226, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_ReadSample_2075
- * @tc.desc: copy current sample to buffer
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2075, TestSize.Level1)
-{
-    InitResource(g_tsMpeg4Uri, URI);
  * @tc.name: Demuxer_ReadSample_2236
  * @tc.desc: copy current sample to buffer, uri
  * @tc.type: FUNC
@@ -197,18 +241,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2236, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_SeekToTime_1065
- * @tc.desc: seek to the specified time
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1065, TestSize.Level1)
-{
-    InitResource(g_tsMpeg4Path, LOCAL);
-    ASSERT_TRUE(initStatus_);
-    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    list<int64_t> toPtsList = {0, 3480, 3640, 3350, 3000, 3100, 4120}; // ms
-    vector<int32_t> videoVals = {103, 103, 103, 15, 15, 15, 11, 11, 11, 19, 20, 19, 27, 27, 27, 24, 26, 24, 1, 1, 1};
  * @tc.name: Demuxer_ReadSample_2227
  * @tc.desc: copy current sample to buffer, local
  * @tc.type: FUNC
@@ -383,6 +415,70 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2240, TestSize.Level1)
 }
 
 /**
+ * @tc.name: Demuxer_SeekToTime_1065
+ * @tc.desc: seek to the specified time
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1065, TestSize.Level1)
+{
+    InitResource(g_tsMpeg4Path, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    list<int64_t> toPtsList = {0, 3480, 3640, 3350, 3000, 3100, 4120}; // ms
+    vector<int32_t> videoVals = {103, 103, 103, 15, 15, 15, 11, 11, 11, 19, 20, 19, 27, 27, 27, 24, 26, 24, 1, 1, 1};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_2065
+ * @tc.desc: seek to the specified time
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2065, TestSize.Level1)
+{
+    InitResource(g_tsMpeg4Uri, URI);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    list<int64_t> toPtsList = {0, 3480, 3640, 3350, 3000, 3100, 4120}; // ms
+    vector<int32_t> videoVals = {103, 103, 103, 15, 15, 15, 11, 11, 11, 19, 20, 19, 27, 27, 27, 24, 26, 24, 1, 1, 1};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
  * @tc.name: Demuxer_SeekToTime_2222
  * @tc.desc: seek to the specified time, local
  * @tc.type: FUNC
@@ -487,7 +583,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2226, TestSize.Level1)
             }
             ReadData();
             printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
-            ASSERT_EQ(frames_[0], videoVals[numbers_]);
             printf("time = %" PRId64 " | frames_[1]=%d | kFrames[1]=%d\n", *toPts, frames_[1], keyFrames_[1]);
             ASSERT_EQ(frames_[0], videoVals[numbers_]);
             ASSERT_EQ(frames_[1], audioVals[numbers_]);
@@ -499,18 +594,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2226, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_SeekToTime_2065
- * @tc.desc: seek to the specified time
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2065, TestSize.Level1)
-{
-    InitResource(g_tsMpeg4Uri, URI);
-    ASSERT_TRUE(initStatus_);
-    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    list<int64_t> toPtsList = {0, 3480, 3640, 3350, 3000, 3100, 4120}; // ms
-    vector<int32_t> videoVals = {103, 103, 103, 15, 15, 15, 11, 11, 11, 19, 20, 19, 27, 27, 27, 24, 26, 24, 1, 1, 1};
  * @tc.name: Demuxer_SeekToTime_2236
  * @tc.desc: seek to the specified time, uri
  * @tc.type: FUNC
@@ -537,7 +620,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2236, TestSize.Level1)
             }
             ReadData();
             printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
-            ASSERT_EQ(frames_[0], videoVals[numbers_]);
             printf("time = %" PRId64 " | frames_[1]=%d | kFrames[1]=%d\n", *toPts, frames_[1], keyFrames_[1]);
             ASSERT_EQ(frames_[0], videoVals[numbers_]);
             ASSERT_EQ(frames_[1], audioVals[numbers_]);
@@ -546,8 +628,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2236, TestSize.Level1)
             selectedTrackIds_.clear();
         }
     }
-}
-} // namespace
     ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
 }
