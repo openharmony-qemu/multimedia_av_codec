@@ -485,10 +485,9 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 
 Status DecoderSurfaceFilter::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
 {
-    if (videoDecoder_ == nullptr) {
-        return Status::ERROR_INVALID_OPERATION;
-    }
-    return videoDecoder_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    FALSE_RETURN_V(videoSink_ != nullptr, Status::ERROR_INVALID_OPERATION);
+    videoSink_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    return Status::OK;
 }
 
 void DecoderSurfaceFilter::GetParameter(std::shared_ptr<Meta> &parameter)

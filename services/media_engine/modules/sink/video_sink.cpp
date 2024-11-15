@@ -24,6 +24,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr int64_t LAG_LIMIT_TIME = 100;
 }
 
 namespace OHOS {
@@ -98,6 +99,7 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
             render = syncCenter->UpdateTimeAnchor(nowCt + waitTime, latency, buffer->pts_ - firstPts_,
                 buffer->pts_, buffer->duration_, this);
         }
+        lagDetector_.CalcLag(buffer);
         lastTimeStamp_ = buffer->pts_ - firstPts_;
     } else {
         MEDIA_LOG_I("Videosink receives EOS.");
@@ -125,6 +127,7 @@ void VideoSink::ResetSyncInfo()
     seekFlag_ = false;
     lastPts_ = HST_TIME_NONE;
     lastClockTime_ = HST_TIME_NONE;
+    lagDetector_.Reset();
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)
@@ -237,6 +240,66 @@ float VideoSink::GetSpeed(float speed)
         return 1.0f;
     }
     return speed;
+}
+
+Status VideoSink::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
+{
+    lagDetector_.GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    return Status::OK;
+}
+
+bool VideoSink::VideoLagDetector::CalcLag(std::shared_ptr<AVBuffer> buffer)
+{
+    FALSE_RETURN_V(!(buffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)), false);
+    auto systemTimeMsNow = Plugins::GetCurrentMillisecond();
+    auto systemTimeMsDiff = systemTimeMsNow - lastSystemTimeMs_;
+    auto bufferTimeUsNow = Plugins::Us2Ms(buffer->pts_);
+    auto bufferTimeMsDiff = bufferTimeUsNow - lastBufferTimeMs_;
+    auto lagTimeMs = systemTimeMsDiff - bufferTimeMsDiff;
+    bool isVideoLag = lastSystemTimeMs_ > 0 && lagTimeMs >= LAG_LIMIT_TIME;
+    MEDIA_LOG_I_FALSE_D(isVideoLag,
+        "prePts " PUBLIC_LOG_D64 " curPts " PUBLIC_LOG_D64 " ptsDiff " PUBLIC_LOG_D64 " tDiff " PUBLIC_LOG_D64,
+        lastBufferTimeMs_, bufferTimeUsNow, bufferTimeMsDiff, systemTimeMsDiff);
+    lastSystemTimeMs_ = systemTimeMsNow;
+    lastBufferTimeMs_ = bufferTimeUsNow;
+    if (isVideoLag) {
+        ResolveLagEvent(lagTimeMs);
+    }
+    return isVideoLag;
+}
+
+void VideoSink::VideoLagDetector::SetEventReceiver(const std::shared_ptr<EventReceiver> eventReceiver)
+{
+    eventReceiver_ = eventReceiver;
+}
+
+void VideoSink::VideoLagDetector::ResolveLagEvent(const int64_t &lagTimeMs)
+{
+    lagTimes_++;
+    maxLagDuration_ = std::max(maxLagDuration_, lagTimeMs);
+    totalLagDuration_ += lagTimeMs;
+    FALSE_RETURN(eventReceiver_ != nullptr);
+    eventReceiver_->OnEvent({"VideoSink", EventType::EVENT_VIDEO_LAG, lagTimeMs});
+}
+
+void VideoSink::VideoLagDetector::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
+{
+    lagTimes = lagTimes_;
+    maxLagDuration = static_cast<int32_t>(maxLagDuration_);
+    if (lagTimes_ != 0) {
+        avgLagDuration = static_cast<int32_t>(totalLagDuration_ / lagTimes_);
+    } else {
+        avgLagDuration = 0;
+    }
+}
+
+void VideoSink::VideoLagDetector::Reset()
+{
+    lagTimes_ = 0;
+    maxLagDuration_ = 0;
+    lastSystemTimeMs_ = 0;
+    lastBufferTimeMs_ = 0;
+    totalLagDuration_ = 0;
 }
 } // namespace Pipeline
 } // namespace MEDIA

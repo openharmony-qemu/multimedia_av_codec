@@ -62,6 +62,7 @@ public:
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status SetMuted(bool isMuted);
     Status SetSeekTime(int64_t seekTime);
+    bool GetSyncCenterClockTime(int64_t &clockTime);
 
     float GetMaxAmplitude();
     int32_t SetMaxAmplitudeCbStatus(bool status);
@@ -82,6 +83,7 @@ private:
     bool DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer);
     void CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer);
     void CheckUpdateState(char *frame, uint64_t replyBytes, int32_t format);
+    int64_t CalcBufferDuration(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
 
     class UnderrunDetector {
     public:
@@ -96,6 +98,38 @@ private:
         int64_t lastClkTime_ {HST_TIME_NONE};
         int64_t lastLatency_ {HST_TIME_NONE};
         int64_t lastBufferDuration_ {HST_TIME_NONE};
+    };
+
+    class AudioLagDetector : public Pipeline::LagDetector {
+    public:
+        void Reset() override;
+
+        bool CalcLag(std::shared_ptr<AVBuffer> buffer) override;
+
+        void SetLatency(int64_t latency)
+        {
+            latency_ = latency;
+        }
+
+        struct AudioDrainTimeGroup {
+            int64_t lastAnchorPts = 0;
+            int64_t anchorDuration = 0;
+            int64_t writeDuration = 0;
+            int64_t nowClockTime = 0;
+
+            AudioDrainTimeGroup() = default;
+            AudioDrainTimeGroup(int64_t anchorPts, int64_t duration, int64_t writeDuration, int64_t clockTime)
+                : lastAnchorPts(anchorPts),
+                  anchorDuration(duration),
+                  writeDuration(writeDuration),
+                  nowClockTime(clockTime) {}
+        };
+
+        void UpdateDrainTimeGroup(AudioDrainTimeGroup group);
+    private:
+        int64_t latency_ = 0;
+        int64_t lastDrainTimeMs_ = 0;
+        AudioDrainTimeGroup lastDrainTimeGroup_ {};
     };
 
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
@@ -117,6 +151,7 @@ private:
     int64_t firstPts_ {HST_TIME_NONE};
     int32_t sampleRate_ {0};
     int32_t samplePerFrame_ {0};
+    int32_t audioChannelCount_ = 0;
     int64_t fixDelay_ {0};
     bool isTransitent_ {false};
     bool isEos_ {false};
@@ -148,6 +183,7 @@ private:
 
     bool calMaxAmplitudeCbStatus_ = false;
     UnderrunDetector underrunDetector_;
+    AudioLagDetector lagDetector_;
     std::atomic<int64_t> seekTimeUs_ {HST_TIME_NONE};
 };
 }

@@ -889,7 +889,9 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
     size_t destLength = bufferSize;
     while (destLength > 0) {
         MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::WriteAudioBuffer: " + std::to_string(destLength));
+        auto systemTimeBeforeWriteMs = Plugins::GetCurrentMillisecond();
         int32_t ret = audioRenderer_->Write(destBuffer, destLength);
+        writeDuration_ = std::max(Plugins::GetCurrentMillisecond() - systemTimeBeforeWriteMs, writeDuration_);
         if (ret < 0) {
             if (audioRenderer_->GetStatus() == AudioStandard::RendererState::RENDERER_PAUSED) {
                 MEDIA_LOG_W("WriteAudioBuffer error because audioRenderer_ paused, cache data.");
@@ -1102,6 +1104,13 @@ Status AudioServerSinkPlugin::SetMuted(bool isMuted)
     audioRenderer_->SetSilentModeAndMixWithOthers(isMuted);
     MEDIA_LOG_I("SetMuted out");
     return Status::OK;
+}
+
+int64_t AudioServerSinkPlugin::GetWriteDurationMs()
+{
+    int64_t writeDuration = writeDuration_;
+    writeDuration_ = 0;
+    return writeDuration;
 }
 } // namespace Plugin
 } // namespace Media
