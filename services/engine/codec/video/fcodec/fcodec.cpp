@@ -1610,7 +1610,10 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
         capsData.width.minVal = VIDEO_MIN_SIZE;
         capsData.height.minVal = VIDEO_MIN_SIZE;
+        capsData.width.maxVal = DEFAULT_VIDEO_WIDTH;
+        capsData.height.maxVal = DEFAULT_VIDEO_WIDTH;
         capsData.frameRate.minVal = 0;
+        capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
         capsData.bitrate.minVal = 1;
         capsData.bitrate.maxVal = VIDEO_BITRATE_MAX_SIZE;
         capsData.blockPerFrame.minVal = 1;
@@ -1629,15 +1632,9 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
             static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
         if (capsData.mimeType == "video/mpeg2") {
-            capsData.width.maxVal = DEFAULT_VIDEO_WIDTH;
-            capsData.height.maxVal = DEFAULT_VIDEO_WIDTH;
-            capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
             capaArray.emplace_back(capsData);
             GetMpeg2CapProf(capaArray);
         } else if (capsData.mimeType == "video/mp4v-es") {
-            capsData.width.maxVal = DEFAULT_VIDEO_WIDTH;
-            capsData.height.maxVal = DEFAULT_VIDEO_WIDTH;
-            capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
             capaArray.emplace_back(capsData);
             GetMpeg4esCapProf(capaArray);
         } else {
