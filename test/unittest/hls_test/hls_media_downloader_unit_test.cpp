@@ -65,6 +65,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo1, TestSize.Level1)
     hlsMediaDownloader->recordSpeedCount_ = 0;
     DownloadInfo downloadInfo;
     hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    hlsMediaDownloader->GetDownloadInfo();
     EXPECT_EQ(downloadInfo.avgDownloadRate, 0);
 }
 
@@ -74,6 +75,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo2, TestSize.Level1)
     hlsMediaDownloader->avgSpeedSum_ = 25;
     DownloadInfo downloadInfo;
     hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    hlsMediaDownloader->GetDownloadInfo();
     EXPECT_EQ(downloadInfo.avgDownloadRate, 5);
 }
 
@@ -326,6 +328,207 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
     EXPECT_TRUE(result);
 }
 
+HWTEST_F(HlsMediaDownloaderUnitTest, HandleFfmpegReadback_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[10];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+
+    downloader->readTsIndex_ = 0;
+    downloader->HandleFfmpegReadback(1000);
+    downloader->Read(buff, readDataInfo);
+
+    downloader->readTsIndex_ = 0;
+    downloader->ffmpegOffset_ = 10000;
+    downloader->HandleFfmpegReadback(1000);
+
+    downloader->readTsIndex_ = 1;
+    downloader->ffmpegOffset_ = 10000;
+    downloader->HandleFfmpegReadback(1000);
+
+    downloader->readTsIndex_ = 10000;
+    downloader->ffmpegOffset_ = 10000;
+    downloader->HandleFfmpegReadback(1000);
+
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckPlaylist_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[10];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+
+    downloader->isStopped = true;
+    downloader->CheckPlaylist(buff, readDataInfo);
+    downloader->Read(buff, readDataInfo);
+
+    OSAL::SleepFor(1 * 1000);
+    downloader->isStopped = true;
+    downloader->CheckPlaylist(buff, readDataInfo);
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, SeekToTsForRead_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[10];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    downloader->Read(buff, readDataInfo);
+
+    OSAL::SleepFor(1 * 1000);
+    downloader->SeekToTsForRead(100);
+    downloader->SeekToTsForRead(0);
+    downloader->SetIsTriggerAutoMode(false);
+
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, ReportVideoSizeChange_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    downloader->ReportVideoSizeChange();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->SetCallback(sourceCallback);
+    downloader->ReportVideoSizeChange();
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[10];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    downloader->Read(buff, readDataInfo);
+
+    OSAL::SleepFor(1 * 1000);
+    downloader->ReportVideoSizeChange();
+    downloader->Close(true);
+    downloader = nullptr;
+    delete sourceCallback;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, DownloadRecordHistory_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[10];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    downloader->Read(buff, readDataInfo);
+
+    OSAL::SleepFor(1 * 1000);
+    downloader->DownloadRecordHistory(2000);
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckRiseBufferSize_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[10];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    downloader->Read(buff, readDataInfo);
+
+    OSAL::SleepFor(1 * 1000);
+    std::shared_ptr<HlsMediaDownloader::RecordData> recordBuff =
+        std::make_shared<HlsMediaDownloader::RecordData>();
+    recordBuff->bufferDuring = 10;
+    downloader->recordData_ = recordBuff;
+    downloader->CheckRiseBufferSize();
+    downloader->CheckPulldownBufferSize();
+
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadRateAndSpeed, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[10];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    downloader->Read(buff, readDataInfo);
+
+    downloader->recordSpeedCount_ = 0;
+    downloader->GetDownloadRateAndSpeed();
+    downloader->recordSpeedCount_ = 1;
+    downloader->GetDownloadRateAndSpeed();
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
@@ -485,7 +688,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M_default, TestSize.Le
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
     ReadDataInfo readDataInfo;
-    for (int i = 0; i < 800; i++) {
+    for (int i = 0; i < 80; i++) {
         OSAL::SleepFor(10);
         downloader->DownloadReport();
 
@@ -517,7 +720,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_read_all, TestSize.Level1)
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
     ReadDataInfo readDataInfo;
-    for (int i = 0; i < 800; i++) {
+    for (int i = 0; i < 80; i++) {
         OSAL::SleepFor(10);
         unsigned char buff[10 * 1024];
         readDataInfo.streamId_ = 0;

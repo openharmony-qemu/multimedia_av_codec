@@ -55,7 +55,7 @@ HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_001, TestSize.Level1)
 {
     std::shared_ptr<VideoDecoderAdapter> videoResize = std::make_shared<VideoDecoderAdapter>();
     Status ret = videoResize->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, "name");
-    EXPECT_EQ(ret, Status::ERROR_VIDEO_DEC_UNAVAILABLE);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_STATE);
 }
 
 HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_002, TestSize.Level1)

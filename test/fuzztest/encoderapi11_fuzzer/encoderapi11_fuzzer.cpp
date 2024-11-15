@@ -28,7 +28,10 @@ using namespace OHOS::Media;
 void RunNormalEncoder()
 {
     auto vEncSample = make_unique<VEncAPI11FuzzSample>();
-    vEncSample->CreateVideoEncoder();
+    int32_t ret = vEncSample->CreateVideoEncoder();
+    if (ret != 0) {
+        return;
+    }
     vEncSample->SetVideoEncoderCallback();
     vEncSample->ConfigureVideoEncoder();
     vEncSample->StartVideoEncoder();
@@ -36,7 +39,10 @@ void RunNormalEncoder()
 
     auto vEncSampleSurf = make_unique<VEncAPI11FuzzSample>();
     vEncSample->surfInput = true;
-    vEncSampleSurf->CreateVideoEncoder();
+    ret = vEncSampleSurf->CreateVideoEncoder();
+    if (ret != 0) {
+        return;
+    }
     vEncSampleSurf->SetVideoEncoderCallback();
     vEncSampleSurf->ConfigureVideoEncoder();
     vEncSampleSurf->StartVideoEncoder();
@@ -61,6 +67,7 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     vEncSample->fuzzSize = size;
     int32_t ret = vEncSample->CreateVideoEncoder();
     if (ret != 0) {
+        delete vEncSample;
         return true;
     }
     vEncSample->SetVideoEncoderCallback();
