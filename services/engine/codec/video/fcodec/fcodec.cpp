@@ -1498,11 +1498,7 @@ void FCodec::SetMpeg4Profiles(CapabilityData& capsData)
         static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY),
         static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_CORE),
         static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_SCALABLE_TEXTURE),
-        static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_FBA),
-        static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_STUDIO),
-        static_cast<int32_t>(MPEG4_PROFILE_CORE_STUDIO),
         static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_SIMPLE),
-        static_cast<int32_t>(MPEG4_PROFILE_FINE_GRANULARITY_SCALABLE)
     };
 }
 
@@ -1566,27 +1562,11 @@ void FCodec::SetMpeg4LevelsProfileGroup2(CapabilityData& capsData)
             static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
             static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3)
         }},
-        {static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_FBA), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_STUDIO), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_CORE_STUDIO), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4)
-        }},
         {static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_SIMPLE), {
             static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_0), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1),
             static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3),
             static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3B), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4),
             static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_5)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_FINE_GRANULARITY_SCALABLE), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_0), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_5)
         }}
     });
 }
