@@ -444,7 +444,7 @@ int32_t FCodec::Stop()
     receiveTask_->Stop();
     avcodec_close(avCodecContext_.get());
     ResetContext(true);
-    ResetBuffers();
+    ReleaseBuffers();
     state_ = State::CONFIGURED;
     AVCODEC_LOGI("Stop codec successful, state: Configured");
     return AVCS_ERR_OK;
@@ -502,8 +502,6 @@ void FCodec::ReleaseResource()
     ReleaseBuffers();
     format_ = Format();
     if (sInfo_.surface != nullptr) {
-        sInfo_.surface->CleanCache();
-        AVCODEC_LOGI("surface cleancache success");
         int ret = UnRegisterListenerToSurface(sInfo_.surface);
         if (ret != 0) {
             callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
@@ -681,6 +679,7 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
     int32_t valBufferCnt = 0;
     if (sInfo_.surface) {
         CHECK_AND_RETURN_RET_LOG(SetSurfaceCfg(bufferCnt) == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "SetSurfaceCfg failed");
+        sInfo_.surface->CleanCache();
     }
     for (int i = 0; i < bufferCnt; i++) {
         std::shared_ptr<FBuffer> buf = std::make_shared<FBuffer>();
@@ -863,6 +862,8 @@ void FCodec::ReleaseBuffers()
                 outputBuffer->owner_ = FBuffer::Owner::OWNED_BY_SURFACE;
             }
         }
+        sInfo_.surface->CleanCache();
+        AVCODEC_LOGI("surface cleancache success");
     }
     buffers_[INDEX_OUTPUT].clear();
     outAVBuffer4Surface_.clear();
