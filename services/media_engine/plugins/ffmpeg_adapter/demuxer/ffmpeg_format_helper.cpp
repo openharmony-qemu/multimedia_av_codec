@@ -109,6 +109,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"ogg", FileType::OGG},
     {"wav", FileType::WAV},
     {"flv", FileType::FLV},
+    {"avi", FileType::AVI},
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
     {"webvtt", FileType::VTT},
@@ -501,6 +502,8 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
         if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A") ||
             StartWith(type->value, "m4v") || StartWith(type->value, "M4V")) {
             fileType = FileType::M4A;
+        } else if (StartWith(type->value, "qt") || StartWith(type->value, "QT")) {
+            fileType = FileType::MOV;
         } else {
             fileType = FileType::MP4;
         }
