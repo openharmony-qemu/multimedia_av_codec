@@ -157,7 +157,7 @@ static void CheckSeekMode(seekInfo seekInfo)
                 readEnd = true;
                 break;
             }
-            frameNum ++;
+            frameNum++;
         }
         if (tarckType == MEDIA_TYPE_VID) {
             ASSERT_EQ(seekInfo.videoCount, frameNum);
@@ -312,7 +312,7 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0006, TestSize.Level0)
     seekInfo fileTest4{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
     5466666, 180, 0, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
     10966666, 30, 0, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 330, 0, 0};
