@@ -304,19 +304,24 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0006, TestSize.Level0)
 {
     seekInfo fileTest1{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_NEXT_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_NEXT_SYNC, 5466666, 150, 0, 0};
+    seekInfo fileTest2{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_NEXT_SYNC,
+    5466666, 150, 0, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -329,19 +334,24 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0007, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC, 5466666, 150, 0, 0};
+    seekInfo fileTest2{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC,
+    5466666, 150, 0, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -354,19 +364,24 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0008, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_NEXT_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_NEXT_SYNC, 5466666, 150, 0, 0};
+    seekInfo fileTest2{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_NEXT_SYNC,
+    5466666, 150, 0, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_3_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -379,19 +394,24 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0009, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC, 5466666, 150, 0, 0};
+    seekInfo fileTest2{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC,
+    5466666, 150, 0, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_3_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -404,19 +424,24 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0010, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_NEXT_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_NEXT_SYNC, 5466666, 150, 0, 0};
+    seekInfo fileTest2{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_NEXT_SYNC,
+    5466666, 150, 0, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_4_layer_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -429,19 +454,24 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0011, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC, 5466666, 150, 0, 0};
+    seekInfo fileTest2{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC,
+    5466666, 150, 0, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 5466666, 180, 0, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    5466666, 180, 0, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 10966666, 30, 0, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_4_layer_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    10966666, 30, 0, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -454,19 +484,23 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0012, TestSize.Level1)
 {
     seekInfo fileTest1{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_NEXT_SYNC, 0, 210, 297, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_NEXT_SYNC, 3500000, 105, 148, 0};
+    seekInfo fileTest2{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_NEXT_SYNC,
+    3500000, 105, 148, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_NEXT_SYNC, 6966666, 1, 2, 0};
     CheckSeekMode(fileTest3);
     seekInfo fileTest4{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 210, 297, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 3500000, 105, 149, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    3500000, 105, 149, 0};
     CheckSeekMode(fileTest5);
-    seekInfo fileTest6{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 6966666, 2, 4, 0};
+    seekInfo fileTest6{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    6966666, 2, 4, 0};
     CheckSeekMode(fileTest6);
     seekInfo fileTest7{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 210, 297, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 3500000, 105, 148, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    3500000, 105, 148, 0};
     CheckSeekMode(fileTest8);
     seekInfo fileTest9{"/data/test/media/demuxer_parser_all_i_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 6966666, 1, 2, 0};
     CheckSeekMode(fileTest9);
@@ -481,21 +515,26 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0013, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC, 0, 210, 297, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC, 3500000, 105, 148, 0};
+    seekInfo fileTest2{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC,
+    3500000, 105, 148, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC, 6966666, 1, 2, 0};
     CheckSeekMode(fileTest3);
     seekInfo fileTest4{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 210, 297, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 3500000, 105, 149, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    3500000, 105, 149, 0};
     CheckSeekMode(fileTest5);
-    seekInfo fileTest6{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 6966666, 2, 4, 0};
+    seekInfo fileTest6{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    6966666, 2, 4, 0};
     CheckSeekMode(fileTest6);
     seekInfo fileTest7{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 210, 297, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 3500000, 105, 148, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    3500000, 105, 148, 0};
     CheckSeekMode(fileTest8);
-    seekInfo fileTest9{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 6966666, 1, 2, 0};
+    seekInfo fileTest9{"/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    6966666, 1, 2, 0};
     CheckSeekMode(fileTest9);
 }
 
@@ -512,15 +551,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0014, TestSize.Level0)
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_ipb_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_ipb_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 6200000, 192, 274, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_ipb_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    6200000, 192, 274, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_ipb_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 12366666, 12, 19, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_ipb_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    12366666, 12, 19, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_ipb_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_ipb_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 6200000, 192, 274, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_ipb_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    6200000, 192, 274, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_ipb_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 12366666, 12, 19, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_ipb_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    12366666, 12, 19, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -537,15 +580,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0015, TestSize.Level0)
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 6323000, 197, 281, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    6323000, 197, 281, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 12356333, 22, 33, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    12356333, 22, 33, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 6323000, 172, 244, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    6323000, 172, 244, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 12356333, 22, 33, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    12356333, 22, 33, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -562,9 +609,11 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0016, TestSize.Level1)
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_ltr_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_ltr_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 5600000, 330, 0, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_ltr_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    5600000, 330, 0, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_ltr_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 10966666, 80, 0, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_ltr_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    10966666, 80, 0, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_ltr_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest6);
@@ -587,15 +636,18 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0017, TestSize.Level1)
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 5600000, 330, 0, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    5600000, 330, 0, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 10966666, 80, 0, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    10966666, 80, 0, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 330, 0, 0};
     CheckSeekMode(fileTest6);
     seekInfo fileTest7{"/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 5600000, 80, 0, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 10966666, 80, 0, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    10966666, 80, 0, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -610,15 +662,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0018, TestSize.Level2)
     CheckSeekMode(fileTest1);
     seekInfo fileTest2{"/data/test/media/demuxer_parser_one_i_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest2);
-    seekInfo fileTest3{"/data/test/media/demuxer_parser_one_i_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 6200000, 372, 525, 0};
+    seekInfo fileTest3{"/data/test/media/demuxer_parser_one_i_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    6200000, 372, 525, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_one_i_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 12366666, 372, 525, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_one_i_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    12366666, 372, 525, 0};
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{"/data/test/media/demuxer_parser_one_i_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest5);
-    seekInfo fileTest6{"/data/test/media/demuxer_parser_one_i_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 6200000, 372, 525, 0};
+    seekInfo fileTest6{"/data/test/media/demuxer_parser_one_i_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    6200000, 372, 525, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_one_i_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 12366666, 372, 525, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_one_i_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    12366666, 372, 525, 0};
     CheckSeekMode(fileTest7);
 }
 
@@ -633,15 +689,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0019, TestSize.Level2)
     CheckSeekMode(fileTest1);
     seekInfo fileTest2{"/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest2);
-    seekInfo fileTest3{"/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 6200000, 372, 525, 0};
+    seekInfo fileTest3{"/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    6200000, 372, 525, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 12366666, 372, 525, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    12366666, 372, 525, 0};
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{"/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest5);
-    seekInfo fileTest6{"/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 6200000, 372, 525, 0};
+    seekInfo fileTest6{"/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    6200000, 372, 525, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 12366666, 372, 525, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    12366666, 372, 525, 0};
     CheckSeekMode(fileTest7);
 }
 
@@ -652,19 +712,26 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0019, TestSize.Level2)
  */
 HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0020, TestSize.Level2)
 {
-    seekInfo fileTest1{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_NEXT_SYNC, 0, 372, 0, 0};
+    seekInfo fileTest1{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_NEXT_SYNC,
+    0, 372, 0, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 372, 0, 0};
+    seekInfo fileTest2{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    0, 372, 0, 0};
     CheckSeekMode(fileTest2);
-    seekInfo fileTest3{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 6200000, 372, 0, 0};
+    seekInfo fileTest3{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    6200000, 372, 0, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 12366666, 372, 0, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    12366666, 372, 0, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 372, 0, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    0, 372, 0, 0};
     CheckSeekMode(fileTest5);
-    seekInfo fileTest6{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 6200000, 372, 0, 0};
+    seekInfo fileTest6{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    6200000, 372, 0, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 12366666, 372, 0, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    12366666, 372, 0, 0};
     CheckSeekMode(fileTest7);
 }
 
@@ -675,19 +742,26 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0020, TestSize.Level2)
  */
 HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0021, TestSize.Level2)
 {
-    seekInfo fileTest1{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_NEXT_SYNC, 0, 372, 0, 0};
+    seekInfo fileTest1{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_NEXT_SYNC,
+    0, 372, 0, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 372, 0, 0};
+    seekInfo fileTest2{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    0, 372, 0, 0};
     CheckSeekMode(fileTest2);
-    seekInfo fileTest3{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 6200000, 372, 0, 0};
+    seekInfo fileTest3{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    6200000, 372, 0, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 12366666, 372, 0, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    12366666, 372, 0, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 372, 0, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    0, 372, 0, 0};
     CheckSeekMode(fileTest5);
-    seekInfo fileTest6{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 6200000, 372, 0, 0};
+    seekInfo fileTest6{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    6200000, 372, 0, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 12366666, 372, 0, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    12366666, 372, 0, 0};
     CheckSeekMode(fileTest7);
 }
 
@@ -704,15 +778,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0022, TestSize.Level1)
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 6200000, 372, 525, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    6200000, 372, 525, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC, 12366666, 122, 176, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    12366666, 122, 176, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 6200000, 122, 175, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    6200000, 122, 175, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC, 12366666, 122, 176, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_sdtp_frame_avc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    12366666, 122, 176, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -725,19 +803,24 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0023, TestSize.Level1)
 {
     seekInfo fileTest1{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC, 6300000, 126, 178, 0};
+    seekInfo fileTest2{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_NEXT_SYNC,
+    6300000, 126, 178, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 6300000, 372, 525, 0};
+    seekInfo fileTest4{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    6300000, 372, 525, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC, 12333333, 126, 179, 0};
+    seekInfo fileTest5{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_PREVIOUS_SYNC,
+    12333333, 126, 179, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 372, 525, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 6300000, 126, 178, 0};
+    seekInfo fileTest7{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    6300000, 126, 178, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC, 12333333, 126, 179, 0};
+    seekInfo fileTest8{"/data/test/media/demuxer_parser_sdtp_frame_hevc.mp4", SEEK_MODE_CLOSEST_SYNC,
+    12333333, 126, 179, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -2295,20 +2378,25 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0086, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_NEXT_SYNC, 0, 0, 103, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_NEXT_SYNC, 2368435, 0, 52, 0};
+    seekInfo fileTest2{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_NEXT_SYNC,
+    2368435, 0, 52, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_NEXT_SYNC, 4736870, 0, 1, 0};
     CheckSeekMode(fileTest3);
     seekInfo fileTest4{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_PREVIOUS_SYNC, 0, 0, 103, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_PREVIOUS_SYNC, 2368435, 0, 52, 0};
+    seekInfo fileTest5{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_PREVIOUS_SYNC,
+    2368435, 0, 52, 0};
     CheckSeekMode(fileTest5);
-    seekInfo fileTest6{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_PREVIOUS_SYNC, 4736870, 0, 1, 0};
+    seekInfo fileTest6{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_PREVIOUS_SYNC,
+    4736870, 0, 1, 0};
     CheckSeekMode(fileTest6);
     seekInfo fileTest7{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_CLOSEST_SYNC, 0, 0, 103, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_CLOSEST_SYNC, 2368435, 0, 52, 0};
+    seekInfo fileTest8{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_CLOSEST_SYNC,
+    2368435, 0, 52, 0};
     CheckSeekMode(fileTest8);
-    seekInfo fileTest9{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_CLOSEST_SYNC, 4736870, 0, 1, 0};
+    seekInfo fileTest9{"/data/test/media/audio/wav_audio_test_202406290859.wav", SEEK_MODE_CLOSEST_SYNC,
+    4736870, 0, 1, 0};
     CheckSeekMode(fileTest9);
 }
