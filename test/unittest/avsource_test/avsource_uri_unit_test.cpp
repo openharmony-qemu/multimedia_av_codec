@@ -518,6 +518,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2100, TestSize.Level1)
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
 }
 
+
 /**
  * @tc.name: AVSource_GetFormat_2110
  * @tc.desc: get format when the file is flac
