@@ -70,8 +70,10 @@ public:
     Status Stop();
     Status Pause();
     Status PauseDragging();
+    Status PauseAudioAlign();
     Status Resume();
     Status ResumeDragging();
+    Status ResumeAudioAlign();
     Status Flush();
     Status Preroll();
     Status PausePreroll();
@@ -115,6 +117,7 @@ public:
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
     bool IsVideoEos();
+    bool HasEosTrack();
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
