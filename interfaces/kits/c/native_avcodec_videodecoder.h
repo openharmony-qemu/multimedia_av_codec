@@ -57,8 +57,8 @@ OH_AVCodec *OH_VideoDecoder_CreateByName(const char *name);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if succeed,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * @since 9
@@ -75,8 +75,8 @@ OH_AVErrCode OH_VideoDecoder_Destroy(OH_AVCodec *codec);
  * @param userData The data that the user rely on to execute the callback
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state, must be called before Prepare.
@@ -96,8 +96,8 @@ OH_AVErrCode OH_VideoDecoder_SetCallback(OH_AVCodec *codec, OH_AVCodecAsyncCallb
  * @param userData The data that the user rely on to execute the callback
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state, must be called before Prepare.
@@ -113,9 +113,11 @@ OH_AVErrCode OH_VideoDecoder_RegisterCallback(OH_AVCodec *codec, OH_AVCodecCallb
  * @param window A pointer to a OHNativeWindow instance, see {@link OHNativeWindow}
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permit to call the interface in Buffer mode.
- * {@link AV_ERR_INVALID_VAL}, 1. the decoder is nullptr or invalid; 2. window is nullptr.
+ * {@link AV_ERR_INVALID_VAL}
+ * 1. the input codec pointer is non decoder instance or nullptr;
+ * 2. window is nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 9
@@ -131,8 +133,10 @@ OH_AVErrCode OH_VideoDecoder_SetSurface(OH_AVCodec *codec, OHNativeWindow *windo
  * @param format A pointer to an OH_AVFormat to give the description of the video track to be decoded
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, 1. the decoder is nullptr or invalid; 2. Invalid param in format.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}
+ * 1. the input codec pointer is non decoder instance or nullptr;
+ * 2. Invalid param in format.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state, must be called before Prepare.
@@ -149,8 +153,8 @@ OH_AVErrCode OH_VideoDecoder_Configure(OH_AVCodec *codec, OH_AVFormat *format);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}
@@ -168,8 +172,8 @@ OH_AVErrCode OH_VideoDecoder_Prepare(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}
@@ -182,14 +186,14 @@ OH_AVErrCode OH_VideoDecoder_Start(OH_AVCodec *codec);
 
 /**
  * @brief Stop the decoder and release the input and output buffer. After stopping,
- * you can re-enter the Executing state through Start, but it should be noted that
+ * you can re-enter the Running state through Start, but it should be noted that
  * if Codec-Specific-Data has been input to the decoder before, it needs to be input again.
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
@@ -206,8 +210,8 @@ OH_AVErrCode OH_VideoDecoder_Stop(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
@@ -223,8 +227,8 @@ OH_AVErrCode OH_VideoDecoder_Flush(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
@@ -254,8 +258,10 @@ OH_AVFormat *OH_VideoDecoder_GetOutputDescription(OH_AVCodec *codec);
  * @param format pointer to an OH_AVFormat instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, 1. the decoder is nullptr or invalid; 2. invalid param in format.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}
+ * 1. the input codec pointer is non decoder instance or nullptr;
+ * 2. invalid param in format.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
@@ -277,8 +283,8 @@ OH_AVErrCode OH_VideoDecoder_SetParameter(OH_AVCodec *codec, OH_AVFormat *format
  * @param attr Information describing the data contained in the buffer
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
@@ -298,8 +304,8 @@ OH_AVErrCode OH_VideoDecoder_PushInputData(OH_AVCodec *codec, uint32_t index, OH
  * @param index The index value corresponding to the output buffer, should be given by {@link OH_AVCodecOnNewOutputData}
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
@@ -317,8 +323,8 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputData(OH_AVCodec *codec, uint32_t index)
  * @param index The index value corresponding to the output buffer, should be given by {@link OH_AVCodecOnNewOutputData}.
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
@@ -344,8 +350,8 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputData(OH_AVCodec *codec, uint32_t index);
  * @param index The index of the input buffer, should be given by {@link OH_AVCodecOnNeedInputBuffer}.
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
@@ -365,8 +371,8 @@ OH_AVErrCode OH_VideoDecoder_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
  * should be given by {@link OH_AVCodecOnNewOutputBuffer}.
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
@@ -397,7 +403,7 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBuffer(OH_AVCodec *codec, uint32_t inde
  * is nanosecond
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, the codec has already released.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
  * {@link AV_ERR_INVALID_VAL}, the parameter is invalid.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
@@ -416,9 +422,9 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBufferAtTime(OH_AVCodec *codec, uint32_
  * should be given by {@link OH_AVCodecOnNewOutputBuffer}.
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_NO_MEMORY}, instance has already destoryed.
  * {@link AV_ERR_INVALID_VAL}
- * 1. the decoder is nullptr or invalid;
+ * 1. the input codec pointer is non decoder instance or nullptr;
  * 2. the index is vaild or consecutively assigned to the same index,
  * the error do not affect the subsequent decode process.
  * {@link AV_ERR_UNKNOWN}, unknown error.
@@ -437,7 +443,7 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index)
  * false if the codec instance is invalid. It is recommend that the invoker initialize isValid to false
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * {@link AV_ERR_INVALID_VAL}, the decoder is nullptr or invalid.
+ * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or nullptr.
  * @since 10
  */
 OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid);
@@ -456,9 +462,9 @@ OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid);
  *         1. internal execution error;
  *         2. the decode service process is abnormal;
  *         3. the media key session service is in an wrong state.
- *         {@link AV_ERR_NO_MEMORY}, instance has already released or no memory.
+ *         {@link AV_ERR_NO_MEMORY}, instance has already destoryed or no memory.
  *         {@link AV_ERR_INVALID_VAL}
- *         1. the decoder is nullptr or invalid;
+ *         1. the input codec pointer is non decoder instance or nullptr;
  *         2. mediaKeySession is nullptr or invalid.
  * @since 11
 */
