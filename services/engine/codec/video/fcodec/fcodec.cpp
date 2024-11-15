@@ -1526,7 +1526,7 @@ void FCodec::SetMpeg4LevelsProfileGroup1(CapabilityData& capsData)
             static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
         }},
         {static_cast<int32_t>(MPEG4_PROFILE_HYBRID), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1)
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
         }},
         {static_cast<int32_t>(MPEG4_PROFILE_BASIC_ANIMATED_TEXTURE), {
             static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
