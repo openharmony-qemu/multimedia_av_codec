@@ -63,9 +63,9 @@ bool AVCodecClient::IsAlived()
     return avCodecProxy_ != nullptr;
 }
 
-int32_t AVCodecClient::CreateInstanceAndRetryInTimes(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                                     sptr<IRemoteObject> &object,
-                                                     int32_t tryTimes)
+int32_t AVCodecClient::CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
+                                                   sptr<IRemoteObject> &object,
+                                                   int32_t tryTimes)
 {
     int32_t ret = AVCS_ERR_OK;
     while (tryTimes--) {
@@ -90,7 +90,7 @@ int32_t AVCodecClient::CreateCodecService(std::shared_ptr<ICodecService> &codecC
     std::lock_guard<std::mutex> lock(mutex_);
 
     sptr<IRemoteObject> object = nullptr;
-    int32_t ret = CreateInstanceAndRetryInTimes(IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODEC, object);
+    int32_t ret = CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODEC, object);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, ret, "Create codec proxy object failed.");
 
     sptr<IStandardCodecService> codecProxy = iface_cast<IStandardCodecService>(object);
@@ -117,7 +117,7 @@ std::shared_ptr<ICodecListService> AVCodecClient::CreateCodecListService()
     std::lock_guard<std::mutex> lock(mutex_);
 
     sptr<IRemoteObject> object = nullptr;
-    (void)CreateInstanceAndRetryInTimes(IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODECLIST, object);
+    (void)CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODECLIST, object);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "Create codeclist proxy object failed.");
 
     sptr<IStandardCodecListService> codecListProxy = iface_cast<IStandardCodecListService>(object);
@@ -148,7 +148,8 @@ sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
     CHECK_AND_RETURN_RET_LOG(samgr != nullptr, nullptr, "system ability manager is nullptr.");
 
     sptr<IRemoteObject> object = nullptr;
-    CLIENT_COLLIE_LISTEN(object = samgr->GetSystemAbility(OHOS::AV_CODEC_SERVICE_ID), "AVCodecClient GetAVCodecProxy");
+    CLIENT_COLLIE_LISTEN(object = samgr->CheckSystemAbility(OHOS::AV_CODEC_SERVICE_ID),
+                         "AVCodecClient GetAVCodecProxy");
     if (object == nullptr) {
         CLIENT_COLLIE_LISTEN(object = samgr->LoadSystemAbility(OHOS::AV_CODEC_SERVICE_ID, 30), // 30: timeout
                              "AVCodecClient LoadSystemAbility");
