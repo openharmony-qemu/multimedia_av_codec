@@ -144,8 +144,13 @@ public:
 
     virtual void WaitForBufferingEnd() {}
     virtual void SetIsReportedErrorCode() {}
-    
+
     virtual bool GetReadTimeOut()
+    {
+        return false;
+    }
+
+    virtual bool isNotRetry(const std::shared_ptr<DownloadRequest>& request)
     {
         return false;
     }
