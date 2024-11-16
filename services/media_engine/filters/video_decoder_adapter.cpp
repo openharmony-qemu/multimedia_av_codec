@@ -39,8 +39,6 @@ namespace OHOS {
 namespace Media {
 using namespace MediaAVCodec;
 const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
-//Threshold for frame lag detection, set to 100 milliseconds.
-const int64_t LAG_LIMIT_TIME = 100;
 
 VideoDecoderCallback::VideoDecoderCallback(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
 {
@@ -123,7 +121,6 @@ Status VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType
 
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     mediaCodecName_ = name;
-    currentTime_ = -1;
     return Status::OK;
 }
 
@@ -168,7 +165,6 @@ Status VideoDecoderAdapter::Stop()
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     FALSE_RETURN_V_MSG(isConfigured_, Status::ERROR_INVALID_STATE, "mediaCodec_ is not configured");
     mediaCodec_->Stop();
-    currentTime_ = -1;
     return Status::OK;
 }
 
@@ -186,7 +182,6 @@ Status VideoDecoderAdapter::Flush()
         bufferVector_.clear();
         inputBufferQueueConsumer_->SetQueueSize(0);
     }
-    currentTime_ = -1;
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
@@ -204,7 +199,6 @@ Status VideoDecoderAdapter::Reset()
         bufferVector_.clear();
         inputBufferQueueConsumer_->SetQueueSize(0);
     }
-    currentTime_ = -1;
     return Status::OK;
 }
 
@@ -360,22 +354,6 @@ int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
     AVCodecTrace trace("VideoDecoderAdapter::ReleaseOutputBuffer");
     MEDIA_LOG_D("VideoDecoderAdapter::ReleaseOutputBuffer");
     mediaCodec_->ReleaseOutputBuffer(index, render);
-    FALSE_RETURN_V(render, 0);
-    if (currentTime_ == -1) {
-        currentTime_ = GetCurrentMillisecond();
-    } else {
-        int64_t currentTime = GetCurrentMillisecond();
-        int64_t diffTime = currentTime - currentTime_;
-        if (diffTime > LAG_LIMIT_TIME) {
-            lagTimes_++;
-            maxLagDuration_ = maxLagDuration_ > diffTime ? maxLagDuration_ : diffTime;
-            totalLagDuration_ += diffTime;
-            if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"VideoDecoderAdapter", EventType::EVENT_VIDEO_LAG, diffTime});
-            }
-        }
-        currentTime_ = currentTime;
-    }
     return 0;
 }
 
@@ -385,25 +363,6 @@ int32_t VideoDecoderAdapter::RenderOutputBufferAtTime(uint32_t index, int64_t re
     MEDIA_LOG_D("VideoDecoderAdapter::RenderOutputBufferAtTime");
     mediaCodec_->RenderOutputBufferAtTime(index, renderTimestampNs);
     return 0;
-}
-
-Status VideoDecoderAdapter::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
-{
-    lagTimes = lagTimes_;
-    maxLagDuration = static_cast<int32_t>(maxLagDuration_);
-    if (lagTimes_ != 0) {
-        avgLagDuration = static_cast<int32_t>(totalLagDuration_ / lagTimes_);
-    } else {
-        avgLagDuration = 0;
-    }
-    return Status::OK;
-}
-
-int64_t VideoDecoderAdapter::GetCurrentMillisecond()
-{
-    std::chrono::system_clock::duration duration = std::chrono::system_clock::now().time_since_epoch();
-    int64_t time = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-    return time;
 }
 
 int32_t VideoDecoderAdapter::SetOutputSurface(sptr<Surface> videoSurface)
