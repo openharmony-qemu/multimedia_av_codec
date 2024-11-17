@@ -119,6 +119,7 @@ private:
     void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer, int64_t renderTime);
     bool AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer);
+    bool DrainSeekContinuous(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     bool DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     bool DrainSeekClosest(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
 

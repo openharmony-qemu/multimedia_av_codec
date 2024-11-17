@@ -161,11 +161,21 @@ Status AudioDecoderFilter::DoPause()
     return Status::OK;
 }
 
+Status AudioDecoderFilter::DoPauseAudioAlign()
+{
+    return DoPause();
+}
+
 Status AudioDecoderFilter::DoResume()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Resume.");
     refreshTotalPauseTime_ = true;
     return (Status)mediaCodec_->Start();
+}
+
+Status AudioDecoderFilter::DoResumeAudioAlign()
+{
+    return DoResume();
 }
 
 Status AudioDecoderFilter::DoStop()

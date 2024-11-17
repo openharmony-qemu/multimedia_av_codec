@@ -39,7 +39,11 @@ public:
 
     Status DoPause() override;
 
+    Status DoPauseAudioAlign() override;
+
     Status DoResume() override;
+
+    Status DoResumeAudioAlign() override;
 
     Status DoStop() override;
 
