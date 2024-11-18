@@ -54,7 +54,6 @@ string g_mpegUri4 = TEST_URI_PATH + string("mpeg_mpeg2_mp3.mpeg");
 
 
 namespace {
-
 /**
  * @tc.name: Demuxer_ReadSample_2250
  * @tc.desc: Read sample test for timed metadata track,local
@@ -583,4 +582,4 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2263, TestSize.Level1)
         }
     }
 }
-}
+} //namespace
