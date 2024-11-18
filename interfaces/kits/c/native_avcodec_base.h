@@ -182,6 +182,13 @@ typedef struct OH_AVDataSource {
 } OH_AVDataSource;
 
 /**
+ * @brief Enumerates the MIME types of video codecs
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG2;
+
+/**
  * @brief Enumerates the MIME types of audio and video codecs
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -698,6 +705,43 @@ typedef enum OH_AVCProfile {
 } OH_AVCProfile;
 
 /**
+ * @brief MPEG2 Profile
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_MPEG2Profile {
+    MPEG2_PROFILE_SIMPLE  = 0,
+    MPEG2_PROFILE_MAIN    = 1,
+    MPEG2_PROFILE_SNR     = 2,
+    MPEG2_PROFILE_SPATIAL = 3,
+    MPEG2_PROFILE_HIGH    = 4,
+    MPEG2_PROFILE_422     = 5,
+} OH_MPEG2Profile;
+
+/**
+ * @brief MPEG4 Profile
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_MPEG4Profile {
+    MPEG4_PROFILE_SIMPLE             = 0,
+    MPEG4_PROFILE_SIMPLE_SCALABLE    = 1,
+    MPEG4_PROFILE_CORE               = 2,
+    MPEG4_PROFILE_MAIN               = 3,
+    MPEG4_PROFILE_NBIT               = 4,
+    MPEG4_PROFILE_HYBRID             = 5,
+    MPEG4_PROFILE_BASIC_ANIMATED_TEXTURE = 6,
+    MPEG4_PROFILE_SCALABLE_TEXTURE   = 7,
+    MPEG4_PROFILE_SIMPLE_FA          = 8,
+    MPEG4_PROFILE_ADVANCED_REAL_TIME_SIMPLE  = 9,
+    MPEG4_PROFILE_CORE_SCALABLE      = 10,
+    MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY = 11,
+    MPEG4_PROFILE_ADVANCED_CORE      = 12,
+    MPEG4_PROFILE_ADVANCED_SCALABLE_TEXTURE  = 13,
+    MPEG4_PROFILE_ADVANCED_SIMPLE    = 14,
+} OH_MPEG4Profile;
+
+/**
  * @brief HEVC Profile
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -882,6 +926,38 @@ typedef enum OH_MatrixCoefficient {
     MATRIX_COEFFICIENT_CHROMATICITY_CL = 13,
     MATRIX_COEFFICIENT_ICTCP = 14,
 } OH_MatrixCoefficient;
+
+/**
+ * @brief MPEG2 Level.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_MPEG2Level {
+    MPEG2_LEVEL_LL  = 0,
+    MPEG2_LEVEL_ML  = 1,
+    MPEG2_LEVEL_H14 = 2,
+    MPEG2_LEVEL_HL  = 3,
+}OH_MPEG2Level;
+
+/**
+ * @brief MPEG4 Level.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_MPEG4Level {
+    MPEG4_LEVEL_0  = 0,
+    MPEG4_LEVEL_0B = 1,
+    MPEG4_LEVEL_1  = 2,
+    MPEG4_LEVEL_2  = 3,
+    MPEG4_LEVEL_3  = 4,
+    MPEG4_LEVEL_3B = 5,
+    MPEG4_LEVEL_4  = 6,
+    MPEG4_LEVEL_4A = 7,
+    MPEG4_LEVEL_5  = 8,
+    MPEG4_LEVEL_6  = 9,
+}OH_MPEG4Level;
 
 /**
  * @brief AVC Level.
