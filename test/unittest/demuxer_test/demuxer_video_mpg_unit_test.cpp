@@ -40,6 +40,8 @@ unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 
+list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
+    SeekMode::SEEK_CLOSEST_SYNC};
 string g_mpegPath = TEST_FILE_PATH + string("mpeg_h264_mp2.mpeg");
 string g_mpegPath2 = TEST_FILE_PATH + string("mpeg_h264_mp3.mpeg");
 string g_mpegPath3 = TEST_FILE_PATH + string("mpeg_mpeg2_mp2.mpeg");
