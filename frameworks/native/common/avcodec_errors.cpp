@@ -132,7 +132,7 @@ const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {
     {AV_ERR_INVALID_VAL,                              "invalid argument"},
     {AV_ERR_IO,                                       "IO error"},
     {AV_ERR_TIMEOUT,                                  "network timeout"},
-    {AV_ERR_UNKNOWN,                                  "unkown error"},
+    {AV_ERR_UNKNOWN,                                  "unknown error"},
     {AV_ERR_SERVICE_DIED,                             "avcodec service died"},
     {AV_ERR_INVALID_STATE,                            "the state is not support this operation"},
     {AV_ERR_UNSUPPORT,                                "unsupport interface"},
