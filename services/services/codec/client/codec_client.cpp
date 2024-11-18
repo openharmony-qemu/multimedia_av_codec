@@ -186,7 +186,7 @@ int32_t CodecClient::Start()
                              "Not get input surface.");
     if (isEnableQpMap_) {
         CHECK_AND_RETURN_RET_LOG(callbackMode_ != MEMORY_CALLBACK, AVCS_ERR_UNSUPPORT, "API9 unsupport qp map");
-        CHECK_AND_RETURN_RET_LOG(codecMode_ == CODEC_SURFACE_MODE, AVCS_ERR_UNSUPPORT,
+        CHECK_AND_RETURN_RET_LOG(codecMode_ != CODEC_SURFACE_MODE_WITHOUT_SETPARAMETER, AVCS_ERR_UNSUPPORT,
                                  "Not register parameter callback");
     }
 
@@ -284,7 +284,7 @@ sptr<OHOS::Surface> CodecClient::CreateInputSurface()
 
     auto ret = codecProxy_->CreateInputSurface();
     EXPECT_AND_LOGI(ret != nullptr, "Succeed");
-    codecMode_ |= CODEC_SURFACE_MODE;
+    codecMode_ |= CODEC_SURFACE_MODE_WITHOUT_SETPARAMETER;
     return ret;
 }
 
@@ -295,7 +295,7 @@ int32_t CodecClient::SetOutputSurface(sptr<Surface> surface)
 
     int32_t ret = codecProxy_->SetOutputSurface(surface);
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
-    codecMode_ = CODEC_SURFACE_MODE;
+    codecMode_ = CODEC_SURFACE_MODE_WITHOUT_SETPARAMETER;
     return ret;
 }
 
