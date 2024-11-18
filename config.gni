@@ -123,12 +123,15 @@ if (av_codec_support_drm) {
   av_codec_defines += [ "UNSUPPORT_DRM" ]
 }
 
-if (!av_codec_support_software_codec) {
-  av_codec_support_fcodec = false
-  av_codec_support_hevc_decoder = false
+if (defined(global_parts_info) &&
+    defined(global_parts_info.av_codec_support_software_codec)) {
+  av_codec_support_fcodec = global_parts_info.av_codec_support_software_codec
+  av_codec_support_hevc_decoder =
+      global_parts_info.av_codec_support_software_codec
 }
 
 if (defined(global_parts_info) &&
     defined(global_parts_info.av_codec_support_start_stop_on_demand)) {
-  av_codec_support_start_stop_on_demand = true
+  av_codec_support_start_stop_on_demand =
+      global_parts_info.av_codec_support_start_stop_on_demand
 }
