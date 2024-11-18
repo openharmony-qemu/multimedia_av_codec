@@ -76,6 +76,10 @@ public:
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
     void SetIsReportedErrorCode() override;
+    bool isNotRetry(const std::shared_ptr<DownloadRequest>& request) override
+    {
+        return isRingBuffer_ && request->GetFileContentLengthNoWait() == 0;
+    }
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);

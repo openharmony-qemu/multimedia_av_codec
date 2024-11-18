@@ -233,11 +233,9 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
 
-    if (request->GetFileContentLengthNoWait() == 0) { // flv living
+    if (downloader_ != nullptr && downloader_->isNotRetry(request)) { // flv living
         NotifyError(clientError, serverError);
-        if (downloader_ != nullptr) {
-            downloader_->SetDownloadErrorState();
-        }
+        downloader_->SetDownloadErrorState();
         return false;
     }
 
