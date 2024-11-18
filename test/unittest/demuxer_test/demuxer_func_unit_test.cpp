@@ -42,8 +42,6 @@ static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
-string g_tsMpeg4Path = TEST_FILE_PATH + string("test_mpeg4_Gop25_4sec.ts");
-string g_tsMpeg4Uri = TEST_URI_PATH + string("test_mpeg4_Gop25_4sec.ts");
 string g_h264aacPath = TEST_FILE_PATH + string("h264_aac.mov");
 string g_h264mp3Path = TEST_FILE_PATH + string("h264_mp3.mov");
 string g_h264vorPath = TEST_FILE_PATH + string("h264_vorbis.mov");
