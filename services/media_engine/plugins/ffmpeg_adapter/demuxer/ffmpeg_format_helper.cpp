@@ -110,7 +110,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"wav", FileType::WAV},
     {"flv", FileType::FLV},
     {"avi", FileType::AVI},
-    {"mpeg", FileType::MPEG},
+    {"mpeg", FileType::MPEGPS},
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
     {"webvtt", FileType::VTT},
