@@ -73,7 +73,7 @@ const std::vector<std::pair<AudioChannelLayout, int>> g_audioVividChannelLayoutM
     {AudioChannelLayout::HOA_ORDER3_ACN_SN3D, 16},
 };
 
-const std::vector<std::pair<int, AudioChannelLayout>> g_channelLayoutDefaukltMap = {
+const std::vector<std::pair<int, AudioChannelLayout>> g_channelLayoutDefaultMap = {
     {2, AudioChannelLayout::STEREO},             // 2: STEREO
     {4, AudioChannelLayout::CH_4POINT0},         // 4: CH_4POINT0
     {6, AudioChannelLayout::CH_5POINT1},         // 6: CH_5POINT1
@@ -367,9 +367,9 @@ AudioChannelLayout FFMpegConverter::ConvertFFToOHAudioChannelLayout(uint64_t ffC
 AudioChannelLayout FFMpegConverter::GetDefaultChannelLayout(int channels)
 {
     AudioChannelLayout layout = AudioChannelLayout::MONO;
-    auto ite = std::find_if(g_channelLayoutDefaukltMap.begin(), g_channelLayoutDefaukltMap.end(),
+    auto ite = std::find_if(g_channelLayoutDefaultMap.begin(), g_channelLayoutDefaultMap.end(),
                             [&channels](const auto &item) -> bool { return item.first == channels; });
-    if (ite != g_channelLayoutDefaukltMap.end()) {
+    if (ite != g_channelLayoutDefaultMap.end()) {
         layout = ite->second;
     }
     MEDIA_LOG_W("Default: " PUBLIC_LOG_S, ConvertOHAudioChannelLayoutToString(layout).data());

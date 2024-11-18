@@ -372,7 +372,7 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
 {
     (void)avcl;
     char buf[500] = {0}; // 500
-    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
+    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, vl);
     if (ret < 0) {
         return;
     }
