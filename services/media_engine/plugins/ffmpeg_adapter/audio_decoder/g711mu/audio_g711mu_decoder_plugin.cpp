@@ -38,7 +38,6 @@ constexpr int AVCODEC_G711MU_SHIFT = 4;
 constexpr int AVCODEC_G711MU_SEG_MASK = 0x70;
 constexpr int G711MU_LINEAR_BIAS = 0x84;
 
-
 Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register>& reg)
 {
     CodecPluginDef definition;
