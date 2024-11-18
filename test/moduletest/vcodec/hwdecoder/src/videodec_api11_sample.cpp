@@ -948,7 +948,7 @@ void VDecAPI11Sample::RenderOutAtTime(uint32_t index)
         int32_t usTimeNum = 1000;
         int32_t msTimeNum = 1000000;
         if (renderTimestampNs == 0) {
-            renderTimestampNs = GetSystemTimeUs() / usTimeNum;
+            renderTimestampNs = GetSystemTimeUs() * usTimeNum;
         }
         renderTimestampNs = renderTimestampNs + (usTimeNum / DEFAULT_FRAME_RATE * msTimeNum);
         OH_AVErrCode code = OH_VideoDecoder_RenderOutputBufferAtTime(vdec_, index, renderTimestampNs);

@@ -48,6 +48,8 @@
 #include "layer_info_two_layer_avc.h"
 #include "layer_info_two_layer_hevc.h"
 #include "layer_info_sdtp_extended_hevc.h"
+#include "layer_info_recording.h"
+#include "layer_info_hdr_vivid.h"
 #include "layer_info_hdr_1_hevc.h"
 #include "layer_info_hdr_2_hevc.h"
 #include <random>
@@ -201,6 +203,13 @@ void InnerDemuxerParserSample::InitAVCScene(MP4Scene scene)
             gopJson_ = GopInfoFourLayerAvc;
             frameLayerJson_ = FrameLayerInfoFourLayerAvc;
             break;
+        case MP4Scene::HDR_VIVID:
+            gopJson_ = GopInfoHdrVivid;
+            frameLayerJson_ = FrameLayerInfoHdrVivid;
+            break;
+        case MP4Scene::RECORDING:
+            gopJson_ = GopInfoRecording;
+            frameLayerJson_ = FrameLayerInfoRecording;
         default:
             break;
     }
