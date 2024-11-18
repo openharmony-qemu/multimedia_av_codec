@@ -1200,14 +1200,13 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2250, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-#ifdef AVSOURCE_INNER_UNIT_TEST
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 1);
     ASSERT_EQ(formatVal_.hasAudio, 1);
     ASSERT_EQ(formatVal_.fileType, 106);
-#endif
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1257,14 +1256,13 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2251, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-#ifdef AVSOURCE_INNER_UNIT_TEST
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 1);
     ASSERT_EQ(formatVal_.hasAudio, 1);
     ASSERT_EQ(formatVal_.fileType, 106);
-#endif
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1314,14 +1312,13 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2252, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-#ifdef AVSOURCE_INNER_UNIT_TEST
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 1);
     ASSERT_EQ(formatVal_.hasAudio, 1);
     ASSERT_EQ(formatVal_.fileType, 106);
-#endif
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1371,14 +1368,13 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2253, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-#ifdef AVSOURCE_INNER_UNIT_TEST
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 1);
     ASSERT_EQ(formatVal_.hasAudio, 1);
     ASSERT_EQ(formatVal_.fileType, 106);
-#endif
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1428,14 +1424,13 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2260, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-#ifdef AVSOURCE_INNER_UNIT_TEST
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 1);
     ASSERT_EQ(formatVal_.hasAudio, 1);
     ASSERT_EQ(formatVal_.fileType, 106);
-#endif
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1485,14 +1480,13 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2261, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-#ifdef AVSOURCE_INNER_UNIT_TEST
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 1);
     ASSERT_EQ(formatVal_.hasAudio, 1);
     ASSERT_EQ(formatVal_.fileType, 106);
-#endif
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1542,14 +1536,13 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2262, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-#ifdef AVSOURCE_INNER_UNIT_TEST
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 1);
     ASSERT_EQ(formatVal_.hasAudio, 1);
     ASSERT_EQ(formatVal_.fileType, 106);
-#endif
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1599,14 +1592,13 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2263, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-#ifdef AVSOURCE_INNER_UNIT_TEST
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 1);
     ASSERT_EQ(formatVal_.hasAudio, 1);
     ASSERT_EQ(formatVal_.fileType, 106);
-#endif
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
