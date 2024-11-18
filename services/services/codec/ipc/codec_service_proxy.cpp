@@ -201,11 +201,10 @@ int32_t CodecServiceProxy::NotifyEos()
 
 int32_t CodecServiceProxy::Reset()
 {
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Listener is nullptr");
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
-
-    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Listener is nullptr");
 
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
@@ -450,11 +449,10 @@ int32_t CodecServiceProxy::GetInputFormat(Format &format)
 
 int32_t CodecServiceProxy::DestroyStub()
 {
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Listener is nullptr");
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
-
-    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Listener is nullptr");
 
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
