@@ -78,6 +78,7 @@ string g_mpegUri4 = TEST_URI_PATH + string("mpeg_mpeg2_mp3.mpeg");
 } //namespace
 
 /**********************************source FD**************************************/
+
 namespace {
 /**
  * @tc.name: AVSource_GetFormat_1025
@@ -641,6 +642,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2240, TestSize.Level1)
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
+
 /**
  * @tc.name: AVSource_GetFormat_2296
  * @tc.desc: get source format, local (264-aac)
@@ -1207,6 +1209,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2250, TestSize.Level1)
     ASSERT_EQ(formatVal_.fileType, 106);
 #endif
     trackIndex_ = 0;
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -1263,6 +1266,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2251, TestSize.Level1)
     ASSERT_EQ(formatVal_.fileType, 106);
 #endif
     trackIndex_ = 0;
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -1319,6 +1323,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2252, TestSize.Level1)
     ASSERT_EQ(formatVal_.fileType, 106);
 #endif
     trackIndex_ = 0;
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -1375,6 +1380,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2253, TestSize.Level1)
     ASSERT_EQ(formatVal_.fileType, 106);
 #endif
     trackIndex_ = 0;
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -1431,6 +1437,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2260, TestSize.Level1)
     ASSERT_EQ(formatVal_.fileType, 106);
 #endif
     trackIndex_ = 0;
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -1487,6 +1494,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2261, TestSize.Level1)
     ASSERT_EQ(formatVal_.fileType, 106);
 #endif
     trackIndex_ = 0;
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -1520,6 +1528,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2261, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
 }
+
 /**
  * @tc.name: AVSource_GetFormat_2262
  * @tc.desc: get source format(mpeg)
@@ -1542,6 +1551,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2262, TestSize.Level1)
     ASSERT_EQ(formatVal_.fileType, 106);
 #endif
     trackIndex_ = 0;
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -1598,6 +1608,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2263, TestSize.Level1)
     ASSERT_EQ(formatVal_.fileType, 106);
 #endif
     trackIndex_ = 0;
+    format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
