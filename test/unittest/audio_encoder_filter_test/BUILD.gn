@@ -100,7 +100,7 @@ ohos_unittest("audio_encoder_filter_unitest") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "safwk:system_ability_fwk",
-    "//third_party/googletest:gmock_main",
+    "googletest:gmock_main",
   ]
 
   resource_config_file =
