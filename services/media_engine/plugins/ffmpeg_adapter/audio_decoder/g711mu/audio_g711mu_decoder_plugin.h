@@ -82,6 +82,7 @@ private:
     int64_t pts_;
     int32_t maxInputSize_;
     int32_t maxOutputSize_;
+    AudioSampleFormat sampleFormat_;
 };
 } // namespace G711mu
 } // namespace Plugins
