@@ -58,8 +58,6 @@ MediaCodec::MediaCodec()
       inputBufferQueueProducer_(nullptr),
       inputBufferQueueConsumer_(nullptr),
       outputBufferQueueProducer_(nullptr),
-      codecCallback_(nullptr),
-      mediaCodecCallback_(nullptr),
       isEncoder_(false),
       isSurfaceMode_(false),
       isBufferMode_(false),
@@ -86,12 +84,6 @@ MediaCodec::~MediaCodec()
     }
     if (outputBufferQueueProducer_) {
         outputBufferQueueProducer_ = nullptr;
-    }
-    if (codecCallback_) {
-        codecCallback_ = nullptr;
-    }
-    if (mediaCodecCallback_) {
-        mediaCodecCallback_ = nullptr;
     }
 }
 
@@ -509,8 +501,9 @@ Status MediaCodec::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuf
 void MediaCodec::HandleAudioCencDecryptError()
 {
     MEDIA_LOG_E("MediaCodec DrmAudioCencDecrypt failed.");
-    if (mediaCodecCallback_ != nullptr) {
-        mediaCodecCallback_->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED,
+    auto realPtr = mediaCodecCallback_.lock();
+    if (realPtr != nullptr) {
+        realPtr->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED,
             static_cast<int32_t>(Status::ERROR_DRM_DECRYPT_FAILED));
     }
 }
@@ -747,8 +740,9 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
         DumpAVBufferToFile(DUMP_PARAM, dumpPrefix_ + DUMP_FILE_NAME, outputBuffer);
     }
     Status ret = outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
-    if (mediaCodecCallback_) {
-        mediaCodecCallback_->OnOutputBufferDone(outputBuffer);
+    auto realPtr = mediaCodecCallback_.lock();
+    if (realPtr != nullptr) {
+        realPtr->OnOutputBufferDone(outputBuffer);
     }
     MEDIA_LOG_D("0x%{public}06" PRIXPTR " OnOutputBufferDone, buffer->pts" PUBLIC_LOG_D64,
         FAKE_POINTER(this), outputBuffer->pts_);
