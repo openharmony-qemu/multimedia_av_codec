@@ -305,16 +305,11 @@ void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
 
 Status DemuxerFilter::PrepareBeforeStart()
 {
-    Status ret = Status::OK;
     if (isLoopStarted.load()) {
         MEDIA_LOG_I_SHORT("Loop is started. Not need start again.");
-        return ret;
+        return Status::OK;
     }
-    ret = Filter::Start();
-    FALSE_RETURN_V(ret == Status::OK, ret);
-    ret = Filter::WaitAllState(FilterState::RUNNING);
-    MEDIA_LOG_I_SHORT("PrepareBeforeStart done ret = %{public}d", ret);
-    return ret;
+    return Filter::Start();
 }
 
 Status DemuxerFilter::DoStart()
@@ -399,23 +394,11 @@ Status DemuxerFilter::ResumeForSeek()
     if (it != nextFiltersMap_.end() && it->second.size() == 1) {
         auto filter = it->second.back();
         if (filter != nullptr) {
-            if (filter->IsDesignatedState(FilterState::RUNNING)) {
-                MEDIA_LOG_I_SHORT("current filter state is running");
-                return Status::OK;
-            }
             MEDIA_LOG_I_SHORT("filter resume");
             filter->Resume();
         }
     }
-    demuxer_->Resume();
-    if (it != nextFiltersMap_.end() && it->second.size() == 1) {
-        auto filter = it->second.back();
-        if (filter != nullptr) {
-            MEDIA_LOG_I_SHORT("filter WaitAllState");
-            return filter->WaitAllState(FilterState::RUNNING);
-        }
-    }
-    return Status::OK;
+    return demuxer_->Resume();
 }
 
 Status DemuxerFilter::DoFlush()
