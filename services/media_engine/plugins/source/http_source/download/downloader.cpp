@@ -163,7 +163,14 @@ void DownloadRequest::WaitHeaderUpdated() const
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
     // Wait Header(fileContentLen etc.) updated
     while (!isHeaderUpdated_ && times_ < RETRY_TIMES && !isInterruptNeeded_ && !headerInfo_.isClosed) {
-        Task::SleepInTask(SLEEP_TIME);
+        {
+            AutoLock lk(finishedMutex_);
+            Task::SleepInTask(SLEEP_TIME);
+            if (isPlayingFinished) {
+                isHeaderUpdating_ = false;
+                return;
+            }
+        }
         times_++;
     }
     MEDIA_LOG_D("isHeaderUpdated_ " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
@@ -228,6 +235,14 @@ bool DownloadRequest::IsM3u8Request() const
 void DownloadRequest::SetIsM3u8Request(bool isM3u8Request)
 {
     isM3u8Request_ = isM3u8Request;
+}
+
+void DownloadRequest::SetPlayingFinished()
+{
+    {
+        AutoLock lk(finishedMutex_);
+        isPlayingFinished = true;
+    }
 }
 
 bool DownloadRequest::IsServerAcceptRange() const
