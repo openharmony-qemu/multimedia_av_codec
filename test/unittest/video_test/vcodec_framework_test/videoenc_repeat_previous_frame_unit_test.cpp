@@ -16,8 +16,9 @@
 #include <gtest/gtest.h>
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
+#include "codeclist_mock.h"
 #include "venc_sample.h"
-#ifdef VIDEOENC_REPEAT_PREVIOUS_FRAME_CAPI_UNIT_TEST
+#ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
 #define TEST_SUIT VideoEncRepeatPreviousFrameCapiTest
@@ -28,7 +29,6 @@
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
-using namespace testing::mt;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 using namespace OHOS::Media;
 
@@ -155,7 +155,7 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
 
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
 
-#ifdef VIDEOENC_REPEAT_PREVIOUS_FRAME_CAPI_UNIT_TEST
+#ifdef VIDEOENC_CAPI_UNIT_TEST
 /**
  * @tc.name: VideoEncoder_RepeatPreviousFrame_Capi_001
  * @tc.desc: key repeat previous frame is invalid
@@ -538,14 +538,14 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_011, TestSize.Level1)
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
 }
 #endif // HMOS_TEST
-#endif // VIDEOENC_REPEAT_PREVIOUS_FRAME_CAPI_UNIT_TEST
+#endif // VIDEOENC_CAPI_UNIT_TEST
 } // namespace
 
 int main(int argc, char **argv)
 {
     testing::GTEST_FLAG(output) = "xml:./";
     for (int i = 0; i < argc; ++i) {
-        cout << argv[i] << endl;
+        std::cout << argv[i] << std::endl;
         if (strcmp(argv[i], "--need_dump") == 0) {
             VideoEncSample::needDump_ = true;
             DecArgv(i, argc, argv);

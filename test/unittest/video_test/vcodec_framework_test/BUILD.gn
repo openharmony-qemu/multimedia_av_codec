@@ -58,6 +58,8 @@ group("vcodec_framework_test") {
       deps += [
         ":videoenc_capi_unit_test",
         ":videoenc_inner_unit_test",
+        ":videoenc_repeat_previous_frame_capi_unit_test",
+        ":videoenc_repeat_previous_frame_inner_unit_test",
         ":videoenc_stable_unit_test",
         ":videoenc_temporal_scalability_capi_unit_test",
         ":videoenc_temporal_scalability_inner_unit_test",
@@ -384,7 +386,7 @@ ohos_unittest("videoenc_repeat_previous_frame_capi_unit_test") {
     "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
-  defines = [ "VIDEOENC_REPEAT_PREVIOUS_FRAME_CAPI_UNIT_TEST" ]
+  defines = [ "VIDEOENC_CAPI_UNIT_TEST" ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
   }
@@ -432,7 +434,7 @@ ohos_unittest("videoenc_repeat_previous_frame_inner_unit_test") {
     "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
-  defines = [ "VIDEOENC_REPEAT_PREVIOUS_FRAME_INNER_UNIT_TEST" ]
+  defines = [ "VIDEOENC_INNER_UNIT_TEST" ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
   }
