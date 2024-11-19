@@ -374,6 +374,10 @@ Status AudioMp3EncoderPlugin::Prepare()
 Status AudioMp3EncoderPlugin::Stop()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
+    if (!lameInfo || !lameMp3Buffer) {
+        AVCODEC_LOGE("AudioMp3EncoderPlugin Stop lameInfo or lameMp3Buffer is nullptr");
+        return Status::ERROR_NULL_POINTER;
+    }
     int result = lame_encode_flush(lameInfo->gfp, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
     if (result < 0) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin Stop lame_encode_flush error.");
