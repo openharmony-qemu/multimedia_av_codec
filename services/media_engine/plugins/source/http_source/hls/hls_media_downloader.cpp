@@ -47,7 +47,7 @@ constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
-constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
+constexpr uint32_t DURATION_CHANGE_AMOUT_MILLISECONDS = 500;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 constexpr int SEEK_STATUS_RETRY_TIMES = 100;
 constexpr int SEEK_STATUS_SLEEP_TIME = 50;
@@ -555,7 +555,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     readTotalBytes_ += readDataInfo.realReadLength_;
     if (now > lastReadCheckTime_ && now - lastReadCheckTime_ > SAMPLE_INTERVAL) {
         readRecordDuringTime_ = now - lastReadCheckTime_;
-        double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND;
+        double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLISECONDS;
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = readTotalBytes_ * BYTES_TO_BIT / readDuration;    // bps
             currentBitrate_ = static_cast<uint64_t>(readSpeed);     // bps
@@ -726,7 +726,7 @@ bool HlsMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         if (res > 0 || hasWriteSize == len) {
             HandleCachedDuration();
             writeBitrateCaculator_->StartClock();
-            uint64_t writeTime = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLIONSECOND;
+            uint64_t writeTime = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLISECONDS;
             if (writeTime > ONE_SECONDS) {
                 writeBitrateCaculator_->ResetClock();
             }
@@ -909,7 +909,7 @@ double HlsMediaDownloader::CalculateCurrentDownloadSpeed()
 {
     double downloadRate = 0;
     double tmpNumerator = static_cast<double>(downloadBits_);
-    double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLIONSECOND;
+    double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLISECONDS;
     if (tmpDenominator > ZERO_THRESHOLD) {
         downloadRate = tmpNumerator / tmpDenominator;
         avgDownloadSpeed_ = downloadRate;
@@ -1415,7 +1415,7 @@ void HlsMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     if (downloader_ != nullptr) {
         downloader_->GetIp(playbackInfo.serverIpAddress);
     }
-    double tmpDownloadTime = static_cast<double>(totalDownloadDuringTime_) / SECOND_TO_MILLIONSECOND;
+    double tmpDownloadTime = static_cast<double>(totalDownloadDuringTime_) / SECOND_TO_MILLISECONDS;
     if (tmpDownloadTime > ZERO_THRESHOLD) {
         playbackInfo.averageDownloadRate = static_cast<int64_t>(totalBits_ / tmpDownloadTime);
     } else {
@@ -1532,11 +1532,11 @@ void HlsMediaDownloader::HandleCachedDuration()
         return;
     }
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetBufferSize()) *
-        BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<int64_t>(currentBitRate_));
+        BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / static_cast<int64_t>(currentBitRate_));
     if ((cachedDuration > lastDurationReacord_ &&
-        cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
+        cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLISECONDS) ||
         (lastDurationReacord_ > cachedDuration &&
-        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
+        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLISECONDS)) {
         MEDIA_LOG_I("HLS OnEvent cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
         callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         lastDurationReacord_ = cachedDuration;

@@ -216,7 +216,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
                     info.discontinuity);
                 AddFile(fragment, duration);
             }
-            duration += static_cast<size_t>(info.duration * SECOND_TO_MICROSECOND);
+            duration += static_cast<size_t>(info.duration * SECOND_TO_MICROSECONDS);
             info.uri = "", info.duration = 0, info.discontinuity = false;
         }
     }
