@@ -455,7 +455,7 @@ OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid);
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param mediaKeySession A media key session instance with decryption function.
- * @param secureVideoPath Secure video Path. set the secure video path as true and the non secure video path as false.
+ * @param secureVideoPath Secure video Path. Set the secure video path as true and the non secure video path as false.
  * In Surface mode, both secure and non secure video Path are supported.
  * In Buffer mode, only non secure video Path are supported.
  * @return {@link AV_ERR_OK}, execution is successful
