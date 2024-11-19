@@ -165,11 +165,11 @@ void DownloadRequest::WaitHeaderUpdated() const
     while (!isHeaderUpdated_ && times_ < RETRY_TIMES && !isInterruptNeeded_ && !headerInfo_.isClosed) {
         {
             AutoLock lk(finishedMutex_);
-            Task::SleepInTask(SLEEP_TIME);
             if (isPlayingFinished) {
                 isHeaderUpdating_ = false;
                 return;
             }
+            Task::SleepInTask(SLEEP_TIME);
         }
         times_++;
     }
@@ -623,6 +623,7 @@ void Downloader::HandlePlayingFinish()
     }
     shouldStartNextRequest = true;
     if (currentRequest_->downloadDoneCallback_ && !isDestructor_) {
+        currentRequest_->SetPlayingFinished();
         currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
         currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
         currentRequest_->isFirstRangeRequestReady_ = false;
