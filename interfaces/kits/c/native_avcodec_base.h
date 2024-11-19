@@ -706,6 +706,7 @@ typedef enum OH_AVCProfile {
 
 /**
  * @brief MPEG2 Profile
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 14
  */
@@ -720,6 +721,7 @@ typedef enum OH_MPEG2Profile {
 
 /**
  * @brief MPEG4 Profile
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 14
  */
@@ -738,7 +740,7 @@ typedef enum OH_MPEG4Profile {
     MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY = 11,
     MPEG4_PROFILE_ADVANCED_CORE      = 12,
     MPEG4_PROFILE_ADVANCED_SCALABLE_TEXTURE  = 13,
-    MPEG4_PROFILE_ADVANCED_SIMPLE    = 14,
+    MPEG4_PROFILE_ADVANCED_SIMPLE    = 17,
 } OH_MPEG4Profile;
 
 /**
