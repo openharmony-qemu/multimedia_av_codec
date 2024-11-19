@@ -1897,7 +1897,7 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
              requestBufferErrorCountMap_[trackId] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Invalid data source, can not get frame");
             if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_IO_DATA_ABNORMAL});
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
             } else {
                 MEDIA_LOG_D("EventReceiver is nullptr");
             }
