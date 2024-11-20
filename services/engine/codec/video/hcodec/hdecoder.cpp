@@ -327,6 +327,7 @@ int32_t HDecoder::OnSetParameters(const Format &format)
         }
         codecRate_ = frameRate.value();
     }
+    (void)SetVrrEnable(format);
     return AVCS_ERR_OK;
 }
 
@@ -409,6 +410,9 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
 {
     int32_t vrrEnable = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_ENABLE_VRR, vrrEnable) || vrrEnable != 1) {
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+        isVrrEnable_ = false;
+#endif
         HLOGI("VRR disabled");
         return AVCS_ERR_OK;
     }
@@ -446,6 +450,9 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 int32_t HDecoder::InitVrr()
 {
+    if (vpeHandle_ != nullptr) {
+        return AVCS_ERR_OK;
+    }
     if (vpeHandle_ == nullptr) {
         vpeHandle_ = dlopen("libvideoprocessingengine.z.so", RTLD_NOW);
         if (vpeHandle_ == nullptr) {
