@@ -90,7 +90,7 @@ void TimeAndIndexConversion::ReadBufferFromDataSource(size_t bufSize, std::share
 void TimeAndIndexConversion::StartParse()
 {
     source_->GetSize(fileSize_);
-    MEDIA_LOG_E("fileSize: " PUBLIC_LOG_D64, fileSize_);
+    MEDIA_LOG_I("fileSize: " PUBLIC_LOG_D64, fileSize_);
     while (static_cast<uint64_t>(offset_) < fileSize_) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
         auto buffer = std::make_shared<Buffer>();
