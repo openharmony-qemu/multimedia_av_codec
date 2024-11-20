@@ -103,7 +103,7 @@ void TimeAndIndexConversion::StartParse()
         ReadBoxHeader(buffer, header);
         uint64_t boxSize = static_cast<uint64_t>(header.size);
         if (boxSize == 1 || boxSize == 0) { // 0 and 1 are used to verify whether there is a large size
-            uint64_t largeSize;
+            uint64_t largeSize = 0;
             ReadLargeSize(buffer, largeSize);
             boxSize = largeSize;
         }
