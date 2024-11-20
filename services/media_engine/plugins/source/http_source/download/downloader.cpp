@@ -163,14 +163,7 @@ void DownloadRequest::WaitHeaderUpdated() const
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
     // Wait Header(fileContentLen etc.) updated
     while (!isHeaderUpdated_ && times_ < RETRY_TIMES && !isInterruptNeeded_ && !headerInfo_.isClosed) {
-        {
-            AutoLock lk(finishedMutex_);
-            if (isPlayingFinished) {
-                isHeaderUpdating_ = false;
-                return;
-            }
-            Task::SleepInTask(SLEEP_TIME);
-        }
+        Task::SleepInTask(SLEEP_TIME);
         times_++;
     }
     MEDIA_LOG_D("isHeaderUpdated_ " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU ", isClosed " PUBLIC_LOG_D32,
@@ -235,14 +228,6 @@ bool DownloadRequest::IsM3u8Request() const
 void DownloadRequest::SetIsM3u8Request(bool isM3u8Request)
 {
     isM3u8Request_ = isM3u8Request;
-}
-
-void DownloadRequest::SetPlayingFinished()
-{
-    {
-        AutoLock lk(finishedMutex_);
-        isPlayingFinished = true;
-    }
 }
 
 bool DownloadRequest::IsServerAcceptRange() const
@@ -623,7 +608,6 @@ void Downloader::HandlePlayingFinish()
     }
     shouldStartNextRequest = true;
     if (currentRequest_->downloadDoneCallback_ && !isDestructor_) {
-        currentRequest_->SetPlayingFinished();
         currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
         currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
         currentRequest_->isFirstRangeRequestReady_ = false;

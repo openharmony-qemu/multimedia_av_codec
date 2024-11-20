@@ -117,7 +117,6 @@ public:
     bool IsServerAcceptRange() const;
     void GetLocation(std::string& location) const;
     void SetIsM3u8Request(bool isM3u8Request);
-    void SetPlayingFinished();
     std::atomic<bool> isHeaderUpdated_ {false};
 private:
     void WaitHeaderUpdated() const;
@@ -154,8 +153,6 @@ private:
     int64_t dropedDataLen_ {0};
     std::atomic<bool> isFirstRangeRequestReady_ {false};
     bool isM3u8Request_ {false};
-    bool isPlayingFinished {false};
-    FairMutex finishedMutex_ {false};
 };
 
 class Downloader {

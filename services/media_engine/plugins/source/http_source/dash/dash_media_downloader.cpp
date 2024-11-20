@@ -1095,11 +1095,6 @@ void DashMediaDownloader::SetAppUid(int32_t appUid)
     }
 }
 
-bool DashMediaDownloader::GetPlayable()
-{
-    return GetBufferSize() >= 0;
-}
-
 bool DashMediaDownloader::GetBufferingTimeOut()
 {
     return false;
