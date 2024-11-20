@@ -107,7 +107,7 @@ void TimeAndIndexConversion::StartParse()
             ReadLargeSize(buffer, largeSize);
             boxSize = largeSize;
         }
-        FALSE_RETURN_MSG(boxSize >=  BOX_HEAD_SIZE, "StartParse failed due to error box size");
+        FALSE_RETURN_MSG(boxSize >= BOX_HEAD_SIZE, "StartParse failed due to error box size");
         if (strncmp(header.type, BOX_TYPE_MOOV, sizeof(header.type)) == 0) {
             offset_ += BOX_HEAD_SIZE;
             ParseMoov(header.size - BOX_HEAD_SIZE);
