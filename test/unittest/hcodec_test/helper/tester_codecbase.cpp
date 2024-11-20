@@ -307,9 +307,9 @@ bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams
         meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_SKIP, static_cast<bool>(param.ebrParam->isSkip));
     }
     if (param.qpMapValue.has_value()) {
-        size_t M = (opt_.dispW - 1) / 16 + 1; // divide by 16x16 block
-        size_t N = (opt_.dispH - 1) / 16 + 1; // divide by 16x16 block
-        vector<uint8_t> QPMap (M * N, param.qpMapValue.value()); // QP_MAX = 51
+        size_t widthInBlock = (opt_.dispW - 1) / 16 + 1; // divide by 16x16 block
+        size_t heightInBlock = (opt_.dispH - 1) / 16 + 1; // divide by 16x16 block
+        vector<uint8_t> QPMap (widthInBlock * heightInBlock, param.qpMapValue.value()); // QP_MAX = 51
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_QP_MAP, QPMap);
     }
     return true;
