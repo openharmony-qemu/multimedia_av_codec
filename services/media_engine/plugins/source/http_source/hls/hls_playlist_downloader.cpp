@@ -264,6 +264,9 @@ bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
     uint32_t maxGap = 0;
     bool isFirstSelect = true;
     for (const auto &item : master_->variants_) {
+        if (item == nullptr) {
+            continue;
+        }
         uint32_t tempGap = (item->bandWidth_ > bitRate) ? (item->bandWidth_ - bitRate) : (bitRate - item->bandWidth_);
         if (isFirstSelect || (tempGap < maxGap)) {
             isFirstSelect = false;
@@ -281,7 +284,7 @@ std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
 {
     std::vector<uint32_t> bitRates;
     for (const auto &item : master_->variants_) {
-        if (item->bandWidth_) {
+        if (item) {
             bitRates.push_back(item->bandWidth_);
         }
     }
@@ -290,7 +293,7 @@ std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
 
 uint32_t HlsPlayListDownloader::GetCurBitrate()
 {
-    if (currentVariant_==nullptr) {
+    if (currentVariant_ == nullptr) {
         return 0;
     }
     return currentVariant_->bandWidth_;
@@ -298,7 +301,7 @@ uint32_t HlsPlayListDownloader::GetCurBitrate()
 
 uint64_t HlsPlayListDownloader::GetCurrentBitRate()
 {
-    if (currentVariant_==nullptr) {
+    if (currentVariant_ == nullptr) {
         return 0;
     }
     MEDIA_LOG_I("HlsPlayListDownloader currentBitrate: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
@@ -307,7 +310,7 @@ uint64_t HlsPlayListDownloader::GetCurrentBitRate()
 
 int HlsPlayListDownloader::GetVedioWidth()
 {
-    if (currentVariant_==nullptr) {
+    if (currentVariant_ == nullptr) {
         return 0;
     }
     MEDIA_LOG_I("HlsPlayListDownloader currentWidth: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
@@ -316,7 +319,7 @@ int HlsPlayListDownloader::GetVedioWidth()
 
 int HlsPlayListDownloader::GetVedioHeight()
 {
-    if (currentVariant_==nullptr) {
+    if (currentVariant_ == nullptr) {
         return 0;
     }
     MEDIA_LOG_I("HlsPlayListDownloader currentHeight: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);

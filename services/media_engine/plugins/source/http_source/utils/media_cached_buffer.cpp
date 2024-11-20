@@ -977,7 +977,7 @@ bool CacheMediaChunkBufferImpl::ClearChunksOfFragment(uint64_t offset)
         }
 
         auto chunkPos = fragmentPos->accessPos;
-        if (chunkIter->offset >= (*chunkPos)->offset) { // Update accessPos of fragment
+        if ((*chunkPos) != nullptr && chunkIter->offset >= (*chunkPos)->offset) { // Update accessPos of fragment
             chunkPos = GetOffsetChunkCache(fragmentPos->chunks, chunkIter->offset + chunkIter->dataLength,
                 LeftBoundedRightOpenComp);
             (*fragmentPos).accessPos = chunkPos;

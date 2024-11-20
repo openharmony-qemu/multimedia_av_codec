@@ -68,7 +68,6 @@ public:
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     size_t GetBufferSize() const override;
     void SetAppUid(int32_t appUid) override;
-    bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
 
 private:

@@ -35,19 +35,19 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr uint32_t DECRYPT_COPY_LEN = 128;
-constexpr int MIN_WITDH = 480;
-constexpr int SECOND_WITDH = 720;
-constexpr int THIRD_WITDH = 1080;
+constexpr int MIN_WIDTH = 480;
+constexpr int SECOND_WIDTH = 720;
+constexpr int THIRD_WIDTH = 1080;
 constexpr uint64_t MAX_BUFFER_SIZE = 19 * 1024 * 1024;
 constexpr uint32_t SAMPLE_INTERVAL = 1000; // Sampling time interval: ms
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
-constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
+constexpr int DATA_USAGE_INTERVAL = 300 * 1000;
 constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
-constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
+constexpr uint32_t DURATION_CHANGE_AMOUT_MILLISECONDS = 500;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 constexpr int SEEK_STATUS_RETRY_TIMES = 100;
 constexpr int SEEK_STATUS_SLEEP_TIME = 50;
@@ -66,7 +66,7 @@ constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 constexpr int32_t HUNDRED_PERCENTS = 100;
 constexpr int32_t HALF_DIVIDE = 2;
 constexpr uint64_t READ_BACK_SAVE_SIZE = 1 * 1024 * 1024;
-constexpr int32_t SAVE_DATA_LOG_FREQUENCE = 10;
+constexpr int32_t SAVE_DATA_LOG_FREQUENCY = 10;
 constexpr uint32_t KILO = 1024;
 }
 
@@ -555,7 +555,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     readTotalBytes_ += readDataInfo.realReadLength_;
     if (now > lastReadCheckTime_ && now - lastReadCheckTime_ > SAMPLE_INTERVAL) {
         readRecordDuringTime_ = now - lastReadCheckTime_;
-        double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND;
+        double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLISECONDS;
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = readTotalBytes_ * BYTES_TO_BIT / readDuration;    // bps
             currentBitrate_ = static_cast<uint64_t>(readSpeed);     // bps
@@ -720,13 +720,13 @@ bool HlsMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
             }
         }
         writeBitrateCaculator_->UpdateWriteBytes(res);
-        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "writeOffset " PUBLIC_LOG_U64 " res "
+        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "writeOffset " PUBLIC_LOG_U64 " res "
             PUBLIC_LOG_ZU, writeOffset_, res);
         ClearChunksOfFragment();
         if (res > 0 || hasWriteSize == len) {
             HandleCachedDuration();
             writeBitrateCaculator_->StartClock();
-            uint64_t writeTime = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLIONSECOND;
+            uint64_t writeTime = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLISECONDS;
             if (writeTime > ONE_SECONDS) {
                 writeBitrateCaculator_->ResetClock();
             }
@@ -738,7 +738,7 @@ bool HlsMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         canWrite_ = false;
         HandleBuffering();
         while (!isInterrupt_ && !canWrite_.load() && !isInterruptNeeded_.load()) {
-            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "HLS CacheMediaBuffer full, waiting seek or read");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "HLS CacheMediaBuffer full, waiting seek or read");
             if (isSeekingFlag.load()) {
                 MEDIA_LOG_I("HLS CacheMediaBuffer full, isSeeking, return true.");
                 return true;
@@ -909,7 +909,7 @@ double HlsMediaDownloader::CalculateCurrentDownloadSpeed()
 {
     double downloadRate = 0;
     double tmpNumerator = static_cast<double>(downloadBits_);
-    double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLIONSECOND;
+    double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLISECONDS;
     if (tmpDenominator > ZERO_THRESHOLD) {
         downloadRate = tmpNumerator / tmpDenominator;
         avgDownloadSpeed_ = downloadRate;
@@ -954,8 +954,8 @@ void HlsMediaDownloader::DownloadReport()
         lastBits_ = totalBits_;
         lastCheckTime_ = now;
     }
-    if (!isDownloadFinish_ && (static_cast<int64_t>(now) - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
-        MEDIA_LOG_D("Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D32 "ms", dataUsage_, DATA_USAGE_NTERVAL);
+    if (!isDownloadFinish_ && (static_cast<int64_t>(now) - lastReportUsageTime_) > DATA_USAGE_INTERVAL) {
+        MEDIA_LOG_D("Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D32 "ms", dataUsage_, DATA_USAGE_INTERVAL);
         dataUsage_ = 0;
         lastReportUsageTime_ = static_cast<int64_t>(now);
     }
@@ -1362,11 +1362,11 @@ void HlsMediaDownloader::InActiveAutoBufferSize()
 
 uint64_t HlsMediaDownloader::TransferSizeToBitRate(int width)
 {
-    if (width <= MIN_WITDH) {
+    if (width <= MIN_WIDTH) {
         return MIN_BUFFER_SIZE;
-    } else if (width >= MIN_WITDH && width < SECOND_WITDH) {
+    } else if (width >= MIN_WIDTH && width < SECOND_WIDTH) {
         return MIN_BUFFER_SIZE * TRANSFER_SIZE_RATE_2;
-    } else if (width >= SECOND_WITDH && width < THIRD_WITDH) {
+    } else if (width >= SECOND_WIDTH && width < THIRD_WIDTH) {
         return MIN_BUFFER_SIZE * TRANSFER_SIZE_RATE_3;
     } else {
         return MIN_BUFFER_SIZE * TRANSFER_SIZE_RATE_4;
@@ -1415,7 +1415,7 @@ void HlsMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     if (downloader_ != nullptr) {
         downloader_->GetIp(playbackInfo.serverIpAddress);
     }
-    double tmpDownloadTime = static_cast<double>(totalDownloadDuringTime_) / SECOND_TO_MILLIONSECOND;
+    double tmpDownloadTime = static_cast<double>(totalDownloadDuringTime_) / SECOND_TO_MILLISECONDS;
     if (tmpDownloadTime > ZERO_THRESHOLD) {
         playbackInfo.averageDownloadRate = static_cast<int64_t>(totalBits_ / tmpDownloadTime);
     } else {
@@ -1532,11 +1532,11 @@ void HlsMediaDownloader::HandleCachedDuration()
         return;
     }
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetBufferSize()) *
-        BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<int64_t>(currentBitRate_));
+        BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / static_cast<int64_t>(currentBitRate_));
     if ((cachedDuration > lastDurationReacord_ &&
-        cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
+        cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLISECONDS) ||
         (lastDurationReacord_ > cachedDuration &&
-        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
+        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLISECONDS)) {
         MEDIA_LOG_I("HLS OnEvent cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
         callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         lastDurationReacord_ = cachedDuration;
