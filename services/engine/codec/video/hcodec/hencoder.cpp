@@ -78,6 +78,10 @@ int32_t HEncoder::OnConfigure(const Format &format)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+    ret = EnableFrameQPMap(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     (void)EnableEncoderParamsFeedback(format);
     return AVCS_ERR_OK;
 }
@@ -171,6 +175,28 @@ int32_t HEncoder::EnableEncoderParamsFeedback(const Format &format)
         return AVCS_ERR_INVALID_VAL;
     }
     HLOGI("configure encoder params feedback[%d] success", enableParamsFeedback);
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::EnableFrameQPMap(const Format &format)
+{
+    int32_t enableQPMap = false;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, enableQPMap)) {
+        return AVCS_ERR_OK;
+    }
+    if (!caps_.port.video.isSupportQPMap) {
+        HLOGE("this device dont support qp map");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = enableQPMap ? OMX_TRUE : OMX_FALSE;
+    if (!SetParameter(OMX_IndexParamEnableQPMap, param)) {
+        HLOGE("enable encoder frame qp map[%d] failed", enableQPMap);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    HLOGI("enable encoder frame qp map[%d] success", enableQPMap);
+    enableQPMap_ = true;
     return AVCS_ERR_OK;
 }
 
@@ -904,6 +930,7 @@ void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffe
     WrapQPRangeParamIntoOmxBuffer(omxBuffer, meta);
     WrapStartQPIntoOmxBuffer(omxBuffer, meta);
     WrapIsSkipFrameIntoOmxBuffer(omxBuffer, meta);
+    WrapQPMapParamIntoOmxBuffer(omxBuffer, meta);
     meta->Clear();
 }
 
@@ -957,6 +984,27 @@ void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer
     param.maxQp = static_cast<uint32_t>(maxQp);
     AppendToVector(omxBuffer->alongParam, param);
     HLOGI("pts=%" PRId64 ", qp=(%d~%d)", omxBuffer->pts, minQp, maxQp);
+}
+
+void HEncoder::WrapQPMapParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                           const shared_ptr<Media::Meta> &meta)
+{
+    if (!enableQPMap_) {
+        return;
+    }
+    vector<uint8_t> QPMap;
+    if (!meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_QP_MAP, QPMap) || QPMap.empty()) {
+        return;
+    }
+    AppendToVector(omxBuffer->alongParam, OMX_IndexParamBlockQP);
+    CodecBlockQpParam param;
+    InitOMXParamExt(param);
+    param.blockQpAddr = nullptr;
+    param.blockQpSize = static_cast<uint32_t>(QPMap.size());
+    param.qpMapReserveInts = static_cast<uint32_t>(QPMap.size());
+    // std::copy(QPMap.begin(), QPMap.end(), std::begin(param.qpMapReserve));
+    AppendToVector(omxBuffer->alongParam, param);
+    AppendArrayToVector(omxBuffer->alongParam, QPMap);
 }
 
 void HEncoder::WrapStartQPIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
