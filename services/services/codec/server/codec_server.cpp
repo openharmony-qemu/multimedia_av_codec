@@ -165,6 +165,8 @@ CodecServer::~CodecServer()
     if (thread->joinable()) {
         thread->join();
     }
+    shareBufCallback_ = nullptr;
+    avBufCallback_ = nullptr;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
@@ -194,12 +196,12 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
                              name.c_str(), ret);
     SetCallerInfo(callerInfo);
 
-    std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());
-    ret = codecBase_->SetCallback(callback);
+    shareBufCallback_ = std::make_shared<CodecBaseCallback>(shared_from_this());
+    ret = codecBase_->SetCallback(shareBufCallback_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "SetCallback failed.");
 
-    std::shared_ptr<MediaCodecCallback> videoCallback = std::make_shared<VCodecBaseCallback>(shared_from_this());
-    ret = codecBase_->SetCallback(videoCallback);
+    avBufCallback_ = std::make_shared<VCodecBaseCallback>(shared_from_this());
+    ret = codecBase_->SetCallback(avBufCallback_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "SetCallback failed.");
 
     StatusChanged(INITIALIZED);
@@ -438,6 +440,8 @@ int32_t CodecServer::Release()
     if (thread && thread->joinable()) {
         thread->join();
     }
+    shareBufCallback_ = nullptr;
+    avBufCallback_ = nullptr;
     (void)ReleasePostProcessing();
     if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
@@ -955,6 +959,7 @@ CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec) 
 
 CodecBaseCallback::~CodecBaseCallback()
 {
+    codec_ = nullptr;
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -994,6 +999,7 @@ VCodecBaseCallback::VCodecBaseCallback(const std::shared_ptr<CodecServer> &codec
 
 VCodecBaseCallback::~VCodecBaseCallback()
 {
+    codec_ = nullptr;
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
