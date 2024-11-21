@@ -28,8 +28,8 @@ public:
     DemuxerSample() = default;
     ~DemuxerSample();
     const char *filePath = "/data/test/fuzz_create.vivid";
-    void RunNormalDemuxer(const uint8_t *data, size_t size);
-    void RunNormalDemuxerApi11(const uint8_t *data, size_t size);
+    void RunNormalDemuxer(uint32_t createSize, int64_t time);
+    void RunNormalDemuxerApi11(uint32_t createSize, int64_t time);
 private:
     void ResetFlag();
     int CreateDemuxer();

@@ -39,14 +39,20 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size);
+    int len = write(fd, data, size - 7);
     if (len <= 0) {
         return false;
     }
     close(fd);
+    int64_t pts = data[size - 5];
+    int64_t ptsForPtsIndex = data[size - 6];
+    int64_t frameIndex = data[size - 7];
+    uint8_t *dataConver = const_cast<uint8_t *>(data);
+    uint32_t *createSize = reinterpret_cast<uint32_t *>(dataConver + size - 4);
     shared_ptr<ParserSample> parserSample = make_shared<ParserSample>();
     parserSample->filePath = MP4_PATH;
-    parserSample->RunReferenceParser(data, size);
+    parserSample->RunReferenceParser(pts, ptsForPtsIndex, frameIndex, *createSize);
+    remove(MP4_PATH);
     return true;
 }
 } // namespace OHOS

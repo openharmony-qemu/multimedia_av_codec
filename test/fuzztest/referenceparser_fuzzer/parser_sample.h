@@ -31,10 +31,11 @@ public:
     ParserSample() = default;
     ~ParserSample();
     const char *filePath = "/data/test/fuzz_create.mp4";
-    void RunReferenceParser(const uint8_t *data, size_t size);
+    void RunReferenceParser(int64_t pts, int64_t ptsForPtsIndex, int64_t frameIndex,uint32_t createSize);
 private:
-    int CreateDemuxer(uint32_t buffersize);
+    int CreateDemuxer(uint32_t buffersize, int64_t ptsForPtsIndex, int64_t frameIndex);
     int fd;
+    int32_t gTrackCount;
     std::shared_ptr<OHOS::Media::AVBuffer> avBuffer;
     std::shared_ptr<AVSource> source = nullptr;
     std::shared_ptr<AVDemuxer> demuxer = nullptr;
