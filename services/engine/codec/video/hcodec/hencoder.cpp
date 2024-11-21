@@ -1002,7 +1002,6 @@ void HEncoder::WrapQPMapParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> 
     param.blockQpAddr = nullptr;
     param.blockQpSize = static_cast<uint32_t>(QPMap.size());
     param.qpMapReserveInts = static_cast<uint32_t>(QPMap.size());
-    // std::copy(QPMap.begin(), QPMap.end(), std::begin(param.qpMapReserve));
     AppendToVector(omxBuffer->alongParam, param);
     AppendArrayToVector(omxBuffer->alongParam, QPMap);
 }
