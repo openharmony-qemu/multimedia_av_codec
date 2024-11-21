@@ -111,6 +111,7 @@ private:
     };
 
     void StartParse();
+    void ReadLargeSize(std::shared_ptr<Buffer> buffer, uint64_t &largeSize);
     void ReadBufferFromDataSource(size_t bufSize, std::shared_ptr<Buffer> &buffer);
     void ReadBoxHeader(std::shared_ptr<Buffer> buffer, BoxHeader &header);
     bool IsMP4orMOV();

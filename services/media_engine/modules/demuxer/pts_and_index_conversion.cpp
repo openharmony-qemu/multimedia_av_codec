@@ -90,7 +90,7 @@ void TimeAndIndexConversion::ReadBufferFromDataSource(size_t bufSize, std::share
 void TimeAndIndexConversion::StartParse()
 {
     source_->GetSize(fileSize_);
-    MEDIA_LOG_E("fileSize: " PUBLIC_LOG_D64, fileSize_);
+    MEDIA_LOG_I("fileSize: " PUBLIC_LOG_D64, fileSize_);
     while (static_cast<uint64_t>(offset_) < fileSize_) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
         auto buffer = std::make_shared<Buffer>();
@@ -101,13 +101,36 @@ void TimeAndIndexConversion::StartParse()
         FALSE_RETURN_MSG(buffer != nullptr, "StartParse failed due to read buffer error");
         BoxHeader header;
         ReadBoxHeader(buffer, header);
+        uint64_t boxSize = static_cast<uint64_t>(header.size);
+        if (boxSize == 1 || boxSize == 0) { // 0 and 1 are used to verify whether there is a large size
+            uint64_t largeSize = 0;
+            ReadLargeSize(buffer, largeSize);
+            boxSize = largeSize;
+        }
+        FALSE_RETURN_MSG(boxSize >= BOX_HEAD_SIZE, "StartParse failed due to error box size");
         if (strncmp(header.type, BOX_TYPE_MOOV, sizeof(header.type)) == 0) {
             offset_ += BOX_HEAD_SIZE;
             ParseMoov(header.size - BOX_HEAD_SIZE);
-        } else if (header.size >= BOX_HEAD_SIZE) {
-            offset_ += header.size;
+        } else {
+            offset_ += boxSize;
         }
     }
+}
+
+void TimeAndIndexConversion::ReadLargeSize(std::shared_ptr<Buffer> buffer, uint64_t &largeSize)
+{
+    offset_ += BOX_HEAD_SIZE;
+    FALSE_RETURN_MSG(buffer != nullptr, "ReadLargeSize failed due to read buffer error");
+    int bufSize = sizeof(uint64_t); // The type of largeSize is uint64_t
+    ReadBufferFromDataSource(bufSize, buffer);
+    FALSE_RETURN_MSG(buffer != nullptr, "ReadLargeSize failed due to read buffer error");
+    auto memory = buffer->GetMemory();
+    FALSE_RETURN_MSG(memory != nullptr, "No memory in buffer");
+    const uint8_t* ptr = memory->GetReadOnlyData();
+    size_t size = memory->GetSize();
+    FALSE_RETURN_MSG(size >= sizeof(uint64_t), "Not enough data in buffer to read large size");
+    largeSize = ntohl(*reinterpret_cast<const uint64_t*>(ptr));
+    offset_ -= BOX_HEAD_SIZE;
 }
 
 void TimeAndIndexConversion::ReadBoxHeader(std::shared_ptr<Buffer> buffer, BoxHeader &header)
