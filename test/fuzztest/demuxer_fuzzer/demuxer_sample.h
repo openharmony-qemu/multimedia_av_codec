@@ -28,12 +28,11 @@ public:
     DemuxerSample() = default;
     ~DemuxerSample();
     const char *filePath = "/data/test/fuzz_create.mp4";
-    void RunNormalDemuxer(const uint8_t *data, size_t size);
-    void RunNormalDemuxerApi11(const uint8_t *data, size_t size);
+    void RunNormalDemuxer(uint32_t createSize, int64_t time);
+    void RunNormalDemuxerApi11(uint32_t createSize, int64_t time);
 private:
     void ResetFlag();
     int CreateDemuxer();
-    template <class T> T GetData();
     int32_t gWidth = 3840;
     int32_t gHeight = 2160;
     int gTrackType = 0;

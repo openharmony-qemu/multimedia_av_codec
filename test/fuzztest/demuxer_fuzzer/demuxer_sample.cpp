@@ -86,7 +86,7 @@ int DemuxerSample::CreateDemuxer()
     return 0;
 }
 
-void DemuxerSample::RunNormalDemuxer(const uint8_t *data, size_t size)
+void DemuxerSample::RunNormalDemuxer(uint32_t createSize, int64_t time)
 {
     gReadEnd = false;
     int ret = CreateDemuxer();
@@ -100,13 +100,6 @@ void DemuxerSample::RunNormalDemuxer(const uint8_t *data, size_t size)
     OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &gTrackCount);
     for (int32_t index = 0; index < gTrackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
-    }
-    g_baseFuzzData = data;
-    g_baseFuzzSize = size;
-    g_baseFuzzPos = 0;
-    int32_t createSize = 0;
-    if (size > sizeof(int32_t) + sizeof(bool)) {
-        createSize = GetData<int32_t>();
     }
     memory = OH_AVMemory_Create(createSize);
     while (!gReadEnd && gTrackCount > 0) {
@@ -132,9 +125,15 @@ void DemuxerSample::RunNormalDemuxer(const uint8_t *data, size_t size)
             }
         }
     }
+    OH_AVDemuxer_SeekToTime(demuxer, time, SEEK_MODE_CLOSEST_SYNC);
+    OH_AVDemuxer_SeekToTime(demuxer, time, SEEK_MODE_PREVIOUS_SYNC);
+    OH_AVDemuxer_SeekToTime(demuxer, time, SEEK_MODE_NEXT_SYNC);
+    for (int32_t index = 0; index < gTrackCount; index++) {
+        OH_AVDemuxer_UnselectTrackByID(demuxer, index);
+    }
 }
 
-void DemuxerSample::RunNormalDemuxerApi11(const uint8_t *data, size_t size)
+void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, int64_t time)
 {
     gReadEnd = false;
     int ret = CreateDemuxer();
@@ -148,13 +147,6 @@ void DemuxerSample::RunNormalDemuxerApi11(const uint8_t *data, size_t size)
     OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &gTrackCount);
     for (int32_t index = 0; index < gTrackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
-    }
-    g_baseFuzzData = data;
-    g_baseFuzzSize = size;
-    g_baseFuzzPos = 0;
-    int32_t createSize = 0;
-    if (size > sizeof(int32_t) + sizeof(bool)) {
-        createSize = GetData<int32_t>();
     }
     buffer = OH_AVBuffer_Create(createSize);
     while (!gReadEnd && gTrackCount > 0) {
@@ -181,19 +173,10 @@ void DemuxerSample::RunNormalDemuxerApi11(const uint8_t *data, size_t size)
             }
         }
     }
-}
-
-template <class T> T DemuxerSample::GetData()
-{
-    T object{};
-    size_t objectSize = sizeof(object);
-    if (g_baseFuzzData == nullptr || objectSize > g_baseFuzzSize - g_baseFuzzPos) {
-        return object;
+    OH_AVDemuxer_SeekToTime(demuxer, time, SEEK_MODE_CLOSEST_SYNC);
+    OH_AVDemuxer_SeekToTime(demuxer, time, SEEK_MODE_PREVIOUS_SYNC);
+    OH_AVDemuxer_SeekToTime(demuxer, time, SEEK_MODE_NEXT_SYNC);
+    for (int32_t index = 0; index < gTrackCount; index++) {
+        OH_AVDemuxer_UnselectTrackByID(demuxer, index);
     }
-    errno_t ret = memcpy_s(&object, objectSize, g_baseFuzzData + g_baseFuzzPos, objectSize);
-    if (ret != EOK) {
-        return {};
-    }
-    g_baseFuzzPos += objectSize;
-    return object;
 }

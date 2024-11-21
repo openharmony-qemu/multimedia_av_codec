@@ -38,14 +38,21 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size);
+    int len = write(fd, data, size - 5);
     if (len <= 0) {
         return false;
     }
     close(fd);
+    int64_t time = data[size - 5];
+    uint8_t *dataConver = const_cast<uint8_t *>(data);
+    uint32_t *createSize = reinterpret_cast<uint32_t *>(dataConver + size - 4);
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = SRT_PATH;
-    demuxerSample->RunNormalDemuxer(data, size);
+    demuxerSample->RunNormalDemuxer(*createSize, time);
+    int ret = remove(SRT_PATH);
+    if (ret != 0) {
+        return false;
+    }
     return true;
 }
 } // namespace OHOS
