@@ -187,7 +187,6 @@ ohos_unittest("videodec_mpeg_func_unit_test") {
     "$av_codec_root_dir/test/unittest/codeclist_test/",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner",
     "$av_codec_root_dir/test/unittest/common/",
-    "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
   defines = [ "VIDEODEC_MPEG_FUNC_UNIT_TEST" ]
@@ -215,6 +214,7 @@ ohos_unittest("videodec_mpeg_func_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "openssl:libcrypto_shared",
     "window_manager:libwm",
   ]
 
