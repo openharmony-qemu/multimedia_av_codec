@@ -48,8 +48,13 @@ constexpr uint8_t H265_NALU_TYPE_MASK = 0x7E;
 constexpr uint8_t H265_VPS = 32;
 constexpr uint8_t H265_SPS = 33;
 constexpr uint8_t H265_PPS = 34;
+constexpr uint8_t MPEG2_SEQUENCE_HEAD[] = {0x00, 0x00, 0x01, 0xb3};
+constexpr uint8_t MPEG2_FRAME_HEAD[] = {0x00, 0x00, 0x01, 0x00};
+constexpr uint8_t MPEG4_SEQUENCE_HEAD[] = {0x00, 0x00, 0x01, 0xb0};
+constexpr uint8_t MPEG4_FRAME_HEAD[] = {0x00, 0x00, 0x01, 0xb6};
 constexpr uint32_t DEFAULT_TIME_INTERVAL = 4166;
-constexpr uint32_t MAX_OUTPUT_FRMAENUM = 60;
+constexpr uint32_t MAX_OUTPUT_FRMAENUM = 1000;
+constexpr uint32_t READ_BUFFER_SIZE = 0.1 * 1024 * 1024;
 
 static inline int64_t GetTimeUs()
 {
@@ -205,7 +210,7 @@ private:
 namespace OHOS {
 namespace MediaAVCodec {
 bool VideoDecSample::needDump_ = false;
-bool VideoDecSample::isHardware_ = true;
+bool VideoDecSample::isHardware_ = false;
 bool VideoDecSample::isRosenWindow_ = false;
 uint64_t VideoDecSample::sampleTimout_ = 180;
 uint64_t VideoDecSample::threadNum_ = 1;
@@ -232,6 +237,7 @@ bool VideoDecSample::Create()
     TITLE_LOG;
 
     isH264Stream_ = inPath_.find("h264") != std::string::npos;
+    isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
 
@@ -252,6 +258,7 @@ bool VideoDecSample::CreateByMime()
     TITLE_LOG;
 
     isH264Stream_ = inPath_.substr(inPath_.length() - 4, 4) == "h264"; // 4: "h264" string len
+    isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
 
@@ -537,6 +544,24 @@ int32_t VideoDecSample::HandleInputFrame(uint32_t &index, OH_AVCodecBufferAttr &
     return SetAVBufferAttr(avBuffer, attr);
 }
 
+int32_t VideoDecSample::HandleInputMpegFrame(uint32_t &index, OH_AVCodecBufferAttr &attr)
+{
+    uint8_t *addr = nullptr;
+    index = signal_->inQueue_.front();
+    OH_AVBuffer *avBuffer = nullptr;
+    if (isAVBufferMode_) {
+        avBuffer = signal_->inBufferQueue_.front();
+        addr = OH_AVBuffer_GetAddr(avBuffer);
+    } else {
+        auto avMemory = signal_->inMemoryQueue_.front();
+        addr = OH_AVMemory_GetAddr(avMemory);
+    }
+    signal_->PopInQueue();
+    int32_t ret = HandleInputMpegInner(addr, attr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleInputFrameInner failed");
+    return SetAVBufferAttr(avBuffer, attr);
+}
+
 int32_t VideoDecSample::HandleOutputFrame(uint32_t &index, OH_AVCodecBufferAttr &attr)
 {
     uint8_t *addr = nullptr;
@@ -560,10 +585,31 @@ int32_t VideoDecSample::HandleOutputFrame(uint32_t &index, OH_AVCodecBufferAttr 
     return ret;
 }
 
+void VideoDecSample::FirstRead()
+{
+    ReadBuffer_ = std::make_unique<uint8_t []>(READ_BUFFER_SIZE + FRAME_HEAD_LEN);
+    isFirstRead_ = false;
+    ReadInputFile();
+}
+
+void VideoDecSample::ReadInputFile()
+{
+    UNITTEST_CHECK_AND_RETURN_LOG(ReadBuffer_, "Preread buffer is nallptr");
+    signal_->inFile_->read(reinterpret_cast<char *>(ReadBuffer_.get() + FRAME_HEAD_LEN), READ_BUFFER_SIZE);
+    readBufferSize_ = signal_->inFile_->gcount() + FRAME_HEAD_LEN;
+    preadBuffer_ = FRAME_HEAD_LEN;
+}
+
 int32_t VideoDecSample::HandleInputFrame(OH_AVMemory *data, OH_AVCodecBufferAttr &attr)
 {
     uint8_t *addr = OH_AVMemory_GetAddr(data);
     return HandleInputFrameInner(addr, attr);
+}
+
+int32_t VideoDecSample::HandleInputMpegFrame(OH_AVMemory *data, OH_AVCodecBufferAttr &attr)
+{
+    uint8_t *addr = OH_AVMemory_GetAddr(data);
+    return HandleInputMpegInner(addr, attr);
 }
 
 int32_t VideoDecSample::HandleOutputFrame(OH_AVMemory *data, OH_AVCodecBufferAttr &attr)
@@ -577,6 +623,17 @@ int32_t VideoDecSample::HandleInputFrame(OH_AVBuffer *data)
     uint8_t *addr = OH_AVBuffer_GetAddr(data);
     OH_AVCodecBufferAttr attr;
     int32_t ret = HandleInputFrameInner(addr, attr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleInputFrameInner failed");
+    ret = OH_AVBuffer_SetBufferAttr(data, &attr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_AVBuffer_SetBufferAttr failed");
+    return AV_ERR_OK;
+}
+
+int32_t VideoDecSample::HandleInputMpegFrame(OH_AVBuffer *data)
+{
+    uint8_t *addr = OH_AVBuffer_GetAddr(data);
+    OH_AVCodecBufferAttr attr;
+    int32_t ret = HandleInputMpegInner(addr, attr);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleInputFrameInner failed");
     ret = OH_AVBuffer_SetBufferAttr(data, &attr);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_AVBuffer_SetBufferAttr failed");
@@ -626,6 +683,134 @@ int32_t VideoDecSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAtt
 
     uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
     UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags), addr64[0]);
+    return AV_ERR_OK;
+}
+
+uint32_t VideoDecSample::ReadMpeg4Frame(uint8_t *addr)
+{
+    uint32_t bufferSize = 0;
+    do {
+        auto pos_1 = std::search(ReadBuffer_.get() + preadBuffer_ + FRAME_HEAD_LEN,
+            ReadBuffer_.get() + readBufferSize_, std::begin(MPEG4_FRAME_HEAD), std::end(MPEG4_FRAME_HEAD));
+        uint32_t size_1 = std::distance(ReadBuffer_.get() + preadBuffer_, pos_1);
+        auto pos_2 = std::search(ReadBuffer_.get() + preadBuffer_, ReadBuffer_.get() + preadBuffer_ + size_1,
+             std::begin(MPEG4_SEQUENCE_HEAD), std::end(MPEG4_SEQUENCE_HEAD));
+        uint32_t size = std::distance(ReadBuffer_.get() + preadBuffer_, pos_2);
+        if (size == 0) {
+            auto pos_3 = std::search(ReadBuffer_.get() + preadBuffer_ + size_1 + FRAME_HEAD_LEN,
+                    ReadBuffer_.get() + readBufferSize_, std::begin(MPEG4_FRAME_HEAD), std::end(MPEG4_FRAME_HEAD));
+            uint32_t size_2 = std::distance(ReadBuffer_.get() + preadBuffer_, pos_3);
+            auto ret = memcpy_s(addr, size_2, ReadBuffer_.get() + preadBuffer_, size_2);
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, 0, "First Copy buffer failed");
+            preadBuffer_ += size_2;
+            bufferSize += size_2;
+            addr += size_2;
+            UNITTEST_CHECK_AND_RETURN_RET_LOG((preadBuffer_ == readBufferSize_) && !signal_->inFile_->eof(),
+                bufferSize, "sequence first frame");
+        } else if (size_1 > size) {
+            auto ret = memcpy_s(addr, size, ReadBuffer_.get() + preadBuffer_, size);
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, 0, "Last Copy buffer failed");
+            preadBuffer_ += size;
+            bufferSize += size;
+            addr += size;
+            UNITTEST_CHECK_AND_RETURN_RET_LOG((preadBuffer_ == readBufferSize_) && !signal_->inFile_->eof(),
+                bufferSize, "sequence last frame");
+        } else {
+            auto ret = memcpy_s(addr, size_1, ReadBuffer_.get() + preadBuffer_, size_1);
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, 0, "Copy buffer failed");
+            preadBuffer_ += size_1;
+            bufferSize += size_1;
+            addr += size_1;
+            UNITTEST_CHECK_AND_RETURN_RET_LOG((preadBuffer_ == readBufferSize_) && !signal_->inFile_->eof(),
+                bufferSize, "commom frame");
+        }
+        ReadInputFile();
+        auto ret = memcpy_s(ReadBuffer_.get(), FRAME_HEAD_LEN,addr - FRAME_HEAD_LEN, FRAME_HEAD_LEN);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, 0, "Copy buffer failed");
+        bufferSize -= FRAME_HEAD_LEN;
+        addr -= FRAME_HEAD_LEN;
+        preadBuffer_ = 0;
+    } while (preadBuffer_ != readBufferSize_);
+    return EOK;
+}
+
+uint32_t VideoDecSample::ReadMpeg2Frame(uint8_t *addr)
+{
+    uint32_t bufferSize = 0;
+    do {
+        auto pos_1 = std::search(ReadBuffer_.get() + preadBuffer_ + FRAME_HEAD_LEN,
+            ReadBuffer_.get() + readBufferSize_, std::begin(MPEG2_FRAME_HEAD), std::end(MPEG2_FRAME_HEAD));
+        uint32_t size_1 = std::distance(ReadBuffer_.get() + preadBuffer_, pos_1);
+        auto pos_2 = std::search(ReadBuffer_.get() + preadBuffer_, ReadBuffer_.get() + preadBuffer_ + size_1,
+             std::begin(MPEG2_SEQUENCE_HEAD), std::end(MPEG2_SEQUENCE_HEAD));
+        uint32_t size = std::distance(ReadBuffer_.get() + preadBuffer_, pos_2);
+        if (size == 0) {
+            auto pos_3 = std::search(ReadBuffer_.get() + preadBuffer_ + size_1 + FRAME_HEAD_LEN,
+                ReadBuffer_.get() + readBufferSize_, std::begin(MPEG2_FRAME_HEAD), std::end(MPEG2_FRAME_HEAD));
+            uint32_t size_2 = std::distance(ReadBuffer_.get() + preadBuffer_, pos_3);
+            auto ret = memcpy_s(addr, size_2, ReadBuffer_.get() + preadBuffer_, size_2);
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, 0, "First Copy buffer failed");
+            preadBuffer_ += size_2;
+            bufferSize += size_2;
+            addr += size_2;
+            UNITTEST_CHECK_AND_RETURN_RET_LOG((preadBuffer_ == readBufferSize_) && !signal_->inFile_->eof(),
+                bufferSize, "sequence first frame");
+        } else if (size_1 > size) {
+            auto ret = memcpy_s(addr, size, ReadBuffer_.get() + preadBuffer_, size);
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, 0, "Last Copy buffer failed");
+            preadBuffer_ += size;
+            bufferSize += size;
+            addr += size;
+            UNITTEST_CHECK_AND_RETURN_RET_LOG((preadBuffer_ == readBufferSize_) && !signal_->inFile_->eof(),
+                bufferSize, "sequence last frame");
+        } else {
+            auto ret = memcpy_s(addr, size_1, ReadBuffer_.get() + preadBuffer_, size_1);
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, 0, "Copy buffer failed");
+            preadBuffer_ += size_1;
+            bufferSize += size_1;
+            addr += size_1;
+            UNITTEST_CHECK_AND_RETURN_RET_LOG((preadBuffer_ == readBufferSize_) && !signal_->inFile_->eof(),
+                bufferSize, "commom frame");
+        }
+        ReadInputFile();
+        auto ret = memcpy_s(ReadBuffer_.get(), FRAME_HEAD_LEN,addr - FRAME_HEAD_LEN, FRAME_HEAD_LEN);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, 0, "Copy buffer failed");
+        bufferSize -= FRAME_HEAD_LEN;
+        addr -= FRAME_HEAD_LEN;
+        preadBuffer_ = 0;
+    } while (preadBuffer_ != readBufferSize_);
+    return EOK;
+}
+
+int32_t VideoDecSample::HandleInputMpegInner(uint8_t *addr, OH_AVCodecBufferAttr &attr)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(addr != nullptr, AV_ERR_UNKNOWN, "in buffer is nullptr");
+    uint32_t bufferSize = 0;
+    attr.offset = 0;
+    attr.pts = GetTimeUs();
+    if ((preadBuffer_ == readBufferSize_) && (signal_->inFile_->eof())) {
+        signal_->isInEos_ = true;
+        attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
+        attr.size = 0;
+        UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d", attr.size, (int32_t)(attr.flags));
+        return AV_ERR_OK;
+    }
+    if (isFirstRead_) {
+        FirstRead();
+        if (isMpeg2Stream_) {
+            bufferSize = ReadMpeg2Frame(addr);
+        } else {
+            bufferSize = ReadMpeg4Frame(addr);
+        }
+    } else {
+        if (isMpeg2Stream_) {
+            bufferSize = ReadMpeg2Frame(addr);
+        } else {
+            bufferSize = ReadMpeg4Frame(addr);
+        }
+    }
+    attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+    attr.size = bufferSize;
     return AV_ERR_OK;
 }
 

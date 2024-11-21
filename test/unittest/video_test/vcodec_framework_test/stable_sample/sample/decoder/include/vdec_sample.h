@@ -69,15 +69,19 @@ public:
     int32_t HandleOutputFrame(OH_AVBuffer *data);
     bool WaitForEos();
 
+    int32_t HandleInputMpegFrame(OH_AVMemory *data, OH_AVCodecBufferAttr &attr);
+    int32_t HandleInputMpegFrame(OH_AVBuffer *data);
+    int32_t HandleInputMpegFrame(uint32_t &index, OH_AVCodecBufferAttr &attr);
+
     int32_t Operate();
     uint32_t frameCount_ = 10;
     std::string operation_ = "NULL";
     std::string mime_ = "";
-    std::string inPath_ = "720_1280_25_avcc.h264";
+    std::string inPath_ = "mpeg2.m2v";
     std::string outPath_ = "";
     int32_t sampleWidth_ = 720;
-    int32_t sampleHeight_ = 1280;
-    int32_t samplePixel_ = AV_PIXEL_FORMAT_NV12;
+    int32_t sampleHeight_ = 480;
+    int32_t samplePixel_ = AV_PIXEL_FORMAT_YUVI420;
     std::shared_ptr<OH_AVFormat> dyFormat_ = nullptr;
     std::unique_ptr<std::thread> inputLoop_ = nullptr;
     std::unique_ptr<std::thread> outputLoop_ = nullptr;
@@ -97,11 +101,18 @@ private:
     bool IsCodecData(const uint8_t *const addr);
     bool InitFile();
 
+    int32_t HandleInputMpegInner(uint8_t *addr, OH_AVCodecBufferAttr &attr);
+    uint32_t ReadMpeg2Frame(uint8_t *addr);
+    uint32_t ReadMpeg4Frame(uint8_t *addr);
+    void ReadInputFile();
+    void FirstRead();
+
     OH_AVCodec *codec_ = nullptr;
     std::shared_ptr<VideoDecSignal> signal_ = nullptr;
 
     bool needXps_ = true;
     bool isFirstEos_ = true;
+    bool isFirstRead_ = true;
     std::atomic<uint32_t> frameInputCount_ = 0;
     std::atomic<uint32_t> frameOutputCount_ = 0;
 
@@ -109,6 +120,7 @@ private:
     bool isAVBufferMode_ = false;
     bool isSurfaceMode_ = false;
     bool isH264Stream_ = true; // true: H264; false: H265
+    bool isMpeg2Stream_ = true; // true: Mpeg2; false: Mpeg4
 
     int32_t width_ = 0;
     int32_t height_ = 0;
@@ -120,6 +132,9 @@ private:
     OH_AVCodecCallback callback_;
     class SurfaceObject;
     std::shared_ptr<SurfaceObject> surafaceObj_ = nullptr;
+    std::unique_ptr<uint8_t []> ReadBuffer_ = nullptr;
+    uint32_t readBufferSize_ = 0;
+    uint32_t preadBuffer_ = 0;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

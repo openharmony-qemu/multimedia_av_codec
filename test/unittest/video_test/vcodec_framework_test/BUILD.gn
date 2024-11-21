@@ -52,6 +52,8 @@ group("vcodec_framework_test") {
       ":videodec_hdrvivid2sdr_inner_unit_test",
       ":videodec_hevcdec_unit_test",
       ":videodec_inner_unit_test",
+      ":videodec_mpeg_func_unit_test",
+      ":videodec_mpeg_stable_unit_test",
       ":videodec_stable_unit_test",
     ]
     if (av_codec_support_hcodec) {
@@ -172,6 +174,54 @@ ohos_unittest("videodec_inner_unit_test") {
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
+#################################################################################################################videodec
+ohos_unittest("videodec_mpeg_func_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  include_dirs = [
+    "./",
+    "./common/include",
+    "./func_sample/mock",
+    "./func_sample/mock/inner",
+    "./func_sample/sample",
+    "$av_codec_root_dir/test/unittest/codeclist_test/",
+    "$av_codec_root_dir/test/unittest/codeclist_test/inner",
+    "$av_codec_root_dir/test/unittest/common/",
+    "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
+  ]
+
+  defines = [ "VIDEODEC_MPEG_FUNC_UNIT_TEST" ]
+
+  cflags = vcodec_unittest_cflags
+
+  sources = [
+    "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
+    "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
+    "./common/unittest_utils.cpp",
+    "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
+    "./func_sample/mock/inner/videodec_inner_mock.cpp",
+    "./func_sample/sample/avcc_reader.cpp",
+    "./func_sample/sample/vdec_sample.cpp",
+    "./videodec_mpeg_func_unit_test.cpp",
+  ]
+
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "drm_framework:drm_framework",
+    "graphic_2d:librender_service_client",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "hilog:libhilog",
+    "window_manager:libwm",
+  ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
+
 #################################################################################################################videoenc
 ohos_unittest("videoenc_capi_unit_test") {
   sanitize = av_codec_test_sanitize
@@ -259,6 +309,7 @@ ohos_unittest("videoenc_inner_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "drm_framework:drm_framework",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
@@ -384,6 +435,17 @@ ohos_unittest("videodec_stable_unit_test") {
   module_out_path = module_output_path
   include_dirs = []
   sources = [ "./videodec_stable_unit_test.cpp" ]
+  public_deps = [ "./stable_sample:video_sample" ]
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
+
+#################################################################################################################videodec
+ohos_unittest("videodec_mpeg_stable_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  include_dirs = []
+  sources = [ "./videodec_mpeg_stable_unit_test.cpp" ]
   public_deps = [ "./stable_sample:video_sample" ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"

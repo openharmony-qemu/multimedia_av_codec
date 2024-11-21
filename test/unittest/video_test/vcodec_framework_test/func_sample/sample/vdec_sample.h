@@ -121,6 +121,7 @@ private:
     int32_t InputLoopInnerExt();
     void CheckSHA();
     int32_t CreateAvccReader();
+    int32_t CreateMpegReader();
     std::shared_ptr<VideoDecMock> videoDec_ = nullptr;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;
@@ -135,10 +136,13 @@ private:
     uint32_t frameOutputCount_ = 0;
     bool isSurfaceMode_ = false;
     bool isH264Stream_ = true; // true: H264; false: H265
+    bool isMpeg2Stream_ = true; // true: Mpeg2; false: Mpeg4
+    bool isMpegStream_ = false;
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
     std::shared_ptr<AvccReader> avccReader_ = nullptr;
+    std::shared_ptr<MpegReader> mpegReader_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
