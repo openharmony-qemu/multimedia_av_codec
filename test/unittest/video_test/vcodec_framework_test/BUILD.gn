@@ -383,7 +383,6 @@ ohos_unittest("videoenc_repeat_previous_frame_capi_unit_test") {
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
     "$av_codec_root_dir/test/unittest/common/",
     "$av_codec_root_dir/frameworks/native/capi/common",
-    "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
   defines = [ "VIDEOENC_CAPI_UNIT_TEST" ]
@@ -411,6 +410,7 @@ ohos_unittest("videoenc_repeat_previous_frame_capi_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "openssl:libcrypto_shared",
     "window_manager:libwm",
   ]
 
@@ -431,7 +431,6 @@ ohos_unittest("videoenc_repeat_previous_frame_inner_unit_test") {
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/codeclist_test",
     "$av_codec_root_dir/test/unittest/common/",
-    "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
   defines = [ "VIDEOENC_INNER_UNIT_TEST" ]
@@ -459,6 +458,7 @@ ohos_unittest("videoenc_repeat_previous_frame_inner_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "openssl:libcrypto_shared",
     "window_manager:libwm",
   ]
 
