@@ -60,6 +60,8 @@ enum ShortOption {
     OPT_LAYER_COUNT,
     OPT_WATERMARK,
     OPT_ENABLE_PARAMS_FEEDBACK,
+    OPT_ENABLE_QP_MAP,
+    OPT_QP_MAP_VALUE,
     // decoder only
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
@@ -103,6 +105,8 @@ static struct option g_longOptions[] = {
     {"layerCnt",        required_argument,  nullptr, OPT_LAYER_COUNT},
     {"waterMark",       required_argument,  nullptr, OPT_WATERMARK},
     {"paramsFeedback",  required_argument,  nullptr, OPT_ENABLE_PARAMS_FEEDBACK},
+    {"enableQPMap",     required_argument,  nullptr, OPT_ENABLE_QP_MAP},
+    {"qpMapValue",      required_argument,  nullptr, OPT_QP_MAP_VALUE},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
@@ -275,6 +279,9 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_ENABLE_PARAMS_FEEDBACK:
                 opt.paramsFeedback = stol(optarg);
                 break;
+            case OPT_ENABLE_QP_MAP:
+                opt.enableQPMap = stol(optarg);
+                break;
             // decoder only
             case OPT_DEC_THEN_ENC:
                 opt.decThenEnc = stol(optarg);
@@ -390,6 +397,11 @@ void CommandOpt::ParsePerFrameParam(uint32_t frameNo, const string &s)
         value >> ebrParam.minQp >> c >> ebrParam.maxQp >> c >> ebrParam.startQp >> c >> ebrParam.isSkip;
         perFrameParamsMap[frameNo].ebrParam = ebrParam;
     }
+    if (key == "qpMapValue") {
+        int32_t qpMapValue;
+        value >> qpMapValue;
+        perFrameParamsMap[frameNo].qpMapValue = qpMapValue;
+    }
 }
 
 void CommandOpt::ParseResourceParam(const std::string &src, ResourceParams& dst)
@@ -498,6 +510,9 @@ void CommandOpt::Print() const
         if (perFrame.ltrParam.has_value()) {
             TLOGI("    LTR, markAsLTR %d, useLTR %d, useLTRPoc %u",
                   perFrame.ltrParam->markAsLTR, perFrame.ltrParam->useLTR, perFrame.ltrParam->useLTRPoc);
+        }
+        if (perFrame.qpMapValue.has_value()) {
+            TLOGI("    qpMapValue %d", perFrame.qpMapValue.value());
         }
     }
     for (const auto &[frameNo, resourceParam] : resourceParamsMap) {
