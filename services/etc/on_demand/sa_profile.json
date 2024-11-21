@@ -8,7 +8,7 @@
             "distributed": false,
             "stop-on-demand": {
                 "allow-update": false,
-                "recycle-delaytime": 300000,
+                "recycle-delaytime": 180000,
                 "unreferenced-unload": true
             }
         }
