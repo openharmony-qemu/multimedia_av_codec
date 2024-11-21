@@ -49,7 +49,10 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = VTT_PATH;
     demuxerSample->RunNormalDemuxer(*createSize, time);
-    remove(VTT_PATH);
+    int ret = remove(VTT_PATH);
+    if (ret != 0) {
+        return false;
+    }
     return true;
 }
 } // namespace OHOS

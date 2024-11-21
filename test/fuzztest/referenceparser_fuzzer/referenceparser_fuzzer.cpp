@@ -52,7 +52,10 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
     shared_ptr<ParserSample> parserSample = make_shared<ParserSample>();
     parserSample->filePath = MP4_PATH;
     parserSample->RunReferenceParser(pts, ptsForPtsIndex, frameIndex, *createSize);
-    remove(MP4_PATH);
+    int ret = remove(MP4_PATH);
+    if (ret != 0) {
+        return false;
+    }
     return true;
 }
 } // namespace OHOS

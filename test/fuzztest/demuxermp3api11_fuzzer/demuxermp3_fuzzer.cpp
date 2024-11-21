@@ -49,7 +49,10 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = MP3_PATH;
     demuxerSample->RunNormalDemuxerApi11(*createSize, time);
-    remove(MP3_PATH);
+    int ret = remove(MP3_PATH);
+    if (ret != 0) {
+        return false;
+    }
     return true;
 }
 } // namespace OHOS

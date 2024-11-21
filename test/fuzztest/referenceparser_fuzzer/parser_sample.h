@@ -31,7 +31,7 @@ public:
     ParserSample() = default;
     ~ParserSample();
     const char *filePath = "/data/test/fuzz_create.mp4";
-    void RunReferenceParser(int64_t pts, int64_t ptsForPtsIndex, int64_t frameIndex,uint32_t createSize);
+    void RunReferenceParser(int64_t pts, int64_t ptsForPtsIndex, int64_t frameIndex, uint32_t createSize);
 private:
     int CreateDemuxer(uint32_t buffersize, int64_t ptsForPtsIndex, int64_t frameIndex);
     int fd;
