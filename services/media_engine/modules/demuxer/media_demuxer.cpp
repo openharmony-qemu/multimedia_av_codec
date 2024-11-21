@@ -2256,5 +2256,10 @@ void MediaDemuxer::WaitForBufferingEnd()
     FALSE_RETURN_MSG(source_ != nullptr, "Source is nullptr");
     source_->WaitForBufferingEnd();
 }
+
+int32_t MediaDemuxer::GetCurrentVideoTrackId()
+{
+    return (videoTrackId_ != TRACK_ID_DUMMY ? static_cast<int32_t>(videoTrackId_) : -1);
+}
 } // namespace Media
 } // namespace OHOS
