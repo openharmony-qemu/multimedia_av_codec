@@ -24,7 +24,7 @@
 #define SAMPLE_ID "[SAMPLE_ID]:" << TEST_ID
 #include "unittest_log.h"
 #define TITLE_LOG UNITTEST_INFO_LOG("")
-#define MpegStableTest
+#define Mpeg_Stable_Test
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
@@ -320,7 +320,7 @@ void VideoDecStableTest::TearDown(void)
     heapThread_ = nullptr;
 }
 
-#ifdef MpegStableTest
+#ifdef Mpeg_Stable_Test
 string GetTestName()
 {
     const ::testing::TestInfo *testInfo = ::testing::UnitTest::GetInstance()->current_test_info();

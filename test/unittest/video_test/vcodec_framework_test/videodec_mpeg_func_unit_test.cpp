@@ -56,7 +56,7 @@ void TEST_SUIT::SetUpTestCase(void)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_MPEG4).data(), false,
         AVCodecCategory::AVCODEC_SOFTWARE);
-    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_MPEG4).data() << " can not found!" << std::endl; 
+    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_MPEG4).data() << " can not found!" << std::endl;
     g_vdecName = capability->GetName();
 }
 

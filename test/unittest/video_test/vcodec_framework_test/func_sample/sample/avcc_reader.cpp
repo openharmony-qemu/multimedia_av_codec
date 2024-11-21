@@ -285,7 +285,7 @@ void MpegReader::Mpeg2MetaUnitReader::PrereadMpeg2Unit()
         CHECK_AND_RETURN_LOG(ret == EOK, "Buffer End Copy buffer failed");
         bufferSize -= MPEG2_FRAME_HEAD_LEN;
         pBuffer -= MPEG2_FRAME_HEAD_LEN;
-        pPrereadBuffer_ = 0;            
+        pPrereadBuffer_ = 0;
     } while (pPrereadBuffer_ != prereadBufferSize_);
     mpegUnit_->resize(bufferSize);
 }
@@ -324,7 +324,7 @@ uint8_t MpegReader::Mpeg2Detector::GetMpegType(const uint8_t *bufferAddr)
     if (flagb) {
         return 0;
     }
-    return 0; 
+    return 0;
 }
 
 void MpegReader::Mpeg4MetaUnitReader::PrereadFile()
@@ -384,8 +384,8 @@ void MpegReader::Mpeg4MetaUnitReader::PrereadMpeg4Unit()
         auto pos_1 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + MPEG4_FRAME_HEAD_LEN,
             prereadBuffer_.get() + prereadBufferSize_, std::begin(MPEG4_FRAME_HEAD), std::end(MPEG4_FRAME_HEAD));
         uint32_t size_1 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_1);
-        auto pos_2 = std::search(prereadBuffer_.get() + pPrereadBuffer_, prereadBuffer_.get() + pPrereadBuffer_ + size_1,
-             std::begin(MPEG4_SEQUENCE_HEAD), std::end(MPEG4_SEQUENCE_HEAD));
+        auto pos_2 = std::search(prereadBuffer_.get() + pPrereadBuffer_, prereadBuffer_.get() +
+            pPrereadBuffer_ + size_1, std::begin(MPEG4_SEQUENCE_HEAD), std::end(MPEG4_SEQUENCE_HEAD));
         uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_2);
         if (size == 0) {
             auto pos_3 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + size_1 + MPEG4_FRAME_HEAD_LEN,
@@ -413,7 +413,7 @@ void MpegReader::Mpeg4MetaUnitReader::PrereadMpeg4Unit()
             UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
         }
         PrereadFile();
-        auto ret = memcpy_s(prereadBuffer_.get(), MPEG4_FRAME_HEAD_LEN,pBuffer - MPEG4_FRAME_HEAD_LEN,
+        auto ret = memcpy_s(prereadBuffer_.get(), MPEG4_FRAME_HEAD_LEN, pBuffer - MPEG4_FRAME_HEAD_LEN,
             MPEG4_FRAME_HEAD_LEN);
         CHECK_AND_RETURN_LOG(ret == EOK, "Copy buffer failed");
         bufferSize -= MPEG2_FRAME_HEAD_LEN;
@@ -462,7 +462,7 @@ uint8_t MpegReader::Mpeg4Detector::GetMpegType(const uint8_t *bufferAddr)
     if (flags) {
         return 0;
     }
-    return 0;         
+    return 0;
 }
 
 int32_t AvccReader::Init(const std::shared_ptr<AvccReaderInfo> &info)

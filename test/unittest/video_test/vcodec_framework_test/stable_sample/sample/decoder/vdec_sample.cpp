@@ -698,7 +698,7 @@ uint32_t VideoDecSample::ReadMpeg4Frame(uint8_t *addr)
         uint32_t size = std::distance(ReadBuffer_.get() + preadBuffer_, pos_2);
         if (size == 0) {
             auto pos_3 = std::search(ReadBuffer_.get() + preadBuffer_ + size_1 + FRAME_HEAD_LEN,
-                    ReadBuffer_.get() + readBufferSize_, std::begin(MPEG4_FRAME_HEAD), std::end(MPEG4_FRAME_HEAD));
+                ReadBuffer_.get() + readBufferSize_, std::begin(MPEG4_FRAME_HEAD), std::end(MPEG4_FRAME_HEAD));
             uint32_t size_2 = std::distance(ReadBuffer_.get() + preadBuffer_, pos_3);
             auto ret = memcpy_s(addr, size_2, ReadBuffer_.get() + preadBuffer_, size_2);
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, 0, "First Copy buffer failed");
@@ -725,7 +725,7 @@ uint32_t VideoDecSample::ReadMpeg4Frame(uint8_t *addr)
                 bufferSize, "commom frame");
         }
         ReadInputFile();
-        auto ret = memcpy_s(ReadBuffer_.get(), FRAME_HEAD_LEN,addr - FRAME_HEAD_LEN, FRAME_HEAD_LEN);
+        auto ret = memcpy_s(ReadBuffer_.get(), FRAME_HEAD_LEN, addr - FRAME_HEAD_LEN, FRAME_HEAD_LEN);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, 0, "Copy buffer failed");
         bufferSize -= FRAME_HEAD_LEN;
         addr -= FRAME_HEAD_LEN;
@@ -773,7 +773,7 @@ uint32_t VideoDecSample::ReadMpeg2Frame(uint8_t *addr)
                 bufferSize, "commom frame");
         }
         ReadInputFile();
-        auto ret = memcpy_s(ReadBuffer_.get(), FRAME_HEAD_LEN,addr - FRAME_HEAD_LEN, FRAME_HEAD_LEN);
+        auto ret = memcpy_s(ReadBuffer_.get(), FRAME_HEAD_LEN, addr - FRAME_HEAD_LEN, FRAME_HEAD_LEN);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, 0, "Copy buffer failed");
         bufferSize -= FRAME_HEAD_LEN;
         addr -= FRAME_HEAD_LEN;

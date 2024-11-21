@@ -290,7 +290,9 @@ int32_t VideoDecSample::Start()
         return AV_ERR_UNKNOWN;
     }
     isMpegStream_ = inPath_.find("m2v") || inPath_.find("m4v") != std::string::npos;
-    if (isMpegStream_)  isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
+    if (isMpegStream_) {
+        isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
+    }
     int32_t ret = isMpegStream_ ? CreateMpegReader() : CreateAvccReader();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: CreateAvccReader fail");
 
@@ -787,10 +789,10 @@ int32_t VideoDecSample::OutputLoopInnerExt()
     (void)buffer->GetBufferAttr(attr);
     if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
-        int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 || testParam_ == VCodecTestParam::SW_MPEG4) ? 
-                            attr.size : buffer->GetNativeBuffer()->GetSize();
+        int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
+            testParam_ == VCodecTestParam::SW_MPEG4) ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
-            "Fatal: GetOutputBuffer fail, exit, index: %d", index);                               
+            "Fatal: GetOutputBuffer fail, exit, index: %d", index);
         UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
         ret = FreeOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
