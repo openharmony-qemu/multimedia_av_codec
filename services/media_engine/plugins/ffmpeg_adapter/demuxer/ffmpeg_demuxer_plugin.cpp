@@ -1576,8 +1576,10 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
             cttsCurNum >= 0 && sttsCurNum >= 0) {
         if (cttsCurNum == 0) {
             cttsIndex++;
-            cttsCurNum = cttsIndex < avStream->ctts_count ?
-                         static_cast<int32_t>(avStream->ctts_data[cttsIndex].count) : 0;
+            if (cttsIndex >= avStream->ctts_count) {
+                break;
+            }
+            cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
         }
         cttsCurNum--;
         if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
