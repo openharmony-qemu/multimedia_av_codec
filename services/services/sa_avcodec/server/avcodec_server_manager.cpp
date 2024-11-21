@@ -246,6 +246,12 @@ void AVCodecServerManager::SetCritical(const bool isKeyService)
     }
 }
 
+bool AVCodecServerManager::InstanceMapEmpty()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    return codecStubMap_.empty() && codecListStubMap_.empty();
+}
+
 void AVCodecServerManager::AsyncExecutor::Commit(sptr<IRemoteObject> obj)
 {
     std::lock_guard<std::mutex> lock(listMutex_);

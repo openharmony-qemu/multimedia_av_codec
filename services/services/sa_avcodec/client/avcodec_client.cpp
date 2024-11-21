@@ -65,7 +65,7 @@ bool AVCodecClient::IsAlived()
 
 int32_t AVCodecClient::CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
                                                    sptr<IRemoteObject> &object,
-                                                   int32_t tryTimes)
+                                                   uint32_t tryTimes)
 {
     int32_t ret = AVCS_ERR_OK;
     while (tryTimes--) {
@@ -153,7 +153,8 @@ sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
     if (object == nullptr) {
         CLIENT_COLLIE_LISTEN(object = samgr->LoadSystemAbility(OHOS::AV_CODEC_SERVICE_ID, 30), // 30: timeout
                              "AVCodecClient LoadSystemAbility");
-        CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "avcodec object is nullptr.");
+        CHECK_AND_RETURN_RET_LOG(object != nullptr,
+            nullptr, "AVCodec object is nullptr, maybe avcodec service does not exist");
     }
 
     avCodecProxy_ = iface_cast<IStandardAVCodecService>(object);
