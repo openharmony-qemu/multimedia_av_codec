@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,7 +37,6 @@ namespace {
         26, // Faild to open/read local data from file/application.
         28, // Timeout was reached.
     };
-
     const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
         300,
         301,
@@ -198,6 +197,7 @@ bool DownloadMonitor::GetStartedStatus()
     return downloader_->GetStartedStatus();
 }
 
+// Notify client and server error.
 void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCode)
 {
     if (callback_ == nullptr) {
