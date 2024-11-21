@@ -91,6 +91,7 @@ ohos_unittest("audio_encoder_filter_unitest") {
     "audio_framework:audio_client",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
+    "googletest:gmock_main",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",

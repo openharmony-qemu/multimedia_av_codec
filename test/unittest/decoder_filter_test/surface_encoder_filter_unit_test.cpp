@@ -24,6 +24,8 @@
 
 #include "surface_encoder_filter.h"
 #include "surface_encoder_adapter.h"
+#include "muxer_filter.h"
+#include "avcodec_video_encoder.h"
 
 namespace OHOS::Media {
 
@@ -64,9 +66,21 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, SurfaceEncoderFilter_001, TestSize.Level1
     EXPECT_EQ(surfaceEncoder->DoStop(), Status::OK);
     EXPECT_EQ(surfaceEncoder->Reset(), Status::OK);
     EXPECT_EQ(surfaceEncoder->DoRelease(), Status::OK);
+}
 
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, SurfaceEncoderFilter_002, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+
+    std::shared_ptr<Meta> format = std::make_shared<Meta>();
+    format->Set<Tag::MIME_TYPE>("test");
+    format->Set<Tag::MEDIA_END_OF_STREAM>(true);
+    EXPECT_EQ(surfaceEncoder->SetCodecFormat(format), Status::OK);
+
+    std::shared_ptr<AVBuffer> waterMarkBuffer = std::make_shared<AVBuffer>();
     surfaceEncoder->SetParameter(nullptr);
-
     surfaceEncoder->isUpdateCodecNeeded_ = true;
 
     std::shared_ptr<TestEventReceiver> eventReceive = std::make_shared<TestEventReceiver>();
@@ -133,6 +147,9 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, Init_001, TestSize.Level1)
     surfaceEncoder->Init(receiver, callback);
     surfaceEncoder->mediaCodec_ = std::make_shared<OHOS::Media::SurfaceEncoderAdapter>();
     surfaceEncoder->Init(receiver, callback);
+    surfaceEncoder->mediaCodec_->codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime("video/avc");
+    surfaceEncoder->mediaCodec_->releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
+    EXPECT_NE(surfaceEncoder->mediaCodec_->codecServer_, nullptr);
     EXPECT_EQ(surfaceEncoder->instanceId_, 0);
 }
 
@@ -142,8 +159,12 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, GetInputSurface_001, TestSize.Level1)
         "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
     surfaceEncoder->surface_ = nullptr;
     surfaceEncoder->GetInputSurface();
+    surfaceEncoder->surface_ = Surface::CreateSurfaceAsConsumer();
+    EXPECT_NE(surfaceEncoder->GetInputSurface(), nullptr);
     surfaceEncoder->mediaCodec_ = nullptr;
     surfaceEncoder->GetInputSurface();
+    surfaceEncoder->mediaCodec_ = std::make_shared<OHOS::Media::SurfaceEncoderAdapter>();
+    EXPECT_NE(surfaceEncoder->GetInputSurface(), nullptr);
     EXPECT_EQ(surfaceEncoder->instanceId_, 0);
 }
 
