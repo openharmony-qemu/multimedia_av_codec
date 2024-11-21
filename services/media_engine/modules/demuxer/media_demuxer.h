@@ -127,6 +127,7 @@ public:
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     void WaitForBufferingEnd();
+    int32_t GetCurrentVideoTrackId();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
