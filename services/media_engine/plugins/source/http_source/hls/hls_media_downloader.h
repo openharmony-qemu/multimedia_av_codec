@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,8 +29,8 @@
 #include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
-#include "utils/write_bitrate_caculator.h"
 #include "utils/media_cached_buffer.h"
+#include "utils/write_bitrate_caculator.h"
 #include <utility>
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
@@ -281,7 +281,6 @@ private:
     volatile size_t bufferingTime_ {0};
     volatile size_t readTime_ {0};
     FairMutex tsStorageInfoMutex_ {};
-
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 
     FairMutex bufferingEndMutex_ {};
