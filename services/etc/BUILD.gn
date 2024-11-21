@@ -16,7 +16,7 @@ import("//build/ohos/sa_profile/sa_profile.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 etc_file = {
-  if (av_codec_support_start_stop_on_demand) {
+  if (av_codec_enable_start_stop_on_demand) {
     process_cfg = "./on_demand/process.cfg"
     sa_profile_json = "./on_demand/sa_profile.json"
   } else {
@@ -24,6 +24,9 @@ etc_file = {
     sa_profile_json = "./sa_profile.json"
   }
 }
+
+print("av_codec_enable_start_stop_on_demand =",
+      av_codec_enable_start_stop_on_demand)
 
 ohos_prebuilt_etc("av_codec_service_cfg") {
   source = etc_file.process_cfg
