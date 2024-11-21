@@ -67,9 +67,10 @@ int32_t AVCodecServer::OnIdle([[maybe_unused]] const SystemAbilityOnDemandReason
 {
     std::lock_guard<std::mutex> stateLock(stateMutex_);
     AVCODEC_LOGI("In");
-    CHECK_AND_RETURN_RET_LOG(AVCodecServerManager::GetInstance().InstanceMapEmpty(),
+    auto instanceCount = AVCodecServerManager::GetInstance().GetInstanceCount();
+    CHECK_AND_RETURN_RET_LOG(instanceCount == 0,
         -1, // -1: refuse to switch to idle state
-        "The transition to the idle state is rejected, because any instance is not released");
+        "The transition to the idle state is rejected, because %{public}u instances is not released", instanceCount);
     return 0;
 }
 

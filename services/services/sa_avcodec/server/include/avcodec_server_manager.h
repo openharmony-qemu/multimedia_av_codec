@@ -39,7 +39,7 @@ public:
     void NotifyProcessStatus(const int32_t status);
     void SetMemMgrStatus(const bool isStarted);
     void SetCritical(const bool isKeyService);
-    bool InstanceMapEmpty();
+    uint32_t GetInstanceCount();
 
 private:
     AVCodecServerManager();
