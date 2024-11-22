@@ -426,11 +426,11 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg4_Checkprofileandlevel, TestSize.L
     uint32_t profilesNum = -1;
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, false, SOFTWARE);
     EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
-    EXPECT_EQ(profilesNum, Mpeg4VideoPaths::MPEG4_PROFILE_SIMPLE_SCALABLE + 1);
+    EXPECT_EQ(profilesNum, static_cast<uint32_t>(Mpeg4VideoPaths::MPEG4_PROFILE_SIMPLE_SCALABLE) + 1);
     for (int32_t i = 0; i < profilesNum; i++) {
         int32_t profile = profiles[i];
-        EXPECT_GE(profile, Mpeg4VideoPaths::MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY);
-        EXPECT_LE(profile, Mpeg4VideoPaths::MPEG4_PROFILE_SIMPLE_SCALABLE);
+        EXPECT_GE(profile, static_cast<uint32_t>(Mpeg4VideoPaths::MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY));
+        EXPECT_LE(profile, static_cast<uint32_t>(Mpeg4VideoPaths::MPEG4_PROFILE_SIMPLE_SCALABLE));
         const int32_t *levels = nullptr;
         uint32_t levelsNum = -1;
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
