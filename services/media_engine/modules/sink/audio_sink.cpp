@@ -30,6 +30,7 @@ constexpr int64_t AUDIO_SAMPLE_8_BIT = 1;
 constexpr int64_t AUDIO_SAMPLE_16_BIT = 2;
 constexpr int64_t AUDIO_SAMPLE_24_BIT = 3;
 constexpr int64_t AUDIO_SAMPLE_32_BIT = 4;
+constexpr int64_t SEC_TO_US = 1000 * 1000;
 }
 
 namespace OHOS {
@@ -658,7 +659,7 @@ int64_t AudioSink::CalcBufferDuration(const std::shared_ptr<OHOS::Media::AVBuffe
             break;
     }
     FALSE_RETURN_V(format > 0, 0);
-    return HST_MSECOND * size / format / sampleRate_ / audioChannelCount_;
+    return SEC_TO_US * size / format / sampleRate_ / audioChannelCount_;
 }
 
 Status AudioSink::SetSpeed(float speed)
