@@ -289,7 +289,8 @@ int32_t VideoDecSample::Start()
     if (signal_ == nullptr || videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
-    isMpegStream_ = inPath_.find("m2v") || inPath_.find("m4v") != std::string::npos;
+    isMpegStream_ = (inPath_.find("m2v") != std::string::npos) ||
+        (inPath_.find("m4v") != std::string::npos);
     if (isMpegStream_) {
         isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     }

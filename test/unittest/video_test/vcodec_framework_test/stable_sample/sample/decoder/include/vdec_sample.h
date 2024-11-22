@@ -81,7 +81,7 @@ public:
     std::string outPath_ = "";
     int32_t sampleWidth_ = 720;
     int32_t sampleHeight_ = 480;
-    int32_t samplePixel_ = AV_PIXEL_FORMAT_YUVI420;
+    int32_t samplePixel_ = AV_PIXEL_FORMAT_NV12;
     std::shared_ptr<OH_AVFormat> dyFormat_ = nullptr;
     std::unique_ptr<std::thread> inputLoop_ = nullptr;
     std::unique_ptr<std::thread> outputLoop_ = nullptr;
