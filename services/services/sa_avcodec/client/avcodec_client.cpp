@@ -12,7 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "avcodec_client.h"
+#include <thread>
 #include "avcodec_xcollie.h"
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
@@ -60,16 +62,35 @@ bool AVCodecClient::IsAlived()
 
     return avCodecProxy_ != nullptr;
 }
+
+int32_t AVCodecClient::CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
+                                                   sptr<IRemoteObject> &object,
+                                                   uint32_t tryTimes)
+{
+    int32_t ret = AVCS_ERR_OK;
+    while (tryTimes--) {
+        if (!IsAlived()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100)); // sleep for 100ms
+            continue;
+        }
+
+        ret = avCodecProxy_->GetSubSystemAbility(subSystemId, listenerStub_->AsObject(), object);
+        if (object != nullptr) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // sleep for 100ms
+        continue;
+    }
+    return ret;
+}
+
 #ifdef SUPPORT_CODEC
 int32_t AVCodecClient::CreateCodecService(std::shared_ptr<ICodecService> &codecClient)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    bool alived = IsAlived();
-    CHECK_AND_RETURN_RET_LOG(alived, AVCS_ERR_SERVICE_DIED, "AVCodec service does not exist.");
 
     sptr<IRemoteObject> object = nullptr;
-    int32_t ret = avCodecProxy_->GetSubSystemAbility(
-        IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODEC, listenerStub_->AsObject(), object);
+    int32_t ret = CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODEC, object);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, ret, "Create codec proxy object failed.");
 
     sptr<IStandardCodecService> codecProxy = iface_cast<IStandardCodecService>(object);
@@ -94,12 +115,9 @@ int32_t AVCodecClient::DestroyCodecService(std::shared_ptr<ICodecService> codecC
 std::shared_ptr<ICodecListService> AVCodecClient::CreateCodecListService()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    bool alived = IsAlived();
-    CHECK_AND_RETURN_RET_LOG(alived, nullptr, "AVCodec service does not exist.");
 
     sptr<IRemoteObject> object = nullptr;
-    (void)avCodecProxy_->GetSubSystemAbility(
-        IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODECLIST, listenerStub_->AsObject(), object);
+    (void)CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODECLIST, object);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "Create codeclist proxy object failed.");
 
     sptr<IStandardCodecListService> codecListProxy = iface_cast<IStandardCodecListService>(object);
@@ -123,33 +141,35 @@ int32_t AVCodecClient::DestroyCodecListService(std::shared_ptr<ICodecListService
 
 sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
 {
-    AVCODEC_LOGD("enter");
+    AVCODEC_LOGI("In");
     sptr<ISystemAbilityManager> samgr = nullptr;
     CLIENT_COLLIE_LISTEN(samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager(),
         "AVCodecClient GetAVCodecProxy");
     CHECK_AND_RETURN_RET_LOG(samgr != nullptr, nullptr, "system ability manager is nullptr.");
 
     sptr<IRemoteObject> object = nullptr;
-    CLIENT_COLLIE_LISTEN(object = samgr->GetSystemAbility(OHOS::AV_CODEC_SERVICE_ID), "AVCodecClient GetAVCodecProxy");
+    CLIENT_COLLIE_LISTEN(object = samgr->CheckSystemAbility(OHOS::AV_CODEC_SERVICE_ID),
+                         "AVCodecClient GetAVCodecProxy");
     if (object == nullptr) {
         CLIENT_COLLIE_LISTEN(object = samgr->LoadSystemAbility(OHOS::AV_CODEC_SERVICE_ID, 30), // 30: timeout
                              "AVCodecClient LoadSystemAbility");
-        CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "avcodec object is nullptr.");
+        CHECK_AND_RETURN_RET_LOG(object != nullptr,
+            nullptr, "AVCodec object is nullptr, maybe avcodec service does not exist");
     }
 
     avCodecProxy_ = iface_cast<IStandardAVCodecService>(object);
-    CHECK_AND_RETURN_RET_LOG(avCodecProxy_ != nullptr, nullptr, "avcodec proxy is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(avCodecProxy_ != nullptr, nullptr, "AVCodec proxy is nullptr");
 
     pid_t pid = 0;
     deathRecipient_ = new (std::nothrow) AVCodecDeathRecipient(pid);
-    CHECK_AND_RETURN_RET_LOG(deathRecipient_ != nullptr, nullptr, "failed to new AVCodecDeathRecipient.");
+    CHECK_AND_RETURN_RET_LOG(deathRecipient_ != nullptr, nullptr, "Failed to create AVCodecDeathRecipient");
 
     deathRecipient_->SetNotifyCb(std::bind(&AVCodecClient::AVCodecServerDied, std::placeholders::_1));
     bool result = object->AddDeathRecipient(deathRecipient_);
     CHECK_AND_RETURN_RET_LOG(result, nullptr, "Failed to add deathRecipient");
 
     listenerStub_ = new (std::nothrow) AVCodecListenerStub();
-    CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, nullptr, "failed to new AVCodecListenerStub");
+    CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, nullptr, "Failed to create AVCodecListenerStub");
     return avCodecProxy_;
 }
 

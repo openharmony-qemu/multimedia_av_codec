@@ -35,7 +35,9 @@
         "av_codec_support_bitstream_dump",
         "av_codec_enable_special_codec",
         "av_codec_support_drm",
-        "av_codec_support_video_processing_engine"
+        "av_codec_support_video_processing_engine",
+        "av_codec_support_software_codec",
+        "av_codec_enable_start_stop_on_demand"
       ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",
@@ -86,7 +88,7 @@
           ],
           "service_group": [
             "//foundation/multimedia/av_codec/services:av_codec_services_package",
-            "//foundation/multimedia/av_codec/sa_profile:av_codec_service_profile"
+            "//foundation/multimedia/av_codec/services/etc:av_codec_service_etc"
           ]
         },
         "inner_kits": [
