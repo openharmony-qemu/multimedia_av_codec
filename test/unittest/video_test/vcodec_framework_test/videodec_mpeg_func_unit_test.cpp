@@ -1124,7 +1124,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_GetOutputDescription_004, TestSize.Level1)
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
 
     EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
-    EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
+    EXPECT_GE(pictureHeight, MPEG_HEIGHT - 1);
 
     EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
