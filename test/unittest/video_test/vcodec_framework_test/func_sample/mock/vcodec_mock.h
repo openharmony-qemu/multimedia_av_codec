@@ -143,8 +143,8 @@ const std::map<int32_t, std::string> decSourcePathMap_ = {{HW_AVC, "/data/test/m
 constexpr uint32_t DEFAULT_BITRATE = 12000;
 
 constexpr uint32_t DEFAULT_WIDTH = 720;
-constexpr uint32_t DEFAULT_HEIGHT = 480; //1280
-constexpr uint32_t DEFAULT_FRAME_RATE = 60; // 20
+constexpr uint32_t DEFAULT_HEIGHT = 1280;
+constexpr uint32_t DEFAULT_FRAME_RATE = 20;
 
 constexpr uint32_t DEFAULT_WIDTH_VENC = 1280;
 constexpr uint32_t DEFAULT_HEIGHT_VENC = 720;
