@@ -312,6 +312,7 @@ CapabilityData AudioCodeclistInfo::GetVendorAacEncoderCapability()
     audioAacCapability.sampleRate = AUDIO_SAMPLE_RATE;
     audioAacCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     audioAacCapability.profiles = { AAC_PROFILE_LC, AAC_PROFILE_HE, AAC_PROFILE_HE_V2 };
+    audioAacCapability.rank = 1; // larger than default rank 0
     return audioAacCapability;
 }
 #endif
