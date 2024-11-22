@@ -24,7 +24,7 @@
 #define SAMPLE_ID "[SAMPLE_ID]:" << TEST_ID
 #include "unittest_log.h"
 #define TITLE_LOG UNITTEST_INFO_LOG("")
-#define Mpeg_Stable_Test
+#define MPEG_STABLE_TEST
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
@@ -320,7 +320,7 @@ void VideoDecStableTest::TearDown(void)
     heapThread_ = nullptr;
 }
 
-#ifdef Mpeg_Stable_Test
+#ifdef MPEG_STABLE_TEST
 string GetTestName()
 {
     const ::testing::TestInfo *testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
@@ -426,11 +426,11 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg4_Checkprofileandlevel, TestSize.L
     uint32_t profilesNum = -1;
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, false, SOFTWARE);
     EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
-    EXPECT_EQ(profilesNum, MPEG4_PROFILE_FINE_GRANULARITY_SCALABLE + 1);
+    EXPECT_EQ(profilesNum, Mpeg4VideoPaths::MPEG4_PROFILE_SIMPLE_SCALABLE + 1);
     for (int32_t i = 0; i < profilesNum; i++) {
         int32_t profile = profiles[i];
-        EXPECT_GE(profile, MPEG4_PROFILE_SIMPLE);
-        EXPECT_LE(profile, MPEG4_PROFILE_FINE_GRANULARITY_SCALABLE);
+        EXPECT_GE(profile, Mpeg4VideoPaths::MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY);
+        EXPECT_LE(profile, Mpeg4VideoPaths::MPEG4_PROFILE_SIMPLE_SCALABLE);
         const int32_t *levels = nullptr;
         uint32_t levelsNum = -1;
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
@@ -454,11 +454,11 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg2_Checkprofileandlevel, TestSize.L
     uint32_t profilesNum = -1;
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG2, false, SOFTWARE);
     EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
-    EXPECT_EQ(profilesNum, MPEG2_PROFILE_422 + 1);
+    EXPECT_EQ(profilesNum, Mpeg2VideoPaths::MPEG2_PROFILE_422 + 1);
     for (int32_t i = 0; i < profilesNum; i++) {
         int32_t profile = profiles[i];
-        EXPECT_GE(profile, MPEG2_PROFILE_SIMPLE);
-        EXPECT_LE(profile, MPEG2_PROFILE_422);
+        EXPECT_GE(profile, Mpeg2VideoPaths::MPEG2_PROFILE_SIMPLE);
+        EXPECT_LE(profile, Mpeg2VideoPaths::MPEG2_PROFILE_422);
         const int32_t *levels = nullptr;
         uint32_t levelsNum = -1;
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
