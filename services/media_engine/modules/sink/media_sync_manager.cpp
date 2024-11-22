@@ -354,9 +354,9 @@ bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, IM
             if (clockState_ != State::PAUSED) {
                 MEDIA_LOG_I_SHORT("leaving seeking_");
                 isSeeking_ = false;
+                seekCond_.notify_all();
             }
             UpdateFirstPtsAfterSeek(iMediaTime.mediaTime);
-            seekCond_.notify_all();
         }
     }
     return render;
