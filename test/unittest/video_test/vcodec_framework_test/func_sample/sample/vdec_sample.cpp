@@ -783,7 +783,7 @@ int32_t VideoDecSample::OutputLoopInnerExt()
     uint32_t ret;
     auto buffer = signal_->outBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-        "Fatal: GetOutputBuffer fail, exit, index: %d", index);               
+        "Fatal: GetOutputBuffer fail, exit, index: %d", index);
     CheckFormatKey();
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
