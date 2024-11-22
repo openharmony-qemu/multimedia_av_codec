@@ -1607,6 +1607,31 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
     return ret == Status::OK;
 }
 
+void HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackId)
+{
+    int64_t startTime = 0;
+    int64_t realSeekTime = 0;
+    std::string mimeType;
+    if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) &&
+        mediaMetaData_.trackMetas[trackId]->Get<Tag::MEDIA_START_TIME>(startTime) &&
+        (mimeType.find("audio") == 0)) {
+        Status retSeek = demuxerPluginManager_->SingleStreamSeekTo((lastAudioPts_ - startTime)/US_TO_S,
+            SeekMode::SEEK_CLOSEST_SYNC, streamID, realSeekTime);
+        MEDIA_LOG_I("Audio lastAudioPts_ " PUBLIC_LOG_D64 " relativePts " PUBLIC_LOG_D64
+            " realSeekTime " PUBLIC_LOG_D64" ret " PUBLIC_LOG_D32, lastAudioPts_,
+            lastAudioPts_ - startTime, realSeekTime, static_cast<int32_t>(retSeek));
+    }
+    if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) &&
+        mediaMetaData_.trackMetas[trackId]->Get<Tag::MEDIA_START_TIME>(startTime) &&
+        (mimeType == "application/x-subrip" || mimeType == "text/vtt")) {
+        Status retSeek = demuxerPluginManager_->SingleStreamSeekTo((lastSubtitlePts_ - startTime)/US_TO_S,
+            SeekMode::SEEK_CLOSEST_SYNC, streamID, realSeekTime);
+        MEDIA_LOG_I("Audio lastSubtitlePts_ " PUBLIC_LOG_D64 " relativePts " PUBLIC_LOG_D64
+            " realSeekTime " PUBLIC_LOG_D64 " ret " PUBLIC_LOG_D32, lastSubtitlePts_,
+            lastSubtitlePts_ - startTime, realSeekTime, static_cast<int32_t>(retSeek));
+    }
+}
+
 bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId)
 {
     StreamType streamType = demuxerPluginManager_->GetStreamTypeByTrackID(selectTrackTrackID_);
@@ -1639,6 +1664,8 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
     MEDIA_LOG_I("Updata info");
 
     InnerSelectTrack(newTrackId);
+
+    HandleSelectTrackStreamSeek(newStreamID, newTrackId);
 
     // update buffer queue
     bufferQueueMap_.insert(std::pair<uint32_t, sptr<AVBufferQueueProducer>>(newTrackId,
@@ -2044,44 +2071,47 @@ Status MediaDemuxer::SetFrameRate(double framerate, uint32_t trackId)
     return Status::OK;
 }
 
-void MediaDemuxer::CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId)
+bool MediaDemuxer::CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId)
 {
     if (trackId == audioTrackId_) {
         if (shouldCheckAudioFramePts_ == false) {
             lastAudioPts_ = sample->pts_;
             MEDIA_LOG_I("Set last audio pts " PUBLIC_LOG_D64, lastAudioPts_);
-            return;
+            return false;
         }
-        if (sample->pts_ < lastAudioPts_) {
+        if (sample->pts_ <= lastAudioPts_) {
             MEDIA_LOG_I("Drop audio buffer pts " PUBLIC_LOG_D64, sample->pts_);
-            return;
+            return true;
         }
         if (shouldCheckAudioFramePts_) {
             shouldCheckAudioFramePts_ = false;
+            lastAudioPts_ = sample->pts_;
         }
     }
     if (trackId == subtitleTrackId_) {
         if (shouldCheckSubtitleFramePts_ == false) {
             lastSubtitlePts_ = sample->pts_;
             MEDIA_LOG_I("Set last subtitle pts " PUBLIC_LOG_D64, lastSubtitlePts_);
-            return;
+            return false;
         }
-        if (sample->pts_ < lastSubtitlePts_) {
+        if (sample->pts_ <= lastSubtitlePts_) {
             MEDIA_LOG_I("Drop subtitle buffer pts " PUBLIC_LOG_D64, sample->pts_);
-            return;
+            return true;
         }
         if (shouldCheckSubtitleFramePts_) {
             shouldCheckSubtitleFramePts_ = false;
+            lastSubtitlePts_ = sample->pts_;
         }
     }
+    return false;
 }
 
 bool MediaDemuxer::IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId)
 {
     DumpBufferToFile(trackId, sample);
 
-    if (demuxerPluginManager_->IsDash()) {
-        CheckDropAudioFrame(sample, trackId);
+    if (demuxerPluginManager_->IsDash() && (trackId == audioTrackId_ || trackId == subtitleTrackId_)) {
+        return CheckDropAudioFrame(sample, trackId);
     }
 
     if (trackId != videoTrackId_) {
