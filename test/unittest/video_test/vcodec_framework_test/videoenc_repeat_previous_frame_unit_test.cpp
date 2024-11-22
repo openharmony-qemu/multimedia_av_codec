@@ -167,7 +167,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
 }
 
@@ -182,7 +182,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_002, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
 }
 
@@ -197,7 +197,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_003, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
 }
 
@@ -213,8 +213,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_004, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
 }
 
@@ -230,8 +230,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_005, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
@@ -247,8 +247,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_006, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
@@ -264,8 +264,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_007, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     videoEnc_->needSleep_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
@@ -288,8 +288,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_008, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     videoEnc_->needSleep_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
@@ -312,8 +312,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_009, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     videoEnc_->needSleep_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
@@ -336,8 +336,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_010, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     videoEnc_->needSleep_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
@@ -359,7 +359,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_011, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
     videoEnc_->needSleep_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
