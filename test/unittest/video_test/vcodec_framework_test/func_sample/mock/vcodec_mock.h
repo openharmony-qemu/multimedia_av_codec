@@ -144,6 +144,7 @@ constexpr uint32_t DEFAULT_BITRATE = 12000;
 
 constexpr uint32_t DEFAULT_WIDTH = 720;
 constexpr uint32_t DEFAULT_HEIGHT = 1280;
+constexpr uint32_t MPEG_HEIGHT = 480;
 constexpr uint32_t DEFAULT_FRAME_RATE = 20;
 
 constexpr uint32_t DEFAULT_WIDTH_VENC = 1280;
