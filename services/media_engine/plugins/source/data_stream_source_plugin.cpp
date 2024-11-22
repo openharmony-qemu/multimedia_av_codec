@@ -137,7 +137,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         offset, expectedLen, seekable_);
     std::shared_ptr<AVSharedMemory> memory = GetMemory();
     FALSE_RETURN_V_MSG(memory != nullptr, Status::ERROR_NO_MEMORY, "allocate memory failed!");
-    int32_t realLen;
+    int32_t realLen = 0;
     do {
         if (isInterrupted_) {
             retryTimes_ = 0;
@@ -153,7 +153,12 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
             expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
             realLen = dataSrc_->ReadAt(expectedLen, memory);
         }
+        FALSE_RETURN_V_MSG(realLen > MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN,
+            "read data error! realLen:" PUBLIC_LOG_D32, realLen);
+        FALSE_RETURN_V_MSG_W(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
         if (realLen > 0) {
+            FALSE_LOG_MSG_W(realLen != static_cast<int32_t>(expectedLen), "realLen != expectedLen, realLen:"
+                PUBLIC_LOG_D32 ", expectedLen: " PUBLIC_LOG_ZU, realLen, expectedLen);
             retryTimes_ = 0;
             HandleBufferingEnd();
             break;
@@ -161,12 +166,9 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         if (realLen == 0) {
             HandleBufferingStart();
         }
-        FALSE_RETURN_V(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM);
         SleepForRetry();
         retryTimes_++;
-    } while (realLen <= 0 && retryTimes_ < DEFAULT_RETRY_TIMES);
-    FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN, "read data error!");
-    FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
+    } while (retryTimes_ < DEFAULT_RETRY_TIMES);
     offset_ += static_cast<uint64_t>(realLen);
     if (buffer && buffer->GetMemory()) {
         buffer->GetMemory()->Write(memory->GetBase(), realLen, 0);
