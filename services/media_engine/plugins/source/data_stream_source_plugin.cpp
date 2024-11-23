@@ -38,6 +38,8 @@ namespace {
     constexpr uint32_t READ_AGAIN_RETRY_TIME_ONE = 100;
     constexpr uint32_t READ_AGAIN_RETRY_TIME_TWO = 200;
     constexpr uint32_t READ_AGAIN_RETRY_TIME_THREE = 500;
+    constexpr uint32_t RETRY_TIMES_ONE = 5; // The number of attempts determines the sleep duration.
+    constexpr uint32_t RETRY_TIMES_TWO = 15;
 }
 std::shared_ptr<Plugins::SourcePlugin> DataStreamSourcePluginCreator(const std::string& name)
 {
@@ -185,11 +187,9 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
 
 void DataStreamSourcePlugin::SleepForRetry()
 {
-    MEDIA_LOG_I("read again.");
-    uint32_t retryTimesOneRight = 5;
-    uint32_t retryTimesTwoRight = 15;
-    FALSE_RETURN_V(retryTimes_ > retryTimesOneRight, OSAL::SleepFor(READ_AGAIN_RETRY_TIME_ONE));
-    FALSE_RETURN_V(retryTimes_ > retryTimesTwoRight, OSAL::SleepFor(READ_AGAIN_RETRY_TIME_TWO));
+    MEDIA_LOG_I("read again. retryTimes:" PUBLIC_LOG_U32, retryTimes_);
+    FALSE_RETURN_V(retryTimes_ > RETRY_TIMES_ONE, OSAL::SleepFor(READ_AGAIN_RETRY_TIME_ONE));
+    FALSE_RETURN_V(retryTimes_ > RETRY_TIMES_TWO, OSAL::SleepFor(READ_AGAIN_RETRY_TIME_TWO));
     OSAL::SleepFor(READ_AGAIN_RETRY_TIME_THREE);
 }
 
@@ -238,6 +238,7 @@ Plugins::Seekable DataStreamSourcePlugin::GetSeekable()
 
 Status DataStreamSourcePlugin::SeekTo(uint64_t offset)
 {
+    std::lock_guard<std::mutex> lock(interruptMutex_);
     if (seekable_ == Plugins::Seekable::UNSEEKABLE) {
         MEDIA_LOG_E("source is unseekable!");
         return Status::ERROR_INVALID_OPERATION;
@@ -247,13 +248,31 @@ Status DataStreamSourcePlugin::SeekTo(uint64_t offset)
         return Status::ERROR_INVALID_PARAMETER;
     }
     offset_ = offset;
+    isInterrupt_ = false;
     MEDIA_LOG_D("seek to offset_ " PUBLIC_LOG_U64 " success", offset_);
+    return Status::OK;
+}
+
+Status DataStreamSourcePlugin::Pause()
+{
+    std::lock_guard<std::mutex> lock(interruptMutex_);
+    MEDIA_LOG_I("Pause enter.");
+    isInterrupt_ = true;
+    return Status::OK;
+}
+ 
+Status DataStreamSourcePlugin::Resume()
+{
+    std::lock_guard<std::mutex> lock(interruptMutex_);
+    MEDIA_LOG_I("Resume enter.");
+    isInterrupt_ = false;
     return Status::OK;
 }
 
 Status DataStreamSourcePlugin::Reset()
 {
-    MEDIA_LOG_D("IN");
+    MEDIA_LOG_I("Reset enter.");
+    isInterrupted_ = true;
     return Status::OK;
 }
 
