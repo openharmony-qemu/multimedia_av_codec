@@ -167,7 +167,7 @@ HWTEST_F(CodecListUnitTest, CodecList_GetName_001, TestSize.Level1)
         std::string codecName = capability_->GetName();
         if (mime == std::string(CodecMimeType::AUDIO_AAC)) {
             bool check = (codecName == nameOfMime ||
-                          codecName == std::string(AVCodecCodecName::AUDIO_ENCODER_AAC_NAME));
+                          codecName == std::string(AVCodecCodecName::AUDIO_ENCODER_VENDOR_AAC_NAME));
             EXPECT_EQ(true, check) << mime << " get error name: " << codecName << std::endl;
         } else {
             EXPECT_EQ(nameOfMime, codecName) << mime << " get error name: " << codecName << std::endl;
