@@ -69,9 +69,8 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback) override
     {
         callback_ = codecCallback;
-        std::shared_ptr<Media::AudioBaseCodecCallback> mediaCallback =
-            std::make_shared<AudioCodecCallback>(shared_from_this());
-        return StatusToAVCodecServiceErrCode(static_cast<Media::Status>(mediaCodec_->SetCodecCallback(mediaCallback)));
+        mediaCallback_ = std::make_shared<AudioCodecCallback>(shared_from_this());
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status>(mediaCodec_->SetCodecCallback(mediaCallback_)));
     }
 
     int32_t Prepare() override
@@ -106,7 +105,9 @@ public:
 
     int32_t Release() override
     {
-        return StatusToAVCodecServiceErrCode(static_cast<Media::Status>(mediaCodec_->Release()));
+        int32_t ret = StatusToAVCodecServiceErrCode(static_cast<Media::Status>(mediaCodec_->Release()));
+        mediaCallback_ = nullptr;
+        return ret;
     }
 
     int32_t NotifyEos() override
@@ -149,16 +150,17 @@ public:
 
     void OnError(CodecErrorType errorType, int32_t errorCode)
     {
-        if (callback_ == nullptr) {
+        auto realPtr = callback_.lock();
+        if (realPtr == nullptr) {
             return;
         }
         switch (errorType) {
             case CodecErrorType::CODEC_DRM_DECRYTION_FAILED:
-                callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_DECRYTION_FAILED,
+                realPtr->OnError(AVCodecErrorType::AVCODEC_ERROR_DECRYTION_FAILED,
                     StatusToAVCodecServiceErrCode(static_cast<Media::Status>(errorCode)));
                 break;
             default:
-                callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL,
+                realPtr->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL,
                     StatusToAVCodecServiceErrCode(static_cast<Media::Status>(errorCode)));
                 break;
         }
@@ -166,8 +168,9 @@ public:
 
     void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer)
     {
-        if (callback_) {
-            callback_->OnOutputBufferAvailable(0, outputBuffer);
+        auto realPtr = callback_.lock();
+        if (realPtr != nullptr) {
+            realPtr->OnOutputBufferAvailable(0, outputBuffer);
         }
     }
 
@@ -182,7 +185,10 @@ public:
 
 private:
     std::shared_ptr<Media::MediaCodec> mediaCodec_;
-    std::shared_ptr<MediaCodecCallback> callback_;
+    // other callback from north interface(codec server)
+    std::weak_ptr<MediaCodecCallback> callback_;
+    // self callback register in mediaCodec_
+    std::shared_ptr<Media::AudioBaseCodecCallback> mediaCallback_ = nullptr;
 };
 
 void AudioCodecCallback::OnError(Media::CodecErrorType errorType, int32_t errorCode)

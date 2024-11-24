@@ -162,8 +162,9 @@ private:
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
-    std::shared_ptr<CodecCallback> codecCallback_;
-    std::shared_ptr<AudioBaseCodecCallback> mediaCodecCallback_;
+    std::weak_ptr<CodecCallback> codecCallback_;
+    // callback from north interface(AudioCodec..)
+    std::weak_ptr<AudioBaseCodecCallback> mediaCodecCallback_;
     AVBufferConfig outputBufferConfig_;
     bool isEncoder_;
     bool isSurfaceMode_;
