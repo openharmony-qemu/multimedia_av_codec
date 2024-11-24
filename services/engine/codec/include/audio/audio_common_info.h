@@ -35,6 +35,7 @@ enum class CodecState {
     FLUSHING,     // RUNNING -> FLUSHED
     RESUMING,     // FLUSHED -> RUNNING
     RELEASING,    // {ANY EXCEPT RELEASED} -> RELEASED
+    CONFIGURED,
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
