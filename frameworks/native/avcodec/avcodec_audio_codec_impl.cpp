@@ -56,9 +56,12 @@ int32_t AVCodecAudioCodecImpl::Init(AVCodecType type, bool isMimeType, const std
 
     implBufferQueue_ = Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY,
         INPUT_BUFFER_QUEUE_NAME);
+    CHECK_AND_RETURN_RET_LOG(implBufferQueue_ != nullptr, AVCS_ERR_NO_MEMORY, "failed to create buffer queue");
 
     inputTask_ = std::make_unique<TaskThread>(ASYNC_HANDLE_INPUT);
+    CHECK_AND_RETURN_RET_LOG(inputTask_ != nullptr, AVCS_ERR_NO_MEMORY, "failed to create input task");
     outputTask_ = std::make_unique<TaskThread>(ASYNC_OUTPUT_FRAME);
+    CHECK_AND_RETURN_RET_LOG(outputTask_ != nullptr, AVCS_ERR_NO_MEMORY, "failed to create output task");
 
     return codecService_->Init(type, isMimeType, name, *format.GetMeta(), API_VERSION::API_VERSION_11);
 }
