@@ -62,11 +62,11 @@ group("vcodec_framework_test") {
         ":videoenc_inner_unit_test",
         ":videoenc_repeat_previous_frame_capi_unit_test",
         ":videoenc_repeat_previous_frame_inner_unit_test",
+        ":videoenc_qpmap_capi_unit_test",
+        ":videoenc_qpmap_inner_unit_test",
         ":videoenc_stable_unit_test",
         ":videoenc_temporal_scalability_capi_unit_test",
         ":videoenc_temporal_scalability_inner_unit_test",
-        ":videoenc_qpmap_capi_unit_test",
-        ":videoenc_qpmap_inner_unit_test",
       ]
     }
   }
@@ -115,8 +115,8 @@ ohos_unittest("videodec_capi_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "window_manager:libwm",
     "openssl:libssl_shared",
+    "window_manager:libwm",
   ]
 
   if (av_codec_support_drm) {
@@ -170,8 +170,8 @@ ohos_unittest("videodec_inner_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "window_manager:libwm",
     "openssl:libssl_shared",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -267,8 +267,8 @@ ohos_unittest("videoenc_capi_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "window_manager:libwm",
     "openssl:libssl_shared",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -315,8 +315,8 @@ ohos_unittest("videoenc_inner_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "window_manager:libwm",
     "openssl:libssl_shared",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -364,8 +364,8 @@ ohos_unittest("videoenc_temporal_scalability_capi_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "window_manager:libwm",
     "openssl:libssl_shared",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -413,8 +413,8 @@ ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "window_manager:libwm",
     "openssl:libssl_shared",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -462,8 +462,8 @@ ohos_unittest("videoenc_qpmap_capi_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "window_manager:libwm",
     "openssl:libssl_shared",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -511,8 +511,8 @@ ohos_unittest("videoenc_qpmap_inner_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "window_manager:libwm",
     "openssl:libssl_shared",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -533,7 +533,6 @@ ohos_unittest("videoenc_qpmap_capi_unit_test") {
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
     "$av_codec_root_dir/test/unittest/common/",
     "$av_codec_root_dir/frameworks/native/capi/common",
-    "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
   defines = [ "VIDEOENC_CAPI_UNIT_TEST" ]
@@ -561,6 +560,7 @@ ohos_unittest("videoenc_qpmap_capi_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "openssl:libssl_shared",
     "window_manager:libwm",
   ]
 
@@ -581,7 +581,6 @@ ohos_unittest("videoenc_qpmap_inner_unit_test") {
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/codeclist_test",
     "$av_codec_root_dir/test/unittest/common/",
-    "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
   defines = [ "VIDEOENC_INNER_UNIT_TEST" ]
@@ -610,6 +609,7 @@ ohos_unittest("videoenc_qpmap_inner_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "openssl:libssl_shared",
     "window_manager:libwm",
   ]
 
@@ -832,8 +832,8 @@ ohos_unittest("videodec_hdrvivid2sdr_capi_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "window_manager:libwm",
     "openssl:libssl_shared",
+    "window_manager:libwm",
   ]
 
   if (av_codec_support_drm) {
@@ -893,8 +893,8 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "window_manager:libwm",
     "openssl:libssl_shared",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
