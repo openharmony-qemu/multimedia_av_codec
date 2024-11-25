@@ -56,6 +56,7 @@ constexpr int32_t PAUSE = 2;
 constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY if no buffer in avbufferqueue producer.
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
+constexpr int32_t US_TO_S = 1000000;
 
 enum SceneCode : int32_t {
     /**
@@ -1607,7 +1608,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
     return ret == Status::OK;
 }
 
-void HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackId)
+void MediaDemuxer::HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackId)
 {
     int64_t startTime = 0;
     int64_t realSeekTime = 0;
