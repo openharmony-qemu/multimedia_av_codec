@@ -429,7 +429,8 @@ AudioChannelLayout FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(uint
 {
     auto ite = std::find_if(g_audioVividChannelLayoutMap.begin(), g_audioVividChannelLayoutMap.end(),
                             [&ffChannelLayout](const auto &item) -> bool {
-                                return static_cast<uint64_t>(item.first) == ffChannelLayout;});
+                                return static_cast<uint64_t>(item.first) == ffChannelLayout;
+                            });
     if (ite == g_audioVividChannelLayoutMap.end() || ite -> second != channels) {
         MEDIA_LOG_W("Convert channel layout failed: " PUBLIC_LOG_U64, ffChannelLayout);
         return GetDefaultChannelLayout(channels);
