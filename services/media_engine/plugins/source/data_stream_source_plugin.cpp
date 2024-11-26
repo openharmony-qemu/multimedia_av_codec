@@ -139,7 +139,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         offset, expectedLen, seekable_);
     std::shared_ptr<AVSharedMemory> memory = GetMemory();
     FALSE_RETURN_V_MSG(memory != nullptr, Status::ERROR_NO_MEMORY, "allocate memory failed!");
-    int32_t = 0;
+    int32_t realLen = 0;
     do {
         if (isInterrupted_) {
             retryTimes_ = 0;
