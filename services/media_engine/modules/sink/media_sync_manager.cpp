@@ -343,10 +343,12 @@ bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, in
         MEDIA_LOG_D("update time anchor to priority " PUBLIC_LOG_D32 ", mediaTime " PUBLIC_LOG_D64 ", clockTime "
         PUBLIC_LOG_D64, currentSyncerPriority_, currentAnchorMediaTime_, currentAnchorClockTime_);
         if (isSeeking_) {
-            MEDIA_LOG_I("leaving seeking_");
-            isSeeking_ = false;
+            if (clockState_ != State::PAUSED) {
+                MEDIA_LOG_I("leaving seeking_");
+                isSeeking_ = false;
+                seekCond_.notify_all();
+            }
             UpdateFirstPtsAfterSeek(mediaTime);
-            seekCond_.notify_all();
         }
     }
     return render;
