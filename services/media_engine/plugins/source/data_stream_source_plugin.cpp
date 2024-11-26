@@ -141,7 +141,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     FALSE_RETURN_V_MSG(memory != nullptr, Status::ERROR_NO_MEMORY, "allocate memory failed!");
     int32_t realLen = 0;
     do {
-        if (isInterrupted_) {
+        if (isInterrupted_ || isExitRead_) {
             retryTimes_ = 0;
             isBufferingStart = false;
             return Status::OK;
@@ -238,7 +238,7 @@ Plugins::Seekable DataStreamSourcePlugin::GetSeekable()
 
 Status DataStreamSourcePlugin::SeekTo(uint64_t offset)
 {
-    std::lock_guard<std::mutex> lock(interruptMutex_);
+    std::lock_guard<std::mutex> lock(isExitReadMutex_);
     if (seekable_ == Plugins::Seekable::UNSEEKABLE) {
         MEDIA_LOG_E("source is unseekable!");
         return Status::ERROR_INVALID_OPERATION;
@@ -248,24 +248,24 @@ Status DataStreamSourcePlugin::SeekTo(uint64_t offset)
         return Status::ERROR_INVALID_PARAMETER;
     }
     offset_ = offset;
-    isInterrupt_ = false;
+    isExitRead_ = false;
     MEDIA_LOG_D("seek to offset_ " PUBLIC_LOG_U64 " success", offset_);
     return Status::OK;
 }
 
 Status DataStreamSourcePlugin::Pause()
 {
-    std::lock_guard<std::mutex> lock(interruptMutex_);
+    std::lock_guard<std::mutex> lock(isExitReadMutex_);
     MEDIA_LOG_I("Pause enter.");
-    isInterrupt_ = true;
+    isExitRead_ = true;
     return Status::OK;
 }
  
 Status DataStreamSourcePlugin::Resume()
 {
-    std::lock_guard<std::mutex> lock(interruptMutex_);
+    std::lock_guard<std::mutex> lock(isExitReadMutex_);
     MEDIA_LOG_I("Resume enter.");
-    isInterrupt_ = false;
+    isExitRead_ = false;
     return Status::OK;
 }
 
