@@ -17,6 +17,7 @@
 #include <functional>
 #include <malloc.h>
 #include <map>
+#include <memory>
 #include <unistd.h>
 #include <limits>
 #include <vector>
@@ -303,11 +304,15 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
 void CodecServer::StartInputParamTask()
 {
     inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
-    inputParamTask_->RegisterHandler([this] {
-        uint32_t index = temporalScalability_->GetFirstBufferIndex();
-        AVCodecBufferInfo info;
-        AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-        CHECK_AND_RETURN_LOG(QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
+    std::weak_ptr<CodecServer> weakThis = weak_from_this();
+    inputParamTask_->RegisterHandler([weakThis] {
+        std::shared_ptr<CodecServer> cs = weakThis.lock();
+        if (cs) {
+            uint32_t index = cs->temporalScalability_->GetFirstBufferIndex();
+            AVCodecBufferInfo info;
+            AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
+            CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
+        }
     });
     inputParamTask_->Start();
 }
@@ -320,7 +325,8 @@ int32_t CodecServer::Start()
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     if (temporalScalability_ != nullptr && isCreateSurface_ && !isSetParameterCb_) {
-        StartInputParamTask();
+        int32_t ret = StartInputParamTask();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start input param task failed"); 
     }
     int32_t ret = StartPostProcessing();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start post processing failed");
