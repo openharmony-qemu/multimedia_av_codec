@@ -68,7 +68,7 @@ int32_t AVCodecClient::CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCo
                                                    uint32_t tryTimes)
 {
     int32_t ret = AVCS_ERR_OK;
-    while (tryTimes--) {
+    do {
         if (!IsAlived()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100)); // sleep for 100ms
             continue;
@@ -80,7 +80,7 @@ int32_t AVCodecClient::CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCo
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100)); // sleep for 100ms
         continue;
-    }
+    } while (--tryTimes);
     return ret;
 }
 
