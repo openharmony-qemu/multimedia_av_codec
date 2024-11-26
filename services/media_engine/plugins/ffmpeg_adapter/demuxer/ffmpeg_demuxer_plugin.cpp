@@ -59,7 +59,7 @@ const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 const int32_t INIT_TIME_THRESHOLD = 1000;
 const uint32_t ID3V2_HEADER_SIZE = 10;
-const uint32_t MS_TO_NS = 1000 * 1000;
+const int32_t MS_TO_NS = 1000 * 1000;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -1590,7 +1590,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
                 MEDIA_LOG_E("pts overflow");
                 return Status::ERROR_INVALID_DATA;
         }
-        double timeScaleRate = MS_TO_NS / static_cast<double>(avStream->time_scale);
+        double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
         double ptsTemp = static_cast<double>(dts) + static_cast<double>(avStream->ctts_data[cttsIndex].duration);
         pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
@@ -1624,7 +1624,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
                 MEDIA_LOG_E("pts overflow");
                 return Status::ERROR_INVALID_DATA;
         }
-        double timeScaleRate = MS_TO_NS / static_cast<double>(avStream->time_scale);
+        double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
         double ptsTemp = static_cast<double>(dts);
         pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
