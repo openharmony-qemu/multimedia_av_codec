@@ -1613,19 +1613,17 @@ void MediaDemuxer::HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackI
     int64_t startTime = 0;
     int64_t realSeekTime = 0;
     std::string mimeType;
-    if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) &&
-        mediaMetaData_.trackMetas[trackId]->Get<Tag::MEDIA_START_TIME>(startTime) &&
-        (mimeType.find("audio") == 0)) {
-        Status retSeek = demuxerPluginManager_->SingleStreamSeekTo((lastAudioPts_ - startTime)/US_TO_S,
+    FALSE_RETURN(mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) &&
+        mediaMetaData_.trackMetas[trackId]->Get<Tag::MEDIA_START_TIME>(startTime));
+    if (mimeType.find("audio") == 0) {
+        Status retSeek = demuxerPluginManager_->SingleStreamSeekTo((lastAudioPts_ - startTime) / US_TO_S,
             SeekMode::SEEK_CLOSEST_SYNC, streamID, realSeekTime);
         MEDIA_LOG_I("Audio lastAudioPts_ " PUBLIC_LOG_D64 " relativePts " PUBLIC_LOG_D64
             " realSeekTime " PUBLIC_LOG_D64" ret " PUBLIC_LOG_D32, lastAudioPts_,
             lastAudioPts_ - startTime, realSeekTime, static_cast<int32_t>(retSeek));
     }
-    if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) &&
-        mediaMetaData_.trackMetas[trackId]->Get<Tag::MEDIA_START_TIME>(startTime) &&
-        (mimeType == "application/x-subrip" || mimeType == "text/vtt")) {
-        Status retSeek = demuxerPluginManager_->SingleStreamSeekTo((lastSubtitlePts_ - startTime)/US_TO_S,
+    if (mimeType == "application/x-subrip" || mimeType == "text/vtt") {
+        Status retSeek = demuxerPluginManager_->SingleStreamSeekTo((lastSubtitlePts_ - startTime) / US_TO_S,
             SeekMode::SEEK_CLOSEST_SYNC, streamID, realSeekTime);
         MEDIA_LOG_I("Audio lastSubtitlePts_ " PUBLIC_LOG_D64 " relativePts " PUBLIC_LOG_D64
             " realSeekTime " PUBLIC_LOG_D64 " ret " PUBLIC_LOG_D32, lastSubtitlePts_,
