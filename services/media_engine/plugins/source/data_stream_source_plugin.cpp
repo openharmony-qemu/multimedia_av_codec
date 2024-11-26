@@ -139,7 +139,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         offset, expectedLen, seekable_);
     std::shared_ptr<AVSharedMemory> memory = GetMemory();
     FALSE_RETURN_V_MSG(memory != nullptr, Status::ERROR_NO_MEMORY, "allocate memory failed!");
-    int32_t realLen = 0;
+    int32_t = 0;
     do {
         if (isInterrupted_) {
             retryTimes_ = 0;
@@ -159,7 +159,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
             "read data error! realLen:" PUBLIC_LOG_D32, realLen);
         FALSE_RETURN_V_MSG_W(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
         if (realLen > 0) {
-            FALSE_LOG_MSG_W(realLen != static_cast<int32_t>(expectedLen), "realLen != expectedLen, realLen:"
+            FALSE_LOG_MSG_W(realLen == static_cast<int32_t>(expectedLen), "realLen != expectedLen, realLen:"
                 PUBLIC_LOG_D32 ", expectedLen: " PUBLIC_LOG_ZU, realLen, expectedLen);
             retryTimes_ = 0;
             HandleBufferingEnd();
