@@ -969,10 +969,13 @@ bool CacheMediaChunkBufferImpl::ClearChunksOfFragment(uint64_t offset)
         return false;
     }
     auto& fragment = *fragmentPos;
+    if (fragment.chunks.empty()) {
+        return false;
+    }
     uint32_t chunkSize = fragment.chunks.size();
     for (uint32_t i = 0; i < chunkSize; ++i) {
         auto chunkIter = fragment.chunks.front();
-        if (chunkIter->offset + chunkIter->dataLength >= offset) {
+        if (chunkIter == nullptr || chunkIter->offset + chunkIter->dataLength >= offset) {
             break;
         }
 
