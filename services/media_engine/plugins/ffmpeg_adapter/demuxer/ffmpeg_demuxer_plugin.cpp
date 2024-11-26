@@ -59,6 +59,7 @@ const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 const int32_t INIT_TIME_THRESHOLD = 1000;
 const uint32_t ID3V2_HEADER_SIZE = 10;
+const int32_t MS_TO_NS = 1000 * 1000;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -640,7 +641,8 @@ bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket *pkt)
     } else {    // vtte
         if (cacheQueue_.HasCache(trackId)) {
             std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
-            if (cacheSamplePacket != nullptr && cacheSamplePacket->pkts[0]->duration == 0) {
+            if (cacheSamplePacket != nullptr && cacheSamplePacket->pkts.size() > 0 &&
+                cacheSamplePacket->pkts[0] != nullptr && cacheSamplePacket->pkts[0]->duration == 0) {
                 cacheSamplePacket->pkts[0]->duration = pkt->pts - cacheSamplePacket->pkts[0]->pts;
             }
         }
@@ -1345,7 +1347,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     MEDIA_LOG_D("Seek based on track " PUBLIC_LOG_D32, trackIndex);
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
-    int64_t ffTime = ConvertTimeToFFmpeg(seekTime * 1000 * 1000, avStream->time_base);
+    int64_t ffTime = ConvertTimeToFFmpeg(seekTime * MS_TO_NS, avStream->time_base);
     if (!CheckStartTime(formatContext_.get(), avStream, ffTime, seekTime)) {
         MEDIA_LOG_E("Get start time from track " PUBLIC_LOG_D32 " failed", trackIndex);
         return Status::ERROR_INVALID_OPERATION;
@@ -1588,8 +1590,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
                 MEDIA_LOG_E("pts overflow");
                 return Status::ERROR_INVALID_DATA;
         }
-        double timeScaleRate = 1000 * 1000 / // 1000 is used for converting pts to us
-                                static_cast<double>(avStream->time_scale);
+        double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
         double ptsTemp = static_cast<double>(dts) + static_cast<double>(avStream->ctts_data[cttsIndex].duration);
         pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
@@ -1623,8 +1624,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
                 MEDIA_LOG_E("pts overflow");
                 return Status::ERROR_INVALID_DATA;
         }
-        double timeScaleRate = 1000 * 1000 / // 1000 is used for converting pts to us
-                                static_cast<double>(avStream->time_scale);
+        double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
         double ptsTemp = static_cast<double>(dts);
         pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
