@@ -1186,7 +1186,7 @@ int32_t CodecServer::SetCallbackForPostProcessing()
 
 void CodecServer::ClearCallbackForPostProcessing()
 {
-    std::shared_lock<std::shared_mutex> lock(cbMutex_);
+    std::lock_guard<std::shared_mutex> lock(cbMutex_);
     postProcessingCallback_.onError = nullptr;
     postProcessingCallback_.onOutputBufferAvailable = nullptr;
 }
@@ -1206,6 +1206,7 @@ int32_t CodecServer::PreparePostProcessing()
 
     int32_t ret{AVCS_ERR_OK};
     if (postProcessingUserData_ == nullptr) {
+        std::lock_guard<std::shared_mutex> lock(cbMutex_);
         ret = SetCallbackForPostProcessing();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set callback for post post processing failed");
     }
