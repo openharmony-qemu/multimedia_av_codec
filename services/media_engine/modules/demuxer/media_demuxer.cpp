@@ -1625,7 +1625,7 @@ void MediaDemuxer::HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackI
     if (mimeType == "application/x-subrip" || mimeType == "text/vtt") {
         Status retSeek = demuxerPluginManager_->SingleStreamSeekTo((lastSubtitlePts_ - startTime) / US_TO_S,
             SeekMode::SEEK_CLOSEST_SYNC, streamID, realSeekTime);
-        MEDIA_LOG_I("Audio lastSubtitlePts_ " PUBLIC_LOG_D64 " relativePts " PUBLIC_LOG_D64
+        MEDIA_LOG_I("Subtitle lastSubtitlePts_ " PUBLIC_LOG_D64 " relativePts " PUBLIC_LOG_D64
             " realSeekTime " PUBLIC_LOG_D64 " ret " PUBLIC_LOG_D32, lastSubtitlePts_,
             lastSubtitlePts_ - startTime, realSeekTime, static_cast<int32_t>(retSeek));
     }
