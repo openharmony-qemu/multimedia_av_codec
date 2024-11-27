@@ -31,24 +31,42 @@ const char *FLV_PATH = "/data/test/fuzz_create.flv";
 
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int64_t)) {
+    if (size < 37) {
         return false;
     }
     int32_t fd = open(FLV_PATH, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size - 5);
+    int len = write(fd, data, size - 36);
     if (len <= 0) {
         return false;
     }
     close(fd);
-    int64_t time = data[size - 5];
+    struct Params params;
+    params.time = data[size - 5];
+    char *uri = new char[21];
+    memcpy(uri, data  + size - 25, 20);
+    uri[20] = '\0';
+    params.setTrackType = data[size - 26];
+    params.setDuration = data[size - 27];
+    params.setHeight = data[size - 28];
+    params.setFrameRate = data[size - 29];
+    char *setLanguage = new char[3];
+    memcpy(setLanguage, data + size - 31, 2);
+    setLanguage[2] = '\0';
+    params.setCodecConfigSize = data[size - 32];
+    params.sampleRate = data[size - 33];
+    params.channelCount = data[size - 34];
+    params.setVideoHeight = data[size - 35];
+    params.setVideoWidth = data[size - 36];
     uint8_t *dataConver = const_cast<uint8_t *>(data);
     uint32_t *createSize = reinterpret_cast<uint32_t *>(dataConver + size - 4);
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = FLV_PATH;
-    demuxerSample->RunNormalDemuxerApi11(*createSize, time);
+    demuxerSample->RunNormalDemuxerApi11(*createSize, uri, setLanguage, params);
+    delete[] uri;
+    delete[] setLanguage;
     int ret = remove(FLV_PATH);
     if (ret != 0) {
         return false;
