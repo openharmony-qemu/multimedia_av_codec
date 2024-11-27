@@ -66,7 +66,7 @@ const int32_t POS_1 = 1;
 const int32_t POS_2 = 2;
 const int32_t POS_3 = 3;
 const int32_t POS_4 = 4;
-const int32_t POS_5 = 4;
+const int32_t POS_5 = 5;
 const int32_t POS_6 = 6;
 const int32_t POS_7 = 7;
 const int32_t POS_8 = 8;
@@ -853,11 +853,11 @@ int64_t FFmpegDemuxerPlugin::AVSeek(void* opaque, int64_t offset, int whence)
             break;
         case SEEK_END:
         case AVSEEK_SIZE: {
+            FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, newPos, "DataSource is nullptr");
             if (ioContext->dataSource->IsDash()) {
                 return -1;
             }
             uint64_t mediaDataSize = 0;
-            FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, newPos, "DataSource is nullptr");
             if (ioContext->dataSource->GetSize(mediaDataSize) == Status::OK && (mediaDataSize > 0)) {
                 newPos = mediaDataSize + offset;
                 MEDIA_LOG_D("Whence: " PUBLIC_LOG_D32 ", pos = " PUBLIC_LOG_D64 ", newPos = " PUBLIC_LOG_U64,
@@ -910,14 +910,14 @@ void FreeContext(AVFormatContext* formatContext, AVIOContext* avioContext)
     }
 }
 
-int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputFormat> pluginImpl, AVDictionary *options)
+int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputFormat> pluginImpl, AVDictionary **options)
 {
     FALSE_RETURN_V_MSG_E(formatContext && pluginImpl, -1, "AVFormatContext is nullptr");
     MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
 
     AVIOContext* avioContext = formatContext->pb;
     auto begin = std::chrono::system_clock::now();
-    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl.get(), &options);
+    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl.get(), options);
     if (ret < 0) {
         FreeContext(formatContext, avioContext);
         MEDIA_LOG_E("Call avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
@@ -967,10 +967,8 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
         av_dict_set(&options, "use_tfdt", "true", 0);
     }
     
-    int ret = ParseHeader(formatContext, pluginImpl_, options);
-    if (options) {
-        av_dict_free(&options);
-    }
+    int ret = ParseHeader(formatContext, pluginImpl_, &options);
+    av_dict_free(&options);
     FALSE_RETURN_V_MSG_E(ret >= 0, nullptr, "ParseHeader failed");
 
     std::shared_ptr<AVFormatContext> retFormatContext =
@@ -1578,14 +1576,28 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
             cttsCurNum >= 0 && sttsCurNum >= 0) {
         if (cttsCurNum == 0) {
             cttsIndex++;
-            cttsCurNum = cttsIndex < avStream->ctts_count ?
-                         static_cast<int32_t>(avStream->ctts_data[cttsIndex].count) : 0;
+            if (cttsIndex >= avStream->ctts_count) {
+                break;
+            }
+            cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
         }
         cttsCurNum--;
-        pts = (dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) *
-                1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
+        if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
+            ((dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) /
+            static_cast<int64_t>(avStream->time_scale))) {
+                MEDIA_LOG_E("pts overflow");
+                return Status::ERROR_INVALID_DATA;
+        }
+        double timeScaleRate = 1000 * 1000 / // 1000 is used for converting pts to us
+                                static_cast<double>(avStream->time_scale);
+        double ptsTemp = static_cast<double>(dts) + static_cast<double>(avStream->ctts_data[cttsIndex].duration);
+        pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
         sttsCurNum--;
+        if ((INT64_MAX - dts) < (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {
+            MEDIA_LOG_E("dts overflow");
+            return Status::ERROR_INVALID_DATA;
+        }
         dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
         if (sttsCurNum == 0) {
             sttsIndex++;
@@ -1606,9 +1618,21 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
 
     while (sttsIndex < avStream->stts_count && sttsCurNum >= 0) {
-        pts = dts * 1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is for converting pts to us
+        if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
+            (dts / static_cast<int64_t>(avStream->time_scale))) {
+                MEDIA_LOG_E("pts overflow");
+                return Status::ERROR_INVALID_DATA;
+        }
+        double timeScaleRate = 1000 * 1000 / // 1000 is used for converting pts to us
+                                static_cast<double>(avStream->time_scale);
+        double ptsTemp = static_cast<double>(dts);
+        pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
         sttsCurNum--;
+        if ((INT64_MAX - dts) < (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {
+            MEDIA_LOG_E("dts overflow");
+            return Status::ERROR_INVALID_DATA;
+        }
         dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
         if (sttsCurNum == 0) {
             sttsIndex++;

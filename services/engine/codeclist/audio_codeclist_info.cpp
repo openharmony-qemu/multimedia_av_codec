@@ -17,6 +17,7 @@
 #include "avcodec_mime_type.h"
 #include "avcodec_codec_name.h"
 #include "hdi_codec.h"
+#include <fstream>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -66,6 +67,8 @@ constexpr int MAX_CHANNEL_COUNT_VIVID = 16;
 #endif
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
+
+const std::string VENDOR_AAC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libaac_enc.z.so";
 
 CapabilityData AudioCodeclistInfo::GetMP3DecoderCapability()
 {
@@ -283,6 +286,35 @@ CapabilityData AudioCodeclistInfo::GetLbvcEncoderCapability()
     audioLbvcCapability.isVendor = true;
     return audioLbvcCapability;
 }
+
+CapabilityData AudioCodeclistInfo::GetVendorAacEncoderCapability()
+{
+    std::unique_ptr<std::ifstream> libFile = std::make_unique<std::ifstream>(VENDOR_AAC_LIB_PATH, std::ios::binary);
+    CapabilityData audioAacCapability;
+    if (!libFile->is_open()) {
+        audioAacCapability.codecName = "";
+        audioAacCapability.mimeType = "";
+        audioAacCapability.maxInstance = 0;
+        audioAacCapability.codecType = AVCODEC_TYPE_NONE;
+        audioAacCapability.isVendor = false;
+        audioAacCapability.bitrate = Range(0, 0);
+        audioAacCapability.channels = Range(0, 0);
+        audioAacCapability.sampleRate = {0};
+        return audioAacCapability;
+    }
+    libFile->close();
+    audioAacCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_VENDOR_AAC_NAME;
+    audioAacCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
+    audioAacCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC;
+    audioAacCapability.isVendor = false;
+    audioAacCapability.bitrate = Range(MIN_BIT_RATE_AAC_ENCODER, MAX_BIT_RATE_AAC_ENCODER);
+    audioAacCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    audioAacCapability.sampleRate = AUDIO_SAMPLE_RATE;
+    audioAacCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    audioAacCapability.profiles = { AAC_PROFILE_LC, AAC_PROFILE_HE, AAC_PROFILE_HE_V2 };
+    audioAacCapability.rank = 1; // larger than default rank 0
+    return audioAacCapability;
+}
 #endif
 
 CapabilityData AudioCodeclistInfo::GetAacEncoderCapability()
@@ -365,7 +397,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetAPEDecoderCapability(),   GetMP3EncoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
-                          GetLbvcDecoderCapability(),  GetLbvcEncoderCapability(),
+                          GetLbvcDecoderCapability(),  GetLbvcEncoderCapability(),  GetVendorAacEncoderCapability(),
 #endif
     };
 }

@@ -160,7 +160,7 @@ public:
     void OnError(MediaAVCodec::AVCodecErrorType type, int32_t errorCode) {}
     void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) {}
 };
-class MyAVBufferQueueProducer : public IRemoteStub<AVBufferQueueProducer> {
+class SurfaceEncoderAdapterUnitTestAP : public IRemoteStub<AVBufferQueueProducer> {
 public:
     uint32_t GetQueueSize()
     {
@@ -174,7 +174,7 @@ public:
     Status RequestBuffer(std::shared_ptr<AVBuffer>& outBuffer,
                                  const AVBufferConfig& config, int32_t timeoutMs)
     {
-        return  Status::OK;
+        return  Status::ERROR_UNKNOWN;
     }
     Status PushBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available)
     {

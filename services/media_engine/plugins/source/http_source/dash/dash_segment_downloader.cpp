@@ -41,7 +41,7 @@ constexpr int32_t DEFAULT_AUDIO_WATER_LINE = 96 * 1024;
 constexpr float DEFAULT_MIN_CACHE_TIME = 0.3;
 constexpr float DEFAULT_MAX_CACHE_TIME = 10.0;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
-constexpr int64_t SECOND_TO_MILLIONSECOND = 1000;
+constexpr int64_t SECOND_TO_MILLISECONDS = 1000;
 constexpr uint32_t BUFFERING_SLEEP_TIME_MS = 10;
 constexpr uint32_t BUFFERING_TIME_OUT_MS = 1000;
 constexpr uint32_t UPDATE_CACHE_STEP = 5 * 1024;
@@ -373,7 +373,7 @@ void DashSegmentDownloader::CalculateBitRate(size_t fragmentSize, double duratio
         return;
     }
 
-    realTimeBitBate_ = static_cast<int64_t>(fragmentSize * BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / duration;
+    realTimeBitBate_ = static_cast<int64_t>(fragmentSize * BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / duration;
     MEDIA_LOG_I("CalculateBitRate streamId: " PUBLIC_LOG_D32 " realTimeBitBate: "
         PUBLIC_LOG_D64, streamId_, realTimeBitBate_);
 }
@@ -385,7 +385,7 @@ void DashSegmentDownloader::HandleCachedDuration()
     }
 
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(buffer_->GetSize()) *
-        BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / realTimeBitBate_);
+        BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / realTimeBitBate_);
     if ((cachedDuration > lastDurationRecord_ &&
          cachedDuration - lastDurationRecord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationRecord_ > cachedDuration &&
@@ -897,7 +897,7 @@ void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
             totalDownloadDuringTime_ += downloadDuringTime_;
             double downloadRate = 0;
             double tmpNumerator = static_cast<double>(curDownloadBits);
-            double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLIONSECOND;
+            double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLISECONDS;
             if (tmpDenominator > ZERO_THRESHOLD) {
                 downloadRate = tmpNumerator / tmpDenominator;
             }

@@ -27,6 +27,17 @@ constexpr uint8_t ANNEXB_FRAME_HEAD[] = {0, 0, 1};
 constexpr uint8_t ANNEXB_FRAME_HEAD_LEN = sizeof(ANNEXB_FRAME_HEAD);
 constexpr uint32_t MAX_NALU_SIZE = 2 * 1024 * 1024; // 2Mb
 
+constexpr uint8_t MPEG2_FRAME_HEAD[] = {0x00, 0x00, 0x01, 0x00};
+constexpr uint8_t MPEG2_FRAME_HEAD_LEN = sizeof(MPEG2_FRAME_HEAD);
+constexpr uint8_t MPEG2_SEQUENCE_HEAD[] = {0x00, 0x00, 0x01, 0xb3};
+constexpr uint8_t MPEG2_SEQUENCE_HEAD_LEN = sizeof(MPEG2_SEQUENCE_HEAD);
+constexpr uint8_t MPEG2_TYPE_OFFEST = 1;
+constexpr uint8_t MPEG4_FRAME_HEAD[] = {0x00, 0x00, 0x01, 0xb6};
+constexpr uint8_t MPEG4_FRAME_HEAD_LEN = sizeof(MPEG4_FRAME_HEAD);
+constexpr uint8_t MPEG4_SEQUENCE_HEAD[] = {0x00, 0x00, 0x01, 0xb0};
+constexpr uint8_t MPEG4_SEQUENCE_HEAD_LEN = sizeof(MPEG4_SEQUENCE_HEAD);
+constexpr uint32_t PREREAD_BUFFER_SIZE = 0.1 * 1024 * 1024;
+
 static inline int64_t GetTimeUs()
 {
     struct timespec now;
@@ -82,14 +93,382 @@ enum HevcNalType {
     HEVC_PREFIX_SEI_NUT = 39,
     HEVC_SUFFIX_SEI_NUT = 40,
 };
+enum Mpeg2Type {
+    M2V_UNSPECIFIED = 0,
+    M2V_I = 1,
+    M2V_P = 2,
+    M2V_B = 3,
+};
+enum Mpeg4Type {
+    MPEG4_UNSPECIFIED = 0,
+    MPEG4_I = 1,
+    MPEG4_P = 2,
+    MPEG4_B = 3,
+    MPEG4_S = 4,
+};
+
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
+
+
+int32_t MpegReader::Init(const std::shared_ptr<MpegReaderInfo> &info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.data(),
+        std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile != nullptr && inputFile->is_open(),
+                                      AV_ERR_INVALID_VAL, "Open input file failed");
+
+    mpegUnitReader_ = info->isMpeg2Stream ?
+        std::static_pointer_cast<MpegUnitReader>(std::make_shared<Mpeg2MetaUnitReader>(inputFile)) :
+        std::static_pointer_cast<MpegUnitReader>(std::make_shared<Mpeg4MetaUnitReader>(inputFile));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mpegUnitReader_, AV_ERR_INVALID_VAL, "Mpeg unit reader create failed");
+
+    mpegDetector_ = info->isMpeg2Stream ?
+        std::static_pointer_cast<MpegDetector>(std::make_shared<Mpeg2Detector>()) :
+        std::static_pointer_cast<MpegDetector>(std::make_shared<Mpeg4Detector>());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mpegDetector_, AV_ERR_INVALID_VAL, "Mpeg detector create failed");
+
+    return AV_ERR_OK;
+}
+
+void MpegReader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t mpegType,
+                                bool isEosFrame)
+{
+    attr.size += frameSize;
+    attr.pts = GetTimeUs();
+    attr.flags |= mpegDetector_->IsI(mpegType) ? AVCODEC_BUFFER_FLAG_SYNC_FRAME : 0;
+    if (isEosFrame) {
+        attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_ + 1) << std::endl;
+    }
+}
+
+int32_t MpegReader::FillBufferExt(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto buffer = signal_->inBufferQueue_.front();
+    auto bufferAddr = buffer->GetAddr();
+
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+    auto ret = mpegUnitReader_->ReadMpegUnit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ReadMpegUnit failed");
+    auto mpegType = mpegDetector_->GetMpegType(mpegDetector_->GetMpegTypeAddr(bufferAddr));
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, mpegType, isEosFrame);
+    buffer->SetBufferAttr(attr);
+    frameInputCount_++;
+
+    return AV_ERR_OK;
+}
+
+int32_t MpegReader::FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto buffer = signal_->inMemoryQueue_.front();
+    auto bufferAddr = buffer->GetAddr();
+
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+    auto ret = mpegUnitReader_->ReadMpegUnit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ReadMpegUnit failed");
+    uint8_t mpegType = mpegDetector_->GetMpegType(mpegDetector_->GetMpegTypeAddr(bufferAddr));
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, mpegType, isEosFrame);
+    
+    frameInputCount_++;
+
+    return AV_ERR_OK;
+}
+
+bool MpegReader::IsEOS()
+{
+    return mpegUnitReader_ ? mpegUnitReader_->IsEOS() : true;
+}
+
+uint8_t const * MpegReader::MpegUnitReader::GetNextMpegUnitAddr()
+{
+    CHECK_AND_RETURN_RET_LOG(mpegUnit_ != nullptr, nullptr, "mpegUnit_ is nullptr");
+    return mpegUnit_->data();
+}
+
+void MpegReader::Mpeg2MetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nallptr");
+    inputFile_->read(reinterpret_cast<char *>(prereadBuffer_.get() + MPEG2_FRAME_HEAD_LEN), PREREAD_BUFFER_SIZE);
+    prereadBufferSize_ = inputFile_->gcount() + MPEG2_FRAME_HEAD_LEN;
+    pPrereadBuffer_ = MPEG2_FRAME_HEAD_LEN;
+}
+
+int32_t MpegReader::Mpeg2MetaUnitReader::ReadMpegUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Got a invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mpegUnit_, AV_ERR_INVALID_VAL, "Mpeg unit buffer is nullptr");
+    bufferSize = mpegUnit_->size();
+    memcpy_s(bufferAddr, bufferSize, mpegUnit_->data(), bufferSize);
+
+    if (!IsEOF()) {
+        isEosFrame = false;
+        PrereadMpeg2Unit();
+    } else {
+        isEosFrame = true;
+        mpegUnit_->resize(0);
+    }
+    return AV_ERR_OK;
+}
+
+MpegReader::Mpeg2MetaUnitReader::Mpeg2MetaUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+    prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE + MPEG2_FRAME_HEAD_LEN);
+    PrereadFile();
+
+    mpegUnit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    PrereadMpeg2Unit();
+}
+
+bool MpegReader::Mpeg2MetaUnitReader::IsEOS()
+{
+    return IsEOF() && mpegUnit_->empty();
+}
+
+bool MpegReader::Mpeg2MetaUnitReader::IsEOF()
+{
+    return (pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->peek() == EOF);
+}
+
+void MpegReader::Mpeg2MetaUnitReader::PrereadMpeg2Unit()
+{
+    CHECK_AND_RETURN_LOG(prereadBufferSize_ > 0, "Empty file, nothing to read");
+    CHECK_AND_RETURN_LOG(mpegUnit_, "Mpeg2 unit buffer is nullptr");
+    auto pBuffer = mpegUnit_->data();
+    uint32_t bufferSize = 0;
+    mpegUnit_->resize(MAX_NALU_SIZE);
+    do {
+        auto pos_1 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + MPEG2_FRAME_HEAD_LEN,
+            prereadBuffer_.get() + prereadBufferSize_, std::begin(MPEG2_FRAME_HEAD), std::end(MPEG2_FRAME_HEAD));
+        uint32_t size_1 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_1);
+        auto pos_2 = std::search(prereadBuffer_.get() + pPrereadBuffer_, prereadBuffer_.get() +
+            pPrereadBuffer_ + size_1, std::begin(MPEG2_SEQUENCE_HEAD), std::end(MPEG2_SEQUENCE_HEAD));
+        uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_2);
+        if (size == 0) {
+            auto pos_3 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + size_1 + MPEG2_FRAME_HEAD_LEN,
+                prereadBuffer_.get() + prereadBufferSize_, std::begin(MPEG2_FRAME_HEAD), std::end(MPEG2_FRAME_HEAD));
+            uint32_t size_2 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_3);
+            auto ret = memcpy_s(pBuffer, size_2, prereadBuffer_.get() + pPrereadBuffer_, size_2);
+            CHECK_AND_RETURN_LOG(ret == EOK, "First Copy buffer failed");
+            pPrereadBuffer_ += size_2;
+            bufferSize += size_2;
+            pBuffer += size_2;
+            UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
+        } else if (size_1 > size) {
+            auto ret = memcpy_s(pBuffer, size, prereadBuffer_.get() + pPrereadBuffer_, size);
+            CHECK_AND_RETURN_LOG(ret == EOK, "Last Copy buffer failed");
+            pPrereadBuffer_ += size;
+            bufferSize += size;
+            pBuffer += size;
+            UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
+        } else {
+            auto ret = memcpy_s(pBuffer, size_1, prereadBuffer_.get() + pPrereadBuffer_, size_1);
+            CHECK_AND_RETURN_LOG(ret == EOK, "Comom Copy buffer failed");
+            pPrereadBuffer_ += size_1;
+            bufferSize += size_1;
+            pBuffer += size_1;
+            UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
+        }
+        PrereadFile();
+        auto ret = memcpy_s(prereadBuffer_.get(), MPEG2_FRAME_HEAD_LEN, pBuffer - MPEG2_FRAME_HEAD_LEN,
+            MPEG2_FRAME_HEAD_LEN);
+        CHECK_AND_RETURN_LOG(ret == EOK, "Buffer End Copy buffer failed");
+        bufferSize -= MPEG2_FRAME_HEAD_LEN;
+        pBuffer -= MPEG2_FRAME_HEAD_LEN;
+        pPrereadBuffer_ = 0;
+    } while (pPrereadBuffer_ != prereadBufferSize_);
+    mpegUnit_->resize(bufferSize);
+}
+
+const uint8_t *MpegReader::Mpeg2Detector::GetMpegTypeAddr(const uint8_t *bufferAddr)
+{
+    auto pos_1 = std::search(bufferAddr, bufferAddr + MPEG2_SEQUENCE_HEAD_LEN + 1,
+        std::begin(MPEG2_SEQUENCE_HEAD), std::end(MPEG2_SEQUENCE_HEAD));
+    auto size = std::distance(bufferAddr, pos_1);
+    if (size == 0) {
+        return nullptr;
+    }
+    auto pos = std::search(bufferAddr, bufferAddr + MPEG2_FRAME_HEAD_LEN + 1,
+        std::begin(MPEG2_FRAME_HEAD), std::end(MPEG2_FRAME_HEAD));
+    return pos + MPEG2_FRAME_HEAD_LEN + MPEG2_TYPE_OFFEST;
+}
+
+bool MpegReader::Mpeg2Detector::IsI(uint8_t mpegType)
+{
+    return (mpegType == M2V_I) ? true : false;
+}
+uint8_t MpegReader::Mpeg2Detector::GetMpegType(const uint8_t *bufferAddr)
+{
+    if (bufferAddr == nullptr) {
+        return 1;
+    }
+    uint8_t flagi =  ((*bufferAddr) & 0x38) == 0x08;
+    uint8_t flagp =  ((*bufferAddr) & 0x38) == 0x08;
+    uint8_t flagb =  ((*bufferAddr) & 0x38) == 0x18;
+    if (flagi) {
+        return 1;
+    }
+    if (flagp) {
+        return 0;
+    }
+    if (flagb) {
+        return 0;
+    }
+    return 0;
+}
+
+void MpegReader::Mpeg4MetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nallptr");
+    inputFile_->read(reinterpret_cast<char *>(prereadBuffer_.get() + MPEG4_FRAME_HEAD_LEN),
+        PREREAD_BUFFER_SIZE);
+    prereadBufferSize_ = inputFile_->gcount() + MPEG4_FRAME_HEAD_LEN;
+    pPrereadBuffer_ = MPEG2_FRAME_HEAD_LEN;
+}
+
+int32_t MpegReader::Mpeg4MetaUnitReader::ReadMpegUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Got a invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mpegUnit_, AV_ERR_INVALID_VAL, "Mpeg unit buffer is nullptr");
+    bufferSize = mpegUnit_->size();
+    memcpy_s(bufferAddr, bufferSize, mpegUnit_->data(), bufferSize);
+
+    if (!IsEOF()) {
+        isEosFrame = false;
+        PrereadMpeg4Unit();
+    } else {
+        isEosFrame = true;
+        mpegUnit_->resize(0);
+    }
+    return AV_ERR_OK;
+}
+
+MpegReader::Mpeg4MetaUnitReader::Mpeg4MetaUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+    prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE + MPEG4_FRAME_HEAD_LEN);
+    PrereadFile();
+
+    mpegUnit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    PrereadMpeg4Unit();
+}
+
+bool MpegReader::Mpeg4MetaUnitReader::IsEOS()
+{
+    return IsEOF() && mpegUnit_->empty();
+}
+
+bool MpegReader::Mpeg4MetaUnitReader::IsEOF()
+{
+    return (pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->peek() == EOF);
+}
+
+void MpegReader::Mpeg4MetaUnitReader::PrereadMpeg4Unit()
+{
+    CHECK_AND_RETURN_LOG(prereadBufferSize_ > 0, "Empty file, nothing to read");
+    CHECK_AND_RETURN_LOG(mpegUnit_, "Mpeg4 unit buffer is nullptr");
+    auto pBuffer = mpegUnit_->data();
+    uint32_t bufferSize = 0;
+    mpegUnit_->resize(MAX_NALU_SIZE);
+    do {
+        auto pos_1 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + MPEG4_FRAME_HEAD_LEN,
+            prereadBuffer_.get() + prereadBufferSize_, std::begin(MPEG4_FRAME_HEAD), std::end(MPEG4_FRAME_HEAD));
+        uint32_t size_1 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_1);
+        auto pos_2 = std::search(prereadBuffer_.get() + pPrereadBuffer_, prereadBuffer_.get() +
+            pPrereadBuffer_ + size_1, std::begin(MPEG4_SEQUENCE_HEAD), std::end(MPEG4_SEQUENCE_HEAD));
+        uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_2);
+        if (size == 0) {
+            auto pos_3 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + size_1 + MPEG4_FRAME_HEAD_LEN,
+                prereadBuffer_.get() + prereadBufferSize_, std::begin(MPEG4_FRAME_HEAD), std::end(MPEG4_FRAME_HEAD));
+            uint32_t size_2 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_3);
+            auto ret = memcpy_s(pBuffer, size_2, prereadBuffer_.get() + pPrereadBuffer_, size_2);
+            CHECK_AND_RETURN_LOG(ret == EOK, "First Copy buffer failed");
+            pPrereadBuffer_ += size_2;
+            bufferSize += size_2;
+            pBuffer += size_2;
+            UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
+        } else if (size_1 > size) {
+            auto ret = memcpy_s(pBuffer, size, prereadBuffer_.get() + pPrereadBuffer_, size);
+            CHECK_AND_RETURN_LOG(ret == EOK, "Last Copy buffer failed");
+            pPrereadBuffer_ += size;
+            bufferSize += size;
+            pBuffer += size;
+            UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
+        } else {
+            auto ret = memcpy_s(pBuffer, size_1, prereadBuffer_.get() + pPrereadBuffer_, size_1);
+            CHECK_AND_RETURN_LOG(ret == EOK, "Copy buffer failed");
+            pPrereadBuffer_ += size_1;
+            bufferSize += size_1;
+            pBuffer += size_1;
+            UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
+        }
+        PrereadFile();
+        auto ret = memcpy_s(prereadBuffer_.get(), MPEG4_FRAME_HEAD_LEN, pBuffer - MPEG4_FRAME_HEAD_LEN,
+            MPEG4_FRAME_HEAD_LEN);
+        CHECK_AND_RETURN_LOG(ret == EOK, "Copy buffer failed");
+        bufferSize -= MPEG2_FRAME_HEAD_LEN;
+        pBuffer -= MPEG2_FRAME_HEAD_LEN;
+        pPrereadBuffer_ = 0;
+    } while (pPrereadBuffer_ != prereadBufferSize_);
+    mpegUnit_->resize(bufferSize);
+}
+
+const uint8_t *MpegReader::Mpeg4Detector::GetMpegTypeAddr(const uint8_t *bufferAddr)
+{
+    auto pos_1 = std::search(bufferAddr, bufferAddr + MPEG4_SEQUENCE_HEAD_LEN + 1,
+        std::begin(MPEG4_SEQUENCE_HEAD), std::end(MPEG4_SEQUENCE_HEAD));
+    auto size = std::distance(bufferAddr, pos_1);
+    if (size == 0) {
+        return nullptr;
+    }
+    auto pos = std::search(bufferAddr, bufferAddr + MPEG4_FRAME_HEAD_LEN + 1,
+        std::begin(MPEG4_FRAME_HEAD), std::end(MPEG4_FRAME_HEAD));
+    return pos + MPEG4_FRAME_HEAD_LEN;
+}
+
+bool MpegReader::Mpeg4Detector::IsI(uint8_t mpegType)
+{
+    return (mpegType == MPEG4_I) ? true : false;
+}
+
+uint8_t MpegReader::Mpeg4Detector::GetMpegType(const uint8_t *bufferAddr)
+{
+    if (bufferAddr == nullptr) {
+        return 1;
+    }
+    uint8_t flagi =  ((*bufferAddr) & 0xc0) == 0x00;
+    uint8_t flagp =  ((*bufferAddr) & 0xc0) == 0x40;
+    uint8_t flagb =  ((*bufferAddr) & 0xc0) == 0x80;
+    uint8_t flags =  ((*bufferAddr) & 0xc0) == 0xC0;
+    if (flagi) {
+        return 1;
+    }
+    if (flagp) {
+        return 0;
+    }
+    if (flagb) {
+        return 0;
+    }
+    if (flags) {
+        return 0;
+    }
+    return 0;
+}
+
 int32_t AvccReader::Init(const std::shared_ptr<AvccReaderInfo> &info)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath_.data(),
+    std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.data(),
                                                                                std::ios::binary | std::ios::in);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile != nullptr && inputFile->is_open(),
                                       AV_ERR_INVALID_VAL, "Open input file failed");
@@ -97,7 +476,7 @@ int32_t AvccReader::Init(const std::shared_ptr<AvccReaderInfo> &info)
     nalUnitReader_ = std::static_pointer_cast<NalUnitReader>(std::make_shared<AvccNalUnitReader>(inputFile));
     UNITTEST_CHECK_AND_RETURN_RET_LOG(nalUnitReader_, AV_ERR_INVALID_VAL, "Nal unit reader create failed");
 
-    nalDetector_ = info->isH264Stream_ ?
+    nalDetector_ = info->isH264Stream ?
         std::static_pointer_cast<NalDetector>(std::make_shared<AVCNalDetector>()) :
         std::static_pointer_cast<NalDetector>(std::make_shared<HEVCNalDetector>());
     UNITTEST_CHECK_AND_RETURN_RET_LOG(nalDetector_, AV_ERR_INVALID_VAL, "Nal detector create failed");

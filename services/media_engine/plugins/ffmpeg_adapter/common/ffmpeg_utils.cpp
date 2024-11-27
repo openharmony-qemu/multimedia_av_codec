@@ -339,13 +339,32 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
         profileVal = it1->second;
     }
     int32_t sampleRateIndex = 0x10;
+    int32_t baseIndex = 0xF;
     auto it2 = sampleRates.find(sampleRate);
     if (it2 != sampleRates.end()) {
         sampleRateIndex = it2->second;
     }
-    std::vector<uint8_t> codecConfig = {0, 0, 0x56, 0xE5, 0};
-    codecConfig[0] = ((profileVal + 1) << 0x03) | ((sampleRateIndex & 0x0F) >> 0x01);
-    codecConfig[1] = ((sampleRateIndex & 0x01) << 0x07) | ((channels & 0x0F) << 0x03);
+    it2 = sampleRates.find(sampleRate / 2); // 2: HE-AAC require divide base sample rate
+    if (it2 != sampleRates.end()) {
+        baseIndex = it2->second;
+    }
+    std::vector<uint8_t> codecConfig;
+    if (profile == AAC_PROFILE_HE || profile == AAC_PROFILE_HE_V2) {
+        // HE-AAC v2 only support stereo and only one channel exist
+        int32_t realCh = (profile == AAC_PROFILE_HE_V2) ? 1 : channels;
+        codecConfig = {0, 0, 0, 0, 0};
+        // 5 bit AOT(0x03:left 3 bits for sample rate) + 4 bit sample rate idx(0x01: 4 - 0x03)
+        codecConfig[0] = ((profileVal + 1) << 0x03) | ((baseIndex & 0x0F) >> 0x01);
+        // 0x07: left 7bits for other, 4 bit channel cfg,0x03:left for other
+        codecConfig[1] = ((baseIndex & 0x01) << 0x07) | ((realCh & 0x0F) << 0x03) | ((sampleRateIndex & 0x0F) >> 1) ;
+        // 4 bit ext sample rate idx(0x07: left 7 bits for other) + 4 bit aot(2: LC-AAC, 0x02: left for other)
+        codecConfig[2] = ((sampleRateIndex & 0x01) << 0x07) | (2 << 0x02);
+    } else {
+        codecConfig = {0, 0, 0x56, 0xE5, 0};
+        codecConfig[0] = ((profileVal + 1) << 0x03) | ((sampleRateIndex & 0x0F) >> 0x01);
+        codecConfig[1] = ((sampleRateIndex & 0x01) << 0x07) | ((channels & 0x0F) << 0x03);
+    }
+
     return codecConfig;
 }
 
@@ -353,7 +372,7 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
 {
     (void)avcl;
     char buf[500] = {0}; // 500
-    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
+    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, vl);
     if (ret < 0) {
         return;
     }

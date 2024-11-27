@@ -36,6 +36,7 @@ public:                                                                         
     }
 namespace OHOS {
 class SystemAbility;
+class SystemAbilityOnDemandReason;
 class ISystemAbilityManagerMock;
 class SystemAbilityMock {
 public:
@@ -50,6 +51,11 @@ public:
 };
 
 // SystemAbility: foundation/systemabilitymgr/safwk/interfaces/innerkits/safwk/system_ability.h
+enum class SystemAbilityState {
+    NOT_LOADED = 0,
+    ACTIVE,
+    IDLE,
+};
 class SystemAbility {
 public:
     static void RegisterMock(std::shared_ptr<SystemAbilityMock> &mock);
@@ -61,9 +67,12 @@ protected:
     virtual bool Publish(SystemAbility *systemAbility);
     virtual void OnDump();
     virtual void OnStart();
+    virtual int32_t OnIdle(const SystemAbilityOnDemandReason& idleReason);
     virtual void OnStop();
     virtual void OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId);
     bool AddSystemAbilityListener(int32_t systemAbilityId);
+    virtual SystemAbilityState GetAbilityState();
+    virtual bool CancelIdle();
 };
 } // namespace OHOS
 #endif // SYSTEM_ABILITY_MOCK_H

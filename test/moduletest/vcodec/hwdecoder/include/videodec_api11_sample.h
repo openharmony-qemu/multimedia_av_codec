@@ -93,7 +93,8 @@ public:
     int32_t sliceHeight_ = 0;
     int32_t picWidth_ = 0;
     int32_t picHeight_ = 0;
-
+    bool enableVRR = false;
+    
     int32_t Start();
     int32_t Stop();
     int32_t Flush();

@@ -182,6 +182,13 @@ typedef struct OH_AVDataSource {
 } OH_AVDataSource;
 
 /**
+ * @brief Enumerates the MIME types of video codecs
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG2;
+
+/**
  * @brief Enumerates the MIME types of audio and video codecs
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -655,6 +662,24 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE;
  * @since 14
  */
 extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_ENABLE_VRR;
+/**
+ * @brief Key for describing applies only when configuring a video encoder in surface mode, value type is int32_t.
+ * If no new frame became available since the last frame submitter to the encoder,
+ * it will sumbit the previous frame repeatly in microseconds. It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER;
+/**
+ * @brief Key for describing the frame previously submitted to the encoder will be repeated (once) maximum count
+ * if no new frame became available since, value type is int32_t. This key takes effect only when
+ * {@link VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER} is vaild. It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT;
 
 /**
  * @brief Media type.
@@ -681,6 +706,8 @@ typedef enum OH_MediaType {
  */
 typedef enum OH_AACProfile {
     AAC_PROFILE_LC = 0,
+    AAC_PROFILE_HE = 3,
+    AAC_PROFILE_HE_V2 = 4,
 } OH_AACProfile;
 
 /**
@@ -696,6 +723,45 @@ typedef enum OH_AVCProfile {
 } OH_AVCProfile;
 
 /**
+ * @brief MPEG2 Profile
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_MPEG2Profile {
+    MPEG2_PROFILE_SIMPLE  = 0,
+    MPEG2_PROFILE_MAIN    = 1,
+    MPEG2_PROFILE_SNR     = 2,
+    MPEG2_PROFILE_SPATIAL = 3,
+    MPEG2_PROFILE_HIGH    = 4,
+    MPEG2_PROFILE_422     = 5,
+} OH_MPEG2Profile;
+
+/**
+ * @brief MPEG4 Profile
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_MPEG4Profile {
+    MPEG4_PROFILE_SIMPLE             = 0,
+    MPEG4_PROFILE_SIMPLE_SCALABLE    = 1,
+    MPEG4_PROFILE_CORE               = 2,
+    MPEG4_PROFILE_MAIN               = 3,
+    MPEG4_PROFILE_NBIT               = 4,
+    MPEG4_PROFILE_HYBRID             = 5,
+    MPEG4_PROFILE_BASIC_ANIMATED_TEXTURE = 6,
+    MPEG4_PROFILE_SCALABLE_TEXTURE   = 7,
+    MPEG4_PROFILE_SIMPLE_FA          = 8,
+    MPEG4_PROFILE_ADVANCED_REAL_TIME_SIMPLE  = 9,
+    MPEG4_PROFILE_CORE_SCALABLE      = 10,
+    MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY = 11,
+    MPEG4_PROFILE_ADVANCED_CORE      = 12,
+    MPEG4_PROFILE_ADVANCED_SCALABLE_TEXTURE  = 13,
+    MPEG4_PROFILE_ADVANCED_SIMPLE    = 17,
+} OH_MPEG4Profile;
+
+/**
  * @brief HEVC Profile
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -707,6 +773,44 @@ typedef enum OH_HEVCProfile {
     HEVC_PROFILE_MAIN_10_HDR10 = 3,
     HEVC_PROFILE_MAIN_10_HDR10_PLUS = 4,
 } OH_HEVCProfile;
+
+/**
+ * @brief VVC Profile: A specified subset of the syntax of VVC.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_VVCProfile {
+    /** Main 10 profile */
+    VVC_PROFILE_MAIN_10 = 1,
+    /** Main 12 profile */
+    VVC_PROFILE_MAIN_12 = 2,
+    /** Main 12 Intra profile */
+    VVC_PROFILE_MAIN_12_INTRA = 10,
+    /** Multilayer Main 10 profile */
+    VVC_PROFILE_MULTI_MAIN_10 = 17,
+    /** Main 10 4:4:4 profile */
+    VVC_PROFILE_MAIN_10_444 = 33,
+    /** Main 12 4:4:4 profile */
+    VVC_PROFILE_MAIN_12_444 = 34,
+    /** Main 16 4:4:4 profile */
+    VVC_PROFILE_MAIN_16_444 = 36,
+    /** Main 12 4:4:4 Intra profile */
+    VVC_PROFILE_MAIN_12_444_INTRA = 42,
+    /** Main 16 4:4:4 Intra profile */
+    VVC_PROFILE_MAIN_16_444_INTRA = 44,
+    /** Multilayer Main 10 4:4:4 profile */
+    VVC_PROFILE_MULTI_MAIN_10_444 = 49,
+    /** Main 10 Still Picture profile */
+    VVC_PROFILE_MAIN_10_STILL = 65,
+    /** Main 12 Still Picture profile */
+    VVC_PROFILE_MAIN_12_STILL = 66,
+    /** Main 10 4:4:4 Still Picture profile */
+    VVC_PROFILE_MAIN_10_444_STILL = 97,
+    /** Main 12 4:4:4 Still Picture profile */
+    VVC_PROFILE_MAIN_12_444_STILL = 98,
+    /** Main 16 4:4:4 Still Picture profile */
+    VVC_PROFILE_MAIN_16_444_STILL = 100,
+} OH_VVCProfile;
 
 /**
  * @brief Enumerates the muxer output file format
@@ -844,6 +948,38 @@ typedef enum OH_MatrixCoefficient {
 } OH_MatrixCoefficient;
 
 /**
+ * @brief MPEG2 Level.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_MPEG2Level {
+    MPEG2_LEVEL_LL  = 0,
+    MPEG2_LEVEL_ML  = 1,
+    MPEG2_LEVEL_H14 = 2,
+    MPEG2_LEVEL_HL  = 3,
+}OH_MPEG2Level;
+
+/**
+ * @brief MPEG4 Level.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_MPEG4Level {
+    MPEG4_LEVEL_0  = 0,
+    MPEG4_LEVEL_0B = 1,
+    MPEG4_LEVEL_1  = 2,
+    MPEG4_LEVEL_2  = 3,
+    MPEG4_LEVEL_3  = 4,
+    MPEG4_LEVEL_3B = 5,
+    MPEG4_LEVEL_4  = 6,
+    MPEG4_LEVEL_4A = 7,
+    MPEG4_LEVEL_5  = 8,
+    MPEG4_LEVEL_6  = 9,
+}OH_MPEG4Level;
+
+/**
  * @brief AVC Level.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -893,6 +1029,46 @@ typedef enum OH_HEVCLevel {
     HEVC_LEVEL_61 = 11,
     HEVC_LEVEL_62 = 12,
 } OH_HEVCLevel;
+
+/**
+ * @brief VVC Level: A defined set of constraints on the values that may be taken by the syntax elements and variables
+ * of VVC, or the value of a transform coefficient prior to scaling.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_VVCLevel {
+    /** VVC level 1.0 */
+    VVC_LEVEL_1 = 16,
+    /** VVC level 2.0 */
+    VVC_LEVEL_2 = 32,
+    /** VVC level 2.1 */
+    VVC_LEVEL_21 = 35,
+    /** VVC level 3.0 */
+    VVC_LEVEL_3 = 48,
+    /** VVC level 3.1 */
+    VVC_LEVEL_31 = 51,
+    /** VVC level 4.0 */
+    VVC_LEVEL_4 = 64,
+    /** VVC level 4.1 */
+    VVC_LEVEL_41 = 67,
+    /** VVC level 5.0 */
+    VVC_LEVEL_5 = 80,
+    /** VVC level 5.1 */
+    VVC_LEVEL_51 = 83,
+    /** VVC level 5.2 */
+    VVC_LEVEL_52 = 86,
+    /** VVC level 6.0 */
+    VVC_LEVEL_6 = 96,
+    /** VVC level 6.1 */
+    VVC_LEVEL_61 = 99,
+    /** VVC level 6.2 */
+    VVC_LEVEL_62 = 102,
+    /** VVC level 6.3 */
+    VVC_LEVEL_63 = 105,
+    /** VVC level 15.5 */
+    VVC_LEVEL_155 = 255,
+} OH_VVCLevel;
 
 /**
  * @brief The reference mode in temporal group of picture.

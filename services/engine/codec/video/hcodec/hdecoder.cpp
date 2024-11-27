@@ -35,6 +35,15 @@ using namespace CodecHDI;
 HDecoder::~HDecoder()
 {
     MsgHandleLoop::Stop();
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+    if (VrrDestroyFunc_ != nullptr) {
+        VrrDestroyFunc_(vrrHandle_);
+    }
+    if (vpeHandle_ != nullptr) {
+        dlclose(vpeHandle_);
+        vpeHandle_ = nullptr;
+    }
+#endif
 }
 
 int32_t HDecoder::OnConfigure(const Format &format)
@@ -64,9 +73,10 @@ int32_t HDecoder::OnConfigure(const Format &format)
     SaveScaleMode(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
-#ifdef USE_VIDEO_PROCESSING_ENGINE
-    (void)SetVrrEnable(format);
-#endif
+    ret = SetVrrEnable(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     return SetupPort(format);
 }
 
@@ -317,6 +327,7 @@ int32_t HDecoder::OnSetParameters(const Format &format)
         }
         codecRate_ = frameRate.value();
     }
+    (void)SetVrrEnable(format);
     return AVCS_ERR_OK;
 }
 
@@ -395,12 +406,18 @@ int32_t HDecoder::SetScaleMode()
     return AVCS_ERR_OK;
 }
 
-#ifdef USE_VIDEO_PROCESSING_ENGINE
 int32_t HDecoder::SetVrrEnable(const Format &format)
 {
     int32_t vrrEnable = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_ENABLE_VRR, vrrEnable) || vrrEnable != 1) {
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+        isVrrEnable_ = false;
+#endif
         HLOGI("VRR disabled");
+        return AVCS_ERR_OK;
+    }
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+    if (isVrrEnable_) {
         return AVCS_ERR_OK;
     }
     optional<double> frameRate = GetFrameRateFromUser(format);
@@ -416,18 +433,56 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         HLOGE("VRR SetIsMvUploadParam SetParameter failed");
         return AVCS_ERR_UNSUPPORT;
     }
-    vrrPredictor_ = OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction::Create();
-    if (vrrPredictor_ == nullptr) {
-        HLOGE("VRR VideoRefreshRatePrediction create failed");
-        return AVCS_ERR_UNSUPPORT;
-    }
-    int32_t ret = vrrPredictor_->CheckLtpoSupport();
+    int32_t ret = InitVrr();
     if (ret != AVCS_ERR_OK) {
-        HLOGE("VRR SetParameter failed");
-        return AVCS_ERR_UNKNOWN;
+        HLOGE("VRR Init failed");
+        return ret;
     }
     isVrrEnable_ = true;
     HLOGI("VRR enabled");
+    return AVCS_ERR_OK;
+#else
+    HLOGE("VRR unsupport");
+    return AVCS_ERR_UNSUPPORT;
+#endif
+}
+
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+int32_t HDecoder::InitVrr()
+{
+    if (vpeHandle_ != nullptr) {
+        return AVCS_ERR_OK;
+    }
+    if (vpeHandle_ == nullptr) {
+        vpeHandle_ = dlopen("libvideoprocessingengine.z.so", RTLD_NOW);
+        if (vpeHandle_ == nullptr) {
+            HLOGE("dlopen libvideoprocessingengine.z.so failed, dlerror: %{public}s", dlerror());
+            return AVCS_ERR_UNSUPPORT;
+        }
+        HLOGI("dlopen libvideoprocessingengine.z.so success");
+    }
+    VrrCreateFunc_ = reinterpret_cast<VrrCreate>(dlsym(vpeHandle_, "VideoRefreshRatePredictionCreate"));
+    VrrCheckSupportFunc_ = reinterpret_cast<VrrCheckSupport>(dlsym(vpeHandle_,
+        "VideoRefreshRatePredictionCheckSupport"));
+    VrrProcessFunc_ = reinterpret_cast<VrrProcess>(dlsym(vpeHandle_, "VideoRefreshRatePredictionProcess"));
+    VrrDestroyFunc_ = reinterpret_cast<VrrDestroy>(dlsym(vpeHandle_, "VideoRefreshRatePredictionDestroy"));
+    if (VrrCreateFunc_ == nullptr || VrrCheckSupportFunc_ == nullptr || VrrProcessFunc_ == nullptr ||
+        VrrDestroyFunc_ == nullptr) {
+        return AVCS_ERR_UNSUPPORT;
+    }
+    vrrHandle_ = VrrCreateFunc_();
+    int32_t ret = VrrCheckSupportFunc_(vrrHandle_, calledByAvcodec_ ? avcodecCaller_.processName.c_str() :
+        playerCaller_.processName.c_str());
+    if (ret != AVCS_ERR_OK) {
+        HLOGE("VRR check ltpo support failed");
+        VrrDestroyFunc_(vrrHandle_);
+        dlclose(vpeHandle_);
+        vpeHandle_ = nullptr;
+        if (ret == Media::VideoProcessingEngine::VPE_ALGO_ERR_INVALID_OPERATION) (
+            return AVCS_ERR_INVALID_OPERATION;
+        )
+        return AVCS_ERR_UNSUPPORT;
+    }
     return AVCS_ERR_OK;
 }
 #endif
@@ -445,6 +500,9 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
             }
         }
     }
+    if (!isDynamic_) {
+        return AVCS_ERR_OK;
+    }
     auto inCnt = std::count_if(inputBufferPool_.begin(), inputBufferPool_.end(), [](const BufferInfo& info) {
         return info.owner == BufferOwner::OWNED_BY_OMX;
     });
@@ -453,7 +511,16 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
         DynamicModeSubmitBuffer();
         inCnt--;
     }
+    DynamicModeSubmitIfEos();
     return AVCS_ERR_OK;
+}
+
+void HDecoder::DynamicModeSubmitIfEos()
+{
+    auto nullSlot = FindNullSlotIfDynamicMode();
+    if (nullSlot != outputBufferPool_.end() && inputPortEos_ && !outputPortEos_) {
+        SendAsyncMsg(MsgWhat::SUBMIT_DYNAMIC_IF_EOS, nullptr);
+    }
 }
 
 bool HDecoder::UseHandleOnOutputPort(bool isDynamic)
@@ -1131,8 +1198,8 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
 int32_t HDecoder::VrrPrediction(BufferInfo &info)
 {
     SCOPED_TRACE();
-    if (vrrPredictor_ == nullptr) {
-        HLOGE("vrrPredictor_ is nullptr");
+    if (VrrProcessFunc_ == nullptr) {
+        HLOGE("VrrProcessFunc_ is nullptr");
         return AVCS_ERR_INVALID_OPERATION;
     }
     int vrrMvType = Media::VideoProcessingEngine::MOTIONVECTOR_TYPE_NONE;
@@ -1144,7 +1211,8 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
         HLOGE("VRR only support for HEVC or AVC");
         return AVCS_ERR_UNSUPPORT;
     }
-    vrrPredictor_->Process(info.surfaceBuffer, static_cast<int32_t>(codecRate_), vrrMvType);
+    VrrProcessFunc_(vrrHandle_, info.surfaceBuffer->SurfaceBufferToNativeBuffer(),
+        static_cast<int32_t>(codecRate_), vrrMvType);
     return AVCS_ERR_OK;
 }
 #endif

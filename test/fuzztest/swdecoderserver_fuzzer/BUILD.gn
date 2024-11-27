@@ -14,6 +14,7 @@
 #####################hydra-fuzz###################
 import("//build/config/features.gni")
 import("//build/test.gni")
+import("//foundation/multimedia/av_codec/config.gni")
 module_output_path = "av_codec/av_codec"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
@@ -49,6 +50,11 @@ ohos_fuzztest("SwdecoderServerFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
     "$MEDIA_ROOT_DIR/services/engine/codec/video/fcodec:fcodec",
   ]
+  defines = []
+  defines += av_codec_defines
+  if (build_variant != "user") {
+    defines += [ "BUILD_ENG_VERSION" ]
+  }
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }

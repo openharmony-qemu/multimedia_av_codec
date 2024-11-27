@@ -305,16 +305,11 @@ void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
 
 Status DemuxerFilter::PrepareBeforeStart()
 {
-    Status ret = Status::OK;
     if (isLoopStarted.load()) {
         MEDIA_LOG_I_SHORT("Loop is started. Not need start again.");
-        return ret;
+        return Status::OK;
     }
-    ret = Filter::Start();
-    FALSE_RETURN_V(ret == Status::OK, ret);
-    ret = Filter::WaitAllState(FilterState::RUNNING);
-    MEDIA_LOG_I_SHORT("PrepareBeforeStart done ret = %{public}d", ret);
-    return ret;
+    return Filter::Start();
 }
 
 Status DemuxerFilter::DoStart()
@@ -349,6 +344,12 @@ Status DemuxerFilter::DoPauseDragging()
     return demuxer_->PauseDragging();
 }
 
+Status DemuxerFilter::DoPauseAudioAlign()
+{
+    MEDIA_LOG_I("DoPauseAudioAlign in");
+    return demuxer_->PauseAudioAlign();
+}
+
 Status DemuxerFilter::PauseForSeek()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::PauseForSeek");
@@ -379,6 +380,12 @@ Status DemuxerFilter::DoResumeDragging()
     return demuxer_->ResumeDragging();
 }
 
+Status DemuxerFilter::DoResumeAudioAlign()
+{
+    MEDIA_LOG_I("DoResumeAudioAlign in");
+    return demuxer_->ResumeAudioAlign();
+}
+
 Status DemuxerFilter::ResumeForSeek()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::ResumeForSeek");
@@ -387,23 +394,11 @@ Status DemuxerFilter::ResumeForSeek()
     if (it != nextFiltersMap_.end() && it->second.size() == 1) {
         auto filter = it->second.back();
         if (filter != nullptr) {
-            if (filter->IsDesignatedState(FilterState::RUNNING)) {
-                MEDIA_LOG_I_SHORT("current filter state is running");
-                return Status::OK;
-            }
             MEDIA_LOG_I_SHORT("filter resume");
             filter->Resume();
         }
     }
-    demuxer_->Resume();
-    if (it != nextFiltersMap_.end() && it->second.size() == 1) {
-        auto filter = it->second.back();
-        if (filter != nullptr) {
-            MEDIA_LOG_I_SHORT("filter WaitAllState");
-            return filter->WaitAllState(FilterState::RUNNING);
-        }
-    }
-    return Status::OK;
+    return demuxer_->Resume();
 }
 
 Status DemuxerFilter::DoFlush()
@@ -792,10 +787,22 @@ bool DemuxerFilter::IsVideoEos()
     return demuxer_->IsVideoEos();
 }
 
+bool DemuxerFilter::HasEosTrack()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->HasEosTrack();
+}
+
 void DemuxerFilter::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
     demuxer_->WaitForBufferingEnd();
+}
+
+int32_t DemuxerFilter::GetCurrentVideoTrackId()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, -1, "demuxer_ is nullptr");
+    return demuxer_->GetCurrentVideoTrackId();
 }
 } // namespace Pipeline
 } // namespace Media

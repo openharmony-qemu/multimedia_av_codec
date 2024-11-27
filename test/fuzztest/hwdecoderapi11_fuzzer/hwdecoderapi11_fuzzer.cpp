@@ -45,7 +45,12 @@ void RunNormalDecoder()
     vDecSample->defaultWidth = DEFAULT_WIDTH;
     vDecSample->defaultHeight = DEFAULT_HEIGHT;
     vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-    vDecSample->CreateVideoDecoder();
+    int32_t ret = vDecSample->CreateVideoDecoder();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return;
+    }
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();
     vDecSample->StartVideoDecoder();
@@ -57,7 +62,12 @@ void RunNormalDecoder()
     vDecSample->defaultWidth = DEFAULT_WIDTH;
     vDecSample->defaultHeight = DEFAULT_HEIGHT;
     vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-    vDecSample->CreateVideoDecoder();
+    ret = vDecSample->CreateVideoDecoder();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return;
+    }
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();
     vDecSample->StartVideoDecoder();
@@ -82,7 +92,12 @@ bool HwdecoderApi11FuzzTest(const uint8_t *data, size_t size)
         g_vDecSample->defaultWidth = DEFAULT_WIDTH;
         g_vDecSample->defaultHeight = DEFAULT_HEIGHT;
         g_vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-        g_vDecSample->CreateVideoDecoder();
+        int32_t ret = g_vDecSample->CreateVideoDecoder();
+        if (ret != 0) {
+            delete g_vDecSample;
+            g_vDecSample = nullptr;
+            return true;
+        }
         g_vDecSample->ConfigureVideoDecoder();
         g_vDecSample->SetVideoDecoderCallback();
         g_vDecSample->Start();

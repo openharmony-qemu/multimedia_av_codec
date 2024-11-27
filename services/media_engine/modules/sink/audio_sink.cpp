@@ -30,6 +30,7 @@ constexpr int64_t AUDIO_SAMPLE_8_BIT = 1;
 constexpr int64_t AUDIO_SAMPLE_16_BIT = 2;
 constexpr int64_t AUDIO_SAMPLE_24_BIT = 3;
 constexpr int64_t AUDIO_SAMPLE_32_BIT = 4;
+constexpr int64_t SEC_TO_US = 1000 * 1000;
 }
 
 namespace OHOS {
@@ -522,16 +523,20 @@ void AudioSink::UnderrunDetector::DetectAudioUnderrun(int64_t clkTime, int64_t l
         MEDIA_LOG_D("AudioSink maybe underrun, underrunTimeUs=" PUBLIC_LOG_D64, underrunTimeUs);
         auto eventReceiver = eventReceiver_.lock();
         FALSE_RETURN(eventReceiver != nullptr);
-        eventReceiver->OnEvent({"AudioSink", EventType::EVENT_AUDIO_LAG, underrunTimeUs / US_TO_MS});
+        eventReceiver->OnDfxEvent({"AudioSink", DfxEventType::DFX_INFO_PLAYER_AUDIO_LAG, underrunTimeUs / US_TO_MS});
     }
 }
 
 bool AudioSink::AudioLagDetector::CalcLag(std::shared_ptr<AVBuffer> buffer)
 {
     (void)buffer;
-    int64_t maxMediaTime = lastDrainTimeGroup_.anchorDuration + lastDrainTimeGroup_.lastAnchorPts;
-    auto currentMediaTime = latency_ + lastDrainTimeGroup_.nowClockTime;
+    int64_t maxMediaTime = lastDrainTimeGroup_.anchorDuration + lastDrainTimeGroup_.lastAnchorPts + latency_;
+    auto currentMediaTime = lastDrainTimeGroup_.nowClockTime;
     auto writeTimeMs = lastDrainTimeGroup_.writeDuration;
+
+    MEDIA_LOG_D("maxMediaTime " PUBLIC_LOG_D64 " currentMediaTime " PUBLIC_LOG_D64 " latency_ " PUBLIC_LOG_D64,
+        maxMediaTime, currentMediaTime, latency_);
+
     if (maxMediaTime < currentMediaTime) {
         MEDIA_LOG_W("renderer write cost " PUBLIC_LOG_D64, writeTimeMs);
     }
@@ -592,7 +597,6 @@ bool AudioSink::UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBu
     }
     uint64_t latency = 0;
     FALSE_LOG_MSG(plugin_->GetLatency(latency) == Status::OK, "failed to get latency");
-    underrunDetector_.DetectAudioUnderrun(nowCt, latency);
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_};
     syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_, iMediaTime, this);
     lagDetector_.SetLatency(latency + fixDelay_);
@@ -655,7 +659,7 @@ int64_t AudioSink::CalcBufferDuration(const std::shared_ptr<OHOS::Media::AVBuffe
             break;
     }
     FALSE_RETURN_V(format > 0, 0);
-    return HST_MSECOND * size / format / sampleRate_ / audioChannelCount_;
+    return SEC_TO_US * size / format / sampleRate_ / audioChannelCount_;
 }
 
 Status AudioSink::SetSpeed(float speed)

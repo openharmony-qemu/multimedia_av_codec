@@ -767,6 +767,56 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_temporal_scale_and_LT
     }
 }
 
+HWTEST_F(HEncoderPreparingUnitTest, configure_avc_enable_qp_map_ok, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
+    ASSERT_TRUE(testObj);
+    CapabilityData cap;
+    int32_t ret = GetEncoderCapabilityForMime(cap, "video/avc");
+    ASSERT_TRUE(ret == AVCS_ERR_OK);
+
+    auto qpMapCap = cap.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_QP_MAP));
+    if (qpMapCap != cap.featuresMap.end()) {
+        Media::Meta meta{};
+        int32_t err = testObj->Init(meta);
+        ASSERT_TRUE(err == AVCS_ERR_OK);
+        Format format;
+        format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 1);
+        ret = testObj->Configure(format);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+    }
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_HEVC_enable_qp_map_ok, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    CapabilityData cap;
+    int32_t ret = GetEncoderCapabilityForMime(cap, "video/hevc");
+    ASSERT_TRUE(ret == AVCS_ERR_OK);
+
+    auto qpMapCap = cap.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_QP_MAP));
+    if (qpMapCap != cap.featuresMap.end()) {
+        Media::Meta meta{};
+        int32_t err = testObj->Init(meta);
+        ASSERT_TRUE(err == AVCS_ERR_OK);
+        Format format;
+        format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, 1);
+        ret = testObj->Configure(format);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+    }
+}
+
 /* ============== GET_OUTPUT_FORMAT ============== */
 HWTEST_F(HEncoderPreparingUnitTest, get_output_format_after_configure, TestSize.Level1)
 {

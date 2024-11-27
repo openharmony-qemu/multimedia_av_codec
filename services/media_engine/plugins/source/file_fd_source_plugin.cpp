@@ -245,7 +245,7 @@ Status FileFdSourcePlugin::SeekTo(uint64_t offset)
     FALSE_RETURN_V_MSG_E(fd_ != -1 && seekable_ == Seekable::SEEKABLE,
         Status::ERROR_WRONG_STATE, "no valid fd or no seekable.");
 
-    MEDIA_LOG_I("SeekTo offset: " PUBLIC_LOG_U64, offset);
+    MEDIA_LOG_D("SeekTo offset: " PUBLIC_LOG_U64, offset);
     if (isCloudFile_) {
         return SeekToOnlineFile(offset);
     } else {

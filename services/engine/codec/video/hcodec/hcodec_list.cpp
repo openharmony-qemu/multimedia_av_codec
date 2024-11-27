@@ -48,7 +48,7 @@ public:
 static bool DecideMode(bool supportPassthrough, bool isSecure)
 {
 #ifdef BUILD_ENG_VERSION
-    string mode = OHOS::system::GetParameter("hcodec.usePassthrough", "");
+    string mode = OHOS::system::GetParameter("persist.hcodec.usePassthrough", "");
     if (mode == "1") {
         LOGI("force passthrough");
         return true;
@@ -175,7 +175,7 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     LOGI("blockPerFrame: [%d, %d], blockPerSecond: [%d, %d]",
         userCap.blockPerFrame.minVal, userCap.blockPerFrame.maxVal,
         userCap.blockPerSecond.minVal, userCap.blockPerSecond.maxVal);
-    LOGI("isSupportPassthrough: %d", hdiVideoCap.isSupportPassthrough);
+    LOGI("isSupportPassthrough: %d, isSupportQPMap", hdiVideoCap.isSupportPassthrough, hdiVideoCap.isSupportQPMap);
     LOGI("isSupportWaterMark: %d, isSupportLowLatency: %d, isSupportTSVC: %d, isSupportLTR %d and maxLTRFrameNum %d",
         hdiVideoCap.isSupportWaterMark, hdiVideoCap.isSupportLowLatency, hdiVideoCap.isSupportTSVC,
         hdiVideoCap.isSupportLTR, hdiVideoCap.maxLTRFrameNum);
@@ -250,6 +250,21 @@ void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, Capabi
             LOGI("role %d support (inner) profile %d and level up to %d",
                 hdiCap.role, innerProfile.value(), innerLevel.value());
         }
+
+        if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_VVC) {
+            optional<int32_t> innerProfileVvc;
+            optional<int32_t> innerLevelVvc;
+            innerProfileVvc = TypeConverter::OmxVvcProfileToInnerProfile(static_cast<CodecVvcProfile>(profile));
+            innerLevelVvc = TypeConverter::OmxVvcLevelToInnerLevel(static_cast<CodecVvcLevel>(maxLevel));
+            if (innerProfileVvc.has_value() && innerLevelVvc.has_value() && innerLevelVvc.value() >= 0) {
+                userCap.profiles.emplace_back(innerProfileVvc.value());
+                optional<vector<int32_t>> allLevel =
+                    TypeConverter::InnerVvcMaxLevelToAllLevels(static_cast<VVCLevel>(innerLevelVvc.value()));
+                userCap.profileLevelsMap[innerProfileVvc.value()] = allLevel.value();
+                LOGI("role %d support (inner) profile %d and level up to %d",
+                    hdiCap.role, innerProfileVvc.value(), innerLevelVvc.value());
+            }
+        }
     }
 }
 
@@ -272,6 +287,9 @@ void HCodecList::GetSupportedFeatureParam(const CodecVideoPortCap& hdiVideoCap,
     }
     if (hdiVideoCap.isSupportWaterMark) {
         userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK)] = Format();
+    }
+    if (hdiVideoCap.isSupportQPMap) {
+        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_QP_MAP)] = Format();
     }
 }
 } // namespace OHOS::MediaAVCodec

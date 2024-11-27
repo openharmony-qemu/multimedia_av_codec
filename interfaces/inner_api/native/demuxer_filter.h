@@ -39,8 +39,10 @@ public:
     Status DoStop() override;
     Status DoPause() override;
     Status DoPauseDragging() override;
+    Status DoPauseAudioAlign() override;
     Status DoResume() override;
     Status DoResumeDragging() override;
+    Status DoResumeAudioAlign() override;
     Status DoFlush() override;
     Status DoPreroll() override;
     Status DoWaitPrerollDone(bool render) override;
@@ -99,12 +101,14 @@ public:
     void OnDumpInfo(int32_t fd);
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
     bool IsVideoEos();
+    bool HasEosTrack();
     Status DisableMediaTrack(Plugins::MediaType mediaType);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
     void DeregisterVideoStreamReadyCallback();
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
     void WaitForBufferingEnd();
+    int32_t GetCurrentVideoTrackId();
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

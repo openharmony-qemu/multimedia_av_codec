@@ -39,14 +39,100 @@ public:
     std::queue<std::shared_ptr<AVMemoryMock>> outMemoryQueue_;
     std::queue<std::shared_ptr<AVBufferMock>> inBufferQueue_;
     std::queue<std::shared_ptr<AVBufferMock>> outBufferQueue_;
-    int32_t errorNum_ = 0;
+    int32_t errorNum = 0;
     std::atomic<bool> isRunning_ = false;
     std::atomic<bool> isPreparing_ = true;
 };
 
+struct MpegReaderInfo {
+    std::string inPath;
+    bool isMpeg2Stream = true; // true: Mpeg2; false: Mpeg4
+};
+
+class MpegReader {
+public:
+    int32_t FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr);
+    int32_t FillBufferExt(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr);
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t mpegType, bool isEosFrame);
+    bool IsEOS();
+    int32_t Init(const std::shared_ptr<MpegReaderInfo> &info);
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+private:
+    class MpegUnitReader {
+    public:
+        explicit MpegUnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~MpegUnitReader() {};
+        uint8_t const *GetNextMpegUnitAddr();
+        virtual int32_t ReadMpegUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) = 0;
+        virtual bool IsEOS() = 0;
+        virtual void PrereadFile() = 0;
+
+    protected:
+        MpegUnitReader() {};
+        virtual bool IsEOF() = 0;
+        std::unique_ptr<std::vector<uint8_t>> mpegUnit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class Mpeg2MetaUnitReader : public MpegUnitReader {
+    public:
+        explicit Mpeg2MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        int32_t ReadMpegUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadMpeg2Unit();
+    private:
+        bool IsEOF() override;
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+    };
+
+    class Mpeg4MetaUnitReader : public MpegUnitReader {
+    public:
+        explicit Mpeg4MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        int32_t ReadMpegUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadMpeg4Unit();
+
+    private:
+        bool IsEOF() override;
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+    };
+
+    class MpegDetector {
+    public:
+        virtual ~MpegDetector() {};
+        virtual const uint8_t *GetMpegTypeAddr(const uint8_t *bufferAddr) = 0;
+        virtual uint8_t GetMpegType(const uint8_t *bufferAddr) = 0;
+        virtual bool IsI(uint8_t mpegType) = 0;
+    };
+    
+    class Mpeg2Detector : public MpegDetector {
+    public:
+        const uint8_t *GetMpegTypeAddr(const uint8_t *bufferAddr) override;
+        uint8_t GetMpegType(const uint8_t *bufferAddr) override;
+        bool IsI(uint8_t mpegType) override;
+    };
+
+    class Mpeg4Detector : public MpegDetector {
+    public:
+        const uint8_t *GetMpegTypeAddr(const uint8_t *bufferAddr) override;
+        uint8_t GetMpegType(const uint8_t *bufferAddr) override;
+        bool IsI(uint8_t mpegType) override;
+    };
+
+    std::shared_ptr<MpegUnitReader> mpegUnitReader_ = nullptr;
+    std::shared_ptr<MpegDetector> mpegDetector_ = nullptr;
+};
+
 struct AvccReaderInfo {
-    std::string inPath_;
-    bool isH264Stream_ = true; // true: H264; false: H265
+    std::string inPath;
+    bool isH264Stream = true; // true: H264; false: H265
 };
 
 class AvccReader {
