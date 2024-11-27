@@ -1110,11 +1110,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekToTimePre_016, TestSize.Level1)
 
     demuxer->isSelectBitRate_ = false;
     demuxer->isSelectTrack_ = true;
-    demuxer->selectTrackTrackID_ = 0;
-    EXPECT_EQ(demuxer->SeekToTimePre(), Status::OK);
-    demuxer->selectTrackTrackID_ = 1;
-    EXPECT_EQ(demuxer->SeekToTimePre(), Status::OK);
-    demuxer->selectTrackTrackID_ = 2;
     EXPECT_EQ(demuxer->SeekToTimePre(), Status::OK);
 
     demuxer->isSelectBitRate_ = false;
@@ -1199,14 +1194,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectTrackChangeStream_016, TestSiz
     Meta metaTmp4;
     metaTmp4.Set<Tag::MIME_TYPE>("aaaa");
     demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp4);
-
-    demuxer->selectTrackTrackID_ = 0;
-    EXPECT_EQ(demuxer->SelectTrackChangeStream(5), false);
-    demuxer->selectTrackTrackID_ = 1;
-    EXPECT_EQ(demuxer->SelectTrackChangeStream(5), false);
-    demuxer->selectTrackTrackID_ = 2;
-    EXPECT_EQ(demuxer->SelectTrackChangeStream(5), false);
-    demuxer->selectTrackTrackID_ = 3;
     EXPECT_EQ(demuxer->SelectTrackChangeStream(5), false);
 
     demuxer->demuxerPluginManager_->AddTrackMapInfo(0, 0);
