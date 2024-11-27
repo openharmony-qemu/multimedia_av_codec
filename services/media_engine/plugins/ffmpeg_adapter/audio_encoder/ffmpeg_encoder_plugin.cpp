@@ -39,8 +39,6 @@ std::vector<std::string_view> codecVec = {
     AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME,
 };
 
-void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap);
-
 void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)
 {
     switch (index) {
