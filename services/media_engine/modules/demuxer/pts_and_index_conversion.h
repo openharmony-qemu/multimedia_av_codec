@@ -96,7 +96,7 @@ private:
     uint64_t offset_ = 0;
     uint64_t fileSize_ = 0;
 
-    TrakInfo curTrakInfo_;
+    TrakInfo curTrakInfo_ {0};
     uint32_t curTrakInfoIndex_ = 0;
     std::vector<TrakInfo> trakInfoVec_;
 
