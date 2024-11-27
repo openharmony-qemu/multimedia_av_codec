@@ -22,8 +22,7 @@
 #include "native_avmemory.h"
 
 namespace OHOS {
-    struct Params
-    {
+    struct Params {
         int64_t time;
         int64_t setTrackType;
         long setDuration;
