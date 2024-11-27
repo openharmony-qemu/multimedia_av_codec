@@ -80,20 +80,20 @@ private:
 
     struct CTTSEntry {
         uint32_t sampleCount;
-        uint32_t sampleOffset;
+        int32_t sampleOffset;
     };
 
     struct TrakInfo {
         uint32_t trakId;
         TrakType trakType;
-        int32_t timeScale;
+        uint32_t timeScale;
         std::vector<STTSEntry> sttsEntries;
         std::vector<CTTSEntry> cttsEntries;
     };
 
     std::shared_ptr<Source> source_ {nullptr};
-    uint64_t mediaDataSize_;
-    int offset_ = 0;
+    uint64_t mediaDataSize_ = 0;
+    uint64_t offset_ = 0;
     uint64_t fileSize_ = 0;
 
     TrakInfo curTrakInfo_;
