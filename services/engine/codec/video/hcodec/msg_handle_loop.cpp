@@ -38,7 +38,7 @@ void MsgHandleLoop::Stop()
     {
         lock_guard<mutex> lock(m_mtx);
         m_threadNeedStop = true;
-        m_threadCond.notify_all();
+        m_threadCond.notify_one();
     }
 
     if (m_thread.joinable()) {
@@ -56,7 +56,7 @@ void MsgHandleLoop::SendAsyncMsg(MsgType type, const ParamSP &msg, uint32_t dela
         msgProcessTime++;
     }
     m_msgQueue[msgProcessTime] = MsgInfo {type, ASYNC_MSG_ID, msg};
-    m_threadCond.notify_all();
+    m_threadCond.notify_one();
 }
 
 bool MsgHandleLoop::SendSyncMsg(MsgType type, const ParamSP &msg, ParamSP &reply, uint32_t waitMs)
@@ -70,7 +70,7 @@ bool MsgHandleLoop::SendSyncMsg(MsgType type, const ParamSP &msg, ParamSP &reply
             time++;
         }
         m_msgQueue[time] = MsgInfo {type, id, msg};
-        m_threadCond.notify_all();
+        m_threadCond.notify_one();
     }
 
     unique_lock<mutex> lock(m_replyMtx);
@@ -122,7 +122,7 @@ void MsgHandleLoop::MainLoop()
                 return m_threadNeedStop || !m_msgQueue.empty();
             });
             if (m_threadNeedStop) {
-                LOGI("stopped, remain %zu msg unprocessed", m_msgQueue.size());
+                LOGD("stopped, remain %zu msg unprocessed", m_msgQueue.size());
                 break;
             }
             TimeUs processUs = m_msgQueue.begin()->first;

@@ -364,8 +364,8 @@ protected:
     TotalCntAndCost outRecord_;
     std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
 
-    // normal: every 200 frames, debug: whole life time
-    static constexpr uint64_t PRINT_PER_FRAME = 200;
+    // normal: every 400 frames, debug: whole life time
+    static constexpr uint64_t PRINT_PER_FRAME = 400;
     std::array<TotalCntAndCost, OWNER_CNT> inputHoldTimeRecord_;
     std::array<TotalCntAndCost, OWNER_CNT> outputHoldTimeRecord_;
     std::chrono::time_point<std::chrono::steady_clock> firstInTime_;

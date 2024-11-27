@@ -384,7 +384,7 @@ int32_t HDecoder::SaveScaleMode(const Format &format, bool set)
         HLOGW("user set invalid scale mode %d", scaleType);
         return AVCS_ERR_INVALID_VAL;
     }
-    HLOGI("user set ScalingType = %d", scaleType);
+    HLOGD("user set ScalingType = %d", scaleType);
     scaleMode_ = scaleMode;
     if (set) {
         return SetScaleMode();
@@ -480,9 +480,9 @@ int32_t HDecoder::InitVrr()
         VrrDestroyFunc_(vrrHandle_);
         dlclose(vpeHandle_);
         vpeHandle_ = nullptr;
-        if (ret == Media::VideoProcessingEngine::VPE_ALGO_ERR_INVALID_OPERATION) (
+        if (ret == Media::VideoProcessingEngine::VPE_ALGO_ERR_INVALID_OPERATION) {
             return AVCS_ERR_INVALID_OPERATION;
-        )
+        }
         return AVCS_ERR_UNSUPPORT;
     }
     return AVCS_ERR_OK;
@@ -589,7 +589,6 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
     if (surfaceBuffer == nullptr) {
         return;
     }
-    HLOGI(">>");
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, surfaceBuffer->GetWidth());
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, surfaceBuffer->GetHeight());
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, surfaceBuffer->GetWidth());
@@ -620,7 +619,7 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
 
 int32_t HDecoder::SubmitAllBuffersOwnedByUs()
 {
-    HLOGI(">>");
+    HLOGD(">>");
     if (isBufferCirculating_) {
         HLOGI("buffer is already circulating, no need to do again");
         return AVCS_ERR_OK;
@@ -645,9 +644,6 @@ void HDecoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
         return;
     }
     BufferInfo& info = pool[i];
-    if (portIndex == OMX_DirOutput && info.owner != BufferOwner::OWNED_BY_SURFACE) {
-        CancelBufferToSurface(info);
-    }
     FreeOmxBuffer(portIndex, info);
     ReduceOwner((portIndex == OMX_DirInput), info.owner);
     pool.erase(pool.begin() + i);
@@ -784,21 +780,6 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     return AVCS_ERR_OK;
 }
 
-void HDecoder::CancelBufferToSurface(BufferInfo& info)
-{
-    if (currSurface_.surface_ && info.surfaceBuffer) {
-        GSError err = currSurface_.surface_->CancelBuffer(info.surfaceBuffer);
-        if (err != GSERROR_OK) {
-            HLOGW("surface(%" PRIu64 "), CancelBuffer(seq=%u) failed, GSError=%d",
-                  currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), err);
-        } else {
-            HLOGI("surface(%" PRIu64 "), CancelBuffer(seq=%u) succ",
-                  currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum());
-        }
-    }
-    ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE); // change owner even if cancel failed
-}
-
 int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
 {
     uint64_t surfaceId = surface->GetUniqueId();
@@ -869,7 +850,7 @@ void HDecoder::OnGetBufferFromSurface(const ParamSP& param)
     if (item.buffer == nullptr) {
         return;
     }
-    ScopedTrace tracePoint("requested:" + std::to_string(item.buffer->GetSeqNum()));
+    HitraceMeterFmtScoped tracePoint(HITRACE_TAG_ZMEDIA, "requested: %u", item.buffer->GetSeqNum());
     freeList_.push_back(item); // push to list, retrive it later, to avoid wait fence too early
     static constexpr size_t MAX_CACHE_CNT = 2;
     if (item.fence == nullptr || !item.fence->IsValid() || freeList_.size() > MAX_CACHE_CNT) {
@@ -908,9 +889,9 @@ void HDecoder::SurfaceModeSubmitBufferFromFreeList()
 
 bool HDecoder::SurfaceModeSubmitOneItem(SurfaceBufferItem& item)
 {
-    SCOPED_TRACE_WITH_ID(item.buffer->GetSeqNum());
+    SCOPED_TRACE_FMT("seq: %u", item.buffer->GetSeqNum());
     if (item.generation != currGeneration_) {
-        HLOGI("buffer generation %d != current generation %d, ignore", item.generation, currGeneration_);
+        HLOGD("buffer generation %d != current generation %d, ignore", item.generation, currGeneration_);
         return false;
     }
     auto iter = FindBelongTo(item.buffer);
@@ -961,7 +942,6 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
         lastFlushRate_ = codecRate_;
         HLOGI("flush video rate(%d)", static_cast<int32_t>(codecRate_));
     }
-    int64_t finalPts = info.omxBuffer->pts;
     BufferFlushConfig cfg {
         .damage = {.x = 0, .y = 0, .w = info.surfaceBuffer->GetWidth(), .h = info.surfaceBuffer->GetHeight() },
         .timestamp = info.omxBuffer->pts,
@@ -972,9 +952,9 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
         info.avBuffer->meta_->Get<OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP>(
             cfg.desiredPresentTimestamp);
         info.avBuffer->meta_->Remove(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP);
-        finalPts = cfg.desiredPresentTimestamp;
     }
-    SCOPED_TRACE_WITH_ID(finalPts);
+    SCOPED_TRACE_FMT("id: %u, pts: %" PRId64 ", desiredPts: %" PRId64,
+        info.bufferId, cfg.timestamp, cfg.desiredPresentTimestamp);
     GSError ret = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, cfg);
     if (ret != GSERROR_OK) {
         HLOGW("surface(%" PRIu64 "), FlushBuffer(seq=%u) failed, GSError=%d",
@@ -987,7 +967,7 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
 
 void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 {
-    SCOPED_TRACE_WITH_ID(bufferId);
+    SCOPED_TRACE_FMT("id: %u", bufferId);
     BufferInfo *info = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (info == nullptr) {
         HLOGE("unknown buffer id %u", bufferId);
@@ -1035,7 +1015,7 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     }
     uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
-    SCOPED_TRACE_WITH_ID(bufferId);
+    SCOPED_TRACE_FMT("id: %u", bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);
     if (!idx.has_value()) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);

@@ -138,10 +138,6 @@ int32_t HEncoder::SetLTRParam(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum)) {
         return AVCS_ERR_OK;
     }
-    if (!caps_.port.video.isSupportLTR) {
-        HLOGW("platform not support LTR");
-        return AVCS_ERR_OK;
-    }
     if (ltrFrameNum <= 0 || ltrFrameNum > caps_.port.video.maxLTRFrameNum) {
         HLOGE("invalid ltrFrameNum %d", ltrFrameNum);
         return AVCS_ERR_INVALID_VAL;
@@ -226,10 +222,6 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
     int32_t enableTemporalScale = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enableTemporalScale) ||
         (enableTemporalScale == 0)) {
-        return AVCS_ERR_OK;
-    }
-    if (!caps_.port.video.isSupportTSVC) {
-        HLOGW("platform not support temporal scale");
         return AVCS_ERR_OK;
     }
     Media::Plugins::TemporalGopReferenceMode GopReferenceMode{};
@@ -1197,7 +1189,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     // buffer mode or surface callback mode
     uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
-    SCOPED_TRACE_WITH_ID(bufferId);
+    SCOPED_TRACE_FMT("id: %u", bufferId);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (bufferInfo == nullptr) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
@@ -1303,28 +1295,11 @@ void HEncoder::TraverseAvaliableBuffers()
         auto it = find_if(inputBufferPool_.begin(), inputBufferPool_.end(),
                           [](const BufferInfo &info) { return info.owner == BufferOwner::OWNED_BY_SURFACE; });
         if (it == inputBufferPool_.end()) {
-            HLOGD("buffer cnt = %zu, but no avaliable slot", avaliableBuffers_.size());
             return;
         }
         InSurfaceBufferEntry entry = avaliableBuffers_.front();
         avaliableBuffers_.pop_front();
         SubmitOneBuffer(entry, *it);
-    }
-}
-
-void HEncoder::TraverseAvaliableSlots()
-{
-    for (BufferInfo& info : inputBufferPool_) {
-        if (info.owner != BufferOwner::OWNED_BY_SURFACE) {
-            continue;
-        }
-        if (avaliableBuffers_.empty() && !GetOneBufferFromSurface()) {
-            HLOGD("slot %u is avaliable, but no buffer", info.bufferId);
-            return;
-        }
-        InSurfaceBufferEntry entry = avaliableBuffers_.front();
-        avaliableBuffers_.pop_front();
-        SubmitOneBuffer(entry, info);
     }
 }
 
@@ -1351,6 +1326,7 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         info.avBuffer->pts_ = entry.pts;
         NotifyUserToFillThisInBuffer(info);
     } else {
+        CheckPts(info.omxBuffer->pts);
         int32_t err = NotifyOmxToEmptyThisInBuffer(info);
         if (err != AVCS_ERR_OK) {
             ResetSlot(info);
@@ -1359,9 +1335,22 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
     }
 }
 
+void HEncoder::CheckPts(int64_t currentPts)
+{
+    if (!pts_.has_value()) {
+        pts_ = currentPts;
+    } else {
+        int64_t lastPts = pts_.value();
+        if (currentPts <= lastPts) {
+            HLOGW("pts not incremental: last %" PRId64 ", current %" PRId64, lastPts, currentPts);
+        }
+        pts_ = currentPts;
+    }
+}
+
 void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 {
-    SCOPED_TRACE_WITH_ID(bufferId);
+    SCOPED_TRACE_FMT("id: %u", bufferId);
     BufferInfo *info = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (info == nullptr) {
         HLOGE("unknown buffer id %u", bufferId);
@@ -1374,7 +1363,7 @@ void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
     if (inputSurface_) {
         ResetSlot(*info);
         if (mode == RESUBMIT_BUFFER && !inputPortEos_) {
-            TraverseAvaliableSlots();
+            TraverseAvaliableBuffers();
         }
     } else {
         ChangeOwner(*info, BufferOwner::OWNED_BY_US);
@@ -1416,6 +1405,7 @@ void HEncoder::OnEnterUninitializedState()
     avaliableBuffers_.clear();
     newestBuffer_.item.reset();
     encodingBuffers_.clear();
+    pts_ = std::nullopt;
 }
 
 HEncoder::BufferItem::~BufferItem()

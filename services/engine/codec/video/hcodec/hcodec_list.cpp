@@ -67,7 +67,7 @@ static bool DecideMode(bool supportPassthrough, bool isSecure)
         }
     }
 #endif
-    LOGI("supportPassthrough = %d", supportPassthrough);
+    LOGD("supportPassthrough = %d", supportPassthrough);
     return supportPassthrough;
 }
 
@@ -112,7 +112,7 @@ vector<CodecCompCapability> GetCapList()
     if (capList.empty()) {
         LOGE("GetComponentCapabilityList return empty");
     } else {
-        LOGI("GetComponentCapabilityList return %zu components", capList.size());
+        LOGD("GetComponentCapabilityList return %zu components", capList.size());
     }
     return capList;
 }

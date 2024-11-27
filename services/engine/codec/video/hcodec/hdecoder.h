@@ -96,7 +96,6 @@ private:
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
     void OnClearBufferPool(OMX_DIRTYPE portIndex) override;
-    void CancelBufferToSurface(BufferInfo &info);
     void OnEnterUninitializedState() override;
 
     // VRR
