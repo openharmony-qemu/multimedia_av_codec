@@ -327,19 +327,19 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
         {AAC_PROFILE_LD, 22},
         {AAC_PROFILE_MAIN, 0},
     };
-    const std::unordered_map<int32_t, int32_t> sampleRates = {
+    const std::unordered_map<uint32_t, uint32_t> sampleRates = {
         {96000, 0}, {88200, 1}, {64000, 2}, {48000, 3},
         {44100, 4}, {32000, 5}, {24000, 6}, {22050, 7},
         {16000, 8}, {12000, 9}, {11025, 10}, {8000,  11},
         {7350,  12},
     };
-    int32_t profileVal = FF_PROFILE_AAC_LOW;
+    uint32_t profileVal = FF_PROFILE_AAC_LOW;
     auto it1 = profiles.find(static_cast<AACProfile>(profile));
     if (it1 != profiles.end()) {
         profileVal = it1->second;
     }
-    int32_t sampleRateIndex = 0x10;
-    int32_t baseIndex = 0xF;
+    uint32_t sampleRateIndex = 0x10;
+    uint32_t baseIndex = 0xF;
     auto it2 = sampleRates.find(sampleRate);
     if (it2 != sampleRates.end()) {
         sampleRateIndex = it2->second;
@@ -351,7 +351,7 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
     std::vector<uint8_t> codecConfig;
     if (profile == AAC_PROFILE_HE || profile == AAC_PROFILE_HE_V2) {
         // HE-AAC v2 only support stereo and only one channel exist
-        int32_t realCh = (profile == AAC_PROFILE_HE_V2) ? 1 : channels;
+        uint32_t realCh = (profile == AAC_PROFILE_HE_V2) ? 1 : static_cast<uint32_t>(channels);
         codecConfig = {0, 0, 0, 0, 0};
         // 5 bit AOT(0x03:left 3 bits for sample rate) + 4 bit sample rate idx(0x01: 4 - 0x03)
         codecConfig[0] = ((profileVal + 1) << 0x03) | ((baseIndex & 0x0F) >> 0x01);
