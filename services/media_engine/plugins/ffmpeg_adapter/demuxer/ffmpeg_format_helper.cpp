@@ -284,15 +284,15 @@ bool IsPCMStream(AVCodecID codecID)
 
 int64_t GetDefaultTrackStartTime(const AVFormatContext& avFormatContext)
 {
-    int64_t dafaultTime = 0;
+    int64_t defaultTime = 0;
     for (uint32_t trackIndex = 0; trackIndex < avFormatContext.nb_streams; ++trackIndex) {
         auto avStream = avFormatContext.streams[trackIndex];
         if (avStream != nullptr && avStream->codecpar != nullptr &&
             avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && avStream->start_time != AV_NOPTS_VALUE) {
-            dafaultTime = AvTime2Us(ConvertTimeFromFFmpeg(avStream->start_time, avStream->time_base));
+            defaultTime = AvTime2Us(ConvertTimeFromFFmpeg(avStream->start_time, avStream->time_base));
         }
     }
-    return dafaultTime;
+    return defaultTime;
 }
 
 static int FfAv3aGetNbObjects(AVChannelLayout *channelLayout)

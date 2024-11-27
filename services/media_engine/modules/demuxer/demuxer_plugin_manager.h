@@ -122,6 +122,7 @@ public:
     Status StartAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StopAllPlugin();
     Status UpdateDefaultStreamID(Plugins::MediaInfo& mediaInfo, StreamType type, int32_t newStreamID);
+    Status SingleStreamSeekTo(int64_t seekTime, Plugins::SeekMode mode, int32_t streamID, int64_t& realSeekTime);
 
     std::shared_ptr<Meta> GetUserMeta();
     uint32_t GetCurrentBitRate();

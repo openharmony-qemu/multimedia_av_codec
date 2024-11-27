@@ -557,6 +557,18 @@ Status DemuxerPluginManager::localSubtitleSeekTo(int64_t seekTime)
     return plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
 }
 
+Status DemuxerPluginManager::SingleStreamSeekTo(int64_t seekTime, Plugins::SeekMode mode, int32_t streamID,
+    int64_t& realSeekTime)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerPluginManager::SingleStreamSeekTo");
+    Status ret = Status::OK;
+    if (streamID >= 0 && streamInfoMap_.find(streamID) != streamInfoMap_.end() &&
+        streamInfoMap_[streamID].plugin != nullptr) {
+        ret = streamInfoMap_[streamID].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
+    }
+    return ret;
+}
+
 Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
     if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {

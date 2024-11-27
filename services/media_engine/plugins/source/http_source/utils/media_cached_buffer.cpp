@@ -141,7 +141,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
 void CacheMediaChunkBufferImpl::UpdateAccessPos(FragmentIterator& fragmentPos, ChunkIterator& chunkPos,
     uint64_t offsetChunk)
 {
-    if (chunkPos == fragmentPos->chunks.end()) {
+    if (chunkPos != fragmentPos->chunks.begin() && chunkPos == fragmentPos->chunks.end()) {
         auto preChunkPos = std::prev(chunkPos);
         if (((*preChunkPos)->offset + (*preChunkPos)->chunkSize) == offsetChunk) {
             fragmentPos->accessPos = chunkPos;
@@ -969,10 +969,13 @@ bool CacheMediaChunkBufferImpl::ClearChunksOfFragment(uint64_t offset)
         return false;
     }
     auto& fragment = *fragmentPos;
+    if (fragment.chunks.empty()) {
+        return false;
+    }
     uint32_t chunkSize = fragment.chunks.size();
     for (uint32_t i = 0; i < chunkSize; ++i) {
         auto chunkIter = fragment.chunks.front();
-        if (chunkIter->offset + chunkIter->dataLength >= offset) {
+        if (chunkIter == nullptr || chunkIter->offset + chunkIter->dataLength >= offset) {
             break;
         }
 

@@ -303,11 +303,15 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
 void CodecServer::StartInputParamTask()
 {
     inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
-    inputParamTask_->RegisterHandler([this] {
-        uint32_t index = temporalScalability_->GetFirstBufferIndex();
-        AVCodecBufferInfo info;
-        AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-        CHECK_AND_RETURN_LOG(QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
+    std::weak_ptr<CodecServer> weakThis = weak_from_this();
+    inputParamTask_->RegisterHandler([weakThis] {
+        std::shared_ptr<CodecServer> cs = weakThis.lock();
+        if (cs) {
+            uint32_t index = cs->temporalScalability_->GetFirstBufferIndex();
+            AVCodecBufferInfo info;
+            AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
+            CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
+        }
     });
     inputParamTask_->Start();
 }
@@ -1186,7 +1190,7 @@ int32_t CodecServer::SetCallbackForPostProcessing()
 
 void CodecServer::ClearCallbackForPostProcessing()
 {
-    std::shared_lock<std::shared_mutex> lock(cbMutex_);
+    std::lock_guard<std::shared_mutex> lock(cbMutex_);
     postProcessingCallback_.onError = nullptr;
     postProcessingCallback_.onOutputBufferAvailable = nullptr;
 }
@@ -1206,6 +1210,7 @@ int32_t CodecServer::PreparePostProcessing()
 
     int32_t ret{AVCS_ERR_OK};
     if (postProcessingUserData_ == nullptr) {
+        std::lock_guard<std::shared_mutex> lock(cbMutex_);
         ret = SetCallbackForPostProcessing();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set callback for post post processing failed");
     }
