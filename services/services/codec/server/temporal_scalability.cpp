@@ -105,6 +105,7 @@ void TemporalScalability::StoreAVBuffer(uint32_t index, shared_ptr<AVBuffer> buf
 
 uint32_t TemporalScalability::GetFirstBufferIndex()
 {
+    isSetParameterCb_ = true;
     return inputIndexQueue_->Front();
 }
 

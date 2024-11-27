@@ -14,6 +14,7 @@
  */
 
 #include "codec_server.h"
+#include <cstdint>
 #include <functional>
 #include <malloc.h>
 #include <map>
@@ -301,7 +302,7 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
     return AVCS_ERR_OK;
 }
 
-void CodecServer::StartInputParamTask()
+int32_t CodecServer::StartInputParamTask()
 {
     inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
     std::weak_ptr<CodecServer> weakThis = weak_from_this();
@@ -314,7 +315,10 @@ void CodecServer::StartInputParamTask()
             CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
         }
     });
+    CHECK_AND_RETURN_RET_LOG(temporalScalability_->isSetParameterCb_ == true, AVCS_ERR_UNKNOWN,
+                             "Input parameter callback set failed");
     inputParamTask_->Start();
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::Start()
