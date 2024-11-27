@@ -39,29 +39,49 @@ int32_t VideoDecoder::Create(const std::string &codecMime, bool isSoftware)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoder::Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext)
+int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
-    CHECK_AND_RETURN_RET_LOG(sampleContext != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: sampleContext");
 
-    // Configure video decoder
-    int32_t ret = Configure(sampleInfo);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Configure failed");
+    auto format = std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), OH_AVFormat_Destroy);
+    CHECK_AND_RETURN_RET_LOG(format != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "AVFormat create failed");
 
-    // SetSurface from video decoder
-    if (sampleInfo.window != nullptr) {
-        ret = OH_VideoDecoder_SetSurface(codec_.get(), sampleInfo.window.get());
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
-            "Set surface failed, ret: %{public}d", ret);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_WIDTH, sampleInfo.videoWidth);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
+    OH_AVFormat_SetDoubleValue(format.get(), OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
+
+    if (sampleInfo.videoDecoderOutputColorspace >= 0) {
+        OH_AVFormat_SetIntValue(format.get(),
+            OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, sampleInfo.videoDecoderOutputColorspace);
     }
 
-    // SetCallback for video decoder
-    ret = SetCallback(sampleContext);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
-        "Set callback failed, ret: %{public}d", ret);
+    if (sampleInfo.videoHeight < sampleInfo.videoWidth) {
+        OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_ROTATION, 270);   // rotate 270°
+    }
 
-    // Prepare video decoder
-    ret = OH_VideoDecoder_Prepare(codec_.get());
+    int ret = OH_VideoDecoder_Configure(codec_.get(), format.get());
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
+
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoder::DealWithSurface(std::shared_ptr<WindowWrapper> &windowWrapper)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    CHECK_AND_RETURN_RET_LOG(windowWrapper != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Window wrapper is nullptr");
+
+    int32_t ret = OH_VideoDecoder_SetSurface(codec_.get(), windowWrapper->GetWindow().get());
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Set surface failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoder::Prepare()
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+
+    int32_t ret = OH_VideoDecoder_Prepare(codec_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Prepare failed, ret: %{public}d", ret);
 
     return AVCODEC_SAMPLE_ERR_OK;
@@ -107,31 +127,6 @@ std::shared_ptr<OH_AVFormat> VideoDecoder::GetFormat()
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, nullptr, "Decoder is null");
     return std::shared_ptr<OH_AVFormat>(OH_VideoDecoder_GetOutputDescription(codec_.get()), OH_AVFormat_Destroy);
-}
-
-int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
-{
-    auto format = std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), OH_AVFormat_Destroy);
-    CHECK_AND_RETURN_RET_LOG(format != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "AVFormat create failed");
-
-    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_WIDTH, sampleInfo.videoWidth);
-    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
-    OH_AVFormat_SetDoubleValue(format.get(), OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
-    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
-
-    if (sampleInfo.videoDecoderOutputColorspace >= 0) {
-        OH_AVFormat_SetIntValue(format.get(),
-            OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, sampleInfo.videoDecoderOutputColorspace);
-    }
-
-    if (sampleInfo.videoHeight < sampleInfo.videoWidth) {
-        OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_ROTATION, 270);   // rotate 270°
-    }
-
-    int ret = OH_VideoDecoder_Configure(codec_.get(), format.get());
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
-
-    return AVCODEC_SAMPLE_ERR_OK;
 }
 
 int32_t VideoDecoderAPI10::PushInput(CodecBufferInfo &info)

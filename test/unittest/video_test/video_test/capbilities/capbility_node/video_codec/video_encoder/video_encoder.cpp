@@ -43,23 +43,50 @@ int32_t VideoEncoder::Create(const std::string &codecMime, bool isSoftware)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoEncoder::Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext)
+int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
-    CHECK_AND_RETURN_RET_LOG(sampleContext != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: sampleContext");
 
-    int32_t ret = SetCallback(sampleContext);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed");
+    auto format = std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), OH_AVFormat_Destroy);
+    CHECK_AND_RETURN_RET_LOG(format != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "AVFormat create failed");
 
-    ret = Configure(sampleInfo);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Configure failed");
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_WIDTH, sampleInfo.videoWidth);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
+    OH_AVFormat_SetDoubleValue(format.get(), OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, sampleInfo.bitrateMode);
+    OH_AVFormat_SetLongValue(format.get(), OH_MD_KEY_BITRATE, sampleInfo.bitrate);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PROFILE, sampleInfo.profile);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_I_FRAME_INTERVAL, sampleInfo.iFrameInterval);
 
-    ret = GetSurface(sampleInfo);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Get surface failed");
+    int ret = OH_VideoEncoder_Configure(codec_.get(), format.get());
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
 
-    ret = OH_VideoEncoder_Prepare(codec_.get());
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoder::DealWithSurface(std::shared_ptr<WindowWrapper> &windowWrapper)
+{
+    CHECK_AND_RETURN_RET_LOG(windowWrapper == nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Window wrapper is not nullptr");
+
+    NativeWindow *window = nullptr;
+    int32_t ret = OH_VideoEncoder_GetSurface(codec_.get(), &window);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && window, AVCODEC_SAMPLE_ERR_ERROR,
+        "Get surface failed, ret: %{public}d", ret);
+
+    windowWrapper = WindowManager::GetInstance().CreateWindowWrapper(
+        SampleWindowType::ENCODER,
+        std::shared_ptr<NativeWindow>(window, OH_NativeWindow_DestroyNativeWindow)
+    );
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoder::Prepare()
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
+
+    int32_t ret = OH_VideoEncoder_Prepare(codec_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Prepare failed, ret: %{public}d", ret);
-
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -112,47 +139,6 @@ int32_t VideoEncoder::NotifyEndOfStream()
     int32_t ret = OH_VideoEncoder_NotifyEndOfStream(codec_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
         "Notify end of stream failed, ret: %{public}d", ret);
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
-{
-    auto format = std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), OH_AVFormat_Destroy);
-    CHECK_AND_RETURN_RET_LOG(format != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "AVFormat create failed");
-
-    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_WIDTH, sampleInfo.videoWidth);
-    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
-    OH_AVFormat_SetDoubleValue(format.get(), OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
-    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, sampleInfo.bitrateMode);
-    OH_AVFormat_SetLongValue(format.get(), OH_MD_KEY_BITRATE, sampleInfo.bitrate);
-    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
-    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PROFILE, sampleInfo.profile);
-    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_I_FRAME_INTERVAL, sampleInfo.iFrameInterval);
-
-    int ret = OH_VideoEncoder_Configure(codec_.get(), format.get());
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
-
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoEncoder::GetSurface(SampleInfo &sampleInfo)
-{
-    // 0b01: buffer mode mask
-    CHECK_AND_RETURN_RET(!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01), AVCODEC_SAMPLE_ERR_OK);
-
-    NativeWindow *window = nullptr;
-    int32_t ret = OH_VideoEncoder_GetSurface(codec_.get(), &window);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && window, AVCODEC_SAMPLE_ERR_ERROR,
-        "Get surface failed, ret: %{public}d", ret);
-    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_BUFFER_GEOMETRY,
-        sampleInfo.videoWidth, sampleInfo.videoHeight);
-    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_FORMAT,
-        ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.profile));
-
-    if (sampleInfo.encoderSurfaceMaxInputBuffer >= 0) {
-        window->surface->SetQueueSize(sampleInfo.encoderSurfaceMaxInputBuffer);
-    }
-    sampleInfo.window = std::shared_ptr<NativeWindow>(window, OH_NativeWindow_DestroyNativeWindow);
     return AVCODEC_SAMPLE_ERR_OK;
 }
 

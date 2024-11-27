@@ -56,6 +56,16 @@ int32_t ToGraphicPixelFormat(int32_t avPixelFormat, int32_t profile)
             return NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP;
     }
 }
+
+std::string ToString(int32_t index, std::unordered_map<int32_t, std::string> map)
+{
+    std::string ret;
+    auto iter = map.find(index);
+    if (iter != map.end()) {
+        ret = map.at(index);
+    }
+    return ret;
+}
 } // Sample
 } // MediaAVCodec
 } // OHOS

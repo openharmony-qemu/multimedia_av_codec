@@ -13,69 +13,64 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_SAMPLE_VIDEO_ENCODER_H
-#define AVCODEC_SAMPLE_VIDEO_ENCODER_H
+#ifndef AVCODEC_SAMPLE_VIDEO_DECODER_H
+#define AVCODEC_SAMPLE_VIDEO_DECODER_H
 
-#include "native_avcodec_videoencoder.h"
+#include "native_avcodec_videodecoder.h"
 #include "video_codec_base.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-class VideoEncoder : public VideoCodecBase {
+class VideoDecoder : public VideoCodecBase {
 public:
     int32_t Create(const std::string &codecMime, bool isSoftware = false) override;
-    int32_t Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext) override;
+    int32_t DealWithSurface(std::shared_ptr<WindowWrapper> &windowWrapper) override;
+    int32_t Configure(const SampleInfo &sampleInfo) override;
+    int32_t Prepare() override;
     int32_t Start() override;
     int32_t Flush() override;
     int32_t Stop() override;
     int32_t Reset() override;
     std::shared_ptr<OH_AVFormat> GetFormat() override;
 
-private:
-    int32_t NotifyEndOfStream();
-    int32_t Configure(const SampleInfo &sampleInfo) override;
-    int32_t GetSurface(SampleInfo &sampleInfo);
+protected:
 };
 
 /********************* API10 *********************/
-class VideoEncoderAPI10 : public VideoEncoder {
+class VideoDecoderAPI10 : public VideoDecoder {
 public:
-    int32_t FreeOutput(uint32_t bufferIndex) override;
-
-protected:
+    int32_t PushInput(CodecBufferInfo &info) override;
     int32_t SetCallback(uintptr_t * const sampleContext) override;
 };
 
-class VideoEncoderAPI10Buffer : public VideoEncoderAPI10 {
+class VideoDecoderAPI10Buffer : public VideoDecoderAPI10 {
 public:
-    int32_t PushInput(CodecBufferInfo &info) override;
+    int32_t FreeOutput(uint32_t bufferIndex) override;
 };
 
-class VideoEncoderAPI10Surface : public VideoEncoderAPI10 {
+class VideoDecoderAPI10Surface : public VideoDecoderAPI10 {
 public:
-    int32_t PushInput(CodecBufferInfo &info) override;
+    int32_t FreeOutput(uint32_t bufferIndex) override;
 };
 
 /********************* API11 *********************/
-class VideoEncoderAPI11 : public VideoEncoder {
+class VideoDecoderAPI11 : public VideoDecoder {
 public:
-    int32_t FreeOutput(uint32_t bufferIndex) override;
-
-protected:
+    int32_t PushInput(CodecBufferInfo &info) override;
     int32_t SetCallback(uintptr_t * const sampleContext) override;
 };
 
-class VideoEncoderAPI11Buffer : public VideoEncoderAPI11 {
+class VideoDecoderAPI11Buffer : public VideoDecoderAPI11 {
 public:
-    int32_t PushInput(CodecBufferInfo &info) override;
+    int32_t FreeOutput(uint32_t bufferIndex) override;
 };
 
-class VideoEncoderAPI11Surface : public VideoEncoderAPI11 {
+class VideoDecoderAPI11Surface : public VideoDecoderAPI11 {
 public:
-    int32_t PushInput(CodecBufferInfo &info) override;
+    int32_t FreeOutput(uint32_t bufferIndex) override;
 };
 } // Sample
 } // MediaAVCodec
 } // OHOS
-#endif // AVCODEC_SAMPLE_VIDEO_ENCODER_H
+#endif // AVCODEC_SAMPLE_VIDEO_DECODER_H

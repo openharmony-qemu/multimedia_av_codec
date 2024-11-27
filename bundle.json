@@ -47,6 +47,7 @@
       ],
       "deps": {
         "components": [
+          "access_token",
           "netmanager_base",
           "bounds_checking_function",
           "c_utils",
