@@ -15,7 +15,6 @@
 
 #include <fstream>
 #include <sstream>
-#include "hitrace_meter.h"
 #include "hcodec.h"
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
@@ -23,16 +22,6 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-
-ScopedTrace::ScopedTrace(const std::string &value)
-{
-    StartTrace(HITRACE_TAG_ZMEDIA, value);
-}
-
-ScopedTrace::~ScopedTrace()
-{
-    FinishTrace(HITRACE_TAG_ZMEDIA);
-}
 
 FuncTracker::FuncTracker(std::string value) : value_(std::move(value))
 {
