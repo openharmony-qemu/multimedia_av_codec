@@ -300,7 +300,7 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
     return AVCS_ERR_OK;
 }
 
-int32_t CodecServer::StartInputParamTask()
+void CodecServer::StartInputParamTask()
 {
     inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
     std::weak_ptr<CodecServer> weakThis = weak_from_this();
@@ -313,10 +313,7 @@ int32_t CodecServer::StartInputParamTask()
             CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
         }
     });
-    CHECK_AND_RETURN_RET_LOG(temporalScalability_->isSetParameterCb_ == true, AVCS_ERR_UNKNOWN,
-                             "Input parameter callback set failed");
     inputParamTask_->Start();
-    return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::Start()
@@ -327,8 +324,7 @@ int32_t CodecServer::Start()
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     if (temporalScalability_ != nullptr && isCreateSurface_ && !isSetParameterCb_) {
-        int32_t ret = StartInputParamTask();
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start input param task failed"); 
+        StartInputParamTask();
     }
     int32_t ret = StartPostProcessing();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start post processing failed");

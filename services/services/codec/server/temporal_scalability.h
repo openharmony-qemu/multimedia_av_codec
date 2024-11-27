@@ -42,7 +42,6 @@ public:
     void ConfigureLTR(uint32_t index);
     void SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer);
     void SetBlockQueueActive();
-    bool isSetParameterCb_ = false;
 
 private:
     std::string name_;

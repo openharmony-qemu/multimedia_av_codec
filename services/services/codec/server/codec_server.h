@@ -119,7 +119,7 @@ private:
     int32_t InitByMime(Meta &callerInfo, API_VERSION apiVersion);
     int32_t InitServer();
     int32_t CodecScenarioInit(Format &config);
-    int32_t StartInputParamTask();
+    void StartInputParamTask();
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     void StatusChanged(CodecStatus newStatus);
