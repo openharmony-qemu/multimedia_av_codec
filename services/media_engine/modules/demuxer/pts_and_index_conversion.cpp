@@ -99,7 +99,7 @@ void TimeAndIndexConversion::StartParse()
         auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
         ReadBufferFromDataSource(bufSize, buffer);
         FALSE_RETURN_MSG(buffer != nullptr, "StartParse failed due to read buffer error");
-        BoxHeader header{0};
+        BoxHeader header {0};
         ReadBoxHeader(buffer, header);
         FALSE_RETURN_MSG(header.size > 0, "StartParse failed due to error box size");
         uint64_t boxSize = static_cast<uint64_t>(header.size);
@@ -159,7 +159,7 @@ bool TimeAndIndexConversion::IsMP4orMOV()
     auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
     ReadBufferFromDataSource(bufSize, buffer);
     FALSE_RETURN_V_MSG_E(buffer != nullptr, false, "IsMP4orMOV failed due to read buffer error");
-    BoxHeader header{0};
+    BoxHeader header {0};
     ReadBoxHeader(buffer, header);
     offset_ = 0; // init offset_
     return strncmp(header.type, BOX_TYPE_FTYP, sizeof(header.type)) == 0;
@@ -176,7 +176,7 @@ void TimeAndIndexConversion::ParseMoov(uint32_t boxSize)
         auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
         ReadBufferFromDataSource(bufSize, buffer);
         FALSE_RETURN_MSG(buffer != nullptr, "ParseMoov failed due to read buffer error");
-        BoxHeader header{0};
+        BoxHeader header {0};
         ReadBoxHeader(buffer, header);
         FALSE_RETURN_MSG(header.size > 0, "ParseMoov failed due to error box size");
         if (strncmp(header.type, BOX_TYPE_TRAK, sizeof(header.type)) == 0) {
@@ -210,7 +210,7 @@ void TimeAndIndexConversion::ParseBox(uint32_t boxSize)
         auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
         ReadBufferFromDataSource(bufSize, buffer);
         FALSE_RETURN_MSG(buffer != nullptr, "ParseBox failed due to read buffer error");
-        BoxHeader header{0};
+        BoxHeader header {0};
         ReadBoxHeader(buffer, header);
         FALSE_RETURN_MSG(header.size > 0, "ParseBox failed due to error box size");
         auto it = boxParsers.find(std::string(header.type));
