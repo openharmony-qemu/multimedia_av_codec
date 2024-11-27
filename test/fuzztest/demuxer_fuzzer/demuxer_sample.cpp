@@ -64,8 +64,8 @@ DemuxerSample::~DemuxerSample()
         audioFormat = nullptr;
     }
     if (videoFormat != nullptr) {
-        OH_AVFormat_Destroy(audioFormat);
-        audioFormat = nullptr;
+        OH_AVFormat_Destroy(videoFormat);
+        videoFormat = nullptr;
     }
 }
 
