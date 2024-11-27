@@ -226,6 +226,7 @@ private:
     int64_t videoStartTime_{0};
 
     std::shared_mutex drmMutex{};
+    std::mutex isSelectTrackMutex_;
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
 
@@ -268,7 +269,7 @@ private:
     std::mutex prerollMutex_ {};
     std::atomic<bool> inPreroll_ = false;
 
-    uint32_t selectTrackTrackID_ { TRACK_ID_DUMMY };
+    std::map<int32_t, int32_t> inSelectTrackType_;
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;
