@@ -63,7 +63,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     close(fd);
     struct Params params;
     params.time = data[size - g_timeSize];
-    char *uri = new char[21];
+    char *uri = new char[g_uriBufferSize];
     if (memcpy_s(uri, g_uriBufferSize, data  + size - g_uriSize, g_uriCount) != 0) {
         return false;
     }
@@ -72,7 +72,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     params.setDuration = data[size - g_durationSize];
     params.setHeight = data[size - g_heightSize];
     params.setFrameRate = data[size - g_frameRateSize];
-    char *setLanguage = new char[3];
+    char *setLanguage = new char[g_languageBufferSize];
     if (memcpy_s(setLanguage, g_languageBufferSize, data + size - g_languageSize, g_languageCount) != 0) {
         return false;
     }
