@@ -33,6 +33,8 @@
 #include "native_avcodec_audiocodec.h"
 #include "native_avcodec_base.h"
 #include "native_avcapability.h"
+#include "native_avbuffer.h"
+#include "native_audio_channel_layout.h"
 #include "securec.h"
 #include "ffmpeg_converter.h"
 
@@ -197,7 +199,13 @@ public:
     void OutputFunc();
     void InputFuncAv();
     void OutputFuncAv();
-
+    void HeAACSampleRateTest(int32_t profile);
+    void ChannelLayoutTest(map<OH_AudioChannelLayout, int32_t> &supportedLayoutMap,
+                           map<OH_AudioChannelLayout, int32_t> &unsupportedLayoutMap,
+                           int32_t profile);
+    void ChannelCountTest(set<int32_t> &supportedChannelCntSet,
+                          set<int32_t> &unsupportedChannelCntSet,
+                          int32_t profile);
 protected:
     std::atomic<bool> isRunning_ = false;
     std::unique_ptr<std::ifstream> inputFile_;
@@ -477,6 +485,75 @@ int32_t AudioCodeCapiEncoderUnitTest::CheckSoFunc()
     }
     soFile_->close();
     return true;
+}
+
+void AudioCodeCapiEncoderUnitTest::HeAACSampleRateTest(int32_t profile)
+{
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, BITS_RATE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, profile);
+    set<uint32_t> supportedSampleRateSet = {
+        16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000,
+    };
+    set<uint32_t> unsupportedSampleRateSet = {
+        0, 4000, 8000, 11025, 12000, 441000,
+    };
+    for (const uint32_t rate : supportedSampleRateSet) {
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, rate);
+        EXPECT_EQ(AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+        EXPECT_EQ(OH_AudioCodec_Reset(audioEnc_), AV_ERR_OK);
+    }
+    for (const uint32_t rate : unsupportedSampleRateSet) {
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, rate);
+        EXPECT_NE(AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+        EXPECT_EQ(OH_AudioCodec_Reset(audioEnc_), AV_ERR_OK);
+    }
+}
+
+void AudioCodeCapiEncoderUnitTest::ChannelCountTest(set<int32_t> &supportedChannelCntSet,
+                                                    set<int32_t> &unsupportedChannelCntSet,
+                                                    int32_t profile)
+{
+    ProceByMimeFunc(OH_AVCODEC_MIMETYPE_AUDIO_AAC, true);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, BITS_RATE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, profile);
+    for (const int32_t cnt : supportedChannelCntSet) {
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, cnt);
+        EXPECT_EQ(AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+        EXPECT_EQ(OH_AudioCodec_Reset(audioEnc_), AV_ERR_OK);
+    }
+    for (const int32_t cnt : unsupportedChannelCntSet) {
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, cnt);
+        EXPECT_NE(AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+        EXPECT_EQ(OH_AudioCodec_Reset(audioEnc_), AV_ERR_OK);
+    }
+}
+
+void AudioCodeCapiEncoderUnitTest::ChannelLayoutTest(map<OH_AudioChannelLayout, int32_t> &supportedLayoutMap,
+                                                     map<OH_AudioChannelLayout, int32_t> &unsupportedLayoutMap,
+                                                     int32_t profile)
+{
+    ProceByMimeFunc(OH_AVCODEC_MIMETYPE_AUDIO_AAC, true);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, BITS_RATE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, profile);
+    map<OH_AudioChannelLayout, int32_t>::iterator iter;
+    for (iter = supportedLayoutMap.begin(); iter != supportedLayoutMap.end(); iter++) {
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, iter->second);
+        OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, iter->first);
+        EXPECT_EQ(AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+        EXPECT_EQ(OH_AudioCodec_Reset(audioEnc_), AV_ERR_OK);
+    }
+    for (iter = unsupportedLayoutMap.begin(); iter != unsupportedLayoutMap.end(); iter++) {
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, iter->second);
+        OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, iter->first);
+        EXPECT_NE(AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+        EXPECT_EQ(OH_AudioCodec_Reset(audioEnc_), AV_ERR_OK);
+    }
 }
 
 HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusCreateByName_01, TestSize.Level1)
@@ -1819,6 +1896,143 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, EncoderConfigureByCap, TestSize.Level1)
     }
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, sample_rate, TestSize.Level1)
+{
+    OH_AVCodec *tmpCodec = OH_AudioCodec_CreateByName("OH.Media.Codec.Encoder.Audio.Vendor.AAC");
+    if (tmpCodec == nullptr) {
+        return;
+    }
+    OH_AudioCodec_Destroy(tmpCodec);
+    ProceByMimeFunc(OH_AVCODEC_MIMETYPE_AUDIO_AAC, true);
+    HeAACSampleRateTest(AAC_PROFILE_HE);
+    HeAACSampleRateTest(AAC_PROFILE_HE_V2);
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, channel_count_v1, TestSize.Level1)
+{
+    OH_AVCodec *tmpCodec = OH_AudioCodec_CreateByName("OH.Media.Codec.Encoder.Audio.Vendor.AAC");
+    if (tmpCodec == nullptr) {
+        return;
+    }
+    OH_AudioCodec_Destroy(tmpCodec);
+    set<int32_t> supportedChannelCntSet = {1, 2, 3, 4, 5, 6, 8};
+    set<int32_t> unsupportedChannelCntSet = {0, 7, 9};
+    ChannelCountTest(supportedChannelCntSet, unsupportedChannelCntSet, AAC_PROFILE_HE);
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, channel_count_v2, TestSize.Level1)
+{
+    OH_AVCodec *tmpCodec = OH_AudioCodec_CreateByName("OH.Media.Codec.Encoder.Audio.Vendor.AAC");
+    if (tmpCodec == nullptr) {
+        return;
+    }
+    OH_AudioCodec_Destroy(tmpCodec);
+    set<int32_t> supportedChannelCntSet = {2};
+    set<int32_t> unsupportedChannelCntSet = {0, 1, 3, 4, 5, 6, 7, 8, 9};
+    ChannelCountTest(supportedChannelCntSet, unsupportedChannelCntSet, AAC_PROFILE_HE_V2);
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, channel_layout_v1, TestSize.Level1)
+{
+    OH_AVCodec *tmpCodec = OH_AudioCodec_CreateByName("OH.Media.Codec.Encoder.Audio.Vendor.AAC");
+    if (tmpCodec == nullptr) {
+        return;
+    }
+    OH_AudioCodec_Destroy(tmpCodec);
+    map<OH_AudioChannelLayout, int32_t> supportedLayoutMap = {
+        {CH_LAYOUT_MONO, 1},
+        {CH_LAYOUT_STEREO, 2},
+        {CH_LAYOUT_SURROUND, 3},
+        {CH_LAYOUT_4POINT0, 4},
+        {CH_LAYOUT_5POINT0, 5},
+        {CH_LAYOUT_5POINT1, 6},
+        {CH_LAYOUT_7POINT1_WIDE, 8},
+        {CH_LAYOUT_7POINT1, 8},
+    };
+    map<OH_AudioChannelLayout, int32_t> unsupportedLayoutMap = {
+        {CH_LAYOUT_MONO, 2},
+        {CH_LAYOUT_STEREO, 3},
+        {CH_LAYOUT_SURROUND, 4},
+        {CH_LAYOUT_4POINT0, 5},
+        {CH_LAYOUT_5POINT0, 6},
+        {CH_LAYOUT_5POINT1, 7},
+        {CH_LAYOUT_7POINT1_WIDE, 3},
+        {CH_LAYOUT_7POINT1, 3},
+        {CH_LAYOUT_7POINT1_WIDE_BACK, 5},
+        // below unsupport layout
+        {CH_LAYOUT_2POINT1, 3},
+        {CH_LAYOUT_4POINT1, 5},
+        {CH_LAYOUT_QUAD_SIDE, 4},
+        {CH_LAYOUT_QUAD, 4},
+        {CH_LAYOUT_6POINT0, 6},
+    };
+    ChannelLayoutTest(supportedLayoutMap, unsupportedLayoutMap, AAC_PROFILE_HE);
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, channel_layout_v2, TestSize.Level1)
+{
+    OH_AVCodec *tmpCodec = OH_AudioCodec_CreateByName("OH.Media.Codec.Encoder.Audio.Vendor.AAC");
+    if (tmpCodec == nullptr) {
+        return;
+    }
+    OH_AudioCodec_Destroy(tmpCodec);
+    map<OH_AudioChannelLayout, int32_t> supportedLayoutMap = {
+        {CH_LAYOUT_STEREO, 2},
+    };
+    map<OH_AudioChannelLayout, int32_t> unsupportedLayoutMap = {
+        {CH_LAYOUT_MONO, 1},
+        {CH_LAYOUT_MONO, 2},
+        {CH_LAYOUT_SURROUND, 3},
+        {CH_LAYOUT_4POINT0, 4},
+        {CH_LAYOUT_5POINT0, 5},
+        {CH_LAYOUT_5POINT1, 6},
+        {CH_LAYOUT_7POINT1_WIDE, 8},
+        {CH_LAYOUT_7POINT1, 8},
+        {CH_LAYOUT_7POINT1_WIDE_BACK, 8},
+        {CH_LAYOUT_STEREO, 3},
+        {CH_LAYOUT_SURROUND, 4},
+        {CH_LAYOUT_4POINT0, 5},
+        {CH_LAYOUT_5POINT0, 6},
+        {CH_LAYOUT_5POINT1, 7},
+        {CH_LAYOUT_7POINT1_WIDE, 3},
+        {CH_LAYOUT_7POINT1, 3},
+        {CH_LAYOUT_7POINT1_WIDE_BACK, 5},
+        // below unsupport layout
+        {CH_LAYOUT_2POINT1, 3},
+        {CH_LAYOUT_4POINT1, 5},
+        {CH_LAYOUT_QUAD_SIDE, 4},
+        {CH_LAYOUT_QUAD, 4},
+        {CH_LAYOUT_6POINT0, 6},
+    };
+    ChannelLayoutTest(supportedLayoutMap, unsupportedLayoutMap, AAC_PROFILE_HE_V2);
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, aac_profile, TestSize.Level1)
+{
+    OH_AVCodec *tmpCodec = OH_AudioCodec_CreateByName("OH.Media.Codec.Encoder.Audio.Vendor.AAC");
+    ProceByMimeFunc(OH_AVCODEC_MIMETYPE_AUDIO_AAC, true);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, BITS_RATE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT);
+    set<int32_t> supportedAacProfile = {AAC_PROFILE_LC};
+    if (tmpCodec != nullptr) {
+        OH_AudioCodec_Destroy(tmpCodec);
+        supportedAacProfile = {AAC_PROFILE_LC, AAC_PROFILE_HE, AAC_PROFILE_HE_V2};
+    }
+    for (const int32_t profile : supportedAacProfile) {
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, profile);
+        EXPECT_EQ(AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+        EXPECT_EQ(OH_AudioCodec_Reset(audioEnc_), AV_ERR_OK);
+    }
+    set<int32_t> unsupportedAacProfile = {1, 2, 5};
+    for (const int32_t profile : unsupportedAacProfile) {
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, profile);
+        EXPECT_NE(AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+        EXPECT_EQ(OH_AudioCodec_Reset(audioEnc_), AV_ERR_OK);
+    }
 }
 
 } // namespace MediaAVCodec
