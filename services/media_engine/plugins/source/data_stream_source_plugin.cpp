@@ -238,7 +238,6 @@ Plugins::Seekable DataStreamSourcePlugin::GetSeekable()
 
 Status DataStreamSourcePlugin::SeekTo(uint64_t offset)
 {
-    std::lock_guard<std::mutex> lock(isExitReadMutex_);
     if (seekable_ == Plugins::Seekable::UNSEEKABLE) {
         MEDIA_LOG_E("source is unseekable!");
         return Status::ERROR_INVALID_OPERATION;
@@ -255,7 +254,6 @@ Status DataStreamSourcePlugin::SeekTo(uint64_t offset)
 
 Status DataStreamSourcePlugin::Pause()
 {
-    std::lock_guard<std::mutex> lock(isExitReadMutex_);
     MEDIA_LOG_I("Pause enter.");
     isExitRead_ = true;
     return Status::OK;
@@ -263,7 +261,6 @@ Status DataStreamSourcePlugin::Pause()
  
 Status DataStreamSourcePlugin::Resume()
 {
-    std::lock_guard<std::mutex> lock(isExitReadMutex_);
     MEDIA_LOG_I("Resume enter.");
     isExitRead_ = false;
     return Status::OK;

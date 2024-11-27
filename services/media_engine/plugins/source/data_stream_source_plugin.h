@@ -56,7 +56,6 @@ private:
     std::atomic<bool> isBufferingStart{false};
     std::atomic<bool> isInterrupted_ {false};
     std::atomic<bool> isExitRead_ {false};
-    std::mutex isExitReadMutex_;
     Plugins::Callback* callback_ {nullptr};
     int64_t size_ {0};
     uint64_t offset_ {0};
