@@ -411,13 +411,16 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
     int32_t vrrEnable = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_ENABLE_VRR, vrrEnable) || vrrEnable != 1) {
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-        isVrrEnable_ = false;
+        vrrDynamicSwitch_ = false;
+        HLOGI("VRR vrrDynamicSwitch_ false");
 #endif
-        HLOGI("VRR disabled");
+        HLOGD("VRR disabled");
         return AVCS_ERR_OK;
     }
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    if (isVrrEnable_) {
+    if (isVrrInitialized_) {
+        vrrDynamicSwitch_ = true;
+        HLOGI("VRR vrrDynamicSwitch_ true");
         return AVCS_ERR_OK;
     }
     optional<double> frameRate = GetFrameRateFromUser(format);
@@ -438,7 +441,8 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         HLOGE("VRR Init failed");
         return ret;
     }
-    isVrrEnable_ = true;
+    isVrrInitialized_ = true;
+    vrrDynamicSwitch_ = true;
     HLOGI("VRR enabled");
     return AVCS_ERR_OK;
 #else
@@ -1241,6 +1245,11 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
 int32_t HDecoder::VrrPrediction(BufferInfo &info)
 {
     SCOPED_TRACE();
+    if (vrrDynamicSwitch_ == false) {
+        info.surfaceBuffer->GetExtraData()->ExtraSet("VIDEO_RATE", codecRate_);
+        HLOGD("VRR flush video rate %{public}d", static_cast<int32_t>(codecRate_));
+        return AVCS_ERR_OK;
+    }
     if (VrrProcessFunc_ == nullptr) {
         HLOGE("VrrProcessFunc_ is nullptr");
         return AVCS_ERR_INVALID_OPERATION;

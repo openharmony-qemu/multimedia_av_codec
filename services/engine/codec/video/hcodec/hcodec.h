@@ -349,7 +349,7 @@ protected:
 
     // VRR
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    bool isVrrEnable_ = false;
+    bool isVrrInitialized_ = false;
     virtual int32_t VrrPrediction(BufferInfo &info) { return AVCS_ERR_UNSUPPORT; }
 #endif
 
