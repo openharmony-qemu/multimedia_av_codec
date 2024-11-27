@@ -125,7 +125,8 @@ void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
     OH_AVFormat_SetBuffer(format, OH_MD_KEY_CODEC_CONFIG, (uint8_t *)configBuffer, params.setCodecConfigSize);
     OH_AVFormat_Copy(format, sourceFormat);
     audioFormat = OH_AVFormat_CreateAudioFormat(OH_AVCODEC_MIMETYPE_AUDIO_AAC, params.sampleRate, params.channelCount);
-    videoFormat = OH_AVFormat_CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, params.setVideoWidth, params.setVideoHeight);
+    videoFormat = OH_AVFormat_CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+        params.setVideoWidth, params.setVideoHeight);
 }
 
 void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const char *setLanguage, Params params)

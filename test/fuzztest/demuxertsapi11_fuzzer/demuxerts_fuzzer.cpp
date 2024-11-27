@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include "securec.h"
 
 #include <iostream>
 #include "demuxer_sample.h"
@@ -28,26 +29,26 @@ using namespace std;
 using namespace OHOS::Media;
 namespace OHOS {
 const char *TS_PATH = "/data/test/fuzz_create.ts";
-int64_t expectSize = 37;
-size_t timeSize = 5;
-size_t uriSize = 25;
-int64_t uriBufferSize = 20;
-char flag = '\0';
-size_t trackTypeSize = 26;
-size_t durationSize = 27;
-size_t heightSize = 28;
-size_t frameRateSize = 29;
-size_t languageSize = 31;
-int64_t languageBufferSize = 2;
-size_t codecConfigSize = 32;
-size_t sampleRateSize = 33;
-size_t channelCount = 34;
-size_t videoHeightSize = 35;
-size_t videoWidthSize = 36;
+int64_t g_expectSize = 37;
+size_t g_timeSize = 5;
+size_t g_uriSize = 25;
+int64_t g_uriBufferSize = 20;
+char g_flag = '\0';
+size_t g_trackTypeSize = 26;
+size_t g_durationSize = 27;
+size_t g_heightSize = 28;
+size_t g_frameRateSize = 29;
+size_t g_languageSize = 31;
+size_t g_languageCount = 2;
+size_t g_codecConfigSize = 32;
+size_t g_sampleRateSize = 33;
+size_t g_channelCount = 34;
+size_t g_videoHeightSize = 35;
+size_t g_videoWidthSize = 36;
 
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
-    if (size < expectSize) {
+    if (size < g_expectSize) {
         return false;
     }
     int32_t fd = open(TS_PATH, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -60,22 +61,22 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     close(fd);
     struct Params params;
-    params.time = data[size - timeSize];
+    params.time = data[size - g_timeSize];
     char *uri = new char[21];
-    memcpy(uri, data  + size - uriSize, uriBufferSize);
-    uri[uriBufferSize] = flag;
-    params.setTrackType = data[size - trackTypeSize];
-    params.setDuration = data[size - durationSize];
-    params.setHeight = data[size - heightSize];
-    params.setFrameRate = data[size - frameRateSize];
+    memcpy_s(uri, sizeof(uri), data  + size - g_uriSize, g_uriBufferSize);
+    uri[g_uriBufferSize] = g_flag;
+    params.setTrackType = data[size - g_trackTypeSize];
+    params.setDuration = data[size - g_durationSize];
+    params.setHeight = data[size - g_heightSize];
+    params.setFrameRate = data[size - g_frameRateSize];
     char *setLanguage = new char[3];
-    memcpy(setLanguage, data + size - languageSize, languageBufferSize);
-    setLanguage[languageBufferSize] = flag;
-    params.setCodecConfigSize = data[size - codecConfigSize];
-    params.sampleRate = data[size - sampleRateSize];
-    params.channelCount = data[size - channelCount];
-    params.setVideoHeight = data[size - videoHeightSize];
-    params.setVideoWidth = data[size - videoWidthSize];
+    memcpy_s(setLanguage, sizeof(setLanguage), data + size - g_languageSize, g_languageCount);
+    setLanguage[g_languageCount] = g_flag;
+    params.setCodecConfigSize = data[size - g_codecConfigSize];
+    params.sampleRate = data[size - g_sampleRateSize];
+    params.channelCount = data[size - g_channelCount];
+    params.setVideoHeight = data[size - g_videoHeightSize];
+    params.setVideoWidth = data[size - g_videoWidthSize];
     uint8_t *dataConver = const_cast<uint8_t *>(data);
     uint32_t *createSize = reinterpret_cast<uint32_t *>(dataConver + size - 4);
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
