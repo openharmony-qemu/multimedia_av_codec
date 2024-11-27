@@ -14,11 +14,9 @@
  */
 
 #include "codec_server.h"
-#include <cstdint>
 #include <functional>
 #include <malloc.h>
 #include <map>
-#include <memory>
 #include <unistd.h>
 #include <limits>
 #include <vector>
