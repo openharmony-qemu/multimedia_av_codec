@@ -32,13 +32,15 @@ const char *MP4_PATH = "/data/test/fuzz_create.vivid";
 int64_t g_expectSize = 37;
 size_t g_timeSize = 5;
 size_t g_uriSize = 25;
-int64_t g_uriBufferSize = 20;
+size_t g_uriBufferSize = 21;
+int64_t g_uriCount = 20;
 char g_flag = '\0';
 size_t g_trackTypeSize = 26;
 size_t g_durationSize = 27;
 size_t g_heightSize = 28;
 size_t g_frameRateSize = 29;
 size_t g_languageSize = 31;
+size_t g_languageBufferSize = 3;
 size_t g_languageCount = 2;
 size_t g_codecConfigSize = 32;
 size_t g_sampleRateSize = 33;
@@ -63,14 +65,18 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     struct Params params;
     params.time = data[size - g_timeSize];
     char *uri = new char[21];
-    memcpy_s(uri, sizeof(uri), data  + size - g_uriSize, g_uriBufferSize);
-    uri[g_uriBufferSize] = g_flag;
+    if (memcpy_s(uri, g_uriBufferSize, data  + size - g_uriSize, g_uriCount) != 0) {
+        return false;
+    }
+    uri[g_uriCount] = g_flag;
     params.setTrackType = data[size - g_trackTypeSize];
     params.setDuration = data[size - g_durationSize];
     params.setHeight = data[size - g_heightSize];
     params.setFrameRate = data[size - g_frameRateSize];
     char *setLanguage = new char[3];
-    memcpy_s(setLanguage, sizeof(setLanguage), data + size - g_languageSize, g_languageCount);
+    if (memcpy_s(setLanguage, g_languageBufferSize, data + size - g_languageSize, g_languageCount) != 0) {
+        return false;
+    }
     setLanguage[g_languageCount] = g_flag;
     params.setCodecConfigSize = data[size - g_codecConfigSize];
     params.sampleRate = data[size - g_sampleRateSize];

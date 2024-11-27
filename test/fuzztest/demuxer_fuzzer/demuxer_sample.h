@@ -22,19 +22,19 @@
 #include "native_avmemory.h"
 
 namespace OHOS {
-    struct Params
-    {
-        int64_t time;
-        int64_t setTrackType;
-        long setDuration;
-        float setHeight;
-        double setFrameRate;
-        int64_t setCodecConfigSize;
-        int32_t sampleRate;
-        int32_t channelCount;
-        int32_t setVideoHeight;
-        int32_t setVideoWidth;
-    };
+struct Params
+{
+    int64_t time;
+    int64_t setTrackType;
+    long setDuration;
+    float setHeight;
+    double setFrameRate;
+    int64_t setCodecConfigSize;
+    int32_t sampleRate;
+    int32_t channelCount;
+    int32_t setVideoHeight;
+    int32_t setVideoWidth;
+};
 namespace Media {
 class DemuxerSample {
 public:
