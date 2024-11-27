@@ -75,7 +75,7 @@ void TimeAndIndexConversion::ReadBufferFromDataSource(size_t bufSize, std::share
     FALSE_RETURN_MSG(buffer != nullptr, "Buffer is nullptr");
     auto result = source_->SeekTo(offset_);
     if (result != Status::OK) {
-        MEDIA_LOG_E("Seek to " PUBLIC_LOG_D32 " fail", offset_);
+        MEDIA_LOG_E("Seek to " PUBLIC_LOG_U64 " fail", offset_);
         buffer = nullptr;
         return;
     }
