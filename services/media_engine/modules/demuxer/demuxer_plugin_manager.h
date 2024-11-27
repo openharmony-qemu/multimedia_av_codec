@@ -101,6 +101,7 @@ public:
     int32_t GetInnerTrackIDByTrackID(int32_t trackId);
     StreamType GetStreamTypeByTrackID(int32_t trackId);
     int32_t GetStreamIDByTrackID(int32_t trackId);
+    int32_t GetStreamIDByTrackType(TrackType type);
     
     TrackType GetTrackTypeByTrackID(int32_t trackID);
 
