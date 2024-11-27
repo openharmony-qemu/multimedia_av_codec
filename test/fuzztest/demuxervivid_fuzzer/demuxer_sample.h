@@ -22,8 +22,7 @@
 #include "native_avmemory.h"
 
 namespace OHOS {
-    struct Params
-    {
+    struct Params {
         int64_t time;
         int64_t setTrackType;
         long setDuration;
@@ -40,7 +39,7 @@ class DemuxerSample {
 public:
     DemuxerSample() = default;
     ~DemuxerSample();
-    const char *filePath = "/data/test/fuzz_create.vivid";
+    const char *filePath = "/data/test/fuzz_create.mp4";
     void RunNormalDemuxer(uint32_t createSize, const char *uri, const char *setLanguage, Params params);
     void RunNormalDemuxerApi11(uint32_t createSize, const char *uri, const char *setLanguage, Params params);
     void GetAndSetFormat(const char *setLanguage, Params params);
@@ -63,6 +62,9 @@ private:
     OH_AVDemuxer *demuxer;
     OH_AVMemory *memory;
     OH_AVBuffer *buffer;
+    const uint8_t *g_baseFuzzData = nullptr;
+    size_t g_baseFuzzSize = 0;
+    size_t g_baseFuzzPos;
 };
 } // namespace Media
 } // namespace OHOS
