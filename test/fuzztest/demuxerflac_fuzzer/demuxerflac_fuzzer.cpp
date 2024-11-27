@@ -28,10 +28,26 @@ using namespace std;
 using namespace OHOS::Media;
 namespace OHOS {
 const char *FLAC_PATH = "/data/test/fuzz_create.flac";
+int64_t expectSize = 37;
+size_t timeSize = 5;
+size_t uriSize = 25;
+int64_t uriBufferSize = 20;
+char flag = '\0';
+size_t trackTypeSize = 26;
+size_t durationSize = 27;
+size_t heightSize = 28;
+size_t frameRateSize = 29;
+size_t languageSize = 31;
+int64_t languageBufferSize = 2;
+size_t codecConfigSize = 32;
+size_t sampleRateSize = 33;
+size_t channelCount = 34;
+size_t videoHeightSize = 35;
+size_t videoWidthSize = 36;
 
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
-    if (size < 37) {
+    if (size < expectSize) {
         return false;
     }
     int32_t fd = open(FLAC_PATH, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -44,22 +60,22 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     close(fd);
     struct Params params;
-    params.time = data[size - 5];
+    params.time = data[size - timeSize];
     char *uri = new char[21];
-    memcpy(uri, data  + size - 25, 20);
-    uri[20] = '\0';
-    params.setTrackType = data[size - 26];
-    params.setDuration = data[size - 27];
-    params.setHeight = data[size - 28];
-    params.setFrameRate = data[size - 29];
+    memcpy(uri, data  + size - uriSize, uriBufferSize);
+    uri[uriBufferSize] = flag;
+    params.setTrackType = data[size - trackTypeSize];
+    params.setDuration = data[size - durationSize];
+    params.setHeight = data[size - heightSize];
+    params.setFrameRate = data[size - frameRateSize];
     char *setLanguage = new char[3];
-    memcpy(setLanguage, data + size - 31, 2);
-    setLanguage[2] = '\0';
-    params.setCodecConfigSize = data[size - 32];
-    params.sampleRate = data[size - 33];
-    params.channelCount = data[size - 34];
-    params.setVideoHeight = data[size - 35];
-    params.setVideoWidth = data[size - 36];
+    memcpy(setLanguage, data + size - languageSize, languageBufferSize);
+    setLanguage[languageBufferSize] = flag;
+    params.setCodecConfigSize = data[size - codecConfigSize];
+    params.sampleRate = data[size - sampleRateSize];
+    params.channelCount = data[size - channelCount];
+    params.setVideoHeight = data[size - videoHeightSize];
+    params.setVideoWidth = data[size - videoWidthSize];
     uint8_t *dataConver = const_cast<uint8_t *>(data);
     uint32_t *createSize = reinterpret_cast<uint32_t *>(dataConver + size - 4);
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
