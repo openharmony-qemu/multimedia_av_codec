@@ -40,8 +40,6 @@ std::vector<std::string_view> codecVec = {
     AVCodecCodecName::AUDIO_DECODER_APE_NAME
 };
 
-void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap);
-
 template <class T>
 void InitDefinition(const std::string &mimetype, const std::string_view &codecName,
                     CodecPluginDef &definition, Capability &cap)
