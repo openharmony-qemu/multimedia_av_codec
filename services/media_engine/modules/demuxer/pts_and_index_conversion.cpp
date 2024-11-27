@@ -33,7 +33,6 @@ const uint32_t BOX_HEAD_SIZE = 8;
 TimeAndIndexConversion::TimeAndIndexConversion()
     : source_(std::make_shared<Source>())
 {
-
 };
 
 TimeAndIndexConversion::~TimeAndIndexConversion()
