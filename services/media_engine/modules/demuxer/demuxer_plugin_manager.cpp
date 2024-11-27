@@ -448,6 +448,19 @@ int32_t DemuxerPluginManager::GetStreamIDByTrackID(int32_t trackId)
     return -1;  // default
 }
 
+int32_t DemuxerPluginManager::GetStreamIDByTrackType(TrackType type)
+{
+    if (type == TRACK_VIDEO) {
+        return curVideoStreamID_;
+    } else if (type == TRACK_AUDIO) {
+        return curAudioStreamID_;
+    } else if (type == TRACK_SUBTITLE) {
+        return curSubTitleStreamID_;
+    } else {
+        return -1;
+    }
+}
+
 bool DemuxerPluginManager::CreatePlugin(std::string pluginName, int32_t id)
 {
     if (streamInfoMap_[id].plugin != nullptr) {
