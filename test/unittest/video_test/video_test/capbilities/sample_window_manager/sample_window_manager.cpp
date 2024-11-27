@@ -24,7 +24,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "WindowManager"};
-std::atomic<int32_t> windowIdCount{0};
 }
 
 namespace OHOS {
@@ -80,6 +79,7 @@ std::shared_ptr<WindowWrapper> WindowManager::CreateWindowWrapper(SampleWindowTy
         "Window wrapper create failed, window type: %{public}s",
         ToString(static_cast<int32_t>(windowType), SAMPLE_WINDOW_TYPE_TO_STRING).c_str());
 
+    static std::atomic<int32_t> windowIdCount{0};
     WindowId windowId = windowIdCount++;
     windowWrappper->SetWindowId(windowId);
     AVCODEC_LOGI("Succeed, window type: %{public}s, window id: %{public}d",

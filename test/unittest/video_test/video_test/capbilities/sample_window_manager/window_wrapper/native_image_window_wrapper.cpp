@@ -25,7 +25,8 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "Nativ
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-void OnFrameAvailable(void *context) {
+void OnFrameAvailable(void *context)
+{
     CHECK_AND_RETURN_LOG(context != nullptr, "Context is nullptr");
     OH_NativeImage *image = static_cast<NativeImageWindowWrapper *>(context)->GetNativeImage().get();
 

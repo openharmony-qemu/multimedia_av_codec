@@ -31,17 +31,17 @@ int32_t VideoDecoderSample::Init()
     auto &info = *context_->sampleInfo;
     if (!(info.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
         switch (info.codecConsumerType) {
-        case CODEC_COMSUMER_TYPE_DEFAULT:
-            context_->windowWrapper = WindowManager::GetInstance().CreateWindowWrapper(SampleWindowType::NATIVE_IMAGE);
-            break;
+            case CODEC_COMSUMER_TYPE_DEFAULT:
+                context_->windowWrapper = WindowManager::GetInstance().CreateWindowWrapper(SampleWindowType::NATIVE_IMAGE);
+                break;
 #ifdef SAMPLE_BUILD_TO_EXECUTOR
-        case CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT:
-            context_->windowWrapper = WindowManager::GetInstance().CreateWindowWrapper(SampleWindowType::ROSEN);
-            break;
+            case CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT:
+                context_->windowWrapper = WindowManager::GetInstance().CreateWindowWrapper(SampleWindowType::ROSEN);
+                break;
 #endif
-        default:
-            AVCODEC_LOGE("Not supported codec consumer type: %{public}d", info.codecConsumerType);
-            break;
+            default:
+                AVCODEC_LOGE("Not supported codec consumer type: %{public}d", info.codecConsumerType);
+                break;
         }
         CHECK_AND_RETURN_RET_LOG(context_->windowWrapper != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
     }
