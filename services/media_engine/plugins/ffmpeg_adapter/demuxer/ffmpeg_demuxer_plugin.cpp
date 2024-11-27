@@ -1367,6 +1367,11 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
     }
+    // fix first frame in hdrvivid stream, when dynamic metadata in hvc1 box
+    if (avStream->codecpar != nullptr && avStream->codecpar->codec_id == AV_CODEC_ID_HEVC &&
+        streamParser_ != nullptr && streamParser_->IsHdrVivid() && seekTime == 0) {
+        streamParser_->ResetXPSSendStatus();        
+    }
     return Status::OK;
 }
 
