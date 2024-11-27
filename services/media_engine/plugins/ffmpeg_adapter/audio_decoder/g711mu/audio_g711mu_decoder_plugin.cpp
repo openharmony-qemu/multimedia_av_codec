@@ -151,8 +151,8 @@ Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
 
 Status AudioG711muDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer)
 {
-    if (!outputBuffer) {
-        AVCODEC_LOGE("AudioG711muDecoderPlugin Queue out buffer is null.");
+    if (!outputBuffer || !channels_) {
+        AVCODEC_LOGE("AudioG711muDecoderPlugin Queue out buffer is null or channels is 0.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     {
@@ -165,7 +165,7 @@ Status AudioG711muDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
         outputBuffer->pts_ = pts_;
         float usPerSample = TIME_ONE_SECOND / sampleRate_;
         if (sampleFormat_ == SAMPLE_S16LE) {
-            outputBuffer->duration_ = (outSize / 2 / channels_) * usPerSample; // 2 bytes
+            outputBuffer->duration_ = static_cast<uint32_t>((outSize / 2.0f / channels_) * usPerSample); // 2 bytes
         }
         dataCallback_->OnOutputBufferDone(outputBuffer);
     }
