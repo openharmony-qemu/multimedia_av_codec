@@ -1367,7 +1367,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
     }
-    // fix first frame in hdrvivid stream, when dynamic metadata in hvc1 box
+    // fix first frame in stream without dynamic metadata which in not in mdat box
     if (streamParser_ != nullptr && seekTime == 0) {
         streamParser_->ResetXPSSendStatus();
     }
