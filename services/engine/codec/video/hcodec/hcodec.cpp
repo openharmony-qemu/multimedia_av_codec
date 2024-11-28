@@ -1016,7 +1016,7 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
                 return;
             }
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-            if (!isEncoder_ && isVrrEnable_) {
+            if (!isEncoder_ && isVrrInitialized_) {
                 (void)VrrPrediction(info);
             }
 #endif
