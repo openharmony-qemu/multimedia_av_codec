@@ -288,6 +288,9 @@ int32_t AudioFfmpegEncoderPlugin::ReAllocateContext()
         }
     });
 
+    CHECK_AND_RETURN_RET_LOG(tmpContext != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
+        "Allocate tmpContext failed.");
+
     tmpContext->channels = avCodecContext_->channels;
     tmpContext->sample_rate = avCodecContext_->sample_rate;
     tmpContext->bit_rate = avCodecContext_->bit_rate;
