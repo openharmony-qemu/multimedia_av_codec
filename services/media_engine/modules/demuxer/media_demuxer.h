@@ -269,7 +269,7 @@ private:
     std::mutex prerollMutex_ {};
     std::atomic<bool> inPreroll_ = false;
 
-    std::map<int32_t, int32_t> inSelectTrackType_;
+    std::map<int32_t, int32_t> inSelectTrackType_{};
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;
