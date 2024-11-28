@@ -653,22 +653,21 @@ void VideoEncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t f
     }
 }
 
-void VideoEncSample::InputQPMap(std::shared_ptr<FormatMock> format,
-                                   std::shared_ptr<AVBufferMock> buffer)
+void VideoEncSample::InputQPMap(std::shared_ptr<FormatMock> format, std::shared_ptr<AVBufferMock> buffer)
 {
     if (!enableQPMapCapability) {
         return;
     }
 
-    size_t qp_map_size = ((DEFAULT_WIDTH_VENC + 15) / 16) * ((DEFAULT_HEIGHT_VENC + 15) / 16);
-    uint8_t *qp_map = new uint8_t[qp_map_size];
-    (void)memset_s(qp_map, qp_map_size, 10, qp_map_size);
-    format->PutBuffer(Media::Tag::VIDEO_ENCODER_PER_FRAME_QP_MAP, qp_map, qp_map_size);
+    size_t qpMapSize = ((DEFAULT_WIDTH_VENC + 15) / 16) * ((DEFAULT_HEIGHT_VENC + 15) / 16); // 15, 16: calculate block num
+    uint8_t *qpMap = new uint8_t[qpMapSize];
+    (void)memset_s(qpMap, qpMapSize, 10, qpMapSize); // 10: qp
+    format->PutBuffer(Media::Tag::VIDEO_ENCODER_PER_FRAME_QP_MAP, qpMap, qpMapSize);
     if (buffer) {
         buffer->SetParameter(format);
     }
 
-    delete [] qp_map;
+    delete [] qpMap;
 }
 
 void VideoEncSample::InputParamLoopFunc()
