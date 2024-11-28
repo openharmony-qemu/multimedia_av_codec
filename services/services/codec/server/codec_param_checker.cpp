@@ -101,6 +101,7 @@ int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, Codec
 int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t QPMapChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -120,6 +121,7 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
+    QPMapChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
@@ -137,6 +139,7 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
+    QPMapChecker,
 };
 
 const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
@@ -593,6 +596,23 @@ int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScena
 
     CHECK_AND_RETURN_RET_LOG(ltrFrameCount >= 0 && ltrFrameCount <= maxLTRFrameCount, AVCS_ERR_INVALID_VAL,
         "Param invalid, LTR frame count range: %{public}d-%{public}d", 0, maxLTRFrameCount);
+
+    return AVCS_ERR_OK;
+}
+
+int32_t QPMapChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)scenario;
+    int32_t qpMapEnable = false;
+    bool qpMapEnableExists = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_QP_MAP, qpMapEnable);
+    PrintParam(qpMapEnableExists, Tag::VIDEO_ENCODER_ENABLE_QP_MAP, qpMapEnable);
+    if (!qpMapEnableExists || !qpMapEnable) {
+        return AVCS_ERR_OK;
+    }
+
+    CHECK_AND_RETURN_RET_LOGW(capData.featuresMap.count(
+        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_QP_MAP)),
+        AVCS_ERR_UNSUPPORT, "Not support qp map capbility");
 
     return AVCS_ERR_OK;
 }
