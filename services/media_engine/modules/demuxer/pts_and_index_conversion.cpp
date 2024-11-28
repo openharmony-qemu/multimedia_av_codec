@@ -75,7 +75,7 @@ void TimeAndIndexConversion::ReadBufferFromDataSource(size_t bufSize, std::share
     FALSE_RETURN_MSG(buffer != nullptr, "Buffer is nullptr");
     auto result = source_->SeekTo(offset_);
     if (result != Status::OK) {
-        MEDIA_LOG_E("Seek to " PUBLIC_LOG_D32 " fail", offset_);
+        MEDIA_LOG_E("Seek to " PUBLIC_LOG_U64 " fail", offset_);
         buffer = nullptr;
         return;
     }
@@ -91,7 +91,7 @@ void TimeAndIndexConversion::StartParse()
 {
     source_->GetSize(fileSize_);
     MEDIA_LOG_I("fileSize: " PUBLIC_LOG_D64, fileSize_);
-    while (static_cast<uint64_t>(offset_) < fileSize_) {
+    while (offset_ < fileSize_) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
         auto buffer = std::make_shared<Buffer>();
         FALSE_RETURN_MSG(buffer != nullptr, "StartParse failed due to read buffer error");
@@ -99,8 +99,9 @@ void TimeAndIndexConversion::StartParse()
         auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
         ReadBufferFromDataSource(bufSize, buffer);
         FALSE_RETURN_MSG(buffer != nullptr, "StartParse failed due to read buffer error");
-        BoxHeader header;
+        BoxHeader header{0};
         ReadBoxHeader(buffer, header);
+        FALSE_RETURN_MSG(header.size > 0, "StartParse failed due to error box size");
         uint64_t boxSize = static_cast<uint64_t>(header.size);
         if (boxSize == 1 || boxSize == 0) { // 0 and 1 are used to verify whether there is a large size
             uint64_t largeSize = 0;
@@ -158,7 +159,7 @@ bool TimeAndIndexConversion::IsMP4orMOV()
     auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
     ReadBufferFromDataSource(bufSize, buffer);
     FALSE_RETURN_V_MSG_E(buffer != nullptr, false, "IsMP4orMOV failed due to read buffer error");
-    BoxHeader header;
+    BoxHeader header{0};
     ReadBoxHeader(buffer, header);
     offset_ = 0; // init offset_
     return strncmp(header.type, BOX_TYPE_FTYP, sizeof(header.type)) == 0;
@@ -166,8 +167,8 @@ bool TimeAndIndexConversion::IsMP4orMOV()
 
 void TimeAndIndexConversion::ParseMoov(uint32_t boxSize)
 {
-    uint64_t parentSize = offset_ + boxSize;
-    while (static_cast<uint64_t>(offset_) < parentSize) {
+    uint64_t parentSize = offset_ + static_cast<uint64_t>(boxSize);
+    while (offset_ < parentSize) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
         auto buffer = std::make_shared<Buffer>();
         FALSE_RETURN_MSG(buffer != nullptr, "ParseMoov failed due to read buffer error");
@@ -175,13 +176,14 @@ void TimeAndIndexConversion::ParseMoov(uint32_t boxSize)
         auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
         ReadBufferFromDataSource(bufSize, buffer);
         FALSE_RETURN_MSG(buffer != nullptr, "ParseMoov failed due to read buffer error");
-        BoxHeader header;
+        BoxHeader header{0};
         ReadBoxHeader(buffer, header);
+        FALSE_RETURN_MSG(header.size > 0, "ParseMoov failed due to error box size");
         if (strncmp(header.type, BOX_TYPE_TRAK, sizeof(header.type)) == 0) {
             offset_ += BOX_HEAD_SIZE;
             ParseTrak(header.size - BOX_HEAD_SIZE);
         } else if (header.size > BOX_HEAD_SIZE) {
-            offset_ += header.size;
+            offset_ += static_cast<uint64_t>(header.size);
         }
     }
 }
@@ -199,8 +201,8 @@ void TimeAndIndexConversion::ParseTrak(uint32_t boxSize)
 
 void TimeAndIndexConversion::ParseBox(uint32_t boxSize)
 {
-    uint64_t parentSize = offset_ + boxSize;
-    while (static_cast<uint64_t>(offset_) < parentSize) {
+    uint64_t parentSize = offset_ + static_cast<uint64_t>(boxSize);
+    while (offset_ < parentSize) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
         auto buffer = std::make_shared<Buffer>();
         FALSE_RETURN_MSG(buffer != nullptr, "ParseBox failed due to read buffer error");
@@ -208,14 +210,15 @@ void TimeAndIndexConversion::ParseBox(uint32_t boxSize)
         auto bufData = buffer->WrapMemory(buff.data(), bufSize, bufSize);
         ReadBufferFromDataSource(bufSize, buffer);
         FALSE_RETURN_MSG(buffer != nullptr, "ParseBox failed due to read buffer error");
-        BoxHeader header;
+        BoxHeader header{0};
         ReadBoxHeader(buffer, header);
+        FALSE_RETURN_MSG(header.size > 0, "ParseBox failed due to error box size");
         auto it = boxParsers.find(std::string(header.type));
         if (it != boxParsers.end()) {
             offset_ += BOX_HEAD_SIZE;
             (this->*(it->second))(header.size - BOX_HEAD_SIZE);
         } else {
-            offset_ += header.size;
+            offset_ += static_cast<uint64_t>(header.size);
         }
     }
 }
@@ -249,11 +252,11 @@ void TimeAndIndexConversion::ParseCtts(uint32_t boxSize)
     const uint8_t* entryPtr = ptr + sizeof(uint32_t) * 2; // 2 is used to skip versionAndFlags and entryCount
     for (uint32_t i = 0; i < entryCount; ++i) {
         entries[i].sampleCount = ntohl(*reinterpret_cast<const uint32_t*>(entryPtr));
-        entries[i].sampleOffset = ntohl(*reinterpret_cast<const uint32_t*>(entryPtr + sizeof(uint32_t)));
+        entries[i].sampleOffset = ntohl(*reinterpret_cast<const int32_t*>(entryPtr + sizeof(uint32_t)));
         entryPtr += sizeof(CTTSEntry);
     }
     curTrakInfo_.cttsEntries = entries;
-    offset_ += boxSize;
+    offset_ += static_cast<uint64_t>(boxSize);
 }
 
 void TimeAndIndexConversion::ParseStts(uint32_t boxSize)
@@ -289,7 +292,7 @@ void TimeAndIndexConversion::ParseStts(uint32_t boxSize)
         entryPtr += sizeof(STTSEntry);
     }
     curTrakInfo_.sttsEntries = entries;
-    offset_ += boxSize;
+    offset_ += static_cast<uint64_t>(boxSize);
 }
 
 void TimeAndIndexConversion::ParseHdlr(uint32_t boxSize)
@@ -325,7 +328,7 @@ void TimeAndIndexConversion::ParseHdlr(uint32_t boxSize)
     } else {
         curTrakInfo_.trakType = TrakType::TRAK_OTHER;
     }
-    offset_ += boxSize;
+    offset_ += static_cast<uint64_t>(boxSize);
 }
 
 void TimeAndIndexConversion::ParseMdhd(uint32_t boxSize)
@@ -351,7 +354,7 @@ void TimeAndIndexConversion::ParseMdhd(uint32_t boxSize)
     timeScale = ntohl(timeScale);
     MEDIA_LOG_D("timeScale: " PUBLIC_LOG_D32, timeScale);
     curTrakInfo_.timeScale = timeScale;
-    offset_ += boxSize;
+    offset_ += static_cast<uint64_t>(boxSize);
 }
 
 void TimeAndIndexConversion::InitPTSandIndexConvert()
@@ -430,30 +433,42 @@ Status TimeAndIndexConversion::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSC
     uint32_t cttsIndex = 0;
     int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
-
-    int32_t sttsCurNum = trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries[sttsIndex].sampleCount;
-    int32_t cttsCurNum = 0;
-
-    cttsCurNum = trakInfoVec_[curConvertTrakInfoIndex_].cttsEntries[cttsIndex].sampleCount;
-    while (sttsIndex < trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries.size() &&
-           cttsIndex < trakInfoVec_[curConvertTrakInfoIndex_].cttsEntries.size() &&
-           cttsCurNum >= 0 && sttsCurNum >= 0) {
+    uint32_t sttsCount = trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries.size();
+    uint32_t cttsCount = trakInfoVec_[curConvertTrakInfoIndex_].cttsEntries.size();
+    uint32_t sttsCurNum = trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries[sttsIndex].sampleCount;
+    uint32_t cttsCurNum = trakInfoVec_[curConvertTrakInfoIndex_].cttsEntries[cttsIndex].sampleCount;
+    while (sttsIndex < sttsCount && cttsIndex < cttsCount) {
         if (cttsCurNum == 0) {
             cttsIndex++;
-            cttsCurNum = cttsIndex < trakInfoVec_[curConvertTrakInfoIndex_].cttsEntries.size() ?
-                         trakInfoVec_[curConvertTrakInfoIndex_].cttsEntries[cttsIndex].sampleCount : 0;
+            if (cttsIndex >= cttsCount) {
+                break;
+            }
+            cttsCurNum = trakInfoVec_[curConvertTrakInfoIndex_].cttsEntries[cttsIndex].sampleCount;
+        }
+        if (cttsCurNum == 0) {
+            break;
         }
         cttsCurNum--;
-        pts = (dts +
-                static_cast<int64_t>(trakInfoVec_[curConvertTrakInfoIndex_].cttsEntries[cttsIndex].sampleOffset)) *
-                1000 * 1000 / // 1000 is used for converting pts to us
-                static_cast<int64_t>(trakInfoVec_[curConvertTrakInfoIndex_].timeScale);
+        if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
+            ((dts + static_cast<int64_t>(trakInfoVec_[curConvertTrakInfoIndex_].cttsEntries[cttsIndex].sampleOffset)) /
+            static_cast<int64_t>(trakInfoVec_[curConvertTrakInfoIndex_].timeScale))) {
+                MEDIA_LOG_E("pts overflow");
+                return Status::ERROR_INVALID_DATA;
+        }
+        double timeScaleRate = 1000 * 1000 / // 1000 is used for converting pts to us
+                                static_cast<double>(trakInfoVec_[curConvertTrakInfoIndex_].timeScale);
+        double ptsTemp = static_cast<double>(dts) +
+            static_cast<double>(trakInfoVec_[curConvertTrakInfoIndex_].cttsEntries[cttsIndex].sampleOffset);
+        pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
+        if (sttsCurNum == 0) {
+            break;
+        }
         sttsCurNum--;
         dts += static_cast<int64_t>(trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries[sttsIndex].sampleDelta);
         if (sttsCurNum == 0) {
             sttsIndex++;
-            sttsCurNum = sttsIndex < trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries.size() ?
+            sttsCurNum = sttsIndex < sttsCount ?
                          trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries[sttsIndex].sampleCount : 0;
         }
     }
@@ -466,18 +481,33 @@ Status TimeAndIndexConversion::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConv
     uint32_t sttsIndex = 0;
     int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
+    uint32_t sttsCount = trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries.size();
+    uint32_t sttsCurNum = trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries[sttsIndex].sampleCount;
 
-    int32_t sttsCurNum = trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries[sttsIndex].sampleCount;
-
-    while (sttsIndex < trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries.size() && sttsCurNum >= 0) {
-        pts = dts * 1000 * 1000 / // 1000 is for converting pts to us
-              static_cast<int64_t>(trakInfoVec_[curConvertTrakInfoIndex_].timeScale);
+    while (sttsIndex < sttsCount) {
+        if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
+            (dts / static_cast<int64_t>(trakInfoVec_[curConvertTrakInfoIndex_].timeScale))) {
+                MEDIA_LOG_E("pts overflow");
+                return Status::ERROR_INVALID_DATA;
+        }
+        double timeScaleRate = 1000 * 1000 / // 1000 is used for converting pts to us
+                                static_cast<double>(trakInfoVec_[curConvertTrakInfoIndex_].timeScale);
+        double ptsTemp = static_cast<double>(dts);
+        pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
+        if (sttsCurNum == 0) {
+            break;
+        }
         sttsCurNum--;
+        if ((INT64_MAX - dts) <
+            (static_cast<int64_t>(trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries[sttsIndex].sampleDelta))) {
+            MEDIA_LOG_E("dts overflow");
+            return Status::ERROR_INVALID_DATA;
+        }
         dts += static_cast<int64_t>(trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries[sttsIndex].sampleDelta);
         if (sttsCurNum == 0) {
             sttsIndex++;
-            sttsCurNum = sttsIndex < trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries.size() ?
+            sttsCurNum = sttsIndex < sttsCount ?
                          trakInfoVec_[curConvertTrakInfoIndex_].sttsEntries[sttsIndex].sampleCount : 0;
         }
     }
