@@ -34,6 +34,7 @@ constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
 constexpr int MAX_RECORD_COUNT = 10;
+constexpr int BUFFER_SIZE = 10;
 
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 
@@ -864,6 +865,63 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_null, TestSize.Level1)
     downloader->Read(buff, readDataInfo);
 
     OSAL::SleepFor(4 * 1000);
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetSegmentOffset, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>("test");
+    downloader->GetSegmentOffset();
+    downloader->GetHLSDiscontinuity();
+    downloader->WaitForBufferingEnd();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720_5K.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    downloader->GetStartedStatus();
+    unsigned char buff[BUFFER_SIZE];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = BUFFER_SIZE;
+    readDataInfo.isEos_ = true;
+    downloader->Read(buff, readDataInfo);
+    downloader->GetSegmentOffset();
+    downloader->GetHLSDiscontinuity();
+    downloader->WaitForBufferingEnd();
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, StopBufferring, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>("test");
+    downloader->StopBufferring(true);
+    downloader->StopBufferring(false);
+    downloader->StopBufferring(true);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720_5K.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    downloader->GetStartedStatus();
+    unsigned char buff[BUFFER_SIZE];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = BUFFER_SIZE;
+    readDataInfo.isEos_ = true;
+    downloader->Read(buff, readDataInfo);
+    downloader->StopBufferring(true);
+    downloader->StopBufferring(false);
+    downloader->StopBufferring(true);
+    downloader->StopBufferring(false);
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
