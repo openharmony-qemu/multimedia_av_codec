@@ -63,7 +63,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     close(fd);
     struct Params params;
-     params.time = data[size - TIME_SIZE];
+    params.time = data[size - TIME_SIZE];
     char *uri = new char[URI_BUFFER_SIZE];
     if (memcpy_s(uri, URI_BUFFER_SIZE, data  + size - URI_SIZE, URI_COUNT) != 0) {
         delete[] uri;
