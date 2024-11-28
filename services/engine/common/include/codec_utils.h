@@ -65,6 +65,10 @@ AVPixelFormat ConvertPixelFormatToFFmpeg(VideoPixelFormat pixelFormat);
 GraphicTransformType TranslateSurfaceRotation(const VideoRotation &rotation);
 int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame> frame, uint8_t **dstData,
                           int32_t *dstLineSize, AVPixelFormat dstPixFmt);
+int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale,
+                          uint8_t **srcData, int32_t *srcLineSize, AVPixelFormat srcPixFmt,
+                          int32_t srcWidth, int32_t srcHeight,
+                          uint8_t **dstData, int32_t *dstLineSize, AVPixelFormat dstPixFmt);
 int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct SurfaceInfo &surfaceInfo,
                          const Format &format);
 int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
