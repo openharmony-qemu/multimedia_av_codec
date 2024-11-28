@@ -226,7 +226,7 @@ private:
     int64_t videoStartTime_{0};
 
     std::shared_mutex drmMutex{};
-    std::mutex isSelectTrackMutex_;
+    std::mutex isSelectTrackMutex_{};
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
 
