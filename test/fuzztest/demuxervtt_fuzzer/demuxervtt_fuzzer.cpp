@@ -29,24 +29,24 @@ using namespace std;
 using namespace OHOS::Media;
 namespace OHOS {
 const char *VTT_PATH = "/data/test/fuzz_create.vtt";
-int64_t g_expectSize = 37;
-size_t g_timeSize = 5;
-size_t g_uriSize = 25;
-size_t g_uriBufferSize = 21;
-int64_t g_uriCount = 20;
-char g_flag = '\0';
-size_t g_trackTypeSize = 26;
-size_t g_durationSize = 27;
-size_t g_heightSize = 28;
-size_t g_frameRateSize = 29;
-size_t g_languageSize = 31;
-size_t g_languageBufferSize = 3;
-size_t g_languageCount = 2;
-size_t g_codecConfigSize = 32;
-size_t g_sampleRateSize = 33;
-size_t g_channelCount = 34;
-size_t g_videoHeightSize = 35;
-size_t g_videoWidthSize = 36;
+const int64_t g_expectSize = 37;
+const size_t g_timeSize = 5;
+const size_t g_uriSize = 25;
+const size_t g_uriBufferSize = 21;
+const int64_t g_uriCount = 20;
+const char g_flag = '\0';
+const size_t g_trackTypeSize = 26;
+const size_t g_durationSize = 27;
+const size_t g_heightSize = 28;
+const size_t g_frameRateSize = 29;
+const size_t g_languageSize = 31;
+const size_t g_languageBufferSize = 3;
+const size_t g_languageCount = 2;
+const size_t g_codecConfigSize = 32;
+const size_t g_sampleRateSize = 33;
+const size_t g_channelCount = 34;
+const size_t g_videoHeightSize = 35;
+const size_t g_videoWidthSize = 36;
 
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
@@ -66,6 +66,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     params.time = data[size - g_timeSize];
     char *uri = new char[g_uriBufferSize];
     if (memcpy_s(uri, g_uriBufferSize, data  + size - g_uriSize, g_uriCount) != 0) {
+        delete[] uri;
         return false;
     }
     uri[g_uriCount] = g_flag;
@@ -75,6 +76,8 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     params.setFrameRate = data[size - g_frameRateSize];
     char *setLanguage = new char[g_languageBufferSize];
     if (memcpy_s(setLanguage, g_languageBufferSize, data + size - g_languageSize, g_languageCount) != 0) {
+        delete[] uri;
+        delete[] setLanguage;
         return false;
     }
     setLanguage[g_languageCount] = g_flag;
