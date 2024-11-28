@@ -128,6 +128,7 @@ void TimeAndIndexConversion::ReadLargeSize(std::shared_ptr<Buffer> buffer, uint6
     auto memory = buffer->GetMemory();
     FALSE_RETURN_MSG(memory != nullptr, "No memory in buffer");
     const uint8_t* ptr = memory->GetReadOnlyData();
+    FALSE_RETURN_MSG(ptr != nullptr, "ReadLargeSize failed due to nullptr");
     size_t size = memory->GetSize();
     FALSE_RETURN_MSG(size >= sizeof(uint64_t), "Not enough data in buffer to read large size");
     largeSize = ntohl(*reinterpret_cast<const uint64_t*>(ptr));
@@ -139,6 +140,7 @@ void TimeAndIndexConversion::ReadBoxHeader(std::shared_ptr<Buffer> buffer, BoxHe
     auto memory = buffer->GetMemory();
     FALSE_RETURN_MSG(memory != nullptr, "No memory in buffer");
     const uint8_t* ptr = memory->GetReadOnlyData();
+    FALSE_RETURN_MSG(ptr != nullptr, "ReadBoxHeader failed due to nullptr");
     size_t size = memory->GetSize();
     FALSE_RETURN_MSG(size >= sizeof(header.size) + 4,  // 4 is used to check data
         "Not enough data in buffer to read BoxHeader");
