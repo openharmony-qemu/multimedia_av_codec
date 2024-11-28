@@ -116,6 +116,7 @@ private:
     VrrCheckSupport VrrCheckSupportFunc_ = nullptr;
     VrrProcess VrrProcessFunc_ = nullptr;
     void *vpeHandle_ = nullptr;
+    bool vrrDynamicSwitch_ = false;
     Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* vrrHandle_ = nullptr;
 #endif
 
