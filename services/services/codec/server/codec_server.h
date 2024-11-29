@@ -120,7 +120,6 @@ private:
     int32_t InitServer();
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
-    void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     void StatusChanged(CodecStatus newStatus);
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);

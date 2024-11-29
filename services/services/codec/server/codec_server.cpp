@@ -160,21 +160,12 @@ CodecServer::CodecServer()
 
 CodecServer::~CodecServer()
 {
-    std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
-    CHECK_AND_RETURN_LOG(thread != nullptr, "0x%{public}06" PRIXPTR " create exit thread failed", FAKE_POINTER(this));
-    if (thread->joinable()) {
-        thread->join();
-    }
+    codecBase_ = nullptr;
     shareBufCallback_ = nullptr;
     avBufCallback_ = nullptr;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
-}
-
-void CodecServer::ExitProcessor()
-{
-    codecBase_ = nullptr;
 }
 
 int32_t CodecServer::InitServer()
@@ -440,10 +431,7 @@ int32_t CodecServer::Release()
     }
     int32_t ret = codecBase_->Release();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
-    std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
-    if (thread && thread->joinable()) {
-        thread->join();
-    }
+    codecBase_ = nullptr;
     shareBufCallback_ = nullptr;
     avBufCallback_ = nullptr;
     (void)ReleasePostProcessing();
