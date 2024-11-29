@@ -39,12 +39,13 @@ ohos_static_library("av_codec_video_loader") {
     "$av_codec_root_dir/services/engine/codec/video/video_codec_loader.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
-
-  public_deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+  deps = [
+	"$av_codec_root_dir/services/engine/base:av_codec_codec_base",
+	"$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
-  ]
+	]
+
+  public_deps = []
 
   external_deps = [
     "bounds_checking_function:libsec_static",
