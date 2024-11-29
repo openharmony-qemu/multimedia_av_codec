@@ -867,8 +867,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsBufferDroppable_001,
     }
     int32_t fd = open(srtPath.c_str(), O_RDONLY);
     std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
-    int32_t aTrackId = 0;
-    int32_t vTrackId = 1;
+    int32_t aTrackId = 1;
+    int32_t vTrackId = 0;
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
     std::shared_ptr<AVBufferQueue> inputBufferQueue =
