@@ -39,12 +39,11 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerPluginManager" };
+constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 }
 
 namespace OHOS {
 namespace Media {
-
-constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 
 DataSourceImpl::DataSourceImpl(const std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID)
     : stream_(stream),
