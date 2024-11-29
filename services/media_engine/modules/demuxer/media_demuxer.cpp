@@ -1845,30 +1845,28 @@ bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
         MEDIA_LOG_W("Invalid track " PUBLIC_LOG_U32, trackId);
         return false;
     }
-
     MEDIA_LOG_D("currentStreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32, currentStreamID, newStreamID);
     bool ret = false;
-    if (currentStreamID != newStreamID) {
-        MEDIA_LOG_I("streamID changed");
-        if (trackId == videoTrackId_ && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
-            ret = SelectBitRateChangeStream(trackId);
-            if (ret) {
-                streamDemuxer_->SetChangeFlag(true);
-                MEDIA_LOG_D("targetBitrate: " PUBLIC_LOG_U32 " currentBitrate: " PUBLIC_LOG_U32, targetBitRate_,
-                    demuxerPluginManager_->GetCurrentBitRate());
-                isSelectBitRate_.store(targetBitRate_ != demuxerPluginManager_->GetCurrentBitRate());
-            }
-        } else {
-            isSelectTrack_.store(true);
-            ret = SelectTrackChangeStream(trackId);
-            if (ret) {
-                MEDIA_LOG_I("targetBitrate: " PUBLIC_LOG_U32 "currentBitrate: " PUBLIC_LOG_U32, targetBitRate_,
-                    demuxerPluginManager_->GetCurrentBitRate());
-                targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
-                streamDemuxer_->SetChangeFlag(true);
-            }
-            isSelectTrack_.store(false);
+    FALSE_RETURN_V(currentStreamID != newStreamID, ret);
+    MEDIA_LOG_I("streamID changed");
+    if (trackId == videoTrackId_ && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
+        ret = SelectBitRateChangeStream(trackId);
+        if (ret) {
+            streamDemuxer_->SetChangeFlag(true);
+            MEDIA_LOG_D("targetBitrate: " PUBLIC_LOG_U32 " currentBitrate: " PUBLIC_LOG_U32, targetBitRate_,
+                demuxerPluginManager_->GetCurrentBitRate());
+            isSelectBitRate_.store(targetBitRate_ != demuxerPluginManager_->GetCurrentBitRate());
         }
+    } else {
+        isSelectTrack_.store(true);
+        ret = SelectTrackChangeStream(trackId);
+        if (ret) {
+            MEDIA_LOG_I("targetBitrate: " PUBLIC_LOG_U32 "currentBitrate: " PUBLIC_LOG_U32, targetBitRate_,
+                demuxerPluginManager_->GetCurrentBitRate());
+            targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
+            streamDemuxer_->SetChangeFlag(true);
+        }
+        isSelectTrack_.store(false);
     }
     return ret;
 }
