@@ -513,7 +513,8 @@ private:
 
 private:
     int32_t DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper, uint32_t waitMs = FIVE_SECONDS_IN_MS);
-    int32_t DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply, uint32_t waitMs = FIVE_SECONDS_IN_MS);
+    int32_t DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply,
+                                  uint32_t waitMs = FIVE_SECONDS_IN_MS);
     void PrintCaller();
     int32_t OnAllocateComponent();
     void ReleaseComponent();
