@@ -129,7 +129,8 @@ int32_t HCodec::Start()
 {
     SCOPED_TRACE();
     FUNC_TRACKER();
-    return DoSyncCall(MsgWhat::START, nullptr);
+    return DoSyncCall(MsgWhat::START, nullptr,
+        (isSecure_ ? FIVE_SECONDS_IN_MS * 2 : FIVE_SECONDS_IN_MS)); // 2: Secure mode
 }
 
 int32_t HCodec::Stop()
@@ -1207,20 +1208,21 @@ void HCodec::SignalError(AVCodecErrorType errorType, int32_t errorCode)
     callback_->OnError(errorType, errorCode);
 }
 
-int32_t HCodec::DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper)
+int32_t HCodec::DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper, uint32_t waitMs)
 {
     ParamSP reply;
-    return DoSyncCallAndGetReply(msgType, oper, reply);
+    return DoSyncCallAndGetReply(msgType, oper, reply, waitMs);
 }
 
-int32_t HCodec::DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply)
+int32_t HCodec::DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper,
+                                      ParamSP &reply, uint32_t waitMs)
 {
     ParamSP msg = make_shared<ParamBundle>();
     IF_TRUE_RETURN_VAL_WITH_MSG(msg == nullptr, AVCS_ERR_NO_MEMORY, "out of memory");
     if (oper) {
         oper(msg);
     }
-    bool ret = MsgHandleLoop::SendSyncMsg(msgType, msg, reply, FIVE_SECONDS_IN_MS);
+    bool ret = MsgHandleLoop::SendSyncMsg(msgType, msg, reply, waitMs);
     if (!ret) {
         HLOGE("wait msg %d(%s) time out", msgType, ToString(msgType));
         return AVCS_ERR_UNKNOWN;
