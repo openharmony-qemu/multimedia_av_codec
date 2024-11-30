@@ -50,6 +50,7 @@ Status Resample::Init(const ResamplePara &resamplePara)
         }
         if (swr_init(swrContext) != 0) {
             MEDIA_LOG_E("swr init error");
+            swr_free(&swrContext);
             return Status::ERROR_UNKNOWN;
         }
         swrCtx_ = std::shared_ptr<SwrContext>(swrContext, [](SwrContext *ptr) {
@@ -80,6 +81,7 @@ Status Resample::InitSwrContext(const ResamplePara &resamplePara)
     }
     if (swr_init(swrContext) != 0) {
         MEDIA_LOG_E("swr init error");
+        swr_free(&swrContext);
         return Status::ERROR_UNKNOWN;
     }
     swrCtx_ = std::shared_ptr<SwrContext>(swrContext, [](SwrContext *ptr) {
