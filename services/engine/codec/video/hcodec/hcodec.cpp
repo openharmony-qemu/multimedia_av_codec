@@ -1214,7 +1214,8 @@ int32_t HCodec::DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper, u
     return DoSyncCallAndGetReply(msgType, oper, reply, waitMs);
 }
 
-int32_t HCodec::DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply, uint32_t waitMs)
+int32_t HCodec::DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper,
+                                      ParamSP &reply, uint32_t waitMs)
 {
     ParamSP msg = make_shared<ParamBundle>();
     IF_TRUE_RETURN_VAL_WITH_MSG(msg == nullptr, AVCS_ERR_NO_MEMORY, "out of memory");
