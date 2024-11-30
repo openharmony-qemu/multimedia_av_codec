@@ -130,7 +130,7 @@ int32_t HCodec::Start()
     SCOPED_TRACE();
     FUNC_TRACKER();
     return DoSyncCall(MsgWhat::START, nullptr,
-        (isSecure_ ? FIVE_SECONDS_IN_MS * 2 : FIVE_SECONDS_IN_MS));
+        (isSecure_ ? FIVE_SECONDS_IN_MS * 2 : FIVE_SECONDS_IN_MS)); // 2: Secure mode
 }
 
 int32_t HCodec::Stop()
