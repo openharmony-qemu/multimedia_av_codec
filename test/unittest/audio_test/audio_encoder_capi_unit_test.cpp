@@ -1946,9 +1946,9 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, channel_layout_v1, TestSize.Level1)
         {CH_LAYOUT_STEREO, 2},
         {CH_LAYOUT_SURROUND, 3},
         {CH_LAYOUT_4POINT0, 4},
-        {CH_LAYOUT_5POINT0, 5},
-        {CH_LAYOUT_5POINT1, 6},
-        {CH_LAYOUT_7POINT1_WIDE, 8},
+        {CH_LAYOUT_5POINT0_BACK, 5},
+        {CH_LAYOUT_5POINT1_BACK, 6},
+        {CH_LAYOUT_7POINT1_WIDE_BACK, 8},
         {CH_LAYOUT_7POINT1, 8},
     };
     map<OH_AudioChannelLayout, int32_t> unsupportedLayoutMap = {
