@@ -465,7 +465,7 @@ int32_t AudioCaptureFilter::RelativeSleep(int64_t nanoTime)
     const int relativeFlag = 0; // flag of relative sleep.
     ret = clock_nanosleep(clockId, relativeFlag, &time, nullptr);
     if (ret != 0) {
-        MEDIA_LOG_I("ACW RelativeSleep may failed, ret is :%{public}d", ret);
+        MEDIA_LOG_I("RelativeSleep may failed, ret is :%{public}d", ret);
     }
     return ret;
 }
