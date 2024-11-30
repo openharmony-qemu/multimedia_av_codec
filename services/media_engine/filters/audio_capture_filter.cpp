@@ -20,7 +20,7 @@
 #include "avcodec_trace.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SCREENCAPTURE, "AudioCaptureFilter" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "AudioCaptureFilter" };
 static constexpr uint8_t LOG_LIMIT_HUNDRED = 100;
 }
 
