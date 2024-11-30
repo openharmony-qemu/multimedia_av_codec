@@ -1506,7 +1506,7 @@ void HlsMediaDownloader::CalculateBitRate(size_t fragmentSize, double duration)
     double dividendDuration = static_cast<double>(duration) / static_cast<double>(ONE_SECONDS);
     uint32_t calculateBitRate = static_cast<uint32_t>(divisorFragmentSize / dividendDuration);
     uint32_t tmpBitRate = static_cast<uint32_t>(currentBitRate_);
-    tmpBitRate_ = (calculateBitRate >> 1) + (tmpBitRate >> 1) + ((calculateBitRate | tmpBitRate) & 1);
+    tmpBitRate = (calculateBitRate >> 1) + (tmpBitRate >> 1) + ((calculateBitRate | tmpBitRate) & 1);
     currentBitRate_ = static_cast<int32_t>(tmpBitRate);
     MEDIA_LOG_I("HLS Calculate avgBitRate: " PUBLIC_LOG_D32, currentBitRate_);
 }
