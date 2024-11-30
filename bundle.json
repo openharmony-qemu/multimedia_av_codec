@@ -248,6 +248,16 @@
               ],
               "header_base": "//foundation/multimedia/av_codec/services/media_engine/modules/demuxer"
             }
+          },
+          {
+            "type": "so",
+            "name": "//foundation/multimedia/av_codec/services/engine/codec/video/hevcdecoder:hevc_decoder",
+            "header": {
+              "header_files": [
+                "HevcDec_Typedef.h"
+              ],
+              "header_base": "//foundation/multimedia/av_codec/services/engine/codec/video/hevcdecoder"
+            }
           }
         ],
       "test": [
