@@ -21,7 +21,8 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "AudioCaptureFilter" };
-static constexpr uint8_t LOG_LIMIT_HUNDRED = 100;
+static constexpr uint64_t AUDIO_NS_PER_SECOND = 1000000000;
+static constexpr int64_t AUDIO_CAPTURE_READ_FAILED_WAIT_TIME = 20000000; // 20000000 us 20ms
 }
 
 namespace OHOS {
@@ -329,6 +330,7 @@ void AudioCaptureFilter::ReadLoop()
     auto ret = audioCaptureModule_->GetSize(bufferSize);
     if (ret != Status::OK) {
         MEDIA_LOG_E("Get audioCaptureModule buffer size fail");
+        RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
         return;
     }
     std::shared_ptr<AVBuffer> buffer;
@@ -337,18 +339,21 @@ void AudioCaptureFilter::ReadLoop()
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
     if (ret != Status::OK) {
-        MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioCaptureFilter RequestBuffer fail");
+        MEDIA_LOG_E("AudioCaptureFilter RequestBuffer fail");
+        RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
         return;
     }
     ret = audioCaptureModule_->Read(buffer, bufferSize);
     if (ret == Status::ERROR_AGAIN) {
         MEDIA_LOG_E("audioCaptureModule read return again");
         outputBufferQueue_->PushBuffer(buffer, false);
+        RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
         return;
     }
     if (ret != Status::OK) {
-        MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioCaptureFilter RequestBuffer fail");
+        MEDIA_LOG_E("AudioCaptureFilter RequestBuffer fail");
         outputBufferQueue_->PushBuffer(buffer, false);
+        RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
         return;
     }
     buffer->memory_->SetSize(bufferSize);
@@ -356,6 +361,8 @@ void AudioCaptureFilter::ReadLoop()
     Status status = outputBufferQueue_->PushBuffer(buffer, true);
     if (status != Status::OK) {
         MEDIA_LOG_E("PushBuffer fail");
+        RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
+        return;
     }
 }
 
@@ -442,6 +449,25 @@ void AudioCaptureFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     if (audioCaptureModule_) {
         audioCaptureModule_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
     }
+}
+
+int32_t AudioCaptureFilter::RelativeSleep(int64_t nanoTime)
+{
+    int32_t ret = -1; // -1 for bad result.
+    if (nanoTime <= 0) {
+        MEDIA_LOG_E("RelativeSleep nanoTime <= 0");
+        return ret;
+    }
+    struct timespec time;
+    time.tv_sec = nanoTime / AUDIO_NS_PER_SECOND;
+    time.tv_nsec = nanoTime - (time.tv_sec * AUDIO_NS_PER_SECOND); // Avoids % operation.
+    clockid_t clockId = CLOCK_MONOTONIC;
+    const int relativeFlag = 0; // flag of relative sleep.
+    ret = clock_nanosleep(clockId, relativeFlag, &time, nullptr);
+    if (ret != 0) {
+        MEDIA_LOG_I("RelativeSleep may failed, ret is :%{public}d", ret);
+    }
+    return ret;
 }
 
 } // namespace Pipeline
