@@ -565,7 +565,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLISECONDS;
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = readTotalBytes_ * BYTES_TO_BIT / readDuration;    // bps
-            currentBitrate_ = static_cast<uint64_t>(readSpeed);     // bps
+            currentBitrate_ = static_cast<int32_t>(readSpeed);     // bps
             MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
             " KByte", static_cast<int32_t>(readSpeed / KILO), static_cast<uint64_t>(GetBufferSize() / KILO));
             MediaAVCodec::AVCodecTrace trace("HlsMediaDownloader::Read, read speed: " +
@@ -1504,8 +1504,10 @@ void HlsMediaDownloader::CalculateBitRate(size_t fragmentSize, double duration)
     double divisorFragmentSize = (static_cast<double>(fragmentSize) / static_cast<double>(ONE_SECONDS))
                                     * static_cast<double>(BYTES_TO_BIT);
     double dividendDuration = static_cast<double>(duration) / static_cast<double>(ONE_SECONDS);
-    int32_t calculateBitRate = static_cast<int32_t>(divisorFragmentSize / dividendDuration);
-    currentBitRate_ = (calculateBitRate >> 1) + (currentBitRate_ >> 1) + ((calculateBitRate | currentBitRate_) & 1);
+    uint32_t calculateBitRate = static_cast<uint32_t>(divisorFragmentSize / dividendDuration);
+    uint32_t tmpBitRate = static_cast<uint32_t>(currentBitRate_);
+    tmpBitRate_ = (calculateBitRate >> 1) + (tmpBitRate >> 1) + ((calculateBitRate | tmpBitRate) & 1);
+    currentBitRate_ = static_cast<int32_t>(tmpBitRate);
     MEDIA_LOG_I("HLS Calculate avgBitRate: " PUBLIC_LOG_D32, currentBitRate_);
 }
 
