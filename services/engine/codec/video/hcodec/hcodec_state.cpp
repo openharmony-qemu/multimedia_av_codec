@@ -334,7 +334,6 @@ void HCodec::StartingState::OnStateEntered()
 
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
-    codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 
     int32_t ret = AllocateBuffers();
     if (ret != AVCS_ERR_OK) {
@@ -342,6 +341,8 @@ void HCodec::StartingState::OnStateEntered()
         hasError_ = true;
         ReplyStartMsg(ret);
         codec_->ChangeStateTo(codec_->initializedState_);
+    } else {
+        codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
     }
 }
 
