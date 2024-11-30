@@ -259,7 +259,7 @@
               "header_base": "//foundation/multimedia/av_codec/services/engine/codec/video/hevcdecoder"
             }
           }
-        ],		
+        ],
       "test": [
         "//foundation/multimedia/av_codec/test:av_codec_demo_test",
         "//foundation/multimedia/av_codec/test:av_codec_unit_test",
