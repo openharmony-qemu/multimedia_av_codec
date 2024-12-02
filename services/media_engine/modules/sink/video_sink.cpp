@@ -174,7 +174,7 @@ int64_t VideoSink::CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& 
     //  the diff between the actual duration of the previous video frame and the theoretically calculated duration
     //  based on the PTS, considering the playback rate
     auto videoDiff = (currentClockTime - lastClockTime_)
-        - static_cast<int64_t>((buffer->pts_ - lastPts_) / AdjustPlaybackRate(playbackRate);
+        - static_cast<int64_t>((buffer->pts_ - lastPts_) / AdjustPlaybackRate(playbackRate));
     // render time per frame reduced by PER_SINK_TIME_THRESHOLD
     auto thresholdAdjustedVideoDiff = videoDiff - PER_SINK_TIME_THRESHOLD;
 
