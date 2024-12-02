@@ -210,7 +210,6 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         if (std::abs(deltaTimeAccu_) < DELTA_TIME_THRESHOLD) {
             bufferAnchoredClockTime = currentBufferRelativeClockTime;
         }
-        MEDIA_LOG_D("lastBfTime:" PUBLIC_LOG_D64" us, lastTS:" PUBLIC_LOG_D64, lastBufferTime_, lastTimeStamp_);
         MEDIA_LOG_D("lastBfTime:" PUBLIC_LOG_D64" us, lastPts:" PUBLIC_LOG_D64,
             lastBufferAnchoredClockTime_, lastBufferRelativePts_);
     } else {
