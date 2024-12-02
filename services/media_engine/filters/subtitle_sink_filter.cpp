@@ -85,6 +85,9 @@ Status SubtitleSinkFilter::DoPrepare()
 {
     subtitleSink_->Prepare();
     inputBufferQueueConsumer_ = subtitleSink_->GetBufferQueueConsumer();
+    if (inputBufferQueueConsumer_ == nullptr) {
+        return Status::ERROR_INVALID_OPERATION;
+    }
     sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
     inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
     if (onLinkedResultCallback_ != nullptr) {
