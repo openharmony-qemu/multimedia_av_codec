@@ -174,7 +174,7 @@ int64_t VideoSink::CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& 
     //  the diff between the actual duration of the previous video frame and the theoretically calculated duration
     //  based on the PTS, considering the playback rate
     auto videoDiff = (currentClockTime - lastClockTime_)
-        - static_cast<int64_t>((buffer->pts_ - lastPts_) / playbackRate);
+        - static_cast<int64_t>((buffer->pts_ - lastPts_) / AdjustPlaybackRate(playbackRate);
     // render time per frame reduced by PER_SINK_TIME_THRESHOLD
     auto thresholdAdjustedVideoDiff = videoDiff - PER_SINK_TIME_THRESHOLD;
 
@@ -216,8 +216,8 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         seekFlag_ = (seekFlag_ == true) ? false : seekFlag_;
     }
 
-    auto diff = CalcBufferDiff(buffer, bufferAnchoredClockTime, syncCenter->GetClockTimeNow(),
-        AdjustPlaybackRate(syncCenter->GetPlaybackRate()));
+    auto diff = CalcBufferDiff(buffer, bufferAnchoredClockTime,
+        syncCenter->GetClockTimeNow(), syncCenter->GetPlaybackRate());
 
     bool tooLate = false;
     int64_t waitTimeUs = 0;
