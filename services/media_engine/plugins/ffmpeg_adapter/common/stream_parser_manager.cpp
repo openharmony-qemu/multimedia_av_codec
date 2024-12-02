@@ -163,7 +163,7 @@ uint32_t StreamParserManager::GetPicHetInLumaSamples()
 
 bool StreamParserManager::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize)
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, 0, "Stream parser is nullptr");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, false, "Stream parser is nullptr");
     return streamParser_->ConvertExtraDataToAnnexb(extraData, extraDataSize);
 }
 
