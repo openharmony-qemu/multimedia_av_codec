@@ -879,8 +879,8 @@ void DashSegmentDownloader::UpdateBufferSegment(const std::shared_ptr<DashBuffer
         }
         MEDIA_LOG_I("SaveData eos:streamId:" PUBLIC_LOG_D32 ", segmentNum:" PUBLIC_LOG_D64 ", contentLength:"
             PUBLIC_LOG_ZU ", bufferPosHead:" PUBLIC_LOG_ZU  " ,bufferPosEnd:" PUBLIC_LOG_ZU,
-            mediaSegment->streamId_, mediaSegment->numberSeq_, mediaSegment->contentLength_, mediaSegment->bufferPosHead_,
-            mediaSegment->bufferPosTail_);
+            mediaSegment->streamId_, mediaSegment->numberSeq_, mediaSegment->contentLength_,
+            mediaSegment->bufferPosHead_, mediaSegment->bufferPosTail_);
     }
 }
 
