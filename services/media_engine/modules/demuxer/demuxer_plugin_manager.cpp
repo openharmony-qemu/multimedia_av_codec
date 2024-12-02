@@ -39,6 +39,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerPluginManager" };
+constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 }
 
 namespace OHOS {
@@ -350,7 +351,7 @@ int32_t DemuxerPluginManager::GetTmpInnerTrackIDByTrackID(int32_t trackId)
     if (iter != temp2TrackInfoMap_.end()) {
         return temp2TrackInfoMap_[trackId].innerTrackIndex;
     }
-    return -1;  // default
+    return INVALID_STREAM_OR_TRACK_ID;  // default
 }
 
 int32_t DemuxerPluginManager::GetTmpStreamIDByTrackID(int32_t trackId)
@@ -359,7 +360,7 @@ int32_t DemuxerPluginManager::GetTmpStreamIDByTrackID(int32_t trackId)
     if (iter != temp2TrackInfoMap_.end()) {
         return temp2TrackInfoMap_[trackId].streamID;
     }
-    return -1;  // default
+    return INVALID_STREAM_OR_TRACK_ID;  // default
 }
 
 Status DemuxerPluginManager::UpdateGeneralValue(int32_t trackCount, const Meta& format, Meta& formatNew)
@@ -436,7 +437,7 @@ int32_t DemuxerPluginManager::GetInnerTrackIDByTrackID(int32_t trackId)
     if (iter != trackInfoMap_.end()) {
         return trackInfoMap_[trackId].innerTrackIndex;
     }
-    return -1;  // default
+    return INVALID_STREAM_OR_TRACK_ID;  // default
 }
 
 int32_t DemuxerPluginManager::GetStreamIDByTrackID(int32_t trackId)
@@ -445,7 +446,20 @@ int32_t DemuxerPluginManager::GetStreamIDByTrackID(int32_t trackId)
     if (iter != trackInfoMap_.end()) {
         return trackInfoMap_[trackId].streamID;
     }
-    return -1;  // default
+    return INVALID_STREAM_OR_TRACK_ID;  // default
+}
+
+int32_t DemuxerPluginManager::GetStreamIDByTrackType(TrackType type)
+{
+    if (type == TRACK_VIDEO) {
+        return curVideoStreamID_;
+    } else if (type == TRACK_AUDIO) {
+        return curAudioStreamID_;
+    } else if (type == TRACK_SUBTITLE) {
+        return curSubTitleStreamID_;
+    } else {
+        return INVALID_STREAM_OR_TRACK_ID;
+    }
 }
 
 bool DemuxerPluginManager::CreatePlugin(std::string pluginName, int32_t id)
@@ -806,7 +820,7 @@ int32_t DemuxerPluginManager::AddExternalSubtitle()
         MEDIA_LOG_I("InitDefaultPlay SUBTITLE");
         return streamIndex;
     }
-    return -1;
+    return INVALID_STREAM_OR_TRACK_ID;
 }
 
 } // namespace Media
