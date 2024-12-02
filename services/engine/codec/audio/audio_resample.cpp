@@ -57,6 +57,7 @@ int32_t AudioResample::InitSwrContext(const ResamplePara& resamplePara)
     }
     if (swr_init(swrContext) != 0) {
         AVCODEC_LOGE("swr init error");
+        swr_free(&swrContext);
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
     swrCtx_ = std::shared_ptr<SwrContext>(swrContext, [](SwrContext *ptr) {
