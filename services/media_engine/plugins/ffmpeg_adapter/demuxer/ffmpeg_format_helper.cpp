@@ -168,7 +168,7 @@ std::string SwitchCase(const std::string& str)
     return res;
 }
 
-std::string Convert(const std::string &str, const std::string fromCharset, const std::string toCharset)
+std::string Convert(const std::string &str, const std::string &fromCharset, const std::string &toCharset)
 {
     iconv_t cd = iconv_open(toCharset.c_str(), fromCharset.c_str());
     if (cd == reinterpret_cast<iconv_t>(-1)) {
