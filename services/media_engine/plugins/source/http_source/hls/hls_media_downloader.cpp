@@ -573,6 +573,7 @@ void HlsMediaDownloader::PrepareToSeek()
         OSAL::SleepFor(SEEK_STATUS_SLEEP_TIME); // 50 means sleep time pre retry
     } while (!playlistDownloader_->IsParseAndNotifyFinished());
 
+    playList_->Clear();
     downloader_->Cancel();
     cacheMediaBuffer_.reset();
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
@@ -653,9 +654,7 @@ void HlsMediaDownloader::PlaylistBackup(const PlayInfo& fragment)
         }
         return;
     }
-    if (playlistDownloader_->IsParseFinished()) {
-        backPlayList_.push_back(fragment);
-    }
+    backPlayList_.push_back(fragment);
 }
 
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
@@ -1130,6 +1129,9 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const st
         PutRequestIntoDownloader(playInfo);
     } else {
         isDownloadStarted_ = false;
+        if (isSeekingFlag) {
+            return;
+        }
         isDownloadFinish_ = true;
         MEDIA_LOG_D("Download done, average download speed : " PUBLIC_LOG_D32 " bit/s", avgDownloadSpeed_);
         int64_t nowTime = steadyClock_.ElapsedMilliseconds();
