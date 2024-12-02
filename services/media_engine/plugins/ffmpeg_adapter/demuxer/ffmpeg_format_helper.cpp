@@ -168,42 +168,6 @@ std::string SwitchCase(const std::string& str)
     return res;
 }
 
-std::string Convert(const std::string &str, const std::string &fromCharset, const std::string &toCharset)
-{
-    iconv_t cd = iconv_open(toCharset.c_str(), fromCharset.c_str());
-    if (cd == reinterpret_cast<iconv_t>(-1)) {
-        MEDIA_LOG_D("Call iconv_open failed");
-        return "";
-    }
-    size_t inLen = str.length();
-    size_t outLen = inLen * 4; // max for chinese character
-    char* inBuf = const_cast<char*>(str.c_str());
-    if (inBuf == nullptr) {
-        MEDIA_LOG_D("Get in buffer failed");
-        iconv_close(cd);
-        return "";
-    }
-    char* outBuf = new char[outLen];
-    if (outBuf == nullptr) {
-        MEDIA_LOG_D("Get out buffer failed");
-        iconv_close(cd);
-        return "";
-    }
-    char* outBufBack = outBuf;
-    if (iconv(cd, &inBuf, &inLen, &outBuf, &outLen) == static_cast<size_t>(-1)) {
-        MEDIA_LOG_D("Call iconv failed");
-        delete[] outBufBack;
-        outBufBack = nullptr;
-        iconv_close(cd);
-        return "";
-    }
-    std::string strOut(outBufBack, outBuf - outBufBack);
-    delete[] outBufBack;
-    outBufBack = nullptr;
-    iconv_close(cd);
-    return strOut;
-}
-
 bool IsUTF8Char(unsigned char chr, int32_t &nBytes)
 {
     if (nBytes == 0) {
@@ -248,14 +212,44 @@ bool IsUTF8(const std::string &data)
 
 std::string ConvertGBKToUTF8(const std::string &strGbk)
 {
-    if (strGbk.length() == 0 || IsUTF8(strGbk)) {
-        return strGbk;
+    if (strGbk.length() == 0) {
+        return "";
     }
-    std::string result = Convert(strGbk, "gbk18030", "utf-8");
-    if (result.length() == 0) {
-        return strGbk;
+
+    const std::string fromCharset = "gbk18030";
+    const std::string toCharset = "utf-8";
+    iconv_t cd = iconv_open(toCharset.c_str(), fromCharset.c_str());
+    if (cd == reinterpret_cast<iconv_t>(-1)) {
+        MEDIA_LOG_D("Call iconv_open failed");
+        return "";
     }
-    return result;
+    size_t inLen = strGbk.length();
+    size_t outLen = inLen * 4; // max for chinese character
+    char* inBuf = const_cast<char*>(strGbk.c_str());
+    if (inBuf == nullptr) {
+        MEDIA_LOG_D("Get in buffer failed");
+        iconv_close(cd);
+        return "";
+    }
+    char* outBuf = new char[outLen];
+    if (outBuf == nullptr) {
+        MEDIA_LOG_D("Get out buffer failed");
+        iconv_close(cd);
+        return "";
+    }
+    char* outBufBack = outBuf;
+    if (iconv(cd, &inBuf, &inLen, &outBuf, &outLen) == static_cast<size_t>(-1)) {
+        MEDIA_LOG_D("Call iconv failed");
+        delete[] outBufBack;
+        outBufBack = nullptr;
+        iconv_close(cd);
+        return "";
+    }
+    std::string strOut(outBufBack, outBuf - outBufBack);
+    delete[] outBufBack;
+    outBufBack = nullptr;
+    iconv_close(cd);
+    return strOut;
 }
 
 bool IsGBK(const char* data)
