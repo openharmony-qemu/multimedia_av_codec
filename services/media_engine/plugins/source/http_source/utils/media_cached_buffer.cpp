@@ -366,7 +366,6 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, uint64_t inOffset, size_t inW
     } else {
         if (freeChunks_.empty()) {
             MEDIA_LOG_D("no free chunk.");
-            return dupWriteSize;
         }
         MEDIA_LOG_D("not find fragment.");
         chunkPos = AddFragmentCacheBuffer(offset);
@@ -1000,7 +999,8 @@ bool CacheMediaChunkBufferImpl::ClearChunksOfFragment(uint64_t offset)
     uint32_t chunkSize = fragment.chunks.size();
     for (uint32_t i = 0; i < chunkSize; ++i) {
         auto chunkIter = fragment.chunks.front();
-        if (chunkIter->offset + chunkIter->dataLength >= offset) {
+        if (fragmentPos->accessPos == fragmentPos->chunks.end() || chunkIter == nullptr ||
+            chunkIter->offset + chunkIter->dataLength >= offset) {
             break;
         }
 
