@@ -254,7 +254,8 @@ void TimeAndIndexConversion::ParseCtts(uint32_t boxSize)
     const uint8_t* entryPtr = ptr + sizeof(uint32_t) * 2; // 2 is used to skip versionAndFlags and entryCount
     for (uint32_t i = 0; i < entryCount; ++i) {
         entries[i].sampleCount = ntohl(*reinterpret_cast<const uint32_t*>(entryPtr));
-        entries[i].sampleOffset = ntohl(*reinterpret_cast<const int32_t*>(entryPtr + sizeof(uint32_t)));
+        entries[i].sampleOffset = static_cast<int32_t>(ntohl(*reinterpret_cast<const uint32_t*>(entryPtr +
+                                  sizeof(uint32_t))));
         entryPtr += sizeof(CTTSEntry);
     }
     curTrakInfo_.cttsEntries = entries;
