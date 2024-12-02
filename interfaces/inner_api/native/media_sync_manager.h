@@ -83,7 +83,7 @@ public:
      * @param mediaTime target pts
      * @return clock time anchored with pts
      */
-    int64_t GetClockTime(int64_t mediaTime) override;
+    int64_t GetAnchoredClockTime(int64_t mediaTime) override;
 
     /**
      * after IMediaSynchronizer has received the first frame, it should call this function to report the receiving of
@@ -114,22 +114,26 @@ private:
         PAUSED,
     };
     static int64_t GetSystemClock();
-    static int64_t SimpleGetMediaTime(int64_t anchorClockTime, int64_t delayTime, int64_t nowClockTime,
-                                      int64_t anchorMediaTime, float playRate);
-    static int64_t SimpleGetMediaTimeExactly(int64_t anchorClockTime, int64_t delayTime, int64_t nowClockTime,
-                                             int64_t anchorMediaTime, float playRate);
-    static int64_t SimpleGetClockTime(int64_t anchorClockTime, int64_t nowMediaTime, int64_t anchorMediaTime,
-                                      float playRate);
+    bool IsTimeValid(int64_t time);
+    int64_t SimpleGetMediaTime(int64_t clockTime);
+    int64_t SimpleGetMediaTimeExactly(int64_t clockTime);
+    int64_t SimpleGetAnchoredClockTime(int64_t clockTime);
 
     bool IsSupplierValid(IMediaSynchronizer* supplier);
 
-    void SimpleUpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, int64_t mediaAbsTime);
+    void SimpleUpdateTimeAnchor(int64_t clockTime, int64_t mediaTime);
     void SimpleUpdatePlayRate(float playRate);
     void SetMediaTimeStartEnd(int32_t trackId, int32_t index, int64_t val);
     void SetAllSyncShouldWaitNoLock();
-    int64_t BoundMediaProgress(int64_t newMediaProgressTime);
     void UpdateFirstPtsAfterSeek(int64_t mediaTime);
     void ReportLagEvent(int64_t lagDurationMs);
+
+    bool SetMediaTimeIfIsSeeking(int64_t& mediaTime);
+    bool SetMediaTimeIfClockStatePaused(int64_t& mediaTime);
+    bool SetMediaTimeIfNone(int64_t& mediaTime);
+    bool SetMediaTimeIfAudioRendered(int64_t& mediaTime);
+    int64_t GetMaxMediaProgress();
+    int64_t BoundMediaProgress(int64_t newMediaProgressTime);
 
     int64_t ClipMediaTime(int64_t inTime);
     OHOS::Media::Mutex clockMutex_ {};
@@ -139,11 +143,8 @@ private:
     int8_t currentRangeEndPriority_ {IMediaSynchronizer::NONE};
     int64_t currentAnchorClockTime_ {HST_TIME_NONE};
     int64_t currentAnchorMediaTime_ {HST_TIME_NONE};
-    int64_t currentAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedMediaTime_ {HST_TIME_NONE};
     int64_t pausedExactMediaTime_ {HST_TIME_NONE};
-    int64_t pausedAbsMediaTime_ {HST_TIME_NONE};
-    int64_t pausedExactAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedClockTime_ {HST_TIME_NONE};
     int64_t firstMediaTimeAfterSeek_ {HST_TIME_NONE};
     int64_t startingTimeMediaUs_ {HST_TIME_NONE};
@@ -167,7 +168,7 @@ private:
     std::atomic<int64_t> lastAudioBufferDuration_ {0};
     std::atomic<int64_t> lastVideoBufferPts_ {0};
     std::atomic<int64_t> lastReportMediaTime_ {HST_TIME_NONE};
-    std::atomic<bool> frameAfterSeeked_ {false};
+    std::atomic<bool> isFrameAfterSeeked_ {false};
     std::weak_ptr<EventReceiver> eventReceiver_;
 };
 } // namespace Pipeline

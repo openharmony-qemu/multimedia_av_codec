@@ -77,7 +77,7 @@ struct IMediaSyncCenter {
      * @param mediaTime target pts
      * @return clock time anchored with pts
      */
-    virtual int64_t GetClockTime(int64_t mediaTime) = 0;
+    virtual int64_t GetAnchoredClockTime(int64_t mediaTime) = 0;
 
     /**
      * after IMediaSynchronizer has received the first frame, it should call this function to report the receiving of

@@ -90,11 +90,11 @@ HWTEST_F(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     buffer->flag_ = BUFFER_FLAG_EOS;
     videoSink_->DoSyncWrite(buffer);
     buffer->pts_ = 1;
-    videoSink_->lastBufferTime_ = 1;
+    videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
     (void)videoSink_->CheckBufferLatenessMayWait(buffer);
     float speed = 0;
-    videoSink_->GetSpeed(speed);
+    videoSink_->AdjustPlaybackRate(speed);
 }
 
 HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
@@ -125,11 +125,11 @@ HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
     buffer->flag_ = 0; // not eos
     videoSink_->DoSyncWrite(buffer2);
     buffer->pts_ = 1;
-    videoSink_->lastBufferTime_ = 1;
+    videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
     (void)videoSink_->CheckBufferLatenessMayWait(buffer);
     float speed = 0;
-    videoSink_->GetSpeed(speed);
+    videoSink_->AdjustPlaybackRate(speed);
 }
 
 HWTEST_F(TestVideoSink, do_sync_write_eos, TestSize.Level1)
@@ -159,11 +159,11 @@ HWTEST_F(TestVideoSink, do_sync_write_eos, TestSize.Level1)
     buffer->flag_ = BUFFER_FLAG_EOS;
     videoSink_->DoSyncWrite(buffer);
     buffer->pts_ = 1;
-    videoSink_->lastBufferTime_ = 1;
+    videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
     (void)videoSink_->CheckBufferLatenessMayWait(buffer);
     float speed = 0;
-    videoSink_->GetSpeed(speed);
+    videoSink_->AdjustPlaybackRate(speed);
 }
 
 HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_001, TestSize.Level1)
@@ -224,7 +224,7 @@ HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_004, TestSize.Level1)
     ASSERT_TRUE(buffer != nullptr);
     auto syncCenter = std::make_shared<MockMediaSyncCenter>();
     videoSink_->SetSyncCenter(syncCenter);
-    videoSink_->lastBufferTime_ = 1000;
+    videoSink_->lastBufferAnchoredClockTime_ = 1000;
     syncCenter->returnInt64Queue_.push(1000);
     syncCenter->returnInt64Queue_.push(2000);
     buffer->pts_ = 1500;
@@ -249,19 +249,19 @@ HWTEST_F(TestVideoSink, SetFirstPts_ShouldNotChangeFirstPts_WhenFirstPtsIsNotNon
     EXPECT_EQ(videoSink_->firstPts_, 200);
 }
 
-// Scenario1: Test when speed is 0.0f then GetSpeed returns 1.0f.
-HWTEST_F(TestVideoSink, GetSpeed_ShouldReturn1_WhenSpeedIs0, TestSize.Level0)
+// Scenario1: Test when speed is 0.0f then AdjustPlaybackRate returns 1.0f.
+HWTEST_F(TestVideoSink, AdjustPlaybackRate_ShouldReturn1_WhenSpeedIs0, TestSize.Level0)
 {
     float speed = 0.0f;
-    float result = videoSink_->GetSpeed(speed);
+    float result = videoSink_->AdjustPlaybackRate(speed);
     ASSERT_EQ(result, 1.0f);
 }
 
-// Scenario2: Test when speed is not 0.0f then GetSpeed returns the same speed.
-HWTEST_F(TestVideoSink, GetSpeed_ShouldReturnSameSpeed_WhenSpeedIsNot0, TestSize.Level0)
+// Scenario2: Test when speed is not 0.0f then AdjustPlaybackRate returns the same speed.
+HWTEST_F(TestVideoSink, AdjustPlaybackRate_ShouldReturnSameSpeed_WhenSpeedIsNot0, TestSize.Level0)
 {
     float speed = 0.5f;
-    float result = videoSink_->GetSpeed(speed);
+    float result = videoSink_->AdjustPlaybackRate(speed);
     ASSERT_EQ(result, speed);
 }
 
