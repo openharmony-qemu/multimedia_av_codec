@@ -1065,7 +1065,7 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
                     Status::ERROR_WRONG_STATE, "Get first frame failed");
                 bool convertRet = streamParser_->ConvertExtraDataToAnnexb(
                     avStream->codecpar->extradata, avStream->codecpar->extradata_size);
-                FALSE_RETURN_V_MSG_E(convertRet == true, Status::ERROR_INVALID_DATA, "ConvertExtraDataToAnnexb failed");
+                FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_INVALID_DATA, "ConvertExtraDataToAnnexb failed");
                 streamParserInited_ = true;
                 break;
             }
