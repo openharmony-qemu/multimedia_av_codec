@@ -815,7 +815,10 @@ bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segme
     }
 
     if (desSegment != nullptr && desSegment->bufferPosTail_ > 0) {
-        return buffer_->SetHead(desSegment->bufferPosHead_);
+        if (buffer_->SetHead(desSegment->bufferPosHead_)) {
+            UpdateInitSegmentState(desSegment->streamId_);
+            return true;
+        }
     }
     return false;
 }
