@@ -216,7 +216,7 @@ std::string ConvertGBKToUTF8(const std::string &strGbk)
         return "";
     }
 
-    const std::string fromCharset = "gbk18030";
+    const std::string fromCharset = "gb18030";
     const std::string toCharset = "utf-8";
     iconv_t cd = iconv_open(toCharset.c_str(), fromCharset.c_str());
     if (cd == reinterpret_cast<iconv_t>(-1)) {
