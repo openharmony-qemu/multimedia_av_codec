@@ -215,7 +215,7 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
 
 std::shared_ptr<Plugins::DemuxerPlugin> DemuxerPluginManager::GetPluginByStreamID(int32_t streamID)
 {
-    if (streamID != -1) {
+    if (streamID != -1 && streamInfoMap_.find(streamID) != streamInfoMap_.end()) {
         return streamInfoMap_[streamID].plugin;
     }
     return nullptr;
