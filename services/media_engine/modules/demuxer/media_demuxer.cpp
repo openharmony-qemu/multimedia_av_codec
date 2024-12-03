@@ -1642,7 +1642,7 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
     TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
     int32_t currentStreamID = demuxerPluginManager_->GetStreamIDByTrackType(type);
     int32_t currentTrackId = trackId;
-    if (newStreamID == -1 || currentStreamID == newStreamID) {
+    if (newStreamID == -1 || currentStreamID == -1 || currentStreamID == newStreamID) {
         return false;
     }
     MEDIA_LOG_I("In");
