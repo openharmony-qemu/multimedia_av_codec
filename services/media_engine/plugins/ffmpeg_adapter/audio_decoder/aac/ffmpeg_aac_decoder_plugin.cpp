@@ -30,8 +30,6 @@ constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 8;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
-static std::vector<int32_t> supportedSampleRate = {96000, 88200, 64000, 48000, 44100, 32000, 24000,
-                                                   22050, 16000, 12000, 11025, 8000,  7350};
 static std::vector<int32_t> supportedSampleRates = {7350,  8000,  11025, 12000, 16000, 22050, 24000,
                                                     32000, 44100, 48000, 64000, 88200, 96000};
 } // namespace
