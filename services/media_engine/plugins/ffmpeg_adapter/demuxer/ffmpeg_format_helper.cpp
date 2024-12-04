@@ -219,8 +219,8 @@ std::string ConvertGBKToUTF8(const std::string &strGbk)
     }
     size_t inLen = strGbk.length();
     size_t outLen = inLen * 4; // max for chinese character
-    char* inBuf = nullptr;
-    if (strcpy_s(inBuf, inLen + 1, strGbk.c_str()) != 0) {
+    char* inBuf = new char[inLen + 1];
+    if (strcpy_s(inBuf, inLen + 1, strGbk.c_str()) != EOK) {
         MEDIA_LOG_D("Get in buffer failed");
         delete[] inBuf;
         inBuf = nullptr;
