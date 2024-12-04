@@ -219,35 +219,27 @@ std::string ConvertGBKToUTF8(const std::string &strGbk)
     }
     size_t inLen = strGbk.length();
     size_t outLen = inLen * 4; // max for chinese character
-    char* inBuf = new char[inLen + 1];
-    if (strcpy_s(inBuf, inLen + 1, strGbk.c_str()) != EOK) {
+    char* inBuf = const_cast<char*>(strGbk.c_str());
+    if (inBuf == nullptr) {
         MEDIA_LOG_D("Get in buffer failed");
-        delete[] inBuf;
-        inBuf = nullptr;
         iconv_close(cd);
         return "";
     }
     char* outBuf = new char[outLen];
     if (outBuf == nullptr) {
         MEDIA_LOG_D("Get out buffer failed");
-        delete[] inBuf;
-        inBuf = nullptr;
         iconv_close(cd);
         return "";
     }
     char* outBufBack = outBuf;
     if (iconv(cd, &inBuf, &inLen, &outBuf, &outLen) == static_cast<size_t>(-1)) {
         MEDIA_LOG_D("Call iconv failed");
-        delete[] inBuf;
-        inBuf = nullptr;
         delete[] outBufBack;
         outBufBack = nullptr;
         iconv_close(cd);
         return "";
     }
     std::string strOut(outBufBack, outBuf - outBufBack);
-    delete[] inBuf;
-    inBuf = nullptr;
     delete[] outBufBack;
     outBufBack = nullptr;
     iconv_close(cd);
