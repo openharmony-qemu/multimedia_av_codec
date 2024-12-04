@@ -816,7 +816,7 @@ bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segme
 
     if (desSegment != nullptr && desSegment->bufferPosTail_ > 0) {
         if (buffer_->SetHead(desSegment->bufferPosHead_)) {
-            // set init segment for first read first segment after seek on buffered
+            // set init segment when seek on buffered, before read first segment demuxer plugin need reboot
             UpdateInitSegmentState(desSegment->streamId_);
             return true;
         }
