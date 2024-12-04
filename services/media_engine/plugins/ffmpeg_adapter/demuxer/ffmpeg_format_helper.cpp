@@ -194,18 +194,12 @@ bool IsUTF8Char(unsigned char chr, int32_t &nBytes)
 
 bool IsUTF8(const std::string &data)
 {
-    const char* str = data.c_str();
-    size_t length = data.length();
-    size_t i = 0;
     int32_t nBytes = 0;
-    unsigned char chr = 0;
-    while (i < length) {
-        chr = *(str + i);
-        if (!IsUTF8Char(chr, nBytes)) {
+    for (size_t i = 0; i < data.size(); ++i) {
+        if (!IsUTF8Char(static_cast<char>(data[i]), nBytes)) {
             MEDIA_LOG_D("Detect char not in uft8");
             return false;
         }
-        i++;
     }
     return true;
 }
@@ -225,27 +219,35 @@ std::string ConvertGBKToUTF8(const std::string &strGbk)
     }
     size_t inLen = strGbk.length();
     size_t outLen = inLen * 4; // max for chinese character
-    char* inBuf = const_cast<char*>(strGbk.c_str());
-    if (inBuf == nullptr) {
+    char* inBuf = nullptr;
+    if (strcpy_s(inBuf, inLen + 1, strGbk.c_str()) != 0) {
         MEDIA_LOG_D("Get in buffer failed");
+        delete[] inBuf;
+        inBuf = nullptr;
         iconv_close(cd);
         return "";
     }
     char* outBuf = new char[outLen];
     if (outBuf == nullptr) {
         MEDIA_LOG_D("Get out buffer failed");
+        delete[] inBuf;
+        inBuf = nullptr;
         iconv_close(cd);
         return "";
     }
     char* outBufBack = outBuf;
     if (iconv(cd, &inBuf, &inLen, &outBuf, &outLen) == static_cast<size_t>(-1)) {
         MEDIA_LOG_D("Call iconv failed");
+        delete[] inBuf;
+        inBuf = nullptr;
         delete[] outBufBack;
         outBufBack = nullptr;
         iconv_close(cd);
         return "";
     }
     std::string strOut(outBufBack, outBuf - outBufBack);
+    delete[] inBuf;
+    inBuf = nullptr;
     delete[] outBufBack;
     outBufBack = nullptr;
     iconv_close(cd);
