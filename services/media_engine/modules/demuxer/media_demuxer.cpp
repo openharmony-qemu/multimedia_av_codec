@@ -952,9 +952,9 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
     Status ret = Status::OK;
     if (static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
-        TrackType trackType = demuxerpluginManager_->GetTrackTypeByTrackID(trackId);
+        TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
         ret = demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer_, isRebooted);
-        FALSE_RETURN_V_MSG_E(RET == Status::OK, ret, "Reboot demuxer plugin failed");
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot demuxer plugin failed");
         ret = InnerSelectTrack(trackId);
     }
     return ret;
