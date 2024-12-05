@@ -349,7 +349,7 @@ void Downloader::Resume()
 
             int64_t fileLength = static_cast<int64_t>(currentRequest_->GetFileContentLength());
             if (currentRequest_->startPos_ + currentRequest_->requestSize_ > fileLength) {
-                int correctRequestSize = fileLength - currentRequest_->startPos_;
+                int32_t correctRequestSize = fileLength - currentRequest_->startPos_;
                 MEDIA_LOG_E("resume error startPos = " PUBLIC_LOG_D64 ", requestSize = " PUBLIC_LOG_D32
                     ", fileLength = " PUBLIC_LOG_D64 ", correct requestSize = " PUBLIC_LOG_D32,
                     currentRequest_->startPos_, currentRequest_->requestSize_, fileLength, correctRequestSize);
