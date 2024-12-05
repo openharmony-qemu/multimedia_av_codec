@@ -966,7 +966,7 @@ Status MediaDemuxer::SeekToTimeAfter()
     if (demuxerPluginManager_->IsDash() == false) {
         return Status::OK;
     }
-    MEDIA_LOG_D("Reboot plugin in");
+    MEDIA_LOG_D("Reboot plugin begin");
     Status ret;
     bool isDemuxerPluginRebooted = true;
     ret = HandleRebootPlugin(audioTrackId_, isDemuxerPluginRebooted);
@@ -983,7 +983,7 @@ Status MediaDemuxer::SeekToTimeAfter()
         shouldCheckSubtitleFramePts_ = false;
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot subtitle demuxer plugin failed");
-    MEDIA_LOG_D("Reboot plugin out");
+    MEDIA_LOG_D("Reboot plugin success");
     return Status::OK;
 }
 
@@ -1782,9 +1782,9 @@ bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
     TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(static_cast<int32_t>(trackId));
     int32_t currentStreamID = demuxerPluginManager_->GetStreamIDByTrackType(type);
     int32_t newStreamID = demuxerPluginManager_->GetStreamDemuxerNewStreamID(type, streamDemuxer_);
-    
     bool ret = false;
     FALSE_RETURN_V(currentStreamID != newStreamID, ret);
+
     MEDIA_LOG_I("Change stream begin, currentStreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
         currentStreamID, newStreamID);
     if (trackId == videoTrackId_ && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
