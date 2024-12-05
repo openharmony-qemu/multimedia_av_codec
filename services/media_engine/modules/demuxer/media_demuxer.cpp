@@ -958,7 +958,6 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
         ret = InnerSelectTrack(trackId);
     }
     return ret;
-
 }
 
 Status MediaDemuxer::SeekToTimeAfter()
