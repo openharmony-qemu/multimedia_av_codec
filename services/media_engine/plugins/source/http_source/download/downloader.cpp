@@ -346,6 +346,17 @@ void Downloader::Resume()
         requestQue_->SetActive(true);
         if (currentRequest_ != nullptr) {
             currentRequest_->isEos_ = false;
+
+            int64_t fileLength = static_cast<int64_t>(currentRequest_->GetFileContentLength());
+            if (currentRequest_->startPos_ + currentRequest_->requestSize_ > fileLength) {
+                int32_t correctRequestSize = fileLength - currentRequest_->startPos_;
+                MEDIA_LOG_E("resume error startPos = " PUBLIC_LOG_D64 ", requestSize = " PUBLIC_LOG_D32
+                    ", fileLength = " PUBLIC_LOG_D64 ", correct requestSize = " PUBLIC_LOG_D32,
+                    currentRequest_->startPos_, currentRequest_->requestSize_, fileLength, correctRequestSize);
+                if (currentRequest_->startPos_ < fileLength) {
+                    currentRequest_->requestSize_ = correctRequestSize;
+                }
+            }
         }
     }
     Start();
