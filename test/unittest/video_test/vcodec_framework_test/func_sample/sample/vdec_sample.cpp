@@ -659,9 +659,9 @@ int32_t VideoDecSample::InputLoopInner()
                                       AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (avccReader_ != nullptr) {
-        avccReader_->FillBuffer(signal_, attr);
+        avccReader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
-        mpegReader_->FillBuffer(signal_, attr);
+        mpegReader_->FillBuffer(buffer->GetAddr(), attr);
     }
     return PushInputData(index, attr);
 }
@@ -852,9 +852,9 @@ int32_t VideoDecSample::InputLoopInnerExt()
                                       AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (avccReader_ != nullptr) {
-        avccReader_->FillBufferExt(signal_, attr);
+        avccReader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
-        mpegReader_->FillBufferExt(signal_, attr);
+        mpegReader_->FillBuffer(buffer->GetAddr(), attr);
     }
     return PushInputBuffer(index);
 }

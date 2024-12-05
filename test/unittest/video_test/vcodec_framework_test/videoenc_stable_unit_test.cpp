@@ -22,19 +22,7 @@
 #define TEST_ID venc->sampleId_
 #define SAMPLE_ID "[SAMPLE_ID]:" << TEST_ID
 #include "unittest_log.h"
-#define TITLE_LOG UNITTEST_INFO_LOG("")
-#define CALLBACK_CHECK_LOG(index, signal)                                                                              \
-    do {                                                                                                               \
-                                                                                                                       \
-        UNITTEST_INFO_LOG("index:%d", index);                                                                          \
-        if ((signal)->isFlushing_ || !(signal)->isRunning_) {                                                          \
-            return;                                                                                                    \
-        }                                                                                                              \
-    } while (0)
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncSample"};
-} // namespace
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -42,253 +30,6 @@ using namespace testing::ext;
 using namespace testing::mt;
 
 namespace {
-constexpr uint64_t TEST_FREQUENCY = 29;
-
-void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
-{
-    (void)codec;
-    (void)errorCode;
-    (void)userData;
-}
-
-void OnStreamChangedVoid(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
-{
-    (void)codec;
-    (void)format;
-    (void)userData;
-}
-
-void InDataVoid(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)data;
-    (void)userData;
-}
-
-void OutDataVoid(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)data;
-    (void)attr;
-    (void)userData;
-}
-
-void InBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)buffer;
-    (void)userData;
-}
-
-void OutBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)buffer;
-    (void)userData;
-}
-
-void InDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    OH_AVCodecBufferAttr attr;
-    venc->HandleInputFrame(data, attr);
-    venc->PushInputData(index, attr);
-}
-
-void OutDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    venc->HandleOutputFrame(data, *attr);
-    venc->ReleaseOutputData(index);
-}
-
-void InDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    OH_AVCodecBufferAttr attr;
-    venc->HandleInputFrame(data, attr);
-    venc->PushInputData(index, attr);
-}
-
-void OutDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    venc->HandleOutputFrame(data, *attr);
-    venc->ReleaseOutputData(index);
-}
-
-void InDataQueue(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    signal->inQueue_.push(index);
-    signal->inMemoryQueue_.push(data);
-    signal->inCond_.notify_all();
-}
-
-void OutDataQueue(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    signal->outQueue_.push(index);
-    signal->outMemoryQueue_.push(data);
-    signal->outAttrQueue_.push(*attr);
-    signal->outCond_.notify_all();
-}
-
-void InBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    venc->HandleInputFrame(buffer);
-    venc->PushInputData(index);
-}
-
-void OutBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    venc->HandleOutputFrame(buffer);
-    venc->ReleaseOutputData(index);
-}
-
-void InBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    venc->HandleInputFrame(buffer);
-    venc->PushInputData(index);
-}
-
-void OutBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    venc->HandleOutputFrame(buffer);
-    venc->ReleaseOutputData(index);
-}
-
-void InBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    signal->inQueue_.push(index);
-    signal->inBufferQueue_.push(buffer);
-    signal->inCond_.notify_all();
-}
-
-void OutBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoEncSignal *>(userData);
-    auto venc = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
-    signal->outQueue_.push(index);
-    signal->outBufferQueue_.push(buffer);
-    signal->outCond_.notify_all();
-}
-
-void InputBufferLoop(shared_ptr<VideoEncSignal> &signal)
-{
-    auto venc = signal->codec_.lock();
-    EXPECT_NE(venc, nullptr);
-    string name = "inloop_" + to_string(venc->sampleId_);
-    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str()); // 15: max thread name
-    while (signal->isRunning_.load()) {
-        unique_lock<mutex> lock(signal->inMutex_);
-        signal->inCond_.wait(lock, [&signal]() {
-            return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->inQueue_.size() > 0;
-        });
-        if (signal->isFlushing_.load()) {
-            signal->inCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
-            continue;
-        }
-        if (!signal->isRunning_.load()) {
-            return;
-        }
-        TITLE_LOG;
-        uint32_t index = 0;
-        OH_AVCodecBufferAttr attr;
-        venc->HandleInputFrame(index, attr);
-        venc->PushInputData(index, attr);
-    }
-}
-
-void OutputBufferLoop(shared_ptr<VideoEncSignal> &signal)
-{
-    auto venc = signal->codec_.lock();
-    EXPECT_NE(venc, nullptr);
-    string name = "outloop_" + to_string(venc->sampleId_);
-    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str()); // 15: max thread name
-    while (signal->isRunning_.load()) {
-        unique_lock<mutex> lock(signal->outMutex_);
-        signal->outCond_.wait(lock, [&signal]() {
-            return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->outQueue_.size() > 0;
-        });
-        if (signal->isFlushing_.load()) {
-            signal->inCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
-            continue;
-        }
-        if (!signal->isRunning_.load()) {
-            return;
-        }
-        TITLE_LOG;
-        uint32_t index = 0;
-        OH_AVCodecBufferAttr attr;
-        venc->HandleOutputFrame(index, attr);
-        venc->ReleaseOutputData(index);
-    }
-}
 
 class VideoEncStableTest : public testing::TestWithParam<std::string> {
 public:
@@ -338,7 +79,7 @@ string GetTestName()
 HWMTEST_F(VideoEncStableTest, VideoEncoder_Multithread_Release_001, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->frameCount_ = 30; // 30: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     venc->inPath_ = "1280_720_nv.yuv";
@@ -367,7 +108,7 @@ HWMTEST_F(VideoEncStableTest, VideoEncoder_Multithread_Release_AVBuffer_001, Tes
           VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->frameCount_ = 30; // 30: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     venc->inPath_ = "1280_720_nv.yuv";
@@ -396,7 +137,7 @@ INSTANTIATE_TEST_SUITE_P(, VideoEncStableTest, testing::Values("Flush", "Stop", 
 AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_001, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 30; // 30: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -426,7 +167,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_001, TestSize.Level
 AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_002, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -454,7 +195,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_002, TestSize.Level
 AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_003, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -483,7 +224,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_003, TestSize.Level
 AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_004, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -516,7 +257,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_004, TestSize.Level
 AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_005, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -546,7 +287,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_001, Tes
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -580,7 +321,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_002, Tes
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -612,7 +353,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_003, Tes
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -645,7 +386,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_004, Tes
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -678,7 +419,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_004, Tes
 AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_001, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 30; // 30: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -708,7 +449,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_001, TestS
 AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_002, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -736,7 +477,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_002, TestS
 AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_003, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -765,7 +506,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_003, TestS
 AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_004, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -797,7 +538,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_004, TestS
 AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_005, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -827,7 +568,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -861,7 +602,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -893,7 +634,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -926,7 +667,7 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
-    auto signal = make_shared<VideoEncSignal>(venc);
+    auto signal = make_shared<VCodecSignal>(venc);
     venc->operation_ = VideoEncStableTest::GetParam();
     venc->frameCount_ = 60; // 60: input frame num
     venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;

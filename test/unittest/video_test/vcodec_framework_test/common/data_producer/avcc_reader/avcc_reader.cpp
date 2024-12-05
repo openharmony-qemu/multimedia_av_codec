@@ -19,6 +19,7 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "securec.h"
+#include "unittest_log.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "AvccReader"};
@@ -146,31 +147,9 @@ void MpegReader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, u
     }
 }
 
-int32_t MpegReader::FillBufferExt(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr)
+int32_t MpegReader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto buffer = signal_->inBufferQueue_.front();
-    auto bufferAddr = buffer->GetAddr();
-
-    int32_t frameSize = 0;
-    bool isEosFrame = false;
-    auto ret = mpegUnitReader_->ReadMpegUnit(bufferAddr, frameSize, isEosFrame);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ReadMpegUnit failed");
-    auto mpegType = mpegDetector_->GetMpegType(mpegDetector_->GetMpegTypeAddr(bufferAddr));
-    bufferAddr += frameSize;
-    FillBufferAttr(attr, frameSize, mpegType, isEosFrame);
-    buffer->SetBufferAttr(attr);
-    frameInputCount_++;
-
-    return AV_ERR_OK;
-}
-
-int32_t MpegReader::FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto buffer = signal_->inMemoryQueue_.front();
-    auto bufferAddr = buffer->GetAddr();
-
     int32_t frameSize = 0;
     bool isEosFrame = false;
     auto ret = mpegUnitReader_->ReadMpegUnit(bufferAddr, frameSize, isEosFrame);
@@ -511,11 +490,9 @@ bool AvccReader::CheckFillBuffer(uint8_t naluType)
     }
 }
 
-int32_t AvccReader::FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr)
+int32_t AvccReader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto buffer = signal_->inMemoryQueue_.front();
-    auto bufferAddr = buffer->GetAddr();
 
     do {
         int32_t frameSize = 0;
@@ -525,28 +502,6 @@ int32_t AvccReader::FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecB
         uint8_t naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(bufferAddr));
         bufferAddr += frameSize;
         FillBufferAttr(attr, frameSize, naluType, isEosFrame);
-        UNITTEST_CHECK_AND_BREAK_LOG(CheckFillBuffer(naluType), "FillBuffer stop running");
-    } while (true);
-    frameInputCount_++;
-
-    return AV_ERR_OK;
-}
-
-int32_t AvccReader::FillBufferExt(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto buffer = signal_->inBufferQueue_.front();
-    auto bufferAddr = buffer->GetAddr();
-
-    do {
-        int32_t frameSize = 0;
-        bool isEosFrame = false;
-        auto ret = nalUnitReader_->ReadNalUnit(bufferAddr, frameSize, isEosFrame);
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ReadNalUnit failed");
-        auto naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(bufferAddr));
-        bufferAddr += frameSize;
-        FillBufferAttr(attr, frameSize, naluType, isEosFrame);
-        buffer->SetBufferAttr(attr);
         UNITTEST_CHECK_AND_BREAK_LOG(CheckFillBuffer(naluType), "FillBuffer stop running");
     } while (true);
     frameInputCount_++;

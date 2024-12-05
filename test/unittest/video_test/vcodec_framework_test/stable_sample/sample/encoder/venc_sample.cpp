@@ -33,12 +33,12 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
-using ReadFrame = std::function<int32_t(std::shared_ptr<VideoEncSignal> &, uint8_t *, int32_t, int32_t, int32_t)>;
+using ReadFrame = std::function<int32_t(std::shared_ptr<VCodecSignal> &, uint8_t *, int32_t, int32_t, int32_t)>;
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncSample"};
 
-int32_t ReadYUV420SP(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int32_t width, int32_t height,
+int32_t ReadYUV420SP(std::shared_ptr<VCodecSignal> &signal, uint8_t *addr, int32_t width, int32_t height,
                      int32_t stride)
 {
     if (width == 0) {
@@ -53,7 +53,7 @@ int32_t ReadYUV420SP(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int
     return stride * height * 3 / 2; // 3: nom, 2: denom
 }
 
-int32_t ReadYUV420P(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int32_t width, int32_t height,
+int32_t ReadYUV420P(std::shared_ptr<VCodecSignal> &signal, uint8_t *addr, int32_t width, int32_t height,
                     int32_t stride)
 {
     if (width == 0) {
@@ -76,7 +76,7 @@ int32_t ReadYUV420P(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int3
     return stride * height * 3 / 2; // 3: nom, 2: denom
 }
 
-int32_t ReadRGBA(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int32_t width, int32_t height, int32_t stride)
+int32_t ReadRGBA(std::shared_ptr<VCodecSignal> &signal, uint8_t *addr, int32_t width, int32_t height, int32_t stride)
 {
     if (width == 0) {
         return 0;
@@ -189,7 +189,7 @@ bool VideoEncSample::InitFile()
     return true;
 }
 
-int32_t VideoEncSample::SetCallback(OH_AVCodecAsyncCallback callback, shared_ptr<VideoEncSignal> &signal)
+int32_t VideoEncSample::SetCallback(OH_AVCodecAsyncCallback callback, shared_ptr<VCodecSignal> &signal)
 {
     TITLE_LOG;
     signal_ = signal;
@@ -202,7 +202,7 @@ int32_t VideoEncSample::SetCallback(OH_AVCodecAsyncCallback callback, shared_ptr
     return ret;
 }
 
-int32_t VideoEncSample::RegisterCallback(OH_AVCodecCallback callback, shared_ptr<VideoEncSignal> &signal)
+int32_t VideoEncSample::RegisterCallback(OH_AVCodecCallback callback, shared_ptr<VCodecSignal> &signal)
 {
     TITLE_LOG;
     signal_ = signal;
@@ -282,11 +282,9 @@ bool VideoEncSample::WaitForEos()
     signal_->isRunning_ = false;
     usleep(100); // 100: wait for callback
     if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        signal_->outCond_.notify_all();
         outputLoop_->join();
     }
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        signal_->inCond_.notify_all();
         inputLoop_->join();
     }
     if (!isNotTimeout) {
@@ -307,7 +305,6 @@ int32_t VideoEncSample::Prepare()
 int32_t VideoEncSample::Stop()
 {
     TITLE_LOG;
-    FlushGuard guard(signal_);
     int32_t ret = OH_VideoEncoder_Stop(codec_);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_Stop failed");
     return ret;
@@ -316,7 +313,6 @@ int32_t VideoEncSample::Stop()
 int32_t VideoEncSample::Flush()
 {
     TITLE_LOG;
-    FlushGuard guard(signal_);
     int32_t ret = OH_VideoEncoder_Flush(codec_);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_Flush failed");
     return ret;
@@ -326,7 +322,6 @@ int32_t VideoEncSample::Reset()
 {
     TITLE_LOG;
     {
-        FlushGuard guard(signal_);
         int32_t ret = OH_VideoEncoder_Reset(codec_);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_Reset failed");
     }
@@ -365,9 +360,9 @@ int32_t VideoEncSample::SetParameter()
     return OH_VideoEncoder_SetParameter(codec_, dyFormat_.get());
 }
 
-int32_t VideoEncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr attr)
+int32_t VideoEncSample::PushInputData(std::shared_ptr<CodecBufferInfo> bufferInfo)
 {
-    UNITTEST_INFO_LOG("index:%d", index);
+    UNITTEST_INFO_LOG("index:%d", bufferInfo->GetIndex());
     if (signal_->isInEos_) {
         if (!isFirstEos_) {
             UNITTEST_INFO_LOG("At Eos State");
@@ -377,10 +372,10 @@ int32_t VideoEncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr attr)
     }
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
-        ret = OH_VideoEncoder_PushInputBuffer(codec_, index);
+        ret = OH_VideoEncoder_PushInputBuffer(codec_, bufferInfo->GetIndex());
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_PushInputBuffer failed");
     } else {
-        ret = OH_VideoEncoder_PushInputData(codec_, index, attr);
+        ret = OH_VideoEncoder_PushInputData(codec_, bufferInfo->GetIndex(), bufferInfo->GetAttr());
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_PushInputData failed");
     }
     frameInputCount_++;
@@ -388,15 +383,15 @@ int32_t VideoEncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr attr)
     return AV_ERR_OK;
 }
 
-int32_t VideoEncSample::ReleaseOutputData(uint32_t index)
+int32_t VideoEncSample::ReleaseOutputData(std::shared_ptr<CodecBufferInfo> bufferInfo)
 {
-    UNITTEST_INFO_LOG("index:%d", index);
+    UNITTEST_INFO_LOG("index:%d", bufferInfo->GetIndex());
     int32_t ret;
     if (isAVBufferMode_) {
-        ret = OH_VideoEncoder_FreeOutputBuffer(codec_, index);
+        ret = OH_VideoEncoder_FreeOutputBuffer(codec_, bufferInfo->GetIndex());
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_FreeOutputBuffer failed");
     } else {
-        ret = OH_VideoEncoder_FreeOutputData(codec_, index);
+        ret = OH_VideoEncoder_FreeOutputData(codec_, bufferInfo->GetIndex());
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_FreeOutputData failed");
     }
     frameOutputCount_++;
@@ -417,87 +412,17 @@ int32_t VideoEncSample::IsValid(bool &isValid)
     return OH_VideoEncoder_IsValid(codec_, &isValid);
 }
 
-int32_t VideoEncSample::SetAVBufferAttr(OH_AVBuffer *avBuffer, OH_AVCodecBufferAttr &attr)
+int32_t VideoEncSample::HandleInputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo)
 {
-    if (!isAVBufferMode_) {
-        return AV_ERR_OK;
-    }
-    int32_t ret = OH_AVBuffer_SetBufferAttr(avBuffer, &attr);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_AVBuffer_SetBufferAttr failed");
-    return ret;
-}
-
-int32_t VideoEncSample::HandleInputFrame(uint32_t &index, OH_AVCodecBufferAttr &attr)
-{
-    uint8_t *addr = nullptr;
-    index = signal_->inQueue_.front();
-    OH_AVBuffer *avBuffer = nullptr;
-    if (isAVBufferMode_) {
-        avBuffer = signal_->inBufferQueue_.front();
-        addr = OH_AVBuffer_GetAddr(avBuffer);
-    } else {
-        auto avMemory = signal_->inMemoryQueue_.front();
-        addr = OH_AVMemory_GetAddr(avMemory);
-    }
-    signal_->PopInQueue();
-    int32_t ret = HandleInputFrameInner(addr, attr);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleInputFrameInner failed");
-    return SetAVBufferAttr(avBuffer, attr);
-}
-
-int32_t VideoEncSample::HandleOutputFrame(uint32_t &index, OH_AVCodecBufferAttr &attr)
-{
-    uint8_t *addr = nullptr;
-    index = signal_->outQueue_.front();
-    int32_t ret = AV_ERR_OK;
-    if (isAVBufferMode_) {
-        auto avBuffer = signal_->outBufferQueue_.front();
-        addr = OH_AVBuffer_GetAddr(avBuffer);
-        ret = OH_AVBuffer_GetBufferAttr(avBuffer, &attr);
-    } else {
-        auto avMemory = signal_->outMemoryQueue_.front();
-        addr = OH_AVMemory_GetAddr(avMemory);
-        attr = signal_->outAttrQueue_.front();
-    }
-    signal_->PopOutQueue();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_AVBuffer_GetBufferAttr failed, index: %d", index);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(addr != nullptr || isSurfaceMode_, AV_ERR_UNKNOWN,
-                                      "out buffer is nullptr, index: %d", index);
-    ret = HandleOutputFrameInner(addr, attr);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleOutputFrameInner failed, index: %d", index);
-    return ret;
-}
-
-int32_t VideoEncSample::HandleInputFrame(OH_AVMemory *data, OH_AVCodecBufferAttr &attr)
-{
-    uint8_t *addr = OH_AVMemory_GetAddr(data);
-    return HandleInputFrameInner(addr, attr);
-}
-
-int32_t VideoEncSample::HandleOutputFrame(OH_AVMemory *data, OH_AVCodecBufferAttr &attr)
-{
-    uint8_t *addr = OH_AVMemory_GetAddr(data);
-    return HandleOutputFrameInner(addr, attr);
-}
-
-int32_t VideoEncSample::HandleInputFrame(OH_AVBuffer *data)
-{
-    uint8_t *addr = OH_AVBuffer_GetAddr(data);
-    OH_AVCodecBufferAttr attr;
-    int32_t ret = HandleInputFrameInner(addr, attr);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleInputFrameInner failed");
-    ret = OH_AVBuffer_SetBufferAttr(data, &attr);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_AVBuffer_SetBufferAttr failed");
+    (void)bufferInfo;
     return AV_ERR_OK;
 }
 
-int32_t VideoEncSample::HandleOutputFrame(OH_AVBuffer *data)
+int32_t VideoEncSample::HandleOutputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo)
 {
-    uint8_t *addr = OH_AVBuffer_GetAddr(data);
-    OH_AVCodecBufferAttr attr;
-    int32_t ret = OH_AVBuffer_GetBufferAttr(data, &attr);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_AVBuffer_GetBufferAttr failed");
-    return HandleOutputFrameInner(addr, attr);
+    (void)bufferInfo;
+    // return HandleOutputFrameInner(addr, attr);
+    return AV_ERR_OK;
 }
 
 int32_t VideoEncSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr)
@@ -555,9 +480,6 @@ int32_t VideoEncSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
 void VideoEncSample::InputFuncSurface()
 {
     while (signal_->isRunning_.load()) {
-        if (signal_->isFlushing_.load()) {
-            continue;
-        }
         OHNativeWindowBuffer *ohNativeWindowBuffer;
         int fenceFd = -1;
         UNITTEST_CHECK_AND_BREAK_LOG(nativeWindow_ != nullptr, "nativeWindow_ == nullptr");
