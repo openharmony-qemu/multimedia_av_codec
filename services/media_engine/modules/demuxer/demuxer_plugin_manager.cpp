@@ -556,7 +556,7 @@ Status DemuxerPluginManager::RebootPlugin(int32_t streamId, TrackType trackType,
 {
     FALSE_RETURN_V_MSG_E(streamInfoMap_.find(streamId) != streamInfoMap_.end(),
         Status::ERROR_INVALID_PARAMETER, "streamId is invalid");
-    FALSE_RETURN_V_MSG_E(streamDemuxer != nullptr, Status::ERROR_INVALID_PARAMETER, "streamDemuxer is nullptr");
+    FALSE_RETURN_V_MSG_E(streamDemuxer != nullptr, Status::ERROR_NULL_POINTER, "streamDemuxer is nullptr");
     MEDIA_LOG_D("RebootPlugin begin. id = " PUBLIC_LOG_D32, streamId);
     streamDemuxer->ResetCache(streamId);
     streamDemuxer->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
