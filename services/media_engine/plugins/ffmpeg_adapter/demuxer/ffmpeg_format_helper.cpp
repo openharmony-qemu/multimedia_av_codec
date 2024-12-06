@@ -431,7 +431,7 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
     std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
     std::sregex_iterator end;
     // at least contain latitude and longitude
-    if (std::distance(numbers, end) < VALID_LOCATION_LEN) {
+    if (static_cast<uint32_t>(std::distance(numbers, end)) < VALID_LOCATION_LEN) {
         MEDIA_LOG_D("Info format error");
         return;
     }
