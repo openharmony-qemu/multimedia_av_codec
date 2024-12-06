@@ -82,10 +82,7 @@ public:
             int32_t width = buffer->GetWidth();
             int32_t height = buffer->GetHeight();
             int32_t stride = buffer->GetStride();
-            int32_t pixelbytes = 1;
-            if (stride >= width * 2) { // 2 10bit per pixel 2 bytes
-                pixelbytes = 2;        // 2 10bit per pixel 2 bytes
-            }
+            int32_t pixelbytes = width != 0 && stride != 0 ? (stride / width) : 1;
             for (int32_t i = 0; i < height * 3 / 2; ++i) { // 3: nom, 2: denom
                 (void)signal_->outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()) + i * stride,
                                                width * pixelbytes);
@@ -281,7 +278,7 @@ int32_t VideoDecSample::CreateAvccReader()
     info->inPath = inPath_;
     info->isH264Stream = isH264Stream_;
 
-    signal_->reader_ = std::shared_ptr<AvccReader>();
+    signal_->reader_ = std::make_shared<AvccReader>();
     int32_t ret = std::static_pointer_cast<AvccReader>(signal_->reader_)->Init(info);
     return ret;
 }
@@ -292,7 +289,7 @@ int32_t VideoDecSample::CreateMpegReader()
     info->inPath = inPath_;
     info->isMpeg2Stream = isMpeg2Stream_;
 
-    signal_->reader_ = std::shared_ptr<MpegReader>();
+    signal_->reader_ = std::make_shared<MpegReader>();
     int32_t ret = std::static_pointer_cast<MpegReader>(signal_->reader_)->Init(info);
     return ret;
 }
@@ -468,7 +465,6 @@ int32_t VideoDecSample::SetParameter()
 
 int32_t VideoDecSample::PushInputData(std::shared_ptr<CodecBufferInfo> bufferInfo)
 {
-    std::shared_lock<std::shared_mutex> lock(codecMutex_);
     UNITTEST_INFO_LOG("index:%d", bufferInfo->GetIndex());
     if (signal_->isInEos_) {
         if (!isFirstEos_) {
@@ -492,7 +488,6 @@ int32_t VideoDecSample::PushInputData(std::shared_ptr<CodecBufferInfo> bufferInf
 
 int32_t VideoDecSample::ReleaseOutputData(std::shared_ptr<CodecBufferInfo> bufferInfo)
 {
-    std::shared_lock<std::shared_mutex> lock(codecMutex_);
     UNITTEST_INFO_LOG("index:%d", bufferInfo->GetIndex());
     int32_t ret;
     if (isAVBufferMode_ && !isSurfaceMode_) {
@@ -520,18 +515,33 @@ int32_t VideoDecSample::IsValid(bool &isValid)
 
 int32_t VideoDecSample::HandleInputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo)
 {
-    std::shared_lock<std::shared_mutex> lock(codecMutex_);
-    uint8_t *addr = nullptr;
-    OH_AVCodecBufferAttr attr;
-    // 读取addr、attr
-    if (bufferInfo->GetBufferType() == TEST_AVBUFFER_CAPI) {
-        OH_AVBuffer_GetBufferAttr(bufferInfo->GetHandle(), &attr);
-        addr = OH_AVBuffer_GetAddr(bufferInfo->GetHandle());
-    } else {
-        attr = bufferInfo->GetAttr();
-        addr = OH_AVMemory_GetAddr(bufferInfo->GetHandle());
+    std::shared_lock<std::shared_mutex> lock(codecMutex_, std::try_to_lock);
+    if (!lock.owns_lock()) {
+        return AV_ERR_OK;
     }
+    uint8_t *addr = bufferInfo->GetAddr();
+    OH_AVCodecBufferAttr attr = {0, 0, 0, 0};
+    HandleInputFrameInner(addr, attr);
+    bufferInfo->SetAttr(attr);
+    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d", attr.size, (int32_t)(attr.flags));
+    return PushInputData(bufferInfo);
+}
 
+int32_t VideoDecSample::HandleOutputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo)
+{
+    std::shared_lock<std::shared_mutex> lock(codecMutex_, std::try_to_lock);
+    if (!lock.owns_lock()) {
+        return AV_ERR_OK;
+    }
+    uint8_t *addr = bufferInfo->GetAddr();
+    OH_AVCodecBufferAttr attr = bufferInfo->GetAttr();
+    int32_t ret = HandleOutputFrameInner(addr, attr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleOutputFrameInner failed, index: %d", index);
+    return ReleaseOutputData(bufferInfo);
+}
+
+int32_t VideoDecSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr)
+{
     signal_->reader_->FillBuffer(addr, attr);
     // 输入帧数不够时，循环读文件
     if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS || needXps_) {
@@ -547,31 +557,7 @@ int32_t VideoDecSample::HandleInputFrame(std::shared_ptr<CodecBufferInfo> buffer
         attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         attr.size = 0;
     }
-    // 设置attr
-    if (bufferInfo->GetBufferType() == TEST_AVBUFFER_CAPI) {
-        OH_AVBuffer_SetBufferAttr(bufferInfo->GetHandle(), &attr);
-    } else {
-        bufferInfo->SetAttr(attr);
-    }
-    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d", attr.size, (int32_t)(attr.flags));
-    return PushInputData(bufferInfo);
-}
-
-int32_t VideoDecSample::HandleOutputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo)
-{
-    std::shared_lock<std::shared_mutex> lock(codecMutex_);
-    uint8_t *addr = nullptr;
-    OH_AVCodecBufferAttr attr;
-    if (bufferInfo->GetBufferType() == TEST_AVBUFFER_CAPI) {
-        OH_AVBuffer_GetBufferAttr(bufferInfo->GetHandle(), &attr);
-        addr = OH_AVBuffer_GetAddr(bufferInfo->GetHandle());
-    } else {
-        attr = bufferInfo->GetAttr();
-        addr = OH_AVMemory_GetAddr(bufferInfo->GetHandle());
-    }
-    int32_t ret = HandleOutputFrameInner(addr, attr);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleOutputFrameInner failed, index: %d", index);
-    return ReleaseOutputData(bufferInfo);
+    return AV_ERR_OK;
 }
 
 int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr)
@@ -585,23 +571,16 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
         return AV_ERR_OK;
     }
     if (needDump_ && !isSurfaceMode_ && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
-        if (stride_ == 0) {
-            std::shared_ptr<OH_AVFormat> format = GetOutputDescription();
-            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_WIDTH, &width_);
-            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_HEIGHT, &height_);
-            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_STRIDE, &stride_);
-            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &heightSlice_);
+        int32_t pixelbytes =
+            signal_->width_ != 0 && signal_->widthStride_ != 0 ? (signal_->widthStride_ / signal_->width_) : 1;
+        for (int32_t i = 0; i < signal_->heightStride_; ++i) {
+            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * signal_->widthStride_,
+                                           signal_->width_ * pixelbytes);
         }
-        int32_t pixelbytes = 1;
-        if (stride_ >= width_ * 2) { // 2 10bit per pixel 2 bytes
-            pixelbytes = 2;          // 2 10bit per pixel 2 bytes
-        }
-        for (int32_t i = 0; i < heightSlice_; ++i) {
-            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_ * pixelbytes);
-        }
-        for (int32_t i = 0; i < (height_ >> 1); ++i) { // 2: denom
-            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + (heightSlice_ + i) * stride_,
-                                           width_ * pixelbytes);
+        for (int32_t i = 0; i < (signal_->height_ >> 1); ++i) { // 2: denom
+            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) +
+                                               (signal_->heightStride_ + i) * signal_->widthStride_,
+                                           signal_->width_ * pixelbytes);
         }
     }
     if (addr == nullptr) {

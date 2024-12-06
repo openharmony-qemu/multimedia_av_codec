@@ -53,8 +53,7 @@ int32_t ReadYUV420SP(std::shared_ptr<VCodecSignal> &signal, uint8_t *addr, int32
     return stride * height * 3 / 2; // 3: nom, 2: denom
 }
 
-int32_t ReadYUV420P(std::shared_ptr<VCodecSignal> &signal, uint8_t *addr, int32_t width, int32_t height,
-                    int32_t stride)
+int32_t ReadYUV420P(std::shared_ptr<VCodecSignal> &signal, uint8_t *addr, int32_t width, int32_t height, int32_t stride)
 {
     if (width == 0) {
         return 0;
@@ -305,7 +304,9 @@ int32_t VideoEncSample::Prepare()
 int32_t VideoEncSample::Stop()
 {
     TITLE_LOG;
+    std::lock_guard<std::shared_mutex> lock(codecMutex_);
     int32_t ret = OH_VideoEncoder_Stop(codec_);
+    signal_->FlushQueue();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_Stop failed");
     return ret;
 }
@@ -313,7 +314,9 @@ int32_t VideoEncSample::Stop()
 int32_t VideoEncSample::Flush()
 {
     TITLE_LOG;
+    std::lock_guard<std::shared_mutex> lock(codecMutex_);
     int32_t ret = OH_VideoEncoder_Flush(codec_);
+    signal_->FlushQueue();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_Flush failed");
     return ret;
 }
@@ -322,7 +325,9 @@ int32_t VideoEncSample::Reset()
 {
     TITLE_LOG;
     {
+        std::lock_guard<std::shared_mutex> lock(codecMutex_);
         int32_t ret = OH_VideoEncoder_Reset(codec_);
+        signal_->FlushQueue();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_Reset failed");
     }
     return Configure();
@@ -331,7 +336,9 @@ int32_t VideoEncSample::Reset()
 int32_t VideoEncSample::Release()
 {
     TITLE_LOG;
+    std::lock_guard<std::shared_mutex> lock(codecMutex_);
     int32_t ret = OH_VideoEncoder_Destroy(codec_);
+    signal_->FlushQueue();
     codec_ = nullptr;
     return ret;
 }
@@ -414,15 +421,28 @@ int32_t VideoEncSample::IsValid(bool &isValid)
 
 int32_t VideoEncSample::HandleInputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo)
 {
-    (void)bufferInfo;
-    return AV_ERR_OK;
+    std::shared_lock<std::shared_mutex> lock(codecMutex_, std::try_to_lock);
+    if (!lock.owns_lock()) {
+        return AV_ERR_OK;
+    }
+    uint8_t *addr = bufferInfo->GetAddr();
+    OH_AVCodecBufferAttr attr = {0, 0, 0, 0};
+    HandleInputFrameInner(addr, attr);
+    bufferInfo->SetAttr(attr);
+    return PushInputData(bufferInfo);
 }
 
 int32_t VideoEncSample::HandleOutputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo)
 {
-    (void)bufferInfo;
-    // return HandleOutputFrameInner(addr, attr);
-    return AV_ERR_OK;
+    std::shared_lock<std::shared_mutex> lock(codecMutex_, std::try_to_lock);
+    if (!lock.owns_lock()) {
+        return AV_ERR_OK;
+    }
+    uint8_t *addr = bufferInfo->GetAddr();
+    OH_AVCodecBufferAttr attr = bufferInfo->GetAttr();
+    int32_t ret = HandleOutputFrameInner(addr, attr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleOutputFrameInner failed, index: %d", index);
+    return ReleaseOutputData(bufferInfo);
 }
 
 int32_t VideoEncSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr)
@@ -480,6 +500,10 @@ int32_t VideoEncSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
 void VideoEncSample::InputFuncSurface()
 {
     while (signal_->isRunning_.load()) {
+        std::shared_lock<std::shared_mutex> lock(codecMutex_, std::try_to_lock);
+        if (!lock.owns_lock()) {
+            continue;
+        }
         OHNativeWindowBuffer *ohNativeWindowBuffer;
         int fenceFd = -1;
         UNITTEST_CHECK_AND_BREAK_LOG(nativeWindow_ != nullptr, "nativeWindow_ == nullptr");

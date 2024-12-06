@@ -227,23 +227,23 @@ void MpegReader::Mpeg2MetaUnitReader::PrereadMpeg2Unit()
     uint32_t bufferSize = 0;
     mpegUnit_->resize(MAX_NALU_SIZE);
     do {
-        auto pos_1 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + MPEG2_FRAME_HEAD_LEN,
+        auto pos1 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + MPEG2_FRAME_HEAD_LEN,
             prereadBuffer_.get() + prereadBufferSize_, std::begin(MPEG2_FRAME_HEAD), std::end(MPEG2_FRAME_HEAD));
-        uint32_t size_1 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_1);
-        auto pos_2 = std::search(prereadBuffer_.get() + pPrereadBuffer_, prereadBuffer_.get() +
-            pPrereadBuffer_ + size_1, std::begin(MPEG2_SEQUENCE_HEAD), std::end(MPEG2_SEQUENCE_HEAD));
-        uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_2);
+        uint32_t size1 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos1);
+        auto pos2 = std::search(prereadBuffer_.get() + pPrereadBuffer_, prereadBuffer_.get() +
+            pPrereadBuffer_ + size1, std::begin(MPEG2_SEQUENCE_HEAD), std::end(MPEG2_SEQUENCE_HEAD));
+        uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos2);
         if (size == 0) {
-            auto pos_3 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + size_1 + MPEG2_FRAME_HEAD_LEN,
+            auto pos3 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + size1 + MPEG2_FRAME_HEAD_LEN,
                 prereadBuffer_.get() + prereadBufferSize_, std::begin(MPEG2_FRAME_HEAD), std::end(MPEG2_FRAME_HEAD));
-            uint32_t size_2 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_3);
-            auto ret = memcpy_s(pBuffer, size_2, prereadBuffer_.get() + pPrereadBuffer_, size_2);
+            uint32_t size2 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos3);
+            auto ret = memcpy_s(pBuffer, size2, prereadBuffer_.get() + pPrereadBuffer_, size2);
             CHECK_AND_RETURN_LOG(ret == EOK, "First Copy buffer failed");
-            pPrereadBuffer_ += size_2;
-            bufferSize += size_2;
-            pBuffer += size_2;
+            pPrereadBuffer_ += size2;
+            bufferSize += size2;
+            pBuffer += size2;
             UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
-        } else if (size_1 > size) {
+        } else if (size1 > size) {
             auto ret = memcpy_s(pBuffer, size, prereadBuffer_.get() + pPrereadBuffer_, size);
             CHECK_AND_RETURN_LOG(ret == EOK, "Last Copy buffer failed");
             pPrereadBuffer_ += size;
@@ -251,11 +251,11 @@ void MpegReader::Mpeg2MetaUnitReader::PrereadMpeg2Unit()
             pBuffer += size;
             UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
         } else {
-            auto ret = memcpy_s(pBuffer, size_1, prereadBuffer_.get() + pPrereadBuffer_, size_1);
+            auto ret = memcpy_s(pBuffer, size1, prereadBuffer_.get() + pPrereadBuffer_, size1);
             CHECK_AND_RETURN_LOG(ret == EOK, "Comom Copy buffer failed");
-            pPrereadBuffer_ += size_1;
-            bufferSize += size_1;
-            pBuffer += size_1;
+            pPrereadBuffer_ += size1;
+            bufferSize += size1;
+            pBuffer += size1;
             UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
         }
         PrereadFile();
@@ -271,9 +271,9 @@ void MpegReader::Mpeg2MetaUnitReader::PrereadMpeg2Unit()
 
 const uint8_t *MpegReader::Mpeg2Detector::GetMpegTypeAddr(const uint8_t *bufferAddr)
 {
-    auto pos_1 = std::search(bufferAddr, bufferAddr + MPEG2_SEQUENCE_HEAD_LEN + 1,
+    auto pos1 = std::search(bufferAddr, bufferAddr + MPEG2_SEQUENCE_HEAD_LEN + 1,
         std::begin(MPEG2_SEQUENCE_HEAD), std::end(MPEG2_SEQUENCE_HEAD));
-    auto size = std::distance(bufferAddr, pos_1);
+    auto size = std::distance(bufferAddr, pos1);
     if (size == 0) {
         return nullptr;
     }
@@ -360,23 +360,23 @@ void MpegReader::Mpeg4MetaUnitReader::PrereadMpeg4Unit()
     uint32_t bufferSize = 0;
     mpegUnit_->resize(MAX_NALU_SIZE);
     do {
-        auto pos_1 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + MPEG4_FRAME_HEAD_LEN,
+        auto pos1 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + MPEG4_FRAME_HEAD_LEN,
             prereadBuffer_.get() + prereadBufferSize_, std::begin(MPEG4_FRAME_HEAD), std::end(MPEG4_FRAME_HEAD));
-        uint32_t size_1 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_1);
-        auto pos_2 = std::search(prereadBuffer_.get() + pPrereadBuffer_, prereadBuffer_.get() +
-            pPrereadBuffer_ + size_1, std::begin(MPEG4_SEQUENCE_HEAD), std::end(MPEG4_SEQUENCE_HEAD));
-        uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_2);
+        uint32_t size1 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos1);
+        auto pos2 = std::search(prereadBuffer_.get() + pPrereadBuffer_, prereadBuffer_.get() +
+            pPrereadBuffer_ + size1, std::begin(MPEG4_SEQUENCE_HEAD), std::end(MPEG4_SEQUENCE_HEAD));
+        uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos2);
         if (size == 0) {
-            auto pos_3 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + size_1 + MPEG4_FRAME_HEAD_LEN,
+            auto pos3 = std::search(prereadBuffer_.get() + pPrereadBuffer_ + size1 + MPEG4_FRAME_HEAD_LEN,
                 prereadBuffer_.get() + prereadBufferSize_, std::begin(MPEG4_FRAME_HEAD), std::end(MPEG4_FRAME_HEAD));
-            uint32_t size_2 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos_3);
-            auto ret = memcpy_s(pBuffer, size_2, prereadBuffer_.get() + pPrereadBuffer_, size_2);
+            uint32_t size2 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos3);
+            auto ret = memcpy_s(pBuffer, size2, prereadBuffer_.get() + pPrereadBuffer_, size2);
             CHECK_AND_RETURN_LOG(ret == EOK, "First Copy buffer failed");
-            pPrereadBuffer_ += size_2;
-            bufferSize += size_2;
-            pBuffer += size_2;
+            pPrereadBuffer_ += size2;
+            bufferSize += size2;
+            pBuffer += size2;
             UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
-        } else if (size_1 > size) {
+        } else if (size1 > size) {
             auto ret = memcpy_s(pBuffer, size, prereadBuffer_.get() + pPrereadBuffer_, size);
             CHECK_AND_RETURN_LOG(ret == EOK, "Last Copy buffer failed");
             pPrereadBuffer_ += size;
@@ -384,11 +384,11 @@ void MpegReader::Mpeg4MetaUnitReader::PrereadMpeg4Unit()
             pBuffer += size;
             UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
         } else {
-            auto ret = memcpy_s(pBuffer, size_1, prereadBuffer_.get() + pPrereadBuffer_, size_1);
+            auto ret = memcpy_s(pBuffer, size1, prereadBuffer_.get() + pPrereadBuffer_, size1);
             CHECK_AND_RETURN_LOG(ret == EOK, "Copy buffer failed");
-            pPrereadBuffer_ += size_1;
-            bufferSize += size_1;
-            pBuffer += size_1;
+            pPrereadBuffer_ += size1;
+            bufferSize += size1;
+            pBuffer += size1;
             UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
         }
         PrereadFile();
@@ -404,9 +404,9 @@ void MpegReader::Mpeg4MetaUnitReader::PrereadMpeg4Unit()
 
 const uint8_t *MpegReader::Mpeg4Detector::GetMpegTypeAddr(const uint8_t *bufferAddr)
 {
-    auto pos_1 = std::search(bufferAddr, bufferAddr + MPEG4_SEQUENCE_HEAD_LEN + 1,
+    auto pos1 = std::search(bufferAddr, bufferAddr + MPEG4_SEQUENCE_HEAD_LEN + 1,
         std::begin(MPEG4_SEQUENCE_HEAD), std::end(MPEG4_SEQUENCE_HEAD));
-    auto size = std::distance(bufferAddr, pos_1);
+    auto size = std::distance(bufferAddr, pos1);
     if (size == 0) {
         return nullptr;
     }

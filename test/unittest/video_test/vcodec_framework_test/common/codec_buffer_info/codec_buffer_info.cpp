@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 #include "codec_buffer_info.h"
+#include "avbuffer_mock.h"
+#include "common_mock.h"
+#include "avformat_mock.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -26,33 +29,18 @@ CodecBufferHandle CodecBufferInfo::GetHandle() const
     return handle_;
 }
 
-uint32_t CodecBufferInfo::GetIndex() const
-{
-    return index_;
-}
-
-OH_AVCodecBufferAttr CodecBufferInfo::GetAttr() const
-{
-    return attr_;
-}
-
-void CodecBufferInfo::SetAttr(OH_AVCodecBufferAttr attr)
-{
-    attr_ = attr;
-}
-
 CodecBufferType CodecBufferInfo::GetBufferType() const
 {
     if (Any::IsSameTypeWith<OH_AVBuffer *>(handle_.any_)) {
-        return TEST_AVMEMORY_CAPI;
-    } else if (Any::IsSameTypeWith<OH_AVMemory *>(handle_.any_)) {
         return TEST_AVBUFFER_CAPI;
+    } else if (Any::IsSameTypeWith<OH_AVMemory *>(handle_.any_)) {
+        return TEST_AVMEMORY_CAPI;
     } else if (Any::IsSameTypeWith<OH_AVFormat *>(handle_.any_)) {
         return TEST_AVFORMAT_CAPI;
     } else if (Any::IsSameTypeWith<std::shared_ptr<AVBufferMock>>(handle_.any_)) {
-        return TEST_AVMEMORY_MOCK;
-    } else if (Any::IsSameTypeWith<std::shared_ptr<AVMemoryMock>>(handle_.any_)) {
         return TEST_AVBUFFER_MOCK;
+    } else if (Any::IsSameTypeWith<std::shared_ptr<AVMemoryMock>>(handle_.any_)) {
+        return TEST_AVMEMORY_MOCK;
     } else if (Any::IsSameTypeWith<std::shared_ptr<FormatMock>>(handle_.any_)) {
         return TEST_AVFORMAT_MOCK;
     } else if (Any::IsSameTypeWith<ParameterWithAttrMock>(handle_.any_)) {
@@ -62,9 +50,61 @@ CodecBufferType CodecBufferInfo::GetBufferType() const
     }
 }
 
+uint32_t CodecBufferInfo::GetIndex() const
+{
+    return index_;
+}
+
 bool CodecBufferInfo::IsValid() const
 {
     return isValid_;
+}
+
+OH_AVCodecBufferAttr CodecBufferInfo::GetAttr()
+{
+    switch (GetBufferType()) {
+        case TEST_AVBUFFER_CAPI:
+            OH_AVBuffer_GetBufferAttr(handle_, &attr_);
+            break;
+        case TEST_AVBUFFER_MOCK:
+            std::shared_ptr<AVBufferMock>(handle_)->GetBufferAttr(attr_);
+            break;
+        default:
+            break;
+    }
+    return attr_;
+}
+
+uint8_t *CodecBufferInfo::GetAddr()
+{
+    switch (GetBufferType()) {
+        case TEST_AVBUFFER_CAPI:
+            return OH_AVBuffer_GetAddr(handle_);
+        case TEST_AVMEMORY_CAPI:
+            return OH_AVMemory_GetAddr(handle_);
+        case TEST_AVBUFFER_MOCK:
+            return std::shared_ptr<AVBufferMock>(handle_)->GetAddr();
+        case TEST_AVMEMORY_MOCK:
+            return std::shared_ptr<AVMemoryMock>(handle_)->GetAddr();
+        default:
+            break;
+    }
+    return nullptr;
+}
+
+void CodecBufferInfo::SetAttr(OH_AVCodecBufferAttr attr)
+{
+    switch (GetBufferType()) {
+        case TEST_AVBUFFER_CAPI:
+            OH_AVBuffer_SetBufferAttr(handle_, &attr);
+            break;
+        case TEST_AVBUFFER_MOCK:
+            std::shared_ptr<AVBufferMock>(handle_)->SetBufferAttr(attr);
+            break;
+        default:
+            break;
+    }
+    attr_ = attr;
 }
 
 void CodecBufferInfo::Release()

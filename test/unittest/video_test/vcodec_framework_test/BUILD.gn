@@ -50,10 +50,10 @@ group("vcodec_framework_test") {
       ":videodec_capi_unit_test",
       ":videodec_hdrvivid2sdr_capi_unit_test",
       ":videodec_hdrvivid2sdr_inner_unit_test",
-      # ":videodec_hevcdec_unit_test",
+      ":videodec_hevcdec_unit_test",
       ":videodec_inner_unit_test",
       ":videodec_mpeg_func_unit_test",
-      # ":videodec_mpeg_stable_unit_test",
+      ":videodec_mpeg_stable_unit_test",
       ":videodec_stable_unit_test",
     ]
     if (av_codec_support_hcodec) {
@@ -64,7 +64,7 @@ group("vcodec_framework_test") {
         ":videoenc_qpmap_inner_unit_test",
         ":videoenc_repeat_previous_frame_capi_unit_test",
         ":videoenc_repeat_previous_frame_inner_unit_test",
-        # ":videoenc_stable_unit_test",
+        ":videoenc_stable_unit_test",
         ":videoenc_temporal_scalability_capi_unit_test",
         ":videoenc_temporal_scalability_inner_unit_test",
       ]
@@ -97,10 +97,10 @@ ohos_unittest("videodec_capi_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
     "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videodec_capi_mock.cpp",
-    "./common/data_producer/avcc_reader/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_func_unit_test.cpp",
   ]
@@ -156,10 +156,10 @@ ohos_unittest("videodec_inner_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
     "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videodec_inner_mock.cpp",
-    "./common/data_producer/avcc_reader/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_func_unit_test.cpp",
   ]
@@ -206,10 +206,10 @@ ohos_unittest("videodec_mpeg_func_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
     "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videodec_inner_mock.cpp",
-    "./common/data_producer/avcc_reader/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_mpeg_func_unit_test.cpp",
   ]
@@ -720,10 +720,10 @@ ohos_unittest("videodec_hdrvivid2sdr_capi_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
     "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videodec_capi_mock.cpp",
-    "./common/data_producer/avcc_reader/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_hdrvivid2sdr_unit_test.cpp",
   ]
@@ -785,10 +785,10 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
     "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videodec_inner_mock.cpp",
-    "./common/data_producer/avcc_reader/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_hdrvivid2sdr_unit_test.cpp",
   ]

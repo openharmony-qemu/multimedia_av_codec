@@ -14,8 +14,8 @@
  */
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
-#include "native_avcapability.h"
 #include "heap_memory_thread.h"
+#include "native_avcapability.h"
 #include "native_avmagic.h"
 #include "unittest_utils.h"
 #include "vdec_sample.h"
@@ -43,13 +43,7 @@ private:
     shared_ptr<HeapMemoryThread> heapThread_ = nullptr;
 };
 
-void VideoDecHevcDecTest::SetUpTestCase(void)
-{
-    (void)InDataVoid;
-    (void)OutDataVoid;
-    (void)InBufferVoid;
-    (void)OutBufferVoid;
-}
+void VideoDecHevcDecTest::SetUpTestCase(void) {}
 
 void VideoDecHevcDecTest::TearDownTestCase(void) {}
 
@@ -1770,7 +1764,7 @@ bool CheckCapabilitySupport()
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
     return capability != nullptr;
 }
-} //namespace
+} // namespace
 
 int main(int argc, char **argv)
 {

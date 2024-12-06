@@ -105,6 +105,7 @@ private:
 private:
     OH_AVCodecAsyncCallback asyncCallback_;
     OH_AVCodecCallback callback_;
+    std::shared_mutex codecMutex_;
     OHNativeWindow *nativeWindow_ = nullptr;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;

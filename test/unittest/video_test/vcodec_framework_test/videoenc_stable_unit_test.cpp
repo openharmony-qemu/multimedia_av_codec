@@ -42,13 +42,7 @@ private:
     shared_ptr<HeapMemoryThread> heapThread_ = nullptr;
 };
 
-void VideoEncStableTest::SetUpTestCase(void)
-{
-    (void)InDataVoid;
-    (void)OutDataVoid;
-    (void)InBufferVoid;
-    (void)OutBufferVoid;
-}
+void VideoEncStableTest::SetUpTestCase(void) {}
 
 void VideoEncStableTest::TearDownTestCase(void) {}
 

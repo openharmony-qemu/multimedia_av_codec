@@ -27,7 +27,7 @@ namespace MediaAVCodec {
 class CodecBufferQueue {
 public:
     virtual void Enqueue(const std::shared_ptr<CodecBufferInfo> bufferInfo);
-    virtual std::shared_ptr<CodecBufferInfo> Dequeue(int32_t timeoutMs = 5000);
+    virtual std::shared_ptr<CodecBufferInfo> Dequeue(int32_t timeoutMs = 1000);
     virtual void Flush();
 
 protected:

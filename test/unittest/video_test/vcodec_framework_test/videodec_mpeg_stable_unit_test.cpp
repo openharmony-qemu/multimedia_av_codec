@@ -15,9 +15,9 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include "heap_memory_thread.h"
+#include "native_avcapability.h"
 #include "unittest_utils.h"
 #include "vdec_sample.h"
-#include "native_avcapability.h"
 
 #define PRINT_HILOG
 #define TEST_ID vdec->sampleId_
@@ -44,13 +44,7 @@ private:
     shared_ptr<HeapMemoryThread> heapThread_ = nullptr;
 };
 
-void VideoDecStableTest::SetUpTestCase(void)
-{
-    (void)InDataVoid;
-    (void)OutDataVoid;
-    (void)InBufferVoid;
-    (void)OutBufferVoid;
-}
+void VideoDecStableTest::SetUpTestCase(void) {}
 
 void VideoDecStableTest::TearDownTestCase(void) {}
 
@@ -180,7 +174,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg4_Checkprofileandlevel, TestSize.L
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
         EXPECT_GT(levelsNum, MPEG4_LEVEL_0);
         EXPECT_LE(levelsNum, MPEG4_LEVEL_6 + 1);
-        for (int32_t j =0; j < levelsNum; j++) {
+        for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, MPEG4_LEVEL_0);
             EXPECT_LE(level, MPEG4_LEVEL_6);
@@ -208,7 +202,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg2_Checkprofileandlevel, TestSize.L
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
         EXPECT_GT(levelsNum, MPEG2_LEVEL_LL);
         EXPECT_LE(levelsNum, MPEG2_LEVEL_HL + 1);
-        for (int32_t j =0; j < levelsNum; j++) {
+        for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, MPEG2_LEVEL_LL);
             EXPECT_LE(level, MPEG2_LEVEL_HL);

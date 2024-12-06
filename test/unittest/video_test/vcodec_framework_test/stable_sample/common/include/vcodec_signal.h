@@ -41,7 +41,7 @@ public:
 
 class VCodecSignal {
 public:
-    VCodecSignal(std::shared_ptr<VCodecSampleBase> codec) : codec_(codec){};
+    VCodecSignal(std::shared_ptr<VCodecSampleBase> codec) : codecSample_(codec){};
     ~VCodecSignal()
     {
         if (outFile_ != nullptr && outFile_->is_open()) {
@@ -70,12 +70,16 @@ public:
     std::shared_ptr<DataProducerBase> reader_;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;
-    std::weak_ptr<VCodecSampleBase> codec_;
+    std::weak_ptr<VCodecSampleBase> codecSample_;
 
     int32_t width_ = 0;
     int32_t height_ = 0;
     int32_t widthStride_ = 0;
     int32_t heightStride_ = 0;
+    int32_t cropTop_ = 0;
+    int32_t cropBottom_ = 0;
+    int32_t cropLeft_ = 0;
+    int32_t cropRight_ = 0;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

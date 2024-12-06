@@ -62,38 +62,53 @@ void OutBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void 
     (void)userData;
 }
 
+void OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+{
+    (void)codec;
+    auto signal = reinterpret_cast<VCodecSignal *>(userData);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_WIDTH, &signal->width_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_HEIGHT, &signal->height_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &signal->widthStride_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &signal->heightStride_);
+    // 获取裁剪矩形信息可选
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_CROP_TOP, &signal->cropTop_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_CROP_BOTTOM, &signal->cropBottom_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_CROP_LEFT, &signal->cropLeft_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_CROP_RIGHT, &signal->cropRight_);
+}
+
 void InDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     auto signal = reinterpret_cast<VCodecSignal *>(userData);
-    auto codecSample = signal->codec_.lock();
+    auto codecSample = signal->codecSample_.lock();
     codecSample->HandleInputFrame(std::make_shared<CodecBufferInfo>(index, data));
 }
 
 void OutDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
 {
     auto signal = reinterpret_cast<VCodecSignal *>(userData);
-    auto codecSample = signal->codec_.lock();
+    auto codecSample = signal->codecSample_.lock();
     codecSample->HandleOutputFrame(std::make_shared<CodecBufferInfo>(index, data, *attr));
 }
 
 void InBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     auto signal = reinterpret_cast<VCodecSignal *>(userData);
-    auto codecSample = signal->codec_.lock();
+    auto codecSample = signal->codecSample_.lock();
     codecSample->HandleInputFrame(std::make_shared<CodecBufferInfo>(index, buffer));
 }
 
 void OutBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     auto signal = reinterpret_cast<VCodecSignal *>(userData);
-    auto codecSample = signal->codec_.lock();
+    auto codecSample = signal->codecSample_.lock();
     codecSample->HandleOutputFrame(std::make_shared<CodecBufferInfo>(index, buffer));
 }
 
 void InDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     auto signal = reinterpret_cast<VCodecSignal *>(userData);
-    auto codecSample = signal->codec_.lock();
+    auto codecSample = signal->codecSample_.lock();
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(codecSample->Operate(), AV_ERR_OK);
@@ -105,7 +120,7 @@ void InDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *u
 void OutDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
 {
     auto signal = reinterpret_cast<VCodecSignal *>(userData);
-    auto codecSample = signal->codec_.lock();
+    auto codecSample = signal->codecSample_.lock();
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(codecSample->Operate(), AV_ERR_OK);
@@ -117,7 +132,7 @@ void OutDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVC
 void InBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     auto signal = reinterpret_cast<VCodecSignal *>(userData);
-    auto codecSample = signal->codec_.lock();
+    auto codecSample = signal->codecSample_.lock();
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(codecSample->Operate(), AV_ERR_OK);
@@ -129,7 +144,7 @@ void InBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, voi
 void OutBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     auto signal = reinterpret_cast<VCodecSignal *>(userData);
-    auto codecSample = signal->codec_.lock();
+    auto codecSample = signal->codecSample_.lock();
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(codecSample->Operate(), AV_ERR_OK);
@@ -164,7 +179,7 @@ void OutBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void
 
 void InputBufferLoop(std::shared_ptr<VCodecSignal> &signal)
 {
-    auto codecSample = signal->codec_.lock();
+    auto codecSample = signal->codecSample_.lock();
     pthread_setname_np(pthread_self(), "inloop");
     while (signal->isRunning_.load()) {
         auto bufferInfo = signal->inQueue_.Dequeue();
@@ -177,7 +192,7 @@ void InputBufferLoop(std::shared_ptr<VCodecSignal> &signal)
 
 void OutputBufferLoop(std::shared_ptr<VCodecSignal> &signal)
 {
-    auto codecSample = signal->codec_.lock();
+    auto codecSample = signal->codecSample_.lock();
     pthread_setname_np(pthread_self(), "outloop");
     while (signal->isRunning_.load()) {
         auto bufferInfo = signal->outQueue_.Dequeue();
