@@ -574,7 +574,7 @@ Status DemuxerPluginManager::RebootPlugin(int32_t streamId, TrackType trackType,
         return Status::ERROR_INVALID_PARAMETER;
     }
 
-    // Start to reboot demuxer plugin while streamId is not changed 
+    // Start to reboot demuxer plugin while streamId is not changed
     streamInfoMap_[streamId].activated = true;
     if (streamInfoMap_[streamId].plugin != nullptr) {
         streamInfoMap_[streamId].plugin.reset();
