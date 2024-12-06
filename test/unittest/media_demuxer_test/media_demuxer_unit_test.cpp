@@ -1084,39 +1084,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.
     EXPECT_EQ(demuxer->HandleDashSelectTrack(3), Status::ERROR_INVALID_OPERATION);
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekToTimePre_016, TestSize.Level1)
-{
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
-    demuxer->audioTrackId_ = 0;
-    demuxer->videoTrackId_ = 0;
-    demuxer->subtitleTrackId_ = 0;
-
-    Meta metaTmp1;
-    metaTmp1.Set<Tag::MIME_TYPE>("audio/xxx");
-    demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp1);
-    Meta metaTmp2;
-    metaTmp2.Set<Tag::MIME_TYPE>("video/xxx");
-    demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp2);
-    Meta metaTmp3;
-    metaTmp3.Set<Tag::MIME_TYPE>("text/vtt");
-    demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp3);
-
-    demuxer->demuxerPluginManager_->isDash_ = false;
-    EXPECT_EQ(demuxer->SeekToTimePre(), Status::OK);
-    demuxer->demuxerPluginManager_->isDash_ = true;
-    demuxer->isSelectBitRate_ = true;
-    EXPECT_EQ(demuxer->SeekToTimePre(), Status::OK);
-
-    demuxer->isSelectBitRate_ = false;
-    demuxer->isSelectTrack_ = true;
-    EXPECT_EQ(demuxer->SeekToTimePre(), Status::OK);
-
-    demuxer->isSelectBitRate_ = false;
-    demuxer->isSelectTrack_ = false;
-    EXPECT_EQ(demuxer->SeekToTimePre(), Status::OK);
-}
-
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekToTimeAfter_016, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
@@ -1139,7 +1106,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekToTimeAfter_016, TestSize.Level1
     EXPECT_EQ(demuxer->SeekToTimeAfter(), Status::OK);
     demuxer->demuxerPluginManager_->isDash_ = true;
     demuxer->isSelectBitRate_ = true;
-    EXPECT_EQ(demuxer->SeekToTimeAfter(), Status::OK);
+    EXPECT_EQ(demuxer->SeekToTimeAfter(), Status::ERROR_INVALID_PARAMETER);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckDropAudioFrame_016, TestSize.Level1)

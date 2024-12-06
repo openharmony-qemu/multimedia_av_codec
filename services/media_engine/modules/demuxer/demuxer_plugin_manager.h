@@ -102,6 +102,7 @@ public:
     StreamType GetStreamTypeByTrackID(int32_t trackId);
     int32_t GetStreamIDByTrackID(int32_t trackId);
     int32_t GetStreamIDByTrackType(TrackType type);
+    int32_t GetStreamDemuxerNewStreamID(TrackType trackType, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     
     TrackType GetTrackTypeByTrackID(int32_t trackID);
 
@@ -120,6 +121,8 @@ public:
     bool IsSubtitle() const;
     Status StopPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StartPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
+    Status RebootPlugin(int32_t streamId, TrackType trackType, std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+        bool& isRebooted);
     Status StartAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StopAllPlugin();
     Status UpdateDefaultStreamID(Plugins::MediaInfo& mediaInfo, StreamType type, int32_t newStreamID);
