@@ -962,9 +962,7 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
 
 Status MediaDemuxer::SeekToTimeAfter()
 {
-    if (demuxerPluginManager_->IsDash() == false) {
-        return Status::OK;
-    }
+    FALSE_RETURN_V(demuxerPluginManager_->IsDash(), Status::OK);
     MEDIA_LOG_D("Reboot plugin begin");
     Status ret;
     bool isDemuxerPluginRebooted = true;
@@ -1771,11 +1769,9 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
 
 bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
 {
+    FALSE_RETURN_V(demuxerPluginManager_->IsDash(), false);
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "Plugin manager is nullptr");
     FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr, false, "Stream is nullptr");
-    if (demuxerPluginManager_->IsDash() == false) {
-        return false;
-    }
 
     MEDIA_LOG_D("IN");
     TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(static_cast<int32_t>(trackId));
