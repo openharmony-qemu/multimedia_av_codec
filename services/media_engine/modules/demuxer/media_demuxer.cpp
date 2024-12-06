@@ -948,7 +948,7 @@ Status MediaDemuxer::UnselectTrack(int32_t trackId)
 Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
 {
     FALSE_RETURN_V_MSG_E(!subStreamDemuxer_ || trackId != static_cast<int32_t>(subtitleTrackId_),
-        Status::ERROR_INVALID_PARAMETER, "subStreamDemuxer is nullptr");
+        Status::ERROR_NULL_POINTER, "subStreamDemuxer is nullptr");
     Status ret = Status::OK;
     if (static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
