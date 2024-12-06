@@ -564,7 +564,8 @@ Status DemuxerPluginManager::RebootPlugin(int32_t streamId, TrackType trackType,
     int32_t newStreamId = GetStreamDemuxerNewStreamID(trackType, streamDemuxer);
     MEDIA_LOG_D("oldstreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32, streamId, newStreamId);
     if (newStreamId != -1 && streamId != newStreamId) {
-        MEDIA_LOG_D("oldstreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32, streamId, newStreamId);
+        MEDIA_LOG_I("StreamID changed, oldstreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
+            streamId, newStreamId);
         isRebooted = false;
         return Status::OK;
     }
@@ -573,6 +574,7 @@ Status DemuxerPluginManager::RebootPlugin(int32_t streamId, TrackType trackType,
         return Status::ERROR_INVALID_PARAMETER;
     }
 
+    // Start to reboot demuxer plugin while streamId is not changed 
     streamInfoMap_[streamId].activated = true;
     if (streamInfoMap_[streamId].plugin != nullptr) {
         streamInfoMap_[streamId].plugin.reset();
