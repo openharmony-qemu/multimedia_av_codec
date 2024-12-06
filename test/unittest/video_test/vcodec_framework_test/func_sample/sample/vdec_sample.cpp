@@ -856,6 +856,7 @@ int32_t VideoDecSample::InputLoopInnerExt()
     } else {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
     }
+    buffer->SetBufferAttr(attr);
     return PushInputBuffer(index);
 }
 
