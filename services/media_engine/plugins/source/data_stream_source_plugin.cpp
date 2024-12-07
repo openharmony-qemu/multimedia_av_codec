@@ -35,8 +35,11 @@ namespace {
     constexpr uint32_t MAX_MEM_CNT = 10 * 1024;
     constexpr size_t DEFAULT_PREDOWNLOAD_SIZE_BYTE = 10 * 1024 * 1024;
     constexpr uint32_t DEFAULT_RETRY_TIMES = 20;
-    constexpr uint32_t READ_AGAIN_RETRY_TIME = 100;
-    constexpr uint32_t READ_ERROR_RETRY_TIME = 50;
+    constexpr uint32_t READ_AGAIN_RETRY_TIME_ONE = 100;
+    constexpr uint32_t READ_AGAIN_RETRY_TIME_TWO = 200;
+    constexpr uint32_t READ_AGAIN_RETRY_TIME_THREE = 500;
+    constexpr uint32_t RETRY_TIMES_ONE = 5; // The number of attempts determines the sleep duration.
+    constexpr uint32_t RETRY_TIMES_TWO = 15;
 }
 std::shared_ptr<Plugins::SourcePlugin> DataStreamSourcePluginCreator(const std::string& name)
 {
@@ -136,8 +139,13 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         offset, expectedLen, seekable_);
     std::shared_ptr<AVSharedMemory> memory = GetMemory();
     FALSE_RETURN_V_MSG(memory != nullptr, Status::ERROR_NO_MEMORY, "allocate memory failed!");
-    int32_t realLen;
+    int32_t realLen = 0;
     do {
+        if (isInterrupted_ || isExitRead_) {
+            retryTimes_ = 0;
+            isBufferingStart = false;
+            return Status::OK;
+        }
         if (seekable_ == Plugins::Seekable::SEEKABLE) {
             FALSE_RETURN_V(static_cast<int64_t>(offset_) <= size_, Status::END_OF_STREAM);
             expectedLen = std::min(static_cast<size_t>(size_ - offset_), expectedLen);
@@ -147,25 +155,22 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
             expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
             realLen = dataSrc_->ReadAt(expectedLen, memory);
         }
+        FALSE_RETURN_V_MSG(realLen > MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN,
+            "read data error! realLen:" PUBLIC_LOG_D32, realLen);
+        FALSE_RETURN_V_MSG_W(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
         if (realLen > 0) {
+            FALSE_LOG_MSG_W(realLen == static_cast<int32_t>(expectedLen), "realLen != expectedLen, realLen:"
+                PUBLIC_LOG_D32 ", expectedLen: " PUBLIC_LOG_ZU, realLen, expectedLen);
             retryTimes_ = 0;
             HandleBufferingEnd();
             break;
         }
         if (realLen == 0) {
             HandleBufferingStart();
-            OSAL::SleepFor(READ_AGAIN_RETRY_TIME);
-            MEDIA_LOG_D("Read length is 0, read again.");
-            break;
         }
-        if (realLen == MediaDataSourceError::SOURCE_ERROR_EOF) {
-            return Status::END_OF_STREAM;
-        }
-        OSAL::SleepFor(READ_ERROR_RETRY_TIME); // 50ms sleep time for connect
+        SleepForRetry();
         retryTimes_++;
-    } while (realLen < 0 && retryTimes_ < DEFAULT_RETRY_TIMES);
-    FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN, "read data error!");
-    FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
+    } while (retryTimes_ < DEFAULT_RETRY_TIMES);
     offset_ += static_cast<uint64_t>(realLen);
     if (buffer && buffer->GetMemory()) {
         buffer->GetMemory()->Write(memory->GetBase(), realLen, 0);
@@ -178,6 +183,19 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         buffer->GetMemory()->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
     FALSE_RETURN_V(realLen != 0, Status::ERROR_AGAIN);
     return Status::OK;
+}
+
+void DataStreamSourcePlugin::SleepForRetry()
+{
+    MEDIA_LOG_I("read again. retryTimes:" PUBLIC_LOG_U32, retryTimes_);
+    FALSE_RETURN_V(retryTimes_ > RETRY_TIMES_ONE, OSAL::SleepFor(READ_AGAIN_RETRY_TIME_ONE));
+    FALSE_RETURN_V(retryTimes_ > RETRY_TIMES_TWO, OSAL::SleepFor(READ_AGAIN_RETRY_TIME_TWO));
+    OSAL::SleepFor(READ_AGAIN_RETRY_TIME_THREE);
+}
+
+void DataStreamSourcePlugin::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterrupted_ = isInterruptNeeded;
 }
 
 void DataStreamSourcePlugin::HandleBufferingStart()
@@ -229,13 +247,29 @@ Status DataStreamSourcePlugin::SeekTo(uint64_t offset)
         return Status::ERROR_INVALID_PARAMETER;
     }
     offset_ = offset;
+    isExitRead_ = false;
     MEDIA_LOG_D("seek to offset_ " PUBLIC_LOG_U64 " success", offset_);
+    return Status::OK;
+}
+
+Status DataStreamSourcePlugin::Pause()
+{
+    MEDIA_LOG_I("Pause enter.");
+    isExitRead_ = true;
+    return Status::OK;
+}
+ 
+Status DataStreamSourcePlugin::Resume()
+{
+    MEDIA_LOG_I("Resume enter.");
+    isExitRead_ = false;
     return Status::OK;
 }
 
 Status DataStreamSourcePlugin::Reset()
 {
-    MEDIA_LOG_D("IN");
+    MEDIA_LOG_I("Reset enter.");
+    isInterrupted_ = true;
     return Status::OK;
 }
 
