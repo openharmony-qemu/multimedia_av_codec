@@ -1067,7 +1067,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.
     demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp3);
     Meta metaTmp4;
     metaTmp4.Set<Tag::MIME_TYPE>("aaaaa");
-    demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp3);
+    demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp4);
 
     demuxer->demuxerPluginManager_->AddTrackMapInfo(0, 0);
     demuxer->demuxerPluginManager_->AddTrackMapInfo(1, 0);
@@ -1081,7 +1081,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.
     EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::OK);
     EXPECT_EQ(demuxer->HandleDashSelectTrack(1), Status::OK);
     EXPECT_EQ(demuxer->HandleDashSelectTrack(2), Status::OK);
-    EXPECT_EQ(demuxer->HandleDashSelectTrack(3), Status::ERROR_INVALID_OPERATION);
+    EXPECT_EQ(demuxer->HandleDashSelectTrack(3), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekToTimeAfter_016, TestSize.Level1)
