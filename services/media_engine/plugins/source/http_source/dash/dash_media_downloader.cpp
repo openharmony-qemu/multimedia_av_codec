@@ -40,7 +40,10 @@ DashMediaDownloader::DashMediaDownloader() noexcept
 
 DashMediaDownloader::~DashMediaDownloader()
 {
-    mpdDownloader_->Close(false);
+    if (mpdDownloader_ != nullptr) {
+        mpdDownloader_->Close(false);
+    }
+
     segmentDownloaders_.clear();
 }
 
