@@ -13,6 +13,16 @@
  * limitations under the License.
  */
 
+/**
+ * @addtogroup AVCapability
+ * @{
+ *
+ * @brief The AVCapability module provide functions for querying encoding and decoding capabilities.
+ * 
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ */
+
 #ifndef NATIVE_AVCAPABILITY_H
 #define NATIVE_AVCAPABILITY_H
 
@@ -422,3 +432,4 @@ OH_AVFormat *OH_AVCapability_GetFeatureProperties(OH_AVCapability *capability, O
 }
 #endif
 #endif // NATIVE_AVCAPABILITY_H
+/** @} */
