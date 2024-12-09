@@ -38,6 +38,7 @@ protected:
     // SystemAbility override
     void OnDump() override;
     void OnStart() override;
+    int32_t OnIdle(const SystemAbilityOnDemandReason& idleReason) override;
     void OnStop() override;
     std::optional<AVCodecServerManager::StubType> SwitchSystemId(
         IStandardAVCodecService::AVCodecSystemAbility subSystemId);
@@ -45,6 +46,8 @@ protected:
 
 private:
     void OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
+
+    std::mutex stateMutex_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

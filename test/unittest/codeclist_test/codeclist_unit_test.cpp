@@ -165,7 +165,13 @@ HWTEST_F(CodecListUnitTest, CodecList_GetName_001, TestSize.Level1)
         capability_ = CodecListMockFactory::GetCapabilityByCategory(mime, true, category);
         ASSERT_NE(nullptr, capability_) << mime << " can not found!" << std::endl;
         std::string codecName = capability_->GetName();
-        EXPECT_EQ(nameOfMime, codecName) << mime << " get error name: " << codecName << std::endl;
+        if (mime == std::string(CodecMimeType::AUDIO_AAC)) {
+            bool check = (codecName == nameOfMime ||
+                          codecName == std::string(AVCodecCodecName::AUDIO_ENCODER_VENDOR_AAC_NAME));
+            EXPECT_EQ(true, check) << mime << " get error name: " << codecName << std::endl;
+        } else {
+            EXPECT_EQ(nameOfMime, codecName) << mime << " get error name: " << codecName << std::endl;
+        }
     }
     if (isHardIncluded_) {
         for (auto it = CAPABILITY_DECODER_HARD_NAME.begin(); it != CAPABILITY_DECODER_HARD_NAME.end(); ++it) {

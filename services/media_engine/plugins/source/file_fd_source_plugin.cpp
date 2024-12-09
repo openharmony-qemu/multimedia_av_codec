@@ -177,6 +177,11 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
     MEDIA_LOG_D("ReadLocal buffer pos: " PUBLIC_LOG_U64 " , len:" PUBLIC_LOG_ZU, position_.load(), expectedLen);
 
+    int32_t offsetCur = lseek(fd_, 0, SEEK_CUR);
+    if (static_cast<uint64_t>(offsetCur) != position_) {
+        MEDIA_LOG_E("Fd offsetCur has changed. offsetCur " PUBLIC_LOG_D32 ", offsetOld " PUBLIC_LOG_U64,
+            offsetCur, position_.load());
+    }
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
     if (size <= 0) {
         HandleReadResult(expectedLen, size);
@@ -245,7 +250,7 @@ Status FileFdSourcePlugin::SeekTo(uint64_t offset)
     FALSE_RETURN_V_MSG_E(fd_ != -1 && seekable_ == Seekable::SEEKABLE,
         Status::ERROR_WRONG_STATE, "no valid fd or no seekable.");
 
-    MEDIA_LOG_I("SeekTo offset: " PUBLIC_LOG_U64, offset);
+    MEDIA_LOG_D("SeekTo offset: " PUBLIC_LOG_U64, offset);
     if (isCloudFile_) {
         return SeekToOnlineFile(offset);
     } else {

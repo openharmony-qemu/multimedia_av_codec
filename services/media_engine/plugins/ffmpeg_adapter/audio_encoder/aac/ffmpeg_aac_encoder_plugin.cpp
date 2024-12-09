@@ -554,7 +554,15 @@ bool FFmpegAACEncoderPlugin::CheckResample() const
 Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 {
     int32_t type;
+    int32_t aacProfile;
     MEDIA_LOG_I("GetMetaData enter");
+    if (meta->Get<Tag::MEDIA_PROFILE>(aacProfile)) {
+        if (aacProfile != AAC_PROFILE_LC) {
+            MEDIA_LOG_E("this plugin only support LC-AAC, input profile:%{public}d", aacProfile);
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+    }
+
     if (meta->Get<Tag::AUDIO_AAC_IS_ADTS>(type)) {
         aacName_ = (type == 1 ? "aac" : "aac_latm");
     }

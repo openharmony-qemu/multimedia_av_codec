@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <iostream>
+#include "native_avcodec_base.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -54,8 +55,12 @@ static int64_t GetFileSize(const char *fileName)
     return fileSize;
 }
 
-int ParserSample::CreateDemuxer(uint32_t buffersize)
+int ParserSample::CreateDemuxer(uint32_t buffersize, int64_t ptsForPtsIndex, int64_t frameIndex)
 {
+    Format sourceFormat;
+    Format trackFormat;
+    uint64_t presentationTimeUs = 0;
+    uint32_t indexForPtsIndex = 0;
     fd = open(filePath, O_RDONLY);
     source = AVSourceFactory::CreateWithFD(fd, 0, GetFileSize(filePath));
     if (!source) {
@@ -70,18 +75,26 @@ int ParserSample::CreateDemuxer(uint32_t buffersize)
         fd = 0;
         return -1;
     }
+    int32_t ret = source->GetSourceFormat(sourceFormat);
+    if (ret != 0) {
+        return -1;
+    }
+    if (!sourceFormat.GetIntValue(OH_MD_KEY_TRACK_COUNT, gTrackCount)) {
+        return -1;
+    }
+    for (int32_t index = 0; index < gTrackCount; index++) {
+        demuxer->SelectTrackByID(index);
+        demuxer->GetRelativePresentationTimeUsByIndex(index, frameIndex, presentationTimeUs);
+        demuxer->GetIndexByRelativePresentationTimeUs(index, ptsForPtsIndex, indexForPtsIndex);
+    }
     std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     avBuffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
     return 0;
 }
 
-void ParserSample::RunReferenceParser(const uint8_t *data, size_t size)
+void ParserSample::RunReferenceParser(int64_t pts, int64_t ptsForPtsIndex, int64_t frameIndex, uint32_t createSize)
 {
-    int64_t pts = 0;
-    if (size > 0) {
-        pts = data[0];
-    }
-    int ret = CreateDemuxer(pts * size);
+    int ret = CreateDemuxer(createSize, ptsForPtsIndex, frameIndex);
     if (ret < 0) {
         return;
     }
@@ -89,7 +102,7 @@ void ParserSample::RunReferenceParser(const uint8_t *data, size_t size)
     if (ret != 0) {
         return;
     }
-    ret = demuxer->ReadSampleBuffer(size, avBuffer);
+    ret = demuxer->ReadSampleBuffer(createSize, avBuffer);
     if (ret != 0) {
         return;
     }

@@ -78,6 +78,10 @@ int32_t HEncoder::OnConfigure(const Format &format)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+    ret = EnableFrameQPMap(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     (void)EnableEncoderParamsFeedback(format);
     return AVCS_ERR_OK;
 }
@@ -171,6 +175,28 @@ int32_t HEncoder::EnableEncoderParamsFeedback(const Format &format)
         return AVCS_ERR_INVALID_VAL;
     }
     HLOGI("configure encoder params feedback[%d] success", enableParamsFeedback);
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::EnableFrameQPMap(const Format &format)
+{
+    int32_t enableQPMap = false;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, enableQPMap)) {
+        return AVCS_ERR_OK;
+    }
+    if (!caps_.port.video.isSupportQPMap) {
+        HLOGE("this device dont support qp map");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = enableQPMap ? OMX_TRUE : OMX_FALSE;
+    if (!SetParameter(OMX_IndexParamEnableQPMap, param)) {
+        HLOGE("enable encoder frame qp map[%d] failed", enableQPMap);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    HLOGI("enable encoder frame qp map[%d] success", enableQPMap);
+    enableQPMap_ = true;
     return AVCS_ERR_OK;
 }
 
@@ -904,6 +930,7 @@ void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffe
     WrapQPRangeParamIntoOmxBuffer(omxBuffer, meta);
     WrapStartQPIntoOmxBuffer(omxBuffer, meta);
     WrapIsSkipFrameIntoOmxBuffer(omxBuffer, meta);
+    WrapQPMapParamIntoOmxBuffer(omxBuffer, meta);
     meta->Clear();
 }
 
@@ -957,6 +984,26 @@ void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer
     param.maxQp = static_cast<uint32_t>(maxQp);
     AppendToVector(omxBuffer->alongParam, param);
     HLOGI("pts=%" PRId64 ", qp=(%d~%d)", omxBuffer->pts, minQp, maxQp);
+}
+
+void HEncoder::WrapQPMapParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                           const shared_ptr<Media::Meta> &meta)
+{
+    if (!enableQPMap_) {
+        return;
+    }
+    vector<uint8_t> QPMap;
+    if (!meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_QP_MAP, QPMap) || QPMap.empty()) {
+        return;
+    }
+    AppendToVector(omxBuffer->alongParam, OMX_IndexParamBlockQP);
+    CodecBlockQpParam param;
+    InitOMXParamExt(param);
+    param.blockQpAddr = nullptr;
+    param.blockQpSize = static_cast<uint32_t>(QPMap.size());
+    param.qpMapReserveInts = static_cast<uint32_t>(QPMap.size());
+    AppendToVector(omxBuffer->alongParam, param);
+    AppendArrayToVector(omxBuffer->alongParam, QPMap);
 }
 
 void HEncoder::WrapStartQPIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
@@ -1150,7 +1197,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     // buffer mode or surface callback mode
     uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
-    SCOPED_TRACE_WITH_ID(bufferId);
+    SCOPED_TRACE_FMT("id: %u", bufferId);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (bufferInfo == nullptr) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
@@ -1256,28 +1303,11 @@ void HEncoder::TraverseAvaliableBuffers()
         auto it = find_if(inputBufferPool_.begin(), inputBufferPool_.end(),
                           [](const BufferInfo &info) { return info.owner == BufferOwner::OWNED_BY_SURFACE; });
         if (it == inputBufferPool_.end()) {
-            HLOGD("buffer cnt = %zu, but no avaliable slot", avaliableBuffers_.size());
             return;
         }
         InSurfaceBufferEntry entry = avaliableBuffers_.front();
         avaliableBuffers_.pop_front();
         SubmitOneBuffer(entry, *it);
-    }
-}
-
-void HEncoder::TraverseAvaliableSlots()
-{
-    for (BufferInfo& info : inputBufferPool_) {
-        if (info.owner != BufferOwner::OWNED_BY_SURFACE) {
-            continue;
-        }
-        if (avaliableBuffers_.empty() && !GetOneBufferFromSurface()) {
-            HLOGD("slot %u is avaliable, but no buffer", info.bufferId);
-            return;
-        }
-        InSurfaceBufferEntry entry = avaliableBuffers_.front();
-        avaliableBuffers_.pop_front();
-        SubmitOneBuffer(entry, info);
     }
 }
 
@@ -1304,6 +1334,7 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         info.avBuffer->pts_ = entry.pts;
         NotifyUserToFillThisInBuffer(info);
     } else {
+        CheckPts(info.omxBuffer->pts);
         int32_t err = NotifyOmxToEmptyThisInBuffer(info);
         if (err != AVCS_ERR_OK) {
             ResetSlot(info);
@@ -1312,9 +1343,22 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
     }
 }
 
+void HEncoder::CheckPts(int64_t currentPts)
+{
+    if (!pts_.has_value()) {
+        pts_ = currentPts;
+    } else {
+        int64_t lastPts = pts_.value();
+        if (currentPts <= lastPts) {
+            HLOGW("pts not incremental: last %" PRId64 ", current %" PRId64, lastPts, currentPts);
+        }
+        pts_ = currentPts;
+    }
+}
+
 void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 {
-    SCOPED_TRACE_WITH_ID(bufferId);
+    SCOPED_TRACE_FMT("id: %u", bufferId);
     BufferInfo *info = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (info == nullptr) {
         HLOGE("unknown buffer id %u", bufferId);
@@ -1327,7 +1371,7 @@ void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
     if (inputSurface_) {
         ResetSlot(*info);
         if (mode == RESUBMIT_BUFFER && !inputPortEos_) {
-            TraverseAvaliableSlots();
+            TraverseAvaliableBuffers();
         }
     } else {
         ChangeOwner(*info, BufferOwner::OWNED_BY_US);
@@ -1369,6 +1413,7 @@ void HEncoder::OnEnterUninitializedState()
     avaliableBuffers_.clear();
     newestBuffer_.item.reset();
     encodingBuffers_.clear();
+    pts_ = std::nullopt;
 }
 
 HEncoder::BufferItem::~BufferItem()

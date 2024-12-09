@@ -15,15 +15,13 @@
 
 #ifndef HCODEC_DFX_H
 #define HCODEC_DFX_H
-
+#include "hitrace_meter.h"
 namespace OHOS::MediaAVCodec {
 
-struct ScopedTrace {
-    explicit ScopedTrace(const std::string &value);
-    ~ScopedTrace();
-};
-#define SCOPED_TRACE() ScopedTrace trace("hcodec" + compUniqueStr_ + __func__)
-#define SCOPED_TRACE_WITH_ID(id) ScopedTrace trace("hcodec" + compUniqueStr_ + __func__ + std::to_string(id))
+#define SCOPED_TRACE() \
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "hcodec%s %s", compUniqueStr_.c_str(), __func__)
+#define SCOPED_TRACE_FMT(fmt, ...) \
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "hcodec%s %s " fmt, compUniqueStr_.c_str(), __func__, ##__VA_ARGS__)
 
 struct FuncTracker {
     explicit FuncTracker(std::string value);

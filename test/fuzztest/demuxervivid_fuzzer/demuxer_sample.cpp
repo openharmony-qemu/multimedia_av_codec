@@ -34,6 +34,10 @@ DemuxerSample::~DemuxerSample()
         OH_AVSource_Destroy(source);
         source = nullptr;
     }
+    if (uriSource != nullptr) {
+        OH_AVSource_Destroy(uriSource);
+        uriSource = nullptr;
+    }
     if (demuxer != nullptr) {
         OH_AVDemuxer_Destroy(demuxer);
         demuxer = nullptr;
@@ -49,6 +53,18 @@ DemuxerSample::~DemuxerSample()
     if (buffer != nullptr) {
         OH_AVBuffer_Destroy(buffer);
         buffer = nullptr;
+    }
+    if (format != nullptr) {
+        OH_AVFormat_Destroy(format);
+        format = nullptr;
+    }
+    if (audioFormat != nullptr) {
+        OH_AVFormat_Destroy(audioFormat);
+        audioFormat = nullptr;
+    }
+    if (videoFormat != nullptr) {
+        OH_AVFormat_Destroy(videoFormat);
+        videoFormat = nullptr;
     }
 }
 
@@ -85,7 +101,35 @@ int DemuxerSample::CreateDemuxer()
     return 0;
 }
 
-void DemuxerSample::RunNormalDemuxer(const uint8_t *data, size_t size)
+void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
+{
+    int64_t duration = 0;
+    OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration);
+    float currentHeight = 0;
+    OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_HEIGHT, &currentHeight);
+    double frameRate;
+    OH_AVFormat_GetDoubleValue(sourceFormat, OH_MD_KEY_FRAME_RATE, &frameRate);
+    const char* language = nullptr;
+    OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_LANGUAGE, &language);
+    uint8_t *codecConfig = nullptr;
+    size_t bufferSize;
+    OH_AVFormat_GetBuffer(sourceFormat, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize);
+    language = OH_AVFormat_DumpInfo(sourceFormat);
+    format = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRACK_TYPE, params.setTrackType);
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, params.setDuration);
+    OH_AVFormat_SetFloatValue(format, OH_MD_KEY_HEIGHT, params.setHeight);
+    OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, params.setFrameRate);
+    OH_AVFormat_SetStringValue(format, OH_MD_KEY_LANGUAGE, setLanguage);
+    char configBuffer[params.setCodecConfigSize];
+    OH_AVFormat_SetBuffer(format, OH_MD_KEY_CODEC_CONFIG, (uint8_t *)configBuffer, params.setCodecConfigSize);
+    OH_AVFormat_Copy(format, sourceFormat);
+    audioFormat = OH_AVFormat_CreateAudioFormat(OH_AVCODEC_MIMETYPE_AUDIO_AAC, params.sampleRate, params.channelCount);
+    videoFormat = OH_AVFormat_CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+        params.setVideoWidth, params.setVideoHeight);
+}
+
+void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const char *setLanguage, Params params)
 {
     gReadEnd = false;
     int ret = CreateDemuxer();
@@ -100,7 +144,7 @@ void DemuxerSample::RunNormalDemuxer(const uint8_t *data, size_t size)
     for (int32_t index = 0; index < gTrackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    memory = OH_AVMemory_Create(size);
+    memory = OH_AVMemory_Create(createSize);
     while (!gReadEnd && gTrackCount > 0) {
         for (int32_t index = 0; index < gTrackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
@@ -124,9 +168,17 @@ void DemuxerSample::RunNormalDemuxer(const uint8_t *data, size_t size)
             }
         }
     }
+    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_CLOSEST_SYNC);
+    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_PREVIOUS_SYNC);
+    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_NEXT_SYNC);
+    for (int32_t index = 0; index < gTrackCount; index++) {
+        OH_AVDemuxer_UnselectTrackByID(demuxer, index);
+    }
+    GetAndSetFormat(setLanguage, params);
+    uriSource = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
 }
 
-void DemuxerSample::RunNormalDemuxerApi11(const uint8_t *data, size_t size)
+void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, const char *setLanguage, Params params)
 {
     gReadEnd = false;
     int ret = CreateDemuxer();
@@ -141,7 +193,7 @@ void DemuxerSample::RunNormalDemuxerApi11(const uint8_t *data, size_t size)
     for (int32_t index = 0; index < gTrackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    buffer = OH_AVBuffer_Create(size);
+    buffer = OH_AVBuffer_Create(createSize);
     while (!gReadEnd && gTrackCount > 0) {
         for (int32_t index = 0; index < gTrackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
@@ -166,4 +218,12 @@ void DemuxerSample::RunNormalDemuxerApi11(const uint8_t *data, size_t size)
             }
         }
     }
+    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_CLOSEST_SYNC);
+    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_PREVIOUS_SYNC);
+    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_NEXT_SYNC);
+    for (int32_t index = 0; index < gTrackCount; index++) {
+        OH_AVDemuxer_UnselectTrackByID(demuxer, index);
+    }
+    GetAndSetFormat(setLanguage, params);
+    uriSource = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
 }

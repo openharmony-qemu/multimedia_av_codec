@@ -875,5 +875,41 @@ HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseDecoderPlugin_03, TestSize.Level1)
     EXPECT_EQ(Status::OK, plugin->SetParameter(meta));
 }
 
+HWTEST_F(AudioMediaCodecUnitTest, EncoderConfigureLCAAC, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ(0, mediaCodec->Init(AAC_MIME_TYPE, true));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(1);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_F32LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    meta->Set<Tag::MEDIA_BITRATE>(64000);  // 64000: valid param
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    EXPECT_EQ(0, mediaCodec->Release());
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, EncoderConfigureHEAAC, TestSize.Level1)
+{
+    auto detect = std::make_shared<MediaCodec>();
+    bool vendorExist = (detect->Init("OH.Media.Codec.Encoder.Audio.Vendor.AAC") == 0);
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ(0, mediaCodec->Init(AAC_MIME_TYPE, true));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_F32LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    meta->Set<Tag::MEDIA_BITRATE>(64000);  // 64000: valid param
+    meta->Set<Tag::MEDIA_PROFILE>(Media::Plugins::AAC_PROFILE_HE);
+    if (vendorExist) {
+        EXPECT_EQ(0, mediaCodec->Configure(meta));
+        mediaCodec->Reset();
+        meta->Set<Tag::MEDIA_PROFILE>(Media::Plugins::AAC_PROFILE_HE_V2);
+        EXPECT_EQ(0, mediaCodec->Configure(meta));
+    } else {
+        EXPECT_NE(0, mediaCodec->Configure(meta));
+    }
+    EXPECT_EQ(0, mediaCodec->Release());
+}
+
 }  // namespace MediaAVCodec
 }  // namespace OHOS

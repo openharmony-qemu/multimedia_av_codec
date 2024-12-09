@@ -53,6 +53,7 @@ void CodecListClient::AVCodecServerDied()
 
 bool CodecListClient::IsServiceDied()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     return codecListProxy_ == nullptr;
 }
 

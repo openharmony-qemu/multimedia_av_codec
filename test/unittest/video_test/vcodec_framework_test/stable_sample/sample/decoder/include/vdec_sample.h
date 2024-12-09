@@ -28,6 +28,7 @@
 #include "native_avcodec_base.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_averrors.h"
+#include "sample_callback.h"
 #include "securec.h"
 #include "surface.h"
 #include "surface_buffer.h"
@@ -35,18 +36,15 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class VideoDecSample;
-using VideoDecSignal = VCodecSignal<VideoDecSample>;
-
-class VideoDecSample : public NoCopyable {
+class VideoDecSample : public NoCopyable, public VCodecSampleBase {
 public:
     VideoDecSample();
     ~VideoDecSample();
     bool Create();
     bool CreateByMime();
 
-    int32_t SetCallback(OH_AVCodecAsyncCallback callback, std::shared_ptr<VideoDecSignal> &signal);
-    int32_t RegisterCallback(OH_AVCodecCallback callback, std::shared_ptr<VideoDecSignal> &signal);
+    int32_t SetCallback(OH_AVCodecAsyncCallback callback, std::shared_ptr<VCodecSignal> &signal);
+    int32_t RegisterCallback(OH_AVCodecCallback callback, std::shared_ptr<VCodecSignal> &signal);
     int32_t SetOutputSurface(const bool isNew = true);
     int32_t Configure();
     int32_t Start();
@@ -57,26 +55,22 @@ public:
     int32_t Release();
     std::shared_ptr<OH_AVFormat> GetOutputDescription();
     int32_t SetParameter();
-    int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr attr = {0, 0, 0, 0});
-    int32_t ReleaseOutputData(uint32_t index);
+    int32_t PushInputData(std::shared_ptr<CodecBufferInfo> bufferInfo);
+    int32_t ReleaseOutputData(std::shared_ptr<CodecBufferInfo> bufferInfo);
     int32_t IsValid(bool &isValid);
 
-    int32_t HandleInputFrame(uint32_t &index, OH_AVCodecBufferAttr &attr);
-    int32_t HandleOutputFrame(uint32_t &index, OH_AVCodecBufferAttr &attr);
-    int32_t HandleInputFrame(OH_AVMemory *data, OH_AVCodecBufferAttr &attr);
-    int32_t HandleOutputFrame(OH_AVMemory *data, OH_AVCodecBufferAttr &attr);
-    int32_t HandleInputFrame(OH_AVBuffer *data);
-    int32_t HandleOutputFrame(OH_AVBuffer *data);
+    int32_t HandleInputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo) override;
+    int32_t HandleOutputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo) override;
     bool WaitForEos();
 
-    int32_t Operate();
+    int32_t Operate() override;
     uint32_t frameCount_ = 10;
     std::string operation_ = "NULL";
     std::string mime_ = "";
-    std::string inPath_ = "720_1280_25_avcc.h264";
+    std::string inPath_ = "mpeg2.m2v";
     std::string outPath_ = "";
     int32_t sampleWidth_ = 720;
-    int32_t sampleHeight_ = 1280;
+    int32_t sampleHeight_ = 480;
     int32_t samplePixel_ = AV_PIXEL_FORMAT_NV12;
     std::shared_ptr<OH_AVFormat> dyFormat_ = nullptr;
     std::unique_ptr<std::thread> inputLoop_ = nullptr;
@@ -91,17 +85,19 @@ public:
     bool skipOutFrameHalfCheck_ = false;
 
 private:
-    int32_t SetAVBufferAttr(OH_AVBuffer *avBuffer, OH_AVCodecBufferAttr &attr);
     int32_t HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr);
     int32_t HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr);
-    bool IsCodecData(const uint8_t *const addr);
-    bool InitFile();
+    bool InitInputFile();
+    bool InitOutputFile();
+    int32_t CreateAvccReader();
+    int32_t CreateMpegReader();
 
     OH_AVCodec *codec_ = nullptr;
-    std::shared_ptr<VideoDecSignal> signal_ = nullptr;
+    std::shared_ptr<VCodecSignal> signal_ = nullptr;
 
     bool needXps_ = true;
     bool isFirstEos_ = true;
+    bool isFirstRead_ = true;
     std::atomic<uint32_t> frameInputCount_ = 0;
     std::atomic<uint32_t> frameOutputCount_ = 0;
 
@@ -109,17 +105,17 @@ private:
     bool isAVBufferMode_ = false;
     bool isSurfaceMode_ = false;
     bool isH264Stream_ = true; // true: H264; false: H265
-
-    int32_t width_ = 0;
-    int32_t height_ = 0;
-    int32_t stride_ = 0;
-    int32_t heightSlice_ = 0;
+    bool isMpeg2Stream_ = true; // true: Mpeg2; false: Mpeg4
 
 private:
     OH_AVCodecAsyncCallback asyncCallback_;
     OH_AVCodecCallback callback_;
+    std::shared_mutex codecMutex_;
     class SurfaceObject;
     std::shared_ptr<SurfaceObject> surafaceObj_ = nullptr;
+    std::unique_ptr<uint8_t []> ReadBuffer_ = nullptr;
+    uint32_t readBufferSize_ = 0;
+    uint32_t preadBuffer_ = 0;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

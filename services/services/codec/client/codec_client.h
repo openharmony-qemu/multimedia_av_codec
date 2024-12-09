@@ -93,12 +93,13 @@ private:
 
     typedef enum : uint32_t {
         CODEC_BUFFER_MODE = 0,
-        CODEC_SURFACE_MODE = 1,
+        CODEC_SURFACE_MODE_WITHOUT_SETPARAMETER = 1,
         CODEC_SET_PARAMETER_CALLBACK = 1 << 1,
-        CODEC_SURFACE_MODE_WITH_SETPARAMETER = CODEC_SURFACE_MODE | CODEC_SET_PARAMETER_CALLBACK,
+        CODEC_SURFACE_MODE_WITH_SETPARAMETER = CODEC_SURFACE_MODE_WITHOUT_SETPARAMETER | CODEC_SET_PARAMETER_CALLBACK,
     } CodecMode;
 
     bool hasOnceConfigured_ = false;
+    int32_t isEnableQpMap_ = 0;
     uint32_t callbackMode_ = INVALID_CALLBACK;
     uint32_t codecMode_ = CODEC_BUFFER_MODE;
     AVCodecType type_ = AVCODEC_TYPE_NONE;

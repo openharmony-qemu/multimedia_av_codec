@@ -63,6 +63,7 @@ enum class AVCapabilityFeature : int32_t {
     VIDEO_LOW_LATENCY = 2,
     VIDEO_WATERMARK = 3,
     VIDEO_RPR = 4,
+    VIDEO_ENCODER_QP_MAP = 5,
     MAX_VALUE
 };
 
@@ -168,6 +169,7 @@ struct CapabilityData {
     std::map<ImgSize, Range> measuredFrameRate;
     bool supportSwapWidthHeight = false;
     std::map<int32_t, Format> featuresMap;
+    int32_t rank = 0;
 };
 
 struct LevelParams {
@@ -657,12 +659,12 @@ enum VVCProfile : int32_t {
  * @version 4.0
  */
 enum MPEG2Profile : int32_t {
-    MPEG2_PROFILE_422 = 0,
-    MPEG2_PROFILE_HIGH = 1,
-    MPEG2_PROFILE_MAIN = 2,
-    MPEG2_PROFILE_SNR = 3,
-    MPEG2_PROFILE_SIMPLE = 4,
-    MPEG2_PROFILE_SPATIAL = 5,
+    MPEG2_PROFILE_SIMPLE   = 0,
+    MPEG2_PROFILE_MAIN     = 1,
+    MPEG2_PROFILE_SNR      = 2,
+    MPEG2_PROFILE_SPATIAL  = 3,
+    MPEG2_PROFILE_HIGH     = 4,
+    MPEG2_PROFILE_422      = 5,
 };
 
 /**
@@ -672,22 +674,25 @@ enum MPEG2Profile : int32_t {
  * @version 4.0
  */
 enum MPEG4Profile : int32_t {
-    MPEG4_PROFILE_ADVANCED_CODING = 0,
-    MPEG4_PROFILE_ADVANCED_CORE = 1,
-    MPEG4_PROFILE_ADVANCED_REAL_TIME = 2,
-    MPEG4_PROFILE_ADVANCED_SCALABLE = 3,
-    MPEG4_PROFILE_ADVANCED_SIMPLE = 4,
-    MPEG4_PROFILE_BASIC_ANIMATED = 5,
-    MPEG4_PROFILE_CORE = 6,
-    MPEG4_PROFILE_CORE_SCALABLE = 7,
-    MPEG4_PROFILE_HYBRID = 8,
-    MPEG4_PROFILE_MAIN = 9,
-    MPEG4_PROFILE_NBIT = 10,
-    MPEG4_PROFILE_SCALABLE_TEXTURE = 11,
-    MPEG4_PROFILE_SIMPLE = 12,
-    MPEG4_PROFILE_SIMPLE_FBA = 13,
-    MPEG4_PROFILE_SIMPLE_FACE = 14,
-    MPEG4_PROFILE_SIMPLE_SCALABLE = 15,
+    MPEG4_PROFILE_SIMPLE             = 0,
+    MPEG4_PROFILE_SIMPLE_SCALABLE    = 1,
+    MPEG4_PROFILE_CORE               = 2,
+    MPEG4_PROFILE_MAIN               = 3,
+    MPEG4_PROFILE_NBIT               = 4,
+    MPEG4_PROFILE_HYBRID             = 5,
+    MPEG4_PROFILE_BASIC_ANIMATED_TEXTURE = 6,
+    MPEG4_PROFILE_SCALABLE_TEXTURE   = 7,
+    MPEG4_PROFILE_SIMPLE_FA          = 8,
+    MPEG4_PROFILE_ADVANCED_REAL_TIME_SIMPLE  = 9,
+    MPEG4_PROFILE_CORE_SCALABLE      = 10,
+    MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY = 11,
+    MPEG4_PROFILE_ADVANCED_CORE      = 12,
+    MPEG4_PROFILE_ADVANCED_SCALABLE_TEXTURE  = 13,
+    MPEG4_PROFILE_SIMPLE_FBA         = 14,
+    MPEG4_PROFILE_SIMPLE_STUDIO      = 15,
+    MPEG4_PROFILE_CORE_STUDIO        = 16,
+    MPEG4_PROFILE_ADVANCED_SIMPLE    = 17,
+    MPEG4_PROFILE_FINE_GRANULARITY_SCALABLE  = 18,
 };
 
 /**
@@ -814,14 +819,16 @@ enum MPEG2Level : int32_t {
  * @version 4.0
  */
 enum MPEG4Level : int32_t {
-    MPEG4_LEVEL_0 = 0,
+    MPEG4_LEVEL_0  = 0,
     MPEG4_LEVEL_0B = 1,
-    MPEG4_LEVEL_1 = 2,
-    MPEG4_LEVEL_2 = 3,
-    MPEG4_LEVEL_3 = 4,
-    MPEG4_LEVEL_4 = 5,
-    MPEG4_LEVEL_4A = 6,
-    MPEG4_LEVEL_5 = 7,
+    MPEG4_LEVEL_1  = 2,
+    MPEG4_LEVEL_2  = 3,
+    MPEG4_LEVEL_3  = 4,
+    MPEG4_LEVEL_3B = 5,
+    MPEG4_LEVEL_4  = 6,
+    MPEG4_LEVEL_4A = 7,
+    MPEG4_LEVEL_5  = 8,
+    MPEG4_LEVEL_6  = 9,
 };
 
 /**

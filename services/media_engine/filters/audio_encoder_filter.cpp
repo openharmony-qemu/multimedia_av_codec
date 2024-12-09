@@ -21,7 +21,7 @@
 #include "avcodec_sysevent.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioEncoderFilter" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "AudioEncoderFilter" };
 }
 
 namespace OHOS {

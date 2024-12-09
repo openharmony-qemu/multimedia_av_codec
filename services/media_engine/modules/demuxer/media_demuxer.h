@@ -127,6 +127,7 @@ public:
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     void WaitForBufferingEnd();
+    int32_t GetCurrentVideoTrackId();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -170,7 +171,7 @@ private:
     bool HasVideo();
     void DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer);
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
-    void CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
+    bool CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     bool IsTrackDisabled(Plugins::MediaType mediaType);
     bool CheckTrackEnabledById(uint32_t trackId);
     bool HandleDashChangeStream(uint32_t trackId);
@@ -180,6 +181,7 @@ private:
     bool SelectBitRateChangeStream(uint32_t trackId);
     bool SelectTrackChangeStream(uint32_t trackId);
     bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
+    void HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackId);
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
 
     Plugins::Seekable seekable_;
@@ -206,8 +208,7 @@ private:
     Status HandleSelectTrack(int32_t trackId);
     Status HandleDashSelectTrack(int32_t trackId);
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
-    void HandleStopPlugin(int32_t trackId);
-    void HandleStartPlugin(int32_t trackId);
+    Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
     bool IsSubtitleMime(const std::string& mime);
     void HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
     void InitPtsInfo();
@@ -224,6 +225,7 @@ private:
     int64_t videoStartTime_{0};
 
     std::shared_mutex drmMutex{};
+    std::mutex isSelectTrackMutex_{};
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
 
@@ -266,7 +268,7 @@ private:
     std::mutex prerollMutex_ {};
     std::atomic<bool> inPreroll_ = false;
 
-    uint32_t selectTrackTrackID_ { TRACK_ID_DUMMY };
+    std::map<int32_t, int32_t> inSelectTrackType_{};
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;

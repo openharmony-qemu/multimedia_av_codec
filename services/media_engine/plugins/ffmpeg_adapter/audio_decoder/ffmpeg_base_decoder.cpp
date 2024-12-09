@@ -189,12 +189,9 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
                          FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt));
         auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(avCodecContext_->channel_layout,
                                                                          avCodecContext_->channels);
-        if (avCodecContext_->channel_layout == 0 && avCodecContext_->channels == 1) { // 1 channel: mono
-            layout = AudioChannelLayout::MONO;
-            avCodecContext_->channel_layout = AV_CH_LAYOUT_MONO;
-        } else if (avCodecContext_->channel_layout == 0 && avCodecContext_->channels == 2) { // 2 channel: stereo
-            layout = AudioChannelLayout::STEREO;
-            avCodecContext_->channel_layout = AV_CH_LAYOUT_STEREO;
+        if (avCodecContext_->channel_layout == 0) {
+            avCodecContext_->channel_layout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(layout);
+            av_channel_layout_from_mask(&avCodecContext_->ch_layout, avCodecContext_->channel_layout);
         }
         AVCODEC_LOGI("recode output description,layout:%{public}s channels:%{public}d nb_channels:%{public}d",
                      FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data(),
@@ -225,6 +222,8 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     }
     ioInfoMem->Write(outFrame->data[0], outputSize, 0);
     outBuffer->pts_ = cachedFrame_->pts;
+    outBuffer->duration_ = static_cast<int64_t>(cachedFrame_->nb_samples * durationTime_);
+    format_->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, outFrame->nb_samples);
     ioInfoMem->SetSize(outputSize);
     if (needResample_) {
         av_frame_unref(convertedFrame_.get());

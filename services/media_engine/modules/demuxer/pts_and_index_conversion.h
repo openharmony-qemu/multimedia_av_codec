@@ -80,23 +80,23 @@ private:
 
     struct CTTSEntry {
         uint32_t sampleCount;
-        uint32_t sampleOffset;
+        int32_t sampleOffset;
     };
 
     struct TrakInfo {
         uint32_t trakId;
         TrakType trakType;
-        int32_t timeScale;
+        uint32_t timeScale;
         std::vector<STTSEntry> sttsEntries;
         std::vector<CTTSEntry> cttsEntries;
     };
 
-    std::shared_ptr<Source> source_ {nullptr};
-    uint64_t mediaDataSize_;
-    int offset_ = 0;
+    std::shared_ptr<Source> source_{nullptr};
+    uint64_t mediaDataSize_ = 0;
+    uint64_t offset_ = 0;
     uint64_t fileSize_ = 0;
 
-    TrakInfo curTrakInfo_;
+    TrakInfo curTrakInfo_{0};
     uint32_t curTrakInfoIndex_ = 0;
     std::vector<TrakInfo> trakInfoVec_;
 
@@ -111,6 +111,7 @@ private:
     };
 
     void StartParse();
+    void ReadLargeSize(std::shared_ptr<Buffer> buffer, uint64_t &largeSize);
     void ReadBufferFromDataSource(size_t bufSize, std::shared_ptr<Buffer> &buffer);
     void ReadBoxHeader(std::shared_ptr<Buffer> buffer, BoxHeader &header);
     bool IsMP4orMOV();

@@ -72,6 +72,7 @@ private:
     int32_t SetRepeat(const Format &format);
     int32_t SetTemperalLayer(const Format &format);
     int32_t SetConstantQualityMode(int32_t quality);
+    int32_t EnableFrameQPMap(const Format &format);
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
@@ -88,12 +89,12 @@ private:
     void SendRepeatMsg(uint64_t generation);
     bool GetOneBufferFromSurface();
     void TraverseAvaliableBuffers();
-    void TraverseAvaliableSlots();
     void SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info);
     void ResetSlot(BufferInfo& info);
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;
     void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
+    void CheckPts(int64_t currentPts);
 
     // per frame param
     void WrapPerFrameParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
@@ -105,6 +106,8 @@ private:
     void WrapQPRangeParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                        const std::shared_ptr<Media::Meta> &meta);
     void WrapStartQPIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                  const std::shared_ptr<Media::Meta> &meta);
+    void WrapQPMapParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                   const std::shared_ptr<Media::Meta> &meta);
     void WrapIsSkipFrameIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                       const std::shared_ptr<Media::Meta> &meta);
@@ -139,6 +142,7 @@ private:
     bool enableSurfaceModeInputCb_ = false;
     bool enableLTR_ = false;
     bool enableTSVC_ = false;
+    bool enableQPMap_ = false;
     sptr<Surface> inputSurface_;
     uint32_t inBufferCnt_ = 0;
     static constexpr size_t MAX_LIST_SIZE = 256;
@@ -153,6 +157,7 @@ private:
     std::map<uint32_t, InSurfaceBufferEntry> encodingBuffers_;
     uint64_t repeatUs_ = 0;      // 0 means user don't set this value
     int32_t repeatMaxCnt_ = 10;  // default repeat 10 times. <0 means repeat forever. =0 means nothing.
+    std::optional<int64_t> pts_;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HENCODER_H

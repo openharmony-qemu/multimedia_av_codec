@@ -16,12 +16,8 @@
 #include "yuv_viewer.h"
 #include <sys/mman.h>
 #include <unistd.h>
-#include "refbase.h"
-#include "surface/window.h"
-#include "surface.h"
-
-#include "ui/rs_surface_node.h"
-#include "window_option.h"
+#include "external_window.h"
+#include "native_buffer.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
 #include "sample_utils.h"
@@ -36,11 +32,6 @@ namespace MediaAVCodec {
 namespace Sample {
 YuvViewer::~YuvViewer()
 {
-    if (rosenWindow_) {
-        rosenWindow_->Destroy();
-        rosenWindow_ = nullptr;
-    }
-
     if (inputThread_ && inputThread_->joinable()) {
         inputThread_->join();
     }
@@ -69,32 +60,21 @@ int32_t YuvViewer::Start()
 
 int32_t YuvViewer::CreateWindow()
 {
-    sptr<OHOS::Surface> surfaceProducer;
-    sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
-    option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_FLOAT);
-    option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FULLSCREEN);
-    rosenWindow_ = Rosen::Window::Create("VideoCodecDemo", option);
-    CHECK_AND_RETURN_RET_LOG(rosenWindow_ != nullptr && rosenWindow_->GetSurfaceNode() != nullptr,
-        AVCODEC_SAMPLE_ERR_ERROR, "Create display window failed");
-    rosenWindow_->SetTurnScreenOn(!rosenWindow_->IsTurnScreenOn());
-    rosenWindow_->SetKeepScreenOn(true);
-    rosenWindow_->Show();
-    surfaceProducer = rosenWindow_->GetSurfaceNode()->GetSurface();
+    windowWrapper_ = WindowManager::GetInstance().CreateWindowWrapper(SampleWindowType::ROSEN);
+    CHECK_AND_RETURN_RET_LOG(windowWrapper_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
+    auto window = windowWrapper_->GetWindow().get();
 
-    window_ = std::shared_ptr<NativeWindow>(reinterpret_cast<NativeWindow *>(
-        CreateNativeWindowFromSurface(&surfaceProducer)), [](NativeWindow *window) -> void { (void)window; });
-
-    (void)OH_NativeWindow_NativeWindowHandleOpt(window_.get(), SET_TRANSFORM, 1); // 1: rotation 90°
-    (void)OH_NativeWindow_NativeWindowHandleOpt(window_.get(), SET_BUFFER_GEOMETRY,
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_TRANSFORM, 1); // 1: rotation 90°
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_BUFFER_GEOMETRY,
         sampleInfo_->videoWidth, sampleInfo_->videoHeight);
-    (void)OH_NativeWindow_NativeWindowHandleOpt(window_.get(), SET_USAGE,
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_USAGE,
         NATIVEBUFFER_USAGE_CPU_READ | NATIVEBUFFER_USAGE_CPU_WRITE |
         NATIVEBUFFER_USAGE_MEM_DMA | NATIVEBUFFER_USAGE_HW_RENDER);
-    (void)OH_NativeWindow_NativeWindowHandleOpt(window_.get(), SET_FORMAT,
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_FORMAT,
         ToGraphicPixelFormat(sampleInfo_->pixelFormat, sampleInfo_->profile));
 
     int32_t strideAlignment = 0;
-    (void)OH_NativeWindow_NativeWindowHandleOpt(window_.get(), GET_STRIDE, &strideAlignment);
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, GET_STRIDE, &strideAlignment);
     sampleInfo_->videoStrideWidth = strideAlignment != 0 ?
         (strideAlignment * std::ceil(static_cast<float>(sampleInfo_->videoWidth) / strideAlignment)) :
         sampleInfo_->videoWidth;
@@ -108,9 +88,10 @@ void YuvViewer::InputThread()
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     int32_t frameCount = 0;
     while (true) {
+        auto window = windowWrapper_->GetWindow().get();
         int fenceFd = -1;
         OHNativeWindowBuffer *buffer = nullptr;
-        int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(window_.get(), &buffer, &fenceFd);
+        int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(window, &buffer, &fenceFd);
         CHECK_AND_CONTINUE_LOG(ret == 0 && buffer != nullptr, "RequestBuffer failed, ret: %{public}d", ret);
 
         BufferHandle* bufferHandle = OH_NativeWindow_GetBufferHandleFromNative(buffer);
@@ -128,7 +109,7 @@ void YuvViewer::InputThread()
 
         ThreadSleep(sampleInfo_->threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP, sampleInfo_->frameInterval);
 
-        ret = OH_NativeWindow_NativeWindowFlushBuffer(window_.get(), buffer, fenceFd, {nullptr, 0});
+        ret = OH_NativeWindow_NativeWindowFlushBuffer(window, buffer, fenceFd, {nullptr, 0});
         CHECK_AND_BREAK_LOG(ret == 0, "Read frame failed, thread out");
 
         frameCount++;

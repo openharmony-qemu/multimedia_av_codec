@@ -84,8 +84,8 @@ void VDecCallbackTest::OnError(int32_t errorCode)
     if (signal_ == nullptr) {
         return;
     }
-    signal_->errorNum_ += 1;
-    cout << ", errorNum=" << signal_->errorNum_ << endl;
+    signal_->errorNum += 1;
+    cout << ", errorNum=" << signal_->errorNum << endl;
 }
 
 void VDecCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format)
@@ -133,8 +133,8 @@ void VDecCallbackTestExt::OnError(int32_t errorCode)
     if (signal_ == nullptr) {
         return;
     }
-    signal_->errorNum_ += 1;
-    cout << ", errorNum=" << signal_->errorNum_ << endl;
+    signal_->errorNum += 1;
+    cout << ", errorNum=" << signal_->errorNum << endl;
 }
 
 void VDecCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format)
@@ -289,7 +289,12 @@ int32_t VideoDecSample::Start()
     if (signal_ == nullptr || videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
-    int32_t ret = CreateAvccReader();
+    isMpegStream_ = (inPath_.find("m2v") != std::string::npos) ||
+        (inPath_.find("m4v") != std::string::npos);
+    if (isMpegStream_) {
+        isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
+    }
+    int32_t ret = isMpegStream_ ? CreateMpegReader() : CreateAvccReader();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: CreateAvccReader fail");
 
     PrepareInner();
@@ -441,11 +446,22 @@ void VideoDecSample::SetSourceType(bool isH264Stream)
 int32_t VideoDecSample::CreateAvccReader()
 {
     std::shared_ptr<AvccReaderInfo> info = std::make_shared<AvccReaderInfo>();
-    info->inPath_ = inPath_;
-    info->isH264Stream_ = isH264Stream_;
+    info->inPath = inPath_;
+    info->isH264Stream = isH264Stream_;
 
     avccReader_ = std::make_shared<AvccReader>();
     int32_t ret = avccReader_->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSample::CreateMpegReader()
+{
+    std::shared_ptr<MpegReaderInfo> info = std::make_shared<MpegReaderInfo>();
+    info->inPath = inPath_;
+    info->isMpeg2Stream = isMpeg2Stream_;
+
+    mpegReader_ = std::make_shared<MpegReader>();
+    int32_t ret = mpegReader_->Init(info);
     return ret;
 }
 
@@ -642,7 +658,11 @@ int32_t VideoDecSample::InputLoopInner()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
                                       AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    avccReader_->FillBuffer(signal_, attr);
+    if (avccReader_ != nullptr) {
+        avccReader_->FillBuffer(buffer->GetAddr(), attr);
+    } else {
+        mpegReader_->FillBuffer(buffer->GetAddr(), attr);
+    }
     return PushInputData(index, attr);
 }
 
@@ -764,15 +784,16 @@ int32_t VideoDecSample::OutputLoopInnerExt()
     uint32_t ret;
     auto buffer = signal_->outBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                      "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+        "Fatal: GetOutputBuffer fail, exit, index: %d", index);
     CheckFormatKey();
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
     if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
-        int32_t size = (testParam_ == VCodecTestParam::SW_AVC) ? attr.size : buffer->GetNativeBuffer()->GetSize();
+        int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
+            testParam_ == VCodecTestParam::SW_MPEG4) ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
-                                          "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+            "Fatal: GetOutputBuffer fail, exit, index: %d", index);
         UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
         ret = FreeOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
@@ -830,7 +851,12 @@ int32_t VideoDecSample::InputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
                                       AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    avccReader_->FillBufferExt(signal_, attr);
+    if (avccReader_ != nullptr) {
+        avccReader_->FillBuffer(buffer->GetAddr(), attr);
+    } else {
+        mpegReader_->FillBuffer(buffer->GetAddr(), attr);
+    }
+    buffer->SetBufferAttr(attr);
     return PushInputBuffer(index);
 }
 
