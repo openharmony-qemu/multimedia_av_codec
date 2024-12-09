@@ -15,20 +15,16 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include "heap_memory_thread.h"
+#include "native_avcapability.h"
 #include "unittest_utils.h"
 #include "vdec_sample.h"
-#include "native_avcapability.h"
 
 #define PRINT_HILOG
 #define TEST_ID vdec->sampleId_
 #define SAMPLE_ID "[SAMPLE_ID]:" << TEST_ID
 #include "unittest_log.h"
-#define TITLE_LOG UNITTEST_INFO_LOG("")
 #define MPEG_STABLE_TEST
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
-} // namespace
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -36,258 +32,6 @@ using namespace testing::ext;
 using namespace testing::mt;
 
 namespace {
-
-void CALLBACK_CHECK_LOG(uint32_t index, VideoDecSignal* signal,
-    std::shared_ptr<OHOS::MediaAVCodec::VideoDecSample> vdec)
-{
-    if ((signal)->isFlushing_ || !(signal)->isRunning_) {
-        return;
-    }
-    UNITTEST_INFO_LOG("index:%d", index);
-}
-
-constexpr uint64_t TEST_FREQUENCY = 29;
-
-void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
-{
-    (void)codec;
-    (void)errorCode;
-    (void)userData;
-}
-void OnStreamChangedVoid(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
-{
-    (void)codec;
-    (void)format;
-    (void)userData;
-}
-void InDataVoid(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)data;
-    (void)userData;
-}
-void OutDataVoid(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)data;
-    (void)attr;
-    (void)userData;
-}
-void InBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)buffer;
-    (void)userData;
-}
-void OutBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)buffer;
-    (void)userData;
-}
-
-void InDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    OH_AVCodecBufferAttr attr;
-    vdec->HandleInputMpegFrame(data, attr);
-    vdec->PushInputData(index, attr);
-}
-
-void OutDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    vdec->HandleOutputFrame(data, *attr);
-    vdec->ReleaseOutputData(index);
-}
-
-void InDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    OH_AVCodecBufferAttr attr;
-    vdec->HandleInputMpegFrame(data, attr);
-    vdec->PushInputData(index, attr);
-}
-
-void OutDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    vdec->HandleOutputFrame(data, *attr);
-    vdec->ReleaseOutputData(index);
-}
-
-void InDataQueue(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    signal->inQueue_.push(index);
-    signal->inMemoryQueue_.push(data);
-    signal->inCond_.notify_all();
-}
-
-void OutDataQueue(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    signal->outQueue_.push(index);
-    signal->outMemoryQueue_.push(data);
-    signal->outAttrQueue_.push(*attr);
-    signal->outCond_.notify_all();
-}
-
-void InBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    vdec->HandleInputMpegFrame(buffer);
-    vdec->PushInputData(index);
-}
-
-void OutBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    vdec->HandleOutputFrame(buffer);
-    vdec->ReleaseOutputData(index);
-}
-
-void InBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    vdec->HandleInputMpegFrame(buffer);
-    vdec->PushInputData(index);
-}
-
-void OutBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    vdec->HandleOutputFrame(buffer);
-    vdec->ReleaseOutputData(index);
-}
-
-void InBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    signal->inQueue_.push(index);
-    signal->inBufferQueue_.push(buffer);
-    signal->inCond_.notify_all();
-}
-
-void OutBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal, vdec);
-    signal->outQueue_.push(index);
-    signal->outBufferQueue_.push(buffer);
-    signal->outCond_.notify_all();
-}
-
-void InputBufferLoop(shared_ptr<VideoDecSignal> &signal)
-{
-    auto vdec = signal->codec_.lock();
-    EXPECT_NE(vdec, nullptr);
-    string name = "inloop_" + to_string(vdec->sampleId_);
-    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str()); // 15: max thread name
-    while (signal->isRunning_.load()) {
-        unique_lock<mutex> lock(signal->inMutex_);
-        signal->inCond_.wait(lock, [&signal]() {
-            return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->inQueue_.size() > 0;
-        });
-        if (signal->isFlushing_.load()) {
-            signal->inCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
-            continue;
-        }
-        if (!signal->isRunning_.load()) {
-            return;
-        }
-        TITLE_LOG;
-        uint32_t index = 0;
-        OH_AVCodecBufferAttr attr;
-        vdec->HandleInputMpegFrame(index, attr);
-        vdec->PushInputData(index, attr);
-    }
-}
-
-void OutputBufferLoop(shared_ptr<VideoDecSignal> &signal)
-{
-    auto vdec = signal->codec_.lock();
-    EXPECT_NE(vdec, nullptr);
-    string name = "outloop_" + to_string(vdec->sampleId_);
-    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str()); // 15: max thread name
-    while (signal->isRunning_.load()) {
-        unique_lock<mutex> lock(signal->outMutex_);
-        signal->outCond_.wait(lock, [&signal]() {
-            return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->outQueue_.size() > 0;
-        });
-        if (signal->isFlushing_.load()) {
-            signal->outCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
-            continue;
-        }
-        if (!signal->isRunning_.load()) {
-            return;
-        }
-        TITLE_LOG;
-        uint32_t index = 0;
-        OH_AVCodecBufferAttr attr;
-        vdec->HandleOutputFrame(index, attr);
-        vdec->ReleaseOutputData(index);
-    }
-}
 
 class VideoDecStableTest : public testing::TestWithParam<std::string> {
 public:
@@ -300,13 +44,7 @@ private:
     shared_ptr<HeapMemoryThread> heapThread_ = nullptr;
 };
 
-void VideoDecStableTest::SetUpTestCase(void)
-{
-    (void)InDataVoid;
-    (void)OutDataVoid;
-    (void)InBufferVoid;
-    (void)OutBufferVoid;
-}
+void VideoDecStableTest::SetUpTestCase(void) {}
 
 void VideoDecStableTest::TearDownTestCase(void) {}
 
@@ -436,7 +174,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg4_Checkprofileandlevel, TestSize.L
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
         EXPECT_GT(levelsNum, MPEG4_LEVEL_0);
         EXPECT_LE(levelsNum, MPEG4_LEVEL_6 + 1);
-        for (int32_t j =0; j < levelsNum; j++) {
+        for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, MPEG4_LEVEL_0);
             EXPECT_LE(level, MPEG4_LEVEL_6);
@@ -464,7 +202,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg2_Checkprofileandlevel, TestSize.L
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
         EXPECT_GT(levelsNum, MPEG2_LEVEL_LL);
         EXPECT_LE(levelsNum, MPEG2_LEVEL_HL + 1);
-        for (int32_t j =0; j < levelsNum; j++) {
+        for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, MPEG2_LEVEL_LL);
             EXPECT_LE(level, MPEG2_LEVEL_HL);
@@ -502,7 +240,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg2_Multithread_Release, TestSize.Le
         Mpeg2VideoPaths path = static_cast<Mpeg2VideoPaths>(i);
         std::string inputPath = getMpeg2InputPath(path);
         auto vdec = make_shared<VideoDecSample>();
-        auto signal = make_shared<VideoDecSignal>(vdec);
+        auto signal = make_shared<VCodecSignal>(vdec);
         vdec->frameCount_ = 600;
         vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG2;
         vdec->inPath_ = inputPath;
@@ -533,7 +271,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg4_Multithread_Release, TestSize.Le
         Mpeg4VideoPaths path = static_cast<Mpeg4VideoPaths>(i);
         std::string inputPath = getMpeg4InputPath(path);
         auto vdec = make_shared<VideoDecSample>();
-        auto signal = make_shared<VideoDecSignal>(vdec);
+        auto signal = make_shared<VCodecSignal>(vdec);
         vdec->frameCount_ = 600;
         vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
         vdec->inPath_ = inputPath;
@@ -565,7 +303,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg2_Multithread_Release_AVBuffer, Te
         Mpeg2VideoPaths path = static_cast<Mpeg2VideoPaths>(i);
         std::string inputPath = getMpeg2InputPath(path);
         auto vdec = make_shared<VideoDecSample>();
-        auto signal = make_shared<VideoDecSignal>(vdec);
+        auto signal = make_shared<VCodecSignal>(vdec);
         vdec->frameCount_ = 600;
         vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG2;
         vdec->inPath_ = inputPath;
@@ -597,7 +335,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg4_Multithread_Release_AVBuffer, Te
         Mpeg4VideoPaths path = static_cast<Mpeg4VideoPaths>(i);
         std::string inputPath = getMpeg4InputPath(path);
         auto vdec = make_shared<VideoDecSample>();
-        auto signal = make_shared<VideoDecSignal>(vdec);
+        auto signal = make_shared<VCodecSignal>(vdec);
         vdec->frameCount_ = 600;
         vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
         vdec->inPath_ = inputPath;
@@ -626,7 +364,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoderMpeg4_Multithread_Release_AVBuffer, Te
 HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
     vdec->inPath_ = "mpeg4.m4v";
@@ -655,7 +393,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_AVBuffer_001, Tes
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
     vdec->inPath_ = "mpeg4.m4v";
@@ -682,7 +420,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_AVBuffer_001, Tes
 HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Start_Four_Times, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
     vdec->inPath_ = "mpeg4.m4v";
@@ -713,7 +451,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Start_Four_Times, TestSiz
 HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_CreateByMime_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
     vdec->inPath_ = "mpeg4.m4v";
@@ -742,7 +480,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_CreateByMime_AVBuffer_001
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
     vdec->inPath_ = "mpeg4.m4v";
@@ -772,7 +510,7 @@ INSTANTIATE_TEST_SUITE_P(, VideoDecStableTest, testing::Values("Flush", "Stop", 
 AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -802,7 +540,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_001, TestSize.Level
 AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_002, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -831,7 +569,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_002, TestSize.Level
 AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_003, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -861,7 +599,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_003, TestSize.Level
 AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_004, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -893,7 +631,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_004, TestSize.Level
 AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_005, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -924,7 +662,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_001, Tes
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -957,7 +695,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_002, Tes
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -989,7 +727,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_003, Tes
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1022,7 +760,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_004, Tes
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1057,7 +795,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_005, Tes
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1088,7 +826,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_005, Tes
 AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1118,7 +856,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_001, TestS
 AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_002, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1147,7 +885,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_002, TestS
 AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_003, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1177,7 +915,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_003, TestS
 AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_004, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1209,7 +947,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_004, TestS
 AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_005, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1240,7 +978,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1273,7 +1011,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1305,7 +1043,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1338,7 +1076,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
@@ -1373,7 +1111,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 604;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;

@@ -14,8 +14,8 @@
  */
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
-#include "native_avcapability.h"
 #include "heap_memory_thread.h"
+#include "native_avcapability.h"
 #include "native_avmagic.h"
 #include "unittest_utils.h"
 #include "vdec_sample.h"
@@ -24,11 +24,7 @@
 #define TEST_ID vdec->sampleId_
 #define SAMPLE_ID "[SAMPLE_ID]:" << TEST_ID
 #include "unittest_log.h"
-#define TITLE_LOG UNITTEST_INFO_LOG("")
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
-} // namespace
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -36,249 +32,6 @@ using namespace testing::ext;
 using namespace testing::mt;
 
 namespace {
-constexpr uint64_t TEST_FREQUENCY = 29;
-
-void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
-{
-    (void)codec;
-    (void)errorCode;
-    (void)userData;
-}
-void OnStreamChangedVoid(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
-{
-    (void)codec;
-    (void)format;
-    (void)userData;
-}
-void InDataVoid(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)data;
-    (void)userData;
-}
-void OutDataVoid(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)data;
-    (void)attr;
-    (void)userData;
-}
-void InBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)buffer;
-    (void)userData;
-}
-void OutBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    (void)codec;
-    (void)index;
-    (void)buffer;
-    (void)userData;
-}
-
-void InDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    OH_AVCodecBufferAttr attr;
-    vdec->HandleInputFrame(data, attr);
-    vdec->PushInputData(index, attr);
-}
-
-void OutDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    vdec->HandleOutputFrame(data, *attr);
-    vdec->ReleaseOutputData(index);
-}
-
-void InDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->inMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    OH_AVCodecBufferAttr attr;
-    vdec->HandleInputFrame(data, attr);
-    vdec->PushInputData(index, attr);
-}
-
-void OutDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->outMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    vdec->HandleOutputFrame(data, *attr);
-    vdec->ReleaseOutputData(index);
-}
-
-void InDataQueue(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    signal->inQueue_.push(index);
-    signal->inMemoryQueue_.push(data);
-    signal->inCond_.notify_all();
-}
-
-void OutDataQueue(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    signal->outQueue_.push(index);
-    signal->outMemoryQueue_.push(data);
-    signal->outAttrQueue_.push(*attr);
-    signal->outCond_.notify_all();
-}
-
-void InBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    vdec->HandleInputFrame(buffer);
-    vdec->PushInputData(index);
-}
-
-void OutBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    vdec->HandleOutputFrame(buffer);
-    vdec->ReleaseOutputData(index);
-}
-
-void InBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->inMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    vdec->HandleInputFrame(buffer);
-    vdec->PushInputData(index);
-}
-
-void OutBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->inMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    vdec->HandleOutputFrame(buffer);
-    vdec->ReleaseOutputData(index);
-}
-
-void InBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->inMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    signal->inQueue_.push(index);
-    signal->inBufferQueue_.push(buffer);
-    signal->inCond_.notify_all();
-}
-
-void OutBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    lock_guard<mutex> lock(signal->outMutex_);
-    UNITTEST_INFO_LOG("index:%d", index);
-    signal->outQueue_.push(index);
-    signal->outBufferQueue_.push(buffer);
-    signal->outCond_.notify_all();
-}
-
-void InputBufferLoop(shared_ptr<VideoDecSignal> &signal)
-{
-    auto vdec = signal->codec_.lock();
-    EXPECT_NE(vdec, nullptr);
-    string name = "inloop_" + to_string(vdec->sampleId_);
-    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str()); // 15: max thread name
-    while (signal->isRunning_.load()) {
-        unique_lock<mutex> lock(signal->inMutex_);
-        signal->inCond_.wait(lock, [&signal]() {
-            return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->inQueue_.size() > 0;
-        });
-        if (signal->isFlushing_.load()) {
-            signal->inCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
-            continue;
-        }
-        if (!signal->isRunning_.load()) {
-            return;
-        }
-        TITLE_LOG;
-        uint32_t index = 0;
-        OH_AVCodecBufferAttr attr;
-        vdec->HandleInputFrame(index, attr);
-        vdec->PushInputData(index, attr);
-    }
-}
-
-void OutputBufferLoop(shared_ptr<VideoDecSignal> &signal)
-{
-    auto vdec = signal->codec_.lock();
-    EXPECT_NE(vdec, nullptr);
-    string name = "outloop_" + to_string(vdec->sampleId_);
-    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str()); // 15: max thread name
-    while (signal->isRunning_.load()) {
-        unique_lock<mutex> lock(signal->outMutex_);
-        signal->outCond_.wait(lock, [&signal]() {
-            return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->outQueue_.size() > 0;
-        });
-        if (signal->isFlushing_.load()) {
-            signal->outCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
-            continue;
-        }
-        if (!signal->isRunning_.load()) {
-            return;
-        }
-        TITLE_LOG;
-        uint32_t index = 0;
-        OH_AVCodecBufferAttr attr;
-        vdec->HandleOutputFrame(index, attr);
-        vdec->ReleaseOutputData(index);
-    }
-}
-
 class VideoDecHevcDecTest : public testing::TestWithParam<std::string> {
 public:
     static void SetUpTestCase(void);
@@ -290,13 +43,7 @@ private:
     shared_ptr<HeapMemoryThread> heapThread_ = nullptr;
 };
 
-void VideoDecHevcDecTest::SetUpTestCase(void)
-{
-    (void)InDataVoid;
-    (void)OutDataVoid;
-    (void)InBufferVoid;
-    (void)OutBufferVoid;
-}
+void VideoDecHevcDecTest::SetUpTestCase(void) {}
 
 void VideoDecHevcDecTest::TearDownTestCase(void) {}
 
@@ -328,7 +75,7 @@ string GetTestName()
 HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Release_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "720_1280_25_avcc.h265";
@@ -359,7 +106,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Release_AVBuffer_001, Te
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "720_1280_25_avcc.h265";
@@ -390,7 +137,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_001, Tes
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "720_1280_25_avcc.h265";
@@ -421,7 +168,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_002, Tes
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "720_1280_25_avcc.h265";
@@ -453,7 +200,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_003, Tes
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "720_1280_25_avcc.h265";
@@ -485,7 +232,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_004, Tes
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "720_1280_25_avcc.h265";
@@ -518,7 +265,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -550,7 +297,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -583,7 +330,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -616,7 +363,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -651,7 +398,7 @@ INSTANTIATE_TEST_SUITE_P(, VideoDecHevcDecTest, testing::Values("Flush", "Stop",
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -683,7 +430,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_001, TestSize.Leve
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_002, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -714,7 +461,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_002, TestSize.Leve
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_003, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -746,7 +493,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_003, TestSize.Leve
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_004, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -780,7 +527,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_004, TestSize.Leve
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_005, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -812,7 +559,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_005, TestSize.Leve
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -845,7 +592,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_001, TestSi
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_002, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -877,7 +624,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_002, TestSi
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_003, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -910,7 +657,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_003, TestSi
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_004, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -945,7 +692,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_004, TestSi
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_005, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -979,7 +726,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_001, Te
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1014,7 +761,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_002, Te
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1048,7 +795,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_003, Te
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1083,7 +830,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_004, Te
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1120,7 +867,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_005, Te
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1154,7 +901,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1190,7 +937,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1225,7 +972,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1261,7 +1008,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1299,7 +1046,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1333,7 +1080,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1365,7 +1112,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_001, Test
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_002, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1396,7 +1143,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_002, Test
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_003, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1428,7 +1175,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_003, Test
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_004, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1462,7 +1209,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_004, Test
 AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_005, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1495,7 +1242,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1529,7 +1276,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1562,7 +1309,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1596,7 +1343,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1632,7 +1379,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1666,7 +1413,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1701,7 +1448,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1735,7 +1482,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1770,7 +1517,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1807,7 +1554,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -1841,7 +1588,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1877,7 +1624,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1912,7 +1659,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1948,7 +1695,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -1986,7 +1733,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
+    auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
@@ -2017,7 +1764,7 @@ bool CheckCapabilitySupport()
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
     return capability != nullptr;
 }
-} //namespace
+} // namespace
 
 int main(int argc, char **argv)
 {
