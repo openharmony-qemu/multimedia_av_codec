@@ -238,6 +238,7 @@ Status StreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size,
         if (IsDash() && streamID != data->streamID) {
             break;
         }
+        FALSE_RETURN_V_MSG_E(err != Status::ERROR_UNKNOWN, Status::ERROR_UNKNOWN, "error unknown");
         if (err != Status::END_OF_STREAM && data->GetMemory()->GetSize() == 0) {
             OSAL::SleepFor(TRY_READ_SLEEP_TIME);
             retryTimes++;
