@@ -114,9 +114,8 @@ private:
         PAUSED,
     };
     static int64_t GetSystemClock();
-    bool IsTimeValid(int64_t time);
+    bool CanGetMediaOrClockTime(int64_t time);
     int64_t SimpleGetMediaTime(int64_t clockTime);
-    int64_t SimpleGetMediaTimeExactly(int64_t clockTime);
     int64_t SimpleGetAnchoredClockTime(int64_t clockTime);
 
     bool IsSupplierValid(IMediaSynchronizer* supplier);
@@ -128,14 +127,13 @@ private:
     void UpdateFirstPtsAfterSeek(int64_t mediaTime);
     void ReportLagEvent(int64_t lagDurationMs);
 
-    bool SetMediaTimeIfIsSeeking(int64_t& mediaTime);
-    bool SetMediaTimeIfClockStatePaused(int64_t& mediaTime);
-    bool SetMediaTimeIfNone(int64_t& mediaTime);
-    bool SetMediaTimeIfAudioRendered(int64_t& mediaTime);
+    bool CheckSeekingMediaTime(int64_t& mediaTime);
+    bool CheckPausedMediaTime(int64_t& mediaTime);
+    bool CheckNoneMediaTime(int64_t& mediaTime);
+    bool CheckFirstMediaTimeAfterSeek(int64_t& mediaTime);
     int64_t GetMaxMediaProgress();
     int64_t BoundMediaProgress(int64_t newMediaProgressTime);
 
-    int64_t ClipMediaTime(int64_t inTime);
     OHOS::Media::Mutex clockMutex_ {};
     State clockState_ {State::PAUSED};
     int8_t currentSyncerPriority_ {IMediaSynchronizer::NONE};

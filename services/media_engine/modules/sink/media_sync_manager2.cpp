@@ -35,10 +35,10 @@ using namespace std::chrono;
 constexpr int MEDIA_TUPLE_START_INDEX = 1;
 constexpr int MEDIA_TUPLE_END_INDEX = 2;
 std::vector<std::function<bool(MediaSyncManager*, int64_t&)>> setMediaTimeFuncs {
-    &MediaSyncManager::SetMediaTimeIfIsSeeking,
-    &MediaSyncManager::SetMediaTimeIfClockStatePaused,
-    &MediaSyncManager::SetMediaTimeIfNone,
-    &MediaSyncManager::SetMediaTimeIfAudioRendered
+    &MediaSyncManager::CheckSeekingMediaTime,
+    &MediaSyncManager::CheckPausedMediaTime,
+    &MediaSyncManager::CheckNoneMediaTime,
+    &MediaSyncManager::CheckFirstMediaTimeAfterSeek
 };
 }
 
@@ -345,7 +345,7 @@ void MediaSyncManager::ReportLagEvent(int64_t lagDurationMs)
     eventReceiver->OnDfxEvent({"SyncManager", DfxEventType::DFX_INFO_PLAYER_STREAM_LAG, lagDurationMs});
 }
 
-bool MediaSyncManager::SetMediaTimeIfIsSeeking(int64_t& mediaTime)
+bool MediaSyncManager::CheckSeekingMediaTime(int64_t& mediaTime)
 {
     FALSE_RETURN_V(isSeeking_, true);
     // no need to bound media progress during seek
@@ -354,20 +354,20 @@ bool MediaSyncManager::SetMediaTimeIfIsSeeking(int64_t& mediaTime)
     return false;
 }
 
-bool MediaSyncManager::SetMediaTimeIfClockStatePaused(int64_t& mediaTime)
+bool MediaSyncManager::CheckPausedMediaTime(int64_t& mediaTime)
 {
     mediaTime = (clockState_ == State::PAUSED) ? pausedMediaTime_ : SimpleGetMediaTime(GetSystemClock());
     return true;
 }
 
-bool MediaSyncManager::SetMediaTimeIfNone(int64_t& mediaTime)
+bool MediaSyncManager::CheckNoneMediaTime(int64_t& mediaTime)
 {
     FALSE_RETURN_V(mediaTime == HST_TIME_NONE, true);
     mediaTime = 0;
     return false;
 }
 
-bool MediaSyncManager::SetMediaTimeIfAudioRendered(int64_t& mediaTime)
+bool MediaSyncManager::CheckFirstMediaTimeAfterSeek(int64_t& mediaTime)
 {
     bool isAudioNotRendered = (firstMediaTimeAfterSeek_ != HST_TIME_NONE && mediaTime < firstMediaTimeAfterSeek_);
     FALSE_RETURN_V(isAudioNotRendered, true);
@@ -426,7 +426,7 @@ int64_t MediaSyncManager::GetClockTimeNow()
     return GetSystemClock();
 }
 
-bool MediaSyncManager::IsTimeValid(int64_t time)
+bool MediaSyncManager::CanGetMediaOrClockTime(int64_t time)
 {
     if (std::fabs(playRate_ - 0) < 1e-9) {
         return false;
@@ -440,7 +440,7 @@ bool MediaSyncManager::IsTimeValid(int64_t time)
 
 int64_t MediaSyncManager::SimpleGetMediaTime(int64_t clockTime)
 {
-    if (!IsTimeValid(clockTime)) {
+    if (!CanGetMediaOrClockTime(clockTime)) {
         return HST_TIME_NONE;
     }
     return currentAnchorMediaTime_ + (clockTime - currentAnchorClockTime_ + delayTime_)
@@ -449,7 +449,7 @@ int64_t MediaSyncManager::SimpleGetMediaTime(int64_t clockTime)
 
 int64_t MediaSyncManager::SimpleGetAnchoredClockTime(int64_t mediaTime)
 {
-    if (!IsTimeValid(mediaTime)) {
+    if (!CanGetMediaOrClockTime(mediaTime)) {
         return HST_TIME_NONE;
     }
     return currentAnchorClockTime_ + (mediaTime - currentAnchorMediaTime_) / static_cast<double>(playRate_);
