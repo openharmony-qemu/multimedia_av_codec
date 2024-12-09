@@ -192,11 +192,10 @@ HWTEST_F(TestSyncManager, Resume_001, TestSize.Level0)
 HWTEST_F(TestSyncManager, Resume_002, TestSize.Level0)
 {
     syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
-    syncManager_->pausedExactMediaTime_ = 100;
+    syncManager_->pausedMediaTime_ = 100;
     syncManager_->alreadySetSyncersShouldWait_ = true;
     EXPECT_EQ(syncManager_->Resume(), Status::OK);
     EXPECT_EQ(syncManager_->pausedMediaTime_, HST_TIME_NONE);
-    EXPECT_EQ(syncManager_->pausedExactMediaTime_, HST_TIME_NONE);
     EXPECT_EQ(syncManager_->pausedClockTime_, HST_TIME_NONE);
 }
 
@@ -688,7 +687,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_002, TestSize.Level0)
     MediaSyncManager mediaSyncManager;
     mediaSyncManager.isSeeking_ = false;
     mediaSyncManager.lastReportMediaTime_ = 100;
-    mediaSyncManager.pausedExactMediaTime_ = 120;
+    mediaSyncManager.pausedMediaTime_ = 120;
     mediaSyncManager.currentAnchorMediaTime_ = 150;
     mediaSyncManager.isFrameAfterSeeked_ = false;
     mediaSyncManager.firstMediaTimeAfterSeek_ = 50;
@@ -696,7 +695,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_002, TestSize.Level0)
     mediaSyncManager.startPts_ = 0;
     mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     int64_t result = mediaSyncManager.GetMediaTimeNow();
-    EXPECT_EQ(result, mediaSyncManager.pausedExactMediaTime_);
+    EXPECT_EQ(result, mediaSyncManager.pausedMediaTime_);
 }
 
 // Scenario3: Test case when invalid
@@ -778,7 +777,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_007, TestSize.Level0)
 {
     syncManager_->isSeeking_ = false;
     syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
-    syncManager_->pausedExactMediaTime_ = 50;
+    syncManager_->pausedMediaTime_ = 50;
     syncManager_->firstMediaTimeAfterSeek_ = 150;
     syncManager_->startPts_ = 50;
     syncManager_->currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
@@ -790,7 +789,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_008, TestSize.Level0)
 {
     syncManager_->isSeeking_ = false;
     syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
-    syncManager_->pausedExactMediaTime_ = 100;
+    syncManager_->pausedMediaTime_ = 100;
     syncManager_->firstMediaTimeAfterSeek_ = 150;
     syncManager_->currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     syncManager_->currentAnchorMediaTime_ = 50;

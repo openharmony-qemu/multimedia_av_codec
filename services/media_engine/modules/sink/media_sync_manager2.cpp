@@ -34,6 +34,12 @@ namespace {
 using namespace std::chrono;
 constexpr int MEDIA_TUPLE_START_INDEX = 1;
 constexpr int MEDIA_TUPLE_END_INDEX = 2;
+std::vector<std::function<bool(MediaSyncManager*, int64_t&)>> setMediaTimeFuncs {
+    &MediaSyncManager::SetMediaTimeIfIsSeeking,
+    &MediaSyncManager::SetMediaTimeIfClockStatePaused,
+    &MediaSyncManager::SetMediaTimeIfNone,
+    &MediaSyncManager::SetMediaTimeIfAudioRendered
+};
 }
 
 MediaSyncManager::~MediaSyncManager()
@@ -71,7 +77,7 @@ Status MediaSyncManager::SetPlaybackRate(float rate)
     OHOS::Media::AutoLock lock(clockMutex_);
     MEDIA_LOG_I_SHORT("set play rate " PUBLIC_LOG_F, rate);
     int64_t currentClockTime = GetSystemClock();
-    int64_t currentMediaTime = SimpleGetMediaTimeExactly(currentClockTime);
+    int64_t currentMediaTime = SimpleGetMediaTime(currentClockTime);
     if (currentMediaTime != HST_TIME_NONE) {
         SimpleUpdateTimeAnchor(currentClockTime, currentMediaTime);
     }
@@ -165,11 +171,10 @@ Status MediaSyncManager::Resume()
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     // update time anchor after a pause during normal playing
-    if (clockState_ == State::PAUSED && pausedExactMediaTime_ != HST_TIME_NONE && alreadySetSyncersShouldWait_) {
-        SimpleUpdateTimeAnchor(GetSystemClock(), pausedExactMediaTime_);
+    if (clockState_ == State::PAUSED && pausedMediaTime_ != HST_TIME_NONE && alreadySetSyncersShouldWait_) {
+        SimpleUpdateTimeAnchor(GetSystemClock(), pausedMediaTime_);
         pausedClockTime_ = HST_TIME_NONE;
         pausedMediaTime_ = HST_TIME_NONE;
-        pausedExactMediaTime_ = HST_TIME_NONE;
     }
     if (clockState_ == State::RESUMED) {
         return Status::OK;
@@ -192,10 +197,9 @@ Status MediaSyncManager::Pause()
         return Status::OK;
     }
     pausedClockTime_ = GetSystemClock();
-    pausedMediaTime_ = ClipMediaTime(SimpleGetMediaTime(pausedClockTime_));
-    pausedExactMediaTime_ = ClipMediaTime(SimpleGetMediaTimeExactly(pausedClockTime_));
-    MEDIA_LOG_I("pause with clockTime " PUBLIC_LOG_D64 ", mediaTime " PUBLIC_LOG_D64 ", exactMediaTime "
-        PUBLIC_LOG_D64, pausedClockTime_, pausedMediaTime_, pausedExactMediaTime_);
+    pausedMediaTime_ = SimpleGetMediaTime(pausedClockTime_);
+    MEDIA_LOG_I("pause with clockTime " PUBLIC_LOG_D64 ", mediaTime " PUBLIC_LOG_D64,
+        pausedClockTime_, pausedMediaTime_);
     clockState_ = State::PAUSED;
     return Status::OK;
 }
@@ -256,24 +260,9 @@ Status MediaSyncManager::Stop()
     return Status::OK;
 }
 
-int64_t MediaSyncManager::ClipMediaTime(int64_t inTime)
-{
-    int64_t ret = inTime;
-    if (minRangeStartOfMediaTime_ != HST_TIME_NONE && ret < minRangeStartOfMediaTime_) {
-        ret = minRangeStartOfMediaTime_;
-        MEDIA_LOG_D_SHORT("clip to min media time " PUBLIC_LOG_D64, ret);
-    }
-    if (maxRangeEndOfMediaTime_ != HST_TIME_NONE && ret > maxRangeEndOfMediaTime_) {
-        ret = maxRangeEndOfMediaTime_;
-        MEDIA_LOG_D_SHORT("clip to max media time " PUBLIC_LOG_D64, ret);
-    }
-    return ret;
-}
-
 void MediaSyncManager::ResetTimeAnchorNoLock()
 {
     pausedMediaTime_ = HST_TIME_NONE;
-    pausedExactMediaTime_ = HST_TIME_NONE;
     currentSyncerPriority_ = IMediaSynchronizer::NONE;
     SimpleUpdateTimeAnchor(HST_TIME_NONE, HST_TIME_NONE);
 }
@@ -367,7 +356,7 @@ bool MediaSyncManager::SetMediaTimeIfIsSeeking(int64_t& mediaTime)
 
 bool MediaSyncManager::SetMediaTimeIfClockStatePaused(int64_t& mediaTime)
 {
-    mediaTime = (clockState_ == State::PAUSED) ? pausedExactMediaTime_ : SimpleGetMediaTimeExactly(GetSystemClock());
+    mediaTime = (clockState_ == State::PAUSED) ? pausedMediaTime_ : SimpleGetMediaTime(GetSystemClock());
     return true;
 }
 
@@ -416,12 +405,6 @@ int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
 int64_t MediaSyncManager::GetMediaTimeNow()
 {
     OHOS::Media::AutoLock lock(clockMutex_);
-    std::vector<std::function<bool(MediaSyncManager*, int64_t&)>> setMediaTimeFuncs {
-        &MediaSyncManager::SetMediaTimeIfIsSeeking,
-        &MediaSyncManager::SetMediaTimeIfClockStatePaused,
-        &MediaSyncManager::SetMediaTimeIfNone,
-        &MediaSyncManager::SetMediaTimeIfAudioRendered
-    };
     int64_t currentMediaTime;
     for (const auto &func : setMediaTimeFuncs) {
         FALSE_RETURN_V(func(this, currentMediaTime), currentMediaTime);
@@ -456,14 +439,6 @@ bool MediaSyncManager::IsTimeValid(int64_t time)
 }
 
 int64_t MediaSyncManager::SimpleGetMediaTime(int64_t clockTime)
-{
-    if (!IsTimeValid(clockTime)) {
-        return HST_TIME_NONE;
-    }
-    return currentAnchorMediaTime_;
-}
-
-int64_t MediaSyncManager::SimpleGetMediaTimeExactly(int64_t clockTime)
 {
     if (!IsTimeValid(clockTime)) {
         return HST_TIME_NONE;
