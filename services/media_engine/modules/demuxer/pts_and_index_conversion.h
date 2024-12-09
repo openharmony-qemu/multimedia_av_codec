@@ -130,6 +130,7 @@ private:
     Status PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvertMode mode,
         int64_t absolutePTS, uint32_t index);
     void InitPTSandIndexConvert();
+    bool IsWithinPTSAndIndexConversionMaxFrames(uint32_t trackIndex);
     void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
     void RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS);
     void PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
