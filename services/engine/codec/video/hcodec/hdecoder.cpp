@@ -73,10 +73,7 @@ int32_t HDecoder::OnConfigure(const Format &format)
     SaveScaleMode(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
-    ret = SetVrrEnable(format);
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
+    (void)SetVrrEnable(format);
     return SetupPort(format);
 }
 
