@@ -1725,6 +1725,11 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
     if (trackId == videoTrackId_) {
         std::unique_lock<std::mutex> draggingLock(draggingMutex_);
         if (VideoStreamReadyCallback_ != nullptr) {
+            if (ret != Status::OK && ret != Status::END_OF_STREAM) {
+                bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
+                MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_U32 ", ret:" PUBLIC_LOG_D32, trackId, (int32_t)(ret));
+                return ret;
+            }
             MEDIA_LOG_D("In");
             std::shared_ptr<VideoStreamReadyCallback> videoStreamReadyCallback = VideoStreamReadyCallback_;
             draggingLock.unlock();
