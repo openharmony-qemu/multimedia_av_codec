@@ -30,7 +30,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "SurfaceEncoderAdapter" };
 }
 
-constexpr uint32_t TIME_OUT_MS = 1000;
+constexpr uint32_t TIME_OUT_MS = 2000;
 constexpr uint32_t NS_PER_US = 1000;
 constexpr int64_t SEC_TO_NS = 1000000000;
 namespace OHOS {
