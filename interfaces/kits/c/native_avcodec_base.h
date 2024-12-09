@@ -673,6 +673,8 @@ typedef enum OH_MediaType {
  */
 typedef enum OH_AACProfile {
     AAC_PROFILE_LC = 0,
+    AAC_PROFILE_HE = 3,
+    AAC_PROFILE_HE_V2 = 4,
 } OH_AACProfile;
 
 /**

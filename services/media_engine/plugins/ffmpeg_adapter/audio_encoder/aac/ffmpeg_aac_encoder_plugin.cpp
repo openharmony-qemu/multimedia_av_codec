@@ -554,7 +554,15 @@ bool FFmpegAACEncoderPlugin::CheckResample() const
 Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 {
     int32_t type;
+    int32_t aacProfile;
     MEDIA_LOG_I("GetMetaData enter");
+    if (meta->Get<Tag::MEDIA_PROFILE>(aacProfile)) {
+        if (aacProfile != AAC_PROFILE_LC) {
+            MEDIA_LOG_E("this plugin only support LC-AAC, input profile:%{public}d", aacProfile);
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+    }
+
     if (meta->Get<Tag::AUDIO_AAC_IS_ADTS>(type)) {
         aacName_ = (type == 1 ? "aac" : "aac_latm");
     }
@@ -807,3 +815,30 @@ Status FFmpegAACEncoderPlugin::CloseCtxLocked()
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+#define FFMPEG_AAC_ENCODER_EXPORT extern "C" __declspec(dllexport)
+#else
+#if defined(__GNUC__) || (defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590))
+#define FFMPEG_AAC_ENCODER_EXPORT extern "C" __attribute__((visibility("default")))
+#else
+#define FFMPEG_AAC_ENCODER_EXPORT
+#endif
+#endif
+
+namespace {
+using namespace Ffmpeg;
+FFMPEG_AAC_ENCODER_EXPORT CodecPlugin *CreateFFmpegAacEncoderPluginObject()
+{
+    const std::string name = std::string(OHOS::MediaAVCodec::AVCodecCodecName::AUDIO_ENCODER_AAC_NAME);
+    CodecPlugin *obj = new FFmpegAACEncoderPlugin(name);
+    return obj;
+}
+
+FFMPEG_AAC_ENCODER_EXPORT void DestroyFFmpegAacEncoderPluginObject(CodecPlugin *obj)
+{
+    if (obj != nullptr) {
+        delete obj;
+    }
+}
+}

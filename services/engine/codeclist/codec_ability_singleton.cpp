@@ -64,6 +64,21 @@ CodecAbilitySingleton::CodecAbilitySingleton()
             RegisterCapabilityArray(capaArray, codecType);
         }
     }
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::sort(capabilityDataArray_.begin(), capabilityDataArray_.end(),
+        [](CapabilityData a, CapabilityData b) {
+            return a.rank > b.rank;
+        });
+    size_t idx = 0;
+    for (auto iter = capabilityDataArray_.begin(); iter != capabilityDataArray_.end(); iter++) {
+        std::string mimeType = (*iter).mimeType;
+        if (mimeCapIdxMap_.find(mimeType) == mimeCapIdxMap_.end()) {
+            std::vector<size_t> idxVec;
+            mimeCapIdxMap_.insert(std::make_pair(mimeType, idxVec));
+        }
+        mimeCapIdxMap_.at(mimeType).emplace_back(idx);
+        idx++;
+    }
     AVCODEC_LOGI("Succeed");
 }
 
@@ -75,13 +90,7 @@ CodecAbilitySingleton::~CodecAbilitySingleton()
 void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> &capaArray, CodecType codecType)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    size_t beginIdx = capabilityDataArray_.size();
     for (auto iter = capaArray.begin(); iter != capaArray.end(); iter++) {
-        std::string mimeType = (*iter).mimeType;
-        std::vector<size_t> idxVec;
-        if (mimeCapIdxMap_.find(mimeType) == mimeCapIdxMap_.end()) {
-            mimeCapIdxMap_.insert(std::make_pair(mimeType, idxVec));
-        }
         if ((*iter).profileLevelsMap.size() > MAX_MAP_SIZE) {
             while ((*iter).profileLevelsMap.size() > MAX_MAP_SIZE) {
                 auto rIter = (*iter).profileLevelsMap.end();
@@ -100,9 +109,7 @@ void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> 
             (*iter).measuredFrameRate.erase(--rIter);
         }
         capabilityDataArray_.emplace_back(*iter);
-        mimeCapIdxMap_.at(mimeType).emplace_back(beginIdx);
         nameCodecTypeMap_.insert(std::make_pair((*iter).codecName, codecType));
-        beginIdx++;
     }
     AVCODEC_LOGD("Register capability successful");
 }

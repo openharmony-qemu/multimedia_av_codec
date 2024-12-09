@@ -168,6 +168,7 @@ struct CapabilityData {
     std::map<ImgSize, Range> measuredFrameRate;
     bool supportSwapWidthHeight = false;
     std::map<int32_t, Format> featuresMap;
+    int32_t rank = 0;
 };
 
 struct LevelParams {
