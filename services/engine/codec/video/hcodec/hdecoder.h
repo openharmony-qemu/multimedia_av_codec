@@ -96,7 +96,6 @@ private:
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
     void OnClearBufferPool(OMX_DIRTYPE portIndex) override;
-    void CancelBufferToSurface(BufferInfo &info);
     void OnEnterUninitializedState() override;
 
     // VRR
@@ -116,6 +115,7 @@ private:
     VrrCheckSupport VrrCheckSupportFunc_ = nullptr;
     VrrProcess VrrProcessFunc_ = nullptr;
     void *vpeHandle_ = nullptr;
+    bool vrrDynamicSwitch_ = false;
     Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* vrrHandle_ = nullptr;
 #endif
 

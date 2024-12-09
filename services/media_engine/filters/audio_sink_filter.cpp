@@ -88,6 +88,9 @@ Status AudioSinkFilter::DoPrepare()
 {
     audioSink_->Prepare();
     inputBufferQueueConsumer_ = audioSink_->GetBufferQueueConsumer();
+    if (inputBufferQueueConsumer_ == nullptr) {
+        return Status::ERROR_INVALID_OPERATION;
+    }
     sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
     inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
     if (onLinkedResultCallback_ != nullptr) {
@@ -110,7 +113,7 @@ Status AudioSinkFilter::DoStart()
     forceUpdateTimeAnchorNextTime_ = true;
     auto err = audioSink_->Start();
     if (err != Status::OK) {
-        eventReceiver_->OnEvent({"audio_sink_filter", EventType::EVENT_ERROR, MSERR_IO_AUDIO_DEVICE_ERROR});
+        eventReceiver_->OnEvent({"audio_sink_filter", EventType::EVENT_ERROR, MSERR_AUD_RENDER_FAILED});
         return err;
     }
     state_ = FilterState::RUNNING;

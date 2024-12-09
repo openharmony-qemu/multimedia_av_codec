@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -73,6 +73,7 @@ public:
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
+    bool GetReadTimeOut() override;
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
@@ -97,7 +98,7 @@ private:
     Mutex taskMutex_ {};
     uint64_t haveReadData_ {0};
 
-        std::set<int32_t> clientNotRetryErrorSet = {
+    std::set<int32_t> clientNotRetryErrorSet = {
         6,  // CURLE_COULDNT_RESOLVE_HOST
         22, // CURLE_HTTP_RETURNED_ERROR
         26, // CURLE_READ_ERROR

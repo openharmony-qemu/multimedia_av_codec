@@ -17,28 +17,19 @@
 #define AVCODEC_SAMPLE_VIDEO_DECODER_SAMPLE_H
 
 #include "video_sample_base.h"
-#include "iconsumer_surface.h"
-
-#include "../../window/window_manager/interfaces/innerkits/wm/window.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-class VideoDecoderSample : public VideoSampleBase, public OHOS::IBufferConsumerListener {
+class VideoDecoderSample : public VideoSampleBase {
 public:
     VideoDecoderSample() {};
-    ~VideoDecoderSample() override;
 
 private:
     int32_t Init() override;
     int32_t Prepare() override;
     void InputThread();
     void OutputThread();
-    int32_t CreateWindow(std::shared_ptr<NativeWindow> &window);
-    void OnBufferAvailable() override;
-
-    OHOS::sptr<OHOS::Surface> surfaceConsumer_ = nullptr;
-    sptr<Rosen::Window> rosenWindow_;
 };
 } // Sample
 } // MediaAVCodec

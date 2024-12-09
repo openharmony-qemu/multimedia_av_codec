@@ -1088,16 +1088,16 @@ size_t DashMediaDownloader::GetBufferSize() const
     return segmentDownloader->GetBufferSize();
 }
 
+bool DashMediaDownloader::GetPlayable()
+{
+    return GetBufferSize() > 0;
+}
+
 void DashMediaDownloader::SetAppUid(int32_t appUid)
 {
     for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
         segmentDownloaders_[i]->SetAppUid(appUid);
     }
-}
-
-bool DashMediaDownloader::GetPlayable()
-{
-    return GetBufferSize() >= 0;
 }
 
 bool DashMediaDownloader::GetBufferingTimeOut()

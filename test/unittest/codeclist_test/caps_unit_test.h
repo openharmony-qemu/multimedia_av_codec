@@ -39,14 +39,23 @@ protected:
     void CheckVideoCaps(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckVideoCapsArray(const std::vector<std::shared_ptr<VideoCaps>> &videoCapsArray) const;
     void CheckAVDecMP3(const std::shared_ptr<AudioCaps> &audioCaps) const;
+    void CheckAVEncMP3(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAVDecAAC(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAVDecVorbis(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAVDecFlac(const std::shared_ptr<AudioCaps> &audioCaps) const;
+    void CheckAVEncFlac(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAVDecOpus(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAVEncAAC(const std::shared_ptr<AudioCaps> &audioCaps) const;
+    void CheckAVEncVendorAAC(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAVEncOpus(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAudioCaps(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAVDecVivid(const std::shared_ptr<AudioCaps> &audioCaps) const;
+    void CheckAVEncAmrnb(const std::shared_ptr<AudioCaps> &audioCaps) const;
+    void CheckAVDecAmrnb(const std::shared_ptr<AudioCaps> &audioCaps) const;
+    void CheckAVEncAmrwb(const std::shared_ptr<AudioCaps> &audioCaps) const;
+    void CheckAVDecAmrwb(const std::shared_ptr<AudioCaps> &audioCaps) const;
+    void CheckAVEncG711mu(const std::shared_ptr<AudioCaps> &audioCaps) const;
+    void CheckAVDecG711mu(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAudioCapsArray(const std::vector<std::shared_ptr<AudioCaps>> &audioCapsArray) const;
 
     std::vector<std::shared_ptr<VideoCaps>> GetVideoDecoderCaps();

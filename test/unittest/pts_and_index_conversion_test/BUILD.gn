@@ -56,8 +56,6 @@ config("pts_and_index_conversio_unittest_cfg") {
     "$av_codec_root_dir/services/media_engine/modules",
     "$av_codec_root_dir/services/media_engine/modules/demuxer",
     "$av_codec_root_dir/test/unittest/common",
-    "$media_foundation_root_dir/interface/inner_api",
-    "//commonlibrary/c_utils/base/include/",
   ]
 }
 
@@ -75,7 +73,6 @@ ohos_unittest("pts_and_index_conversion_unit_test") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
-    "//third_party/googletest:gmock_main",
   ]
 
   external_deps = [

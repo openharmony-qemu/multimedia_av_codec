@@ -350,7 +350,7 @@ protected:
 
     // VRR
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    bool isVrrEnable_ = false;
+    bool isVrrInitialized_ = false;
     virtual int32_t VrrPrediction(BufferInfo &info) { return AVCS_ERR_UNSUPPORT; }
 #endif
 
@@ -364,8 +364,8 @@ protected:
     TotalCntAndCost outRecord_;
     std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
 
-    // normal: every 200 frames, debug: whole life time
-    static constexpr uint64_t PRINT_PER_FRAME = 200;
+    // normal: every 400 frames, debug: whole life time
+    static constexpr uint64_t PRINT_PER_FRAME = 400;
     std::array<TotalCntAndCost, OWNER_CNT> inputHoldTimeRecord_;
     std::array<TotalCntAndCost, OWNER_CNT> outputHoldTimeRecord_;
     std::chrono::time_point<std::chrono::steady_clock> firstInTime_;
@@ -512,8 +512,9 @@ private:
     };
 
 private:
-    int32_t DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper);
-    int32_t DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply);
+    int32_t DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper, uint32_t waitMs = FIVE_SECONDS_IN_MS);
+    int32_t DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply,
+                                  uint32_t waitMs = FIVE_SECONDS_IN_MS);
     void PrintCaller();
     int32_t OnAllocateComponent();
     void ReleaseComponent();

@@ -390,7 +390,7 @@ Status DecoderSurfaceFilter::DoPreroll()
     if (ret != Status::OK) {
         MEDIA_LOG_E("video decoder start failed, ret = %{public}d", ret);
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR,
-            MSERR_IO_VIDEO_DEVICE_ERROR});
+            MSERR_VID_DEC_FAILED});
     }
     Filter::StartFilterTask();
     return ret;

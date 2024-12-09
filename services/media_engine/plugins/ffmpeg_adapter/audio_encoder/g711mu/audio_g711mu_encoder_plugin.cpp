@@ -36,7 +36,7 @@ constexpr int OUTPUT_BUFFER_SIZE_DEFAULT = 640;  // 20ms:160
 constexpr int AVCODEC_G711MU_LINEAR_BIAS = 0x84;
 constexpr int AVCODEC_G711MU_CLIP = 8159;
 constexpr uint16_t AVCODEC_G711MU_SEG_NUM = 8;
-static const short AVCODEC_G711MU_SEG_END[8] = {
+static const short AVCODEC_G711MU_SEG_END[8] = { // list of pcm limit value
     0x3F, 0x7F, 0xFF, 0x1FF, 0x3FF, 0x7FF, 0xFFF, 0x1FFF};
 
 

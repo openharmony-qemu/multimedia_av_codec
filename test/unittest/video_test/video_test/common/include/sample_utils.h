@@ -17,12 +17,15 @@
 #define AVCODEC_SAMPLE_SAMPLE_UTILS_H
 
 #include <cstdint>
+#include <string>
+#include <unordered_map>
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
 void ThreadSleep(bool isValid, int32_t interval);
 int32_t ToGraphicPixelFormat(int32_t avPixelFormat, int32_t profile);
+std::string ToString(int32_t index, std::unordered_map<int32_t, std::string> map);
 } // Sample
 } // MediaAVCodec
 } // OHOS

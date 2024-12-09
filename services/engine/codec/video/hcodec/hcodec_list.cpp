@@ -48,7 +48,7 @@ public:
 static bool DecideMode(bool supportPassthrough, bool isSecure)
 {
 #ifdef BUILD_ENG_VERSION
-    string mode = OHOS::system::GetParameter("hcodec.usePassthrough", "");
+    string mode = OHOS::system::GetParameter("persist.hcodec.usePassthrough", "");
     if (mode == "1") {
         LOGI("force passthrough");
         return true;
@@ -67,7 +67,7 @@ static bool DecideMode(bool supportPassthrough, bool isSecure)
         }
     }
 #endif
-    LOGI("supportPassthrough = %d", supportPassthrough);
+    LOGD("supportPassthrough = %d", supportPassthrough);
     return supportPassthrough;
 }
 
@@ -112,7 +112,7 @@ vector<CodecCompCapability> GetCapList()
     if (capList.empty()) {
         LOGE("GetComponentCapabilityList return empty");
     } else {
-        LOGI("GetComponentCapabilityList return %zu components", capList.size());
+        LOGD("GetComponentCapabilityList return %zu components", capList.size());
     }
     return capList;
 }
@@ -175,7 +175,7 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     LOGI("blockPerFrame: [%d, %d], blockPerSecond: [%d, %d]",
         userCap.blockPerFrame.minVal, userCap.blockPerFrame.maxVal,
         userCap.blockPerSecond.minVal, userCap.blockPerSecond.maxVal);
-    LOGI("isSupportPassthrough: %d", hdiVideoCap.isSupportPassthrough);
+    LOGI("isSupportPassthrough: %d, isSupportQPMap", hdiVideoCap.isSupportPassthrough, hdiVideoCap.isSupportQPMap);
     LOGI("isSupportWaterMark: %d, isSupportLowLatency: %d, isSupportTSVC: %d, isSupportLTR %d and maxLTRFrameNum %d",
         hdiVideoCap.isSupportWaterMark, hdiVideoCap.isSupportLowLatency, hdiVideoCap.isSupportTSVC,
         hdiVideoCap.isSupportLTR, hdiVideoCap.maxLTRFrameNum);
@@ -287,6 +287,9 @@ void HCodecList::GetSupportedFeatureParam(const CodecVideoPortCap& hdiVideoCap,
     }
     if (hdiVideoCap.isSupportWaterMark) {
         userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK)] = Format();
+    }
+    if (hdiVideoCap.isSupportQPMap) {
+        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_QP_MAP)] = Format();
     }
 }
 } // namespace OHOS::MediaAVCodec

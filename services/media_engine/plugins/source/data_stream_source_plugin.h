@@ -36,6 +36,8 @@ public:
     Status GetSize(uint64_t& size) override;
     Plugins::Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
+    Status Pause() override;
+    Status Resume() override;
     Status Reset() override;
     bool IsNeedPreDownload() override;
     void SetInterruptState(bool isInterruptNeeded) override;
@@ -53,6 +55,7 @@ private:
     std::shared_ptr<AVSharedMemoryPool> pool_;
     std::atomic<bool> isBufferingStart{false};
     std::atomic<bool> isInterrupted_ {false};
+    std::atomic<bool> isExitRead_ {false};
     Plugins::Callback* callback_ {nullptr};
     int64_t size_ {0};
     uint64_t offset_ {0};

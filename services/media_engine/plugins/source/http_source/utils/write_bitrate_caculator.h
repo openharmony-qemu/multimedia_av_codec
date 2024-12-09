@@ -25,7 +25,7 @@ namespace Plugins {
 namespace HttpPlugin {
 
 constexpr uint32_t BYTES_TO_BIT = 8;
-constexpr uint32_t SECOND_TO_MILLIONSECOND = 1000;
+constexpr uint32_t SECOND_TO_MILLISECONDS = 1000;
 
 class WriteBitrateCaculator {
 public:
@@ -75,7 +75,7 @@ public:
             writeBitrate_ = 0;
             return;
         }
-        writeBitrate_ = static_cast<float>(writeBytes_ * BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / writeTime;
+        writeBitrate_ = static_cast<float>(writeBytes_ * BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / writeTime;
     }
     uint64_t GetWriteBitrate()
     {

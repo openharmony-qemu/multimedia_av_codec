@@ -201,6 +201,7 @@ int32_t CodecServiceProxy::NotifyEos()
 
 int32_t CodecServiceProxy::Reset()
 {
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Listener is nullptr");
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
@@ -448,6 +449,7 @@ int32_t CodecServiceProxy::GetInputFormat(Format &format)
 
 int32_t CodecServiceProxy::DestroyStub()
 {
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Listener is nullptr");
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;

@@ -65,6 +65,7 @@ private:
     void ReadLoop();
     Status PrepareAudioCapture();
     std::shared_ptr<Task> taskPtr_{nullptr};
+    int32_t RelativeSleep(int64_t nanoTime);
     std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_{nullptr};
     sptr<AVBufferQueueProducer> outputBufferQueue_;
     AudioStandard::SourceType sourceType_ = AudioStandard::SourceType::SOURCE_TYPE_INVALID;

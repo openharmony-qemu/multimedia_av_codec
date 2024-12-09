@@ -118,7 +118,6 @@ struct SampleInfo {
 
     CodecRunMode codecRunMode = API11_SURFACE;
     int32_t frameInterval = -1;
-    std::shared_ptr<NativeWindow> window = nullptr;
     int32_t sampleRepeatTimes = 0;
     int32_t demoRepeatTimes = 1;
     OH_AVPixelFormat pixelFormat = AV_PIXEL_FORMAT_NV12;
@@ -132,7 +131,6 @@ struct SampleInfo {
     std::string outputFilePath;
     CodecConsumerType codecConsumerType = CODEC_COMSUMER_TYPE_DEFAULT;
     ThreadSleepMode threadSleepMode = THREAD_SLEEP_MODE_INPUT_SLEEP;
-    int32_t encoderSurfaceMaxInputBuffer = 0;
     int32_t pauseBeforeRunSample = 0;
     int32_t videoStrideWidth = 0;
     int32_t videoSliceHeight = 0;

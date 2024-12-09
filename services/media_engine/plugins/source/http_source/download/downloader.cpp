@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -67,31 +67,31 @@ DownloadRequest::DownloadRequest(const std::string& url,
     headerInfo_.contentLen = 0;
 }
 
-DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
+DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
                                  bool requestWholeFile)
-    : saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)), mediaSouce_(mediaSouce),
+    : saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)), requestInfo_(requestInfo),
     requestWholeFile_(requestWholeFile)
 {
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
     headerInfo_.fileContentLen = 0;
     headerInfo_.contentLen = 0;
-    url_ = mediaSouce.url;
-    httpHeader_ = mediaSouce.httpHeader;
+    url_ = requestInfo.url;
+    httpHeader_ = requestInfo.httpHeader;
 }
 
 DownloadRequest::DownloadRequest(double duration,
                                  DataSaveFunc saveData,
                                  StatusCallbackFunc statusCallback,
-                                 RequestInfo mediaSouce,
+                                 RequestInfo requestInfo,
                                  bool requestWholeFile)
     : duration_(duration), saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)),
-    mediaSouce_(mediaSouce), requestWholeFile_(requestWholeFile)
+    requestInfo_(requestInfo), requestWholeFile_(requestWholeFile)
 {
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
     headerInfo_.fileContentLen = 0;
     headerInfo_.contentLen = 0;
-    url_ = mediaSouce.url;
-    httpHeader_ = mediaSouce.httpHeader;
+    url_ = requestInfo.url;
+    httpHeader_ = requestInfo.httpHeader;
 }
 
 size_t DownloadRequest::GetFileContentLength() const
@@ -266,7 +266,7 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
         {
             AutoLock lk(loopPauseMutex_);
             if (loopStatus_ == LoopStatus::PAUSE) {
-                MEDIA_LOG_I("loopStatus_ PAUSE to START");
+                MEDIA_LOG_I("0x%{public}06" PRIXPTR " loopStatus PAUSE to START", FAKE_POINTER(this));
             }
             loopStatus_ = LoopStatus::START;
         }
@@ -357,11 +357,22 @@ void Downloader::Resume()
         MEDIA_LOG_I("resume Begin");
         if (isClientClose_ && client_ != nullptr && currentRequest_ != nullptr) {
             isClientClose_ = false;
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
+            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
         }
         requestQue_->SetActive(true);
         if (currentRequest_ != nullptr) {
             currentRequest_->isEos_ = false;
+
+            int64_t fileLength = static_cast<int64_t>(currentRequest_->GetFileContentLength());
+            if (currentRequest_->startPos_ + currentRequest_->requestSize_ > fileLength) {
+                int correctRequestSize = fileLength - currentRequest_->startPos_;
+                MEDIA_LOG_E("resume error startPos = " PUBLIC_LOG_D64 ", requestSize = " PUBLIC_LOG_D32
+                    ", fileLength = " PUBLIC_LOG_D64 ", correct requestSize = " PUBLIC_LOG_D32,
+                    currentRequest_->startPos_, currentRequest_->requestSize_, fileLength, correctRequestSize);
+                if (currentRequest_->startPos_ < fileLength) {
+                    currentRequest_->requestSize_ = correctRequestSize;
+                }
+            }
         }
     }
     Start();
@@ -400,9 +411,9 @@ void Downloader::Stop(bool isAsync)
 bool Downloader::Seek(int64_t offset)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Seek, offset: " + std::to_string(offset));
-    FALSE_RETURN_V_MSG(!isDestructor_ && !isInterruptNeeded_, false, "not Seek. is Destructor or InterruptNeeded");
+    FALSE_RETURN_V_MSG(!isDestructor_ && !isInterruptNeeded_, false, "Seek fail, is Destructor or InterruptNeeded");
     AutoLock lock(operatorMutex_);
-    FALSE_RETURN_V(currentRequest_ != nullptr, false);
+    FALSE_RETURN_V_MSG(currentRequest_ != nullptr, false, "Seek fail, currentRequest nullptr");
     size_t contentLength = currentRequest_->GetFileContentLength();
     MEDIA_LOG_I("Seek Begin, offset = " PUBLIC_LOG_D64 ", contentLength = " PUBLIC_LOG_ZU, offset, contentLength);
     if (offset >= 0 && offset < static_cast<int64_t>(contentLength)) {
@@ -464,7 +475,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
                 currentRequest_->dropedDataLen_ = 0;
                 MEDIA_LOG_D("Do retry.");
             }
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
+            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
             requestQue_->SetActive(true);
             currentRequest_->isEos_ = false;
         }
@@ -502,7 +513,7 @@ bool Downloader::BeginDownload()
         MEDIA_LOG_I("Set default UA.");
     }
     
-    int32_t timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
+    int32_t timeoutMs = currentRequest_->requestInfo_.timeoutMs;
     FALSE_RETURN_V(!url.empty(), false);
     if (client_) {
         client_->Open(url, httpHeader, timeoutMs);
@@ -566,7 +577,7 @@ void Downloader::RequestData()
     RequestInfo sourceInfo;
     sourceInfo.url = currentRequest_->url_;
     sourceInfo.httpHeader = currentRequest_->httpHeader_;
-    sourceInfo.timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
+    sourceInfo.timeoutMs = currentRequest_->requestInfo_.timeoutMs;
 
     auto handleResponseCb = [this](int32_t clientCode, int32_t serverCode, Status ret) {
         currentRequest_->clientError_ = clientCode;
@@ -574,6 +585,7 @@ void Downloader::RequestData()
         if (isDestructor_) {
             return;
         }
+
         if (currentRequest_->requestSize_ == FIRST_REQUEST_SIZE && !currentRequest_->isFirstRangeRequestReady_
             && currentRequest_->serverError_ == SERVER_RANGE_ERROR_CODE) {
             MEDIA_LOG_I("first request is above filesize, need retry.");
@@ -624,7 +636,7 @@ void Downloader::HandleRetOK()
         PauseLoop(true);
         return;
     }
-    
+
     int64_t remaining = 0;
     if (currentRequest_->endPos_ <= 0) {
         remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -

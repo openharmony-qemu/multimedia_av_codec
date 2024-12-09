@@ -22,6 +22,7 @@ extern "C" {
 const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC = "video/avc";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4 = "video/mp4v-es";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_HEVC = "video/hevc";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG2 = "video/mpeg2";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC = "audio/mp4a-latm";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_FLAC = "audio/flac";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_VORBIS = "audio/vorbis";
@@ -128,6 +129,10 @@ const char *OH_MD_KEY_START_TIME = "start_time";
 const char *OH_MD_KEY_TRACK_START_TIME = "track_start_time";
 const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE = "video_decoder_output_colorspace";
 const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_ENABLE_VRR = "video_decoder_output_enable_vrr";
+const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER = "video_encoder_repeat_previous_frame_after";
+const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT = "video_encoder_repeat_previous_max_count";
+const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_QP_MAP = "video_encoder_enable_qp_map";
+const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_QP_MAP = "video_encoder_per_frame_qp_map";
 
 #ifdef __cplusplus
 }
