@@ -20,39 +20,21 @@
 #include <iostream>
 #include <mutex>
 #include <queue>
-#include "../../func_sample/mock/vcodec_mock.h"
+#include "avcodec_common.h"
+#include "data_producer_base.h"
+#include "native_avbuffer_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-struct VDecSignal {
-public:
-    std::mutex mutex_;
-    std::mutex inMutex_;
-    std::mutex outMutex_;
-    std::condition_variable cond_;
-    std::condition_variable inCond_;
-    std::condition_variable outCond_;
-    std::queue<uint32_t> inIndexQueue_;
-    std::queue<uint32_t> outIndexQueue_;
-    std::queue<OH_AVCodecBufferAttr> outAttrQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> inMemoryQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> outMemoryQueue_;
-    std::queue<std::shared_ptr<AVBufferMock>> inBufferQueue_;
-    std::queue<std::shared_ptr<AVBufferMock>> outBufferQueue_;
-    int32_t errorNum = 0;
-    std::atomic<bool> isRunning_ = false;
-    std::atomic<bool> isPreparing_ = true;
-};
 
 struct MpegReaderInfo {
     std::string inPath;
     bool isMpeg2Stream = true; // true: Mpeg2; false: Mpeg4
 };
 
-class MpegReader {
+class MpegReader : public DataProducerBase {
 public:
-    int32_t FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr);
-    int32_t FillBufferExt(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr);
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
     void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t mpegType, bool isEosFrame);
     bool IsEOS();
     int32_t Init(const std::shared_ptr<MpegReaderInfo> &info);
@@ -135,13 +117,12 @@ struct AvccReaderInfo {
     bool isH264Stream = true; // true: H264; false: H265
 };
 
-class AvccReader {
+class AvccReader : public DataProducerBase {
 public:
-    int32_t FillBuffer(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr);
-    int32_t FillBufferExt(std::shared_ptr<VDecSignal> &signal_, OH_AVCodecBufferAttr &attr);
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
     void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t naluType, bool isEosFrame);
-    bool CheckFillBuffer(uint8_t naluType);
     bool IsEOS();
+    bool CheckFillBuffer(uint8_t naluType);
     int32_t Init(const std::shared_ptr<AvccReaderInfo> &info);
     std::mutex mutex_;
     int32_t frameInputCount_ = 0;

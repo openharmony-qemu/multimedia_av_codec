@@ -78,7 +78,9 @@ ohos_unittest("videodec_capi_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
+    "./common/data_producer/avcc_reader/",
+    "./common/data_producer/base/",
     "./func_sample/mock",
     "./func_sample/mock/capi",
     "./func_sample/sample",
@@ -95,10 +97,10 @@ ohos_unittest("videodec_capi_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videodec_capi_mock.cpp",
-    "./func_sample/sample/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_func_unit_test.cpp",
   ]
@@ -136,7 +138,9 @@ ohos_unittest("videodec_inner_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
+    "./common/data_producer/avcc_reader/",
+    "./common/data_producer/base/",
     "./func_sample/mock",
     "./func_sample/mock/inner",
     "./func_sample/sample",
@@ -152,10 +156,10 @@ ohos_unittest("videodec_inner_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videodec_inner_mock.cpp",
-    "./func_sample/sample/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_func_unit_test.cpp",
   ]
@@ -184,7 +188,9 @@ ohos_unittest("videodec_mpeg_func_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
+    "./common/data_producer/avcc_reader/",
+    "./common/data_producer/base/",
     "./func_sample/mock",
     "./func_sample/mock/inner",
     "./func_sample/sample",
@@ -200,10 +206,10 @@ ohos_unittest("videodec_mpeg_func_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videodec_inner_mock.cpp",
-    "./func_sample/sample/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_mpeg_func_unit_test.cpp",
   ]
@@ -232,7 +238,7 @@ ohos_unittest("videoenc_capi_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
     "./func_sample/mock",
     "./func_sample/mock/capi",
     "./func_sample/sample",
@@ -252,7 +258,7 @@ ohos_unittest("videoenc_capi_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videoenc_capi_mock.cpp",
     "./func_sample/sample/venc_sample.cpp",
@@ -281,7 +287,7 @@ ohos_unittest("videoenc_inner_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
     "./func_sample/mock",
     "./func_sample/mock/inner",
     "./func_sample/sample",
@@ -300,7 +306,7 @@ ohos_unittest("videoenc_inner_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videoenc_inner_mock.cpp",
     "./func_sample/sample/venc_sample.cpp",
@@ -329,7 +335,7 @@ ohos_unittest("videoenc_temporal_scalability_capi_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
     "./func_sample/mock",
     "./func_sample/mock/capi",
     "./func_sample/sample",
@@ -349,7 +355,7 @@ ohos_unittest("videoenc_temporal_scalability_capi_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videoenc_capi_mock.cpp",
     "./func_sample/sample/venc_sample.cpp",
@@ -378,7 +384,7 @@ ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
     "./func_sample/mock",
     "./func_sample/mock/inner",
     "./func_sample/sample",
@@ -397,7 +403,7 @@ ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videoenc_inner_mock.cpp",
     "./func_sample/sample/venc_sample.cpp",
@@ -427,7 +433,7 @@ ohos_unittest("videoenc_qpmap_capi_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
     "./func_sample/mock",
     "./func_sample/mock/capi",
     "./func_sample/sample",
@@ -447,7 +453,7 @@ ohos_unittest("videoenc_qpmap_capi_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videoenc_capi_mock.cpp",
     "./func_sample/sample/venc_sample.cpp",
@@ -476,7 +482,7 @@ ohos_unittest("videoenc_qpmap_inner_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
     "./func_sample/mock",
     "./func_sample/mock/inner",
     "./func_sample/sample",
@@ -495,7 +501,7 @@ ohos_unittest("videoenc_qpmap_inner_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videoenc_inner_mock.cpp",
     "./func_sample/sample/venc_sample.cpp",
@@ -525,7 +531,7 @@ ohos_unittest("videoenc_repeat_previous_frame_capi_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
     "./func_sample/mock",
     "./func_sample/mock/capi",
     "./func_sample/sample",
@@ -545,7 +551,7 @@ ohos_unittest("videoenc_repeat_previous_frame_capi_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videoenc_capi_mock.cpp",
     "./func_sample/sample/venc_sample.cpp",
@@ -574,7 +580,7 @@ ohos_unittest("videoenc_repeat_previous_frame_inner_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
     "./func_sample/mock",
     "./func_sample/mock/inner",
     "./func_sample/sample",
@@ -593,7 +599,7 @@ ohos_unittest("videoenc_repeat_previous_frame_inner_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videoenc_inner_mock.cpp",
     "./func_sample/sample/venc_sample.cpp",
@@ -666,7 +672,7 @@ ohos_unittest("video_buffer_converter_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "$av_codec_root_dir/services/services/codec/ipc",
-    "./common/include",
+    "./common/utils",
   ]
   cflags = vcodec_unittest_cflags
   sources = [ "./buffer_converter_unit_test.cpp" ]
@@ -691,7 +697,9 @@ ohos_unittest("videodec_hdrvivid2sdr_capi_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
+    "./common/data_producer/avcc_reader/",
+    "./common/data_producer/base/",
     "./func_sample/mock",
     "./func_sample/mock/capi",
     "./func_sample/sample",
@@ -712,10 +720,10 @@ ohos_unittest("videodec_hdrvivid2sdr_capi_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videodec_capi_mock.cpp",
-    "./func_sample/sample/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_hdrvivid2sdr_unit_test.cpp",
   ]
@@ -755,7 +763,9 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./common/include",
+    "./common/utils",
+    "./common/data_producer/avcc_reader/",
+    "./common/data_producer/base/",
     "./func_sample/mock",
     "./func_sample/mock/inner",
     "./func_sample/sample",
@@ -775,10 +785,10 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
-    "./common/unittest_utils.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
+    "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videodec_inner_mock.cpp",
-    "./func_sample/sample/avcc_reader.cpp",
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_hdrvivid2sdr_unit_test.cpp",
   ]

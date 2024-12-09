@@ -22,134 +22,64 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include "avcc_reader.h"
+#include "codec_buffer_queue.h"
+#include "avcodec_log.h"
 #include "native_avbuffer.h"
 #include "native_avformat.h"
 #include "native_avmemory.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-template <typename T>
+
+class VCodecSampleBase {
+public:
+    virtual int32_t HandleInputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo) = 0;
+    virtual int32_t HandleOutputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo) = 0;
+    virtual int32_t Operate() = 0;
+};
+
 class VCodecSignal {
 public:
-    explicit VCodecSignal(std::shared_ptr<T> codec) : codec_(codec) {}
+    VCodecSignal(std::shared_ptr<VCodecSampleBase> codec) : codecSample_(codec){};
     ~VCodecSignal()
     {
         if (outFile_ != nullptr && outFile_->is_open()) {
             outFile_->close();
         }
-        if (inFile_ != nullptr && inFile_->is_open()) {
-            inFile_->close();
-        }
     }
+
+    void FlushQueue()
+    {
+        inQueue_.Flush();
+        outQueue_.Flush();
+    }
+
     std::mutex eosMutex_;
     std::condition_variable eosCond_;
     std::atomic<bool> isInEos_ = false;
     std::atomic<bool> isOutEos_ = false;
 
-    std::mutex inMutex_;
-    std::condition_variable inCond_;
-    std::queue<uint32_t> inQueue_;
-    std::queue<OH_AVMemory *> inMemoryQueue_;
-    std::queue<OH_AVBuffer *> inBufferQueue_;
-
-    std::mutex outMutex_;
-    std::condition_variable outCond_;
-    std::queue<uint32_t> outQueue_;
-    std::queue<OH_AVCodecBufferAttr> outAttrQueue_;
-    std::queue<OH_AVMemory *> outMemoryQueue_;
-    std::queue<OH_AVBuffer *> outBufferQueue_;
+    CodecBufferQueue inQueue_;
+    CodecBufferQueue outQueue_;
 
     std::vector<int32_t> errors_;
     std::atomic<int32_t> controlNum_ = 0;
     std::atomic<bool> isRunning_ = false;
-    std::atomic<bool> isFlushing_ = false;
 
+    std::shared_ptr<DataProducerBase> reader_;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;
-    std::weak_ptr<T> codec_;
+    std::weak_ptr<VCodecSampleBase> codecSample_;
 
-    void PopInQueue()
-    {
-        if (!inQueue_.empty()) {
-            inQueue_.pop();
-        }
-        if (!inMemoryQueue_.empty()) {
-            inMemoryQueue_.pop();
-        }
-        if (!inBufferQueue_.empty()) {
-            inBufferQueue_.pop();
-        }
-    }
-
-    void PopOutQueue()
-    {
-        if (!outQueue_.empty()) {
-            outQueue_.pop();
-        }
-        if (!outAttrQueue_.empty()) {
-            outAttrQueue_.pop();
-        }
-        if (!outMemoryQueue_.empty()) {
-            outMemoryQueue_.pop();
-        }
-        if (!outBufferQueue_.empty()) {
-            outBufferQueue_.pop();
-        }
-    }
-};
-
-template <typename T>
-class FlushGuard {
-public:
-    explicit FlushGuard(std::shared_ptr<T> signal)
-    {
-        if (signal == nullptr) {
-            return;
-        }
-        signal_ = signal;
-        signal_->isFlushing_ = true;
-        signal_->inCond_.notify_all();
-        signal_->outCond_.notify_all();
-        {
-            std::scoped_lock lock(signal_->inMutex_, signal_->outMutex_);
-            FlushInQueue();
-            FlushOutQueue();
-        }
-    }
-
-    ~FlushGuard()
-    {
-        if (signal_ == nullptr) {
-            return;
-        }
-        signal_->isFlushing_ = false;
-        signal_->inCond_.notify_all();
-        signal_->outCond_.notify_all();
-    }
-
-private:
-    void FlushInQueue()
-    {
-        std::queue<uint32_t> tempIndex;
-        swap(tempIndex, signal_->inQueue_);
-        std::queue<OH_AVMemory *> tempInMemory;
-        swap(tempInMemory, signal_->inMemoryQueue_);
-        std::queue<OH_AVBuffer *> tempInBuffer;
-        swap(tempInBuffer, signal_->inBufferQueue_);
-    }
-
-    void FlushOutQueue()
-    {
-        std::queue<uint32_t> tempIndex;
-        swap(tempIndex, signal_->outQueue_);
-        std::queue<OH_AVCodecBufferAttr> tempOutAttr;
-        swap(tempOutAttr, signal_->outAttrQueue_);
-        std::queue<OH_AVMemory *> tempOutMemory;
-        swap(tempOutMemory, signal_->outMemoryQueue_);
-        std::queue<OH_AVBuffer *> tempOutBuffer;
-        swap(tempOutBuffer, signal_->outBufferQueue_);
-    }
-    std::shared_ptr<T> signal_ = nullptr;
+    int32_t width_ = 0;
+    int32_t height_ = 0;
+    int32_t widthStride_ = 0;
+    int32_t heightStride_ = 0;
+    int32_t cropTop_ = 0;
+    int32_t cropBottom_ = 0;
+    int32_t cropLeft_ = 0;
+    int32_t cropRight_ = 0;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

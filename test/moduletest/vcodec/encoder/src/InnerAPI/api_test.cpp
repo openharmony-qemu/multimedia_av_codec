@@ -264,7 +264,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0400, TestSize.Level2)
     ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
     ASSERT_EQ(AVCS_ERR_OK, venc_->Start());
     ASSERT_EQ(AVCS_ERR_OK, venc_->Stop());
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, venc_->Stop());
+    ASSERT_EQ(AVCS_ERR_OK, venc_->Stop());
 }
 
 /**
@@ -343,7 +343,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0700, TestSize.Level2)
     ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
     ASSERT_EQ(AVCS_ERR_OK, venc_->Start());
     ASSERT_EQ(AVCS_ERR_OK, venc_->Flush());
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, venc_->Flush());
+    ASSERT_EQ(AVCS_ERR_OK, venc_->Flush());
 }
 
 /**

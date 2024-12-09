@@ -34,6 +34,8 @@ protected:
     std::shared_ptr<Downloader> downloader;
 };
 
+constexpr int START_POS = 10;
+
 void DownloaderUnitTest::SetUpTestCase(void)
 {
 }
@@ -54,6 +56,109 @@ void DownloaderUnitTest::TearDown(void)
 
 HWTEST_F(DownloaderUnitTest, Downloader_Construct_nullptr, TestSize.Level1)
 {
+    EXPECT_NE(downloader->client_, nullptr);
+}
+
+HWTEST_F(DownloaderUnitTest, StopBufferring_1, TestSize.Level1)
+{
+    downloader->StopBufferring();
+    EXPECT_NE(downloader->client_, nullptr);
+}
+
+HWTEST_F(DownloaderUnitTest, StopBufferring_2, TestSize.Level1)
+{
+    downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isAppBackground_ = true;
+    downloader->StopBufferring();
+    EXPECT_NE(downloader->client_, nullptr);
+}
+
+HWTEST_F(DownloaderUnitTest, StopBufferring_3, TestSize.Level1)
+{
+    downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isAppBackground_ = false;
+    downloader->StopBufferring();
+    EXPECT_NE(downloader->client_, nullptr);
+}
+
+HWTEST_F(DownloaderUnitTest, StopBufferring_4, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isAppBackground_ = false;
+    downloader->StopBufferring();
+    EXPECT_NE(downloader->client_, nullptr);
+}
+
+HWTEST_F(DownloaderUnitTest, StopBufferring_5, TestSize.Level1)
+{
+    downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->currentRequest_->startPos_ = START_POS;
+    downloader->isAppBackground_ = false;
+    downloader->shouldStartNextRequest = false;
+    downloader->StopBufferring();
+    EXPECT_NE(downloader->client_, nullptr);
+}
+
+HWTEST_F(DownloaderUnitTest, StopBufferring_6, TestSize.Level1)
+{
+    downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isAppBackground_ = false;
+    downloader->shouldStartNextRequest = false;
+    downloader->StopBufferring();
     EXPECT_NE(downloader->client_, nullptr);
 }
 

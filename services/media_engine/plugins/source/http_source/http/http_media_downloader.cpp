@@ -303,15 +303,13 @@ bool HttpMediaDownloader::HandleBuffering()
     }
     if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: "
-        PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32,
-            GetCurrentBufferSize(), waterLineAbove_, isBuffering_.load(), canWrite_.load());
+        PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32 " readOffset: "
+        PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, GetCurrentBufferSize(), waterLineAbove_, isBuffering_.load(),
+        canWrite_.load(), readOffset_, writeOffset_);
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
         bufferingTime_ = 0;
     }
-    MEDIA_LOG_D("HTTP HandleBuffering bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: " PUBLIC_LOG_ZU
-        ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32,
-        GetCurrentBufferSize(), waterLineAbove_, isBuffering_.load(), canWrite_.load());
     return isBuffering_.load();
 }
 
@@ -1392,13 +1390,15 @@ void HttpMediaDownloader::ClearCacheBuffer()
     if (cacheMediaBuffer_ == nullptr || downloader_ == nullptr) {
         return;
     }
+    MEDIA_LOG_I("HTTP ClearCacheBuffer begin.");
     isNeedDropData_ = true;
     downloader_->Pause();
     cacheMediaBuffer_->Clear();
     isNeedDropData_ = false;
+    downloader_->Seek(readOffset_);
     downloader_->Resume();
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
-    MEDIA_LOG_I("HTTP ClearCacheBuffer, freeSize: " PUBLIC_LOG_U64, freeSize);
+    MEDIA_LOG_I("HTTP ClearCacheBuffer end, freeSize: " PUBLIC_LOG_U64, freeSize);
 }
 
 void HttpMediaDownloader::SetIsReportedErrorCode()

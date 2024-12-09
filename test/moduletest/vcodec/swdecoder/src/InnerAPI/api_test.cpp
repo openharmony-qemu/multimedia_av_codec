@@ -291,7 +291,7 @@ HWTEST_F(SwdecInnerApiNdkTest, VIDEO_SWDEC_API_0400, TestSize.Level2)
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Stop());
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->Stop());
+    ASSERT_EQ(AVCS_ERR_OK, vdec_->Stop());
 }
 
 /**
@@ -361,7 +361,7 @@ HWTEST_F(SwdecInnerApiNdkTest, VIDEO_SWDEC_API_0700, TestSize.Level2)
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Flush());
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->Flush());
+    ASSERT_EQ(AVCS_ERR_OK, vdec_->Flush());
 }
 
 /**

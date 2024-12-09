@@ -208,8 +208,7 @@ private:
     Status HandleSelectTrack(int32_t trackId);
     Status HandleDashSelectTrack(int32_t trackId);
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
-    void HandleStopPlugin(int32_t trackId);
-    void HandleStartPlugin(int32_t trackId);
+    Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
     bool IsSubtitleMime(const std::string& mime);
     void HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
     void InitPtsInfo();
