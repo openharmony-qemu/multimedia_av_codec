@@ -74,6 +74,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "muxer/data_sink_fd.cpp",
     "muxer/data_sink_file.cpp",
     "muxer/media_muxer.cpp",
+    "sink/audio_sampleformat.cpp",
     "sink/audio_sink.cpp",
     "sink/calc_max_amplitude.cpp",
     "sink/media_sync_manager.cpp",
