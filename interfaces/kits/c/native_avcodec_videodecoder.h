@@ -24,6 +24,17 @@
  * @version 1.0
  */
 
+/**
+ * @file native_avcodec_videodecoder.h
+ *
+ * @brief Declare the Native API used for video decoding.
+ *
+ * @kit AVCodecKit
+ * @library libnative_media_vdec.so
+ * @syscap SystemCapability.Multimedia.Media.VideoDecoder
+ * @since 9
+ */
+
 #ifndef NATIVE_AVCODEC_VIDEODECODER_H
 #define NATIVE_AVCODEC_VIDEODECODER_H
 

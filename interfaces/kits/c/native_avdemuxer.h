@@ -23,6 +23,17 @@
  * @since 10
  */
 
+/**
+ * @file native_avdemuxer.h
+ *
+ * @brief Declare the interface for parsing audio and video media data.
+ *
+ * @kit AVCodecKit
+ * @library libnative_media_avdemuxer.so
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @since 10
+ */
+
 #ifndef NATIVE_AVDEMUXER_H
 #define NATIVE_AVDEMUXER_H
 

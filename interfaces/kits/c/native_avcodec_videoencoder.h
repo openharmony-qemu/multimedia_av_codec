@@ -17,9 +17,20 @@
  * @addtogroup VideoEncoder
  * @{
  *
- * @brief The VideoEncoder module provide interfaces for video encoding
+ * @brief The VideoEncoder module provide interfaces for video encoding.
  *
  * @syscap SystemCapability.Multimedia.VideoEncoder
+ * @since 9
+ */
+
+/**
+ * @file native_avcodec_videoencoder.h
+ *
+ * @brief Declare the interface used for video encoding.
+ *
+ * @kit AVCodecKit
+ * @library libnative_media_venc.so
+ * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @since 9
  */
 
