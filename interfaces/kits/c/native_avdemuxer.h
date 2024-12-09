@@ -18,7 +18,7 @@
  * @{
  *
  * @brief The AVDemuxer module provide an interface for extracting samples from media file streams.
- * 
+ *
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @since 10
  */

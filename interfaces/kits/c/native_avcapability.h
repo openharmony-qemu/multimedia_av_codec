@@ -18,7 +18,7 @@
  * @{
  *
  * @brief The AVCapability module provide functions for querying encoding and decoding capabilities.
- * 
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */
