@@ -50,12 +50,16 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-const uint32_t MAX_VALUE_LEN = 256;
 const uint32_t DOUBLE_BYTES = 2;
 const uint32_t KEY_PREFIX_LEN = 20;
 const uint32_t VALUE_PREFIX_LEN = 8;
 const uint32_t VALID_LOCATION_LEN = 2;
 const int32_t VIDEO_ROTATION_360 = 360;
+
+const unsigned char MASK_80 = 0x80;
+const unsigned char MASK_C0 = 0xC0;
+const int32_t MIN_BYTES = 2;
+const int32_t MAX_BYTES = 6;
 
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
@@ -159,24 +163,82 @@ std::string SwitchCase(const std::string& str)
     return res;
 }
 
-int ConvertGBK2UTF8(char* input, const size_t inputLen, char* output, const size_t outputLen)
+bool IsUTF8Char(unsigned char chr, int32_t &nBytes)
 {
-    MEDIA_LOG_D("Convert GBK to UTF-8, inputLen=" PUBLIC_LOG_ZU, inputLen);
-    int resultLen = -1;
-    size_t inputTempLen = inputLen;
-    size_t outputTempLen = outputLen;
-    iconv_t cd = iconv_open("UTF-8", "GB2312");
-    if (cd != reinterpret_cast<iconv_t>(-1)) {
-        size_t ret = iconv(cd, &input, &inputTempLen, &output, &outputTempLen);
-        if (ret != static_cast<size_t>(-1))  {
-            resultLen = static_cast<int>(outputLen - outputTempLen);
-        } else {
-            MEDIA_LOG_D("Convert failed");
+    if (nBytes == 0) {
+        if ((chr & MASK_80) == 0) {
+            return true;
         }
-        iconv_close(cd);
+        while ((chr & MASK_80) == MASK_80) {
+            chr <<= 1;
+            nBytes++;
+        }
+
+        if (nBytes < MIN_BYTES || nBytes > MAX_BYTES) {
+            return false;
+        }
+        nBytes--;
+    } else {
+        if ((chr & MASK_C0) != MASK_80) {
+            return false;
+        }
+        nBytes--;
     }
-    MEDIA_LOG_D("Convert GBK to UTF-8, resultLen=" PUBLIC_LOG_D32, resultLen);
-    return resultLen;
+    return true;
+}
+
+bool IsUTF8(const std::string &data)
+{
+    int32_t nBytes = 0;
+    for (size_t i = 0; i < data.size(); ++i) {
+        if (!IsUTF8Char(static_cast<char>(data[i]), nBytes)) {
+            MEDIA_LOG_D("Detect char not in uft8");
+            return false;
+        }
+    }
+    return true;
+}
+
+std::string ConvertGBKToUTF8(const std::string &strGbk)
+{
+    if (strGbk.length() == 0) {
+        return "";
+    }
+
+    const std::string fromCharset = "gb18030";
+    const std::string toCharset = "utf-8";
+    iconv_t cd = iconv_open(toCharset.c_str(), fromCharset.c_str());
+    if (cd == reinterpret_cast<iconv_t>(-1)) {
+        MEDIA_LOG_D("Call iconv_open failed");
+        return "";
+    }
+    size_t inLen = strGbk.length();
+    size_t outLen = inLen * 4; // max for chinese character
+    char* inBuf = const_cast<char*>(strGbk.c_str());
+    if (inBuf == nullptr) {
+        MEDIA_LOG_D("Get in buffer failed");
+        iconv_close(cd);
+        return "";
+    }
+    char* outBuf = new char[outLen];
+    if (outBuf == nullptr) {
+        MEDIA_LOG_D("Get out buffer failed");
+        iconv_close(cd);
+        return "";
+    }
+    char* outBufBack = outBuf;
+    if (iconv(cd, &inBuf, &inLen, &outBuf, &outLen) == static_cast<size_t>(-1)) {
+        MEDIA_LOG_D("Call iconv failed");
+        delete[] outBufBack;
+        outBufBack = nullptr;
+        iconv_close(cd);
+        return "";
+    }
+    std::string strOut(outBufBack, outBuf - outBufBack);
+    delete[] outBufBack;
+    outBufBack = nullptr;
+    iconv_close(cd);
+    return strOut;
 }
 
 bool IsGBK(const char* data)
@@ -369,7 +431,7 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
     std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
     std::sregex_iterator end;
     // at least contain latitude and longitude
-    if (std::distance(numbers, end) < VALID_LOCATION_LEN) {
+    if (static_cast<uint32_t>(std::distance(numbers, end)) < VALID_LOCATION_LEN) {
         MEDIA_LOG_D("Info format error");
         return;
     }
@@ -801,21 +863,13 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         return;
     }
     format.SetData(key, std::string(valPtr->value));
-    if (IsGBK(valPtr->value)) {
-        int inputLen = strlen(valPtr->value);
-        char* utf8Result = new char[MAX_VALUE_LEN + 1];
-        utf8Result[MAX_VALUE_LEN] = '\0';
-        int resultLen = ConvertGBK2UTF8(valPtr->value, inputLen, utf8Result, MAX_VALUE_LEN);
-        if (resultLen >= 0) { // In some case, utf8Result will contains extra characters, extract the valid parts
-            char *subStr = new char[resultLen + 1];
-            int ret = memcpy_s(subStr, resultLen, utf8Result, resultLen);
-            if (ret == EOK) {
-                subStr[resultLen] = '\0';
-                format.SetData(key, std::string(subStr));
-            }
-            delete[] subStr;
+    if (!IsUTF8(valPtr->value) && IsGBK(valPtr->value)) {
+        std::string resultStr = ConvertGBKToUTF8(std::string(valPtr->value));
+        if (resultStr.length() > 0) {
+            format.SetData(key, resultStr);
+        } else {
+            MEDIA_LOG_D("Convert utf8 failed");
         }
-        delete[] utf8Result;
     }
 }
 } // namespace Ffmpeg
