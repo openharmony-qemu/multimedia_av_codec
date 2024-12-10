@@ -152,7 +152,7 @@ void VideoSink::SetSeekFlag()
     seekFlag_ = true;
 }
 
-void VideoSink::SetLastPts(int64_t lastPts, int renderDelay)
+void VideoSink::SetLastPts(int64_t lastPts, int64_t renderDelay)
 {
     lastPts_ = lastPts;
     auto syncCenter = syncCenter_.lock();
