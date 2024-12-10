@@ -117,15 +117,6 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_GET_STREAM_INFO, TestSize.Level1)
     EXPECT_EQ(status, Status::OK);
 }
 
-HWTEST_F(DashMpdDownloaderUnitTest, TEST_IS_BITRATE_SAME, TestSize.Level1)
-{
-    int usingStreamId = g_mpdDownloader->GetInUseVideoStreamId();
-    std::shared_ptr<DashStreamDescription> stream = g_mpdDownloader->GetStreamByStreamId(usingStreamId);
-    
-    EXPECT_NE(stream, nullptr);
-    EXPECT_TRUE(g_mpdDownloader->IsBitrateSame(stream->bandwidth_));
-}
-
 HWTEST_F(DashMpdDownloaderUnitTest, TEST_GET_BREAK_POINT_SEGMENT, TestSize.Level1)
 {
     int usingStreamId = g_mpdDownloader->GetInUseVideoStreamId();

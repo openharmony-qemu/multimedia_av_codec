@@ -43,6 +43,7 @@ DashMediaDownloader::~DashMediaDownloader()
     if (mpdDownloader_ != nullptr) {
         mpdDownloader_->Close(false);
     }
+
     segmentDownloaders_.clear();
 }
 
@@ -243,13 +244,10 @@ std::vector<uint32_t> DashMediaDownloader::GetBitRates()
 bool DashMediaDownloader::SelectBitRate(uint32_t bitrate)
 {
     std::lock_guard<std::mutex> sidxLock(parseSidxMutex_);
+    MEDIA_LOG_I("Dash SelectBitRate bitrate:" PUBLIC_LOG_U32, bitrate);
     {
         isAutoSelectBitrate_ = false;
-        if (mpdDownloader_->IsBitrateSame(bitrate)) {
-            MEDIA_LOG_W("Dash SelectBitRate is same bitrate.");
-            return true;
-        }
-        
+
         std::lock_guard<std::mutex> lock(switchMutex_);
         // The bit rate is being switched. Wait until the sidx download and parsing are complete.
         if (bitrateParam_.waitSidxFinish_ ||
