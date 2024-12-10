@@ -13,6 +13,27 @@
  * limitations under the License.
  */
 
+/**
+ * @addtogroup AVSource
+ * @{
+ *
+ * @brief The AVSource module provides functions for constructing media resource object functionality.
+ *
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @since 10
+ */
+
+/**
+ * @file native_avsource.h
+ *
+ * @brief Declare the interface for parsing audio and video media data.
+ *
+ * @kit AVCodecKit
+ * @library libnative_media_avsource.so
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @since 10
+ */
+
 #ifndef NATIVE_AVSOURCE_H
 #define NATIVE_AVSOURCE_H
 
@@ -112,3 +133,4 @@ OH_AVFormat *OH_AVSource_GetTrackFormat(OH_AVSource *source, uint32_t trackIndex
 #endif
 
 #endif // NATIVE_AVSOURCE_H
+/** @} */
