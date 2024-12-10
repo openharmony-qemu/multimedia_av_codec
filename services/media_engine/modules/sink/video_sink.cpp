@@ -80,16 +80,16 @@ void VideoSink::UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
     needUpdateTimeAnchor_ = false;
 }
 
-void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t renderDelay)
 {
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN(syncCenter != nullptr && buffer != nullptr);
     syncCenter->SetLastVideoBufferPts(buffer->pts_ - firstPts_);
-    int64_t nowCt = syncCenter->GetClockTimeNow();
+    int64_t ct4Buffer = syncCenter->GetClockTimeNow() + (renderDelay > 0 ? renderDelay : 0);
     uint64_t latency = 0;
     (void)GetLatency(latency);
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_};
-    syncCenter->UpdateTimeAnchor(nowCt, latency, iMediaTime, this);
+    syncCenter->UpdateTimeAnchor(ct4Buffer, latency, iMediaTime, this);
 }
 
 int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
@@ -152,12 +152,12 @@ void VideoSink::SetSeekFlag()
     seekFlag_ = true;
 }
 
-void VideoSink::SetLastPts(int64_t lastPts)
+void VideoSink::SetLastPts(int64_t lastPts, int renderDelay)
 {
     lastPts_ = lastPts;
     auto syncCenter = syncCenter_.lock();
     if (syncCenter != nullptr) {
-        lastClockTime_ = syncCenter->GetClockTimeNow();
+        lastClockTime_ = syncCenter->GetClockTimeNow() + (renderDelay > 0 ? renderDelay : 0);
     }
 }
 
@@ -197,7 +197,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     } else if (diff < 0 && diff2 < SINK_TIME_US_THRESHOLD && diff < diff3) { // per frame render time reduced by 33ms
         diff = diff3;
     }
-    MEDIA_LOG_D_SHORT("VS ct4Bf:" PUBLIC_LOG_D64 "diff:" PUBLIC_LOG_D64 "nowCt:" PUBLIC_LOG_D64, ct4Buffer, diff,
+    MEDIA_LOG_D_SHORT("VS ct4Bf:" PUBLIC_LOG_D64 " diff:" PUBLIC_LOG_D64 " nowCt:" PUBLIC_LOG_D64, ct4Buffer, diff,
         nowCt);
     if (diff < 0) { // buffer is early, diff < 0 or 0 < diff < 40ms(25Hz) render it
         waitTimeUs = 0 - diff;
