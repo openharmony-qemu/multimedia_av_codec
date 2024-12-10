@@ -675,23 +675,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, CalculateNextRender_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: RenderNextOutput_002
- * @tc.desc: RenderNextOutput
- * @tc.type: FUNC
- */
-HWTEST_F(DecoderSurfaceFilterUnitTest, RenderNextOutput_002, TestSize.Level1)
-{
-    uint32_t index = 0;
-    uint8_t data[100];
-    std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
-    decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
-    decoderSurfaceFilter_->isInSeekContinous_ = true;
-    decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
-    EXPECT_EQ(decoderSurfaceFilter_->seekTimeUs_, 0);
-}
-
-/**
  * @tc.name: DrainOutputBuffer_001
  * @tc.desc: DrainOutputBuffer
  * @tc.type: FUNC
@@ -820,36 +803,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, OnDumpInfo_001, TestSize.Level1)
     decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
     decoderSurfaceFilter_->OnDumpInfo(32);
     EXPECT_EQ(decoderSurfaceFilter_->stopTime_, 0);
-}
-
-/**
- * @tc.name: ReleaseOutputBuffer_001
- * @tc.desc: ReleaseOutputBuffer
- * @tc.type: FUNC
- */
-
-HWTEST_F(DecoderSurfaceFilterUnitTest, ReleaseOutputBuffer_001, TestSize.Level1)
-{
-    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
-    decoderSurfaceFilter_->videoSink_ = std::make_shared<VideoSink>();
-    uint8_t data[100];
-    std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
-    decoderSurfaceFilter_->playRangeEndTime_ = 1;
-    outBuffer->pts_ = 2000;
-    decoderSurfaceFilter_->isRenderStarted_ = true;
-    Status ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    decoderSurfaceFilter_->isRenderStarted_ = false;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, false, outBuffer, 0L);
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    outBuffer->flag_ = true;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    outBuffer->flag_ = false;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    decoderSurfaceFilter_->isInSeekContinous_ = true;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    EXPECT_EQ(ret, Status::OK);
 }
 
 /**
@@ -1037,6 +990,41 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, SetCallingInfo_0400, TestSize.Level1)
     EXPECT_EQ(appPid, decoderSurfaceFilter_->appPid_);
     EXPECT_EQ(bundleName, decoderSurfaceFilter_->bundleName_);
     EXPECT_EQ(instanceId, decoderSurfaceFilter_->instanceId_);
+}
+
+
+/**
+ * @tc.name: RenderNextOutput_001
+ * @tc.desc: RenderNextOutput
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest, RenderNextOutput_001, TestSize.Level1)
+{
+    uint32_t index = 0;
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    decoderSurfaceFilter_->enableRenderAtTime_ = false;
+    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
+    decoderSurfaceFilter_->isInSeekContinous_ = true;
+    decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
+    EXPECT_EQ(decoderSurfaceFilter_->seekTimeUs_, 0);
+}
+
+/**
+ * @tc.name: RenderNextOutput_002
+ * @tc.desc: RenderNextOutput
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest, RenderNextOutput_002, TestSize.Level1)
+{
+    uint32_t index = 0;
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    decoderSurfaceFilter_->enableRenderAtTime_ = true;
+    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
+    EXPECT_EQ(decoderSurfaceFilter_->renderTimeMaxAdvanceUs_, 80000);
 }
 }  // namespace Pipeline
 }  // namespace Media

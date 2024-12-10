@@ -293,21 +293,22 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetParameter, TestSi
 HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_AcquireNextRenderBuffer, TestSize.Level1)
 {
     uint32_t index = 0u;
+    int64_t renderTime = 1000;
     auto buffer = AVBuffer::CreateAVBuffer();
-    bool acquireRes = decoderSurfaceFilter_->AcquireNextRenderBuffer(true, index, buffer);
+    bool acquireRes = decoderSurfaceFilter_->AcquireNextRenderBuffer(true, index, buffer, renderTime);
     EXPECT_EQ(acquireRes, false);
 
-    acquireRes = decoderSurfaceFilter_->AcquireNextRenderBuffer(false, index, buffer);
+    acquireRes = decoderSurfaceFilter_->AcquireNextRenderBuffer(false, index, buffer, renderTime);
     EXPECT_EQ(acquireRes, false);
 
     decoderSurfaceFilter_->isFirstFrameAfterResume_ = false;
     decoderSurfaceFilter_->outputBuffers_.push_back(std::make_pair(0, buffer));
-    acquireRes = decoderSurfaceFilter_->AcquireNextRenderBuffer(false, index, buffer);
+    acquireRes = decoderSurfaceFilter_->AcquireNextRenderBuffer(false, index, buffer, renderTime);
     EXPECT_EQ(acquireRes, true);
 
     decoderSurfaceFilter_->isFirstFrameAfterResume_ = true;
     decoderSurfaceFilter_->outputBuffers_.push_back(std::make_pair(0, buffer));
-    acquireRes = decoderSurfaceFilter_->AcquireNextRenderBuffer(false, index, buffer);
+    acquireRes = decoderSurfaceFilter_->AcquireNextRenderBuffer(false, index, buffer, renderTime);
     EXPECT_EQ(acquireRes, true);
 
     auto buffer1 = AVBuffer::CreateAVBuffer();
@@ -315,11 +316,56 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_AcquireNextRenderBuf
     decoderSurfaceFilter_->isFirstFrameAfterResume_ = false;
     decoderSurfaceFilter_->outputBuffers_.push_back(std::make_pair(0, buffer));
     decoderSurfaceFilter_->outputBuffers_.push_back(std::make_pair(1, buffer1));
-    acquireRes = decoderSurfaceFilter_->AcquireNextRenderBuffer(false, index, buffer);
+    acquireRes = decoderSurfaceFilter_->AcquireNextRenderBuffer(false, index, buffer, renderTime);
     EXPECT_EQ(acquireRes, true);
 
     auto stopRes = decoderSurfaceFilter_->Stop();
     ASSERT_EQ(stopRes, Status::OK);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_ReleaseOutputBuffer, TestSize.Level1)
+{
+    std::shared_ptr<VideoDecoderAdapter> videoDecoderAdapter = std::make_shared<VideoDecoderAdapter>();
+    decoderSurfaceFilter_->videoDecoder_ = videoDecoderAdapter;
+    std::shared_ptr<VideoSink> videoSink = std::make_shared<VideoSink>();
+    decoderSurfaceFilter_->videoSink_ = videoSink;
+    auto buffer = AVBuffer::CreateAVBuffer();
+
+    decoderSurfaceFilter_->isRenderStarted_ = false;
+    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    buffer->flag_ = 0;
+    decoderSurfaceFilter_->playRangeEndTime_ = 1;
+    buffer->pts_ = 2000;
+    Status ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, buffer, 0L);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->isRenderStarted_, true);
+
+    decoderSurfaceFilter_->isRenderStarted_ = true;
+    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    buffer->flag_ = 1;
+    decoderSurfaceFilter_->playRangeEndTime_ = -1;
+    decoderSurfaceFilter_->lastRenderTimeNs_ = HST_TIME_NONE;
+    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, buffer, 1000L);
+    EXPECT_EQ(decoderSurfaceFilter_->seekTimeUs_, 0);
+    EXPECT_EQ(ret, Status::OK);
+
+    decoderSurfaceFilter_->lastRenderTimeNs_ = 900L;
+    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, buffer, 1000L);
+    EXPECT_EQ(ret, Status::OK);
+
+    buffer->flag_ = 0;
+    buffer->pts_ = -1;
+    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, buffer, 1000L);
+    EXPECT_EQ(ret, Status::OK);
+
+    buffer->pts_ = 2000;
+    decoderSurfaceFilter_->lastRenderTimeNs_ = 900L;
+    decoderSurfaceFilter_->enableRenderAtTimeDfx_ = true;
+    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, buffer, 1000L);
+    EXPECT_EQ(ret, Status::OK);
+
+    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, buffer, 0L);
+    EXPECT_EQ(ret, Status::OK);
 }
 }  // namespace Pipeline
 }  // namespace Media
