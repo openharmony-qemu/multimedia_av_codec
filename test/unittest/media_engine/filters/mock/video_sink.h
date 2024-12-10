@@ -38,7 +38,8 @@ public:
     MOCK_METHOD(void, SetSeekFlag, (), ());
     MOCK_METHOD(void, SetLastPts, (int64_t lastPts, int64_t renderDelay), ());
     MOCK_METHOD(Status, SetParameter, (const std::shared_ptr<Meta> &meta), ());
-    MOCK_METHOD(void, UpdateTimeAnchorActually, (const std::shared_ptr<OHOS::Media::AVBuffer> &buffer, int64_t renderDelay), ());
+    MOCK_METHOD(void, UpdateTimeAnchorActually,
+        (const std::shared_ptr<OHOS::Media::AVBuffer> &buffer, int64_t renderDelay), ());
     MOCK_METHOD(Status, GetLagInfo, (int32_t & lagTimes, int32_t &maxLagDuration, int32_t &avgLagDuration), ());
 };
 }  // namespace Pipeline
