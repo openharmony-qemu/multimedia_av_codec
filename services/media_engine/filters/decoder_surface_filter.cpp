@@ -997,7 +997,6 @@ Status DecoderSurfaceFilter::StopSeekContinous()
     return Status::OK;
 }
 
-
 int64_t DecoderSurfaceFilter::GetSystimeTimeNs()
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
