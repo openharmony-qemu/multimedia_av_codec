@@ -426,13 +426,9 @@ int64_t MediaSyncManager::GetClockTimeNow()
     return GetSystemClock();
 }
 
-bool MediaSyncManager::IsMediaOrClockTimeValid(int64_t time)
+bool MediaSyncManager::IsPlayRateValid(float playRate)
 {
-    if (std::fabs(playRate_ - 0) < 1e-9) {
-        return false;
-    }
-    if (time == HST_TIME_NONE || currentAnchorClockTime_ == HST_TIME_NONE
-        || currentAnchorMediaTime_ == HST_TIME_NONE || delayTime_ == HST_TIME_NONE) {
+    if (std::fabs(playRate_) < 1e-9) {
         return false;
     }
     return true;
@@ -440,7 +436,9 @@ bool MediaSyncManager::IsMediaOrClockTimeValid(int64_t time)
 
 int64_t MediaSyncManager::GetMediaTime(int64_t clockTime)
 {
-    if (!IsMediaOrClockTimeValid(clockTime)) {
+    bool isMediaTimeValid = (clockTime != HST_TIME_NONE && currentAnchorClockTime_ != HST_TIME_NONE
+        && currentAnchorMediaTime_ != HST_TIME_NONE && delayTime_ != HST_TIME_NONE);
+    if (!IsPlayRateValid(playRate_) || !isMediaTimeValid) {
         return HST_TIME_NONE;
     }
     return currentAnchorMediaTime_ + (clockTime - currentAnchorClockTime_ + delayTime_)
@@ -458,7 +456,10 @@ int64_t MediaSyncManager::GetAnchoredClockTime(int64_t mediaTime)
         MEDIA_LOG_D_SHORT("media time " PUBLIC_LOG_D64 " exceed max media time " PUBLIC_LOG_D64,
                 mediaTime, maxRangeEndOfMediaTime_);
     }
-    if (!IsMediaOrClockTimeValid(mediaTime)) {
+
+    bool isAnchoredClockTimeValid = (mediaTime != HST_TIME_NONE && currentAnchorClockTime_ != HST_TIME_NONE
+        && currentAnchorMediaTime_ != HST_TIME_NONE);
+    if (!IsPlayRateValid(playRate_) || !isAnchoredClockTimeValid) {
         return HST_TIME_NONE;
     }
     return currentAnchorClockTime_ + (mediaTime - currentAnchorMediaTime_) / static_cast<double>(playRate_);

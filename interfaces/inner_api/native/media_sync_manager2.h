@@ -129,7 +129,7 @@ private:
 
     void ReportLagEvent(int64_t lagDurationMs);
     bool IsSupplierValid(IMediaSynchronizer* supplier);
-    bool IsMediaOrClockTimeValid(int64_t time);
+    bool IsPlayRateValid(float playRate);
 
     // GetMediaTimeNow executes the following functions in sequence, 
     // Check and set media time, 
