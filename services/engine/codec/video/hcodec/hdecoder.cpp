@@ -349,7 +349,7 @@ int32_t HDecoder::SaveScaleMode(const Format &format, bool set)
         HLOGW("user set invalid scale mode %d", scaleType);
         return AVCS_ERR_INVALID_VAL;
     }
-    HLOGI("user set ScalingType = %d", scaleType);
+    HLOGD("user set ScalingType = %d", scaleType);
     scaleMode_ = scaleMode;
     if (set) {
         return SetScaleMode();
@@ -384,6 +384,9 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
             }
         }
     }
+    if (!currSurface_.surface_ || !isDynamic_) {
+        return AVCS_ERR_OK;
+    }
     auto inCnt = std::count_if(inputBufferPool_.begin(), inputBufferPool_.end(), [](const BufferInfo& info) {
         return info.owner == BufferOwner::OWNED_BY_OMX;
     });
@@ -392,7 +395,21 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
         SubmitDynamicBufferIfPossible();
         inCnt--;
     }
+    DynamicModeSubmitIfEos();
     return AVCS_ERR_OK;
+}
+
+void HDecoder::DynamicModeSubmitIfEos()
+{
+    if (!currSurface_.surface_ || !isDynamic_) {
+        return;
+    }
+    auto nullSlot = std::find_if(outputBufferPool_.begin(), outputBufferPool_.end(), [](const BufferInfo& info) {
+        return info.surfaceBuffer == nullptr;
+    });
+    if (nullSlot != outputBufferPool_.end() && inputPortEos_ && !outputPortEos_) {
+        SendAsyncMsg(MsgWhat::SUBMIT_DYNAMIC_IF_EOS, nullptr);
+    }
 }
 
 bool HDecoder::UseHandleOnOutputPort(bool isDynamic)
@@ -466,7 +483,7 @@ void HDecoder::SetCallerToBuffer(int fd)
         HLOGW("set pid %s to fd %d failed", pid.c_str(), fd);
         return;
     }
-    HLOGI("set pid %s to fd %d succ", pid.c_str(), fd);
+    HLOGD("set pid %s to fd %d succ", pid.c_str(), fd);
 }
 
 void HDecoder::UpdateFormatFromSurfaceBuffer()
@@ -478,7 +495,6 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
     if (surfaceBuffer == nullptr) {
         return;
     }
-    HLOGI(">>");
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, surfaceBuffer->GetWidth());
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, surfaceBuffer->GetHeight());
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, surfaceBuffer->GetWidth());
@@ -494,7 +510,7 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
     OH_NativeBuffer_Planes *planes = nullptr;
     GSError err = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
     if (err != GSERROR_OK || planes == nullptr) {
-        HLOGW("get plane info failed, GSError=%d", err);
+        HLOGI("can not get plane info, ignore");
         return;
     }
     for (uint32_t i = 0; i < planes->planeCount; i++) {
@@ -509,7 +525,7 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
 
 int32_t HDecoder::SubmitAllBuffersOwnedByUs()
 {
-    HLOGI(">>");
+    HLOGD(">>");
     if (isBufferCirculating_) {
         HLOGI("buffer is already circulating, no need to do again");
         return AVCS_ERR_OK;
@@ -670,14 +686,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
 void HDecoder::CancelBufferToSurface(BufferInfo& info)
 {
     if (currSurface_.surface_ && info.surfaceBuffer) {
-        GSError err = currSurface_.surface_->CancelBuffer(info.surfaceBuffer);
-        if (err != GSERROR_OK) {
-            HLOGW("surface(%" PRIu64 "), CancelBuffer(seq=%u) failed, GSError=%d",
-                  currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), err);
-        } else {
-            HLOGI("surface(%" PRIu64 "), CancelBuffer(seq=%u) succ",
-                  currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum());
-        }
+        currSurface_.surface_->CancelBuffer(info.surfaceBuffer);
     }
     ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE); // change owner even if cancel failed
 }
@@ -787,7 +796,6 @@ void HDecoder::SubmitDynamicBufferIfPossible()
 
 int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
 {
-    SCOPED_TRACE_WITH_ID(info.bufferId);
     info.lastFlushTime = GetNowUs();
     if (std::abs(lastFlushRate_ - codecRate_) > std::numeric_limits<float>::epsilon()) {
         sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
@@ -807,6 +815,8 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
             cfg.desiredPresentTimestamp);
         info.avBuffer->meta_->Remove(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP);
     }
+    SCOPED_TRACE_FMT("id: %u, pts: %" PRId64 ", desiredPts: %" PRId64,
+        info.bufferId, cfg.timestamp, cfg.desiredPresentTimestamp);
     GSError ret = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, cfg);
     if (ret != GSERROR_OK) {
         HLOGW("surface(%" PRIu64 "), FlushBuffer(seq=%u) failed, GSError=%d",
@@ -819,7 +829,7 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
 
 void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 {
-    SCOPED_TRACE_WITH_ID(bufferId);
+    SCOPED_TRACE_FMT("id: %u", bufferId);
     BufferInfo *info = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (info == nullptr) {
         HLOGE("unknown buffer id %u", bufferId);
@@ -850,7 +860,11 @@ void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 void HDecoder::OnReleaseOutputBuffer(const BufferInfo &info)
 {
     if (currSurface_.surface_) {
-        HLOGI("outBufId = %u, discard by user, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
+        if (debugMode_) {
+            HLOGI("outBufId = %u, discard by user, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
+        } else {
+            outputDiscardCnt_++;
+        }
     }
 }
 
@@ -863,7 +877,7 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     }
     uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
-    SCOPED_TRACE_WITH_ID(bufferId);
+    SCOPED_TRACE_FMT("id: %u", bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);
     if (!idx.has_value()) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);

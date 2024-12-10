@@ -486,6 +486,12 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             }
             codec_->OnQueueInputBuffer(info, inputMode_);
             break;
+        case MsgWhat::SUBMIT_DYNAMIC_IF_EOS:
+            if (codec_->inputPortEos_ && !codec_->outputPortEos_) {
+                codec_->SubmitDynamicBufferIfPossible();
+                codec_->DynamicModeSubmitIfEos();
+            }
+            break;
         case MsgWhat::NOTIFY_EOS:
             codec_->OnSignalEndOfInputStream(info);
             break;
@@ -501,10 +507,11 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
             return;
         }
-        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER:
             codec_->OnPrintAllBufferOwner(info);
             return;
-        }
+        case MsgWhat::CHECK_IF_STUCK:
+            return;
         default:
             BaseState::OnMsgReceived(info);
             break;
@@ -565,7 +572,7 @@ void HCodec::RunningState::OnShutDown(const MsgInfo &info)
 void HCodec::RunningState::OnFlush(const MsgInfo &info)
 {
     codec_->isBufferCirculating_ = false;
-    SLOGI("begin to ask omx to flush");
+    SLOGD("begin to ask omx to flush");
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_FLUSH, OMX_ALL, {});
     if (ret == HDF_SUCCESS) {
         codec_->ReplyToSyncMsgLater(info);
@@ -632,6 +639,8 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
             codec_->OnPrintAllBufferOwner(info);
             return;
         }
+        case MsgWhat::GET_BUFFER_FROM_SURFACE:
+            return;
         default: {
             BaseState::OnMsgReceived(info);
         }
@@ -690,6 +699,12 @@ void HCodec::OutputPortChangedState::OnCodecEvent(CodecEventType event, uint32_t
                 HandleOutputPortEnabled();
             }
             return;
+        }
+        case CODEC_EVENT_PORT_SETTINGS_CHANGED: {
+            if (data2 == OMX_IndexColorAspects) {
+                codec_->UpdateColorAspects();
+            }
+            break;
         }
         default: {
             BaseState::OnCodecEvent(event, data1, data2);
@@ -754,7 +769,7 @@ void HCodec::FlushingState::OnStateEntered()
     flushCompleteFlag_[OMX_DirOutput] = false;
     codec_->ReclaimBuffer(OMX_DirInput, BufferOwner::OWNED_BY_USER);
     codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_USER);
-    SLOGI("all buffer owned by user are now owned by us");
+    SLOGD("all buffer owned by user are now owned by us");
 
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);

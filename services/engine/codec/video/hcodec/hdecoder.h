@@ -69,6 +69,7 @@ private:
     bool RequestAndFindBelongTo(
         sptr<SurfaceBuffer>& buffer, sptr<SyncFence>& fence, std::vector<BufferInfo>::iterator& iter);
     __attribute__((no_sanitize("cfi"))) void SubmitDynamicBufferIfPossible() override;
+    void DynamicModeSubmitIfEos() override;
 
     // switch surface
     int32_t OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface);
