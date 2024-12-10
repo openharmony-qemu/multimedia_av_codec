@@ -17,7 +17,7 @@
  * @addtogroup VideoDecoder
  * @{
  *
- * @brief The VideoDecoder module provides interfaces for video decoding
+ * @brief The VideoDecoder module provides interfaces for video decoding.
  *
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
  * @since 9
