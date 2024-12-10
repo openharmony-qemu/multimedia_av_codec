@@ -110,6 +110,7 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer, uint32_t trackIndex,
 
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(sample->memory_->GetBase() + info.offset,
         sample->memory_->GetSize(), info.size);
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_NO_MEMORY, "create buffer failed");
     buffer->pts_ = info.pts;
     buffer->flag_ = info.flags;
 
