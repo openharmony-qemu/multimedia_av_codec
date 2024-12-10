@@ -85,6 +85,15 @@ public:
      */
     int64_t GetAnchoredClockTime(int64_t mediaTime) override;
 
+    int64_t GetSeekTime() override;
+    int64_t GetMediaStartPts() override;
+
+    void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
+    void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
+    void SetMediaStartPts(int64_t startPts) override;
+    void SetLastAudioBufferDuration(int64_t durationUs) override;
+    void SetLastVideoBufferPts(int64_t bufferPts) override;
+
     /**
      * after IMediaSynchronizer has received the first frame, it should call this function to report the receiving of
      * the first frame.
@@ -93,45 +102,50 @@ public:
      */
     void ReportPrerolled(IMediaSynchronizer* supplier) override;
 
+    /**
+     * after IMediaSynchronizer has received the eos frame, it should call this function to report the receiving of
+     * the eos frame.
+     *
+     * @param supplier which report eos frame
+     */
     void ReportEos(IMediaSynchronizer* supplier) override;
 
-    void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
-
-    void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
-
-    void SetStartingTimeMediaUs(int64_t startingTimeMediaUs);
-
-    int64_t GetSeekTime() override;
     void ResetTimeAnchorNoLock();
-    void SetMediaStartPts(int64_t startPts) override;
     void ResetMediaStartPts() override;
-    int64_t GetMediaStartPts() override;
-    void SetLastAudioBufferDuration(int64_t durationUs) override;
-    void SetLastVideoBufferPts(int64_t bufferPts) override;
 private:
     enum class State {
         RESUMED,
         PAUSED,
     };
     static int64_t GetSystemClock();
-    bool CanGetMediaOrClockTime(int64_t time);
-    int64_t SimpleGetMediaTime(int64_t clockTime);
-    int64_t SimpleGetAnchoredClockTime(int64_t clockTime);
+    int64_t GetMediaTime(int64_t clockTime);
 
-    bool IsSupplierValid(IMediaSynchronizer* supplier);
-
+    void UpdatePlayRate(float playRate);
+    void UpdateFirstPtsAfterSeek(int64_t mediaTime);
     void SimpleUpdateTimeAnchor(int64_t clockTime, int64_t mediaTime);
-    void SimpleUpdatePlayRate(float playRate);
+
     void SetMediaTimeStartEnd(int32_t trackId, int32_t index, int64_t val);
     void SetAllSyncShouldWaitNoLock();
-    void UpdateFirstPtsAfterSeek(int64_t mediaTime);
-    void ReportLagEvent(int64_t lagDurationMs);
 
+    void ReportLagEvent(int64_t lagDurationMs);
+    bool IsSupplierValid(IMediaSynchronizer* supplier);
+    bool IsMediaOrClockTimeValid(int64_t time);
+
+    // GetMediaTimeNow executes the following functions in sequence, 
+    // Check and set media time, 
+    // return true to indicate that subsequent functions should continue to execute, 
+    // false to indicate that the current mediaTime should be returned directly
     bool CheckSeekingMediaTime(int64_t& mediaTime);
     bool CheckPausedMediaTime(int64_t& mediaTime);
     bool CheckNoneMediaTime(int64_t& mediaTime);
     bool CheckFirstMediaTimeAfterSeek(int64_t& mediaTime);
+
+    // Get the maximum media progress
     int64_t GetMaxMediaProgress();
+
+    // Check the media time range, 
+    // ensure that media time does not regress in non-seek state, 
+    // and does not exceed the maximum media progress
     int64_t BoundMediaProgress(int64_t newMediaProgressTime);
 
     OHOS::Media::Mutex clockMutex_ {};

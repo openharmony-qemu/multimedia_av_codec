@@ -77,11 +77,11 @@ Status MediaSyncManager::SetPlaybackRate(float rate)
     OHOS::Media::AutoLock lock(clockMutex_);
     MEDIA_LOG_I_SHORT("set play rate " PUBLIC_LOG_F, rate);
     int64_t currentClockTime = GetSystemClock();
-    int64_t currentMediaTime = SimpleGetMediaTime(currentClockTime);
+    int64_t currentMediaTime = GetMediaTime(currentClockTime);
     if (currentMediaTime != HST_TIME_NONE) {
         SimpleUpdateTimeAnchor(currentClockTime, currentMediaTime);
     }
-    SimpleUpdatePlayRate(rate);
+    UpdatePlayRate(rate);
     return Status::OK;
 }
 
@@ -197,7 +197,7 @@ Status MediaSyncManager::Pause()
         return Status::OK;
     }
     pausedClockTime_ = GetSystemClock();
-    pausedMediaTime_ = SimpleGetMediaTime(pausedClockTime_);
+    pausedMediaTime_ = GetMediaTime(pausedClockTime_);
     MEDIA_LOG_I("pause with clockTime " PUBLIC_LOG_D64 ", mediaTime " PUBLIC_LOG_D64,
         pausedClockTime_, pausedMediaTime_);
     clockState_ = State::PAUSED;
@@ -267,7 +267,7 @@ void MediaSyncManager::ResetTimeAnchorNoLock()
     SimpleUpdateTimeAnchor(HST_TIME_NONE, HST_TIME_NONE);
 }
 
-void MediaSyncManager::SimpleUpdatePlayRate(float playRate)
+void MediaSyncManager::UpdatePlayRate(float playRate)
 {
     playRate_ = playRate;
 }
@@ -356,7 +356,7 @@ bool MediaSyncManager::CheckSeekingMediaTime(int64_t& mediaTime)
 
 bool MediaSyncManager::CheckPausedMediaTime(int64_t& mediaTime)
 {
-    mediaTime = (clockState_ == State::PAUSED) ? pausedMediaTime_ : SimpleGetMediaTime(GetSystemClock());
+    mediaTime = (clockState_ == State::PAUSED) ? pausedMediaTime_ : GetMediaTime(GetSystemClock());
     return true;
 }
 
@@ -426,7 +426,7 @@ int64_t MediaSyncManager::GetClockTimeNow()
     return GetSystemClock();
 }
 
-bool MediaSyncManager::CanGetMediaOrClockTime(int64_t time)
+bool MediaSyncManager::IsMediaOrClockTimeValid(int64_t time)
 {
     if (std::fabs(playRate_ - 0) < 1e-9) {
         return false;
@@ -438,21 +438,13 @@ bool MediaSyncManager::CanGetMediaOrClockTime(int64_t time)
     return true;
 }
 
-int64_t MediaSyncManager::SimpleGetMediaTime(int64_t clockTime)
+int64_t MediaSyncManager::GetMediaTime(int64_t clockTime)
 {
-    if (!CanGetMediaOrClockTime(clockTime)) {
+    if (!IsMediaOrClockTimeValid(clockTime)) {
         return HST_TIME_NONE;
     }
     return currentAnchorMediaTime_ + (clockTime - currentAnchorClockTime_ + delayTime_)
         * static_cast<double>(playRate_) - delayTime_;
-}
-
-int64_t MediaSyncManager::SimpleGetAnchoredClockTime(int64_t mediaTime)
-{
-    if (!CanGetMediaOrClockTime(mediaTime)) {
-        return HST_TIME_NONE;
-    }
-    return currentAnchorClockTime_ + (mediaTime - currentAnchorMediaTime_) / static_cast<double>(playRate_);
 }
 
 int64_t MediaSyncManager::GetAnchoredClockTime(int64_t mediaTime)
@@ -466,7 +458,10 @@ int64_t MediaSyncManager::GetAnchoredClockTime(int64_t mediaTime)
         MEDIA_LOG_D_SHORT("media time " PUBLIC_LOG_D64 " exceed max media time " PUBLIC_LOG_D64,
                 mediaTime, maxRangeEndOfMediaTime_);
     }
-    return SimpleGetAnchoredClockTime(mediaTime);
+    if (!IsMediaOrClockTimeValid(mediaTime)) {
+        return HST_TIME_NONE;
+    }
+    return currentAnchorClockTime_ + (mediaTime - currentAnchorMediaTime_) / static_cast<double>(playRate_);
 }
 
 void MediaSyncManager::ReportPrerolled(IMediaSynchronizer* supplier)

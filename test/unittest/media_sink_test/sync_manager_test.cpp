@@ -412,70 +412,37 @@ HWTEST_F(TestSyncManager, UpdateFirstPtsAfterSeek_ShouldNotUpdateFirstPts_WhenMe
     EXPECT_EQ(syncManager_->firstMediaTimeAfterSeek_, firstMediaTimeAfterSeek);
 }
 
-HWTEST_F(TestSyncManager, SimpleGetMediaTime_001, TestSize.Level0)
+HWTEST_F(TestSyncManager, GetMediaTime_001, TestSize.Level0)
 {
     syncManager_->currentAnchorClockTime_ = 100;
     syncManager_->delayTime_ = 50;
     syncManager_->currentAnchorMediaTime_ = 200;
     syncManager_->playRate_ = 0;
     int64_t clockTime = 150;
-    int64_t result = syncManager_->SimpleGetMediaTime(clockTime);
+    int64_t result = syncManager_->GetMediaTime(clockTime);
     ASSERT_EQ(result, HST_TIME_NONE);
 }
 
-HWTEST_F(TestSyncManager, SimpleGetMediaTime_002, TestSize.Level0)
+HWTEST_F(TestSyncManager, GetMediaTime_002, TestSize.Level0)
 {
     syncManager_->currentAnchorClockTime_ = HST_TIME_NONE;
     syncManager_->delayTime_ = 50;
     syncManager_->currentAnchorMediaTime_ = 200;
     syncManager_->playRate_ = 1.0;
     int64_t clockTime = 150;
-    int64_t result = syncManager_->SimpleGetMediaTime(clockTime);
+    int64_t result = syncManager_->GetMediaTime(clockTime);
     ASSERT_EQ(result, HST_TIME_NONE);
 }
 
-HWTEST_F(TestSyncManager, SimpleGetMediaTime_003, TestSize.Level0)
+HWTEST_F(TestSyncManager, GetMediaTime_003, TestSize.Level0)
 {
     syncManager_->currentAnchorClockTime_ = 100;
     syncManager_->delayTime_ = 50;
     syncManager_->currentAnchorMediaTime_ = 200;
     syncManager_->playRate_ = 1.0;
     int64_t clockTime = 150;
-    int64_t result = syncManager_->SimpleGetMediaTime(clockTime);
+    int64_t result = syncManager_->GetMediaTime(clockTime);
     ASSERT_EQ(result, 250);
-}
-
-HWTEST_F(TestSyncManager, SimpleGetAnchoredClockTime_001, TestSize.Level0)
-{
-    syncManager_->currentAnchorClockTime_ = 100;
-    syncManager_->delayTime_ = 50;
-    syncManager_->currentAnchorMediaTime_ = 200;
-    syncManager_->playRate_ = 0;
-    int64_t clockTime = 150;
-    int64_t result = syncManager_->SimpleGetAnchoredClockTime(clockTime);
-    ASSERT_EQ(result, HST_TIME_NONE);
-}
-
-HWTEST_F(TestSyncManager, SimpleGetAnchoredClockTime_002, TestSize.Level0)
-{
-    syncManager_->currentAnchorClockTime_ = HST_TIME_NONE;
-    syncManager_->delayTime_ = 50;
-    syncManager_->currentAnchorMediaTime_ = 200;
-    syncManager_->playRate_ = 1.0;
-    int64_t clockTime = 150;
-    int64_t result = syncManager_->SimpleGetAnchoredClockTime(clockTime);
-    ASSERT_EQ(result, HST_TIME_NONE);
-}
-
-HWTEST_F(TestSyncManager, SimpleGetAnchoredClockTime_003, TestSize.Level0)
-{
-    syncManager_->currentAnchorClockTime_ = 100;
-    syncManager_->delayTime_ = 50;
-    syncManager_->currentAnchorMediaTime_ = 200;
-    syncManager_->playRate_ = 1.0;
-    int64_t mediaTime = 150;
-    int64_t result = syncManager_->SimpleGetAnchoredClockTime(mediaTime);
-    ASSERT_EQ(result, 50);
 }
 
 HWTEST_F(TestSyncManager, GetAnchoredClockTime_001, TestSize.Level0)
