@@ -17,7 +17,7 @@
  * @addtogroup CodecBase
  * @{
  *
- * @brief The CodecBase module provide variables, properties, and functions
+ * @brief The CodecBase module provides variables, properties, and functions
  * for audio and video muxer, demuxer, and basic encoding and decoding functions.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase

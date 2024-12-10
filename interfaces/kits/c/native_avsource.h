@@ -17,7 +17,7 @@
  * @addtogroup AVSource
  * @{
  *
- * @brief The AVSource module provide functions for constructing media resource object functionality.
+ * @brief The AVSource module provides functions for constructing media resource object functionality.
  *
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @since 10

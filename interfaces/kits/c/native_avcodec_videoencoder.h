@@ -17,7 +17,7 @@
  * @addtogroup VideoEncoder
  * @{
  *
- * @brief The VideoEncoder module provide interfaces for video encoding.
+ * @brief The VideoEncoder module provides interfaces for video encoding.
  *
  * @syscap SystemCapability.Multimedia.VideoEncoder
  * @since 9
