@@ -1000,7 +1000,7 @@ Status DecoderSurfaceFilter::StopSeekContinous()
 int64_t DecoderSurfaceFilter::GetSystimeTimeNs()
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        std::chrono::steady_clock::now().time_since_epoch()).count();
 }
  
 void DecoderSurfaceFilter::HandleFirstOutput()
