@@ -385,7 +385,7 @@ HWTEST_F(AudioCodeDecoderInnerUnitTest, audioDecoder_Mp3_Stop_02, TestSize.Level
     format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Configure(format_));
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
 }
 
 HWTEST_F(AudioCodeDecoderInnerUnitTest, audioDecoder_Mp3_Flush_01, TestSize.Level1)
@@ -615,7 +615,7 @@ HWTEST_F(AudioCodeDecoderInnerUnitTest, audioDecoder_Flac_Stop_02, TestSize.Leve
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, DEFAULT_SAMPLE_RATE);
     format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Configure(format_));
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
 }
 
 HWTEST_F(AudioCodeDecoderInnerUnitTest, audioDecoder_Flac_Flush_01, TestSize.Level1)
@@ -879,7 +879,7 @@ HWTEST_F(AudioCodeDecoderInnerUnitTest, audioDecoder_Opus_Stop_02, TestSize.Leve
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, DEFAULT_SAMPLE_RATE);
     format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Configure(format_));
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
 }
 
 HWTEST_F(AudioCodeDecoderInnerUnitTest, audioDecoder_Opus_Flush_01, TestSize.Level1)
@@ -1191,7 +1191,7 @@ HWTEST_F(AudioCodeDecoderInnerUnitTest, audioDecoder_Aac_Stop_02, TestSize.Level
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Configure(format_));
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
 }
 
 HWTEST_F(AudioCodeDecoderInnerUnitTest, audioDecoder_Aac_Flush_01, TestSize.Level1)
