@@ -20,21 +20,25 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "hevcswdecoderconfigure_fuzzer"
-
+const int64_t EXPECT_SIZE = 6;
+const size_t WIDTH_SIZE = 1;
+const size_t HEIGHT_SIZE = 2;
+const size_t FRAME_RATE_SIZE = 3;
+const size_t ROTATION_SIZE = 4;
+const size_t PIXELFORMAT_SIZE = 5;
 namespace OHOS {
 bool HevcSwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int32_t)) {
+    if (size < EXPECT_SIZE) {
         return false;
     }
     bool result = false;
-    int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     VDecServerSample *vDecSample = new VDecServerSample();
-    vDecSample->kWidth = data_;
-    vDecSample->kHeight = data_;
-    vDecSample->kFormat = data_;
-    vDecSample->kRotation = data_;
-    vDecSample->kFormatRate = data_;
+    vDecSample->kWidth = data[size - WIDTH_SIZE];
+    vDecSample->kHeight = data[size - HEIGHT_SIZE];
+    vDecSample->kFormat = data[size - PIXELFORMAT_SIZE];
+    vDecSample->kRotation = data[size - ROTATION_SIZE];
+    vDecSample->kFormatRate = data[size - FRAME_RATE_SIZE];
     vDecSample->RunVideoServerDecoder();
     vDecSample->WaitForEos();
 
