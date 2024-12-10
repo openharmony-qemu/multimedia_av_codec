@@ -180,7 +180,7 @@ protected:
     size_t fragmentMaxNum_;
     LruCache<int64_t, FragmentIterator> lruCache_;
 
-    bool isLargeOffsetSpan_ {false};
+    bool isLargeOffsetSpan_ {true};
 };
 
 class CacheMediaBuffer {
