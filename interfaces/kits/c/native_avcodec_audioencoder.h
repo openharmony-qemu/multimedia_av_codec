@@ -13,6 +13,27 @@
  * limitations under the License.
  */
 
+/**
+ * @addtogroup AudioEncoder
+ * @{
+ *
+ * @brief The AudioEncoder module provides functions for audio encoding.
+ *
+ * @syscap SystemCapability.Multimedia.Media.AudioEncoder
+ * @since 9
+ */
+
+/**
+ * @file native_avcodec_audioencoder.h
+ *
+ * @brief Declare the Native API used for audio encoding.
+ *
+ * @kit AVCodecKit
+ * @library libnative_media_aenc.so
+ * @syscap SystemCapability.Multimedia.Media.AudioEncoder
+ * @since 9
+ */
+
 #ifndef NATIVE_AVCODEC_AUDIOENCODER_H
 #define NATIVE_AVCODEC_AUDIOENCODER_H
 
@@ -244,3 +265,4 @@ OH_AVErrCode OH_AudioEncoder_IsValid(OH_AVCodec *codec, bool *isValid);
 }
 #endif
 #endif // NATIVE_AVCODEC_AUDIOENCODER_H
+/** @} */
