@@ -564,7 +564,9 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
         sample->dts_ = dts;
         sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, dts);
     }
-    if (samplePacket->pkts[0]->dts == firstFrame_->dts) {
+    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+        avStream->codecpar->codec_id != AV_CODEC_ID_H264 &&
+        samplePacket->pkts[0]->dts == firstFrame_->dts) {
         if (streamParser_ != nullptr) {
             streamParser_->ResetXPSSendStatus();
         }
