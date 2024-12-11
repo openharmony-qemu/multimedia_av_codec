@@ -22,7 +22,7 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "swdecoderconfigure_fuzzer"
-const int64_t EXPECT_SIZE = 6;
+const size_t EXPECT_SIZE = 6;
 const size_t WIDTH_SIZE = 1;
 const size_t HEIGHT_SIZE = 2;
 const size_t FRAME_RATE_SIZE = 3;
