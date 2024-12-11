@@ -66,6 +66,7 @@ constexpr size_t AUDIO_WATER_LINE_ABOVE = 16 * 1024;
 constexpr uint32_t CLEAR_SAVE_DATA_SIZE = 1 * 1024 * 1024;
 constexpr size_t LARGE_OFFSET_SPAN_THRESHOLD = 10 * 1024 * 1024;
 constexpr int32_t STATE_CHANGE_THRESHOLD = 2;
+constexpr size_t LARGE_VIDEO_THRESHOLD = 18 * 1024 * 1024;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -335,8 +336,8 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
         return false;
     }
     if (!isRingBuffer_ && cacheMediaBuffer_ != nullptr && !isLargeOffsetSpan_ &&
-        cacheMediaBuffer_->IsReadSplit(readOffset_)) {
-        MEDIA_LOG_D("HTTP IsReadSplit, StartBuffering return, readOffset_" PUBLIC_LOG_ZU, readOffset_);
+        cacheMediaBuffer_->IsReadSplit(readOffset_) && isNeedClearHasRead_) {
+        MEDIA_LOG_I("HTTP IsReadSplit, StartBuffering return, readOffset_ " PUBLIC_LOG_ZU, readOffset_);
         wantReadLength = std::min(static_cast<size_t>(wantReadLength), GetCurrentBufferSize());
         return false;
     }
@@ -451,7 +452,7 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
             hasReadSize += size;
         }
     }
-    if (hasReadSize > 0 && isLargeOffsetSpan_) {
+    if (hasReadSize > 0 || (!isLargeOffsetSpan_ && !isNeedClearHasRead_)) {
         canWrite_ = true;
     }
     if (isInterruptNeeded_.load()) {
@@ -471,6 +472,9 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
 void HttpMediaDownloader::HandleDownloadWaterLine()
 {
     if (downloader_ == nullptr || !isFirstFrameArrived_ || isBuffering_ || isLargeOffsetSpan_) {
+        return;
+    }
+    if (!isNeedClearHasRead_) {
         return;
     }
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
@@ -497,7 +501,9 @@ void HttpMediaDownloader::CheckDownloadPos(unsigned int wantReadLength)
 {
     size_t writeOffsetTmp = writeOffset_;
     size_t remain = GetCurrentBufferSize();
-    if ((!isLargeOffsetSpan_ && cacheMediaBuffer_->IsReadSplit(readOffset_)) || (isSeekWait_ && canWrite_)) {
+    if ((!isLargeOffsetSpan_ && cacheMediaBuffer_->IsReadSplit(readOffset_) && isNeedClearHasRead_) ||
+        (isSeekWait_ && canWrite_)) {
+        MEDIA_LOG_I("HTTP CheckDownloadPos return, IsReadSplit.");
         return;
     }
     if (remain < wantReadLength && isServerAcceptRange_ &&
@@ -632,7 +638,7 @@ bool HttpMediaDownloader::SeekRingBuffer(int64_t offset)
 
 void HttpMediaDownloader::UpdateMinAndMaxReadOffset()
 {
-    if (!isLargeOffsetSpan_ && isMinAndMaxOffsetUpdate_) {
+    if ((!isLargeOffsetSpan_ && isMinAndMaxOffsetUpdate_) || !isNeedClearHasRead_) {
         return;
     }
     uint64_t readOffsetTmp = static_cast<uint64_t>(readOffset_);
@@ -723,8 +729,8 @@ bool HttpMediaDownloader::ChangeDownloadPos(bool isSeekHit)
 bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
 {
     MEDIA_LOG_D("HTTP Seek hit.");
-    if (!isLargeOffsetSpan_ && cacheMediaBuffer_->IsReadSplit(offset)) {
-        MEDIA_LOG_D("HTTP Seek hit return, because IsReadSplit");
+    if (!isLargeOffsetSpan_ && cacheMediaBuffer_->IsReadSplit(offset) && isNeedClearHasRead_) {
+        MEDIA_LOG_D("HTTP seek hit return, because IsReadSplit");
         return true;
     }
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
@@ -768,6 +774,9 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
         return HandleSeekHit(offset);
     }
     MEDIA_LOG_I("HTTP Seek miss.");
+
+    size_t fileContenLen = downloadRequest_->GetFileContentLength();
+    isNeedClearHasRead_ = fileContenLen > LARGE_VIDEO_THRESHOLD ? true : false;
 
     uint64_t diff = static_cast<size_t>(offset) > writeOffset_ ?
         static_cast<size_t>(offset) - writeOffset_ : 0;
@@ -1334,6 +1343,9 @@ void HttpMediaDownloader::WaitForBufferingEnd()
 bool HttpMediaDownloader::ClearHasReadBuffer()
 {
     if (!isFirstFrameArrived_ || cacheMediaBuffer_ == nullptr || isLargeOffsetSpan_) {
+        return false;
+    }
+    if (isNeedClearHasRead_) {
         return false;
     }
     uint64_t minOffset = std::min(minReadOffset_, static_cast<uint64_t>(writeOffset_));
