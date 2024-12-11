@@ -597,7 +597,7 @@ bool AudioSink::UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBu
     syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_,
         buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_, this);
     lagDetector_.SetLatency(latency + fixDelay_);
-    MEDIA_LOG_D("AudioSink fixDelay_: " PUBLIC_LOG_D64
+    MEDIA_LOG_I("AudioSink fixDelay_: " PUBLIC_LOG_D64
         " us, latency: " PUBLIC_LOG_D64
         " us, pts-f: " PUBLIC_LOG_D64
         " us, pts: " PUBLIC_LOG_D64
