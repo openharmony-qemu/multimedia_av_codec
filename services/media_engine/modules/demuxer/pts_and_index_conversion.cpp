@@ -378,8 +378,9 @@ bool TimeAndIndexConversion::IsWithinPTSAndIndexConversionMaxFrames(uint32_t tra
     uint32_t frames = 0;
     for (auto sttsEntry : trakInfoVec_[trackIndex].sttsEntries) {
         frames += sttsEntry.sampleCount;
+        FALSE_RETURN_V_MSG_E(frames <= PTS_AND_INDEX_CONVERSION_MAX_FRAMES, false, "Frame count exceeds limit");
     }
-    return frames <= PTS_AND_INDEX_CONVERSION_MAX_FRAMES;
+    return true;
 }
 
 Status TimeAndIndexConversion::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
@@ -387,7 +388,7 @@ Status TimeAndIndexConversion::GetIndexByRelativePresentationTimeUs(const uint32
 {
     FALSE_RETURN_V_MSG_E(trackIndex < trakInfoVec_.size(), Status::ERROR_INVALID_DATA, "Track is out of range");
     bool frameCheck = IsWithinPTSAndIndexConversionMaxFrames(trackIndex);
-    FALSE_RETURN_V_MSG_E(frameCheck, Status::ERROR_INVALID_DATA, "Frame is out of range");
+    FALSE_RETURN_V_MSG_E(frameCheck, Status::ERROR_INVALID_DATA, "Frame count exceeds limit");
     InitPTSandIndexConvert();
     Status ret = GetPresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
@@ -418,7 +419,7 @@ Status TimeAndIndexConversion::GetRelativePresentationTimeUsByIndex(const uint32
 {
     FALSE_RETURN_V_MSG_E(trackIndex < trakInfoVec_.size(), Status::ERROR_INVALID_DATA, "Track is out of range");
     bool frameCheck = IsWithinPTSAndIndexConversionMaxFrames(trackIndex);
-    FALSE_RETURN_V_MSG_E(frameCheck, Status::ERROR_INVALID_DATA, "Frame is out of range");
+    FALSE_RETURN_V_MSG_E(frameCheck, Status::ERROR_INVALID_DATA, "Frame count exceeds limit");
     InitPTSandIndexConvert();
     Status ret = GetPresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
