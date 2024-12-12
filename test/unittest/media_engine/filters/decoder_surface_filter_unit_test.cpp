@@ -342,7 +342,7 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_ReleaseOutputBuffer,
 
     decoderSurfaceFilter_->isRenderStarted_ = true;
     decoderSurfaceFilter_->isInSeekContinous_ = false;
-    buffer->flag_ |= (uint32_t)(Plugins::AVBufferFlag::EOS);
+    buffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     decoderSurfaceFilter_->playRangeEndTime_ = -1;
     decoderSurfaceFilter_->lastRenderTimeNs_ = HST_TIME_NONE;
     ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, buffer, 1000L);
