@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 #include "libavformat/avformat.h"
+#include "libavutil/channel_layout.h"
+#include "libavcodec/av3a.h"
 #include "libavutil/parseutils.h"
 #ifdef __cplusplus
 }
@@ -91,6 +93,9 @@ private:
     static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseOrientationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseTrackType(const AVFormatContext& avFormatContext, Meta& format);
+
+    static void ParseAv3aInfo(const AVStream& avStream, Meta &format);
+    static void ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format);
 };
 extern std::vector<TagType> g_supportSourceFormat;
 } // namespace Ffmpeg
