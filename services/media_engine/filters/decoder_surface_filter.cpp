@@ -148,7 +148,7 @@ DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType t
     filterType_ = type;
     enableRenderAtTime_ = system::GetParameter("debug.media_service.enable_renderattime", "1") == "1";
     renderTimeMaxAdvanceUs_ = static_cast<int64_t>
-        (system::GetParameter("debug.media_service.renderattime_advance", MAX_ADVANCE_US));
+        (system::GetIntParameter("debug.media_service.renderattime_advance", MAX_ADVANCE_US));
     enableRenderAtTimeDfx_ = system::GetParameter("debug.media_service.enable_renderattime_dfx", "0") == "1";
 }
 
