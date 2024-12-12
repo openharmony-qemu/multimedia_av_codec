@@ -38,10 +38,10 @@ namespace Media {
 namespace Pipeline {
 static const int64_t PLAY_RANGE_DEFAULT_VALUE = -1;
 static const int64_t MICROSECONDS_CONVERT_UNIT = 1000; // ms change to us
-static const int64_t NS_PER_US = 1000; // ms change to us
+static const int64_t NS_PER_US = 1000; // us change to ns
 static const uint32_t PREROLL_WAIT_TIME = 1000; // Lock wait for 1000ms.
 static const uint32_t TASK_DELAY_TOLERANCE = 5 * 1000 * 1000; // task delay tolerance 5_000_000ns also 5ms
-static const int64_t MAX_DEBUG_LOG = 10;
+static const int64_t MAX_DEBUG_LOG = 10; 
 static const int32_t MAX_ADVANCE_US = 80000; // max advance us at render time
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
