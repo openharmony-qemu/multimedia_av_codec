@@ -21,6 +21,7 @@
 #include "common/native_mfmagic.h"
 #include "native_avcodec_audiocodec.h"
 #include "avcodec_audio_encoder.h"
+#include <fuzzer/FuzzedDataProvider.h>
 #define FUZZ_PROJECT_NAME "audiodecoderSetParameter_fuzzer"
 namespace OHOS {
 bool AudioAACSetParameterFuzzTest(const uint8_t *data, size_t size)
