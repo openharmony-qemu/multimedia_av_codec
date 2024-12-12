@@ -74,7 +74,7 @@ HWTEST_F(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     auto setParam = videoSink_->SetParameter(meta);
     ASSERT_TRUE(setParam == Status::OK);
     videoSink_->ResetSyncInfo();
-    videoSink_->SetLastPts(0);
+    videoSink_->SetLastPts(0, 0);
     videoSink_->SetFirstPts(HST_TIME_NONE);
     videoSink_->SetSeekFlag();
     uint64_t latency = 0;
@@ -110,7 +110,7 @@ HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
     auto setParam = videoSink_->SetParameter(meta);
     ASSERT_TRUE(setParam == Status::OK);
     videoSink_->ResetSyncInfo();
-    videoSink_->SetLastPts(0);
+    videoSink_->SetLastPts(0, 0);
     videoSink_->SetFirstPts(HST_TIME_NONE);
     videoSink_->SetSeekFlag();
     AVBufferConfig config;
@@ -145,7 +145,7 @@ HWTEST_F(TestVideoSink, do_sync_write_eos, TestSize.Level1)
     auto setParam = videoSink_->SetParameter(meta);
     ASSERT_TRUE(setParam == Status::OK);
     videoSink_->ResetSyncInfo();
-    videoSink_->SetLastPts(0);
+    videoSink_->SetLastPts(0, 0);
     videoSink_->SetFirstPts(HST_TIME_NONE);
     videoSink_->SetSeekFlag();
     AVBufferConfig config;
@@ -271,7 +271,7 @@ HWTEST_F(TestVideoSink, SetLastPts_001, TestSize.Level0)
     videoSink_->SetSyncCenter(syncCenter);
     syncCenter->returnInt64Queue_.push(987654321);
     int64_t lastPts = 123456789;
-    videoSink_->SetLastPts(lastPts);
+    videoSink_->SetLastPts(lastPts, 0);
     EXPECT_EQ(videoSink_->lastPts_, lastPts);
 }
 
@@ -280,7 +280,7 @@ HWTEST_F(TestVideoSink, SetLastPts_002, TestSize.Level0)
     auto syncCenter = std::make_shared<MockMediaSyncCenter>();
     videoSink_->SetSyncCenter(nullptr);
     int64_t lastPts = 123456789;
-    videoSink_->SetLastPts(lastPts);
+    videoSink_->SetLastPts(lastPts, 0);
     EXPECT_EQ(videoSink_->lastPts_, lastPts);
 }
 }  // namespace Test

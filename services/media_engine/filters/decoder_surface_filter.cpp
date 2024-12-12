@@ -38,7 +38,11 @@ namespace Media {
 namespace Pipeline {
 static const int64_t PLAY_RANGE_DEFAULT_VALUE = -1;
 static const int64_t MICROSECONDS_CONVERT_UNIT = 1000; // ms change to us
+static const int64_t NS_PER_US = 1000; // us change to ns
 static const uint32_t PREROLL_WAIT_TIME = 1000; // Lock wait for 1000ms.
+static const uint32_t TASK_DELAY_TOLERANCE = 5 * 1000 * 1000; // task delay tolerance 5_000_000ns also 5ms
+static const int64_t MAX_DEBUG_LOG = 10;
+static const int32_t MAX_ADVANCE_US = 80000; // max advance us at render time
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -142,6 +146,10 @@ DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType t
     videoDecoder_ = std::make_shared<VideoDecoderAdapter>();
     videoSink_ = std::make_shared<VideoSink>();
     filterType_ = type;
+    enableRenderAtTime_ = system::GetParameter("debug.media_service.enable_renderattime", "1") == "1";
+    renderTimeMaxAdvanceUs_ = static_cast<int64_t>
+        (system::GetIntParameter("debug.media_service.renderattime_advance", MAX_ADVANCE_US));
+    enableRenderAtTimeDfx_ = system::GetParameter("debug.media_service.enable_renderattime_dfx", "0") == "1";
 }
 
 DecoderSurfaceFilter::~DecoderSurfaceFilter()
@@ -176,6 +184,7 @@ void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     videoSink_->SetEventReceiver(eventReceiver_);
     FALSE_RETURN(videoDecoder_ != nullptr);
     videoDecoder_->SetEventReceiver(eventReceiver_);
+    eosTask_ = std::make_unique<Task>("OS_EOSv", groupId_, TaskType::VIDEO, TaskPriority::HIGH, false);
 }
 
 Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
@@ -288,6 +297,7 @@ Status DecoderSurfaceFilter::DoPauseDragging()
 {
     MEDIA_LOG_I("DoPauseDragging enter.");
     DoPause();
+    lastRenderTimeNs_ = GetSystimeTimeNs();
     {
         std::unique_lock<std::mutex> lock(mutex_);
         if (!outputBufferMap_.empty()) {
@@ -319,6 +329,7 @@ Status DecoderSurfaceFilter::DoResumeDragging()
     MEDIA_LOG_I("DoResumeDragging enter.");
     refreshTotalPauseTime_ = true;
     isPaused_ = false;
+    lastRenderTimeNs_ = HST_TIME_NONE;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
@@ -334,6 +345,7 @@ Status DecoderSurfaceFilter::DoStop()
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
     isPaused_ = false;
+    lastRenderTimeNs_ = HST_TIME_NONE;
     playRangeStartTime_ = PLAY_RANGE_DEFAULT_VALUE;
     playRangeEndTime_ = PLAY_RANGE_DEFAULT_VALUE;
 
@@ -355,6 +367,7 @@ Status DecoderSurfaceFilter::DoStop()
 Status DecoderSurfaceFilter::DoFlush()
 {
     MEDIA_LOG_I("Flush");
+    lastRenderTimeNs_ = HST_TIME_NONE;
     videoDecoder_->Flush();
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -594,13 +607,14 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame, 
     FALSE_RETURN_V(!dropFrame, Status::OK);
     uint32_t index = idx;
     std::shared_ptr<AVBuffer> outputBuffer = nullptr;
-    bool acquireRes = AcquireNextRenderBuffer(byIdx, index, outputBuffer);
+    bool acquireRes = AcquireNextRenderBuffer(byIdx, index, outputBuffer, renderTime);
     FALSE_RETURN_V(acquireRes, Status::OK);
     ReleaseOutputBuffer(index, recvArg, outputBuffer, renderTime);
     return Status::OK;
 }
 
-bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer)
+bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer,
+                                                   int64_t renderTime)
 {
     std::unique_lock<std::mutex> lock(mutex_);
     if (!byIdx) {
@@ -611,7 +625,9 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
         index = static_cast<uint32_t>(task.first);
         outBuffer = task.second;
         if (isFirstFrameAfterResume_) {
-            videoSink_->UpdateTimeAnchorActually(outBuffer);
+            int64_t curTimeNs = GetSystimeTimeNs();
+            videoSink_->UpdateTimeAnchorActually(outBuffer,
+                (renderTime > 0 && renderTime > curTimeNs) ? renderTime - curTimeNs : 0);
             isFirstFrameAfterResume_ = false;
         }
         if (!outputBuffers_.empty()) {
@@ -629,48 +645,54 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
 Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer,
                                                  int64_t renderTime)
 {
-    if (render && !isRenderStarted_.load() && !isInSeekContinous_) {
-        isRenderStarted_ = true;
-        if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
-        }
+    if (!isRenderStarted_.load() && render && !(outBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS))
+        && !isInSeekContinous_) {
+        HandleFirstOutput();
     }
     if ((playRangeEndTime_ != PLAY_RANGE_DEFAULT_VALUE) &&
         (outBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
         MEDIA_LOG_I("ReleaseBuffer for eos, SetPlayRange start: " PUBLIC_LOG_D64 ", end: " PUBLIC_LOG_D64,
                     playRangeStartTime_, playRangeEndTime_);
-        FALSE_RETURN_V(eventReceiver_ != nullptr, Status::OK);
-        Event event {
-            .srcFilter = "VideoSink",
-            .type = EventType::EVENT_COMPLETE,
-        };
-        eventReceiver_->OnEvent(event);
+        HandleEosOutput(index);
         return Status::OK;
     }
-    if (renderTime > 0L && render) {
-        videoDecoder_->RenderOutputBufferAtTime(index, renderTime);
-    } else if (outBuffer->pts_ < 0) {
+ 
+    if ((outBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)) && !isInSeekContinous_) {
+        ResetSeekInfo();
+        MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
+                ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
+                outBuffer->pts_, outBuffer->flag_);
+        HandleEosOutput(index);
+        return Status::OK;
+    }
+
+    if (outBuffer->pts_ < 0) {
         MEDIA_LOG_W("Avoid render video frame with pts=" PUBLIC_LOG_D64, outBuffer->pts_);
         videoDecoder_->ReleaseOutputBuffer(index, false);
+        return Status::OK;
+    }
+
+    if (renderTime > 0L && render) {
+        int64_t currentSysTimeNs = GetSystimeTimeNs();
+        int64_t lastRenderTimeNs = lastRenderTimeNs_.load();
+        int64_t minRendererTime = std::max(currentSysTimeNs, lastRenderTimeNs == HST_TIME_NONE ? 0 : lastRenderTimeNs);
+        renderTime = renderTime < minRendererTime ? minRendererTime : renderTime;
+        MEDIA_LOG_D("ReleaseOutputBuffer index " PUBLIC_LOG_U32 " renderTime " PUBLIC_LOG_D64 " curTime " PUBLIC_LOG_D64
+            " lastRenderTimeNs " PUBLIC_LOG_D64, index, renderTime, currentSysTimeNs, lastRenderTimeNs);
+        RenderAtTimeDfx(renderTime, currentSysTimeNs, lastRenderTimeNs);
+        videoDecoder_->RenderOutputBufferAtTime(index, renderTime);
+        if (!isInSeekContinous_) {
+            lastRenderTimeNs_ = renderTime;
+        }
     } else {
         MEDIA_LOG_D("ReleaseOutputBuffer index= " PUBLIC_LOG_D32" isRender= " PUBLIC_LOG_U32" pts= " PUBLIC_LOG_D64,
                     index, static_cast<uint32_t>(render), outBuffer->pts_);
         videoDecoder_->ReleaseOutputBuffer(index, render);
     }
     if (!isInSeekContinous_) {
-        videoSink_->SetLastPts(outBuffer->pts_);
-    }
-    if ((outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) && !isInSeekContinous_) {
-        ResetSeekInfo();
-        MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
-                ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
-                outBuffer->pts_, outBuffer->flag_);
-        FALSE_RETURN_V(eventReceiver_ != nullptr, Status::OK);
-        Event event {
-            .srcFilter = "VideoSink",
-            .type = EventType::EVENT_COMPLETE,
-        };
-        eventReceiver_->OnEvent(event);
+        int64_t renderDelay = renderTime > 0L && render ?
+            (renderTime - GetSystimeTimeNs()) / MICROSECONDS_CONVERT_UNIT : 0;
+        videoSink_->SetLastPts(outBuffer->pts_, renderDelay);
     }
     return Status::OK;
 }
@@ -697,8 +719,18 @@ void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBu
         Filter::ProcessOutputBuffer(false, 0);
         return;
     }
+    
     int64_t waitTime = CalculateNextRender(index, outputBuffer);
-    MEDIA_LOG_D("RenderNextOutput pts: " PUBLIC_LOG_D64"  waitTime: " PUBLIC_LOG_D64,
+    if (enableRenderAtTime_) {
+        int64_t renderTimeNs = waitTime * NS_PER_US + GetSystimeTimeNs();
+        MEDIA_LOG_D("RenderNextOutput enter. pts: " PUBLIC_LOG_D64 "  waitTime: " PUBLIC_LOG_D64
+                    "  renderTimeNs: " PUBLIC_LOG_D64, outputBuffer->pts_, waitTime, renderTimeNs);
+        // most renderTimeMaxAdvanceUs_ in advance
+        Filter::ProcessOutputBuffer(waitTime >= 0,
+            waitTime > renderTimeMaxAdvanceUs_ ? waitTime - renderTimeMaxAdvanceUs_ : 0, false, 0, renderTimeNs);
+        return;
+    }
+    MEDIA_LOG_D("RenderNextOutput enter. pts: " PUBLIC_LOG_D64"  waitTime: " PUBLIC_LOG_D64,
         outputBuffer->pts_, waitTime);
     Filter::ProcessOutputBuffer(waitTime >= 0, waitTime);
 }
@@ -711,7 +743,7 @@ void DecoderSurfaceFilter::ConsumeVideoFrame(uint32_t index, bool isRender, int6
 
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
-    if (outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
+    if (outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)) {
         MEDIA_LOG_I("Decoder output EOS");
     }
     std::unique_lock<std::mutex> lock(mutex_);
@@ -756,7 +788,7 @@ void DecoderSurfaceFilter::RenderLoop()
 bool DecoderSurfaceFilter::DrainSeekContinuous(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     FALSE_RETURN_V_NOLOG(isInSeekContinous_, false);
-    bool isEOS = outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS);
+    bool isEOS = outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     FALSE_RETURN_V_NOLOG(!isEOS, false);
     outputBufferMap_.insert(std::make_pair(index, outputBuffer));
     std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback = nullptr;
@@ -783,7 +815,7 @@ bool DecoderSurfaceFilter::DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer
     std::lock_guard<std::mutex> lock(prerollMutex_);
     FALSE_RETURN_V_NOLOG(inPreroll_.load() && !prerollDone_.load(), false);
     outputBuffers_.push_back(make_pair(index, outputBuffer));
-    bool isEOS = outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS);
+    bool isEOS = outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     eosNext_.store(isEOS);
     prerollDone_.store(true);
     MEDIA_LOG_I("receive preroll output, pts: " PUBLIC_LOG_D64 " bufferIdx: " PUBLIC_LOG_D32,
@@ -795,7 +827,7 @@ bool DecoderSurfaceFilter::DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer
 bool DecoderSurfaceFilter::DrainSeekClosest(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     FALSE_RETURN_V_NOLOG(isSeek_, false);
-    bool isEOS = outputBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS);
+    bool isEOS = outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     if (outputBuffer->pts_ < seekTimeUs_ && !isEOS) {
         videoDecoder_->ReleaseOutputBuffer(index, false);
         return true;
@@ -962,6 +994,81 @@ Status DecoderSurfaceFilter::StopSeekContinous()
 {
     isInSeekContinous_ = false;
     return Status::OK;
+}
+
+int64_t DecoderSurfaceFilter::GetSystimeTimeNs()
+{
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+ 
+void DecoderSurfaceFilter::HandleFirstOutput()
+{
+    isRenderStarted_ = true;
+    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "ReportFirsrFrameEvent without eventReceiver_");
+    eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
+}
+ 
+void DecoderSurfaceFilter::HandleEosOutput(int index)
+{
+    int64_t curTimeNs = GetSystimeTimeNs();
+    int64_t lastRenderTimeNs = lastRenderTimeNs_.load();
+    if (lastRenderTimeNs == HST_TIME_NONE || curTimeNs >= lastRenderTimeNs || !eosTask_) {
+        MEDIA_LOG_I("HandleEosOutput sync");
+        videoDecoder_->ReleaseOutputBuffer(index, false);
+        ReportEosEvent();
+        return;
+    }
+    std::weak_ptr<DecoderSurfaceFilter> weakPtr(shared_from_this());
+    eosTask_->SubmitJobOnce([index, weakPtr] {
+        MEDIA_LOG_I("HandleEosOutput async");
+        auto strongPtr = weakPtr.lock();
+        FALSE_RETURN(strongPtr != nullptr);
+        int64_t lastRenderTimeNs = strongPtr->lastRenderTimeNs_.load();
+        if (lastRenderTimeNs == HST_TIME_NONE ||
+            lastRenderTimeNs - strongPtr->GetSystimeTimeNs() > TASK_DELAY_TOLERANCE) { // flush before release EOS
+            return;
+        }
+        if (strongPtr->videoDecoder_) {
+            strongPtr->videoDecoder_->ReleaseOutputBuffer(index, false);
+        }
+        strongPtr->ReportEosEvent();
+        }, (lastRenderTimeNs - curTimeNs) / MICROSECONDS_CONVERT_UNIT, false);
+}
+ 
+void DecoderSurfaceFilter::ReportEosEvent()
+{
+    MEDIA_LOG_I("ReportEOSEvent");
+    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "ReportEOSEvent without eventReceiver_");
+    Event event {
+        .srcFilter = "VideoSink",
+        .type = EventType::EVENT_COMPLETE,
+    };
+    eventReceiver_->OnEvent(event);
+}
+ 
+void DecoderSurfaceFilter::RenderAtTimeDfx(int64_t renderTime, int64_t currentTime, int64_t lastRenderTimeNs)
+{
+    FALSE_RETURN_NOLOG(enableRenderAtTimeDfx_);
+    renderTimeQueue_.push_back(renderTime);
+ 
+    auto firstValidIt = std::lower_bound(renderTimeQueue_.begin(), renderTimeQueue_.end(), currentTime);
+    renderTimeQueue_.erase(renderTimeQueue_.begin(), firstValidIt);
+    MEDIA_LOG_D("RenderTimeQueue size = %{public}zu", renderTimeQueue_.size());
+ 
+    int32_t count = 0;
+    for (auto it = renderTimeQueue_.begin(); it != renderTimeQueue_.end(); ++it) {
+        if (count < MAX_DEBUG_LOG) {
+            logMessage += std::to_string(*it);
+            logMessage += ", ";
+            ++count;
+        }
+    }
+
+    if (!logMessage.empty()) {
+        MEDIA_LOG_D("buffer renderTime is %{public}s", logMessage.c_str());
+        logMessage.clear();
+    }
 }
 } // namespace Pipeline
 } // namespace MEDIA
