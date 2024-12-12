@@ -86,7 +86,10 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
 
   defines = []
 
-  defines += [ "OHOS_EXPAND_MP4_INFO" ]
+  defines += [
+    "OHOS_EXPAND_MP4_INFO",
+    "OHOS_AV3A_DEMUXER",
+  ]
 
   if (build_variant != "user") {
     defines += [ "BUILD_ENG_VERSION" ]
