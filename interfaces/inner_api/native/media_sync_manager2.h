@@ -17,8 +17,6 @@
 #define HISTREAMER_PIPELINE_CORE_PIPELINE_CLOCK_H
 #include <condition_variable>
 #include <memory>
-#include <string>
-#include <tuple>
 #include <vector>
 #include "sink/i_media_sync_center.h"
 #include "osal/task/mutex.h"
@@ -36,98 +34,61 @@ class MediaSyncManager : public IMediaSyncCenter, public std::enable_shared_from
 public:
     MediaSyncManager() = default;
     virtual ~MediaSyncManager();
-    // interfaces called by hiplayer hirecoder etc.
-    Status SetPlaybackRate(float rate) override;
-    float GetPlaybackRate() override;
-    void WaitAllPrerolled(bool prerolled = true);
-    Status Stop();
-    Status Resume();
-    Status Pause();
-    Status Seek(int64_t mediaTime, bool isClosest = false);
-    Status Reset() override;
-    bool InSeeking();
-    void SetEventReceiver(std::weak_ptr<EventReceiver> eventReceiver);
-    std::condition_variable seekCond_;
 
-    // interfaces from IMediaSyncCenter
     void AddSynchronizer(IMediaSynchronizer* syncer) override;
-
     void RemoveSynchronizer(IMediaSynchronizer* syncer) override;
-    /**
-     * anchor a media time(pts) with real clock time.
-     *
-     * @param clockTime based on HST_TIME_BASE
-     * @param mediaTime media time based on HST_TIME_BASE
-     * @param maxMediaTime duration of the resource
-     * @param supplier which report this time anchor
-     * @retval current frame Whether rendering is required
-     */
+
+    // after supplier has received the first frame, it should call this function to report the receiving of
+    // the first frame.
+    void ReportPrerolled(IMediaSynchronizer* supplier) override;
+
+    // after supplier has received the eos frame, it should call this function to report the receiving of
+    // the eos frame.
+    void ReportEos(IMediaSynchronizer* supplier) override;
+
+    // anchor a media time(pts) with real clock time.
     bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, IMediaTime iMediaTime,
         IMediaSynchronizer* supplier) override;
 
-    /**
-     * get media time currently
-     * @return media time now
-     */
     int64_t GetMediaTimeNow() override;
-
-    /***
-     * get clock time now
-     * @return return clock time based on HST_TIME_BASE
-     */
     int64_t GetClockTimeNow() override;
-
-    /**
-     * Get clock time anchored with pts
-     *
-     * @param mediaTime target pts
-     * @return clock time anchored with pts
-     */
     int64_t GetAnchoredClockTime(int64_t mediaTime) override;
-
     int64_t GetSeekTime() override;
     int64_t GetMediaStartPts() override;
+    float GetPlaybackRate() override;
 
-    void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
     void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
+    void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
     void SetMediaStartPts(int64_t startPts) override;
     void SetLastAudioBufferDuration(int64_t durationUs) override;
     void SetLastVideoBufferPts(int64_t bufferPts) override;
+    Status SetPlaybackRate(float rate) override;
 
-    /**
-     * after IMediaSynchronizer has received the first frame, it should call this function to report the receiving of
-     * the first frame.
-     *
-     * @param supplier which report first frame
-     */
-    void ReportPrerolled(IMediaSynchronizer* supplier) override;
+    Status Reset() override;
+    Status Pause();
+    Status Resume();
+    Status Seek(int64_t mediaTime, bool isClosest = false);
+    Status Stop();
 
-    /**
-     * after IMediaSynchronizer has received the eos frame, it should call this function to report the receiving of
-     * the eos frame.
-     *
-     * @param supplier which report eos frame
-     */
-    void ReportEos(IMediaSynchronizer* supplier) override;
-
-    void ResetTimeAnchorNoLock();
-    void ResetMediaStartPts() override;
+    // return isSeeking_
+    bool InSeeking();
+    // notified when leaving seeking，that is, isSeeking_ is set to false
+    std::condition_variable seekCond_;
 private:
     enum class State {
         RESUMED,
         PAUSED,
     };
+
     static int64_t GetSystemClock();
     int64_t GetMediaTime(int64_t clockTime);
 
-    void UpdatePlayRate(float playRate);
-    void UpdateFirstPtsAfterSeek(int64_t mediaTime);
     void SimpleUpdateTimeAnchor(int64_t clockTime, int64_t mediaTime);
+    void ResetTimeAnchorNoLock();
 
-    void SetMediaTimeStartEnd(int32_t trackId, int32_t index, int64_t val);
+    void UpdateFirstPtsAfterSeek(int64_t mediaTime);
     void SetAllSyncShouldWaitNoLock();
 
-    void ReportLagEvent(int64_t lagDurationMs);
     bool IsSupplierValid(IMediaSynchronizer* supplier);
     bool IsPlayRateValid(float playRate);
 
@@ -140,48 +101,43 @@ private:
     bool CheckNoneMediaTime(int64_t& mediaTime);
     bool CheckFirstMediaTimeAfterSeek(int64_t& mediaTime);
 
-    // Get the maximum media progress
-    int64_t GetMaxMediaProgress();
-
     // Check the media time range, 
     // ensure that media time does not regress in non-seek state, 
     // and does not exceed the maximum media progress
     int64_t BoundMediaProgress(int64_t newMediaProgressTime);
+    // get the maximum media progress
+    int64_t GetMaxMediaProgress();
 
-    OHOS::Media::Mutex clockMutex_ {};
-    State clockState_ {State::PAUSED};
     int8_t currentSyncerPriority_ {IMediaSynchronizer::NONE};
     int8_t currentRangeStartPriority_ {IMediaSynchronizer::NONE};
     int8_t currentRangeEndPriority_ {IMediaSynchronizer::NONE};
-    int64_t currentAnchorClockTime_ {HST_TIME_NONE};
-    int64_t currentAnchorMediaTime_ {HST_TIME_NONE};
-    int64_t pausedMediaTime_ {HST_TIME_NONE};
-    int64_t pausedExactMediaTime_ {HST_TIME_NONE};
-    int64_t pausedClockTime_ {HST_TIME_NONE};
-    int64_t firstMediaTimeAfterSeek_ {HST_TIME_NONE};
-    int64_t startingTimeMediaUs_ {HST_TIME_NONE};
 
-    float playRate_ {1.0f};
-    bool alreadySetSyncersShouldWait_ {false};
-    bool allSyncerShouldPrerolled_ {true};
-    bool isSeeking_ {false};
-    int64_t seekingMediaTime_ {HST_TIME_NONE};
-
-    // trackid start end
-    std::vector<std::tuple<int32_t, int64_t, int64_t>> trackMediaTimeRange_ {};
-    int64_t minRangeStartOfMediaTime_ {HST_TIME_NONE};
-    int64_t maxRangeEndOfMediaTime_ {HST_TIME_NONE};
-
-    OHOS::Media::Mutex syncersMutex_ {};
-    std::vector<IMediaSynchronizer*> syncers_;
-    std::vector<IMediaSynchronizer*> prerolledSyncers_;
-    int64_t delayTime_ {HST_TIME_NONE};
     int64_t startPts_ {HST_TIME_NONE};
+    int64_t firstMediaTimeAfterSeek_ {HST_TIME_NONE};
+
     std::atomic<int64_t> lastAudioBufferDuration_ {0};
     std::atomic<int64_t> lastVideoBufferPts_ {0};
     std::atomic<int64_t> lastReportMediaTime_ {HST_TIME_NONE};
     std::atomic<bool> isFrameAfterSeeked_ {false};
-    std::weak_ptr<EventReceiver> eventReceiver_;
+
+    OHOS::Media::Mutex syncersMutex_ {};
+    std::vector<IMediaSynchronizer*> syncers_;
+    std::vector<IMediaSynchronizer*> prerolledSyncers_;
+
+    float playRate_ {1.0f};
+    bool isSeeking_ {false};
+    State clockState_ {State::PAUSED};
+    int64_t delayTime_ {HST_TIME_NONE};
+    bool alreadySetSyncersShouldWait_ {false};
+    int64_t seekingMediaTime_ {HST_TIME_NONE};
+
+    OHOS::Media::Mutex clockMutex_ {};
+    int64_t pausedMediaTime_ {HST_TIME_NONE};
+    int64_t pausedClockTime_ {HST_TIME_NONE};
+    int64_t minRangeStartOfMediaTime_ {HST_TIME_NONE};
+    int64_t maxRangeEndOfMediaTime_ {HST_TIME_NONE};
+    int64_t currentAnchorClockTime_ {HST_TIME_NONE};
+    int64_t currentAnchorMediaTime_ {HST_TIME_NONE};
 };
 } // namespace Pipeline
 } // namespace Media

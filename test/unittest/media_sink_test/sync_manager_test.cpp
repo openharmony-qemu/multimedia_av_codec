@@ -152,30 +152,18 @@ HWTEST_F(TestSyncManager, sync_manager_life_func, TestSize.Level1)
     ASSERT_NE(seekTime, 0);
 }
 
-// Scenario1: Test when allSyncerShouldPrerolled_ is true and alreadySetSyncersShouldWait_ is false.
+// Scenario1: Test when alreadySetSyncersShouldWait_ is false.
 HWTEST_F(TestSyncManager, SetAllSyncShouldWaitNoLock_001, TestSize.Level0)
 {
-    syncManager_->allSyncerShouldPrerolled_ = true;
     syncManager_->alreadySetSyncersShouldWait_ = false;
     syncManager_->SetAllSyncShouldWaitNoLock();
     EXPECT_TRUE(syncManager_->prerolledSyncers_.empty());
     EXPECT_TRUE(syncManager_->alreadySetSyncersShouldWait_);
 }
 
-// Scenario2: Test when allSyncerShouldPrerolled_ is false.
-HWTEST_F(TestSyncManager, SetAllSyncShouldWaitNoLock_002, TestSize.Level0)
-{
-    syncManager_->allSyncerShouldPrerolled_ = false;
-    syncManager_->alreadySetSyncersShouldWait_ = false;
-    syncManager_->SetAllSyncShouldWaitNoLock();
-    EXPECT_TRUE(syncManager_->prerolledSyncers_.empty());
-    EXPECT_FALSE(syncManager_->alreadySetSyncersShouldWait_);
-}
-
 // Scenario3: Test when alreadySetSyncersShouldWait_ is true.
 HWTEST_F(TestSyncManager, SetAllSyncShouldWaitNoLock_003, TestSize.Level0)
 {
-    syncManager_->allSyncerShouldPrerolled_ = true;
     syncManager_->alreadySetSyncersShouldWait_ = true;
     syncManager_->SetAllSyncShouldWaitNoLock();
     EXPECT_TRUE(syncManager_->prerolledSyncers_.empty());
@@ -747,21 +735,10 @@ HWTEST_F(TestSyncManager, ReportPrerolled_001, TestSize.Level0)
     // No further action is expected, as the function should return immediately.
 }
 
-// Scenario2: Test when allSyncerShouldPrerolled_ is false then ReportPrerolled returns immediately.
-HWTEST_F(TestSyncManager, ReportPrerolled_002, TestSize.Level0)
-{
-    IMediaSynchronizer* supplier = new VideoSink();
-    syncManager_->allSyncerShouldPrerolled_ = false;
-    syncManager_->ReportPrerolled(supplier);
-    // No further action is expected, as the function should return immediately.
-    delete supplier;
-}
-
 // Scenario3: Test when supplier is already in prerolledSyncers_ then ReportPrerolled returns immediately.
 HWTEST_F(TestSyncManager, ReportPrerolled_003, TestSize.Level0)
 {
     IMediaSynchronizer* supplier = new VideoSink();
-    syncManager_->allSyncerShouldPrerolled_ = true;
     syncManager_->prerolledSyncers_.emplace_back(supplier);
     syncManager_->ReportPrerolled(supplier);
     // No further action is expected, as the function should return immediately.
@@ -771,7 +748,6 @@ HWTEST_F(TestSyncManager, ReportPrerolled_003, TestSize.Level0)
 HWTEST_F(TestSyncManager, ReportPrerolled_004, TestSize.Level0)
 {
     IMediaSynchronizer* supplier = new VideoSink();
-    syncManager_->allSyncerShouldPrerolled_ = true;
     syncManager_->ReportPrerolled(supplier);
     EXPECT_EQ(syncManager_->prerolledSyncers_.size(), 1);
     EXPECT_EQ(syncManager_->prerolledSyncers_.front(), supplier);
@@ -782,7 +758,6 @@ HWTEST_F(TestSyncManager, ReportPrerolled_004, TestSize.Level0)
 HWTEST_F(TestSyncManager, ReportPrerolled_005, TestSize.Level0)
 {
     IMediaSynchronizer* supplier = new VideoSink();
-    syncManager_->allSyncerShouldPrerolled_ = true;
     syncManager_->syncers_.emplace_back(supplier);
     syncManager_->ReportPrerolled(supplier);
     EXPECT_EQ(syncManager_->prerolledSyncers_.size(), 0);

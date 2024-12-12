@@ -101,8 +101,6 @@ struct IMediaSyncCenter {
 
     virtual void SetMediaStartPts(int64_t startPts) = 0;
 
-    virtual void ResetMediaStartPts() = 0;
-
     virtual int64_t GetMediaStartPts() = 0;
 
     virtual void SetLastAudioBufferDuration(int64_t durationUs) = 0;
