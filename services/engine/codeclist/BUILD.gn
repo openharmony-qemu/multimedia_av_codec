@@ -61,6 +61,7 @@ ohos_static_library("av_codec_engine_codeclist") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "ipc:ipc_single",
     "media_foundation:media_foundation",
   ]
 

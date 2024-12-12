@@ -68,6 +68,7 @@ ohos_unittest("codeclist_capi_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
@@ -106,6 +107,7 @@ ohos_unittest("codeclist_inner_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "ipc:ipc_single",
     "media_foundation:media_foundation",
   ]
 

@@ -35,6 +35,7 @@ ohos_executable("hcodec_demo") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
