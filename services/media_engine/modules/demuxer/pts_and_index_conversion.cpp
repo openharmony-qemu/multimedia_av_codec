@@ -30,6 +30,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "T
 namespace OHOS {
 namespace Media {
 const uint32_t BOX_HEAD_SIZE = 8;
+const uint32_t PTS_AND_INDEX_CONVERSION_MAX_FRAMES = 36000;
 TimeAndIndexConversion::TimeAndIndexConversion()
     : source_(std::make_shared<Source>())
 {
@@ -372,10 +373,22 @@ void TimeAndIndexConversion::InitPTSandIndexConvert()
     relativePTSToIndexTempDiff_ = INT64_MAX;
 }
 
+bool TimeAndIndexConversion::IsWithinPTSAndIndexConversionMaxFrames(uint32_t trackIndex)
+{
+    uint32_t frames = 0;
+    for (auto sttsEntry : trakInfoVec_[trackIndex].sttsEntries) {
+        frames += sttsEntry.sampleCount;
+        FALSE_RETURN_V_MSG_E(frames <= PTS_AND_INDEX_CONVERSION_MAX_FRAMES, false, "Frame count exceeds limit");
+    }
+    return true;
+}
+
 Status TimeAndIndexConversion::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
     const uint64_t relativePresentationTimeUs, uint32_t &index)
 {
     FALSE_RETURN_V_MSG_E(trackIndex < trakInfoVec_.size(), Status::ERROR_INVALID_DATA, "Track is out of range");
+    bool frameCheck = IsWithinPTSAndIndexConversionMaxFrames(trackIndex);
+    FALSE_RETURN_V_MSG_E(frameCheck, Status::ERROR_INVALID_DATA, "Frame count exceeds limit");
     InitPTSandIndexConvert();
     Status ret = GetPresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
@@ -404,10 +417,9 @@ Status TimeAndIndexConversion::GetIndexByRelativePresentationTimeUs(const uint32
 Status TimeAndIndexConversion::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
-    if (trackIndex >= static_cast<uint32_t>(trakInfoVec_.size())) {
-        MEDIA_LOG_E("Track is out of range");
-        return Status::ERROR_INVALID_DATA;
-    }
+    FALSE_RETURN_V_MSG_E(trackIndex < trakInfoVec_.size(), Status::ERROR_INVALID_DATA, "Track is out of range");
+    bool frameCheck = IsWithinPTSAndIndexConversionMaxFrames(trackIndex);
+    FALSE_RETURN_V_MSG_E(frameCheck, Status::ERROR_INVALID_DATA, "Frame count exceeds limit");
     InitPTSandIndexConvert();
     Status ret = GetPresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
