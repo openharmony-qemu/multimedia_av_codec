@@ -103,7 +103,6 @@ public:
     void DeregisterVideoFrameReadyCallback();
     int32_t GetDecRateUpperLimit();
     void ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs = 0L);
-    int64_t GetSystimeTimeNs();
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -128,6 +127,7 @@ private:
     void HandleEosOutput(int index);
     void ReportEosEvent();
     void RenderAtTimeDfx(int64_t renderTimeNs, int64_t currentTimeNs, int64_t lastRenderTimeNs);
+    int64_t GetSystimeTimeNs();
 
     std::string name_;
     FilterType filterType_;
@@ -199,6 +199,7 @@ private:
     bool enableRenderAtTime_ {true};
     bool enableRenderAtTimeDfx_ {false};
     std::list<int64_t> renderTimeQueue_;
+    std::string logMessage;
 };
 } // namespace Pipeline
 } // namespace Media
