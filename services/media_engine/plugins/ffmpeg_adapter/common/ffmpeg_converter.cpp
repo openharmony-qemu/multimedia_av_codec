@@ -68,9 +68,9 @@ const std::vector<std::pair<AudioChannelLayout, int>> g_audioVividChannelLayoutM
     {AudioChannelLayout::CH_5POINT1POINT4, 10},
     {AudioChannelLayout::CH_7POINT1POINT2, 10},
     {AudioChannelLayout::CH_7POINT1POINT4, 12},
-    {AudioChannelLayout::HOA_FIRST, 4},
-    {AudioChannelLayout::HOA_SECOND, 9},
-    {AudioChannelLayout::HOA_THIRD, 16},
+    {AudioChannelLayout::HOA_ORDER1_ACN_SN3D, 4},
+    {AudioChannelLayout::HOA_ORDER2_ACN_SN3D, 9},
+    {AudioChannelLayout::HOA_ORDER3_ACN_SN3D, 16},
 };
 
 const std::vector<std::pair<int, AudioChannelLayout>> g_channelLayoutDefaukltMap = {
