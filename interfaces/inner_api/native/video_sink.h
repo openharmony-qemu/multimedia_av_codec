@@ -38,9 +38,9 @@ public:
     void SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver);
     void SetFirstPts(int64_t pts);
     void SetSeekFlag();
-    void SetLastPts(int64_t lastPts);
+    void SetLastPts(int64_t lastPts, int64_t renderDelay = 0);
     Status SetParameter(const std::shared_ptr<Meta>& meta);
-    void UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+    void UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t renderDelay = 0);
     Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
 private:
     int64_t CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer,

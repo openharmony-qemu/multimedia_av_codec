@@ -215,7 +215,7 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
 
 std::shared_ptr<Plugins::DemuxerPlugin> DemuxerPluginManager::GetPluginByStreamID(int32_t streamID)
 {
-    if (streamID != -1) {
+    if (streamID != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_.find(streamID) != streamInfoMap_.end()) {
         return streamInfoMap_[streamID].plugin;
     }
     return nullptr;
@@ -236,7 +236,7 @@ void DemuxerPluginManager::GetTrackInfoByStreamID(int32_t streamID, int32_t& tra
 
 Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr<BaseStreamDemuxer> streamDemuxer)
 {
-    if (streamID == -1) {
+    if (streamID == INVALID_STREAM_OR_TRACK_ID) {
         MEDIA_LOG_I("LoadDemuxerPlugin streamid invalid");
         return Status::ERROR_UNKNOWN;
     }
@@ -257,17 +257,17 @@ Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr
 Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
     Plugins::MediaInfo& mediaInfo)
 {
-    if (curAudioStreamID_ != -1) {
+    if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID) {
         MEDIA_LOG_I("LoadCurrentAllPlugin audio plugin");
         Status ret = LoadDemuxerPlugin(curAudioStreamID_, streamDemuxer);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin audio plugin failed.");
     }
-    if (curVideoStreamID_ != -1) {
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID) {
         MEDIA_LOG_I("LoadCurrentAllPlugin video plugin");
         Status ret = LoadDemuxerPlugin(curVideoStreamID_, streamDemuxer);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin video plugin failed.");
     }
-    if (curSubTitleStreamID_ != -1) {
+    if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID) {
         MEDIA_LOG_I("LoadCurrentAllPlugin subtitle plugin");
         Status ret = LoadDemuxerPlugin(curSubTitleStreamID_, streamDemuxer);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin subtitle plugin failed.");
@@ -283,7 +283,7 @@ Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemu
 Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
     Plugins::MediaInfo& mediaInfo)
 {
-    if (curSubTitleStreamID_ == -1) {
+    if (curSubTitleStreamID_ == INVALID_STREAM_OR_TRACK_ID) {
         MEDIA_LOG_I("LoadCurrentSubtitleDemuxerPlugin failed, curSubTitleStreamID_ invalid");
         return Status::ERROR_UNKNOWN;
     }
@@ -551,6 +551,49 @@ Status DemuxerPluginManager::StopPlugin(int32_t streamId, std::shared_ptr<BaseSt
     return Status::OK;
 }
 
+Status DemuxerPluginManager::RebootPlugin(int32_t streamId, TrackType trackType,
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer, bool& isRebooted)
+{
+    FALSE_RETURN_V_MSG_E(streamInfoMap_.find(streamId) != streamInfoMap_.end(),
+        Status::ERROR_INVALID_PARAMETER, "streamId is invalid");
+    FALSE_RETURN_V_MSG_E(streamDemuxer != nullptr, Status::ERROR_NULL_POINTER, "streamDemuxer is nullptr");
+    MEDIA_LOG_D("RebootPlugin begin. id = " PUBLIC_LOG_D32, streamId);
+    streamDemuxer->ResetCache(streamId);
+    streamDemuxer->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
+    std::string type = streamDemuxer->SnifferMediaType(streamId);
+    int32_t newStreamId = GetStreamDemuxerNewStreamID(trackType, streamDemuxer);
+    MEDIA_LOG_D("oldstreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32, streamId, newStreamId);
+    if (newStreamId != INVALID_STREAM_OR_TRACK_ID && streamId != newStreamId) {
+        MEDIA_LOG_I("StreamID changed, oldstreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
+            streamId, newStreamId);
+        isRebooted = false;
+        return Status::OK;
+    }
+    if (type.empty()) {
+        MEDIA_LOG_W("RebootPlugin failed, sniff failed");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+
+    // Start to reboot demuxer plugin while streamId is not changed
+    streamInfoMap_[streamId].activated = true;
+    if (streamInfoMap_[streamId].plugin != nullptr) {
+        streamInfoMap_[streamId].plugin.reset();
+        streamInfoMap_[streamId].pluginName = "";
+    }
+    MediaTypeFound(streamDemuxer, type, streamId);
+    FALSE_RETURN_V_MSG_E(streamInfoMap_[streamId].plugin != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "Set data source failed due to create video demuxer plugin failed");
+    Plugins::MediaInfo mediaInfoTemp;
+    Status ret = streamInfoMap_[streamId].plugin->GetMediaInfo(mediaInfoTemp);
+    isRebooted = true;
+    streamDemuxer->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetMediaInfo failed");
+    streamInfoMap_[streamId].mediaInfo = mediaInfoTemp;
+    UpdateMediaInfo(streamId);
+    MEDIA_LOG_D("RebootPlugin success. id = " PUBLIC_LOG_D32, streamId);
+    return Status::OK;
+}
+
 void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
     const std::string& pluginName, int32_t id)
 {
@@ -558,6 +601,24 @@ void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> str
     if (!InitPlugin(streamDemuxer, pluginName, id)) {
         MEDIA_LOG_E("MediaTypeFound init plugin error.");
     }
+}
+
+int32_t DemuxerPluginManager::GetStreamDemuxerNewStreamID(TrackType trackType,
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer)
+{
+    FALSE_RETURN_V_MSG_E(streamDemuxer != nullptr, INVALID_STREAM_OR_TRACK_ID, "streamDemuxer is nullptr");
+    int32_t newStreamID = INVALID_STREAM_OR_TRACK_ID;
+    if (trackType == TRACK_AUDIO) {
+        newStreamID = streamDemuxer->GetNewAudioStreamID();
+    } else if (trackType == TRACK_SUBTITLE) {
+        newStreamID = streamDemuxer->GetNewSubtitleStreamID();
+    } else if (trackType == TRACK_VIDEO) {
+        newStreamID = streamDemuxer->GetNewVideoStreamID();
+    } else {
+        MEDIA_LOG_W("Invalid trackType " PUBLIC_LOG_U32, trackType);
+        return INVALID_STREAM_OR_TRACK_ID;
+    }
+    return newStreamID;
 }
 
 Status DemuxerPluginManager::localSubtitleSeekTo(int64_t seekTime)
@@ -585,19 +646,19 @@ Status DemuxerPluginManager::SingleStreamSeekTo(int64_t seekTime, Plugins::SeekM
 
 Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
-    if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
+    if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
         if (ret != Status::OK) {
             return ret;
         }
     }
-    if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
         if (ret != Status::OK) {
             return ret;
         }
     }
-    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+    if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
         if (ret != Status::OK && mode != Plugins::SeekMode::SEEK_NEXT_SYNC) {
             ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(
@@ -609,7 +670,7 @@ Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, in
 
 Status DemuxerPluginManager::Flush()
 {
-    if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
+    if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->Flush();
         if (needResetEosStatus_) {
             streamInfoMap_[curAudioStreamID_].plugin->ResetEosStatus();
@@ -618,7 +679,7 @@ Status DemuxerPluginManager::Flush()
             return ret;
         }
     }
-    if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->Flush();
         if (needResetEosStatus_) {
             streamInfoMap_[curVideoStreamID_].plugin->ResetEosStatus();
@@ -627,7 +688,7 @@ Status DemuxerPluginManager::Flush()
             return ret;
         }
     }
-    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+    if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->Flush();
         if (needResetEosStatus_) {
             streamInfoMap_[curSubTitleStreamID_].plugin->ResetEosStatus();
@@ -641,19 +702,19 @@ Status DemuxerPluginManager::Flush()
 
 Status DemuxerPluginManager::Reset()
 {
-    if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->Reset();
         if (ret != Status::OK) {
             return ret;
         }
     }
-    if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
+    if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->Reset();
         if (ret != Status::OK) {
             return ret;
         }
     }
-    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+    if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->Reset();
         if (ret != Status::OK) {
             return ret;
@@ -664,19 +725,19 @@ Status DemuxerPluginManager::Reset()
 
 Status DemuxerPluginManager::Stop()
 {
-    if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->Stop();
         if (ret != Status::OK) {
             return ret;
         }
     }
-    if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
+    if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->Stop();
         if (ret != Status::OK) {
             return ret;
         }
     }
-    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+    if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->Stop();
         if (ret != Status::OK) {
             return ret;
@@ -687,19 +748,19 @@ Status DemuxerPluginManager::Stop()
 
 Status DemuxerPluginManager::Start()
 {
-    if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->Start();
         if (ret != Status::OK) {
             return ret;
         }
     }
-    if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
+    if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->Start();
         if (ret != Status::OK) {
             return ret;
         }
     }
-    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+    if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->Start();
         if (ret != Status::OK) {
             return ret;
@@ -759,7 +820,7 @@ std::shared_ptr<Meta> DemuxerPluginManager::GetUserMeta()
     }
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     FALSE_RETURN_V_MSG_E(meta != nullptr, nullptr, "Create meta failed.");
-    if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin) {
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->GetUserMeta(meta);
         if (ret != Status::OK) {
             MEDIA_LOG_W("No valid user data");
@@ -772,7 +833,7 @@ std::shared_ptr<Meta> DemuxerPluginManager::GetUserMeta()
 
 uint32_t DemuxerPluginManager::GetCurrentBitRate()
 {
-    if (IsDash() && curVideoStreamID_ != -1) {
+    if (IsDash() && curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID) {
         return streamInfoMap_[curVideoStreamID_].bitRate;
     }
     return 0;
@@ -812,7 +873,7 @@ TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
 
 int32_t DemuxerPluginManager::AddExternalSubtitle()
 {
-    if (curSubTitleStreamID_ == -1) {
+    if (curSubTitleStreamID_ == INVALID_STREAM_OR_TRACK_ID) {
         int32_t streamIndex = static_cast<int32_t>(streamInfoMap_.size());
         curSubTitleStreamID_ = streamIndex;
         streamInfoMap_[streamIndex].activated = true;

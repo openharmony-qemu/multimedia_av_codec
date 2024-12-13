@@ -96,11 +96,22 @@ namespace {
 HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0100, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        int32_t ret = vDecSample->Stop();
-        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-        ret = vDecSample->Flush();
+        int32_t ret = vDecSample->Flush();
         ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
         ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_STATE_0101
+ * @tc.name      : create-configure-stop
+ * @tc.desc      : state test
+ */
+HWTEST_F(HevcSwdecStateNdkTest, VIDEO_SWDEC_STATE_0101, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        int32_t ret = vDecSample->Stop();
         ASSERT_EQ(AV_ERR_OK, ret);
     }
 }
@@ -1148,11 +1159,25 @@ HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5400, TestSize.Level2)
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
-        ret = vDecSample->Stop();
-        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
         ret = vDecSample->Flush();
         ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
         ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_STATE_5401
+ * @tc.name      : create-configure-setsurface-stop
+ * @tc.desc      : state test
+ */
+HWTEST_F(HevcSwdecStateNdkTest, VIDEO_HWDEC_STATE_5401, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample->SF_OUTPUT = true;
+        int32_t ret = vDecSample->DecodeSetSurface();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
         ASSERT_EQ(AV_ERR_OK, ret);
     }
 }

@@ -431,6 +431,24 @@ void CapsUnitTest::CheckAudioCaps(const std::shared_ptr<AudioCaps> &audioCaps) c
         CheckAVEncAAC(audioCaps);
     } else if (codecName.compare(AVCodecCodecName::AUDIO_DECODER_VIVID_NAME) == 0) {
         CheckAVDecVivid(audioCaps);
+    } else if (codecName.compare(AVCodecCodecName::AUDIO_ENCODER_VENDOR_AAC_NAME) == 0) {
+        CheckAVEncVendorAAC(audioCaps);
+    } else if (codecName.compare(AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME) == 0) {
+        CheckAVEncFlac(audioCaps);
+    } else if (codecName.compare(AVCodecCodecName::AUDIO_ENCODER_MP3_NAME) == 0) {
+        CheckAVEncMP3(audioCaps);
+    } else if (codecName.compare(AVCodecCodecName::AUDIO_ENCODER_AMRNB_NAME) == 0) {
+        CheckAVEncAmrnb(audioCaps);
+    } else if (codecName.compare(AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME) == 0) {
+        CheckAVDecAmrnb(audioCaps);
+    } else if (codecName.compare(AVCodecCodecName::AUDIO_ENCODER_AMRWB_NAME) == 0) {
+        CheckAVEncAmrwb(audioCaps);
+    } else if (codecName.compare(AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME) == 0) {
+        CheckAVDecAmrwb(audioCaps);
+    } else if (codecName.compare(AVCodecCodecName::AUDIO_ENCODER_OPUS_NAME) == 0) {
+        CheckAVEncOpus(audioCaps);
+    } else if (codecName.compare(AVCodecCodecName::AUDIO_DECODER_OPUS_NAME) == 0) {
+        CheckAVDecOpus(audioCaps);
     }
 }
 
@@ -449,7 +467,27 @@ void CapsUnitTest::CheckAVDecMP3(const std::shared_ptr<AudioCaps> &audioCaps) co
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
-    EXPECT_EQ(12, audioCaps->GetSupportedSampleRates().size()); // 12: supported samplerate count
+    EXPECT_EQ(9, audioCaps->GetSupportedSampleRates().size()); // 9: supported samplerate count
+    EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
+}
+
+void CapsUnitTest::CheckAVEncMP3(const std::shared_ptr<AudioCaps> &audioCaps) const
+{
+    std::shared_ptr<AVCodecInfo> audioCodecCaps = audioCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_AUDIO_ENCODER, audioCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::AUDIO_MPEG, audioCodecCaps->GetMimeType());
+    EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, audioCodecCaps->IsVendor());
+    EXPECT_EQ(8000, audioCaps->GetSupportedBitrate().minVal); // 8000: max bitrate
+    EXPECT_EQ(MAX_AUDIO_BITRATE, audioCaps->GetSupportedBitrate().maxVal);
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
+    EXPECT_EQ(MAX_CHANNEL_COUNT_MP3, audioCaps->GetSupportedChannel().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
+    EXPECT_EQ(9, audioCaps->GetSupportedSampleRates().size()); // 9: supported samplerate count
     EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
 }
@@ -469,7 +507,7 @@ void CapsUnitTest::CheckAVDecAAC(const std::shared_ptr<AudioCaps> &audioCaps) co
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
-    EXPECT_EQ(12, audioCaps->GetSupportedSampleRates().size()); // 12: supported samplerate count
+    EXPECT_EQ(13, audioCaps->GetSupportedSampleRates().size()); // 13: supported samplerate count
     EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
 }
@@ -489,7 +527,7 @@ void CapsUnitTest::CheckAVDecVorbis(const std::shared_ptr<AudioCaps> &audioCaps)
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
-    EXPECT_EQ(12, audioCaps->GetSupportedSampleRates().size()); // 12: supported samplerate count
+    EXPECT_EQ(0, audioCaps->GetSupportedSampleRates().size());
     EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
 }
@@ -503,13 +541,33 @@ void CapsUnitTest::CheckAVDecFlac(const std::shared_ptr<AudioCaps> &audioCaps) c
     EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
     EXPECT_EQ(0, audioCodecCaps->IsVendor());
     EXPECT_EQ(1, audioCaps->GetSupportedBitrate().minVal);
-    EXPECT_EQ(2100000, audioCaps->GetSupportedBitrate().maxVal); // 2100000: max supported bitrate
+    EXPECT_EQ(1536000, audioCaps->GetSupportedBitrate().maxVal); // 1536000: max supported bitrate
     EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
-    EXPECT_EQ(MAX_CHANNEL_COUNT, audioCaps->GetSupportedChannel().maxVal);       // 8: max channal count
+    EXPECT_EQ(MAX_CHANNEL_COUNT, audioCaps->GetSupportedChannel().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
     EXPECT_EQ(13, audioCaps->GetSupportedSampleRates().size()); // 13: supported samplerate count
+    EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
+}
+
+void CapsUnitTest::CheckAVEncFlac(const std::shared_ptr<AudioCaps> &audioCaps) const
+{
+    std::shared_ptr<AVCodecInfo> audioCodecCaps = audioCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_AUDIO_ENCODER, audioCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::AUDIO_FLAC, audioCodecCaps->GetMimeType());
+    EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, audioCodecCaps->IsVendor());
+    EXPECT_EQ(32000, audioCaps->GetSupportedBitrate().minVal); // 32000: min supported bitrate
+    EXPECT_EQ(1536000, audioCaps->GetSupportedBitrate().maxVal); // 1536000: max supported bitrate
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
+    EXPECT_EQ(MAX_CHANNEL_COUNT, audioCaps->GetSupportedChannel().maxVal);
+    EXPECT_EQ(-2, audioCaps->GetSupportedComplexity().minVal); // -2: min complexity
+    EXPECT_EQ(2, audioCaps->GetSupportedComplexity().maxVal); // 2: max complexity
+    EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
+    EXPECT_EQ(9, audioCaps->GetSupportedSampleRates().size()); // 9: supported sample rates count
     EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
 }
@@ -525,11 +583,11 @@ void CapsUnitTest::CheckAVDecOpus(const std::shared_ptr<AudioCaps> &audioCaps) c
     EXPECT_EQ(1, audioCaps->GetSupportedBitrate().minVal);
     EXPECT_EQ(MAX_AUDIO_BITRATE, audioCaps->GetSupportedBitrate().maxVal);
     EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
-    EXPECT_EQ(MAX_CHANNEL_COUNT, audioCaps->GetSupportedChannel().maxVal);
+    EXPECT_EQ(2, audioCaps->GetSupportedChannel().maxVal); // 2: opus support max 2 channels
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
     EXPECT_EQ(1, audioCaps->GetSupportedFormats().size());
-    EXPECT_EQ(1, audioCaps->GetSupportedSampleRates().size());
+    EXPECT_EQ(5, audioCaps->GetSupportedSampleRates().size()); // 5: opus support 5 sample rates
     EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
 }
@@ -557,17 +615,37 @@ void CapsUnitTest::CheckAVEncAAC(const std::shared_ptr<AudioCaps> &audioCaps) co
     EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
     EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
     EXPECT_EQ(0, audioCodecCaps->IsVendor());
-    EXPECT_EQ(8000, audioCaps->GetSupportedBitrate().minVal); // 8000: supported min bitrate
+    EXPECT_EQ(1, audioCaps->GetSupportedBitrate().minVal);
     EXPECT_EQ(MAX_AUDIO_BITRATE_AAC, audioCaps->GetSupportedBitrate().maxVal);
     EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
     EXPECT_EQ(MAX_CHANNEL_COUNT, audioCaps->GetSupportedChannel().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
-    EXPECT_EQ(DEFAULT_SAMPLE_RATE_SIZE, audioCaps->GetSupportedSampleRates().size()); // 11: supported samplerate count
+    EXPECT_EQ(DEFAULT_SAMPLE_RATE_SIZE, audioCaps->GetSupportedSampleRates().size());
     EXPECT_EQ(1, audioCaps->GetSupportedProfiles().size());
     auto profilesVec = audioCaps->GetSupportedProfiles();
     EXPECT_EQ(0, profilesVec.at(0));
+    EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
+}
+
+void CapsUnitTest::CheckAVEncVendorAAC(const std::shared_ptr<AudioCaps> &audioCaps) const
+{
+    std::shared_ptr<AVCodecInfo> audioCodecCaps = audioCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_AUDIO_ENCODER, audioCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::AUDIO_AAC, audioCodecCaps->GetMimeType());
+    EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, audioCodecCaps->IsVendor());
+    EXPECT_EQ(1, audioCaps->GetSupportedBitrate().minVal);
+    EXPECT_EQ(MAX_AUDIO_BITRATE_AAC, audioCaps->GetSupportedBitrate().maxVal);
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
+    EXPECT_EQ(MAX_CHANNEL_COUNT, audioCaps->GetSupportedChannel().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
+    EXPECT_EQ(13, audioCaps->GetSupportedSampleRates().size()); // 13: support max 13 sample rates
+    EXPECT_EQ(3, audioCaps->GetSupportedProfiles().size()); // 3: support 3 profiles
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
 }
 
@@ -579,13 +657,133 @@ void CapsUnitTest::CheckAVEncOpus(const std::shared_ptr<AudioCaps> &audioCaps) c
     EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
     EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
     EXPECT_EQ(0, audioCodecCaps->IsVendor());
-    EXPECT_EQ(1, audioCaps->GetSupportedBitrate().minVal);
-    EXPECT_EQ(MAX_AUDIO_BITRATE, audioCaps->GetSupportedBitrate().maxVal);
+    EXPECT_EQ(6000, audioCaps->GetSupportedBitrate().minVal); // 6000: opus min bitrate
+    EXPECT_EQ(510000, audioCaps->GetSupportedBitrate().maxVal); // 510000: opus max bitrate
     EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
-    EXPECT_EQ(MAX_CHANNEL_COUNT, audioCaps->GetSupportedChannel().maxVal);
+    EXPECT_EQ(2, audioCaps->GetSupportedChannel().maxVal); // 2: opus support max 2 channels
+    EXPECT_EQ(1, audioCaps->GetSupportedComplexity().minVal);
+    EXPECT_EQ(10, audioCaps->GetSupportedComplexity().maxVal); // 10: opus complexity max
+    EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
+    EXPECT_EQ(5, audioCaps->GetSupportedSampleRates().size()); // 5: opus encode support 5 sample rates
+    EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
+}
+
+void CapsUnitTest::CheckAVEncAmrnb(const std::shared_ptr<AudioCaps> &audioCaps) const
+{
+    std::shared_ptr<AVCodecInfo> audioCodecCaps = audioCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_AUDIO_ENCODER, audioCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::AUDIO_AMR_NB, audioCodecCaps->GetMimeType());
+    EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, audioCodecCaps->IsVendor());
+    EXPECT_EQ(4750, audioCaps->GetSupportedBitrate().minVal); // 4750: amrnb min bitrate
+    EXPECT_EQ(12200, audioCaps->GetSupportedBitrate().maxVal); // 12200: amrnb max bitrate
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
-    EXPECT_EQ(1, audioCaps->GetSupportedFormats().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
+    EXPECT_EQ(1, audioCaps->GetSupportedSampleRates().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
+}
+
+void CapsUnitTest::CheckAVDecAmrnb(const std::shared_ptr<AudioCaps> &audioCaps) const
+{
+    std::shared_ptr<AVCodecInfo> audioCodecCaps = audioCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_AUDIO_DECODER, audioCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::AUDIO_AMR_NB, audioCodecCaps->GetMimeType());
+    EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, audioCodecCaps->IsVendor());
+    EXPECT_EQ(4750, audioCaps->GetSupportedBitrate().minVal); // 4750: amrnb min bitrate
+    EXPECT_EQ(12200, audioCaps->GetSupportedBitrate().maxVal); // 12200: amrnb max bitrate
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
+    EXPECT_EQ(1, audioCaps->GetSupportedSampleRates().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
+}
+
+void CapsUnitTest::CheckAVEncAmrwb(const std::shared_ptr<AudioCaps> &audioCaps) const
+{
+    std::shared_ptr<AVCodecInfo> audioCodecCaps = audioCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_AUDIO_ENCODER, audioCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::AUDIO_AMR_WB, audioCodecCaps->GetMimeType());
+    EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, audioCodecCaps->IsVendor());
+    EXPECT_EQ(6600, audioCaps->GetSupportedBitrate().minVal); // 6600: amrwb min bitrate
+    EXPECT_EQ(23850, audioCaps->GetSupportedBitrate().maxVal); // 23850: amrwb max bitrate
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
+    EXPECT_EQ(1, audioCaps->GetSupportedSampleRates().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
+}
+
+void CapsUnitTest::CheckAVDecAmrwb(const std::shared_ptr<AudioCaps> &audioCaps) const
+{
+    std::shared_ptr<AVCodecInfo> audioCodecCaps = audioCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_AUDIO_DECODER, audioCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::AUDIO_AMR_WB, audioCodecCaps->GetMimeType());
+    EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, audioCodecCaps->IsVendor());
+    EXPECT_EQ(6600, audioCaps->GetSupportedBitrate().minVal); // 6600: amrwb min bitrate
+    EXPECT_EQ(23850, audioCaps->GetSupportedBitrate().maxVal); // 23850: amrwb max bitrate
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
+    EXPECT_EQ(1, audioCaps->GetSupportedSampleRates().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
+}
+
+void CapsUnitTest::CheckAVEncG711mu(const std::shared_ptr<AudioCaps> &audioCaps) const
+{
+    std::shared_ptr<AVCodecInfo> audioCodecCaps = audioCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_AUDIO_ENCODER, audioCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::AUDIO_G711MU, audioCodecCaps->GetMimeType());
+    EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, audioCodecCaps->IsVendor());
+    EXPECT_EQ(64000, audioCaps->GetSupportedBitrate().minVal); // 64000: g711mu only support 64000 bitrate
+    EXPECT_EQ(64000, audioCaps->GetSupportedBitrate().maxVal); // 64000: g711mu only support 64000 bitrate
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
+    EXPECT_EQ(1, audioCaps->GetSupportedSampleRates().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
+    EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
+}
+
+void CapsUnitTest::CheckAVDecG711mu(const std::shared_ptr<AudioCaps> &audioCaps) const
+{
+    std::shared_ptr<AVCodecInfo> audioCodecCaps = audioCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_AUDIO_DECODER, audioCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::AUDIO_G711MU, audioCodecCaps->GetMimeType());
+    EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, audioCodecCaps->IsVendor());
+    EXPECT_EQ(64000, audioCaps->GetSupportedBitrate().minVal); // 64000: g711mu only support 64000 bitrate
+    EXPECT_EQ(64000, audioCaps->GetSupportedBitrate().maxVal); // 64000: g711mu only support 64000 bitrate
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
+    EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
     EXPECT_EQ(1, audioCaps->GetSupportedSampleRates().size());
     EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());

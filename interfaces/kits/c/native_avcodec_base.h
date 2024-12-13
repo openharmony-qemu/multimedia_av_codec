@@ -13,6 +13,29 @@
  * limitations under the License.
  */
 
+/**
+ * @addtogroup CodecBase
+ * @{
+ *
+ * @brief The CodecBase module provides variables, properties, and functions
+ * for audio and video muxer, demuxer, and basic encoding and decoding functions.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 9
+ */
+
+/**
+ * @file native_avcodec_base.h
+ *
+ * @brief Declare the Native API used for audio and video muxer,
+ * demuxer and basic encoding and decoding functions.
+ *
+ * @kit AVCodecKit
+ * @library libnative_media_codecbase.so
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 9
+ */
+
 #ifndef NATIVE_AVCODEC_BASE_H
 #define NATIVE_AVCODEC_BASE_H
 
@@ -1115,3 +1138,4 @@ typedef enum OH_TemporalGopReferenceMode {
 #endif
 
 #endif // NATIVE_AVCODEC_BASE_H
+/** @} */

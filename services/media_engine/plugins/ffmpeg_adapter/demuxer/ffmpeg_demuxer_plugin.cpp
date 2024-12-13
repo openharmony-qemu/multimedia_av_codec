@@ -60,6 +60,7 @@ const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 const int32_t INIT_TIME_THRESHOLD = 1000;
 const uint32_t ID3V2_HEADER_SIZE = 10;
 const int32_t MS_TO_NS = 1000 * 1000;
+const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -1063,8 +1064,9 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
                 FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY, "No memory");
                 FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
                     Status::ERROR_WRONG_STATE, "Get first frame failed");
-                streamParser_->ConvertExtraDataToAnnexb(
+                bool convertRet = streamParser_->ConvertExtraDataToAnnexb(
                     avStream->codecpar->extradata, avStream->codecpar->extradata_size);
+                FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_INVALID_DATA, "ConvertExtraDataToAnnexb failed");
                 streamParserInited_ = true;
                 break;
             }
@@ -1597,6 +1599,11 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
         double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
         double ptsTemp = static_cast<double>(dts) + static_cast<double>(avStream->ctts_data[cttsIndex].duration);
         pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
+        if (mode == GET_ALL_FRAME_PTS &&
+            static_cast<uint32_t>(ptsListOrg_.size()) >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
+            MEDIA_LOG_I("PTS list has reached the maximum limit");
+            break;
+        }
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
         sttsCurNum--;
         if ((INT64_MAX - dts) < (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {
@@ -1631,6 +1638,11 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
         double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
         double ptsTemp = static_cast<double>(dts);
         pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
+        if (mode == GET_ALL_FRAME_PTS &&
+            static_cast<uint32_t>(ptsListOrg_.size()) >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
+            MEDIA_LOG_I("PTS list has reached the maximum limit");
+            break;
+        }
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
         sttsCurNum--;
         if ((INT64_MAX - dts) < (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {

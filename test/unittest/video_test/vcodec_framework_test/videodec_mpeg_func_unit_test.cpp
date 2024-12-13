@@ -769,7 +769,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Stop_003, TestSize.Level1)
     SetFormatWithParam(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    EXPECT_NE(AV_ERR_OK, videoDec_->Stop());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
 
 /**

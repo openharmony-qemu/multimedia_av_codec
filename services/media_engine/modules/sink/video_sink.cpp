@@ -82,16 +82,16 @@ void VideoSink::UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
     needUpdateTimeAnchor_ = false;
 }
 
-void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t renderDelay)
 {
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN(syncCenter != nullptr && buffer != nullptr);
     syncCenter->SetLastVideoBufferPts(buffer->pts_ - firstPts_);
-    int64_t nowCt = syncCenter->GetClockTimeNow();
+    int64_t ct4Buffer = syncCenter->GetClockTimeNow() + (renderDelay > 0 ? renderDelay : 0);
     uint64_t latency = 0;
     (void)GetLatency(latency);
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_};
-    syncCenter->UpdateTimeAnchor(nowCt, latency, iMediaTime, this);
+    syncCenter->UpdateTimeAnchor(ct4Buffer, latency, iMediaTime, this);
 }
 
 int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
@@ -154,12 +154,12 @@ void VideoSink::SetSeekFlag()
     seekFlag_ = true;
 }
 
-void VideoSink::SetLastPts(int64_t lastPts)
+void VideoSink::SetLastPts(int64_t lastPts, int64_t renderDelay)
 {
     lastPts_ = lastPts;
     auto syncCenter = syncCenter_.lock();
     if (syncCenter != nullptr) {
-        lastClockTime_ = syncCenter->GetClockTimeNow();
+        lastClockTime_ = syncCenter->GetClockTimeNow() + (renderDelay > 0 ? renderDelay : 0);
     }
 }
 
@@ -185,7 +185,7 @@ int64_t VideoSink::CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& 
     } else if (diff < 0 && videoDiff < SINK_TIME_US_THRESHOLD && diff < thresholdAdjustedVideoDiff) {
         diff = thresholdAdjustedVideoDiff;
     }
-    MEDIA_LOG_D("VS ct4Bf:" PUBLIC_LOG_D64 "diff:" PUBLIC_LOG_D64 "nowCt:" PUBLIC_LOG_D64,
+    MEDIA_LOG_D("VS ct4Bf:" PUBLIC_LOG_D64 " diff:" PUBLIC_LOG_D64 " nowCt:" PUBLIC_LOG_D64,
         bufferAnchoredClockTime, diff, currentClockTime);
     return diff;
 }

@@ -356,7 +356,7 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, uint64_t inOffset, size_t inW
         if ((fragmentPos->offsetBegin + static_cast<uint64_t>(fragmentPos->dataLength)) != offset) {
             auto ret = WriteInPlace(fragmentPos, src, offset, writeSize, dupWriteSize);
             if (!ret || dupWriteSize >= writeSize) {
-                return writeSize;
+                return ret ? writeSize : dupWriteSize;
             }
             src += dupWriteSize;
             offset += dupWriteSize;
