@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "meta/meta.h"
 #include "common/native_mfmagic.h"
 #include "native_cencinfo.h"
@@ -190,9 +191,10 @@ bool CencInfoSetSubsampleInfoFuzzTest(const uint8_t *data, size_t size)
     uint32_t subsampleCount = static_cast<uint32_t>(data[3]); // 3:subsample count index
     DrmSubsample subsamples[DRM_KEY_MAX_SUB_SAMPLE_NUM];
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(subsampleCount <= DRM_KEY_MAX_SUB_SAMPLE_NUM, false);
+    FuzzedDataProvider fdp(data, size);
     for (uint32_t i = 0; i < subsampleCount; i++) {
-        subsamples[i].clearHeaderLen = static_cast<uint32_t>(data[4]); // 4:clearHeader len index
-        subsamples[i].payLoadLen = static_cast<uint32_t>(data[5]); // 5:payLoad len index
+        subsamples[i].clearHeaderLen = fdp.ConsumeIntegral<uint32_t>();
+        subsamples[i].payLoadLen = fdp.ConsumeIntegral<uint32_t>();
     }
     static uint8_t cencInfoSetSubsampleInfoFuzzTestFlag = 0;
     if (cencInfoSetSubsampleInfoFuzzTestFlag == 0) {
@@ -312,7 +314,6 @@ bool CencInfoSetAVBufferFuzzTest(const uint8_t *data, size_t size)
 {
     OH_AVErrCode errNo = AV_ERR_OK;
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(size >= 8, false); // 8:cenc info size
-    MemoryFlag memFlag = MEMORY_READ_WRITE;
     DrmCencAlgorithm algo = static_cast<enum DrmCencAlgorithm>(data[0]);
     DrmCencInfoMode mode = static_cast<enum DrmCencInfoMode>(data[1]); // 1:mode index
     uint32_t encryptedBlockCount = static_cast<uint32_t>(data[2]); // 2:encrypted block count index
@@ -321,9 +322,10 @@ bool CencInfoSetAVBufferFuzzTest(const uint8_t *data, size_t size)
     uint32_t subsampleCount = static_cast<uint32_t>(data[5]); // 5:subsample count index
     DrmSubsample subsamples[DRM_KEY_MAX_SUB_SAMPLE_NUM];
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(subsampleCount <= DRM_KEY_MAX_SUB_SAMPLE_NUM, false);
+    FuzzedDataProvider fdp(data, size);
     for (uint32_t i = 0; i < subsampleCount; i++) {
-        subsamples[i].clearHeaderLen = static_cast<uint32_t>(data[6]); // 6:clearHeader len index
-        subsamples[i].payLoadLen = static_cast<uint32_t>(data[7]); // 7:payLoad len index
+        subsamples[i].clearHeaderLen = fdp.ConsumeIntegral<uint32_t>();
+        subsamples[i].payLoadLen = fdp.ConsumeIntegral<uint32_t>();
     }
     static uint8_t cencInfoSetAVBufferFuzzTestFlag = 0;
     if (cencInfoSetAVBufferFuzzTestFlag == 0) {
@@ -331,7 +333,7 @@ bool CencInfoSetAVBufferFuzzTest(const uint8_t *data, size_t size)
         cencInfoSetAVBufferFuzzTestFlag = 1;
     }
 
-    std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSharedAllocator(memFlag);
+    std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSharedAllocator(MEMORY_READ_WRITE);
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(avAllocator != nullptr, false);
 
     std::shared_ptr<AVBuffer> inBuf = AVBuffer::CreateAVBuffer(avAllocator, static_cast<int32_t>(DRM_KEY_ID_SIZE));
