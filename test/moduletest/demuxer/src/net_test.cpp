@@ -315,8 +315,9 @@ namespace {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxerV, 0, memoryV, &attrV));
             if (attrV.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 islast = false;
+            } else {
+                myMap.insert(pair<int64_t, int32_t>(attrV.pts, attrV.size));
             }
-            myMap.insert(pair<int64_t, int32_t>(attrV.pts, attrV.size));
         }
     }
     /**
