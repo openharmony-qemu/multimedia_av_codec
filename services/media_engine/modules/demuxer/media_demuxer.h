@@ -283,6 +283,7 @@ private:
     std::atomic<bool> isInterruptNeeded_ {false};
     bool isAutoMaintainPts_ = false;
     std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
+    int64_t mediaStartPts_ {HST_TIME_NONE};
 };
 } // namespace Media
 } // namespace OHOS
