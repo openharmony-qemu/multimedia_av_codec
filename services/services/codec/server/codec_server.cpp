@@ -34,6 +34,7 @@
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
+#include "event_manager.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
@@ -144,11 +145,11 @@ void PostProcessingCallbackOnOutputFormatChanged(const OHOS::Media::Format& form
 namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
-std::shared_ptr<ICodecService> CodecServer::Create()
+std::shared_ptr<ICodecService> CodecServer::Create(uint32_t instanceId)
 {
     std::shared_ptr<CodecServer> server = std::make_shared<CodecServer>();
 
-    int32_t ret = server->InitServer();
+    int32_t ret = server->InitServer(instanceId);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Server init failed, ret: %{public}d!", ret);
     return server;
 }
@@ -168,8 +169,9 @@ CodecServer::~CodecServer()
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
-int32_t CodecServer::InitServer()
+int32_t CodecServer::InitServer(uint32_t instanceId)
 {
+    instanceId_ = instanceId;
     return AVCS_ERR_OK;
 }
 
@@ -688,6 +690,20 @@ int32_t CodecServer::ReleaseOutputBufferOfCodec(uint32_t index, bool render)
         ret = codecBase_->ReleaseOutputBuffer(index);
     }
     return ret;
+}
+
+void CodecServer::OnInstanceInitEvent()
+{
+    Meta meta;
+    // todo
+    EventManager::GetInstance().OnInstanceEvent(EventType::INIT, meta);
+}
+
+void CodecServer::OnInstanceMemoryEvent()
+{
+    Meta meta;
+    // todo
+    EventManager::GetInstance().OnInstanceEvent(EventType::MEMORY, meta);
 }
 
 int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)

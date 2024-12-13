@@ -20,9 +20,11 @@
 #include <functional>
 #include <map>
 #include <list>
+#include <optional>
 #include "iremote_object.h"
 #include "ipc_skeleton.h"
 #include "nocopyable.h"
+#include "instance_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -40,6 +42,9 @@ public:
     void SetMemMgrStatus(const bool isStarted);
     void SetCritical(const bool isKeyService);
     uint32_t GetInstanceCount();
+    std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> GetInstanceInfoListByPid(pid_t pid);
+    std::optional<std::pair<sptr<IRemoteObject>, InstanceInfo>> GetInstanceInfoByInstanceId(uint32_t instanceId);
+    void SetInstanceInfoByInstanceId(uint32_t instanceId, const InstanceInfo &info);
 
 private:
     AVCodecServerManager();
@@ -51,11 +56,8 @@ private:
     int32_t CreateCodecListStubObject(sptr<IRemoteObject> &object);
 #endif
 
-    void EraseObject(std::map<sptr<IRemoteObject>, pid_t>::iterator& iter,
-                     std::map<sptr<IRemoteObject>, pid_t>& stubMap,
-                     pid_t pid,
-                     const std::string& stubName);
-    void EraseObject(std::map<sptr<IRemoteObject>, pid_t>& stubMap, pid_t pid);
+    void EraseObject(std::map<sptr<IRemoteObject>, pid_t> &stubMap, pid_t pid);
+    void EraseCodecObjectByPid(pid_t pid);
     void Init();
 
     class AsyncExecutor {
@@ -71,7 +73,7 @@ private:
         std::mutex listMutex_;
     };
 
-    std::map<sptr<IRemoteObject>, pid_t> codecStubMap_;
+    std::unordered_multimap<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> codecStubMap_;
     std::map<sptr<IRemoteObject>, pid_t> codecListStubMap_;
     AsyncExecutor executor_;
     pid_t pid_ = 0;

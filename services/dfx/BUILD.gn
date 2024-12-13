@@ -15,7 +15,6 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 config("av_codec_service_log_dfx_public_config") {
-  cflags = [ "-DOHOS_AV_CODEC_LOG_DFX" ]
   include_dirs = [ "$av_codec_root_dir/services/dfx/include" ]
 }
 

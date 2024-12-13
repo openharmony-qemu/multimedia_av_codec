@@ -72,12 +72,12 @@ const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
 
 namespace OHOS {
 namespace MediaAVCodec {
-sptr<CodecServiceStub> CodecServiceStub::Create()
+sptr<CodecServiceStub> CodecServiceStub::Create(uint32_t instanceId)
 {
     sptr<CodecServiceStub> codecStub = new (std::nothrow) CodecServiceStub();
     CHECK_AND_RETURN_RET_LOG(codecStub != nullptr, nullptr, "Codec service stub create failed");
 
-    int32_t ret = codecStub->InitStub();
+    int32_t ret = codecStub->InitStub(instanceId);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Codec stub init failed");
     return codecStub;
 }
@@ -94,11 +94,11 @@ CodecServiceStub::~CodecServiceStub()
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
-int32_t CodecServiceStub::InitStub()
+int32_t CodecServiceStub::InitStub(uint32_t instanceId)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_SYNC_TRACE;
-    codecServer_ = CodecServer::Create();
+    codecServer_ = CodecServer::Create(instanceId);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server create failed");
     return AVCS_ERR_OK;
 }

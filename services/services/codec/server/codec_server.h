@@ -29,12 +29,13 @@
 #include "codec_param_checker.h"
 #include "lock_free_queue.h"
 #include "post_processing.h"
+#include "instance_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 class CodecServer : public std::enable_shared_from_this<CodecServer>, public ICodecService, public NoCopyable {
 public:
-    static std::shared_ptr<ICodecService> Create();
+    static std::shared_ptr<ICodecService> Create(uint32_t instanceId = 0);
     CodecServer();
     virtual ~CodecServer();
 
@@ -117,7 +118,7 @@ public:
 private:
     int32_t InitByName(Meta &callerInfo, API_VERSION apiVersion);
     int32_t InitByMime(Meta &callerInfo, API_VERSION apiVersion);
-    int32_t InitServer();
+    int32_t InitServer(uint32_t instanceId = 0);
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
@@ -128,7 +129,8 @@ private:
     void SetFreeStatus(bool isFree);
     int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
-    int32_t ParamCheck(Format &config);
+    void OnInstanceInitEvent();
+    void OnInstanceMemoryEvent();
 
     CodecStatus status_ = UNINITIALIZED;
 
@@ -140,11 +142,8 @@ private:
     std::string lastErrMsg_;
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
-    struct CallerInfo {
-        pid_t pid = -1;
-        uid_t uid = 0;
-        std::string processName;
-    } caller_, forwardCaller_;
+    uint32_t instanceId_ = 0;
+    CallerInfo caller_, forwardCaller_;
     bool isSurfaceMode_ = false;
     bool isModeConfirmed_ = false;
     bool isCreateSurface_ = false;

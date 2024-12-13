@@ -28,7 +28,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 class CodecServiceStub : public IRemoteStub<IStandardCodecService>, public NoCopyable {
 public:
-    static sptr<CodecServiceStub> Create();
+    static sptr<CodecServiceStub> Create(uint32_t instanceId = 0);
     virtual ~CodecServiceStub();
 
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
@@ -64,7 +64,7 @@ public:
 
 private:
     CodecServiceStub();
-    int32_t InitStub();
+    int32_t InitStub(uint32_t instanceId = 0);
     int32_t SetListenerObject(MessageParcel &data, MessageParcel &reply);
     int32_t Init(MessageParcel &data, MessageParcel &reply);
     int32_t Configure(MessageParcel &data, MessageParcel &reply);

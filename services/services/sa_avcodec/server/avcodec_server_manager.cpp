@@ -58,7 +58,7 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
     for (auto iter : codecStubMap_) {
         std::string instanceStr = std::string("    Instance_") + std::to_string(instanceIndex++) + "_Info\n";
         write(fd, instanceStr.data(), instanceStr.size());
-        (void)iter.first->Dump(fd, args);
+        (void)iter.second.first->Dump(fd, args);
     }
 
     return OHOS::NO_ERROR;
@@ -130,6 +130,7 @@ int32_t AVCodecServerManager::CreateCodecListStubObject(sptr<IRemoteObject> &obj
 #ifdef SUPPORT_CODEC
 int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
 {
+    static std::atomic<uint32_t> instanceId = 0;
     sptr<CodecServiceStub> stub = CodecServiceStub::Create();
     CHECK_AND_RETURN_RET_LOG(stub != nullptr, AVCS_ERR_CREATE_AVCODEC_STUB_FAILED, "Failed to create CodecServiceStub");
 
@@ -138,7 +139,11 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
         "Failed to create CodecServiceStub");
 
     pid_t pid = IPCSkeleton::GetCallingPid();
-    codecStubMap_[object] = pid;
+    InstanceInfo instanceInfo = {
+        .instanceId = instanceId,
+        .caller = { .pid = pid },
+    };
+    codecStubMap_.emplace(pid, std::make_pair(object, instanceInfo));
 
     SetCritical(true);
     AVCODEC_LOGD("The number of codec services(%{public}zu).", codecStubMap_.size());
@@ -146,41 +151,37 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
 }
 #endif
 
-void AVCodecServerManager::EraseObject(std::map<sptr<IRemoteObject>, pid_t>::iterator& iter,
-                                       std::map<sptr<IRemoteObject>, pid_t>& stubMap,
-                                       pid_t pid,
-                                       const std::string& stubName)
-{
-    if (iter != stubMap.end()) {
-        AVCODEC_LOGI("destroy %{public}s stub services(%{public}zu) pid(%{public}d).", stubName.c_str(),
-                     stubMap.size(), pid);
-        (void)stubMap.erase(iter);
-        return;
-    }
-    AVCODEC_LOGE("find %{public}s object failed, pid(%{public}d).", stubName.c_str(), pid);
-    return;
-}
-
 void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> object)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     pid_t pid = IPCSkeleton::GetCallingPid();
-    auto compare_func = [object](std::pair<sptr<IRemoteObject>, pid_t> objectPair) -> bool {
-        return objectPair.first == object;
-    };
     switch (type) {
         case CODEC: {
-            auto it = find_if(codecStubMap_.begin(), codecStubMap_.end(), compare_func);
-            EraseObject(it, codecStubMap_, pid, "codec");
+            auto it = find_if(codecStubMap_.begin(), codecStubMap_.end(),
+                [object](std::pair<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> objectPair) -> bool {
+                    return objectPair.second.first == object;
+                }
+            );
+            CHECK_AND_BREAK_LOG(it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
+
+            AVCODEC_LOGI("destroy codec stub services(%{public}zu) pid(%{public}d)", codecStubMap_.size(), pid);
+            codecStubMap_.erase(it);
             break;
         }
         case CODECLIST: {
-            auto it = find_if(codecListStubMap_.begin(), codecListStubMap_.end(), compare_func);
-            EraseObject(it, codecListStubMap_, pid, "codeclist");
+            auto it = find_if(codecListStubMap_.begin(), codecListStubMap_.end(),
+                [object](std::pair<sptr<IRemoteObject>, pid_t> objectPair) -> bool {
+                    return objectPair.first == object;
+                }
+            );
+            CHECK_AND_BREAK_LOG(it != codecListStubMap_.end(), "find codeclist object failed, pid(%{public}d)", pid);
+
+            AVCODEC_LOGI("destroy codeclist stub services(%{public}zu) pid(%{public}d)", codecListStubMap_.size(), pid);
+            codecListStubMap_.erase(it);
             break;
         }
         default: {
-            AVCODEC_LOGE("default case, av_codec server manager failed, pid(%{public}d).", pid);
+            AVCODEC_LOGE("default case, av_codec server manager failed, pid(%{public}d)", pid);
             break;
         }
     }
@@ -199,14 +200,25 @@ void AVCodecServerManager::EraseObject(std::map<sptr<IRemoteObject>, pid_t>& stu
             it++;
         }
     }
-    return;
+}
+
+void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
+{
+    for (auto it = codecStubMap_.begin(); it != codecStubMap_.end();) {
+        if (it->first == pid) {
+            executor_.Commit(it->second.first);
+            it = codecStubMap_.erase(it);
+        } else {
+            it++;
+        }
+    }
 }
 
 void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     AVCODEC_LOGI("codec stub services(%{public}zu) pid(%{public}d).", codecStubMap_.size(), pid);
-    EraseObject(codecStubMap_, pid);
+    EraseCodecObjectByPid(pid);
     AVCODEC_LOGI("codec stub services(%{public}zu).", codecStubMap_.size());
 
     AVCODEC_LOGI("codeclist stub services(%{public}zu) pid(%{public}d).", codecListStubMap_.size(), pid);
@@ -250,6 +262,36 @@ uint32_t AVCodecServerManager::GetInstanceCount()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     return codecStubMap_.size() + codecListStubMap_.size();
+}
+
+std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> AVCodecServerManager::GetInstanceInfoListByPid(pid_t pid)
+{
+    std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> instanceInfoList;
+    auto range = codecStubMap_.equal_range(pid);
+    for (auto iter = range.first; iter != range.second; iter++) {
+        instanceInfoList.emplace_back(iter->second);
+    }
+    return instanceInfoList;
+}
+
+std::optional<std::pair<sptr<IRemoteObject>, InstanceInfo>>
+AVCodecServerManager::GetInstanceInfoByInstanceId(uint32_t instanceId)
+{
+    for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
+        if (iter->second.second.instanceId == instanceId) {
+            return iter->second;
+        }
+    }
+    return std::nullopt;
+}
+
+void AVCodecServerManager::SetInstanceInfoByInstanceId(uint32_t instanceId, const InstanceInfo &info)
+{
+    for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
+        if (iter->second.second.instanceId == instanceId) {
+            iter->second.second = info;
+        }
+    }
 }
 
 void AVCodecServerManager::AsyncExecutor::Commit(sptr<IRemoteObject> obj)
