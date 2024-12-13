@@ -1267,11 +1267,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VRR_0001, TestSize.Level0)
     vDecSample->enableVRR = true;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
-    if (!access("/system/lib64/media/", 0)) {
-        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->ConfigureVideoDecoder());
-    } else {
-        ASSERT_EQ(AV_ERR_UNSUPPORT, vDecSample->ConfigureVideoDecoder());
-    }
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
 }
 
 /**
@@ -1289,10 +1285,6 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VRR_0002, TestSize.Level0)
     vDecSample->enableVRR = true;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
-    if (!access("/system/lib64/media/", 0)) {
-        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->ConfigureVideoDecoder());
-    } else {
-        ASSERT_EQ(AV_ERR_UNSUPPORT, vDecSample->ConfigureVideoDecoder());
-    }
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
 }
 } // namespace
