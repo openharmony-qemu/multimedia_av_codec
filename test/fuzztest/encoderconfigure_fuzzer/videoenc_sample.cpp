@@ -15,8 +15,6 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <utility>
-#include "openssl/crypto.h"
-#include "openssl/sha.h"
 #include "videoenc_sample.h"
 using namespace OHOS;
 using namespace OHOS::Media;

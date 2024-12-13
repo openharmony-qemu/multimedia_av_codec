@@ -16,8 +16,6 @@
 #include <sys/time.h>
 #include <utility>
 #include "iconsumer_surface.h"
-#include "openssl/crypto.h"
-#include "openssl/sha.h"
 #include "native_buffer_inner.h"
 #include "videoenc_api11_sample.h"
 using namespace OHOS;
