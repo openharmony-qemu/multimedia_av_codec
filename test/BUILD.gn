@@ -156,7 +156,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/audioencoderflush_fuzzer:AudioEncoderFlushFuzzTest",
       "fuzztest/audioencoderg711_fuzzer:AudioencoderG711FuzzTest",
       "fuzztest/audioencoderheaac_fuzzer:AudioencoderHEAacFuzzTest",
-      "fuzztest/audiodecoderhev2aac_fuzzer:AudioDecoderHEV2AacFuzzTest",
+      "fuzztest/audioencoderhev2aac_fuzzer:AudioencoderHEV2AacFuzzTest",
       "fuzztest/audioencodermp3_fuzzer:AudioencoderMp3FuzzTest",
       "fuzztest/audioencoderopus_fuzzer:AudioencoderOpusFuzzTest",
       "fuzztest/audioencoderpreapi_fuzzer:AudioencoderpreapiFuzzTest",
