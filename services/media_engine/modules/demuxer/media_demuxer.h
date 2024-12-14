@@ -176,7 +176,6 @@ private:
     bool CheckTrackEnabledById(uint32_t trackId);
     bool HandleDashChangeStream(uint32_t trackId);
 
-    Status SeekToTimePre();
     Status SeekToTimeAfter();
     bool SelectBitRateChangeStream(uint32_t trackId);
     bool SelectTrackChangeStream(uint32_t trackId);

@@ -365,7 +365,7 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
         return ret;
     }
     // Under the current specifications, change buffer->streamID only in the scenario of switching tracks.
-    FALSE_RETURN_V(!IsDash() || buffer == nullptr || buffer->streamID == streamID, Status::END_OF_STREAM);
+    FALSE_RETURN_V_NOLOG(!IsDash() || buffer == nullptr || buffer->streamID == streamID, Status::END_OF_STREAM);
 
     if (mediaDataSize_ == LIVE_CONTENT_LENGTH) {
         return Status::OK;
