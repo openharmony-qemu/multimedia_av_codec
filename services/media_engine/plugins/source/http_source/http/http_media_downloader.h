@@ -71,8 +71,14 @@ public:
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
+    bool GetReadTimeOut() override;
     void SetAppUid(int32_t appUid) override;
     void WaitForBufferingEnd() override;
+    void SetIsReportedErrorCode() override;
+    bool IsNotRetry(const std::shared_ptr<DownloadRequest>& request) override
+    {
+        return isRingBuffer_ && request->GetFileContentLengthNoWait() == 0;
+    }
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -170,6 +176,7 @@ private:
 
     volatile size_t wantedReadLength_ {0};
     volatile size_t bufferingTime_ {0};
+    volatile size_t readTime_ {0};
 
     uint64_t minReadOffset_ {0};
     uint64_t maxReadOffset_ {0};
@@ -182,6 +189,7 @@ private:
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
     bool isSeekWait_ {false};
+    bool isReportedErrorCode_ {false};
     bool isNeedClearHasRead_ {false};
 };
 }
