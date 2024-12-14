@@ -185,11 +185,13 @@ private:
     int32_t maxOffsetNotUpdateCount_ {0};
     std::atomic<bool> isMinAndMaxOffsetUpdate_ {false};
 
-    std::atomic<bool> isLargeOffsetSpan_ {true};
+    std::atomic<bool> isLargeOffsetSpan_ {false};
+    int32_t stateChangeCount_ {0};
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
     bool isSeekWait_ {false};
     bool isReportedErrorCode_ {false};
+    bool isNeedClearHasRead_ {false};
 };
 }
 }
