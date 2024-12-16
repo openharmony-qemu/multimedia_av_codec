@@ -593,7 +593,7 @@ void HevcDecoder::SetSurfaceParameter(const Format &format, const std::string_vi
         AVCODEC_LOGW("Set parameter failed: %{public}s", formatKey.data());
         return;
     }
-    AVCODEC_LOGI("Set parameter %{public}s success, val %{publid}d", formatKey.data(), val);
+    AVCODEC_LOGI("Set parameter %{public}s success, val %{public}d", formatKey.data(), val);
 }
 
 int32_t HevcDecoder::SetParameter(const Format &format)
