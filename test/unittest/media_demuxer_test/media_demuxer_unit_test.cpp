@@ -550,6 +550,20 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Resume_001, TestSize.Level1)
     EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
 }
 
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Resume_002, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+
+    demuxer->streamDemuxer_ = nullptr;
+    demuxer->source_ = nullptr;
+    demuxer->inPreroll_.store(true);
+    EXPECT_EQ(demuxer->Resume(), Status::OK);
+
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    demuxer->inPreroll_.store(false);
+    EXPECT_EQ(demuxer->Resume(), Status::OK);
+}
+
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Start_001, TestSize.Level1)
 {
     string srtPath = "/data/test/media/drm/sm4c.ts";
@@ -834,6 +848,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckDropAudioFrame_013, TestSize.Le
     demuxer->CheckDropAudioFrame(sample, 0);
     demuxer->shouldCheckAudioFramePts_ = true;
     demuxer->CheckDropAudioFrame(sample, 0);
+    demuxer->lastAudioPts_ = 99;
+    demuxer->CheckDropAudioFrame(sample, 0);
 
     demuxer->subtitleTrackId_ = 1;
     demuxer->shouldCheckSubtitleFramePts_ = false;
@@ -843,6 +859,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckDropAudioFrame_013, TestSize.Le
     demuxer->CheckDropAudioFrame(sample, 1);
     demuxer->lastSubtitlePts_ = 99;
     demuxer->CheckDropAudioFrame(sample, 1);
+
+    demuxer->CheckDropAudioFrame(sample, 2);
 
     demuxer->videoTrackId_ = 1;
     demuxer->isDecodeOptimizationEnabled_ = true;
@@ -1418,7 +1436,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_TryRecvParserTask_002, TestSize.Leve
     delete[] data;
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_002, TestSize.Level1)
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_001, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
@@ -1436,9 +1454,19 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_002, TestSize.Level1)
     metaTmp3.Set<Tag::MIME_TYPE>("text/vtt");
     demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp3);
     EXPECT_EQ(demuxer->StartTask(0), Status::OK);
+    EXPECT_EQ(demuxer->StartTask(0), Status::OK);
     EXPECT_EQ(demuxer->StartTask(1), Status::OK);
     EXPECT_EQ(demuxer->StartTask(2), Status::OK);
     EXPECT_EQ(demuxer->StopAllTask(), Status::OK);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_002, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+
+    int32_t trackId = 1;
+    demuxer->taskMap_[trackId] = nullptr;
+    EXPECT_EQ(demuxer->StartTask(trackId), Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckChangeStreamID_002, TestSize.Level1)
@@ -1842,5 +1870,38 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_VideoStreamCallback_001, TestSize.Le
     EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
     demuxer->RegisterVideoStreamReadyCallback(std::make_shared<VideoStreamReadyTestCallback>());
     EXPECT_NE(Status::OK, demuxer->HandleRead(trackId));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetDumpInfo_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->isDump_ = false;
+    demuxer->dumpPrefix_ = "1";
+
+    demuxer->SetDumpInfo(true, 0);
+    EXPECT_EQ(demuxer->isDump_, false);
+    EXPECT_EQ(demuxer->dumpPrefix_, "1");
+
+    demuxer->SetDumpInfo(true, 1);
+    EXPECT_EQ(demuxer->isDump_, true);
+    EXPECT_EQ(demuxer->dumpPrefix_, "1");
+
+    demuxer->SetDumpInfo(false, 0);
+    EXPECT_EQ(demuxer->isDump_, false);
+    EXPECT_EQ(demuxer->dumpPrefix_, "0");
+
+    demuxer->SetDumpInfo(true, 1);
+    EXPECT_EQ(demuxer->isDump_, true);
+    EXPECT_EQ(demuxer->dumpPrefix_, "1");
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HasEosTrack_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_FALSE(demuxer->HasEosTrack());
+    demuxer->eosMap_[0] = false;
+    EXPECT_FALSE(demuxer->HasEosTrack());
+    demuxer->eosMap_[1] = true;
+    EXPECT_TRUE(demuxer->HasEosTrack());
 }
 }
