@@ -544,6 +544,11 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
         ret = ConvertAvcToAnnexb(*srcAVPacket);
         SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_H264);
     }
+    if (ioContext_.retry) {
+        ioContext_.retry = false;
+        cacheQueue_.Pop(dstSamplePacket->pkts[0]->stream_index);
+        return Status::ERROR_AGAIN;
+    }
     return ret;
 }
 
