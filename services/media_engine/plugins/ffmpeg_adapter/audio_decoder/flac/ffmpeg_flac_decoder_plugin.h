@@ -70,6 +70,7 @@ private:
 
 private:
     int channels;
+    AudioSampleFormat sampleFormat_;
     DataCallback *dataCallback_{nullptr};
     std::unique_ptr<FfmpegBaseDecoder> basePlugin;
 };
