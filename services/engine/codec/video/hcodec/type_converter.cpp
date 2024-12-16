@@ -138,6 +138,98 @@ vector<HEVCLevelMapping> g_hevcLevelTable = {
     { CODEC_HEVC_HIGH_TIER_LEVEL62, HEVC_LEVEL_62 },
 };
 
+struct VVCProfileMapping {
+    CodecVvcProfile omxProfile;
+    VVCProfile innerProfile;
+};
+vector<VVCProfileMapping> g_vvcProfileTable = {
+    { CODEC_VVC_PROFILE_MAIN10,              VVC_PROFILE_MAIN_10 },
+    { CODEC_VVC_PROFILE_MAIN10_STILL,        VVC_PROFILE_MAIN_10_STILL },
+    { CODEC_VVC_PROFILE_MAIN10_444,          VVC_PROFILE_MAIN_10_444 },
+    { CODEC_VVC_PROFILE_MAIN10_444_STILL,    VVC_PROFILE_MAIN_10_444_STILL },
+    { CODEC_VVC_PROFILE_MULTI_MAIN10,        VVC_PROFILE_MULTI_MAIN_10 },
+    { CODEC_VVC_PROFILE_MULTI_MAIN10_444,    VVC_PROFILE_MULTI_MAIN_10_444 },
+    { CODEC_VVC_PROFILE_MAIN12,              VVC_PROFILE_MAIN_12 },
+    { CODEC_VVC_PROFILE_MAIN12_INTRA,        VVC_PROFILE_MAIN_12_INTRA },
+    { CODEC_VVC_PROFILE_MAIN12_STILL,        VVC_PROFILE_MAIN_12_STILL },
+    { CODEC_VVC_PROFILE_MAIN12_444,          VVC_PROFILE_MAIN_12_444 },
+    { CODEC_VVC_PROFILE_MAIN12_444_INTRA,    VVC_PROFILE_MAIN_12_444_INTRA },
+    { CODEC_VVC_PROFILE_MAIN12_444_STILL,    VVC_PROFILE_MAIN_12_444_STILL },
+    { CODEC_VVC_PROFILE_MAIN16_444,          VVC_PROFILE_MAIN_16_444 },
+    { CODEC_VVC_PROFILE_MAIN16_444_INTRA,    VVC_PROFILE_MAIN_16_444_INTRA },
+    { CODEC_VVC_PROFILE_MAIN16_444_STILL,    VVC_PROFILE_MAIN_16_444_STILL },
+};
+
+struct VVCLevelMapping {
+    CodecVvcLevel omxLevel;
+    VVCLevel innerLevel;
+};
+vector<VVCLevelMapping> g_vvcLevelTable = {
+    { CODEC_VVC_MAIN_TIER_LEVEL1,   VVC_LEVEL_1 },
+    { CODEC_VVC_HIGH_TIER_LEVEL1,   VVC_LEVEL_1 },
+    { CODEC_VVC_MAIN_TIER_LEVEL2,   VVC_LEVEL_2 },
+    { CODEC_VVC_HIGH_TIER_LEVEL2,   VVC_LEVEL_2 },
+    { CODEC_VVC_MAIN_TIER_LEVEL21,  VVC_LEVEL_21 },
+    { CODEC_VVC_HIGH_TIER_LEVEL21,  VVC_LEVEL_21 },
+    { CODEC_VVC_MAIN_TIER_LEVEL3,   VVC_LEVEL_3 },
+    { CODEC_VVC_HIGH_TIER_LEVEL3,   VVC_LEVEL_3 },
+    { CODEC_VVC_MAIN_TIER_LEVEL31,  VVC_LEVEL_31 },
+    { CODEC_VVC_HIGH_TIER_LEVEL31,  VVC_LEVEL_31 },
+    { CODEC_VVC_MAIN_TIER_LEVEL4,   VVC_LEVEL_4 },
+    { CODEC_VVC_HIGH_TIER_LEVEL4,   VVC_LEVEL_4 },
+    { CODEC_VVC_MAIN_TIER_LEVEL41,  VVC_LEVEL_41 },
+    { CODEC_VVC_HIGH_TIER_LEVEL41,  VVC_LEVEL_41 },
+    { CODEC_VVC_MAIN_TIER_LEVEL5,   VVC_LEVEL_5 },
+    { CODEC_VVC_HIGH_TIER_LEVEL5,   VVC_LEVEL_5 },
+    { CODEC_VVC_MAIN_TIER_LEVEL51,  VVC_LEVEL_51 },
+    { CODEC_VVC_HIGH_TIER_LEVEL51,  VVC_LEVEL_51 },
+    { CODEC_VVC_MAIN_TIER_LEVEL52,  VVC_LEVEL_52 },
+    { CODEC_VVC_HIGH_TIER_LEVEL52,  VVC_LEVEL_52 },
+    { CODEC_VVC_MAIN_TIER_LEVEL6,   VVC_LEVEL_6 },
+    { CODEC_VVC_HIGH_TIER_LEVEL6,   VVC_LEVEL_6 },
+    { CODEC_VVC_MAIN_TIER_LEVEL61,  VVC_LEVEL_61 },
+    { CODEC_VVC_HIGH_TIER_LEVEL61,  VVC_LEVEL_61 },
+    { CODEC_VVC_MAIN_TIER_LEVEL62,  VVC_LEVEL_62 },
+    { CODEC_VVC_HIGH_TIER_LEVEL62,  VVC_LEVEL_62 },
+    { CODEC_VVC_MAIN_TIER_LEVEL63,  VVC_LEVEL_63 },
+    { CODEC_VVC_HIGH_TIER_LEVEL63,  VVC_LEVEL_63 },
+    { CODEC_VVC_MAIN_TIER_LEVEL155, VVC_LEVEL_155 },
+    { CODEC_VVC_HIGH_TIER_LEVEL155, VVC_LEVEL_155 },
+};
+
+struct VVCMaxLevelMapping {
+    VVCLevel maxLevel;
+    vector<int32_t> allLevels;
+};
+
+vector<VVCMaxLevelMapping> g_vvcMaxLevelTable = {
+    { VVC_LEVEL_1,    {VVC_LEVEL_1} },
+    { VVC_LEVEL_2,    {VVC_LEVEL_1, VVC_LEVEL_2} },
+    { VVC_LEVEL_21,   {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21} },
+    { VVC_LEVEL_3,    {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3} },
+    { VVC_LEVEL_31,   {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31} },
+    { VVC_LEVEL_4,    {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31, VVC_LEVEL_4} },
+    { VVC_LEVEL_41,   {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31, VVC_LEVEL_4, VVC_LEVEL_41} },
+    { VVC_LEVEL_5,    {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31, VVC_LEVEL_4, VVC_LEVEL_41,
+                       VVC_LEVEL_5} },
+    { VVC_LEVEL_51,   {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31, VVC_LEVEL_4, VVC_LEVEL_41,
+                       VVC_LEVEL_5, VVC_LEVEL_51} },
+    { VVC_LEVEL_52,   {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31, VVC_LEVEL_4, VVC_LEVEL_41,
+                       VVC_LEVEL_5, VVC_LEVEL_51, VVC_LEVEL_52} },
+    { VVC_LEVEL_6,    {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31, VVC_LEVEL_4, VVC_LEVEL_41,
+                       VVC_LEVEL_5, VVC_LEVEL_51, VVC_LEVEL_52, VVC_LEVEL_6} },
+    { VVC_LEVEL_61,   {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31, VVC_LEVEL_4, VVC_LEVEL_41,
+                       VVC_LEVEL_5, VVC_LEVEL_51, VVC_LEVEL_52, VVC_LEVEL_6, VVC_LEVEL_61} },
+    { VVC_LEVEL_62,   {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31, VVC_LEVEL_4, VVC_LEVEL_41,
+                       VVC_LEVEL_5, VVC_LEVEL_51, VVC_LEVEL_52, VVC_LEVEL_6, VVC_LEVEL_61, VVC_LEVEL_62} },
+    { VVC_LEVEL_63,   {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31, VVC_LEVEL_4, VVC_LEVEL_41,
+                       VVC_LEVEL_5, VVC_LEVEL_51, VVC_LEVEL_52, VVC_LEVEL_6, VVC_LEVEL_61, VVC_LEVEL_62,
+                       VVC_LEVEL_63} },
+    { VVC_LEVEL_155,  {VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31, VVC_LEVEL_4, VVC_LEVEL_41,
+                       VVC_LEVEL_5, VVC_LEVEL_51, VVC_LEVEL_52, VVC_LEVEL_6, VVC_LEVEL_61, VVC_LEVEL_62,
+                       VVC_LEVEL_63, VVC_LEVEL_155} },
+};
+
 optional<AVCodecType> TypeConverter::HdiCodecTypeToInnerCodecType(CodecHDI::CodecType type)
 {
     static const map<CodecType, AVCodecType> table = {
@@ -288,6 +380,30 @@ std::optional<HEVCLevel> TypeConverter::OmxHevcLevelToInnerLevel(CodecHevcLevel 
     return nullopt;
 }
 
+std::optional<VVCProfile> TypeConverter::OmxVvcProfileToInnerProfile(CodecVvcProfile profile)
+{
+    auto it = find_if(g_vvcProfileTable.begin(), g_vvcProfileTable.end(), [profile](const VVCProfileMapping& p) {
+        return p.omxProfile == profile;
+    });
+    if (it != g_vvcProfileTable.end()) {
+        return it->innerProfile;
+    }
+    LOGW("unknown CodecVvcProfile %d", profile);
+    return nullopt;
+}
+
+std::optional<VVCLevel> TypeConverter::OmxVvcLevelToInnerLevel(CodecVvcLevel level)
+{
+    auto it = find_if(g_vvcLevelTable.begin(), g_vvcLevelTable.end(), [level](const VVCLevelMapping& p) {
+        return p.omxLevel == level;
+    });
+    if (it != g_vvcLevelTable.end()) {
+        return it->innerLevel;
+    }
+    LOGW("unknown CodecVvcLevel %d", level);
+    return nullopt;
+}
+
 std::optional<OMX_VIDEO_AVCPROFILETYPE> TypeConverter::InnerAvcProfileToOmxProfile(AVCProfile profile)
 {
     auto it = find_if(g_avcProfileTable.begin(), g_avcProfileTable.end(), [profile](const AVCProfileMapping& p) {
@@ -309,6 +425,30 @@ std::optional<CodecHevcProfile> TypeConverter::InnerHevcProfileToOmxProfile(HEVC
         return it->omxProfile;
     }
     LOGW("unknown CodecHevcProfile %d", profile);
+    return nullopt;
+}
+
+std::optional<CodecVvcProfile> TypeConverter::InnerVvcProfileToOmxProfile(VVCProfile profile)
+{
+    auto it = find_if(g_vvcProfileTable.begin(), g_vvcProfileTable.end(), [profile](const VVCProfileMapping& p) {
+        return p.innerProfile == profile;
+    });
+    if (it != g_vvcProfileTable.end()) {
+        return it->omxProfile;
+    }
+    LOGW("unknown CodecVvcProfile %d", profile);
+    return nullopt;
+}
+
+std::optional<std::vector<int32_t>> TypeConverter::InnerVvcMaxLevelToAllLevels(VVCLevel maxLevel)
+{
+    auto it = find_if(g_vvcMaxLevelTable.begin(), g_vvcMaxLevelTable.end(), [maxLevel](const VVCMaxLevelMapping& p) {
+        return p.maxLevel == maxLevel;
+    });
+    if (it != g_vvcMaxLevelTable.end()) {
+        return it->allLevels;
+    }
+    LOGW("unknown VvcMaxLevel %d", maxLevel);
     return nullopt;
 }
 

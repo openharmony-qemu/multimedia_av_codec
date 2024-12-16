@@ -46,6 +46,7 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_IMAGE_PNG = "image/png";
     static constexpr std::string_view MEDIA_MIMETYPE_IMAGE_BMP = "image/bmp";
 
+    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_VVC = "video/vvc";
 private:
     AVCodecMimeType() = delete;
     ~AVCodecMimeType() = delete;
