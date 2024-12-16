@@ -74,7 +74,7 @@ Status MediaSyncManager::SetPlaybackRate(float rate)
     if (rate < 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }
-    FALSE_RETURN_V_MSG_W(rate >= 0, Status::ERROR_INVALID_PARAMETER, "Invalid playback Rate: {%public}f", rate);
+    FALSE_RETURN_V_MSG_W(rate >= 0, Status::ERROR_INVALID_PARAMETER, "Invalid playback Rate: %{public}f", rate);
     OHOS::Media::AutoLock lock(clockMutex_);
     MEDIA_LOG_I_SHORT("set play rate " PUBLIC_LOG_F, rate);
     int64_t currentClockTime = GetSystemClock();
