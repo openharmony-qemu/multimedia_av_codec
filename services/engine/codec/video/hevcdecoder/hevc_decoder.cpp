@@ -974,9 +974,16 @@ void HevcDecoder::SendFrame()
 
     int32_t ret = 0;
     std::unique_lock<std::mutex> runLock(decRunMutex_);
-    do {
+    while (true) {
         ret = DecodeFrameOnce();
-    } while (ret == 0 && isSendEos_);
+        if (!isSendEos_) {
+            hevcDecoderInputArgs_.uiStreamLen -= hevcDecoderOutpusArgs_.uiBytsConsumed;
+            hevcDecoderInputArgs_.pStream += hevcDecoderOutpusArgs_.uiBytsConsumed;
+        }
+        if ((hevcDecoderInputArgs_.uiStreamLen == 0 && !isSendEos_) || ret == -1 || (isSendEos_ && ret != 0)) {
+            break;
+        }
+    }
     runLock.unlock();
 
     if (isSendEos_) {
