@@ -51,7 +51,7 @@ typedef struct TagHevcDecOutArgs {
     UINT32 uiDecStride;
     UINT32 uiDecBitDepth;
     UINT64 uiTimeStamp;
-
+    UINT32 uiBytsConsumed;
     UINT8 *pucOutYUV[3];  // YUV address, store YUV in order
 } HEVC_DEC_OUTARGS;
 
