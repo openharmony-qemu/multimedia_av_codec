@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -64,6 +64,7 @@ public:
     void SetLastVideoBufferPts(int64_t bufferPts) override;
     Status SetPlaybackRate(float rate) override;
 
+    void ResetMediaStartPts() override;
     Status Reset() override;
     Status Pause();
     Status Resume();
@@ -98,7 +99,7 @@ private:
     // false to indicate that the current mediaTime should be returned directly
     bool CheckSeekingMediaTime(int64_t& mediaTime);
     bool CheckPausedMediaTime(int64_t& mediaTime);
-    bool CheckNoneMediaTime(int64_t& mediaTime);
+    bool CheckIfMediaTimeIsNone(int64_t& mediaTime);
     bool CheckFirstMediaTimeAfterSeek(int64_t& mediaTime);
 
     // Check the media time range, 
@@ -108,36 +109,35 @@ private:
     // get the maximum media progress
     int64_t GetMaxMediaProgress();
 
-    int8_t currentSyncerPriority_ {IMediaSynchronizer::NONE};
-    int8_t currentRangeStartPriority_ {IMediaSynchronizer::NONE};
-    int8_t currentRangeEndPriority_ {IMediaSynchronizer::NONE};
-
-    int64_t startPts_ {HST_TIME_NONE};
-    int64_t firstMediaTimeAfterSeek_ {HST_TIME_NONE};
+    OHOS::Media::Mutex syncersMutex_ {};
+    std::vector<IMediaSynchronizer*> syncers_;
+    std::vector<IMediaSynchronizer*> prerolledSyncers_;
 
     std::atomic<int64_t> lastAudioBufferDuration_ {0};
     std::atomic<int64_t> lastVideoBufferPts_ {0};
     std::atomic<int64_t> lastReportMediaTime_ {HST_TIME_NONE};
     std::atomic<bool> isFrameAfterSeeked_ {false};
 
-    OHOS::Media::Mutex syncersMutex_ {};
-    std::vector<IMediaSynchronizer*> syncers_;
-    std::vector<IMediaSynchronizer*> prerolledSyncers_;
-
+    OHOS::Media::Mutex clockMutex_ {};
     float playRate_ {1.0f};
     bool isSeeking_ {false};
     State clockState_ {State::PAUSED};
     int64_t delayTime_ {HST_TIME_NONE};
+    int64_t startPts_ {HST_TIME_NONE};
+    int64_t firstMediaTimeAfterSeek_ {HST_TIME_NONE};
     bool alreadySetSyncersShouldWait_ {false};
     int64_t seekingMediaTime_ {HST_TIME_NONE};
-
-    OHOS::Media::Mutex clockMutex_ {};
     int64_t pausedMediaTime_ {HST_TIME_NONE};
     int64_t pausedClockTime_ {HST_TIME_NONE};
     int64_t minRangeStartOfMediaTime_ {HST_TIME_NONE};
     int64_t maxRangeEndOfMediaTime_ {HST_TIME_NONE};
     int64_t currentAnchorClockTime_ {HST_TIME_NONE};
     int64_t currentAnchorMediaTime_ {HST_TIME_NONE};
+    int8_t currentSyncerPriority_ {IMediaSynchronizer::NONE};
+    int8_t currentRangeStartPriority_ {IMediaSynchronizer::NONE};
+    int8_t currentRangeEndPriority_ {IMediaSynchronizer::NONE};
+
+
 };
 } // namespace Pipeline
 } // namespace Media

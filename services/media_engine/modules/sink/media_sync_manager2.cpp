@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+* Copyright (c) 2023-2024 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -74,6 +74,7 @@ Status MediaSyncManager::SetPlaybackRate(float rate)
     if (rate < 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }
+    FALSE_RETURN_V_MSG_W(rate >= 0, Status::ERROR_INVALID_PARAMETER, "Invalid playback Rate: {%public}f", rate);
     OHOS::Media::AutoLock lock(clockMutex_);
     MEDIA_LOG_I_SHORT("set play rate " PUBLIC_LOG_F, rate);
     int64_t currentClockTime = GetSystemClock();
@@ -93,9 +94,7 @@ float MediaSyncManager::GetPlaybackRate()
 
 void MediaSyncManager::SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId, IMediaSynchronizer* supplier)
 {
-    if (!IsSupplierValid(supplier) || supplier->GetPriority() < currentRangeStartPriority_) {
-        return;
-    }
+    FALSE_RETURN_NOLOG(IsSupplierValid(supplier) && supplier->GetPriority() >= currentRangeStartPriority_);
     currentRangeStartPriority_ = supplier->GetPriority();
     OHOS::Media::AutoLock lock(clockMutex_);
     if (minRangeStartOfMediaTime_ == HST_TIME_NONE || startMediaTime < minRangeStartOfMediaTime_) {
@@ -106,9 +105,7 @@ void MediaSyncManager::SetMediaTimeRangeStart(int64_t startMediaTime, int32_t tr
 
 void MediaSyncManager::SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier)
 {
-    if (!IsSupplierValid(supplier) || supplier->GetPriority() < currentRangeEndPriority_) {
-        return;
-    }
+    FALSE_RETURN_NOLOG(IsSupplierValid(supplier) && supplier->GetPriority() >= currentRangeEndPriority_);
     currentRangeEndPriority_ = supplier->GetPriority();
     OHOS::Media::AutoLock lock(clockMutex_);
     if (maxRangeEndOfMediaTime_ == HST_TIME_NONE || endMediaTime > maxRangeEndOfMediaTime_) {
@@ -142,9 +139,7 @@ Status MediaSyncManager::Resume()
         pausedClockTime_ = HST_TIME_NONE;
         pausedMediaTime_ = HST_TIME_NONE;
     }
-    if (clockState_ == State::RESUMED) {
-        return Status::OK;
-    }
+    FALSE_RETURN_V_NOLOG(clockState_ != State::RESUMED, Status::OK);
     SetAllSyncShouldWaitNoLock();
     MEDIA_LOG_I_SHORT("resume");
     clockState_ = State::RESUMED;
@@ -159,9 +154,7 @@ int64_t MediaSyncManager::GetSystemClock()
 Status MediaSyncManager::Pause()
 {
     OHOS::Media::AutoLock lock(clockMutex_);
-    if (clockState_ == State::PAUSED) {
-        return Status::OK;
-    }
+    FALSE_RETURN_V_NOLOG(clockState_ != State::PAUSED, Status::OK);
     pausedClockTime_ = GetSystemClock();
     pausedMediaTime_ = GetMediaTime(pausedClockTime_);
     MEDIA_LOG_I("pause with clockTime " PUBLIC_LOG_D64 ", mediaTime " PUBLIC_LOG_D64,
@@ -173,9 +166,7 @@ Status MediaSyncManager::Pause()
 Status MediaSyncManager::Seek(int64_t mediaTime, bool isClosest)
 {
     OHOS::Media::AutoLock lock(clockMutex_);
-    if (minRangeStartOfMediaTime_ == HST_TIME_NONE || maxRangeEndOfMediaTime_ == HST_TIME_NONE) {
-        return Status::ERROR_INVALID_OPERATION;
-    }
+    FALSE_RETURN_V_NOLOG(minRangeStartOfMediaTime_ != HST_TIME_NONE && maxRangeEndOfMediaTime_ != HST_TIME_NONE, Status::ERROR_INVALID_OPERATION);
     isSeeking_ = true;
     MEDIA_LOG_I_SHORT("isSeeking_ mediaTime: %{public}" PRId64, mediaTime);
     seekingMediaTime_ = mediaTime;
@@ -193,7 +184,7 @@ Status MediaSyncManager::Seek(int64_t mediaTime, bool isClosest)
 
 Status MediaSyncManager::Reset()
 {
-    MEDIA_LOG_I_SHORT("do Reset");
+    MEDIA_LOG_D("do Reset");
     Stop();
     {
         OHOS::Media::AutoLock lock1(syncersMutex_);
@@ -209,7 +200,7 @@ Status MediaSyncManager::Reset()
 
 Status MediaSyncManager::Stop()
 {
-    MEDIA_LOG_I_SHORT("do Stop");
+    MEDIA_LOG_D("do Stop");
     OHOS::Media::AutoLock lock(clockMutex_);
     clockState_ = State::PAUSED;
     ResetTimeAnchorNoLock();
@@ -313,7 +304,7 @@ bool MediaSyncManager::CheckPausedMediaTime(int64_t& mediaTime)
     return true;
 }
 
-bool MediaSyncManager::CheckNoneMediaTime(int64_t& mediaTime)
+bool MediaSyncManager::CheckIfMediaTimeIsNone(int64_t& mediaTime)
 {
     FALSE_RETURN_V(mediaTime == HST_TIME_NONE, true);
     mediaTime = 0;
@@ -381,9 +372,8 @@ int64_t MediaSyncManager::GetClockTimeNow()
 
 bool MediaSyncManager::IsPlayRateValid(float playRate)
 {
-    if (std::fabs(playRate_) < 1e-9) {
-        return false;
-    }
+    static constexpr float MIN_PLAYRATE = 1e-9;
+    FALSE_RETURN_V_NOLOG(std::fabs(playRate_) >= MIN_PLAYRATE, false);
     return true;
 }
 
@@ -391,9 +381,7 @@ int64_t MediaSyncManager::GetMediaTime(int64_t clockTime)
 {
     bool isMediaTimeValid = (clockTime != HST_TIME_NONE && currentAnchorClockTime_ != HST_TIME_NONE
         && currentAnchorMediaTime_ != HST_TIME_NONE && delayTime_ != HST_TIME_NONE);
-    if (!IsPlayRateValid(playRate_) || !isMediaTimeValid) {
-        return HST_TIME_NONE;
-    }
+    FALSE_RETURN_V_NOLOG(IsPlayRateValid(playRate_) && isMediaTimeValid, HST_TIME_NONE);
     return currentAnchorMediaTime_ + (clockTime - currentAnchorClockTime_ + delayTime_)
         * static_cast<double>(playRate_) - delayTime_;
 }
@@ -454,6 +442,11 @@ void MediaSyncManager::SetMediaStartPts(int64_t startPts)
     if (isStartPtsValid) {
         startPts_ = startPts;
     }
+}
+
+void MediaSyncManager::ResetMediaStartPts()
+{
+    startPts_ = HST_TIME_NONE;
 }
 
 int64_t MediaSyncManager::GetMediaStartPts()
