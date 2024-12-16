@@ -980,7 +980,7 @@ void HevcDecoder::SendFrame()
             hevcDecoderInputArgs_.uiStreamLen -= hevcDecoderOutpusArgs_.uiBytsConsumed;
             hevcDecoderInputArgs_.pStream += hevcDecoderOutpusArgs_.uiBytsConsumed;
         }
-    } while ((hevcDecoderInputArgs_.uiStreamLen != 0 || isSendEos_) && (ret != -1) && (!isSendEos_ || ret == 0));
+    } while ((ret!=-1) && ((!isSendEos&&uiStreamLen != 0) || (isSendEos_&&ret==0)));
     runLock.unlock();
 
     if (isSendEos_) {
