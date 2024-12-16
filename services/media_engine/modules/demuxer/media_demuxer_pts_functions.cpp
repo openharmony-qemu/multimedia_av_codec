@@ -106,7 +106,8 @@ void MediaDemuxer::InitPtsInfo()
         if (!(mime.find("audio/") == 0 || mime.find("video/") == 0)) {
             continue;
         }
-        if (trackInfo->GetData(Tag::MEDIA_START_TIME, startTime) && (mediaStartPts_ == HST_TIME_NONE || startTime < mediaStartPts_)) {
+        if (trackInfo->GetData(Tag::MEDIA_START_TIME, startTime) &&
+            (mediaStartPts_ == HST_TIME_NONE || startTime < mediaStartPts_)) {
                 mediaStartPts_ = startTime;
         }
     }
