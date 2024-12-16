@@ -59,15 +59,13 @@ StreamDemuxer::~StreamDemuxer()
 Status StreamDemuxer::ReadFrameData(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Buffer>& bufferPtr)
 {
-    if (IsDash()) {
-        MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64 " streamID: " PUBLIC_LOG_D32, offset, streamID);
-        if (cacheDataMap_.find(streamID) != cacheDataMap_.end() && cacheDataMap_[streamID].CheckCacheExist(offset)) {
-            MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
-            auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
-            if (memory != nullptr && memory->GetSize() > 0) {
-                MEDIA_LOG_D("GetPeekRange read cache, Read data from cache data. streamID: " PUBLIC_LOG_D32, streamID);
-                return PullDataWithCache(streamID, offset, size, bufferPtr);
-            }
+    MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64 " streamID: " PUBLIC_LOG_D32, offset, streamID);
+    if (cacheDataMap_.find(streamID) != cacheDataMap_.end() && cacheDataMap_[streamID].CheckCacheExist(offset)) {
+        MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
+        auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
+        if (memory != nullptr && memory->GetSize() > 0) {
+            MEDIA_LOG_D("GetPeekRange read cache, Read data from cache data. streamID: " PUBLIC_LOG_D32, streamID);
+            return PullDataWithCache(streamID, offset, size, bufferPtr);
         }
     }
     return PullData(streamID, offset, size, bufferPtr);
