@@ -1242,7 +1242,7 @@ Status FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
         sLock.unlock();
         if (ffmpegRet < 0) {
             MEDIA_LOG_E("Call av_read_frame failed, ret:" PUBLIC_LOG_D32, ffmpegRet);
-            av_packet_unref(pkt);
+            av_packet_free(&pkt);
             break;
         }
         cacheQueue_.AddTrackQueue(pkt->stream_index);
