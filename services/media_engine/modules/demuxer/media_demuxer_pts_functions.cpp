@@ -73,7 +73,7 @@ void MediaDemuxer::HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuf
             baseInfo->basePts = curPacketPts;
         }
     }
-    sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts;
+    sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts + mediaStartPts_;
     MEDIA_LOG_I("Success, track:" PUBLIC_LOG_U32 ", orgPts:"
         PUBLIC_LOG_D64 ", pts:" PUBLIC_LOG_D64 ", basePts: " PUBLIC_LOG_D64, trackId,
         curPacketPts, sample->pts_, baseInfo->basePts);
@@ -97,5 +97,23 @@ void MediaDemuxer::InitPtsInfo()
     }
 }
 
+void MediaDemuxer::InitMediaStartPts()
+{
+    std::string mime;
+    int64_t startTime = 0;
+    for (const auto& trackInfo : mediaMetaData_.trackMetas) {
+        if (trackInfo == nullptr || !(trackInfo->GetData(Tag::MIME_TYPE, mime))) {
+            MEDIA_LOG_W("TrackInfo is null or get mime fail");
+            continue;
+        }
+        if (!(mime.find("audio/") == 0 || mime.find("video/") == 0)) {
+            continue;
+        }
+        if (trackInfo->GetData(Tag::MEDIA_START_TIME, startTime) &&
+            (mediaStartPts_ == HST_TIME_NONE || startTime < mediaStartPts_)) {
+                mediaStartPts_ = startTime;
+        }
+    }
+}
 } // namespace Media
 } // namespace OHOS

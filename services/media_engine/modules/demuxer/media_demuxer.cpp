@@ -554,6 +554,7 @@ Status MediaDemuxer::InnerPrepare()
     if (ret == Status::OK) {
         InitMediaMetaData(mediaInfo);
         InitDefaultTrack(mediaInfo, videoTrackId_, audioTrackId_, subtitleTrackId_, videoMime_);
+        InitMediaStartPts();
         if (videoTrackId_ != TRACK_ID_DUMMY) {
             AddDemuxerCopyTask(videoTrackId_, TaskType::VIDEO);
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, videoTrackId_, -1);

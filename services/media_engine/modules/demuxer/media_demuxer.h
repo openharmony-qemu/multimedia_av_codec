@@ -211,6 +211,7 @@ private:
     bool IsSubtitleMime(const std::string& mime);
     void HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
     void InitPtsInfo();
+    void InitMediaStartPts();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -282,6 +283,7 @@ private:
     std::atomic<bool> isInterruptNeeded_ {false};
     bool isAutoMaintainPts_ = false;
     std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
+    int64_t mediaStartPts_ {HST_TIME_NONE};
 };
 } // namespace Media
 } // namespace OHOS
