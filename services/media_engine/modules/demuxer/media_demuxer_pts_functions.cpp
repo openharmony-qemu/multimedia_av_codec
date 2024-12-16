@@ -95,7 +95,10 @@ void MediaDemuxer::InitPtsInfo()
         maintainBaseInfos_[trackId]->segmentOffset = INVALID_PTS_DATA;
         maintainBaseInfos_[trackId]->basePts = INVALID_PTS_DATA;
     }
+}
 
+void MediaDemuxer::InitMediaStartPts()
+{
     std::string mime;
     int64_t startTime = 0;
     for (const auto& trackInfo : mediaMetaData_.trackMetas) {
@@ -112,6 +115,5 @@ void MediaDemuxer::InitPtsInfo()
         }
     }
 }
-
 } // namespace Media
 } // namespace OHOS

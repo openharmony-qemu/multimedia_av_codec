@@ -212,6 +212,7 @@ private:
     bool IsSubtitleMime(const std::string& mime);
     void HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
     void InitPtsInfo();
+    void InitMediaStartPts();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
