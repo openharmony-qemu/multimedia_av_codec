@@ -57,8 +57,6 @@ ohos_unittest("av_audio_sink_unit_test") {
   public_configs = []
 
   if (av_codec_support_test) {
-    public_external_deps = [ "ffmpeg:libohosffmpeg" ]
-
     sources = [
       "./audio_server_sink_plugin_test.cpp",
       "./audio_server_sink_plugin_unit_test.cpp",
@@ -90,6 +88,7 @@ ohos_unittest("av_audio_sink_unit_test") {
     "audio_framework:audio_client",
     "audio_framework:audio_renderer",
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "googletest:gmock_main",
     "graphic_surface:surface",
     "hilog:libhilog",

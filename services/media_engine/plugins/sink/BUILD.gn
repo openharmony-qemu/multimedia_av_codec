@@ -53,8 +53,6 @@ ohos_shared_library("media_plugin_AudioServerSink") {
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
-  public_external_deps = [ "ffmpeg:libohosffmpeg" ]
-
   sources = [
     "../ffmpeg_adapter/common/ffmpeg_convert.cpp",
     "../ffmpeg_adapter/common/ffmpeg_utils.cpp",

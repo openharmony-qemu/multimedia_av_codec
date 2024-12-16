@@ -39,7 +39,7 @@ ohos_fuzztest("EncoderAPI11FuzzTest") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "ipc:ipc_core",
+    "ipc:ipc_single",
     "media_foundation:native_media_core",
     "openssl:libcrypto_shared",
     "window_manager:libwm",
