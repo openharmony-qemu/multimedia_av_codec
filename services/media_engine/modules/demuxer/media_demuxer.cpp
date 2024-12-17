@@ -47,6 +47,7 @@ const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
 static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
+static constexpr int32_t INVALID_TRACK_ID = -1;
 } // namespace
 
 namespace OHOS {
@@ -2256,6 +2257,11 @@ void MediaDemuxer::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(source_ != nullptr, "Source is nullptr");
     source_->WaitForBufferingEnd();
+}
+
+int32_t MediaDemuxer::GetCurrentVideoTrackId()
+{
+    return (videoTrackId_ != TRACK_ID_DUMMY ? static_cast<int32_t>(videoTrackId_) : INVALID_TRACK_ID);
 }
 } // namespace Media
 } // namespace OHOS
