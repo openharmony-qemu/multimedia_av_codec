@@ -124,6 +124,8 @@ public:
     int32_t GetNewSubtitleStreamID();
     bool CanDoChangeStream();
     void SetChangeFlag(bool flag);
+    void SetSourceType(SourceType type);
+    bool GetIsDataSrcNoSeek();
 protected:
     std::shared_ptr<Source> source_;
     std::function<Status(int32_t, uint64_t, size_t)> checkRange_;
@@ -139,6 +141,8 @@ public:
     Plugins::Seekable seekable_;
 private:
     bool isDash_ = {false};
+    bool isDataSrcNoSeek_ = {false};
+    SourceType sourceType_ = {SourceType::SOURCE_TYPE_FD};
     std::atomic<int32_t> newVideoStreamID_ = -1;
     std::atomic<int32_t> newAudioStreamID_ = -1;
     std::atomic<int32_t> newSubtitleStreamID_ = -1;
