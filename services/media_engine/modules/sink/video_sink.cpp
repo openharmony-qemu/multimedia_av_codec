@@ -279,7 +279,7 @@ void VideoSink::VideoLagDetector::ResolveLagEvent(const int64_t &lagTimeMs)
     maxLagDuration_ = std::max(maxLagDuration_, lagTimeMs);
     totalLagDuration_ += lagTimeMs;
     FALSE_RETURN(eventReceiver_ != nullptr);
-    eventReceiver_->OnEvent({"VideoSink", EventType::EVENT_VIDEO_LAG, lagTimeMs});
+    eventReceiver_->OnDfxEvent({"VideoSink", DfxEventType::DFX_INFO_PLAYER_VIDEO_LAG, lagTimeMs});
 }
 
 void VideoSink::VideoLagDetector::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
