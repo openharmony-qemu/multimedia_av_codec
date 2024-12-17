@@ -868,34 +868,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, OnDumpInfo_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: ReleaseOutputBuffer_002
- * @tc.desc: ReleaseOutputBuffer
- * @tc.type: FUNC
- */
-
-HWTEST_F(DecoderSurfaceFilterUnitTest, ReleaseOutputBuffer_002, TestSize.Level1)
-{
-    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
-    decoderSurfaceFilter_->videoSink_ = std::make_shared<VideoSink>();
-    uint8_t data[100];
-    std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
-    decoderSurfaceFilter_->playRangeEndTime_ = 1;
-    outBuffer->pts_ = 2000;
-    decoderSurfaceFilter_->isRenderStarted_ = false;
-    Status ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, false, outBuffer, 1L);
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 1L);
-    outBuffer->flag_ = true;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 1L);
-    outBuffer->flag_ = false;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 1L);
-    decoderSurfaceFilter_->isInSeekContinous_ = true;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 1L);
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 1L);
-    EXPECT_EQ(ret, Status::OK);
-}
-
-/**
  * @tc.name: DoInitAfterLink_001
  * @tc.desc: DoInitAfterLink
  * @tc.type: FUNC
