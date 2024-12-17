@@ -544,6 +544,13 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
         ret = ConvertAvcToAnnexb(*srcAVPacket);
         SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_H264);
     }
+    if (ioContext_.retry) {
+        ioContext_.retry = false;
+        formatContext_->pb->eof_reached = 0;
+        formatContext_->pb->error = 0;
+        cacheQueue_.Pop(dstSamplePacket->pkts[0]->stream_index);
+        return Status::ERROR_AGAIN;
+    }
     return ret;
 }
 
@@ -564,9 +571,10 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
         sample->dts_ = dts;
         sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, dts);
     }
+
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
         avStream->codecpar->codec_id != AV_CODEC_ID_H264 &&
-        samplePacket->pkts[0]->dts == firstFrame_->dts) {
+        firstFrame_ && samplePacket->pkts[0]->dts == firstFrame_->dts) {
         if (streamParser_ != nullptr) {
             streamParser_->ResetXPSSendStatus();
         }
