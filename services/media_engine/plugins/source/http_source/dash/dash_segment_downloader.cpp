@@ -439,7 +439,7 @@ std::shared_ptr<DashBufferSegment> DashSegmentDownloader::GetCurrentSegment()
         std::lock_guard<std::mutex> lock(segmentMutex_);
         auto it = std::find_if(segmentList_.begin(), segmentList_.end(),
             [this](const std::shared_ptr<DashBufferSegment> &item) -> bool {
-                return buffer_->GetHead() >= item->bufferPosHead_ && buffer_->GetHead() <= item->bufferPosTail_;
+                return buffer_->GetHead() >= item->bufferPosHead_ && buffer_->GetHead() < item->bufferPosTail_;
             });
         if (it != segmentList_.end()) {
             currentSegment = *it;
@@ -815,7 +815,11 @@ bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segme
     }
 
     if (desSegment != nullptr && desSegment->bufferPosTail_ > 0) {
-        return buffer_->SetHead(desSegment->bufferPosHead_);
+        if (buffer_->SetHead(desSegment->bufferPosHead_)) {
+            // set init segment when seek on buffered, before read first segment demuxer plugin need reboot
+            UpdateInitSegmentState(desSegment->streamId_);
+            return true;
+        }
     }
     return false;
 }
@@ -879,8 +883,8 @@ void DashSegmentDownloader::UpdateBufferSegment(const std::shared_ptr<DashBuffer
         }
         MEDIA_LOG_I("SaveData eos:streamId:" PUBLIC_LOG_D32 ", segmentNum:" PUBLIC_LOG_D64 ", contentLength:"
             PUBLIC_LOG_ZU ", bufferPosHead:" PUBLIC_LOG_ZU  " ,bufferPosEnd:" PUBLIC_LOG_ZU,
-            streamId_, mediaSegment->numberSeq_, mediaSegment->contentLength_, mediaSegment->bufferPosHead_,
-            mediaSegment->bufferPosTail_);
+            mediaSegment->streamId_, mediaSegment->numberSeq_, mediaSegment->contentLength_,
+            mediaSegment->bufferPosHead_, mediaSegment->bufferPosTail_);
     }
 }
 
