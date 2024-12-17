@@ -546,6 +546,8 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
     }
     if (ioContext_.retry) {
         ioContext_.retry = false;
+        formatContext_->pb->eof_reached = 0;
+        formatContext_->pb->error = 0;
         cacheQueue_.Pop(dstSamplePacket->pkts[0]->stream_index);
         return Status::ERROR_AGAIN;
     }
