@@ -25,6 +25,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "VideoSink" };
 constexpr int64_t LAG_LIMIT_TIME = 100;
+constexpr int32_t DROP_FRAME_CONTINUOUSLY_MAX_CNT = 2;
 }
 
 namespace OHOS {
@@ -118,12 +119,12 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         }
         return -1;
     }
-    if ((render && waitTime >= 0) || lastFrameDropped_) {
-        lastFrameDropped_ = false;
+    if ((render && waitTime >= 0) || dropFrameContinuouslyCnt_.load() >= DROP_FRAME_CONTINUOUSLY_MAX_CNT) {
+        dropFrameContinuouslyCnt_.store(0);
         renderFrameCnt_++;
         return waitTime > 0 ? waitTime : 0;
     }
-    lastFrameDropped_ = true;
+    dropFrameContinuouslyCnt_.fetch_add(1);
     discardFrameCnt_++;
     return -1;
 }
