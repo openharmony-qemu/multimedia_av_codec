@@ -82,7 +82,7 @@ private:
     int64_t firstPts_ {HST_TIME_NONE};
     int64_t fixDelay_ {0};
     bool seekFlag_{false};
-    std::atomic<bool> lastFrameDropped_ {false};
+    std::atomic<int32_t> dropFrameContinuouslyCnt_ {0};
     int64_t lastPts_ = -1;
     int64_t lastClockTime_ = -1;
     std::atomic<bool> isRenderStarted_{false};
