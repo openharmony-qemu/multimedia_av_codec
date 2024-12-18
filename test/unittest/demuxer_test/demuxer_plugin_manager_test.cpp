@@ -315,6 +315,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, UpdateTempTrackMapInfo_001, TestSize.Leve
     demuxerPluginManager_->temp2TrackInfoMap_[newTrackId].streamID = 0;
     demuxerPluginManager_->temp2TrackInfoMap_[newTrackId].innerTrackIndex = 0;
     demuxerPluginManager_->UpdateTempTrackMapInfo(oldTrackId, newTrackId, newInnerTrackIndex);
+    EXPECT_EQ(demuxerPluginManager_->temp2TrackInfoMap_[oldTrackId].innerTrackIndex, newInnerTrackIndex);
 }
 
 HWTEST_F(DemuxerPluginManagerUnitTest, SingleStreamSeekTo_001, TestSize.Level1)
