@@ -398,10 +398,7 @@ HWTEST(TestSubtitleSink, GetTargetSubtitleIndex, TestSize.Level1)
     auto sink = SubtitleSinkCreate();
     ASSERT_TRUE(sink != nullptr);
     sink->GetTargetSubtitleIndex(0);
-    sink->subtitleInfoVec_.push_back({"test", 1, 1});
-    sink->subtitleInfoVec_.push_back({"test", 3, 2});
-    sink->GetTargetSubtitleIndex(3);
-    sink->GetTargetSubtitleIndex(10);
+    EXPECT_EQ(sink->currentInfoIndex_, 0);
 }
 
 HWTEST(TestSubtitleSink, GetBufferQueue, TestSize.Level1)
@@ -417,7 +414,7 @@ HWTEST(TestSubtitleSink, createSink, TestSize.Level1)
     auto sink = std::make_shared<SubtitleSink>();
     std::shared_ptr<Meta> meta = nullptr;
     std::shared_ptr<EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
-    sink->Init(meta, testEventReceiver);
+    EXPECT_EQ(sink->Init(meta, testEventReceiver), Status::OK);
 }
 
 }  // namespace Test
