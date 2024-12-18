@@ -295,7 +295,8 @@ HWTEST_F(TestVideoSink, GetLagInfo_001, TestSize.Level0)
     EXPECT_EQ(avgLagDuration, 0);
     videoSink_->lagDetector_.lagTimes_ = 10;
     videoSink_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
-    EXPECT_EQ(avgLagDuration, static_cast<int32_t>(videoSink_->lagDetector_.totalLagDuration_ /  videoSink_->lagDetector_.lagTimes_));
+    EXPECT_EQ(avgLagDuration, static_cast<int32_t>(videoSink_->lagDetector_.totalLagDuration_ /
+        videoSink_->lagDetector_.lagTimes_));
 }
 }  // namespace Test
 }  // namespace Media
