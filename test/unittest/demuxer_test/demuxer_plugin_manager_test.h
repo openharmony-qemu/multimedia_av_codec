@@ -15,7 +15,7 @@
 
 #ifndef DEMUXER_PLUGIN_MANAGER_UNIT_TEST_H
 #define DEMUXER_PLUGIN_MANAGER_UNIT_TEST_H
-
+#include "mock/mock_base_stream_demuxer.h"
 #include "gtest/gtest.h"
 #include "demuxer_plugin_manager.h"
 
@@ -35,6 +35,7 @@ public:
 protected:
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_{ nullptr };
     std::shared_ptr<DataSourceImpl> dataSourceImpl_{ nullptr };
+    std::shared_ptr<MockBaseStreamDemuxer> streamDemuxer_{ nullptr };
 };
 }  // namespace Media
 }  // namespace OHOS

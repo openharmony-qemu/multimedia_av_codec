@@ -392,6 +392,31 @@ HWTEST(TestSubtitleSink, do_sync_write_eos, TestSize.Level1)
     sink->DoSyncWrite(buffer);
     ASSERT_TRUE(sink->DoSyncWrite(buffer) != -1);
 }
+
+HWTEST(TestSubtitleSink, GetTargetSubtitleIndex, TestSize.Level1)
+{
+    auto sink = SubtitleSinkCreate();
+    ASSERT_TRUE(sink != nullptr);
+    sink->GetTargetSubtitleIndex(0);
+    EXPECT_EQ(sink->currentInfoIndex_, 0);
+}
+
+HWTEST(TestSubtitleSink, GetBufferQueue, TestSize.Level1)
+{
+    auto sink = SubtitleSinkCreate();
+    sink->state_ = Pipeline::FilterState::INITIALIZED;
+    EXPECT_EQ(sink->GetBufferQueueProducer(), nullptr);
+    EXPECT_EQ(sink->GetBufferQueueConsumer(), nullptr);
+}
+
+HWTEST(TestSubtitleSink, createSink, TestSize.Level1)
+{
+    auto sink = std::make_shared<SubtitleSink>();
+    std::shared_ptr<Meta> meta = nullptr;
+    std::shared_ptr<EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
+    EXPECT_EQ(sink->Init(meta, testEventReceiver), Status::OK);
+}
+
 }  // namespace Test
 }  // namespace Media
 }  // namespace OHOS
