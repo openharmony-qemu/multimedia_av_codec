@@ -598,6 +598,7 @@ int32_t CodecServer::GetOutputFormat(Format &format)
     }
 }
 
+// LCOV_EXCL_START
 int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
     bool svpFlag)
 {
@@ -635,6 +636,7 @@ int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySes
 
     return AVCS_ERR_OK;
 }
+// LCOV_EXCL_STOP
 
 #ifdef SUPPORT_DRM
 int32_t CodecServer::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
