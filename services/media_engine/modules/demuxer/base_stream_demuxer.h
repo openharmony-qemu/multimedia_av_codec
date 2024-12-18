@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -107,21 +107,21 @@ public:
     virtual Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
         size_t expectedLen) = 0;
     void SetInterruptState(bool isInterruptNeeded);
-    void SetDemuxerState(int32_t streamId, DemuxerState state);
+    virtual void SetDemuxerState(int32_t streamId, DemuxerState state);
     void SetBundleName(const std::string& bundleName);
     void SetIsIgnoreParse(bool state);
     bool GetIsIgnoreParse();
     Plugins::Seekable GetSeekable();
-    std::string SnifferMediaType(int32_t streamID);
+    virtual std::string SnifferMediaType(int32_t streamID);
     bool IsDash() const;
     void SetIsDash(bool flag);
 
     Status SetNewAudioStreamID(int32_t streamID);
     Status SetNewVideoStreamID(int32_t streamID);
     Status SetNewSubtitleStreamID(int32_t streamID);
-    int32_t GetNewVideoStreamID();
-    int32_t GetNewAudioStreamID();
-    int32_t GetNewSubtitleStreamID();
+    virtual int32_t GetNewVideoStreamID();
+    virtual int32_t GetNewAudioStreamID();
+    virtual int32_t GetNewSubtitleStreamID();
     bool CanDoChangeStream();
     void SetChangeFlag(bool flag);
 protected:
