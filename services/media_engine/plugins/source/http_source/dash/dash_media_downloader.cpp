@@ -297,7 +297,7 @@ void DashMediaDownloader::SeekToTs(int64_t seekTime)
     int64_t seekTimeMs;
     std::lock_guard<std::mutex> lock(parseSidxMutex_);
     {
-        if (seekTime < 0 || seekTime >= mpdDownloader_->GetDuration()) {
+        if (seekTime < 0 || seekTime > mpdDownloader_->GetDuration()) {
             return;
         }
         seekTimeMs = seekTime / MS_2_NS;
@@ -726,6 +726,11 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
         std::shared_ptr<DashSegment> segment;
         mpdDownloader_->SeekToTs(segmentDownloader->GetStreamId(), seekTimeMs, segment);
         if (segment == nullptr) {
+            MEDIA_LOG_I("Dash SeekToTs end streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
+                segmentDownloader->GetStreamId(), segmentDownloader->GetStreamType());
+            int64_t remainLastNumberSeq = -1;
+            segmentDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
+            segmentDownloader->SetAllSegmentFinished();
             continue;
         }
 
