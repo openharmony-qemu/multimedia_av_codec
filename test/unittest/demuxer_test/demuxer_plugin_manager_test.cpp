@@ -369,16 +369,16 @@ HWTEST_F(DemuxerPluginManagerUnitTest, RebootPlugin_001, TestSize.Level1)
     std::string str = "";
     EXPECT_CALL(*streamDemuxer_, SnifferMediaType).WillRepeatedly(Return(str));
     EXPECT_CALL(*streamDemuxer_, GetNewAudioStreamID()).WillRepeatedly(Return(newStreamID));
-    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted), 
+    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted),
         Status::OK);
     streamId = 1;
-    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted), 
+    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted),
         Status::ERROR_INVALID_PARAMETER);
     trackType = TRACK_INVALID;
-    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted), 
+    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted),
         Status::ERROR_INVALID_PARAMETER);
     streamId = 0;
-    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted), 
+    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted),
         Status::ERROR_INVALID_PARAMETER);
 }
 
