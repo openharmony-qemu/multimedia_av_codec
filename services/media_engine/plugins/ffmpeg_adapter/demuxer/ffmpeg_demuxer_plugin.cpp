@@ -954,7 +954,7 @@ int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputForma
         static_cast<std::chrono::duration<double, std::milli>>(open - begin).count());
     int32_t parseSpend = static_cast<int32_t>(
         static_cast<std::chrono::duration<double, std::milli>>(parse - open).count());
-    if ((openSpend > INT32_MAX - parseSpend) || (openSpend + parseSpend > INIT_TIME_THRESHOLD)) {
+    if ((parseSpend < 0) || (openSpend > INT32_MAX - parseSpend) || (openSpend + parseSpend > INIT_TIME_THRESHOLD)) {
         MEDIA_LOG_W("Spend [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]", openSpend, parseSpend);
     }
     if (ret < 0) {
