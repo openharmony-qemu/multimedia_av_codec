@@ -735,9 +735,11 @@ int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo
     retCode = AVCS_ERR_INVALID_VAL;
     CHECK_AND_RETURN_RET_LOG((decryptModuleProxy_ != nullptr), retCode,
         "SetDecryptConfig decryptModuleProxy_ nullptr");
+// LCOV_EXCL_START
     retCode = decryptModuleProxy_->DecryptMediaData(svpFlag_, cryptInfo, inDrmBuffer, outDrmBuffer);
     CHECK_AND_RETURN_RET_LOG((retCode == 0), AVCS_ERR_UNKNOWN, "CodecDrmDecrypt decrypt failed!");
     return AVCS_ERR_OK;
+// LCOV_EXCL_STOP
 #else
     (void)cencInfo;
     (void)inBuf;

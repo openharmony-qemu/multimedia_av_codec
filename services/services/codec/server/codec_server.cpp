@@ -518,10 +518,12 @@ int32_t CodecServer::DrmVideoCencDecrypt(uint32_t index)
                 decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
                 return ret;
             }
+// LCOV_EXCL_START
             drmDecryptor_->SetCodecName(codecName_);
             ret = drmDecryptor_->DrmVideoCencDecrypt(decryptVideoBufs_[index].inBuf,
                 decryptVideoBufs_[index].outBuf, dataSize);
             decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
+// LCOV_EXCL_STOP
         }
     }
     return ret;

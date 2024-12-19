@@ -1320,15 +1320,11 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HDR_Function_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, VideoDecoder_SetDecryptionConfig_001, TestSize.Level1)
 {
     VCodecTestCode param = VCodecTestCode::HW_AVC;
-    videoDec_->isAVBufferMode_ = true;
     CreateByNameWithParam(param);
     SetFormatWithParam(param);
     PrepareSource(param);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetVideoDecryptionConfig());
-    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
 
 /**

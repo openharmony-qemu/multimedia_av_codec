@@ -1131,6 +1131,35 @@ HWTEST_F(CodecServerUnitTest, DumpInfo_Valid_Test_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: DrmVideoCencDecrypt_Test_001
+ * @tc.desc: DrmVideoCencDecrypt function test
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecServerUnitTest, DrmVideoCencDecrypt_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
+    server_->isCreateSurface_ = true;
+    server_->isSetParameterCb_ = true;
+    server_->drmDecryptor_ = std::make_shared<CodecDrmDecrypt>();
+    uint32_t index = 0;
+    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
+    MemoryFlag memFlag = MEMORY_READ_WRITE;
+    std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSharedAllocator(memFlag);
+    if (avAllocator != nullptr) {
+        std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, testSize);
+        buffer->memory_->SetSize(testSize - 1);
+        server_->OnInputBufferAvailable(index, buffer);
+        int32_t ret = server_->DrmVideoCencDecrypt(index);
+        EXPECT_EQ(ret, AVCS_ERR_OK);
+        server_->OnInputBufferAvailable(index, buffer);
+        ret = server_->DrmVideoCencDecrypt(index);
+        EXPECT_EQ(ret, AVCS_ERR_OK);
+    }
+}
+
+/**
  * @tc.name: MergeFormat_Valid_Test_001
  * @tc.desc: MergeFormat format key type FORMAT_TYPE_INT32
  */
