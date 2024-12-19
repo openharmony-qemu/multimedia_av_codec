@@ -38,6 +38,7 @@ using MediaType = OHOS::Media::Plugins::MediaType;
 namespace {
     const std::string MIME_IMAGE = "image";
     const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
+    constexpr int32_t INVALID_TRACK_ID = -1;
 }
 static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
     "builtin.player.demuxer", FilterType::FILTERTYPE_DEMUXER,
@@ -793,6 +794,12 @@ void DemuxerFilter::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
     demuxer_->WaitForBufferingEnd();
+}
+
+int32_t DemuxerFilter::GetCurrentVideoTrackId()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, INVALID_TRACK_ID, "demuxer_ is nullptr");
+    return demuxer_->GetCurrentVideoTrackId();
 }
 } // namespace Pipeline
 } // namespace Media
