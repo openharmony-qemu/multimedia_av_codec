@@ -66,6 +66,7 @@ public:
 private:
     void CloseUri(bool isAsync = false);
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
+    bool CheckIsM3U8Uri();
 
     uint32_t bufferSize_;
     uint32_t waterline_;
