@@ -564,6 +564,25 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_DumpSliceAudioBuffer001, Tes
     audioServerSinkPlugin->DumpSliceAudioBuffer(buffer, bytesSingle);
     ASSERT_EQ(audioServerSinkPlugin->curCount_, audioServerSinkPlugin->sliceCount_);
 }
+
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_GetWriteDurationMs001, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    int64_t duration =  100;
+    audioServerSinkPlugin->writeDuration_ = duration;
+    int64_t ret = audioServerSinkPlugin->GetWriteDurationMs();
+    ASSERT_EQ(ret, duration);
+}
+
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_Drain001, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    audioServerSinkPlugin->audioRenderer_ = nullptr;
+    Status ret = audioServerSinkPlugin->Drain();
+    ASSERT_EQ(ret, Status::ERROR_WRONG_STATE);
+}
 }  // namespace Test
 }  // namespace Media
 }  // namespace OHOS
