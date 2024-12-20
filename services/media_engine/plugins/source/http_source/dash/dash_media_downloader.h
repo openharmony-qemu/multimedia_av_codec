@@ -105,7 +105,7 @@ private:
     Callback* callback_ {nullptr};
     StatusCallbackFunc statusCallback_ {nullptr};
 
-    std::shared_ptr<DashMpdDownloader> mpdDownloader_;
+    std::shared_ptr<DashMpdDownloader> mpdDownloader_ {nullptr};
     std::vector<std::shared_ptr<DashSegmentDownloader>> segmentDownloaders_;
 
     std::atomic<bool> isInterruptNeeded_{false};

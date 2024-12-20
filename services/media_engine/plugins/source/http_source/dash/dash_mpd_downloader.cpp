@@ -866,36 +866,6 @@ std::vector<uint32_t> DashMpdDownloader::GetBitRatesByHdr(bool isHdr) const
     return bitRates;
 }
 
-bool DashMpdDownloader::IsBitrateSame(uint32_t bitRate)
-{
-    selectVideoStreamId_ = -1;
-    uint32_t maxGap = 0;
-    bool isFirstSelect = true;
-    std::shared_ptr<DashStreamDescription> currentStream;
-    std::shared_ptr<DashStreamDescription> newStream;
-    for (const auto &item: streamDescriptions_) {
-        if (item->type_ != MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
-            continue;
-        }
-
-        if (item->inUse_) {
-            currentStream = item;
-        }
-
-        uint32_t tempGap = (item->bandwidth_ > bitRate) ? (item->bandwidth_ - bitRate) : (bitRate - item->bandwidth_);
-        if (isFirstSelect || (tempGap < maxGap)) {
-            isFirstSelect = false;
-            maxGap = tempGap;
-            newStream = item;
-            selectVideoStreamId_ = newStream->streamId_;
-        }
-    }
-    if (newStream == nullptr || (currentStream != nullptr && (newStream->bandwidth_ == currentStream->bandwidth_))) {
-        return true;
-    }
-    return false;
-}
-
 void DashMpdDownloader::SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg) const
 {
     seg = nullptr;
