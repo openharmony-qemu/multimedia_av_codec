@@ -325,14 +325,14 @@ inline int ConvFp(int32_t x)
     return static_cast<int32_t>(x / (1 << 16)); // 16 is used for digital conversion
 }
 
-std::string ConvertArrayToString(const int* Array, size_t size)
+std::string ConvertArrayToString(const int* array, size_t size)
 {
     std::string result;
     for (size_t i = 0; i < size; ++i) {
         if (i > 0) {
             result += ' ';
         }
-        result += std::to_string(Array[i]);
+        result += std::to_string(array[i]);
     }
     return result;
 }
