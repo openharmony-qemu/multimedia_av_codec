@@ -1193,7 +1193,7 @@ HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_001, TestSize.Level1)
     server_->isModeConfirmed_ = true;
     server_->isSurfaceMode_ = true;
     server_->isFreezedFlag_ = true;
-    server_->NotifyBackGround();
+    server_->NotifyForeGround();
     EXPECT_FALSE(server_->isFreezedFlag_);
 }
 

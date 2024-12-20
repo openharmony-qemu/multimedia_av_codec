@@ -31,7 +31,9 @@
 #ifdef SUPPORT_CODECLIST
 #include "codeclist_service_stub.h"
 #endif
-
+#ifdef USE_EFFICIENCY_MANAGER
+#include "syspara/parameters.h"
+#endif
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServerManager"};
 } // namespace
