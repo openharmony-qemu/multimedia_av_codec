@@ -48,7 +48,7 @@ public:
 static bool DecideMode(bool supportPassthrough, bool isSecure)
 {
 #ifdef BUILD_ENG_VERSION
-    string mode = OHOS::system::GetParameter("persist.hcodec.usePassthrough", "");
+    string mode = OHOS::system::GetParameter("hcodec.usePassthrough", "");
     if (mode == "1") {
         LOGI("force passthrough");
         return true;
@@ -175,7 +175,7 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     LOGI("blockPerFrame: [%d, %d], blockPerSecond: [%d, %d]",
         userCap.blockPerFrame.minVal, userCap.blockPerFrame.maxVal,
         userCap.blockPerSecond.minVal, userCap.blockPerSecond.maxVal);
-    LOGI("isSupportPassthrough: %d, isSupportQPMap", hdiVideoCap.isSupportPassthrough, hdiVideoCap.isSupportQPMap);
+    LOGI("isSupportPassthrough: %d", hdiVideoCap.isSupportPassthrough);
     LOGI("isSupportWaterMark: %d, isSupportLowLatency: %d, isSupportTSVC: %d, isSupportLTR %d and maxLTRFrameNum %d",
         hdiVideoCap.isSupportWaterMark, hdiVideoCap.isSupportLowLatency, hdiVideoCap.isSupportTSVC,
         hdiVideoCap.isSupportLTR, hdiVideoCap.maxLTRFrameNum);
@@ -287,9 +287,6 @@ void HCodecList::GetSupportedFeatureParam(const CodecVideoPortCap& hdiVideoCap,
     }
     if (hdiVideoCap.isSupportWaterMark) {
         userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK)] = Format();
-    }
-    if (hdiVideoCap.isSupportQPMap) {
-        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_QP_MAP)] = Format();
     }
 }
 } // namespace OHOS::MediaAVCodec

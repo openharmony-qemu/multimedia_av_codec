@@ -73,7 +73,6 @@ struct PerFrameParams {
     std::optional<LTRParam> ltrParam;
     std::optional<bool> discard;
     std::optional<EBRParam> ebrParam;
-    std::optional<int32_t> qpMapValue;
 };
 
 struct ResourceParams {
@@ -127,7 +126,6 @@ struct CommandOpt {
     std::optional<int32_t> isVrrEnable;
     WaterMarkParam waterMark;
     bool paramsFeedback;
-    bool enableQPMap = false;
 
     // decoder only
     bool decThenEnc = false;
