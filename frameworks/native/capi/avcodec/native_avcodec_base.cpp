@@ -131,8 +131,6 @@ const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE = "video_decoder_output_c
 const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_ENABLE_VRR = "video_decoder_output_enable_vrr";
 const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER = "video_encoder_repeat_previous_frame_after";
 const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT = "video_encoder_repeat_previous_max_count";
-const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_QP_MAP = "video_encoder_enable_qp_map";
-const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_QP_MAP = "video_encoder_per_frame_qp_map";
 
 #ifdef __cplusplus
 }

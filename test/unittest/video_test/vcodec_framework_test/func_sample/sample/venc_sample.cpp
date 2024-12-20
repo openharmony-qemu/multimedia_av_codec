@@ -653,24 +653,6 @@ void VideoEncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t f
     }
 }
 
-void VideoEncSample::InputQPMap(std::shared_ptr<FormatMock> format, std::shared_ptr<AVBufferMock> buffer)
-{
-    if (!enableQPMapCapability) {
-        return;
-    }
-
-    size_t qpMapSize =
-        ((DEFAULT_WIDTH_VENC + 15) / 16) * ((DEFAULT_HEIGHT_VENC + 15) / 16); // 15, 16: calculate block num
-    uint8_t *qpMap = new uint8_t[qpMapSize];
-    (void)memset_s(qpMap, qpMapSize, 10, qpMapSize); // 10: qp
-    format->PutBuffer(Media::Tag::VIDEO_ENCODER_PER_FRAME_QP_MAP, qpMap, qpMapSize);
-    if (buffer) {
-        buffer->SetParameter(format);
-    }
-
-    delete [] qpMap;
-}
-
 void VideoEncSample::InputParamLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
@@ -701,7 +683,6 @@ void VideoEncSample::InputParamLoopFunc()
         }
 
         InputLtrParam(format, frameInputCount_, nullptr);
-        InputQPMap(format, nullptr);
 
         UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
         int32_t ret = PushInputParameter(index);
@@ -993,7 +974,6 @@ int32_t VideoEncSample::InputLoopInnerExt()
             (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
         }
         InputLtrParam(format, frameInputCount_, buffer);
-        InputQPMap(format, buffer);
     }
 
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
