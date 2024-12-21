@@ -1596,7 +1596,8 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_9400, TestSize.Level2)
         OH_AVRange widthRange;
         ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoHeightRange(capability, &heightRange));
         ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoWidthRange(capability, &widthRange));
-        ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, widthRange.maxVal + 1, heightRange.maxVal + 1));
+        ASSERT_EQ(false,
+            OH_AVCapability_IsVideoSizeSupported(capability, widthRange.maxVal + 1, heightRange.maxVal + 1));
     }
 }
 /**
