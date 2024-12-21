@@ -317,7 +317,6 @@ bool HlsMediaDownloader::HandleBuffering()
         AutoLock lk(bufferingEndMutex_);
         if (!canWrite_) {
             MEDIA_LOG_I("HLS canWrite false");
-            isBuffering_ = false;
         }
         {
             AutoLock lock(tsStorageInfoMutex_);
@@ -549,7 +548,11 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     readTime_ = now;
-
+    if (isBuffering_ && !canWrite_) {
+        MEDIA_LOG_I("HLS can not write and buffering.");
+        SeekToTsForRead(readTsIndex_);
+        return Status::ERROR_AGAIN;
+    }
     if (!CheckDataIntegrity()) {
         MEDIA_LOG_W("HLS Read in, fix download.");
         SeekToTsForRead(readTsIndex_);
@@ -596,6 +599,7 @@ void HlsMediaDownloader::PrepareToSeek()
     cacheMediaBuffer_.reset();
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
+    canWrite_ = true;
 
     AutoLock lock(tsStorageInfoMutex_);
     tsStorageInfo_.clear();

@@ -187,12 +187,14 @@ void HlsPlayListDownloader::UpdateMasterAndNotifyList(bool isPreParse)
     bool ret = false;
     if (!master_->isSimple_) {
         currentVariant_ = master_->defaultVariant_;
-        ret = currentVariant_->m3u8_->Update(playList_, true);
+        if (currentVariant_ && currentVariant_->m3u8_) {
+            ret = currentVariant_->m3u8_->Update(playList_, true);
+        }
     }
     if (currentVariant_ && currentVariant_->m3u8_) {
         currentVariant_->m3u8_->httpHeader_ = httpHeader_;
     }
-    if (master_->isSimple_) {
+    if (master_->isSimple_ && currentVariant_ && currentVariant_->m3u8_) {
         ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
         master_->isParseSuccess_ = ret;
     }
