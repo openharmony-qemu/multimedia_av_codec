@@ -44,14 +44,6 @@ enum class StateCode {
     RESUME,
 };
 
-enum class EncoderAdapterErrorType: int32_t {
-    AVCODEC_ERROR_INTERNAL,
-    AVCODEC_ERROR_DECRYTION_FAILED,
-    AVCODEC_ERROR_EXTEND_START = 0X10000,
-    // codec no frame processed
-    AVCODEC_ERROR_ECODER_NO_FRAME_PROCESSED = 0X20000
-
-}
 class EncoderAdapterCallback {
 public:
     virtual ~EncoderAdapterCallback() = default;

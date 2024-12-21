@@ -33,6 +33,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "
 constexpr uint32_t TIME_OUT_MS = 1000;
 constexpr uint32_t NS_PER_US = 1000;
 constexpr int64_t SEC_TO_NS = 1000000000;
+constexpr uint32_t AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED = 0X20000;
 namespace OHOS {
 namespace Media {
 
@@ -335,10 +336,11 @@ Status SurfaceEncoderAdapter::Stop()
     if (isStart_ && !isTransCoderMode) {
         std::unique_lock<std::mutex> lock(stopMutex_);
         std::cv_status wait_status = stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
-
-        if (wait_status == std::cv_status::timeout) {
+        // Waiting timeout with no video frame received
+        if (wait_status == std::cv_status::timeout && currentKeyFramePts_ == -1) {
             MEDIA_LOG_E("Codec stop with no frame pts > stoptime.");
-            encoderAdapterCallback_->OnError(AVCODEC_ERROR_ECODER_NO_FRAME_PROCESSED, 0X20000);
+            encoderAdapterCallback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL,
+                                             AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED);
         }
         AddStopPts();
     }
