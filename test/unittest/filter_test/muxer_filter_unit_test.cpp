@@ -67,12 +67,10 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_GetCurrentPtsMs_0100, TestSize.Level1)
  */
 HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoStart_0100, TestSize.Level1)
 {
-    muxerFilter_->startCount_ = 0;
-    muxerFilter_->preFilterCount_ = 1;
     muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
     muxerFilter_->DoStart();
-    muxerFilter_->startCount_ = 0;
-    muxerFilter_->preFilterCount_ = 0;
+    EXPECT_EQ(muxerFilter_->DoStart(), Status::OK);
+    EXPECT_EQ(muxerFilter_->isStarted, true);
     EXPECT_EQ(muxerFilter_->DoStart(), Status::OK);
 }
 
@@ -84,15 +82,13 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoStart_0100, TestSize.Level1)
 HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoStop_0100, TestSize.Level1)
 {
     muxerFilter_->stopCount_ = 0;
-    muxerFilter_->preFilterCount_ = 1;
+    muxerFilter_->preFilterCount_ = 2;
     muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
     EXPECT_EQ(muxerFilter_->DoStop(), Status::OK);
-    muxerFilter_->stopCount_ = 0;
-    muxerFilter_->preFilterCount_ = 0;
-    muxerFilter_->DoStop();
-    muxerFilter_->stopCount_ = 0;
-    muxerFilter_->preFilterCount_ = 1;
+    EXPECT_EQ(muxerFilter_->isStarted, true);
+
     EXPECT_EQ(muxerFilter_->DoStop(), Status::OK);
+    EXPECT_EQ(muxerFilter_->isStarted, false);
 }
 
 /**
