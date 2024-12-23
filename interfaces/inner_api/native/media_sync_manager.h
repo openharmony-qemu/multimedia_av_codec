@@ -84,7 +84,7 @@ private:
     std::vector<std::function<bool(MediaSyncManager*, int64_t&)>> setMediaTimeFuncs {
         &MediaSyncManager::CheckSeekingMediaTime,
         &MediaSyncManager::CheckPausedMediaTime,
-        &MediaSyncManager::CheckNoneMediaTime,
+        &MediaSyncManager::CheckIfMediaTimeIsNone,
         &MediaSyncManager::CheckFirstMediaTimeAfterSeek
     };
 
