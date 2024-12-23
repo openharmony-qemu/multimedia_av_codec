@@ -1705,6 +1705,11 @@ Status MediaDemuxer::HandleReadSample(uint32_t trackId)
     if (trackId == videoTrackId_) {
         std::unique_lock<std::mutex> draggingLock(draggingMutex_);
         if (VideoStreamReadyCallback_ != nullptr) {
+            if (ret != Status::OK && ret != Status::END_OF_STREAM) {
+                bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
+                MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_U32 ", ret:" PUBLIC_LOG_D32, trackId, (int32_t)(ret));
+                return ret;
+            }
             MEDIA_LOG_D("In");
             std::shared_ptr<VideoStreamReadyCallback> videoStreamReadyCallback = VideoStreamReadyCallback_;
             draggingLock.unlock();
@@ -1737,9 +1742,6 @@ Status MediaDemuxer::HandleReadSample(uint32_t trackId)
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
             return Status::OK;
         }
-        MEDIA_LOG_D("HandleReadSample PushBuffer, track: " PUBLIC_LOG_U32 ", bufferid: " PUBLIC_LOG_U64 ", pts: "
-            PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32,
-            trackId, bufferMap_[trackId]->GetUniqueId(), bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
         HandleAutoMaintainPts(trackId, bufferMap_[trackId]);
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
         ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
