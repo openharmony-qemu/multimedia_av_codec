@@ -32,8 +32,6 @@ namespace Media {
 namespace Pipeline {
 namespace {
 using namespace std::chrono;
-constexpr int MEDIA_TUPLE_START_INDEX = 1;
-constexpr int MEDIA_TUPLE_END_INDEX = 2;
 }
 
 MediaSyncManager::~MediaSyncManager()
@@ -76,7 +74,7 @@ Status MediaSyncManager::SetPlaybackRate(float rate)
     if (currentMediaTime != HST_TIME_NONE) {
         SimpleUpdateTimeAnchor(currentClockTime, currentMediaTime);
     }
-    playRate_ = playRate;
+    playRate_ = rate;
     return Status::OK;
 }
 
@@ -160,7 +158,8 @@ Status MediaSyncManager::Pause()
 Status MediaSyncManager::Seek(int64_t mediaTime, bool isClosest)
 {
     OHOS::Media::AutoLock lock(clockMutex_);
-    FALSE_RETURN_V_NOLOG(minRangeStartOfMediaTime_ != HST_TIME_NONE && maxRangeEndOfMediaTime_ != HST_TIME_NONE, Status::ERROR_INVALID_OPERATION);
+    FALSE_RETURN_V_NOLOG(minRangeStartOfMediaTime_ != HST_TIME_NONE && maxRangeEndOfMediaTime_ != HST_TIME_NONE,
+        Status::ERROR_INVALID_OPERATION);
     isSeeking_ = true;
     MEDIA_LOG_I_SHORT("isSeeking_ mediaTime: %{public}" PRId64, mediaTime);
     seekingMediaTime_ = mediaTime;
