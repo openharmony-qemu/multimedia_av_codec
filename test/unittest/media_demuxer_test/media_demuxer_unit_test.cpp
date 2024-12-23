@@ -1107,9 +1107,9 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.
     demuxer->videoTrackId_ = 1;
     demuxer->subtitleTrackId_ = 2;
 
-    EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::OK);
-    EXPECT_EQ(demuxer->HandleDashSelectTrack(1), Status::OK);
-    EXPECT_EQ(demuxer->HandleDashSelectTrack(2), Status::OK);
+    EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::ERROR_INVALID_OPERATION);
+    EXPECT_EQ(demuxer->HandleDashSelectTrack(1), Status::ERROR_INVALID_OPERATION);
+    EXPECT_EQ(demuxer->HandleDashSelectTrack(2), Status::ERROR_INVALID_OPERATION);
     EXPECT_EQ(demuxer->HandleDashSelectTrack(3), Status::ERROR_UNKNOWN);
 }
 
