@@ -30,8 +30,7 @@ namespace HttpPlugin {
 namespace {
 constexpr int DEFAULT_BUFFER_SIZE = 200 * 1024;
 constexpr int ERROR_COUNT = 5;
-const std::string M3U8_SUFFIX = ".m3u8";
-const std::string M3U8_BINARY = "/m3u8";
+const std::string LOWER_M3U8 = "m3u8";
 const std::string DASH_SUFFIX = ".mpd";
 
 }
@@ -140,8 +139,7 @@ Status HttpSourcePlugin::Stop()
 Status HttpSourcePlugin::Pause()
 {
     MEDIA_LOG_I("Pause enter.");
-    if (downloader_ != nullptr && (uri_.find(M3U8_SUFFIX) != std::string::npos ||
-        uri_.find(M3U8_BINARY) != std::string::npos)) {
+    if (downloader_ != nullptr && CheckIsM3U8Uri()) {
         downloader_->Pause();
     }
     return Status::OK;
@@ -150,8 +148,7 @@ Status HttpSourcePlugin::Pause()
 Status HttpSourcePlugin::Resume()
 {
     MEDIA_LOG_I("Resume enter.");
-    if (downloader_ != nullptr && (uri_.find(M3U8_SUFFIX) != std::string::npos ||
-        uri_.find(M3U8_BINARY) != std::string::npos)) {
+    if (downloader_ != nullptr && CheckIsM3U8Uri()) {
         downloader_->Resume();
     }
     return Status::OK;
@@ -247,8 +244,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
 bool HttpSourcePlugin::IsSeekToTimeSupported()
 {
     if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
-        return uri_.find(M3U8_SUFFIX) != std::string::npos || uri_.find(DASH_SUFFIX) != std::string::npos ||
-               uri_.find(M3U8_BINARY) != std::string::npos;
+        return CheckIsM3U8Uri() || uri_.find(DASH_SUFFIX) != std::string::npos;
     }
     MEDIA_LOG_I("IsSeekToTimeSupported return true");
     return true;
@@ -458,6 +454,19 @@ void HttpSourcePlugin::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(downloader_ != nullptr, "WaitForBufferingEnd downloader is nullptr");
     downloader_->WaitForBufferingEnd();
+}
+
+bool HttpSourcePlugin::CheckIsM3U8Uri()
+{
+    if (uri_.empty()) {
+        return false;
+    }
+    std::string uri = uri_;
+    std::transform(uri.begin(), uri.end(), uri.begin(), ::tolower);
+    if (uri.find(LOWER_M3U8) != std::string::npos) {
+        return true;
+    }
+    return false;
 }
 }
 }

@@ -47,6 +47,7 @@ const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
 static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
+static constexpr int32_t INVALID_TRACK_ID = -1;
 } // namespace
 
 namespace OHOS {
@@ -1752,6 +1753,11 @@ Status MediaDemuxer::HandleReadSample(uint32_t trackId)
     if (trackId == videoTrackId_) {
         std::unique_lock<std::mutex> draggingLock(draggingMutex_);
         if (VideoStreamReadyCallback_ != nullptr) {
+            if (ret != Status::OK && ret != Status::END_OF_STREAM) {
+                bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
+                MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_U32 ", ret:" PUBLIC_LOG_D32, trackId, (int32_t)(ret));
+                return ret;
+            }
             MEDIA_LOG_D("In");
             std::shared_ptr<VideoStreamReadyCallback> videoStreamReadyCallback = VideoStreamReadyCallback_;
             draggingLock.unlock();
@@ -1784,9 +1790,6 @@ Status MediaDemuxer::HandleReadSample(uint32_t trackId)
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
             return Status::OK;
         }
-        MEDIA_LOG_D("HandleReadSample PushBuffer, track: " PUBLIC_LOG_U32 ", bufferid: " PUBLIC_LOG_U64 ", pts: "
-            PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32,
-            trackId, bufferMap_[trackId]->GetUniqueId(), bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
         HandleAutoMaintainPts(trackId, bufferMap_[trackId]);
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
         ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
@@ -2254,6 +2257,11 @@ void MediaDemuxer::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(source_ != nullptr, "Source is nullptr");
     source_->WaitForBufferingEnd();
+}
+
+int32_t MediaDemuxer::GetCurrentVideoTrackId()
+{
+    return (videoTrackId_ != TRACK_ID_DUMMY ? static_cast<int32_t>(videoTrackId_) : INVALID_TRACK_ID);
 }
 } // namespace Media
 } // namespace OHOS
