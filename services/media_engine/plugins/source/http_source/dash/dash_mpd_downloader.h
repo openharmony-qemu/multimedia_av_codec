@@ -122,7 +122,6 @@ public:
     Seekable GetSeekable() const;
     std::vector<uint32_t> GetBitRates() const;
     std::vector<uint32_t> GetBitRatesByHdr(bool isHdr) const;
-    bool IsBitrateSame(uint32_t bitRate);
     void SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg) const;
     void UpdateDownloadFinished(const std::string &url);
     int GetInUseVideoStreamId() const;
@@ -251,7 +250,6 @@ private:
     bool notifyOpenOk_ {false};
     bool isHdrStart_ {false};
     unsigned int initResolution_ {0};
-    int selectVideoStreamId_ {-1};
     std::atomic<bool> isInterruptNeeded_{false};
     std::vector<DashDrmInfo> localDrmInfos_;
 };
