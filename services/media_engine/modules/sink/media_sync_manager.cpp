@@ -34,12 +34,6 @@ namespace {
 using namespace std::chrono;
 constexpr int MEDIA_TUPLE_START_INDEX = 1;
 constexpr int MEDIA_TUPLE_END_INDEX = 2;
-std::vector<std::function<bool(MediaSyncManager*, int64_t&)>> setMediaTimeFuncs {
-    &MediaSyncManager::CheckSeekingMediaTime,
-    &MediaSyncManager::CheckPausedMediaTime,
-    &MediaSyncManager::CheckNoneMediaTime,
-    &MediaSyncManager::CheckFirstMediaTimeAfterSeek
-};
 }
 
 MediaSyncManager::~MediaSyncManager()

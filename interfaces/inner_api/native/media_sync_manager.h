@@ -81,6 +81,13 @@ private:
         PAUSED,
     };
 
+    std::vector<std::function<bool(MediaSyncManager*, int64_t&)>> setMediaTimeFuncs {
+        &MediaSyncManager::CheckSeekingMediaTime,
+        &MediaSyncManager::CheckPausedMediaTime,
+        &MediaSyncManager::CheckNoneMediaTime,
+        &MediaSyncManager::CheckFirstMediaTimeAfterSeek
+    };
+
     static int64_t GetSystemClock();
     int64_t GetMediaTime(int64_t clockTime);
 
@@ -93,17 +100,17 @@ private:
     bool IsSupplierValid(IMediaSynchronizer* supplier);
     bool IsPlayRateValid(float playRate);
 
-    // GetMediaTimeNow executes the following functions in sequence, 
-    // Check and set media time, 
-    // return true to indicate that subsequent functions should continue to execute, 
+    // GetMediaTimeNow executes the following functions in sequence,
+    // Check and set media time,
+    // return true to indicate that subsequent functions should continue to execute,
     // false to indicate that the current mediaTime should be returned directly
     bool CheckSeekingMediaTime(int64_t& mediaTime);
     bool CheckPausedMediaTime(int64_t& mediaTime);
     bool CheckIfMediaTimeIsNone(int64_t& mediaTime);
     bool CheckFirstMediaTimeAfterSeek(int64_t& mediaTime);
 
-    // Check the media time range, 
-    // ensure that media time does not regress in non-seek state, 
+    // Check the media time range,
+    // ensure that media time does not regress in non-seek state,
     // and does not exceed the maximum media progress
     int64_t BoundMediaProgress(int64_t newMediaProgressTime);
     // get the maximum media progress
@@ -136,8 +143,6 @@ private:
     int8_t currentSyncerPriority_ {IMediaSynchronizer::NONE};
     int8_t currentRangeStartPriority_ {IMediaSynchronizer::NONE};
     int8_t currentRangeEndPriority_ {IMediaSynchronizer::NONE};
-
-
 };
 } // namespace Pipeline
 } // namespace Media
