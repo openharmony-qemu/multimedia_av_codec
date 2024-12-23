@@ -105,9 +105,6 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     if (ret == DASH_READ_END) {
         MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", readDataInfo.streamId_);
         readDataInfo.isEos_ = true;
-        if (callback_ != nullptr) {
-            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
-        }
         return Status::END_OF_STREAM;
     } else if (ret == DASH_READ_AGAIN) {
         return Status::ERROR_AGAIN;
