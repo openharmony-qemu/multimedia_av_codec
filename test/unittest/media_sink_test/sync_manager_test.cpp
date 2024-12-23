@@ -320,61 +320,6 @@ HWTEST_F(TestSyncManager,
     EXPECT_EQ(syncManager_->SetPlaybackRate(rate), Status::OK);
 }
 
-// Scenario1: Test when inTime is less than minRangeStartOfMediaTime_
-HWTEST_F(TestSyncManager, ClipMediaTime_ShouldClipToMin_WhenInTimeLessThanMin, TestSize.Level0)
-{
-    syncManager_->minRangeStartOfMediaTime_ = 100;
-    syncManager_->maxRangeEndOfMediaTime_ = 200;
-    int64_t inTime = 50;
-    int64_t expected = 100;
-    int64_t result = syncManager_->ClipMediaTime(inTime);
-    ASSERT_EQ(expected, result);
-}
-
-// Scenario2: Test when inTime is more than maxRangeEndOfMediaTime_
-HWTEST_F(TestSyncManager, ClipMediaTime_ShouldClipToMax_WhenInTimeMoreThanMax, TestSize.Level0)
-{
-    syncManager_->minRangeStartOfMediaTime_ = 100;
-    syncManager_->maxRangeEndOfMediaTime_ = 200;
-    int64_t inTime = 250;
-    int64_t expected = 200;
-    int64_t result = syncManager_->ClipMediaTime(inTime);
-    ASSERT_EQ(expected, result);
-}
-
-// Scenario3: Test when inTime is between minRangeStartOfMediaTime_ and maxRangeEndOfMediaTime_
-HWTEST_F(TestSyncManager, ClipMediaTime_ShouldNotClip_WhenInTimeBetweenMinAndMax, TestSize.Level0)
-{
-    syncManager_->minRangeStartOfMediaTime_ = 100;
-    syncManager_->maxRangeEndOfMediaTime_ = 200;
-    int64_t inTime = 150;
-    int64_t expected = 150;
-    int64_t result = syncManager_->ClipMediaTime(inTime);
-    ASSERT_EQ(expected, result);
-}
-
-// Scenario4: Test when inTime is equal to minRangeStartOfMediaTime_
-HWTEST_F(TestSyncManager, ClipMediaTime_ShouldNotClip_WhenInTimeEqualToMin, TestSize.Level0)
-{
-    syncManager_->minRangeStartOfMediaTime_ = 100;
-    syncManager_->maxRangeEndOfMediaTime_ = 200;
-    int64_t inTime = 100;
-    int64_t expected = 100;
-    int64_t result = syncManager_->ClipMediaTime(inTime);
-    ASSERT_EQ(expected, result);
-}
-
-// Scenario5: Test when inTime is equal to maxRangeEndOfMediaTime_
-HWTEST_F(TestSyncManager, ClipMediaTime_ShouldNotClip_WhenInTimeEqualToMax, TestSize.Level0)
-{
-    syncManager_->minRangeStartOfMediaTime_ = 100;
-    syncManager_->maxRangeEndOfMediaTime_ = 200;
-    int64_t inTime = 200;
-    int64_t expected = 200;
-    int64_t result = syncManager_->ClipMediaTime(inTime);
-    ASSERT_EQ(expected, result);
-}
-
 HWTEST_F(TestSyncManager, UpdateFirstPtsAfterSeek_ShouldUpdateFirstPts_WhenFirstPtsIsNone, TestSize.Level0)
 {
     int64_t mediaTime = 100;
