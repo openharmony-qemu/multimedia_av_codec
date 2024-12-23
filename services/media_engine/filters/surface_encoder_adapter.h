@@ -43,6 +43,7 @@ enum class StateCode {
     PAUSE,
     RESUME,
 };
+
 class EncoderAdapterCallback {
 public:
     virtual ~EncoderAdapterCallback() = default;
