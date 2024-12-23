@@ -26,9 +26,9 @@ void StateMachine::ChangeStateTo(const std::shared_ptr<State> &targetState)
     std::shared_ptr<State> lastState = currState_;
     currState_ = targetState;
     if (lastState == nullptr) {
-        LOGI("change to %s", currState_->stateName_.c_str());
+        LOGD("change to %s", currState_->stateName_.c_str());
     } else {
-        LOGI("%s -> %s", lastState->stateName_.c_str(), currState_->stateName_.c_str());
+        LOGD("%s -> %s", lastState->stateName_.c_str(), currState_->stateName_.c_str());
         lastState->OnStateExited();
     }
     currState_->OnStateEntered();

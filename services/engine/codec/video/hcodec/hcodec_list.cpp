@@ -107,7 +107,7 @@ vector<CodecCompCapability> GetCapList()
     if (capList.empty()) {
         LOGE("GetComponentCapabilityList return empty");
     } else {
-        LOGI("GetComponentCapabilityList return %zu components", capList.size());
+        LOGD("GetComponentCapabilityList return %zu components", capList.size());
     }
     return capList;
 }

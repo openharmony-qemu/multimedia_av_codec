@@ -93,6 +93,7 @@ private:
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;
     void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
+    void CheckPts(int64_t currentPts);
 
     // per frame param
     void WrapPerFrameParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
@@ -145,6 +146,7 @@ private:
     std::map<uint32_t, InSurfaceBufferEntry> encodingBuffers_;
     uint64_t repeatUs_ = 0;      // 0 means user don't set this value
     int32_t repeatMaxCnt_ = 10;  // default repeat 10 times. <0 means repeat forever. =0 means nothing.
+    std::optional<int64_t> pts_;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HENCODER_H

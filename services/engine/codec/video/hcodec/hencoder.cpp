@@ -753,7 +753,7 @@ bool HEncoder::ReadyToStart()
         return false;
     }
     if (inputSurface_) {
-        HLOGI("surface mode");
+        HLOGI("surface mode, surface id = %" PRIu64, inputSurface_->GetUniqueId());
     } else {
         HLOGI("buffer mode");
     }
@@ -869,7 +869,8 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
     if (inBufferCnt_ > inputSurface_->GetQueueSize()) {
         inputSurface_->SetQueueSize(inBufferCnt_);
     }
-    HLOGI("queue size %u", inputSurface_->GetQueueSize());
+    HLOGI("succ, surface id = %" PRIu64 ", queue size %u",
+          inputSurface_->GetUniqueId(), inputSurface_->GetQueueSize());
     return producerSurface;
 }
 
@@ -1100,7 +1101,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     // buffer mode or surface callback mode
     uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
-    SCOPED_TRACE_WITH_ID(bufferId);
+    SCOPED_TRACE_FMT("id: %u", bufferId);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (bufferInfo == nullptr) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
@@ -1116,6 +1117,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     if (inputSurface_ && bufferInfo->avBuffer->meta_->GetData(
         OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, discard) && discard) {
         HLOGI("inBufId = %u, discard by user, pts = %" PRId64, bufferId, bufferInfo->avBuffer->pts_);
+        inputDiscardCnt_++;
         bufferInfo->avBuffer->meta_->Clear();
         ResetSlot(*bufferInfo);
         ReplyErrorCode(msg.id, AVCS_ERR_OK);
@@ -1253,6 +1255,7 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         info.avBuffer->pts_ = entry.pts;
         NotifyUserToFillThisInBuffer(info);
     } else {
+        CheckPts(info.omxBuffer->pts);
         int32_t err = NotifyOmxToEmptyThisInBuffer(info);
         if (err != AVCS_ERR_OK) {
             ResetSlot(info);
@@ -1261,9 +1264,22 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
     }
 }
 
+void HEncoder::CheckPts(int64_t currentPts)
+{
+    if (!pts_.has_value()) {
+        pts_ = currentPts;
+    } else {
+        int64_t lastPts = pts_.value();
+        if (currentPts <= lastPts) {
+            HLOGW("pts not incremental: last %" PRId64 ", current %" PRId64, lastPts, currentPts);
+        }
+        pts_ = currentPts;
+    }
+}
+
 void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 {
-    SCOPED_TRACE_WITH_ID(bufferId);
+    SCOPED_TRACE_FMT("id: %u", bufferId);
     BufferInfo *info = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (info == nullptr) {
         HLOGE("unknown buffer id %u", bufferId);
@@ -1318,6 +1334,7 @@ void HEncoder::OnEnterUninitializedState()
     avaliableBuffers_.clear();
     newestBuffer_.item.reset();
     encodingBuffers_.clear();
+    pts_ = std::nullopt;
 }
 
 HEncoder::BufferItem::~BufferItem()
