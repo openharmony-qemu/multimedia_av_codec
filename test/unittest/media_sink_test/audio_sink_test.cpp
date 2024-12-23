@@ -1257,6 +1257,36 @@ HWTEST(TestAudioSink, audio_sink_DropApeBuffer_004, TestSize.Level1)
     buffer->pts_ = 5 * HST_NSECOND;
     ASSERT_TRUE(audioSink->DropApeBuffer(buffer));
 }
+
+HWTEST(TestAudioSink, audio_sink_SetIsTransitent_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    auto ret = audioSink->SetIsTransitent(true);
+    ASSERT_TRUE(ret == Status::OK);
+}
+
+HWTEST(TestAudioSink, audio_sink_GetSyncCenterClockTime_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    int64_t clockTime = 0;
+    auto ret = audioSink->SetIsTransitent(clockTime);
+    ASSERT_TRUE(ret == Status::OK);
+}
+
+HWTEST(TestAudioSink, audio_sink_SetMuted_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    auto ret = audioSink->SetMuted(true);
+    ASSERT_TRUE(ret == Status::OK);
+}
+
+HWTEST(TestAudioSink, audio_sink_SetSeekTime_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    int64_t seekTime = 0;
+    auto ret = audioSink->SetSeekTime(seekTime);
+    ASSERT_TRUE(ret == Status::OK);
+}
 } // namespace Test
 } // namespace Media
 } // namespace OHOS
