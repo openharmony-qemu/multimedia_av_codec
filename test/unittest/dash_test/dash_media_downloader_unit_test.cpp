@@ -60,7 +60,7 @@ void DashMediaDownloaderUnitTest::TearDownTestCase(void)
     g_mediaDownloader->Resume();
     g_mediaDownloader->SetInterruptState(true);
     g_mediaDownloader->SetDemuxerState(0);
-    g_mediaDownloader->Close(true);
+    g_mediaDownloader->Close(false);
     g_mediaDownloader = nullptr;
 
     g_server->StopServer();
@@ -254,7 +254,8 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_SUBTITLE, TestSize.Level1)
         mediaDownloader->SeekToTime(1, SeekMode::SEEK_NEXT_SYNC);
     }
 
-    mediaDownloader->Close(true);
+    usleep(WAIT_FOR_SIDX_TIME);
+    mediaDownloader->Close(false);
     mediaDownloader = nullptr;
     EXPECT_EQ(status, Status::OK);
 }
@@ -310,7 +311,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE_AFTER_SWITCH, TestSize
     bool result = mediaDownloader->SelectBitRate(switchingBitrate);
 
     usleep(WAIT_FOR_SIDX_TIME);
-    mediaDownloader->Close(true);
+    mediaDownloader->Close(false);
     mediaDownloader = nullptr;
     EXPECT_EQ(status, Status::OK);
     EXPECT_TRUE(result);
@@ -367,7 +368,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_SUBTITLE_AFTER_SWITCH, TestSiz
     Status status = mediaDownloader->SelectStream(switchingSubtitleStreamId);
 
     usleep(WAIT_FOR_SIDX_TIME);
-    mediaDownloader->Close(true);
+    mediaDownloader->Close(false);
     mediaDownloader = nullptr;
     EXPECT_EQ(status, Status::OK);
     EXPECT_TRUE(result);
@@ -387,7 +388,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
     mediaDownloader->GetSeekable();
 
     bool result = mediaDownloader->SeekToTime(1, SeekMode::SEEK_NEXT_SYNC);
-    mediaDownloader->Close(true);
+    mediaDownloader->Close(false);
     mediaDownloader = nullptr;
     EXPECT_TRUE(result);
 }
@@ -417,7 +418,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_READ, TestSize.Level1)
     mediaDownloader->Read(buff, readDataInfo);
     mediaDownloader->SetDownloadErrorState();
     mediaDownloader->Read(buff, readDataInfo);
-    mediaDownloader->Close(true);
+    mediaDownloader->Close(false);
     mediaDownloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
@@ -444,7 +445,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, GET_PLAYBACK_INFO_001, TestSize.Level1)
     EXPECT_EQ(playbackInfo.isDownloading, false);
     EXPECT_EQ(playbackInfo.downloadRate, 0);
     EXPECT_EQ(playbackInfo.bufferDuration, 0);
-    mediaDownloader->Close(true);
+    mediaDownloader->Close(false);
     mediaDownloader = nullptr;
 }
 
