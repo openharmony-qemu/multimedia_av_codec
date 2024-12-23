@@ -140,7 +140,7 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
 
     pid_t pid = IPCSkeleton::GetCallingPid();
     InstanceInfo instanceInfo = {
-        .instanceId = instanceId,
+        .instanceId = instanceId++,
         .caller = { .pid = pid },
     };
     codecStubMap_.emplace(pid, std::make_pair(object, instanceInfo));
@@ -266,6 +266,7 @@ uint32_t AVCodecServerManager::GetInstanceCount()
 
 std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> AVCodecServerManager::GetInstanceInfoListByPid(pid_t pid)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> instanceInfoList;
     auto range = codecStubMap_.equal_range(pid);
     for (auto iter = range.first; iter != range.second; iter++) {
@@ -277,6 +278,7 @@ std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> AVCodecServerManager::
 std::optional<std::pair<sptr<IRemoteObject>, InstanceInfo>>
 AVCodecServerManager::GetInstanceInfoByInstanceId(uint32_t instanceId)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
         if (iter->second.second.instanceId == instanceId) {
             return iter->second;
@@ -287,6 +289,7 @@ AVCodecServerManager::GetInstanceInfoByInstanceId(uint32_t instanceId)
 
 void AVCodecServerManager::SetInstanceInfoByInstanceId(uint32_t instanceId, const InstanceInfo &info)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
         if (iter->second.second.instanceId == instanceId) {
             iter->second.second = info;

@@ -696,14 +696,14 @@ void CodecServer::OnInstanceInitEvent()
 {
     Meta meta;
     // todo
-    EventManager::GetInstance().OnInstanceEvent(EventType::INIT, meta);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, meta);
 }
 
 void CodecServer::OnInstanceMemoryEvent()
 {
     Meta meta;
     // todo
-    EventManager::GetInstance().OnInstanceEvent(EventType::MEMORY, meta);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_MEMORY_UPDATE, meta);
 }
 
 int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)

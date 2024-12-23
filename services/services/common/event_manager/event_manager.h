@@ -18,27 +18,35 @@
 
 #include <mutex>
 #include <memory>
-#include "instance_init_event_callback.h"
-#include "instance_memory_event_callback.h"
-#include "rss_event_callback.h"
+#include "meta.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-class EventManager : std::enable_shared_from_this<EventManager>,
-    private InstanceInitEventCallback, InstanceMemoryEventCallback, RssEventCallback {
+enum class EventType {
+    UNKNOWN,
+    INSTANCE_INIT,
+    INSTANCE_RELEASE,
+    INSTANCE_MEMORY_UPDATE,
+    INSTANCE_FREEZE,
+    INSTANCE_UNFREEZE,
+    END,
+};
+
+class EventManager{
 public:
     static EventManager &GetInstance();
-    void OnInstanceEvent(EventType type, Media::Meta &meta) override;
+    void OnInstanceEvent(EventType type, Media::Meta &meta);
 
 private:
     std::mutex eventMutex_;
 
 /* For extented event callback */
 private:
-    void OnInstanceInitEvent(Media::Meta &meta) override;
-    void OnInstanceMemoryEvent(Media::Meta &meta) override;
-    void OnAppFreezeEvent(Media::Meta &meta) override;
-    void OnAppUnfreezeEvent(Media::Meta &meta) override;
+    void OnInstanceInitEvent(Media::Meta &meta);
+    void OnInstanceReleaseEvent(Media::Meta &meta);
+    void OnInstanceMemoryUpdateEvent(Media::Meta &meta);
+    void OnAppFreezeEvent(Media::Meta &meta);
+    void OnAppUnfreezeEvent(Media::Meta &meta);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

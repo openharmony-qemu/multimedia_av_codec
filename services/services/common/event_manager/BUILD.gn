@@ -15,10 +15,7 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 config("event_manager_public_config") {
-  include_dirs = [
-    "./",
-    "./event_callback/",
-  ]
+  include_dirs = [ "./" ]
 }
 
 ohos_source_set("event_manager") {
@@ -26,13 +23,15 @@ ohos_source_set("event_manager") {
 
   public_external_deps = [ "media_foundation:media_foundation" ]
 
-  configs = ["../../../dfx:av_codec_service_log_dfx_public_config"]
+  configs = [ "../../../dfx:av_codec_service_log_dfx_public_config" ]
 
   include_dirs = [
     "./",
-    "./event_callback/",
     "./event_handler/",
   ]
 
-  sources = [ "event_manager.cpp" ]
+  sources = [
+    "./event_handler/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
+    "./event_manager.cpp",
+  ]
 }

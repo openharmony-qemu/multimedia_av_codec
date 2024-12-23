@@ -31,18 +31,22 @@ EventManager &EventManager::GetInstance()
 void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
 {
     CHECK_AND_RETURN_LOG(type > EventType::UNKNOWN && type < EventType::END, "Unknown event type, ignore");
+    std::lock_guard<std::mutex> lock(eventMutex_);
 
     switch (type) {
-        case EventType::INIT:
+        case EventType::INSTANCE_INIT:
             OnInstanceInitEvent(meta);
             break;
-        case EventType::MEMORY:
-            OnInstanceMemoryEvent(meta);
+        case EventType::INSTANCE_RELEASE:
+            OnInstanceReleaseEvent(meta);
             break;
-        case EventType::FREEZE:
+        case EventType::INSTANCE_MEMORY_UPDATE:
+            OnInstanceMemoryUpdateEvent(meta);
+            break;
+        case EventType::INSTANCE_FREEZE:
             OnAppFreezeEvent(meta);
             break;
-        case EventType::UNFREEZE:
+        case EventType::INSTANCE_UNFREEZE:
             OnAppUnfreezeEvent(meta);
             break;
         default:
@@ -56,7 +60,12 @@ void EventManager::OnInstanceInitEvent(Media::Meta &meta)
     (void)meta;
 }
 
-void EventManager::OnInstanceMemoryEvent(Media::Meta &meta)
+void EventManager::OnInstanceReleaseEvent(Media::Meta &meta)
+{
+    (void)meta;
+}
+
+void EventManager::OnInstanceMemoryUpdateEvent(Media::Meta &meta)
 {
     (void)meta;
 }
