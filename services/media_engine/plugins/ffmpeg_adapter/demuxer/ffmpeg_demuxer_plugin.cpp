@@ -934,7 +934,7 @@ int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputForma
     MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
 
     AVIOContext* avioContext = formatContext->pb;
-    auto begin = std::chrono::system_clock::now();
+    auto begin = std::chrono::steady_clock::now();
     int ret = avformat_open_input(&formatContext, nullptr, pluginImpl.get(), options);
     if (ret < 0) {
         FreeContext(formatContext, avioContext);
@@ -943,19 +943,19 @@ int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputForma
         return ret;
     }
 
-    auto open = std::chrono::system_clock::now();
+    auto open = std::chrono::steady_clock::now();
     if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
         formatContext->probesize = LIVE_FLV_PROBE_SIZE;
     }
 
     ret = avformat_find_stream_info(formatContext, NULL);
-    auto parse = std::chrono::system_clock::now();
-    int32_t openSpend = static_cast<int32_t>(
-        static_cast<std::chrono::duration<double, std::milli>>(open - begin).count());
-    int32_t parseSpend = static_cast<int32_t>(
-        static_cast<std::chrono::duration<double, std::milli>>(parse - open).count());
-    if ((parseSpend < 0) || (openSpend > INT32_MAX - parseSpend) || (openSpend + parseSpend > INIT_TIME_THRESHOLD)) {
-        MEDIA_LOG_W("Spend [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]", openSpend, parseSpend);
+    auto parse = std::chrono::steady_clock::now();
+    int64_t openSpend = static_cast<int64_t>(
+            chrono::duration_cast<chrono::microseconds>(open - begin).count());
+    int64_t parseSpend = static_cast<int64_t>(
+            chrono::duration_cast<chrono::microseconds>(parse - open).count());
+    if ((parseSpend < 0) || (openSpend > INT64_MAX - parseSpend) || (openSpend + parseSpend > INIT_TIME_THRESHOLD)) {
+        MEDIA_LOG_W("Spend [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]", openSpend, parseSpend);
     }
     if (ret < 0) {
         FreeContext(formatContext, avioContext);
