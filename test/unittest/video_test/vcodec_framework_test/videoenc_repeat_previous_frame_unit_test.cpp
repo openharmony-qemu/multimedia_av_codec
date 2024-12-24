@@ -234,10 +234,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_005, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     videoEnc_->needSleep_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+#ifdef HMOS_TEST
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 2 - 7;
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
+#endif // HMOS_TEST
 }
 
 /**
@@ -256,10 +258,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_006, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     videoEnc_->needSleep_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+#ifdef HMOS_TEST
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 2 - 7;
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
+#endif // HMOS_TEST
 }
 
 /**
@@ -479,10 +483,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Inner_005, TestSize.Level1)
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     videoEnc_->needSleep_ = true;
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+#ifdef HMOS_TEST
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AVCS_ERR_OK, videoEnc_->Start());
     int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 2 - 7;
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
+#endif // HMOS_TEST
 }
 
 /**
@@ -501,10 +507,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Inner_006, TestSize.Level1)
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     videoEnc_->needSleep_ = true;
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+#ifdef HMOS_TEST
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AVCS_ERR_OK, videoEnc_->Start());
     int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 2 - 7;
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
+#endif // HMOS_TEST
 }
 
 /**
