@@ -697,7 +697,7 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_ENABLE_VRR;
  * it will sumbit the previous frame repeatly in microseconds. It is used in configure.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER;
 /**
@@ -706,7 +706,7 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER;
  * {@link VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER} is vaild. It is used in configure.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT;
 
