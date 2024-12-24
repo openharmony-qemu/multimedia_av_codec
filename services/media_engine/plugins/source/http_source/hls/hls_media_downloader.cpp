@@ -1541,7 +1541,7 @@ void HlsMediaDownloader::HandleCachedDuration()
 void HlsMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
 {
     if (waterLineAbove_ == 0 || callback_ == nullptr) {
-        MEDIA_LOG_E("UpdateCachedPercent: ERROR");
+        MEDIA_LOG_E("HLS UpdateCachedPercent: ERROR");
         return;
     }
     if (infoType == BufferingInfoType::BUFFERING_START) {
@@ -1652,6 +1652,12 @@ bool HlsMediaDownloader::GetBufferingTimeOut()
     }
 }
 
+bool HlsMediaDownloader::GetReadTimeOut()
+{
+    size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+    return (now >= readTime_) ? (now - readTime_ >= MAX_BUFFERING_TIME_OUT) : false;
+}
+
 size_t HlsMediaDownloader::GetSegmentOffset()
 {
     if (playlistDownloader_) {
@@ -1690,6 +1696,11 @@ void HlsMediaDownloader::WaitForBufferingEnd()
             isBuffering_.load(), isInterruptNeeded_.load());
         return !isBuffering_.load() || isInterruptNeeded_.load();
     });
+}
+
+void HlsMediaDownloader::SetIsReportedErrorCode()
+{
+    isReportedErrorCode_ = true;
 }
 }
 }

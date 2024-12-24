@@ -1010,8 +1010,8 @@ void HttpMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("HTTP SetDownloadErrorState");
     downloadErrorState_ = true;
-    if (callback_ != nullptr) {
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+    if (callback_ != nullptr && !isReportedErrorCode_) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_NOT_RETRY}, "read"});
     }
     Close(true);
 }
@@ -1328,6 +1328,12 @@ bool HttpMediaDownloader::GetBufferingTimeOut()
     }
 }
 
+bool HttpMediaDownloader::GetReadTimeOut()
+{
+    size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+    return (now >= readTime_) ? (now - readTime_ >= MAX_BUFFERING_TIME_OUT) : false;
+}
+
 void HttpMediaDownloader::WaitForBufferingEnd()
 {
     AutoLock lk(bufferingEndMutex_);
@@ -1359,7 +1365,7 @@ bool HttpMediaDownloader::ClearHasReadBuffer()
     if (diff > ALLOW_CLEAR_MIDDLE_DATA_MIN_SIZE) {
         res = cacheMediaBuffer_->ClearMiddleReadFragment(minClearOffset, maxClearOffset) || res;
     }
-    MEDIA_LOG_D("ClearHasReadBuffer res: " PUBLIC_LOG_D32 " clearOffset: " PUBLIC_LOG_U64 " minClearOffset: "
+    MEDIA_LOG_D("HTTP ClearHasReadBuffer, res: " PUBLIC_LOG_D32 " clearOffset: " PUBLIC_LOG_U64 " minClearOffset: "
         PUBLIC_LOG_U64 " maxClearOffset: " PUBLIC_LOG_U64, res, clearOffset, minClearOffset, maxClearOffset);
     return res;
 }
@@ -1369,13 +1375,20 @@ void HttpMediaDownloader::ClearCacheBuffer()
     if (cacheMediaBuffer_ == nullptr || downloader_ == nullptr) {
         return;
     }
+    MEDIA_LOG_I("HTTP ClearCacheBuffer begin.");
     isNeedDropData_ = true;
     downloader_->Pause();
     cacheMediaBuffer_->Clear();
     isNeedDropData_ = false;
+    downloader_->Seek(readOffset_);
     downloader_->Resume();
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
-    MEDIA_LOG_I("HTTP ClearCacheBuffer, freeSize: " PUBLIC_LOG_U64, freeSize);
+    MEDIA_LOG_I("HTTP ClearCacheBuffer end, freeSize: " PUBLIC_LOG_U64, freeSize);
+}
+
+void HttpMediaDownloader::SetIsReportedErrorCode()
+{
+    isReportedErrorCode_ = true;
 }
 }
 }

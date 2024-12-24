@@ -99,10 +99,12 @@ public:
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
+    bool GetReadTimeOut() override;
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
     void WaitForBufferingEnd() override;
+    void SetIsReportedErrorCode() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -185,8 +187,6 @@ private:
     uint32_t writeTsIndex_ = 0;
     bool isAutoSelectBitrate_ {true};
     uint64_t seekTime_ = 0;
-
-    uint64_t readTime_ {0};
 
     bool isReadFrame_ {false};
     bool isTimeOut_ {false};
@@ -277,12 +277,13 @@ private:
     uint64_t ffmpegOffset_ = 0;
     volatile size_t wantedReadLength_ {0};
     volatile size_t bufferingTime_ {0};
+    volatile size_t readTime_ {0};
     FairMutex tsStorageInfoMutex_ {};
-
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
+    bool isReportedErrorCode_ {false};
 };
 }
 }
