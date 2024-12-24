@@ -709,6 +709,13 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER;
  * @since 14
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT;
+/**
+ * @brief Key for creation timestamp of a media file, value type is string.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+extern const char *OH_MD_KEY_CREATION_TIME;
 
 /**
  * @brief Media type.

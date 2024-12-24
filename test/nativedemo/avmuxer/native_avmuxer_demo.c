@@ -79,6 +79,23 @@ static struct MuxerParam g_muxerParam  = {
     .coverType = "",
 };
 
+void SetFormat(OH_AVMuxer *muxer)
+{
+    OH_AVFormat *format = OH_AVFormat_Create();
+    if (format == NULL) {
+        printf("SetFormat failed!\n");
+        return;
+    }
+    OH_AVFormat_SetStringValue(format, OH_MD_KEY_CREATION_TIME, "2023-12-19T03:16:00.000000Z");
+    int ret = OH_AVMuxer_SetFormat(muxer, format);
+    OH_AVFormat_Destroy(format);
+    if (ret != AV_ERR_OK) {
+        printf("SetFormat failed!");
+        return;
+    }
+    printf("SetFormat success!");
+}
+
 int AddTrackAudio(OH_AVMuxer *muxer, const AudioTrackParam *param, int fdInput)
 {
     if (fdInput < 0) {
@@ -556,6 +573,7 @@ int DoRunMuxer(FdListStr *fdStr, OH_AVMuxer *muxer)
         printf("set failed!\n");
         return -1;
     }
+    SetFormat(muxer);
     int audioTrackIndex = AddTrackAudio(muxer, g_muxerParam.audioParams, fdStr->inAudioFd);
     int videoTrackIndex = AddTrackVideo(muxer, g_muxerParam.videoParams, fdStr->inVideoFd);
     int coverTrackIndex = AddTrackCover(muxer, g_muxerParam.coverParams, fdStr->inCoverFd);
