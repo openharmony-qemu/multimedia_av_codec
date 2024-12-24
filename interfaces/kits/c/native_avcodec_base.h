@@ -267,14 +267,6 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC;
 
 /**
- * @brief Enumerates the MIME types of audio pcm codec.
- *
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
- */
-extern const char *OH_AVCODEC_MIMETYPE_AUDIO_PCM;
-
-/**
  * @brief Enumerates the MIME type of audio ape codec.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -305,6 +297,14 @@ extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
  * @since 12
  */
 extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT;
+
+/**
+ * @brief Enumerates the MIME types of audio pcm codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_PCM;
 
 /**
  * @brief The extra data's key of surface Buffer
