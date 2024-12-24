@@ -365,7 +365,9 @@ void AudioSink::HandleEosInner(bool drain)
 void AudioSink::DrainAndReportEosEvent()
 {
     plugin_->Drain();
-    plugin_->PauseTransitent();
+    if (appUid_ != 1003) { // 1003 is bootanimation uid
+        plugin_->PauseTransitent();
+    }
     eosInterruptType_ = EosInterruptState::NONE;
     eosDraining_ = false; // finish draining task
     isEos_ = true;
