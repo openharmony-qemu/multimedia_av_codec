@@ -48,7 +48,7 @@ public:
     MockMediaMuxer(int32_t appUid, int32_t appPid) : MediaMuxer(appUid, appPid) {}
     MOCK_METHOD(Status, Start, (), (override));
     MOCK_METHOD(Status, Stop, (), (override));
-}
+};
 
 class MyFilterLinkCallback : public FilterLinkCallback {
 public:
