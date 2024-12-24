@@ -2400,3 +2400,36 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0086, TestSize.Level2)
     4736870, 0, 1, 0};
     CheckSeekMode(fileTest9);
 }
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0087
+ * @tc.name      : demuxer seek, video_audio_one_frame_test.mp4, SEEK_MODE_NEXT_SYNC
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0087, TestSize.Level2)
+{
+    seekInfo fileTest{"/data/test/media/video_audio_one_frame_test.mp4", SEEK_MODE_NEXT_SYNC, 0, 1, 5, 0};
+    CheckSeekMode(fileTest);
+}
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0088
+ * @tc.name      : demuxer seek, video_audio_one_frame_test.mp4, SEEK_MODE_PREVIOUS_SYNC
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0088, TestSize.Level2)
+{
+    seekInfo fileTest{"/data/test/media/video_audio_one_frame_test.mp4", SEEK_MODE_PREVIOUS_SYNC, 0, 1, 5, 0};
+    CheckSeekMode(fileTest);
+}
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0089
+ * @tc.name      : demuxer seek, video_audio_one_frame_test.mp4, SEEK_MODE_CLOSEST_SYNC
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0089, TestSize.Level2)
+{
+    seekInfo fileTest{"/data/test/media/video_audio_one_frame_test.mp4", SEEK_MODE_CLOSEST_SYNC, 0, 1, 5, 0};
+    CheckSeekMode(fileTest);
+}
