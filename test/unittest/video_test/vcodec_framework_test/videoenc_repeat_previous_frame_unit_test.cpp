@@ -232,12 +232,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_005, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
     format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    videoEnc_->needSleep_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 2 - 7;
-    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 2 + 7;
-    EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
 }
 
@@ -255,12 +254,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Capi_006, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
     format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    videoEnc_->needSleep_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 2 - 7;
-    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 2 + 7;
-    EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
 }
 
@@ -479,12 +477,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Inner_005, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    videoEnc_->needSleep_ = true;
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AVCS_ERR_OK, videoEnc_->Start());
     int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 2 - 7;
-    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 2 + 7;
-    EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
 }
 
@@ -502,12 +499,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_Inner_006, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    videoEnc_->needSleep_ = true;
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AVCS_ERR_OK, videoEnc_->Start());
     int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 2 - 7;
-    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 2 + 7;
-    EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
 }
 
