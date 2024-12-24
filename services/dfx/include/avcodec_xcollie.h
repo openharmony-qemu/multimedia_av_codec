@@ -19,34 +19,42 @@
 #include <string>
 #include <map>
 #include <mutex>
+#include <functional>
+#include <ctime>
 
 namespace OHOS {
 namespace MediaAVCodec {
-class __attribute__((visibility("default"))) AVCodecXCollie {
+class AVCodecXCollie {
 public:
     static AVCodecXCollie &GetInstance();
-    uint64_t SetTimer(const std::string &name, bool isService, bool recovery, uint32_t timeout);
-    void CancelTimer(uint64_t index);
+    int32_t SetTimer(const std::string &name, bool recovery, uint32_t timeout, std::function<void(void *)> callback);
+    int32_t SetInterfaceTimer(const std::string &name, bool isService, bool recovery, uint32_t timeout);
+    void CancelTimer(int32_t timerId);
     int32_t Dump(int32_t fd);
     constexpr static uint32_t timerTimeout = 10;
 private:
+    struct TimerInfo {
+        std::string name;
+        std::time_t startTime;
+    };
+
     AVCodecXCollie() = default;
     ~AVCodecXCollie() = default;
-    void ServiceTimerCallback(void *data);
-    void ClientTimerCallback(void *data);
 
     std::mutex mutex_;
-    uint64_t dumperIndex_ = 1;
-    std::map<int32_t, std::pair<int32_t, std::string>> dfxDumper_;
-    uint32_t threadDeadlockCount_ = 0;
+    std::map<int32_t, TimerInfo> dfxDumper_;
+
+// For interfacec timer
+private:
+    static void ServiceInterfaceTimerCallback(void *data);
+    static void ClientInterfaceTimerCallback(void *data);
 };
 
-class __attribute__((visibility("hidden"))) AVCodecXcollieTimer {
+class AVCodecXcollieTimer {
 public:
-    AVCodecXcollieTimer(const std::string &name, bool isService = true,
-        bool recovery = false, uint32_t timeout = 30)
+    AVCodecXcollieTimer(const std::string &name, bool recovery, uint32_t timeout, std::function<void(void *)> callback)
     {
-        index_ = AVCodecXCollie::GetInstance().SetTimer(name, isService, recovery, timeout);
+        index_ = AVCodecXCollie::GetInstance().SetTimer(name, recovery, timeout, callback);
     };
 
     ~AVCodecXcollieTimer()
@@ -54,11 +62,35 @@ public:
         AVCodecXCollie::GetInstance().CancelTimer(index_);
     }
 private:
-    uint64_t index_ = 0;
+    int32_t index_ = 0;
 };
 
-#define COLLIE_LISTEN(statement, args...) { AVCodecXcollieTimer xCollie(args); statement; }
-#define CLIENT_COLLIE_LISTEN(statement, name) { AVCodecXcollieTimer xCollie(name, false, false, 30); statement; }
+class AVCodecXcollieInterfaceTimer {
+public:
+    AVCodecXcollieInterfaceTimer(const std::string &name, bool isService = true,
+        bool recovery = false, uint32_t timeout = 30)
+    {
+        index_ = AVCodecXCollie::GetInstance().SetInterfaceTimer(name, isService, recovery, timeout);
+    };
+
+    ~AVCodecXcollieInterfaceTimer()
+    {
+        AVCodecXCollie::GetInstance().CancelTimer(index_);
+    }
+private:
+    int32_t index_ = 0;
+};
+
+#define COLLIE_LISTEN(statement, args...)                               \
+    {                                                                   \
+        AVCodecXcollieInterfaceTimer xCollie(args);                     \
+        statement;                                                      \
+    }
+#define CLIENT_COLLIE_LISTEN(statement, name)                           \
+    {                                                                   \
+        AVCodecXcollieInterfaceTimer xCollie(name, false, false, 30);   \
+        statement;                                                      \
+    }
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_XCOLLIE_H
