@@ -67,11 +67,14 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_GetCurrentPtsMs_0100, TestSize.Level1)
  */
 HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoStart_0100, TestSize.Level1)
 {
-    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
-    muxerFilter_->DoStart();
+    std::shared_ptr<MockMediaMuxer> mockMediaMuxer = std::make_shared<MockMediaMuxer>(0, 0);
+    muxerFilter_->mediaMuxer_ = std::static_pointer_cast<MediaMuxer>(mockMediaMuxer);
+    EXPECT_CALL(*mockMediaMuxer, Start()).WillOnce(testing::Return(Status::NO_ERROR));
+
     EXPECT_EQ(muxerFilter_->DoStart(), Status::OK);
     EXPECT_EQ(muxerFilter_->isStarted, true);
     EXPECT_EQ(muxerFilter_->DoStart(), Status::OK);
+    EXPECT_EQ(muxerFilter_->isStarted, true);
 }
 
 /**
@@ -81,14 +84,31 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoStart_0100, TestSize.Level1)
  */
 HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoStop_0100, TestSize.Level1)
 {
+    
+    std::shared_ptr<MockMediaMuxer> mockMediaMuxer = std::make_shared<MockMediaMuxer>(0, 0);
+    muxerFilter_->mediaMuxer_ = std::static_pointer_cast<MediaMuxer>(mockMediaMuxer);
+    EXPECT_CALL(*mockMediaMuxer, Start()).WillOnce(testing::Return(Status::NO_ERROR));
+    EXPECT_EQ(muxerFilter_->DoStart(), Status::OK);
+    EXPECT_EQ(muxerFilter_->isStarted, true);
+    
     muxerFilter_->stopCount_ = 0;
     muxerFilter_->preFilterCount_ = 2;
-    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
-    EXPECT_EQ(muxerFilter_->DoStop(), Status::OK);
-    EXPECT_EQ(muxerFilter_->isStarted, true);
 
     EXPECT_EQ(muxerFilter_->DoStop(), Status::OK);
+    EXPECT_EQ(muxerFilter_->isStarted, true);
+    EXPECT_CALL(*mockMediaMuxer, Stop()).WillOnce(testing::Return(Status::NO_ERROR));
+    EXPECT_EQ(muxerFilter_->DoStop(), Status::OK);
     EXPECT_EQ(muxerFilter_->isStarted, false);
+    
+    muxerFilter_->stopCount_ = 0;
+    muxerFilter_->preFilterCount_ = 1;
+    EXPECT_CALL(*mockMediaMuxer, Stop()).WillOnce(testing::Return(Status::ERROR_WRONG_STATE));
+    EXPECT_EQ(muxerFilter_->DoStop(), Status::OK);
+    
+    muxerFilter_->stopCount_ = 0;
+    muxerFilter_->preFilterCount_ = 1;
+    EXPECT_CALL(*mockMediaMuxer, Stop()).WillOnce(testing::Return(Status::ERROR_UNKNOWN));
+    EXPECT_EQ(muxerFilter_->DoStop(), Status::ERROR_UNKNOWN);
 }
 
 /**
