@@ -591,6 +591,7 @@ public:
     static constexpr std::string_view AUDIO_AVS3DA = "audio/av3a";
     static constexpr std::string_view AUDIO_APE = "audio/x-ape";
     static constexpr std::string_view AUDIO_LBVC = "audio/lbvc";
+    static constexpr std::string_view VIDEO_VVC = "video/vvc";
 };
 
 /**
@@ -624,6 +625,30 @@ enum HEVCProfile : int32_t {
     HEVC_PROFILE_MAIN_10_HDR10 = 3,
     HEVC_PROFILE_MAIN_10_HDR10_PLUS = 4,
     HEVC_PROFILE_UNKNOW = -1,
+};
+
+/**
+ * @brief VVC Profile
+ *
+ * @since 5.1
+ */
+enum VVCProfile : int32_t {
+    VVC_PROFILE_MAIN_10 = 1,
+    VVC_PROFILE_MAIN_12 = 2,
+    VVC_PROFILE_MAIN_12_INTRA = 10,
+    VVC_PROFILE_MULTI_MAIN_10 = 17,
+    VVC_PROFILE_MAIN_10_444 = 33,
+    VVC_PROFILE_MAIN_12_444 = 34,
+    VVC_PROFILE_MAIN_16_444 = 36,
+    VVC_PROFILE_MAIN_12_444_INTRA = 42,
+    VVC_PROFILE_MAIN_16_444_INTRA = 44,
+    VVC_PROFILE_MULTI_MAIN_10_444 = 49,
+    VVC_PROFILE_MAIN_10_STILL = 65,
+    VVC_PROFILE_MAIN_12_STILL = 66,
+    VVC_PROFILE_MAIN_10_444_STILL = 97,
+    VVC_PROFILE_MAIN_12_444_STILL = 98,
+    VVC_PROFILE_MAIN_16_444_STILL = 100,
+    VVC_PROFILE_UNKNOW = -1,
 };
 
 /**
@@ -744,6 +769,30 @@ enum HEVCLevel : int32_t {
     HEVC_LEVEL_61 = 11,
     HEVC_LEVEL_62 = 12,
     HEVC_LEVEL_UNKNOW = -1,
+};
+
+/**
+ * @brief
+ *
+ * @since 5.1
+ */
+enum VVCLevel : int32_t {
+    VVC_LEVEL_1 = 16,
+    VVC_LEVEL_2 = 32,
+    VVC_LEVEL_21 = 35,
+    VVC_LEVEL_3 = 48,
+    VVC_LEVEL_31 = 51,
+    VVC_LEVEL_4 = 64,
+    VVC_LEVEL_41 = 67,
+    VVC_LEVEL_5 = 80,
+    VVC_LEVEL_51 = 83,
+    VVC_LEVEL_52 = 86,
+    VVC_LEVEL_6 = 96,
+    VVC_LEVEL_61 = 99,
+    VVC_LEVEL_62 = 102,
+    VVC_LEVEL_63 = 105,
+    VVC_LEVEL_155 = 255,
+    VVC_LEVEL_UNKNOW = -1,
 };
 
 /**
