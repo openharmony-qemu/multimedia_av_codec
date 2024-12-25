@@ -13,6 +13,27 @@
  * limitations under the License.
  */
 
+/**
+ * @addtogroup AVMuxer
+ * @{
+ *
+ * @brief The AVMuxer module provides functions for audio and video muxer.
+ *
+ * @syscap SystemCapability.Multimedia.Media.Muxer
+ * @since 10
+ */
+
+/**
+ * @file native_avmuxer.h
+ *
+ * @brief Declare the Native API used for audio and video muxer.
+ *
+ * @kit AVCodecKit
+ * @library libnative_media_avmuxer.so
+ * @syscap SystemCapability.Multimedia.Media.Muxer
+ * @since 10
+ */
+
 #ifndef NATIVE_AVMUXER_H
 #define NATIVE_AVMUXER_H
 
@@ -156,3 +177,4 @@ OH_AVErrCode OH_AVMuxer_Destroy(OH_AVMuxer *muxer);
 #endif
 
 #endif // NATIVE_AVMUXER_H
+/** @} */
