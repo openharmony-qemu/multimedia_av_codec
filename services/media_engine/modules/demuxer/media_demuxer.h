@@ -22,6 +22,7 @@
 #include <shared_mutex>
 #include <unordered_set>
 
+#include "osal/task/condition_variable.h"
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
@@ -85,6 +86,7 @@ public:
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
+    void OnSeekReadyEvent(const Plugins::PluginEvent &event);
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
     bool IsRenderNextVideoFrameSupported();
@@ -225,6 +227,7 @@ private:
 
     std::shared_mutex drmMutex{};
     std::mutex isSelectTrackMutex_{};
+    std::mutex rebootPluginMutex_{};
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
 
@@ -268,6 +271,8 @@ private:
     std::atomic<bool> inPreroll_ = false;
 
     std::map<int32_t, int32_t> inSelectTrackType_{};
+    std::map<int32_t, std::pair<int32_t, bool>> seekReadyStreamInfo_{};
+    std::condition_variable rebootPluginCondition_;
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;

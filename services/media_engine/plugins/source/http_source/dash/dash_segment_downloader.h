@@ -148,7 +148,7 @@ public:
     void SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc);
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
     bool CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd);
-    bool SeekToTime(const std::shared_ptr<DashSegment>& segment);
+    bool SeekToTime(const std::shared_ptr<DashSegment>& segment, int32_t& streamId);
     void SetInitSegment(std::shared_ptr<DashInitSegment> initSegment, bool needUpdateState = false);
     void UpdateStreamId(int streamId);
     void SetCurrentBitRate(int32_t bitRate);

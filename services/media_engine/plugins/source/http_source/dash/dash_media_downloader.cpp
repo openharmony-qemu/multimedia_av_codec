@@ -21,6 +21,7 @@
 #include "osal/task/task.h"
 #include "utils/time_utils.h"
 #include "utils/bitrate_process_utils.h"
+#include "format.h"
 
 namespace OHOS {
 namespace Media {
@@ -724,8 +725,23 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
 
     for (auto &segmentDownloader : segmentDownloaders_) {
         std::shared_ptr<DashSegment> segment;
+        int32_t streamId = static_cast<int32_t>(segmentDownloader->GetStreamId());
         mpdDownloader_->SeekToTs(segmentDownloader->GetStreamId(), seekTimeMs, segment);
         if (segment == nullptr) {
+            MEDIA_LOG_I("Dash SeekToTs end streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
+                segmentDownloader->GetStreamId(), segmentDownloader->GetStreamType());
+            int64_t remainLastNumberSeq = -1;
+            segmentDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
+            segmentDownloader->SetAllSegmentFinished();
+            Format seekReadyInfo {};
+            seekReadyInfo.PutIntValue("currentStreamType", static_cast<int32_t>(segmentDownloader->GetStreamType()));
+            seekReadyInfo.PutIntValue("currentStreamId", streamId);
+            seekReadyInfo.PutIntValue("isEOS", static_cast<int32_t>(true));
+            MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: " PUBLIC_LOG_D32,
+                static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, static_cast<int32_t>(true));
+            if (callback_ != nullptr) {
+                callback_->OnEvent({PluginEventType::DASH_SEEK_READY, seekReadyInfo, "dash_seek_ready"});
+            }
             continue;
         }
 
@@ -733,17 +749,25 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
             PUBLIC_LOG_U32, segment->numberSeq_, segment->duration_);
         std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
             segmentDownloader->GetStreamId());
-        if (!isSwitching && segmentDownloader->SeekToTime(segment)) {
+        if (!isSwitching && segmentDownloader->SeekToTime(segment, streamId)) {
             MEDIA_LOG_I("Dash SeekToTs of buffered streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
                 segmentDownloader->GetStreamId(), segmentDownloader->GetStreamType());
             segmentDownloader->SetInitSegment(initSeg, true);
-            continue;
         } else {
             int64_t remainLastNumberSeq = -1;
             segmentDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
             mpdDownloader_->SetCurrentNumberSeqByStreamId(segmentDownloader->GetStreamId(), segment->numberSeq_);
             segmentDownloader->SetInitSegment(initSeg, true);
             segmentDownloader->Open(segment);
+        }
+        Format seekReadyInfo {};
+        seekReadyInfo.PutIntValue("currentStreamType", static_cast<int32_t>(segmentDownloader->GetStreamType()));
+        seekReadyInfo.PutIntValue("currentStreamId", streamId);
+        seekReadyInfo.PutIntValue("isEOS", static_cast<int32_t>(false));
+        MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: " PUBLIC_LOG_D32,
+            static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, static_cast<int32_t>(false));
+        if (callback_ != nullptr) {
+            callback_->OnEvent({PluginEventType::DASH_SEEK_READY, seekReadyInfo, "dash_seek_ready"});
         }
     }
 }

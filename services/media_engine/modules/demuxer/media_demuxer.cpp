@@ -27,6 +27,7 @@
 #include "cpp_ext/type_traits_ext.h"
 #include "buffer/avallocator.h"
 #include "common/event.h"
+#include "format.h"
 #include "common/log.h"
 #include "hisysevent.h"
 #include "meta/media_types.h"
@@ -46,6 +47,12 @@ const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
 static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
+std::map<OHOS::Media::TrackType, OHOS::Media::StreamType> TRACK_TO_STREAM_MAP = {
+    {OHOS::Media::TrackType::TRACK_VIDEO, OHOS::Media::StreamType::VIDEO},
+    {OHOS::Media::TrackType::TRACK_AUDIO, OHOS::Media::StreamType::AUDIO},
+    {OHOS::Media::TrackType::TRACK_SUBTITLE, OHOS::Media::StreamType::SUBTITLE},
+    {OHOS::Media::TrackType::TRACK_INVALID, OHOS::Media::StreamType::MIXED}
+};
 } // namespace
 
 namespace OHOS {
@@ -818,7 +825,7 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
         return Status::ERROR_UNKNOWN;
     }
 
-    if (targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)) {
+    if (trackId == curTrackId || targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)) {
         MEDIA_LOG_I("Select stream");
         {
             std::lock_guard<std::mutex> lock(isSelectTrackMutex_);
@@ -948,6 +955,23 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
     if (static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
+        MEDIA_LOG_D("TrackType " PUBLIC_LOG_D32, static_cast<int32_t>(trackType));
+        FALSE_RETURN_V_MSG_E(trackType != TRACK_INVALID, Status::ERROR_INVALID_PARAMETER, "TrackType is invalid");
+        StreamType streamType = TRACK_TO_STREAM_MAP[trackType];
+        std::pair<int32_t, bool> seekReadyInfo;
+        {
+            std::unique_lock<std::mutex> lock(rebootPluginMutex_);
+            rebootPluginCondition_.wait(lock, [this, streamType] {
+                return seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) != seekReadyStreamInfo_.end();
+            });
+            seekReadyInfo = seekReadyStreamInfo_[static_cast<int32_t>(streamType)];
+            seekReadyStreamInfo_.erase(static_cast<int32_t>(streamType));
+        }
+        if (seekReadyInfo.second || seekReadyInfo.first != streamID) {
+            MEDIA_LOG_I("End of stream or streamID changed, isEOS: " PUBLIC_LOG_D32 ", streamId: " PUBLIC_LOG_D32,
+                static_cast<int32_t>(seekReadyInfo.second), seekReadyInfo.first);
+            return Status::OK;
+        }
         ret = demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer_, isRebooted);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot demuxer plugin failed");
         ret = InnerSelectTrack(trackId);
@@ -959,22 +983,24 @@ Status MediaDemuxer::SeekToTimeAfter()
 {
     FALSE_RETURN_V_NOLOG(demuxerPluginManager_->IsDash(), Status::OK);
     MEDIA_LOG_D("Reboot plugin begin");
-    Status ret;
+    Status ret = Status::OK;
     bool isDemuxerPluginRebooted = true;
-    ret = HandleRebootPlugin(audioTrackId_, isDemuxerPluginRebooted);
-    if (shouldCheckAudioFramePts_) {
-        shouldCheckAudioFramePts_ = false;
-    }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot audio demuxer plugin failed");
-    isDemuxerPluginRebooted = true;
-    ret = HandleRebootPlugin(videoTrackId_, isDemuxerPluginRebooted);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot video demuxer plugin failed");
-    isDemuxerPluginRebooted = true;
     ret = HandleRebootPlugin(subtitleTrackId_, isDemuxerPluginRebooted);
     if (shouldCheckSubtitleFramePts_) {
         shouldCheckSubtitleFramePts_ = false;
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot subtitle demuxer plugin failed");
+
+    isDemuxerPluginRebooted = true;
+    ret = HandleRebootPlugin(audioTrackId_, isDemuxerPluginRebooted);
+    if (shouldCheckAudioFramePts_) {
+        shouldCheckAudioFramePts_ = false;
+    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot audio demuxer plugin failed");
+
+    isDemuxerPluginRebooted = true;
+    ret = HandleRebootPlugin(videoTrackId_, isDemuxerPluginRebooted);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot video demuxer plugin failed");
     MEDIA_LOG_D("Reboot plugin success");
     return Status::OK;
 }
@@ -1995,6 +2021,40 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         default:
             break;
     }
+    OnSeekReadyEvent(event);
+}
+
+void MediaDemuxer::OnSeekReadyEvent(const Plugins::PluginEvent &event)
+{
+    FALSE_RETURN_NOLOG(event.type == PluginEventType::DASH_SEEK_READY);
+    MEDIA_LOG_D("Onevent dash seek ready");
+    std::unique_lock<std::mutex> lock(rebootPluginMutex_);
+    Format param = AnyCast<Format>(event.param);
+    int32_t currentStreamType = -1;
+    param.GetIntValue("currentStreamType", currentStreamType);
+    int32_t isEOS = 0;
+    param.GetIntValue("isEOS", isEOS);
+    int32_t currentStreamId = -1;
+    param.GetIntValue("currentStreamId", currentStreamId);
+    MEDIA_LOG_D("HandleDashSeekReady, streamType: " PUBLIC_LOG_D32 " streamId: " PUBLIC_LOG_D32
+        " isEos: " PUBLIC_LOG_D32, currentStreamType, currentStreamId, isEOS);
+    switch (currentStreamType) {
+        case static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_VID):
+            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId,
+                static_cast<bool>(isEOS));
+            break;
+        case static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_AUD):
+            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId,
+                static_cast<bool>(isEOS));
+            break;
+        case static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE):
+            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId,
+                static_cast<bool>(isEOS));
+            break;
+        default:
+            break;
+    }
+    rebootPluginCondition_.notify_all();
 }
 
 Status MediaDemuxer::OptimizeDecodeSlow(bool isDecodeOptimizationEnabled)
