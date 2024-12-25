@@ -692,21 +692,21 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE;
  */
 extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_ENABLE_VRR;
 /**
- * @brief Key for describing applies only when configuring a video encoder in surface mode, value type is int32_t.
- * If no new frame became available since the last frame submitter to the encoder,
+ * @brief Key applies only when configuring a video encoder in surface mode, value type is int32_t.
+ * If no new frame became available since the last frame submitted to the encoder,
  * it will sumbit the previous frame repeatly in microseconds. It is used in configure.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER;
 /**
- * @brief Key for describing the frame previously submitted to the encoder will be repeated (once) maximum count
- * if no new frame became available since, value type is int32_t. This key takes effect only when
+ * @brief Key for describing the maximum count that the frame previously submitted to the encoder will be
+ * repeated, in case no new frame has been available since, value type is int32_t. This key takes effect only when
  * {@link VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER} is vaild. It is used in configure.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT;
 /**
