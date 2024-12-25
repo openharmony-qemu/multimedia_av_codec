@@ -13,6 +13,27 @@
  * limitations under the License.
  */
 
+/**
+ * @addtogroup AudioDecoder
+ * @{
+ *
+ * @brief The AudioDecoder module provides functions for audio decoding.
+ *
+ * @syscap SystemCapability.Multimedia.Media.AudioDecoder
+ * @since 9
+ */
+
+/**
+ * @file native_avcodec_audiodecoder.h
+ *
+ * @brief Declare the Native API used for audio decoding.
+ *
+ * @kit AVCodecKit
+ * @library libnative_media_adec.so
+ * @syscap SystemCapability.Multimedia.Media.AudioDecoder
+ * @since 9
+ */
+
 #ifndef NATIVE_AVCODEC_AUDIODECODER_H
 #define NATIVE_AVCODEC_AUDIODECODER_H
 
@@ -249,3 +270,4 @@ OH_AVErrCode OH_AudioDecoder_IsValid(OH_AVCodec *codec, bool *isValid);
 }
 #endif
 #endif // NATIVE_AVCODEC_AUDIODECODER_H
+/** @} */
