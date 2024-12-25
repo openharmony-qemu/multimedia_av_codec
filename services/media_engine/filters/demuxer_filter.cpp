@@ -310,6 +310,7 @@ Status DemuxerFilter::PrepareBeforeStart()
         MEDIA_LOG_I("Loop is started. Not need start again.");
         return Status::OK;
     }
+    SetIsNotPrepareBeforeStart(false);
     return Filter::Start();
 }
 
@@ -390,6 +391,7 @@ Status DemuxerFilter::DoResumeAudioAlign()
 
 Status DemuxerFilter::ResumeForSeek()
 {
+    FALSE_RETURN_V_MSG(isNotPrepareBeforeStart_, Status::OK, "Current is not need resumeForSeek");
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::ResumeForSeek");
     MEDIA_LOG_I("ResumeForSeek in size: %{public}zu", nextFiltersMap_.size());
     auto it = nextFiltersMap_.find(StreamType::STREAMTYPE_ENCODED_VIDEO);
@@ -800,6 +802,11 @@ int32_t DemuxerFilter::GetCurrentVideoTrackId()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, INVALID_TRACK_ID, "demuxer_ is nullptr");
     return demuxer_->GetCurrentVideoTrackId();
+}
+
+void DemuxerFilter::SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart)
+{
+    isNotPrepareBeforeStart_ = isNotPrepareBeforeStart;
 }
 } // namespace Pipeline
 } // namespace Media

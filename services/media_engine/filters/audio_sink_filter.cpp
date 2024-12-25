@@ -100,7 +100,7 @@ Status AudioSinkFilter::DoPrepare()
 Status AudioSinkFilter::DoStart()
 {
     MEDIA_LOG_I("start called");
-    if (state_ == FilterState::RUNNING) {
+    if (state_ == FilterState::RUNNING || isCancelStart_) {
         return Status::OK;
     }
     if (state_ != FilterState::READY && state_ != FilterState::PAUSED) {
@@ -321,6 +321,11 @@ int32_t AudioSinkFilter::SetMaxAmplitudeCbStatus(bool status)
 {
     FALSE_RETURN_V(audioSink_ != nullptr, MSERR_INVALID_VAL);
     return audioSink_->SetMaxAmplitudeCbStatus(status);
+}
+
+void AudioSinkFilter::SetIsCancelStart(bool isCancelStart)
+{
+    isCancelStart_ = isCancelStart;
 }
 } // namespace Pipeline
 } // namespace Media

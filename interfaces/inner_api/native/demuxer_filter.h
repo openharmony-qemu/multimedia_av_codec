@@ -110,6 +110,7 @@ public:
     Status PauseDemuxerReadLoop();
     void WaitForBufferingEnd();
     int32_t GetCurrentVideoTrackId();
+    void SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -153,6 +154,7 @@ private:
     uint64_t instanceId_ = 0;
     std::string videoMime_;
     std::string audioMime_;
+    bool isNotPrepareBeforeStart_ {true};
 };
 } // namespace Pipeline
 } // namespace Media

@@ -82,6 +82,8 @@ public:
     Status SetSeekTime(int64_t seekTime);
     float GetMaxAmplitude();
     int32_t SetMaxAmplitudeCbStatus(bool status);
+
+    void SetIsCancelStart(bool isCancelStart);
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;
@@ -116,6 +118,7 @@ private:
     float volume_ {-1.0f}; // default invalid value
 
     bool forceUpdateTimeAnchorNextTime_ {false};
+    bool isCancelStart_ {false};
 };
 } // namespace Pipeline
 } // namespace Media
