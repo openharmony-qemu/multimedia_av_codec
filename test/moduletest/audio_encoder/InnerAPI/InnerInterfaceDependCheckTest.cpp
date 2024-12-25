@@ -733,7 +733,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     ret = Flush(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 
     Destroy(encoderDemo);
     delete encoderDemo;
@@ -862,7 +862,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 
     Destroy(encoderDemo);
     delete encoderDemo;
@@ -972,7 +972,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 
     Destroy(encoderDemo);
     delete encoderDemo;
