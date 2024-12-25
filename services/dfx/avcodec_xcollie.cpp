@@ -16,6 +16,8 @@
 #include "avcodec_xcollie.h"
 #include <unistd.h>
 #include <chrono>
+#include <iomanip>
+#include <sstream>
 #ifdef HICOLLIE_ENABLE
 #include "xcollie/xcollie.h"
 #include "xcollie/xcollie_define.h"
@@ -36,6 +38,14 @@ namespace {
 
 namespace OHOS {
 namespace MediaAVCodec {
+static std::string GetTimeString(std::time_t time)
+{
+    std::stringstream ss;
+    struct tm timeTm;
+    ss << std::put_time(localtime_r(&time, &timeTm), "%F %T");
+    return ss.str();
+}
+
 AVCodecXCollie &AVCodecXCollie::GetInstance()
 {
     static AVCodecXCollie instance;
@@ -114,7 +124,8 @@ int32_t AVCodecXCollie::Dump(int32_t fd)
         dumpControler.AddInfo(DUMP_XCOLLIE_INDEX +
             (dumperIndex << DUMP_OFFSET_16), "Timer "s + std::to_string(dumperIndex));
         dumpControler.AddInfo(DUMP_XCOLLIE_INDEX + (timeInfoIndex++ << DUMP_OFFSET_8), "TimerName", iter.second.name);
-        dumpControler.AddInfo(DUMP_XCOLLIE_INDEX + (timeInfoIndex++ << DUMP_OFFSET_8), "StartTime", iter.second.name);
+        dumpControler.AddInfo(DUMP_XCOLLIE_INDEX + (timeInfoIndex++ << DUMP_OFFSET_8),
+            "StartTime", GetTimeString(iter.second.startTime).c_str());
         dumperIndex++;
     }
 
