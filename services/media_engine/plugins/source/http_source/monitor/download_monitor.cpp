@@ -35,6 +35,7 @@ namespace {
         25, // Upload faild.
         26, // Faild to open/read local data from file/application.
         28, // Timeout was reached.
+        0,
     };
     const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
         300,
@@ -43,6 +44,8 @@ namespace {
         303,
         304,
         305,
+        403,
+        0,
     };
 }
 
