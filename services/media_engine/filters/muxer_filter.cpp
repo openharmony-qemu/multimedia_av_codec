@@ -21,6 +21,7 @@
 #include "muxer/media_muxer.h"
 #include "avcodec_trace.h"
 #include "avcodec_sysevent.h"
+#include "avcodec_log.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "MuxerFilter" };
@@ -136,19 +137,17 @@ Status MuxerFilter::DoPrepare()
 
 Status MuxerFilter::DoStart()
 {
-    MEDIA_LOG_I("Start");
+    MEDIA_LOG_I("MuxerFilter Start");
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Start");
-    startCount_++;
-    if (startCount_ == preFilterCount_) {
-        startCount_ = 0;
-        Status ret = mediaMuxer_->Start();
-        if (ret != Status::OK) {
-            SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
-        }
-        return ret;
+    
+    CHECK_AND_RETURN_RET_LOG(!isStarted, Status::OK, "MuxerFilter has started");
+    Status ret = mediaMuxer_->Start();
+    if (ret != Status::OK) {
+        SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
     } else {
-        return Status::OK;
+        isStarted = true;
     }
+    return ret;
 }
 
 Status MuxerFilter::DoPause()
@@ -167,21 +166,22 @@ Status MuxerFilter::DoResume()
 
 Status MuxerFilter::DoStop()
 {
-    MEDIA_LOG_I("Stop");
+    MEDIA_LOG_I("MuxerFilter Stop");
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Stop");
     stopCount_++;
-    Status ret = Status::OK;
     if (stopCount_ == preFilterCount_) {
         stopCount_ = 0;
-        ret = mediaMuxer_->Stop();
-        if (ret == Status::ERROR_WRONG_STATE) {
-            return Status::OK;
+        Status ret = mediaMuxer_->Stop();
+        if (ret == Status::OK) {
+            isStarted = false;
+        } else if (ret == Status::ERROR_WRONG_STATE) {
+            ret = Status::OK;
+        } else {
+            SetFaultEvent("MuxerFilter::DoStop error", (int32_t)ret);
         }
+        return ret;
     }
-    if (ret != Status::OK) {
-        SetFaultEvent("MuxerFilter::DoStop error", (int32_t)ret);
-    }
-    return ret;
+    return Status::OK;
 }
 
 Status MuxerFilter::DoFlush()
