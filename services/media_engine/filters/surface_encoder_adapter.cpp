@@ -589,7 +589,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
             mappingTime = mappingTimeQueue_.front().second;
             mappingTimeQueue_.pop_front();
         }
-        if (startBufferTime_ == -1 && buffer->pts_ != 0) {
+        if (startBufferTime_ == -1) {
             startBufferTime_ = buffer->pts_;
         }
         // cache recent 2 pts
