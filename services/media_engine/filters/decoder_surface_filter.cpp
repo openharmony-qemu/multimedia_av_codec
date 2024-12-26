@@ -704,6 +704,7 @@ void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBu
 {
     if (isInSeekContinous_) {
         Filter::ProcessOutputBuffer(false, 0);
+        return;
     }
     int64_t waitTime = CalculateNextRender(index, outputBuffer);
     MEDIA_LOG_D("RenderNextOutput enter. pts: " PUBLIC_LOG_D64"  waitTime: " PUBLIC_LOG_D64,
