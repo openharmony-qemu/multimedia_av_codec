@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_EVENT_MANAGER_H
-#define AVCODEC_EVENT_MANAGER_H
+#ifndef AVCODEC_EVENT_INFO_EXTENDED_KEY_H
+#define AVCODEC_EVENT_INFO_EXTENDED_KEY_H
 
 #include <string>
 
@@ -30,4 +30,4 @@ public:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_EVENT_MANAGER_H
+#endif // AVCODEC_EVENT_INFO_EXTENDED_KEY_H

@@ -166,6 +166,9 @@ CodecServer::~CodecServer()
     avBufCallback_ = nullptr;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
+    Media::Meta eventInfo;
+    eventInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, eventInfo);
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -188,6 +191,8 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
                              "Init failed. isMimeType:(%{public}d), name:(%{public}s), error:(%{public}d)", isMimeType,
                              name.c_str(), ret);
     SetCallerInfo(callerInfo);
+    callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
 
     shareBufCallback_ = std::make_shared<CodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(shareBufCallback_);

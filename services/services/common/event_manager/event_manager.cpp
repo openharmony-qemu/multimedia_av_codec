@@ -16,6 +16,8 @@
 #include "event_manager.h"
 #include "avcodec_log.h"
 
+#include "instance_memory_update_event_handler.h"
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "EventManager"};
 } // namespace
@@ -32,6 +34,11 @@ void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
 {
     CHECK_AND_RETURN_LOG(type > EventType::UNKNOWN && type < EventType::END, "Unknown event type, ignore");
     std::lock_guard<std::mutex> lock(eventMutex_);
+    auto instanceId = INVALID_INSTANCE_ID;
+    meta.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
+    if (instanceId == INVALID_INSTANCE_ID) {
+        return;
+    }
 
     switch (type) {
         case EventType::INSTANCE_INIT:
@@ -62,12 +69,12 @@ void EventManager::OnInstanceInitEvent(Media::Meta &meta)
 
 void EventManager::OnInstanceReleaseEvent(Media::Meta &meta)
 {
-    (void)meta;
+    InstanceMemoryUpdateEventHandler::GetInstance().OnInstanceRelease(meta);
 }
 
 void EventManager::OnInstanceMemoryUpdateEvent(Media::Meta &meta)
 {
-    (void)meta;
+    InstanceMemoryUpdateEventHandler::GetInstance().OnInstanceMemoryUpdate(meta);
 }
 
 void EventManager::OnAppFreezeEvent(Media::Meta &meta)

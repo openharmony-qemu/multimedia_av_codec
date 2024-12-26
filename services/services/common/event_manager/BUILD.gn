@@ -31,8 +31,7 @@ ohos_source_set("event_manager") {
     "./",
     "../",
     "../../../../interfaces/inner_api/native/",
-    "../../sa_avcodec/server/include/",
-    "./event_handler/",
+    "./event_handler/instance_memory_update_event_handler/",
   ]
 
   sources = [
