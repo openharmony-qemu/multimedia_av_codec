@@ -33,6 +33,7 @@
 #include "avcodec_common.h"
 #include "osal/task/condition_variable.h"
 #include "avcodec_video_encoder.h"
+#include "surface_encoder_filter.h"
 
 namespace OHOS {
 namespace Media {
