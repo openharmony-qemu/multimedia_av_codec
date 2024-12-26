@@ -43,7 +43,10 @@ public:
     void UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t renderDelay = 0);
     Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
 private:
-    float GetSpeed(float speed);
+    int64_t CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer,
+        int64_t bufferAnchoredClockTime, int64_t currentClockTime, float playbackRate);
+    float AdjustPlaybackRate(float speed);
+    int64_t SmoothDeltaTime(int64_t accumulatedDeltaTime, int64_t currentDeltaTime);
     void UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
         const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
 
@@ -68,9 +71,9 @@ private:
     bool isFirstFrame_ {true};
     uint32_t frameRate_ {0};
     int64_t firstFramePts_ {0};
-    int64_t firstFrameNowct_ {0};
-    int64_t lastTimeStamp_ {HST_TIME_NONE};
-    int64_t lastBufferTime_ {HST_TIME_NONE};
+    int64_t firstFrameClockTime_ {0};
+    int64_t lastBufferRelativePts_ {HST_TIME_NONE};
+    int64_t lastBufferAnchoredClockTime_ {HST_TIME_NONE};
     int64_t deltaTimeAccu_ {0};
     VideoScaleType videoScaleType_ {VideoScaleType::VIDEO_SCALE_TYPE_FIT};
 

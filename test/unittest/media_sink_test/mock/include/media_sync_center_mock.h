@@ -31,7 +31,7 @@ public:
         Pipeline::IMediaSynchronizer* supplier) override;
     int64_t GetMediaTimeNow() override;
     int64_t GetClockTimeNow() override;
-    int64_t GetClockTime(int64_t mediaTime) override;
+    int64_t GetAnchoredClockTime(int64_t mediaTime) override;
     void ReportPrerolled(Pipeline::IMediaSynchronizer* supplier) override;
     void ReportEos(Pipeline::IMediaSynchronizer* supplier) override;
     void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId,

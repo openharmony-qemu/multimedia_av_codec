@@ -137,8 +137,8 @@ HWTEST_F(TestSyncManager, sync_manager_life_func, TestSize.Level1)
     auto clockTimeNow = syncManager_->GetMediaTimeNow();
     ASSERT_EQ(clockTimeNow, 0);
 
-    // GetClockTime
-    auto clockTime = syncManager_->GetClockTime(0);
+    // GetAnchoredClockTime
+    auto clockTime = syncManager_->GetAnchoredClockTime(0);
     ASSERT_NE(clockTime, 0);
 
     // Report
@@ -152,30 +152,18 @@ HWTEST_F(TestSyncManager, sync_manager_life_func, TestSize.Level1)
     ASSERT_NE(seekTime, 0);
 }
 
-// Scenario1: Test when allSyncerShouldPrerolled_ is true and alreadySetSyncersShouldWait_ is false.
+// Scenario1: Test when alreadySetSyncersShouldWait_ is false.
 HWTEST_F(TestSyncManager, SetAllSyncShouldWaitNoLock_001, TestSize.Level0)
 {
-    syncManager_->allSyncerShouldPrerolled_ = true;
     syncManager_->alreadySetSyncersShouldWait_ = false;
     syncManager_->SetAllSyncShouldWaitNoLock();
     EXPECT_TRUE(syncManager_->prerolledSyncers_.empty());
     EXPECT_TRUE(syncManager_->alreadySetSyncersShouldWait_);
 }
 
-// Scenario2: Test when allSyncerShouldPrerolled_ is false.
-HWTEST_F(TestSyncManager, SetAllSyncShouldWaitNoLock_002, TestSize.Level0)
-{
-    syncManager_->allSyncerShouldPrerolled_ = false;
-    syncManager_->alreadySetSyncersShouldWait_ = false;
-    syncManager_->SetAllSyncShouldWaitNoLock();
-    EXPECT_TRUE(syncManager_->prerolledSyncers_.empty());
-    EXPECT_FALSE(syncManager_->alreadySetSyncersShouldWait_);
-}
-
 // Scenario3: Test when alreadySetSyncersShouldWait_ is true.
 HWTEST_F(TestSyncManager, SetAllSyncShouldWaitNoLock_003, TestSize.Level0)
 {
-    syncManager_->allSyncerShouldPrerolled_ = true;
     syncManager_->alreadySetSyncersShouldWait_ = true;
     syncManager_->SetAllSyncShouldWaitNoLock();
     EXPECT_TRUE(syncManager_->prerolledSyncers_.empty());
@@ -192,15 +180,11 @@ HWTEST_F(TestSyncManager, Resume_001, TestSize.Level0)
 HWTEST_F(TestSyncManager, Resume_002, TestSize.Level0)
 {
     syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
-    syncManager_->pausedExactAbsMediaTime_ = 100;
-    syncManager_->pausedExactMediaTime_ = 100;
+    syncManager_->pausedMediaTime_ = 100;
     syncManager_->alreadySetSyncersShouldWait_ = true;
     EXPECT_EQ(syncManager_->Resume(), Status::OK);
     EXPECT_EQ(syncManager_->pausedMediaTime_, HST_TIME_NONE);
-    EXPECT_EQ(syncManager_->pausedExactMediaTime_, HST_TIME_NONE);
     EXPECT_EQ(syncManager_->pausedClockTime_, HST_TIME_NONE);
-    EXPECT_EQ(syncManager_->pausedAbsMediaTime_, HST_TIME_NONE);
-    EXPECT_EQ(syncManager_->pausedExactAbsMediaTime_, HST_TIME_NONE);
 }
 
 // Scenario3: Test the flow of the Resume method when clockState is not paused and not resumed
@@ -320,75 +304,20 @@ HWTEST_F(TestSyncManager, SetPlaybackRate_ShouldReturnOk_WhenRateEqualTo0, TestS
     EXPECT_EQ(syncManager_->SetPlaybackRate(rate), Status::OK);
 }
 
-// Scenario3: Test case for rate greater than 0 and currentAbsMediaTime_ is HST_TIME_NONE
+// Scenario3: Test case for rate greater than 0 and currentAnchorMediaTime_ is HST_TIME_NONE
 HWTEST_F(TestSyncManager,
-    SetPlaybackRate_ShouldReturnOk_WhenRateGreaterThan0AndCurrentAbsMediaTimeIsNone, TestSize.Level0) {
+    SetPlaybackRate_ShouldReturnOk_WhenRateGreaterThan0AndCurrentAnchorMediaTimeIsNone, TestSize.Level0) {
     float rate = 1.0;
-    syncManager_->currentAbsMediaTime_ = HST_TIME_NONE;
+    syncManager_->currentAnchorMediaTime_ = HST_TIME_NONE;
     EXPECT_EQ(syncManager_->SetPlaybackRate(rate), Status::OK);
 }
 
-// Scenario4: Test case for rate greater than 0 and currentAbsMediaTime_ is not HST_TIME_NONE
+// Scenario4: Test case for rate greater than 0 and currentAnchorMediaTime_ is not HST_TIME_NONE
 HWTEST_F(TestSyncManager,
-    SetPlaybackRate_ShouldReturnOk_WhenRateGreaterThan0AndCurrentAbsMediaTimeIsNotNone, TestSize.Level0) {
+    SetPlaybackRate_ShouldReturnOk_WhenRateGreaterThan0AndCurrentAnchorMediaTimeIsNotNone, TestSize.Level0) {
     float rate = 1.0;
-    syncManager_->currentAbsMediaTime_ = 100;
+    syncManager_->currentAnchorMediaTime_ = 100;
     EXPECT_EQ(syncManager_->SetPlaybackRate(rate), Status::OK);
-}
-
-// Scenario1: Test when inTime is less than minRangeStartOfMediaTime_
-HWTEST_F(TestSyncManager, ClipMediaTime_ShouldClipToMin_WhenInTimeLessThanMin, TestSize.Level0)
-{
-    syncManager_->minRangeStartOfMediaTime_ = 100;
-    syncManager_->maxRangeEndOfMediaTime_ = 200;
-    int64_t inTime = 50;
-    int64_t expected = 100;
-    int64_t result = syncManager_->ClipMediaTime(inTime);
-    ASSERT_EQ(expected, result);
-}
-
-// Scenario2: Test when inTime is more than maxRangeEndOfMediaTime_
-HWTEST_F(TestSyncManager, ClipMediaTime_ShouldClipToMax_WhenInTimeMoreThanMax, TestSize.Level0)
-{
-    syncManager_->minRangeStartOfMediaTime_ = 100;
-    syncManager_->maxRangeEndOfMediaTime_ = 200;
-    int64_t inTime = 250;
-    int64_t expected = 200;
-    int64_t result = syncManager_->ClipMediaTime(inTime);
-    ASSERT_EQ(expected, result);
-}
-
-// Scenario3: Test when inTime is between minRangeStartOfMediaTime_ and maxRangeEndOfMediaTime_
-HWTEST_F(TestSyncManager, ClipMediaTime_ShouldNotClip_WhenInTimeBetweenMinAndMax, TestSize.Level0)
-{
-    syncManager_->minRangeStartOfMediaTime_ = 100;
-    syncManager_->maxRangeEndOfMediaTime_ = 200;
-    int64_t inTime = 150;
-    int64_t expected = 150;
-    int64_t result = syncManager_->ClipMediaTime(inTime);
-    ASSERT_EQ(expected, result);
-}
-
-// Scenario4: Test when inTime is equal to minRangeStartOfMediaTime_
-HWTEST_F(TestSyncManager, ClipMediaTime_ShouldNotClip_WhenInTimeEqualToMin, TestSize.Level0)
-{
-    syncManager_->minRangeStartOfMediaTime_ = 100;
-    syncManager_->maxRangeEndOfMediaTime_ = 200;
-    int64_t inTime = 100;
-    int64_t expected = 100;
-    int64_t result = syncManager_->ClipMediaTime(inTime);
-    ASSERT_EQ(expected, result);
-}
-
-// Scenario5: Test when inTime is equal to maxRangeEndOfMediaTime_
-HWTEST_F(TestSyncManager, ClipMediaTime_ShouldNotClip_WhenInTimeEqualToMax, TestSize.Level0)
-{
-    syncManager_->minRangeStartOfMediaTime_ = 100;
-    syncManager_->maxRangeEndOfMediaTime_ = 200;
-    int64_t inTime = 200;
-    int64_t expected = 200;
-    int64_t result = syncManager_->ClipMediaTime(inTime);
-    ASSERT_EQ(expected, result);
 }
 
 HWTEST_F(TestSyncManager, UpdateFirstPtsAfterSeek_ShouldUpdateFirstPts_WhenFirstPtsIsNone, TestSize.Level0)
@@ -416,43 +345,69 @@ HWTEST_F(TestSyncManager, UpdateFirstPtsAfterSeek_ShouldNotUpdateFirstPts_WhenMe
     EXPECT_EQ(syncManager_->firstMediaTimeAfterSeek_, firstMediaTimeAfterSeek);
 }
 
-// Scenario1: Test when playRate is 0 then return HST_TIME_NONE.
-HWTEST_F(TestSyncManager, SimpleGetMediaTime_001, TestSize.Level0)
+HWTEST_F(TestSyncManager, GetMediaTime_001, TestSize.Level0)
 {
-    int64_t anchorClockTime = 100;
-    int64_t delayTime = 50;
-    int64_t nowClockTime = 150;
-    int64_t anchorMediaTime = 200;
-    float playRate = 0;
-    int64_t result =
-        syncManager_->SimpleGetMediaTime(anchorClockTime, delayTime, nowClockTime, anchorMediaTime, playRate);
+    syncManager_->currentAnchorClockTime_ = 100;
+    syncManager_->delayTime_ = 50;
+    syncManager_->currentAnchorMediaTime_ = 200;
+    syncManager_->playRate_ = 0;
+    int64_t clockTime = 150;
+    int64_t result = syncManager_->GetMediaTime(clockTime);
     ASSERT_EQ(result, HST_TIME_NONE);
 }
 
-// Scenario2: Test when any of the input parameters is HST_TIME_NONE then return HST_TIME_NONE.
-HWTEST_F(TestSyncManager, SimpleGetMediaTime_002, TestSize.Level0)
+HWTEST_F(TestSyncManager, GetMediaTime_002, TestSize.Level0)
 {
-    int64_t anchorClockTime = HST_TIME_NONE;
-    int64_t delayTime = 50;
-    int64_t nowClockTime = 150;
-    int64_t anchorMediaTime = 200;
-    float playRate = 1.0;
-    int64_t result =
-        syncManager_->SimpleGetMediaTime(anchorClockTime, delayTime, nowClockTime, anchorMediaTime, playRate);
+    syncManager_->currentAnchorClockTime_ = HST_TIME_NONE;
+    syncManager_->delayTime_ = 50;
+    syncManager_->currentAnchorMediaTime_ = 200;
+    syncManager_->playRate_ = 1.0;
+    int64_t clockTime = 150;
+    int64_t result = syncManager_->GetMediaTime(clockTime);
     ASSERT_EQ(result, HST_TIME_NONE);
 }
 
-// Scenario3: Test when all parameters are valid then return anchorMediaTime.
-HWTEST_F(TestSyncManager, SimpleGetMediaTime_003, TestSize.Level0)
+HWTEST_F(TestSyncManager, GetMediaTime_003, TestSize.Level0)
 {
-    int64_t anchorClockTime = 100;
-    int64_t delayTime = 50;
-    int64_t nowClockTime = 150;
-    int64_t anchorMediaTime = 200;
-    float playRate = 1.0;
-    int64_t result =
-        syncManager_->SimpleGetMediaTime(anchorClockTime, delayTime, nowClockTime, anchorMediaTime, playRate);
-    ASSERT_EQ(result, anchorMediaTime);
+    syncManager_->currentAnchorClockTime_ = 100;
+    syncManager_->delayTime_ = 50;
+    syncManager_->currentAnchorMediaTime_ = 200;
+    syncManager_->playRate_ = 1.0;
+    int64_t clockTime = 150;
+    int64_t result = syncManager_->GetMediaTime(clockTime);
+    ASSERT_EQ(result, 250);
+}
+
+HWTEST_F(TestSyncManager, GetAnchoredClockTime_001, TestSize.Level0)
+{
+    MediaSyncManager mediaSyncManager;
+    mediaSyncManager.minRangeStartOfMediaTime_ = 100;
+    mediaSyncManager.maxRangeEndOfMediaTime_ = 200;
+    int64_t mediaTime = 50;
+    int64_t result = mediaSyncManager.GetAnchoredClockTime(mediaTime);
+    EXPECT_EQ(result, HST_TIME_NONE);
+}
+
+// Scenario2: Test when mediaTime is greater than maxRangeEndOfMediaTime_
+HWTEST_F(TestSyncManager, GetAnchoredClockTime_002, TestSize.Level0)
+{
+    MediaSyncManager mediaSyncManager;
+    mediaSyncManager.minRangeStartOfMediaTime_ = 100;
+    mediaSyncManager.maxRangeEndOfMediaTime_ = 200;
+    int64_t mediaTime = 250;
+    int64_t result = mediaSyncManager.GetAnchoredClockTime(mediaTime);
+    EXPECT_EQ(result, HST_TIME_NONE);
+}
+
+// Scenario3: Test when mediaTime is within the range
+HWTEST_F(TestSyncManager, GetAnchoredClockTime_003, TestSize.Level0)
+{
+    MediaSyncManager mediaSyncManager;
+    mediaSyncManager.minRangeStartOfMediaTime_ = 100;
+    mediaSyncManager.maxRangeEndOfMediaTime_ = 200;
+    int64_t mediaTime = 150;
+    int64_t result = mediaSyncManager.GetAnchoredClockTime(mediaTime);
+    EXPECT_EQ(result, HST_TIME_NONE);
 }
 
 // Scenario1: audio priority and not seeked, do not go back
@@ -465,7 +420,7 @@ HWTEST_F(TestSyncManager, BoundMediaProgress_001, TestSize.Level0)
     mediaSyncManager.lastAudioBufferDuration_ = 20;
     mediaSyncManager.currentAnchorMediaTime_ = 100;
     mediaSyncManager.lastReportMediaTime_ = lastReportMediaTime;
-    mediaSyncManager.frameAfterSeeked_ = false;
+    mediaSyncManager.isFrameAfterSeeked_ = false;
     mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
 
     newMediaProgressTime = 50;
@@ -482,7 +437,7 @@ HWTEST_F(TestSyncManager, BoundMediaProgress_002, TestSize.Level0)
     mediaSyncManager.lastAudioBufferDuration_ = 20;
     mediaSyncManager.currentAnchorMediaTime_ = 100;
     mediaSyncManager.lastReportMediaTime_ = 90;
-    mediaSyncManager.frameAfterSeeked_ = false;
+    mediaSyncManager.isFrameAfterSeeked_ = false;
     mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
 
     newMediaProgressTime = 250;
@@ -499,7 +454,7 @@ HWTEST_F(TestSyncManager, BoundMediaProgress_003, TestSize.Level0)
     mediaSyncManager.lastAudioBufferDuration_ = 20;
     mediaSyncManager.currentAnchorMediaTime_ = 100;
     mediaSyncManager.lastReportMediaTime_ = 90;
-    mediaSyncManager.frameAfterSeeked_ = false;
+    mediaSyncManager.isFrameAfterSeeked_ = false;
     mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
 
     newMediaProgressTime = 100;
@@ -516,7 +471,7 @@ HWTEST_F(TestSyncManager, BoundMediaProgress_004, TestSize.Level0)
     mediaSyncManager.lastAudioBufferDuration_ = 100;
     mediaSyncManager.currentAnchorMediaTime_ = 100;
     mediaSyncManager.lastReportMediaTime_ = 150;
-    mediaSyncManager.frameAfterSeeked_ = true;
+    mediaSyncManager.isFrameAfterSeeked_ = true;
     mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
 
     newMediaProgressTime = 50;
@@ -532,7 +487,7 @@ HWTEST_F(TestSyncManager, BoundMediaProgress_005, TestSize.Level0)
     // pre-defined values
     mediaSyncManager.currentAnchorMediaTime_ = 200;
     mediaSyncManager.lastReportMediaTime_ = 150;
-    mediaSyncManager.frameAfterSeeked_ = true;
+    mediaSyncManager.isFrameAfterSeeked_ = true;
     mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
 
     newMediaProgressTime = 175;
@@ -569,15 +524,15 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_002, TestSize.Level0)
     MediaSyncManager mediaSyncManager;
     mediaSyncManager.isSeeking_ = false;
     mediaSyncManager.lastReportMediaTime_ = 100;
-    mediaSyncManager.pausedExactAbsMediaTime_ = 120;
+    mediaSyncManager.pausedMediaTime_ = 120;
     mediaSyncManager.currentAnchorMediaTime_ = 150;
-    mediaSyncManager.frameAfterSeeked_ = false;
+    mediaSyncManager.isFrameAfterSeeked_ = false;
     mediaSyncManager.firstMediaTimeAfterSeek_ = 50;
     mediaSyncManager.clockState_ = MediaSyncManager::State::PAUSED;
     mediaSyncManager.startPts_ = 0;
     mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     int64_t result = mediaSyncManager.GetMediaTimeNow();
-    EXPECT_EQ(result, mediaSyncManager.pausedExactAbsMediaTime_);
+    EXPECT_EQ(result, mediaSyncManager.pausedMediaTime_);
 }
 
 // Scenario3: Test case when invalid
@@ -601,10 +556,9 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_004, TestSize.Level0)
     mediaSyncManager.clockState_ = MediaSyncManager::State::RESUMED;
     mediaSyncManager.lastReportMediaTime_ = lastReportMediaTime_;
     mediaSyncManager.currentAnchorMediaTime_ = 150;
-    mediaSyncManager.currentAbsMediaTime_ = 150;
     mediaSyncManager.delayTime_ = 50;
     mediaSyncManager.playRate_ = 1.0f;
-    mediaSyncManager.frameAfterSeeked_ = false;
+    mediaSyncManager.isFrameAfterSeeked_ = false;
     mediaSyncManager.firstMediaTimeAfterSeek_ = 50; // firstMediaTimeAfterSeek_ < currentMediaTime
     mediaSyncManager.startPts_ = 0;
     mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
@@ -623,10 +577,9 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_005, TestSize.Level0)
     mediaSyncManager.clockState_ = MediaSyncManager::State::RESUMED;
     mediaSyncManager.lastReportMediaTime_ = lastReportMediaTime_;
     mediaSyncManager.currentAnchorMediaTime_ = 150;
-    mediaSyncManager.currentAbsMediaTime_ = 150;
     mediaSyncManager.delayTime_ = 50;
     mediaSyncManager.playRate_ = 1.0f;
-    mediaSyncManager.frameAfterSeeked_ = false;
+    mediaSyncManager.isFrameAfterSeeked_ = false;
     mediaSyncManager.firstMediaTimeAfterSeek_ = 150; // firstMediaTimeAfterSeek_ >= currentMediaTime
     mediaSyncManager.startPts_ = 0;
     mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
@@ -645,10 +598,9 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_006, TestSize.Level0)
     mediaSyncManager.clockState_ = MediaSyncManager::State::RESUMED;
     mediaSyncManager.lastReportMediaTime_ = lastReportMediaTime_;
     mediaSyncManager.currentAnchorMediaTime_ = 150;
-    mediaSyncManager.currentAbsMediaTime_ = 150;
     mediaSyncManager.delayTime_ = 50;
     mediaSyncManager.playRate_ = 1.0f;
-    mediaSyncManager.frameAfterSeeked_ = false;
+    mediaSyncManager.isFrameAfterSeeked_ = false;
     mediaSyncManager.firstMediaTimeAfterSeek_ = HST_TIME_NONE; // firstMediaTimeAfterSeek_ = HST_TIME_NONE
     mediaSyncManager.startPts_ = 0;
     mediaSyncManager.currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
@@ -662,7 +614,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_007, TestSize.Level0)
 {
     syncManager_->isSeeking_ = false;
     syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
-    syncManager_->pausedExactAbsMediaTime_ = 100;
+    syncManager_->pausedMediaTime_ = 50;
     syncManager_->firstMediaTimeAfterSeek_ = 150;
     syncManager_->startPts_ = 50;
     syncManager_->currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
@@ -674,7 +626,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_008, TestSize.Level0)
 {
     syncManager_->isSeeking_ = false;
     syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
-    syncManager_->pausedExactAbsMediaTime_ = 100;
+    syncManager_->pausedMediaTime_ = 100;
     syncManager_->firstMediaTimeAfterSeek_ = 150;
     syncManager_->currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     syncManager_->currentAnchorMediaTime_ = 50;
@@ -721,74 +673,6 @@ HWTEST_F(TestSyncManager, GetClockTimeNow_001, TestSize.Level0)
     EXPECT_EQ(mediaSyncManager.clockState_, MediaSyncManager::State::PAUSED);
 }
 
-// Scenario1: Test when playRate is 0, the function should return HST_TIME_NONE.
-HWTEST_F(TestSyncManager, SimpleGetClockTime_001, TestSize.Level0)
-{
-    MediaSyncManager mediaSyncManager;
-    int64_t anchorClockTime = 100;
-    int64_t nowMediaTime = 200;
-    int64_t anchorMediaTime = 150;
-    float playRate = 0;
-    int64_t result = mediaSyncManager.SimpleGetClockTime(anchorClockTime, nowMediaTime, anchorMediaTime, playRate);
-    EXPECT_EQ(result, HST_TIME_NONE);
-}
-
-// Scenario2: Test when any of the input parameters is HST_TIME_NONE, the function should return HST_TIME_NONE.
-HWTEST_F(TestSyncManager, SimpleGetClockTime_002, TestSize.Level0)
-{
-    MediaSyncManager mediaSyncManager;
-    int64_t anchorClockTime = HST_TIME_NONE;
-    int64_t nowMediaTime = 200;
-    int64_t anchorMediaTime = 150;
-    float playRate = 1.0;
-    int64_t result = mediaSyncManager.SimpleGetClockTime(anchorClockTime, nowMediaTime, anchorMediaTime, playRate);
-    EXPECT_EQ(result, HST_TIME_NONE);
-}
-
-// Scenario3: Test when all parameters are valid, the function should return the correct clock time.
-HWTEST_F(TestSyncManager, SimpleGetClockTime_003, TestSize.Level0)
-{
-    MediaSyncManager mediaSyncManager;
-    int64_t anchorClockTime = 100;
-    int64_t nowMediaTime = 200;
-    int64_t anchorMediaTime = 150;
-    float playRate = 1.0;
-    int64_t result = mediaSyncManager.SimpleGetClockTime(anchorClockTime, nowMediaTime, anchorMediaTime, playRate);
-    EXPECT_EQ(result, 150);
-}
-
-HWTEST_F(TestSyncManager, GetClockTime_001, TestSize.Level0)
-{
-    MediaSyncManager mediaSyncManager;
-    mediaSyncManager.minRangeStartOfMediaTime_ = 100;
-    mediaSyncManager.maxRangeEndOfMediaTime_ = 200;
-    int64_t mediaTime = 50;
-    int64_t result = mediaSyncManager.GetClockTime(mediaTime);
-    EXPECT_EQ(result, HST_TIME_NONE);
-}
-
-// Scenario2: Test when mediaTime is greater than maxRangeEndOfMediaTime_
-HWTEST_F(TestSyncManager, GetClockTime_002, TestSize.Level0)
-{
-    MediaSyncManager mediaSyncManager;
-    mediaSyncManager.minRangeStartOfMediaTime_ = 100;
-    mediaSyncManager.maxRangeEndOfMediaTime_ = 200;
-    int64_t mediaTime = 250;
-    int64_t result = mediaSyncManager.GetClockTime(mediaTime);
-    EXPECT_EQ(result, HST_TIME_NONE);
-}
-
-// Scenario3: Test when mediaTime is within the range
-HWTEST_F(TestSyncManager, GetClockTime_003, TestSize.Level0)
-{
-    MediaSyncManager mediaSyncManager;
-    mediaSyncManager.minRangeStartOfMediaTime_ = 100;
-    mediaSyncManager.maxRangeEndOfMediaTime_ = 200;
-    int64_t mediaTime = 150;
-    int64_t result = mediaSyncManager.GetClockTime(mediaTime);
-    EXPECT_EQ(result, HST_TIME_NONE);
-}
-
 // Scenario1: Test when supplier is nullptr then ReportPrerolled returns immediately.
 HWTEST_F(TestSyncManager, ReportPrerolled_001, TestSize.Level0)
 {
@@ -796,21 +680,10 @@ HWTEST_F(TestSyncManager, ReportPrerolled_001, TestSize.Level0)
     // No further action is expected, as the function should return immediately.
 }
 
-// Scenario2: Test when allSyncerShouldPrerolled_ is false then ReportPrerolled returns immediately.
-HWTEST_F(TestSyncManager, ReportPrerolled_002, TestSize.Level0)
-{
-    IMediaSynchronizer* supplier = new VideoSink();
-    syncManager_->allSyncerShouldPrerolled_ = false;
-    syncManager_->ReportPrerolled(supplier);
-    // No further action is expected, as the function should return immediately.
-    delete supplier;
-}
-
 // Scenario3: Test when supplier is already in prerolledSyncers_ then ReportPrerolled returns immediately.
 HWTEST_F(TestSyncManager, ReportPrerolled_003, TestSize.Level0)
 {
     IMediaSynchronizer* supplier = new VideoSink();
-    syncManager_->allSyncerShouldPrerolled_ = true;
     syncManager_->prerolledSyncers_.emplace_back(supplier);
     syncManager_->ReportPrerolled(supplier);
     // No further action is expected, as the function should return immediately.
@@ -820,7 +693,6 @@ HWTEST_F(TestSyncManager, ReportPrerolled_003, TestSize.Level0)
 HWTEST_F(TestSyncManager, ReportPrerolled_004, TestSize.Level0)
 {
     IMediaSynchronizer* supplier = new VideoSink();
-    syncManager_->allSyncerShouldPrerolled_ = true;
     syncManager_->ReportPrerolled(supplier);
     EXPECT_EQ(syncManager_->prerolledSyncers_.size(), 1);
     EXPECT_EQ(syncManager_->prerolledSyncers_.front(), supplier);
@@ -831,7 +703,6 @@ HWTEST_F(TestSyncManager, ReportPrerolled_004, TestSize.Level0)
 HWTEST_F(TestSyncManager, ReportPrerolled_005, TestSize.Level0)
 {
     IMediaSynchronizer* supplier = new VideoSink();
-    syncManager_->allSyncerShouldPrerolled_ = true;
     syncManager_->syncers_.emplace_back(supplier);
     syncManager_->ReportPrerolled(supplier);
     EXPECT_EQ(syncManager_->prerolledSyncers_.size(), 0);
