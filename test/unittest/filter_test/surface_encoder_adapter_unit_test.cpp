@@ -146,7 +146,9 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Stop_0100, TestSiz
     surfaceEncoderAdapter_->isStart_ = true;
     surfaceEncoderAdapter_->isTransCoderMode = true;
     surfaceEncoderAdapter_->releaseBufferTask_ = nullptr;
-    std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback = std::make_shared<EncoderAdapterCallback>();
+    std::shared_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter = std::make_shared<SurfaceEncoderAdapter>();
+    std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
+        std::make_shared<SurfaceEncoderAdapterCallback>(surfaceEncoderAdapter);
     surfaceEncoderAdapter_->SetEncoderAdapterCallback(encoderAdapterCallback);
     Status ret = surfaceEncoderAdapter_->Stop();
     EXPECT_EQ(ret, Status::OK);
