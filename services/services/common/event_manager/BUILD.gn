@@ -19,6 +19,8 @@ config("event_manager_public_config") {
 }
 
 ohos_source_set("event_manager") {
+  branch_protector_ret = "pac_ret"
+  sanitize = av_codec_sanitize
   public_configs = [ ":event_manager_public_config" ]
 
   public_external_deps = [ "media_foundation:media_foundation" ]
@@ -27,6 +29,9 @@ ohos_source_set("event_manager") {
 
   include_dirs = [
     "./",
+    "../",
+    "../../../../interfaces/inner_api/native/",
+    "../../sa_avcodec/server/include/",
     "./event_handler/",
   ]
 
@@ -34,4 +39,9 @@ ohos_source_set("event_manager") {
     "./event_handler/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
     "./event_manager.cpp",
   ]
+
+  deps = [ "../../sa_avcodec:sa_manager" ]
+
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
 }

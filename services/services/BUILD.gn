@@ -119,11 +119,6 @@ ohos_shared_library("av_codec_service") {
   sources = [
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "common/avsharedmemory_ipc.cpp",
-    "sa_avcodec/ipc/avcodec_listener_proxy.cpp",
-    "sa_avcodec/ipc/avcodec_parcel.cpp",
-    "sa_avcodec/ipc/avcodec_service_stub.cpp",
-    "sa_avcodec/server/avcodec_server.cpp",
-    "sa_avcodec/server/avcodec_server_manager.cpp",
   ]
 
   if (av_codec_support_codec) {
@@ -154,6 +149,7 @@ ohos_shared_library("av_codec_service") {
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
     "./common/event_manager:event_manager",
+    "./sa_avcodec:sa_manager",
   ]
 
   if (av_codec_support_codeclist) {

@@ -130,7 +130,7 @@ int32_t AVCodecServerManager::CreateCodecListStubObject(sptr<IRemoteObject> &obj
 #ifdef SUPPORT_CODEC
 int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
 {
-    static std::atomic<uint32_t> instanceId = 0;
+    static std::atomic<int32_t> instanceId = 0;
     sptr<CodecServiceStub> stub = CodecServiceStub::Create();
     CHECK_AND_RETURN_RET_LOG(stub != nullptr, AVCS_ERR_CREATE_AVCODEC_STUB_FAILED, "Failed to create CodecServiceStub");
 
@@ -275,13 +275,12 @@ std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> AVCodecServerManager::
     return instanceInfoList;
 }
 
-std::optional<std::pair<sptr<IRemoteObject>, InstanceInfo>>
-AVCodecServerManager::GetInstanceInfoByInstanceId(uint32_t instanceId)
+std::optional<InstanceInfo> AVCodecServerManager::GetInstanceInfoByInstanceId(uint32_t instanceId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
         if (iter->second.second.instanceId == instanceId) {
-            return iter->second;
+            return iter->second.second;
         }
     }
     return std::nullopt;

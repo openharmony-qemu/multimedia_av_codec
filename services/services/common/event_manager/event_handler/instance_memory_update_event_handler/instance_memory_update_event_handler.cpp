@@ -14,12 +14,39 @@
  */
 
 #include "instance_memory_update_event_handler.h"
+#include "avcodec_server_manager.h"
+#include "avcodec_log.h"
+#include "avcodec_errors.h"
+#include "event_info_extended_key.h"
+
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceMemoryUpdateEventHandler"};
+constexpr int32_t MEMORY_LEAK_UPLOAD_TIMEOUT = 180; // seconds
+} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
+InstanceMemoryUpdateEventHandler &InstanceMemoryUpdateEventHandler::GetInstance()
+{
+    static InstanceMemoryUpdateEventHandler handler;
+    return handler;
+}
+
 void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta &meta)
 {
-    (void)meta;
+    auto instanceId = INVALID_INSTANCE_ID;
+    auto instanceIdExist = meta.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
+    CHECK_AND_RETURN_LOG(instanceIdExist == true && instanceId != INVALID_INSTANCE_ID, "Can not find instance id");
+
+    auto calculator = GetCalculator(meta);
+    CHECK_AND_RETURN_LOG(calculator != std::nullopt, "Can not find a calculator");
+    auto instanceMemory = calculator.value()(GetBlockCount(meta));
+
+    auto instanceInfo = UpdateInstanceMemory(instanceId, instanceMemory);
+    CHECK_AND_RETURN_LOG(instanceInfo != std::nullopt, "Update instance memory failed");
+
+    DeterminAppMemoryLeak(GetActualPidByInstanceInfo(instanceInfo.value()));
 }
 
 void InstanceMemoryUpdateEventHandler::OnInstanceRelease(const Media::Meta &meta)
@@ -27,16 +54,16 @@ void InstanceMemoryUpdateEventHandler::OnInstanceRelease(const Media::Meta &meta
     (void)meta;
 }
 
-void InstanceMemoryUpdateEventHandler::UpdateAppMemoryThreshold()
+void InstanceMemoryUpdateEventHandler::RemoveTimer(pid_t pid)
 {
-    (void)appMemoryThreshold_;
+    std::lock_guard<std::mutex> lock(timerMutex_);
+    timerMap_.erase(pid);
 }
 
-std::optional<std::function<uint32_t(uint32_t)>> InstanceMemoryUpdateEventHandler::GetCalculator(const Media::Meta &meta)
+std::optional<std::function<uint64_t(uint32_t)>> InstanceMemoryUpdateEventHandler::GetCalculator(const Media::Meta &meta)
 {
     (void)meta;
-    (void)meta;
-    return std::optional<std::function<uint32_t(uint32_t)>>();
+    return std::optional<std::function<uint64_t(uint32_t)>>();
 }
 
 uint32_t InstanceMemoryUpdateEventHandler::GetBlockCount(const Media::Meta &meta)
@@ -45,29 +72,61 @@ uint32_t InstanceMemoryUpdateEventHandler::GetBlockCount(const Media::Meta &meta
     return 0;
 }
 
-int32_t InstanceMemoryUpdateEventHandler::UpdateInstanceMemory(uint32_t instanceId, uint32_t memory)
+pid_t InstanceMemoryUpdateEventHandler::GetActualPidByInstanceInfo(const InstanceInfo &info)
 {
-    (void)instanceId;
+    return info.forwardCaller.pid != INVALID_PID ? info.forwardCaller.pid : info.caller.pid;
+}
+
+std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemory(int32_t instanceId, uint64_t memory)
+{
+    auto instanceInfo = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
+    CHECK_AND_RETURN_RET_LOG(instanceInfo != std::nullopt,
+        std::nullopt, "Can not find this instance, id: %{public}d", instanceId);
+
+    instanceInfo.value().memoryUsage = memory;
+    AVCodecServerManager::GetInstance().SetInstanceInfoByInstanceId(instanceId, instanceInfo.value());
+    AVCODEC_LOGI("The memory usage of instance %{public}d has been updated to %{public}" PRIu64, instanceId, memory);
+
+    return instanceInfo;
+}
+
+void InstanceMemoryUpdateEventHandler::UpdateAppMemoryThreshold()
+{
+    // if (appMemoryThreshold_ == INVALID) {
+        (void)appMemoryThreshold_;
+    // }
+}
+
+uint64_t InstanceMemoryUpdateEventHandler::GetAppMemory(pid_t pid)
+{
+    return 0;
+}
+
+void InstanceMemoryUpdateEventHandler::UploadAppMemory(pid_t pid)
+{
+    auto memory = GetAppMemory(pid);
     (void)memory;
-    return 0;
+
+
+    InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(pid);
 }
 
-int32_t InstanceMemoryUpdateEventHandler::DeleteInstanceMemory(sptr<IRemoteObject> &object)
+void InstanceMemoryUpdateEventHandler::DeterminAppMemoryLeak(pid_t pid)
 {
-    (void)object;
-    return 0;
-}
+    UpdateAppMemoryThreshold();
 
-int32_t InstanceMemoryUpdateEventHandler::DeterminAppMemoryLeak(pid_t pid)
-{
-    (void)pid;
-    return 0;
-}
+    auto memory = GetAppMemory(pid);
+    if (memory > appMemoryThreshold_ && timerMap_.count(pid) == 0) {
+        using namespace std::string_literals;
+        auto timeName = "Pid_"s + std::to_string(pid) + " memory leak";
+        AVCodecXcollieTimer timer(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT,
+            [=](void *) -> void { UploadAppMemory(pid); });
 
-void InstanceMemoryUpdateEventHandler::UploadAppMemory(pid_t pid, uint32_t memory)
-{
-    (void)pid;
-    (void)memory;
+        std::lock_guard<std::mutex> lock(timerMutex_);
+        timerMap_.emplace(pid, timer);
+    } else if (memory <= appMemoryThreshold_ && timerMap_.count(pid) != 0) {
+        InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(pid);
+    }
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

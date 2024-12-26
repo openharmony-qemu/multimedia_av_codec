@@ -18,26 +18,35 @@
 
 #include <optional>
 #include <functional>
+#include <unordered_map>
+#include <mutex>
+#include "avcodec_xcollie.h"
 #include "meta.h"
+#include "instance_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 class InstanceMemoryUpdateEventHandler {
 public:
+    static InstanceMemoryUpdateEventHandler &GetInstance();
     void OnInstanceMemoryUpdate(const Media::Meta &meta);
     void OnInstanceRelease(const Media::Meta &meta);
+    void RemoveTimer(pid_t pid);
 
 private:
-    void UpdateAppMemoryThreshold();
-    std::optional<std::function<uint32_t(uint32_t)>> GetCalculator(const Media::Meta &meta);
+    std::optional<std::function<uint64_t(uint32_t)>> GetCalculator(const Media::Meta &meta);
     uint32_t GetBlockCount(const Media::Meta &meta);
-    int32_t UpdateInstanceMemory(uint32_t instanceId, uint32_t memory);
-    int32_t DeleteInstanceMemory(sptr<IRemoteObject> &object);
-    int32_t DeterminAppMemoryLeak(pid_t pid);
+    pid_t GetActualPidByInstanceInfo(const InstanceInfo &info);
+    std::optional<InstanceInfo> UpdateInstanceMemory(int32_t instanceId, uint64_t memory);
 
-    void UploadAppMemory(pid_t pid, uint32_t memory);
+    void UpdateAppMemoryThreshold();
+    static uint64_t GetAppMemory(pid_t pid);
+    static void UploadAppMemory(pid_t pid);
+    void DeterminAppMemoryLeak(pid_t pid);
 
     uint32_t appMemoryThreshold_ = 0;
+    std::mutex timerMutex_;
+    std::unordered_map<pid_t, AVCodecXcollieTimer> timerMap_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

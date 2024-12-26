@@ -22,6 +22,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+constexpr int32_t INVALID_PID = -1;
 struct CallerInfo
 {
     pid_t pid = -1;
@@ -29,18 +30,19 @@ struct CallerInfo
     std::string processName = "";
 };
 
+constexpr int32_t INVALID_INSTANCE_ID = -1;
 struct InstanceInfo
 {
-    uint32_t instanceId = 0;
+    int32_t instanceId = INVALID_INSTANCE_ID;
     CallerInfo caller;
     CallerInfo forwardCaller;
-    uint32_t memoryUsage = 0;
+    uint64_t memoryUsage = 0;
 
     void Print()
     {
         constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceInfo"};
         AVCODEC_LOGI("InstanceId: %{public}d, Caller: [%{public}d, %{public}s], ForwardCaller: [%{public}d, %{public}s]"
-            ", MemoryUsage: %{public}u", instanceId, caller.pid, caller.processName.c_str(), forwardCaller.pid,
+            ", MemoryUsage: %{public}" PRIu64, instanceId, caller.pid, caller.processName.c_str(), forwardCaller.pid,
             forwardCaller.processName.c_str(), memoryUsage);
     }
 };

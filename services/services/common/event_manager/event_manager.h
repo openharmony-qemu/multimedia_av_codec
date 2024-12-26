@@ -18,7 +18,9 @@
 
 #include <mutex>
 #include <memory>
+#include <string>
 #include "meta.h"
+#include "event_info_extended_key.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
