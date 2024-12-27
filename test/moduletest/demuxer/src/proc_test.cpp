@@ -63,7 +63,7 @@ constexpr int32_t COUNTDUAL = 2;
 constexpr int32_t BITRATEMONO = 64000;
 constexpr int32_t BITRATEDUAL = 705600;
 constexpr int32_t FRAME_REMAINING = 100;
-constexpr int32_t START_TIME_NUM = 5011;
+constexpr int64_t START_TIME_NUM = 5011;
 void DemuxerProcNdkTest::SetUpTestCase() {}
 void DemuxerProcNdkTest::TearDownTestCase() {}
 void DemuxerProcNdkTest::SetUp()
