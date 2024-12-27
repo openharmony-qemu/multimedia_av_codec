@@ -227,9 +227,6 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.paramsFeedback == 1) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PARAMS_FEEDBACK, opt_.paramsFeedback);
     }
-    if (opt_.enableQPMap == 1) {
-        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, opt_.enableQPMap);
-    }
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
     if (err != AVCS_ERR_OK) {
@@ -305,12 +302,6 @@ bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, static_cast<int32_t>(param.ebrParam->maxQp));
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_START, static_cast<int32_t>(param.ebrParam->startQp));
         meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_SKIP, static_cast<bool>(param.ebrParam->isSkip));
-    }
-    if (param.qpMapValue.has_value()) {
-        size_t widthInBlock = (opt_.dispW - 1) / 16 + 1; // divide by 16x16 block
-        size_t heightInBlock = (opt_.dispH - 1) / 16 + 1; // divide by 16x16 block
-        vector<uint8_t> QPMap (widthInBlock * heightInBlock, param.qpMapValue.value()); // QP_MAX = 51
-        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_QP_MAP, QPMap);
     }
     return true;
 }

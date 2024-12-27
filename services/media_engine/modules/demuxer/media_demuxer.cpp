@@ -561,6 +561,7 @@ Status MediaDemuxer::InnerPrepare()
     if (ret == Status::OK) {
         InitMediaMetaData(mediaInfo);
         InitDefaultTrack(mediaInfo, videoTrackId_, audioTrackId_, subtitleTrackId_, videoMime_);
+        InitMediaStartPts();
         if (videoTrackId_ != TRACK_ID_DUMMY) {
             AddDemuxerCopyTask(videoTrackId_, TaskType::VIDEO);
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, videoTrackId_, -1);
@@ -614,6 +615,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     demuxerPluginManager_->InitDefaultPlay(streams);
 
     streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    streamDemuxer_->SetSourceType(source->GetSourceType());
     streamDemuxer_->SetInterruptState(isInterruptNeeded_);
     streamDemuxer_->SetSource(source_);
     streamDemuxer_->Init(uri_);
@@ -648,6 +650,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
 
     int32_t subtitleStreamID = demuxerPluginManager_->AddExternalSubtitle();
     subStreamDemuxer_ = std::make_shared<StreamDemuxer>();
+    subStreamDemuxer_->SetSourceType(subSource->GetSourceType());
     subStreamDemuxer_->SetInterruptState(isInterruptNeeded_);
     subStreamDemuxer_->SetSource(subtitleSource_);
     subStreamDemuxer_->Init(subSource->GetSourceUri());

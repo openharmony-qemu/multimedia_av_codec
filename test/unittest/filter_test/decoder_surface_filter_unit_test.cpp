@@ -778,6 +778,54 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, OnOutputFormatChanged_002, TestSize.Level
 }
 
 /**
+ * @tc.name: OnOutputFormatChanged_003
+ * @tc.desc: OnOutputFormatChanged
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest, OnOutputFormatChanged_003, TestSize.Level1)
+{
+    MediaAVCodec::Format format;
+    format.PutIntValue("video_picture_width", 0);
+    format.PutIntValue("video_picture_height", 0);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 0);
+
+    format.PutIntValue("video_picture_width", 0);
+    format.PutIntValue("video_picture_height", 1);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 0);
+
+    format.PutIntValue("video_picture_width", 1);
+    format.PutIntValue("video_picture_height", 0);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 0);
+
+    format.PutIntValue("video_picture_width", 1);
+    format.PutIntValue("video_picture_height", 1);
+    decoderSurfaceFilter_->surfaceWidth_ = 0;
+    decoderSurfaceFilter_->surfaceHeight_ = 1;
+    decoderSurfaceFilter_->OnOutputFormatChanged(format);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 1);
+
+    decoderSurfaceFilter_->surfaceWidth_ = 1;
+    decoderSurfaceFilter_->surfaceHeight_ = 0;
+    decoderSurfaceFilter_->OnOutputFormatChanged(format);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 1);
+
+    decoderSurfaceFilter_->surfaceWidth_ = 0;
+    decoderSurfaceFilter_->surfaceHeight_ = 0;
+    decoderSurfaceFilter_->OnOutputFormatChanged(format);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 1);
+
+    decoderSurfaceFilter_->surfaceWidth_ = 1;
+    decoderSurfaceFilter_->surfaceHeight_ = 1;
+    decoderSurfaceFilter_->OnOutputFormatChanged(format);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 1);
+
+    decoderSurfaceFilter_->surfaceWidth_ = 2;
+    decoderSurfaceFilter_->surfaceHeight_ = 2;
+    decoderSurfaceFilter_->OnOutputFormatChanged(format);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 1);
+}
+
+/**
  * @tc.name: ParseDecodeRateLimit_001
  * @tc.desc: ParseDecodeRateLimit
  * @tc.type: FUNC
@@ -800,6 +848,20 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, ParseDecodeRateLimit_001, TestSize.Level1
  */
 HWTEST_F(DecoderSurfaceFilterUnitTest, OnDumpInfo_001, TestSize.Level1)
 {
+    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
+    decoderSurfaceFilter_->OnDumpInfo(32);
+    EXPECT_EQ(decoderSurfaceFilter_->stopTime_, 0);
+}
+
+/**
+ * @tc.name: OnDumpInfo_002
+ * @tc.desc: OnDumpInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest, OnDumpInfo_002, TestSize.Level1)
+{
+    decoderSurfaceFilter_->videoDecoder_ = nullptr;
+    decoderSurfaceFilter_->OnDumpInfo(32);
     decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
     decoderSurfaceFilter_->OnDumpInfo(32);
     EXPECT_EQ(decoderSurfaceFilter_->stopTime_, 0);

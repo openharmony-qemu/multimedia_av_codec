@@ -36,6 +36,7 @@ namespace {
         25, // Upload faild.
         26, // Faild to open/read local data from file/application.
         28, // Timeout was reached.
+        0,
     };
     const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
         300,
@@ -44,8 +45,8 @@ namespace {
         303,
         304,
         305,
-        400,
-        401,
+        403,
+        0,
     };
 }
 
@@ -229,7 +230,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     auto clientError = request->GetClientError();
     int serverError = request->GetServerError();
     auto retryTimes = request->GetRetryTimes();
-    std::set<int> notRetryErrorSet = {400, 401, 403};
+    std::set<int> notRetryErrorSet = {400, 401};
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
 

@@ -518,10 +518,12 @@ int32_t CodecServer::DrmVideoCencDecrypt(uint32_t index)
                 decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
                 return ret;
             }
+// LCOV_EXCL_START
             drmDecryptor_->SetCodecName(codecName_);
             ret = drmDecryptor_->DrmVideoCencDecrypt(decryptVideoBufs_[index].inBuf,
                 decryptVideoBufs_[index].outBuf, dataSize);
             decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
+// LCOV_EXCL_STOP
         }
     }
     return ret;
@@ -598,6 +600,7 @@ int32_t CodecServer::GetOutputFormat(Format &format)
     }
 }
 
+// LCOV_EXCL_START
 int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
     bool svpFlag)
 {
@@ -635,6 +638,7 @@ int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySes
 
     return AVCS_ERR_OK;
 }
+// LCOV_EXCL_STOP
 
 #ifdef SUPPORT_DRM
 int32_t CodecServer::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)

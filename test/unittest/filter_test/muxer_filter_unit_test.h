@@ -22,6 +22,8 @@
 #include "filter/filter.h"
 #include "common/status.h"
 #include "meta/media_types.h"
+#include "muxer/media_muxer.h"
+#include "gmock/gmock.h"
 
 namespace OHOS {
 namespace Media {
@@ -40,6 +42,14 @@ public:
 protected:
     std::shared_ptr<MuxerFilter> muxerFilter_{ nullptr };
 };
+
+class MockMediaMuxer : public MediaMuxer {
+public:
+    MockMediaMuxer(int32_t appUid, int32_t appPid) : MediaMuxer(appUid, appPid) {}
+    MOCK_METHOD(Status, Start, (), (override));
+    MOCK_METHOD(Status, Stop, (), (override));
+};
+
 class MyFilterLinkCallback : public FilterLinkCallback {
 public:
     ~MyFilterLinkCallback() = default;

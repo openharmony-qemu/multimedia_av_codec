@@ -867,7 +867,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0700, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_HWDEC_CAP_API_0800
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : function test, 不同平台解码器数量不一致, 改为不校验具体数量
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0800, TestSize.Level2)
 {
@@ -875,7 +875,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0800, TestSize.Level2)
     ASSERT_NE(cap, nullptr);
     string codec_name = OH_AVCapability_GetName(cap);
     if (codec_name == "OMX.hisi.video.decoder.avc") {
-        ASSERT_EQ(30, OH_AVCapability_GetMaxSupportedInstances(cap));
+        ASSERT_LT(1, OH_AVCapability_GetMaxSupportedInstances(cap));
     } else {
         ASSERT_EQ(6, OH_AVCapability_GetMaxSupportedInstances(cap));
     }
@@ -884,7 +884,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0800, TestSize.Level2)
 /**
  * @tc.number    : VIDEO_HWDEC_CAP_API_0810
  * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
+ * @tc.desc      : function test, 不同平台解码器数量不一致, 改为不校验具体数量
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0810, TestSize.Level2)
 {
@@ -892,7 +892,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0810, TestSize.Level2)
     ASSERT_NE(cap, nullptr);
     string codec_name = OH_AVCapability_GetName(cap);
     if (codec_name == "OMX.hisi.video.decoder.hevc") {
-        ASSERT_EQ(30, OH_AVCapability_GetMaxSupportedInstances(cap));
+        ASSERT_LT(1, OH_AVCapability_GetMaxSupportedInstances(cap));
     } else {
         ASSERT_EQ(6, OH_AVCapability_GetMaxSupportedInstances(cap));
     }
@@ -1492,7 +1492,11 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_9400, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, 7680, 4320));
+    OH_AVRange heightRange;
+    OH_AVRange widthRange;
+    ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoHeightRange(capability, &heightRange));
+    ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoWidthRange(capability, &widthRange));
+    ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, widthRange.maxVal + 1, heightRange.maxVal + 1));
 }
 /**
  * @tc.number    : VIDEO_HWDEC_CAP_API_5400

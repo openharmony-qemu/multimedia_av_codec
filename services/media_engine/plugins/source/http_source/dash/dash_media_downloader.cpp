@@ -106,9 +106,6 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     if (ret == DASH_READ_END) {
         MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", readDataInfo.streamId_);
         readDataInfo.isEos_ = true;
-        if (callback_ != nullptr) {
-            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
-        }
         return Status::END_OF_STREAM;
     } else if (ret == DASH_READ_AGAIN) {
         return Status::ERROR_AGAIN;
@@ -298,7 +295,7 @@ void DashMediaDownloader::SeekToTs(int64_t seekTime)
     int64_t seekTimeMs;
     std::lock_guard<std::mutex> lock(parseSidxMutex_);
     {
-        if (seekTime < 0 || seekTime >= mpdDownloader_->GetDuration()) {
+        if (seekTime < 0 || seekTime > mpdDownloader_->GetDuration()) {
             return;
         }
         seekTimeMs = seekTime / MS_2_NS;

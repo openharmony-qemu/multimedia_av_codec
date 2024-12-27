@@ -59,7 +59,7 @@ int64_t MockMediaSyncCenter::GetClockTimeNow()
     return result;
 }
 
-int64_t MockMediaSyncCenter::GetClockTime(int64_t mediaTime)
+int64_t MockMediaSyncCenter::GetAnchoredClockTime(int64_t mediaTime)
 {
     (void)mediaTime;
     auto result = returnInt64Queue_.front();

@@ -73,7 +73,6 @@ private:
     std::shared_ptr<MediaMuxer> mediaMuxer_;
 
     int32_t preFilterCount_{0};
-    int32_t startCount_{0};
     int32_t stopCount_{0};
     int32_t eosCount_{0};
     std::map<int32_t, int64_t> bufferPtsMap_;
@@ -95,6 +94,8 @@ private:
  
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
+    
+    bool isStarted{false};
 };
 } // namespace Pipeline
 } // namespace MEDIA

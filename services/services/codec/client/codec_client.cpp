@@ -29,7 +29,7 @@ int32_t CodecClient::Create(const sptr<IStandardCodecService> &ipcProxy, std::sh
 
     codec = std::make_shared<CodecClient>(ipcProxy);
     CHECK_AND_RETURN_RET_LOG(codec != nullptr && std::static_pointer_cast<CodecClient>(codec)->syncMutex_ != nullptr,
-                             AVCS_ERR_UNKNOWN, "Codec client is nullptr");
+        AVCS_ERR_UNKNOWN, "Codec client is nullptr");
 
     int32_t ret = std::static_pointer_cast<CodecClient>(codec)->CreateListenerObject();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Codec client create failed");
@@ -116,8 +116,8 @@ void CodecClient::InitLabel(AVCodecType type)
     type_ = type;
 }
 
-int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo,
-                          API_VERSION apiVersion)
+int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name,
+                          Meta &callerInfo, API_VERSION apiVersion)
 {
     (void)apiVersion;
     using namespace OHOS::Media;
@@ -146,7 +146,6 @@ int32_t CodecClient::Configure(const Format &format)
 
     int32_t isSetParameterCb = (codecMode_ & CODEC_SET_PARAMETER_CALLBACK) != 0;
     const_cast<Format &>(format).PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
-    format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_QP_MAP, isEnableQpMap_);
 
     int32_t ret = codecProxy_->Configure(format);
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
@@ -184,11 +183,6 @@ int32_t CodecClient::Start()
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
     CHECK_AND_RETURN_RET_LOG(codecMode_ != CODEC_SET_PARAMETER_CALLBACK, AVCS_ERR_INVALID_STATE,
                              "Not get input surface.");
-    if (isEnableQpMap_) {
-        CHECK_AND_RETURN_RET_LOG(callbackMode_ != MEMORY_CALLBACK, AVCS_ERR_UNSUPPORT, "API9 unsupport qp map");
-        CHECK_AND_RETURN_RET_LOG(codecMode_ != CODEC_SURFACE_MODE_WITHOUT_SETPARAMETER, AVCS_ERR_UNSUPPORT,
-                                 "Not register parameter callback");
-    }
 
     SetNeedListen(true);
     int32_t ret = codecProxy_->Start();
@@ -284,7 +278,7 @@ sptr<OHOS::Surface> CodecClient::CreateInputSurface()
 
     auto ret = codecProxy_->CreateInputSurface();
     EXPECT_AND_LOGI(ret != nullptr, "Succeed");
-    codecMode_ |= CODEC_SURFACE_MODE_WITHOUT_SETPARAMETER;
+    codecMode_ |= CODEC_SURFACE_MODE;
     return ret;
 }
 
@@ -295,7 +289,7 @@ int32_t CodecClient::SetOutputSurface(sptr<Surface> surface)
 
     int32_t ret = codecProxy_->SetOutputSurface(surface);
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
-    codecMode_ = CODEC_SURFACE_MODE_WITHOUT_SETPARAMETER;
+    codecMode_ = CODEC_SURFACE_MODE;
     return ret;
 }
 

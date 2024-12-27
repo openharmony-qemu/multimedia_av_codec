@@ -197,6 +197,7 @@ private:
     void CalculateBitRate(size_t fragmentSize, double duration);
     void UpdateCachedPercent(BufferingInfoType infoType);
     void UpdateBufferSegment(const std::shared_ptr<DashBufferSegment> &mediaSegment, uint32_t len);
+    void DoBufferingEndEvent();
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;

@@ -241,6 +241,7 @@ bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, DashRead
                 MEDIA_LOG_I("Read: streamId:" PUBLIC_LOG_D32 " segment "
                     PUBLIC_LOG_D64 " read Eos", mediaSegment_->streamId_, mediaSegment_->numberSeq_);
             }
+            DoBufferingEndEvent();
             return true;
         }
     }
@@ -292,7 +293,7 @@ bool DashSegmentDownloader::HandleBuffering(const std::atomic<bool> &isInterrupt
         }
 
         if (isAllSegmentFinished_.load()) {
-            isBuffering_.store(false);
+            DoBufferingEndEvent();
             break;
         }
         OSAL::SleepFor(BUFFERING_SLEEP_TIME_MS);
@@ -313,7 +314,7 @@ void DashSegmentDownloader::SaveDataHandleBuffering()
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
     if (buffer_->GetSize() >= waterLineAbove_ || isAllSegmentFinished_.load()) {
-        isBuffering_.store(false);
+        DoBufferingEndEvent();
     }
 
     if (!isBuffering_.load() && callback_ != nullptr) {
@@ -323,17 +324,25 @@ void DashSegmentDownloader::SaveDataHandleBuffering()
     }
 }
 
+void DashSegmentDownloader::DoBufferingEndEvent()
+{
+    if (isBuffering_.exchange(false) && callback_ != nullptr) {
+        MEDIA_LOG_I("DoBufferingEndEvent OnEvent streamId: " PUBLIC_LOG_D32 " cacheData buffering end", streamId_);
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
+        callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+    }
+}
+
 bool DashSegmentDownloader::HandleCache()
 {
     waterLineAbove_ = static_cast<size_t>(GetWaterLineAbove());
-    if (!isBuffering_.load()) {
+    if (!isBuffering_.exchange(true)) {
         if (callback_ != nullptr) {
             MEDIA_LOG_I("HandleCache OnEvent streamId: " PUBLIC_LOG_D32 " start buffering, waterLineAbove:"
                 PUBLIC_LOG_U32, streamId_, waterLineAbove_);
             UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
             callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
         }
-        isBuffering_.store(true);
         return true;
     }
     return false;
