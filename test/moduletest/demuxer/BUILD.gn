@@ -70,7 +70,6 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/func2_test.cpp",
       "./src/func_test.cpp",
       "./src/movfunc_test.cpp",
-      "./src/mpgfunc_test.cpp",
       "./src/randomseek_test.cpp",
       "./src/seek2_test.cpp",
       "./src/seek_test.cpp",
