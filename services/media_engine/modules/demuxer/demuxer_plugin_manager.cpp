@@ -562,7 +562,8 @@ Status DemuxerPluginManager::RebootPlugin(int32_t streamId, TrackType trackType,
     streamDemuxer->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
     std::string type = streamDemuxer->SnifferMediaType(streamId);
     int32_t newStreamId = GetStreamDemuxerNewStreamID(trackType, streamDemuxer);
-    MEDIA_LOG_D("oldstreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32, streamId, newStreamId);
+    MEDIA_LOG_D("TrackType: " PUBLIC_LOG_D32 " oldstreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
+        static_cast<int32_t>(trackType), streamId, newStreamId);
     if (newStreamId != INVALID_STREAM_OR_TRACK_ID && streamId != newStreamId) {
         MEDIA_LOG_I("StreamID changed, oldstreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
             streamId, newStreamId);

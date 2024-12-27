@@ -1121,16 +1121,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekToTimeAfter_016, TestSize.Level1
     demuxer->videoTrackId_ = 0;
     demuxer->subtitleTrackId_ = 0;
 
-    Meta metaTmp1;
-    metaTmp1.Set<Tag::MIME_TYPE>("audio/xxx");
-    demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp1);
-    Meta metaTmp2;
-    metaTmp2.Set<Tag::MIME_TYPE>("video/xxx");
-    demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp2);
-    Meta metaTmp3;
-    metaTmp3.Set<Tag::MIME_TYPE>("text/vtt");
-    demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp3);
-
     demuxer->demuxerPluginManager_->isDash_ = false;
     EXPECT_EQ(demuxer->SeekToTimeAfter(), Status::OK);
     demuxer->demuxerPluginManager_->isDash_ = true;
