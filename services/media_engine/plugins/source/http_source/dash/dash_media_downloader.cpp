@@ -716,6 +716,20 @@ bool DashMediaDownloader::IsSeekingInSwitch()
     return isSwitching;
 }
 
+void DashMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos)
+{
+    Format seekReadyInfo {};
+    seekReadyInfo.PutIntValue("currentStreamType", streamType);
+    seekReadyInfo.PutIntValue("currentStreamId", streamId);
+    seekReadyInfo.PutIntValue("isEOS", isEos);
+    MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: " PUBLIC_LOG_D32,
+        streamType, streamId, isEos);
+    if (callback_ != nullptr) {
+        MEDIA_LOG_D("Onevent dash seek ready");
+        callback_->OnEvent({PluginEventType::DASH_SEEK_READY, seekReadyInfo, "dash_seek_ready"});
+    }
+}
+
 void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
 {
     bool isSwitching = IsSeekingInSwitch();
@@ -730,15 +744,7 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
             int64_t remainLastNumberSeq = -1;
             segmentDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
             segmentDownloader->SetAllSegmentFinished();
-            Format seekReadyInfo {};
-            seekReadyInfo.PutIntValue("currentStreamType", static_cast<int32_t>(segmentDownloader->GetStreamType()));
-            seekReadyInfo.PutIntValue("currentStreamId", streamId);
-            seekReadyInfo.PutIntValue("isEOS", static_cast<int32_t>(true));
-            MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: " PUBLIC_LOG_D32,
-                static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, static_cast<int32_t>(true));
-            if (callback_ != nullptr) {
-                callback_->OnEvent({PluginEventType::DASH_SEEK_READY, seekReadyInfo, "dash_seek_ready"});
-            }
+            HandleSeekReady(static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, 1);
             continue;
         }
 
@@ -757,15 +763,7 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
             segmentDownloader->SetInitSegment(initSeg, true);
             segmentDownloader->Open(segment);
         }
-        Format seekReadyInfo {};
-        seekReadyInfo.PutIntValue("currentStreamType", static_cast<int32_t>(segmentDownloader->GetStreamType()));
-        seekReadyInfo.PutIntValue("currentStreamId", streamId);
-        seekReadyInfo.PutIntValue("isEOS", static_cast<int32_t>(false));
-        MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: " PUBLIC_LOG_D32,
-            static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, static_cast<int32_t>(false));
-        if (callback_ != nullptr) {
-            callback_->OnEvent({PluginEventType::DASH_SEEK_READY, seekReadyInfo, "dash_seek_ready"});
-        }
+        HandleSeekReady(static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, 0);
     }
 }
 

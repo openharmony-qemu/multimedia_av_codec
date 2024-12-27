@@ -99,6 +99,7 @@ private:
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloaderByType(MediaAVCodec::MediaType type) const;
     void OpenInitSegment(const std::shared_ptr<DashStreamDescription> &streamDesc,
                          const std::shared_ptr<DashSegment> &seg);
+    void HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos);
 
 private:
 
