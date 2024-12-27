@@ -53,6 +53,7 @@ ohos_unittest("sa_avcodec_unit_test") {
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
     "$av_codec_root_dir/services/services/sa_avcodec",
+    "$av_codec_root_dir/services/services/common",
   ]
 
   defines = av_codec_defines
