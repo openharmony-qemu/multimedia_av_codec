@@ -60,6 +60,7 @@ namespace Media {
 constexpr uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes 0ms means no retry
 constexpr int32_t START = 1;
 constexpr int32_t PAUSE = 2;
+constexpr int32_t SEEK_TO_EOS = 1;
 constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY if no buffer in avbufferqueue producer.
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
@@ -970,9 +971,9 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
             seekReadyInfo = seekReadyStreamInfo_[static_cast<int32_t>(streamType)];
             seekReadyStreamInfo_.erase(static_cast<int32_t>(streamType));
         }
-        if (seekReadyInfo.second || seekReadyInfo.first != streamID) {
+        if (seekReadyInfo.second == SEEK_TO_EOS || (seekReadyInfo.first >= 0 && seekReadyInfo.first != streamID)) {
             MEDIA_LOG_I("End of stream or streamID changed, isEOS: " PUBLIC_LOG_D32 ", streamId: " PUBLIC_LOG_D32,
-                static_cast<int32_t>(seekReadyInfo.second), seekReadyInfo.first);
+                seekReadyInfo.second, seekReadyInfo.first);
             return Status::OK;
         }
         ret = demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer_, isRebooted);
@@ -2035,7 +2036,7 @@ void MediaDemuxer::OnSeekReadyEvent(const Plugins::PluginEvent &event)
     Format param = AnyCast<Format>(event.param);
     int32_t currentStreamType = -1;
     param.GetIntValue("currentStreamType", currentStreamType);
-    int32_t isEOS = 0;
+    int32_t isEOS = -1;
     param.GetIntValue("isEOS", isEOS);
     int32_t currentStreamId = -1;
     param.GetIntValue("currentStreamId", currentStreamId);
@@ -2043,16 +2044,13 @@ void MediaDemuxer::OnSeekReadyEvent(const Plugins::PluginEvent &event)
         " isEos: " PUBLIC_LOG_D32, currentStreamType, currentStreamId, isEOS);
     switch (currentStreamType) {
         case static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_VID):
-            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId,
-                static_cast<bool>(isEOS));
+            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId, isEOS);
             break;
         case static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_AUD):
-            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId,
-                static_cast<bool>(isEOS));
+            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::AUDIO)] = std::make_pair(currentStreamId, isEOS);
             break;
         case static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE):
-            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId,
-                static_cast<bool>(isEOS));
+            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::SUBTITLE)] = std::make_pair(currentStreamId, isEOS);
             break;
         default:
             break;

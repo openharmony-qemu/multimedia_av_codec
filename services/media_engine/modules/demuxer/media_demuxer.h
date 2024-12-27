@@ -272,7 +272,7 @@ private:
     std::atomic<bool> inPreroll_ = false;
 
     std::map<int32_t, int32_t> inSelectTrackType_{};
-    std::map<int32_t, std::pair<int32_t, bool>> seekReadyStreamInfo_{};
+    std::map<int32_t, std::pair<int32_t, int32_t>> seekReadyStreamInfo_{};
     std::condition_variable rebootPluginCondition_;
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
