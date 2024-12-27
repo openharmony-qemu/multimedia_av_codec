@@ -37,6 +37,9 @@
 #ifdef AVCODEC_SUPPORT_EVENT_MANAGER
 #include "event_manager.h"
 #endif
+#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
+#include "event_manager.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
@@ -148,6 +151,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
 std::shared_ptr<ICodecService> CodecServer::Create(int32_t instanceId)
+std::shared_ptr<ICodecService> CodecServer::Create(int32_t instanceId)
 {
     std::shared_ptr<CodecServer> server = std::make_shared<CodecServer>();
 
@@ -180,7 +184,9 @@ CodecServer::~CodecServer()
 }
 
 int32_t CodecServer::InitServer(int32_t instanceId)
+int32_t CodecServer::InitServer(int32_t instanceId)
 {
+    instanceId_ = instanceId;
     instanceId_ = instanceId;
     return AVCS_ERR_OK;
 }
@@ -201,6 +207,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     SetCallerInfo(callerInfo);
 #ifdef AVCODEC_SUPPORT_EVENT_MANAGER
     callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    callerInfo.SetData(EventInfoExtentedKey::CODEC_TYPE.data(), type);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
 #endif
 
@@ -1630,5 +1637,32 @@ void CodecServer::CleanPostProcessingResource()
     decoderIsEOS_.store(false);
 }
 
+void CodecServer::NotifyBackGround(bool recycleMemory)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_LOG(status_ == RUNNING || status_ == FLUSHED || status_ == END_OF_STREAM,
+                         "NotifyBackGround Not need freezed, status:%{public}s", GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "Codecbase is nullptr");
+    int32_t ret = codecBase_->NotifyBackGround(recycleMemory);
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "NotifyBackGround failed, ret:%{public}d", ret);
+    AVCODEC_LOGI("NotifyBackGround, Caller pid: %{public}d, process name :%{public}s", caller_.pid,
+                 caller_.processName.c_str());
+    isFreezedFlag_ = true;
+    return;
+}
+
+void CodecServer::NotifyForeGround()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (isFreezedFlag_ == true) {
+        CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "Codecbase is nullptr");
+        int32_t ret = codecBase_->NotifyForeGround();
+        CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "NotifyForeGround failed, ret:%{public}d", ret);
+        AVCODEC_LOGI("NotifyForeGround, Caller pid: %{public}d, process name :%{public}s", caller_.pid,
+                     caller_.processName.c_str());
+        isFreezedFlag_ = false;
+    }
+    return;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

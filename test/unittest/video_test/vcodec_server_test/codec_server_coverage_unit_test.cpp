@@ -1168,6 +1168,7 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_001, TestSize.Level1)
     CreateHCodecByMime();
     server_->isModeConfirmed_ = true;
     server_->isSurfaceMode_ = true;
+    bool recycleMemory = true;
 
     std::vector<CodecServer::CodecStatus> testList = {
         CodecServer::CodecStatus::RUNNING,
@@ -1178,7 +1179,7 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_001, TestSize.Level1)
     for (auto &val : testList) {
         server_->status_ = val;
         server_->isFreezedFlag_ = false;
-        server_->NotifyBackGround();
+        server_->NotifyBackGround(recycleMemory);
         EXPECT_TRUE(server_->isFreezedFlag_);
     }
 }

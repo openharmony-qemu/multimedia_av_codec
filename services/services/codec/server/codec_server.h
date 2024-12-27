@@ -30,11 +30,13 @@
 #include "lock_free_queue.h"
 #include "post_processing.h"
 #include "instance_info.h"
+#include "instance_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 class CodecServer : public std::enable_shared_from_this<CodecServer>, public ICodecService, public NoCopyable {
 public:
+    static std::shared_ptr<ICodecService> Create(int32_t instanceId = INVALID_INSTANCE_ID);
     static std::shared_ptr<ICodecService> Create(int32_t instanceId = INVALID_INSTANCE_ID);
     CodecServer();
     virtual ~CodecServer();
@@ -118,9 +120,14 @@ public:
         const bool svpFlag) override;
 #endif
 
+    // PurgeableMemory
+    void NotifyBackGround(bool recycleMemory);
+    void NotifyForeGround();
+
 private:
     int32_t InitByName(Meta &callerInfo, API_VERSION apiVersion);
     int32_t InitByMime(Meta &callerInfo, API_VERSION apiVersion);
+    int32_t InitServer(int32_t instanceId = INVALID_INSTANCE_ID);
     int32_t InitServer(int32_t instanceId = INVALID_INSTANCE_ID);
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
@@ -146,6 +153,8 @@ private:
     std::string codecMime_;
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
+    int32_t instanceId_ = INVALID_INSTANCE_ID;
+    CallerInfo caller_, forwardCaller_;
     int32_t instanceId_ = INVALID_INSTANCE_ID;
     CallerInfo caller_, forwardCaller_;
     bool isSurfaceMode_ = false;

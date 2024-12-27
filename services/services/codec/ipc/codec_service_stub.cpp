@@ -396,6 +396,34 @@ int32_t CodecServiceStub::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySess
 }
 #endif
 
+void CodecServiceStub::NotifyBackGround(bool recycleMemory)
+{
+    std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_LOG(codecServer_ != nullptr, "Codec server is nullptr");
+    std::static_pointer_cast<CodecServer>(codecServer_)->NotifyBackGround(recycleMemory);
+    std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
+    int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+    if (duration > TIMEOUT_THRESHOLD_MILLISECONDS) {
+        AVCODEC_LOGW("NotifyBackGround duration: %{public}" PRId64 " ms", duration);
+    }
+    return;
+}
+
+void CodecServiceStub::NotifyForeGround()
+{
+    std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_LOG(codecServer_ != nullptr, "Codec server is nullptr");
+    std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
+    std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
+    int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+    if (duration > TIMEOUT_THRESHOLD_MILLISECONDS) {
+        AVCODEC_LOGW("NotifyForeGround duration: %{public}" PRId64 " ms", duration);
+    }
+    return;
+}
+
 int32_t CodecServiceStub::DestroyStub(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;

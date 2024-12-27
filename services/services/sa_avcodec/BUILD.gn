@@ -51,6 +51,7 @@ ohos_source_set("sa_manager") {
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "init:libbegetutil",
   ]
 
   subsystem_name = "multimedia"

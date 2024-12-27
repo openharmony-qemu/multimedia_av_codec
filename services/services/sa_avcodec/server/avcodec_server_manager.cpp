@@ -25,21 +25,26 @@
 #include "avcodec_trace.h"
 #include "avcodec_xcollie.h"
 #include "system_ability_definition.h"
+#include "syspara/parameters.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
 #endif
 #ifdef SUPPORT_CODECLIST
 #include "codeclist_service_stub.h"
 #endif
-#ifdef USE_EFFICIENCY_MANAGER
-#include "syspara/parameters.h"
-#endif
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServerManager"};
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
+void CodecInfoCallback::OnCodecInfoAvailable(pid_t callerPid, pid_t forwardCallerPid, AVCodecType codecType)
+{
+    AVCodecServerManager::GetInstance().SetCodecInfo(callerPid, forwardCallerPid, codecType);
+    return;
+}
+
 AVCodecServerManager& AVCodecServerManager::GetInstance()
 {
     static AVCodecServerManager instance;
@@ -55,7 +60,8 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
 
     std::unordered_multimap<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> codecStubMapTemp;
     {
-        std::lock_guard<std::shared_mutex> lock(mutex_);
+        // std::lock_guard<std::shared_mutex> lock(mutex_);
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         codecStubMapTemp = codecStubMap_;
     }
 
@@ -271,6 +277,39 @@ uint32_t AVCodecServerManager::GetInstanceCount()
     return codecStubMap_.size() + codecListStubMap_.size();
 }
 
+std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> AVCodecServerManager::GetInstanceInfoListByPid(pid_t pid)
+{
+    std::lock_guard<std::mutex> lock(pidmutex_);
+    std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> instanceInfoList;
+    auto range = codecStubMap_.equal_range(pid);
+
+    for (auto iter = range.first; iter != range.second; iter++) {
+        instanceInfoList.emplace_back(iter->second);
+    }
+    return instanceInfoList;
+}
+
+std::optional<InstanceInfo> AVCodecServerManager::GetInstanceInfoByInstanceId(int32_t instanceId)
+{
+    std::lock_guard<std::mutex> lock(pidmutex_);
+    for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
+        if (iter->second.second.instanceId == instanceId) {
+            return iter->second.second;
+        }
+    }
+    return std::nullopt;
+}
+
+void AVCodecServerManager::SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info)
+{
+    std::lock_guard<std::mutex> lock(pidmutex_);
+    for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
+        if (iter->second.second.instanceId == instanceId) {
+            iter->second.second = info;
+        }
+    }
+}
+
 std::vector<CodecInstance> AVCodecServerManager::GetInstanceInfoListByPid(pid_t pid)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
@@ -313,6 +352,50 @@ void AVCodecServerManager::SetInstanceInfoByInstanceId(int32_t instanceId, const
             iter->second.second = info;
         }
     }
+}
+
+std::vector<sptr<IRemoteObject>> AVCodecServerManager::GetFreezeInfoList(pid_t pid)
+{
+    std::vector<sptr<IRemoteObject>> instanceList;
+    std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> instanceInfos = GetInstanceInfoListByPid(pid);
+    for (auto &codecStub : instanceInfos) {
+        if ((codecStub.second.caller.pid == pid) && (codecStub.second.codecType == AVCODEC_TYPE_VIDEO_DECODER)) {
+            instanceList.push_back(codecStub.first);
+        }
+    }
+    return instanceList;
+}
+
+void AVCodecServerManager::NotifyFrozen(const std::vector<int32_t> &pidList)
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    bool recycleMemory = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
+    AVCODEC_LOGI("recycleMemory is %{public}d", recycleMemory);
+    for (auto pid : pidList) {
+        std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
+        for (auto &instance : instanceList) {
+            CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
+            #ifdef SUPPORT_CODEC
+            static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyBackGround(recycleMemory);
+            #endif
+        }
+    }
+    return;
+}
+
+void AVCodecServerManager::NotifyActive(const std::vector<int32_t> &pidList)
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    for (auto pid : pidList) {
+        std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
+        for (auto &instance : instanceList) {
+            CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
+            #ifdef SUPPORT_CODEC
+            static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyForeGround();
+            #endif
+        }
+    }
+    return;
 }
 
 void AVCodecServerManager::AsyncExecutor::Commit(sptr<IRemoteObject> obj)

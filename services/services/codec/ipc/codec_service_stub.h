@@ -20,16 +20,20 @@
 #include <shared_mutex>
 #include "meta.h"
 #include "i_codec_service.h"
+#include "meta.h"
+#include "i_codec_service.h"
 #include "avcodec_death_recipient.h"
 #include "i_standard_codec_listener.h"
 #include "i_standard_codec_service.h"
 #include "nocopyable.h"
+#include "instance_info.h"
 #include "instance_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 class CodecServiceStub : public IRemoteStub<IStandardCodecService>, public NoCopyable {
 public:
+    static sptr<CodecServiceStub> Create(int32_t instanceId = INVALID_INSTANCE_ID);
     static sptr<CodecServiceStub> Create(int32_t instanceId = INVALID_INSTANCE_ID);
     virtual ~CodecServiceStub();
 
@@ -63,9 +67,13 @@ public:
 #endif
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args) override;
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
+    // PurgeableMemory
+    void NotifyBackGround(bool recycleMemory);
+    void NotifyForeGround();
 
 private:
     CodecServiceStub();
+    int32_t InitStub(int32_t instanceId = INVALID_INSTANCE_ID);
     int32_t InitStub(int32_t instanceId = INVALID_INSTANCE_ID);
     int32_t SetListenerObject(MessageParcel &data, MessageParcel &reply);
     int32_t Init(MessageParcel &data, MessageParcel &reply);

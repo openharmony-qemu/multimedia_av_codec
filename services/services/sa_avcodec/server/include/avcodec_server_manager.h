@@ -48,6 +48,9 @@ public:
     std::vector<CodecInstance> GetInstanceInfoListByActualPid(pid_t pid);
     std::optional<InstanceInfo> GetInstanceInfoByInstanceId(int32_t instanceId);
     void SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info);
+    void NotifyFrozen(const std::vector<int32_t> &pidList);
+    void NotifyActive(const std::vector<int32_t> &pidList);
+    std::vector<sptr<IRemoteObject>> GetFreezeInfoList(pid_t pid);
 
 private:
     AVCodecServerManager();
@@ -74,6 +77,7 @@ private:
         void HandleAsyncExecution();
         std::list<sptr<IRemoteObject>> freeList_;
         std::mutex listMutex_;
+
     };
 
     std::unordered_multimap<pid_t, CodecInstance> codecStubMap_;
@@ -81,6 +85,7 @@ private:
     AsyncExecutor executor_;
     pid_t pid_ = 0;
     std::shared_mutex mutex_;
+    std::mutex pidmutex_;
     using NotifyProcessStatusFunc = int32_t(*)(int32_t pid, int32_t type, int32_t status, int32_t saId);
     using SetCriticalFunc = int32_t(*)(int32_t pid, bool critical, int32_t saId);
     static constexpr char LIB_PATH[] = "libmemmgrclient.z.so";

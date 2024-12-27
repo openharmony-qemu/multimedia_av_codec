@@ -157,6 +157,8 @@ ohos_shared_library("av_codec_service") {
       "$av_codec_root_dir/services/engine/codeclist:av_codec_engine_codeclist",
     ]
   }
+  
+  defines = [ "AVCODEC_SUPPORT_EVENT_MANAGER" ]
 
   defines = [ "AVCODEC_SUPPORT_EVENT_MANAGER" ]
 
