@@ -35,9 +35,8 @@ InstanceMemoryUpdateEventHandler &InstanceMemoryUpdateEventHandler::GetInstance(
 
 void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta &meta)
 {
-    auto instanceId = INVALID_INSTANCE_ID;
-    auto instanceIdExist = meta.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
-    CHECK_AND_RETURN_LOG(instanceIdExist == true && instanceId != INVALID_INSTANCE_ID, "Can not find instance id");
+    auto instanceId = GetInstanceIdFromMeta(meta);
+    CHECK_AND_RETURN_LOG(instanceId != INVALID_INSTANCE_ID, "Can not find instance id");
 
     auto calculator = GetCalculator(meta);
     CHECK_AND_RETURN_LOG(calculator != std::nullopt, "Can not find a calculator");
@@ -117,8 +116,7 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryLeak(pid_t pid)
 
     auto memory = GetAppMemory(pid);
     if (memory > appMemoryThreshold_ && timerMap_.count(pid) == 0) {
-        using namespace std::string_literals;
-        auto timeName = "Pid_"s + std::to_string(pid) + " memory leak";
+        auto timeName = std::string("Pid_") + std::to_string(pid) + " memory leak";
         AVCodecXcollieTimer timer(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT,
             [=](void *) -> void { UploadAppMemory(pid); });
 

@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-constexpr int32_t INVALID_PID = -1;
+constexpr pid_t INVALID_PID = -1;
 struct CallerInfo
 {
     pid_t pid = -1;

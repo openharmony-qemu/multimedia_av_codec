@@ -15,6 +15,8 @@
 
 #include "event_manager.h"
 #include "avcodec_log.h"
+#include "avcodec_server_manager.h"
+#include "meta/meta_key.h"
 
 #include "instance_memory_update_event_handler.h"
 
@@ -64,7 +66,18 @@ void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
 
 void EventManager::OnInstanceInitEvent(Media::Meta &meta)
 {
-    (void)meta;
+    auto instanceId = GetInstanceIdFromMeta(meta);
+    auto instanceInfoOpt = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
+    CHECK_AND_RETURN_LOG(instanceInfoOpt != std::nullopt, "Can not find this instance, id: %{public}d", instanceId);
+    auto instanceInfo = instanceInfoOpt.value();
+
+    meta.GetData(Media::Tag::AV_CODEC_CALLER_PID,                  instanceInfo.caller.pid);
+    meta.GetData(Media::Tag::AV_CODEC_CALLER_UID,                  instanceInfo.caller.uid);
+    meta.GetData(Media::Tag::AV_CODEC_CALLER_PROCESS_NAME,         instanceInfo.caller.processName);
+    meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PID,          instanceInfo.forwardCaller.pid);
+    meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_UID,          instanceInfo.forwardCaller.uid);
+    meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, instanceInfo.forwardCaller.processName);
+    AVCodecServerManager::GetInstance().SetInstanceInfoByInstanceId(instanceId, instanceInfo);
 }
 
 void EventManager::OnInstanceReleaseEvent(Media::Meta &meta)
