@@ -63,7 +63,6 @@ enum class AVCapabilityFeature : int32_t {
     VIDEO_LOW_LATENCY = 2,
     VIDEO_WATERMARK = 3,
     VIDEO_RPR = 4,
-    VIDEO_ENCODER_QP_MAP = 5,
     MAX_VALUE
 };
 
