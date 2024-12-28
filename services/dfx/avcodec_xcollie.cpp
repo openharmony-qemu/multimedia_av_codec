@@ -95,7 +95,7 @@ void AVCodecXCollie::CancelTimer(int32_t timerId)
         return;
     }
     HiviewDFX::XCollie::GetInstance().CancelTimer(timerId);
-    
+
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = dfxDumper_.find(timerId);
     if (it == dfxDumper_.end()) {

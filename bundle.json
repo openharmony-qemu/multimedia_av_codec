@@ -78,9 +78,7 @@
           "hiview",
           "cJSON"
         ],
-        "third_party": [
-          "bounds_checking_function"
-        ]
+        "third_party": []
       },
       "build": {
         "group_type": {

@@ -24,6 +24,13 @@ ohos_shared_library("av_codec_service_dfx") {
 
   sanitize = av_codec_sanitize
 
+  public_configs = [ ":av_codec_service_log_dfx_public_config" ]
+
+  public_external_deps = [
+    "hilog:libhilog",
+    "media_foundation:media_foundation",
+  ]
+
   sources = [
     "avcodec_dump_utils.cpp",
     "avcodec_sysevent.cpp",
@@ -66,11 +73,9 @@ ohos_shared_library("av_codec_service_dfx") {
   external_deps = [
     "c_utils:utils",
     "hicollie:libhicollie",
-    "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
-    "media_foundation:media_foundation",
   ]
 
   subsystem_name = "multimedia"

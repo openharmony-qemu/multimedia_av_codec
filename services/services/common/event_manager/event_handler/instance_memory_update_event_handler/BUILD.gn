@@ -25,8 +25,6 @@ ohos_source_set("instance_memory_update_event_handler") {
 
   public_external_deps = [ "media_foundation:media_foundation" ]
 
-  configs = [ "../../../../../dfx:av_codec_service_log_dfx_public_config" ]
-
   include_dirs = [
     "./",
     "../../",
@@ -40,7 +38,10 @@ ohos_source_set("instance_memory_update_event_handler") {
     "./waterline_manager.cpp",
   ]
 
-  deps = [ "../../../../sa_avcodec:sa_manager" ]
+  deps = [
+    "../../../../../dfx:av_codec_service_dfx",
+    "../../../../sa_avcodec:sa_manager",
+  ]
 
   external_deps = [
     "cJSON:cjson",

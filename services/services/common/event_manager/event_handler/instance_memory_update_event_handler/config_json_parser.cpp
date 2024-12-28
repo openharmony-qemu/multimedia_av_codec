@@ -25,7 +25,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 
 namespace OHOS {
 namespace MediaAVCodec {
-
 ConfigJsonParser::ConfigJsonParser() {}
 
 ConfigJsonParser::~ConfigJsonParser()
@@ -70,6 +69,5 @@ cJSON* ConfigJsonParser::GetRootNode() const
 {
     return root_;
 }
-
 } // MediaAVCodec
 } // OHOS

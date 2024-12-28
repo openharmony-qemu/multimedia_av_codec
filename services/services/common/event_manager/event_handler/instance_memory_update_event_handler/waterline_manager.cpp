@@ -32,7 +32,6 @@ const std::string UNKNOWN = "unknown";
 
 namespace OHOS {
 namespace MediaAVCodec {
-
 std::string DeviceDetector::deviceType_ {"unknown"};
 
 void DeviceDetector::TryToGetDeviceType()
@@ -85,6 +84,5 @@ void WaterLineManager::ReportHiview(int32_t appId)
     memList.emplace_back(memoryCaller);
     // collector_->SetSplitMemoryValue(memList);
 }
-
 } // MediaAVCodec
 } // OHOS
