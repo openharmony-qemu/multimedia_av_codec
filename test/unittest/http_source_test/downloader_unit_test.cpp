@@ -59,6 +59,116 @@ HWTEST_F(DownloaderUnitTest, Downloader_Construct_nullptr, TestSize.Level1)
     EXPECT_NE(downloader->client_, nullptr);
 }
 
+HWTEST_F(DownloaderUnitTest, Retry_1, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    EXPECT_FALSE(downloader->Retry(Request_));
+}
+
+HWTEST_F(DownloaderUnitTest, Retry_2, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isAppBackground_ = true;
+    EXPECT_TRUE(downloader->Retry(Request_));
+}
+
+HWTEST_F(DownloaderUnitTest, Retry_3, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isDestructor_ = true;
+    EXPECT_FALSE(downloader->Retry(Request_));
+}
+
+HWTEST_F(DownloaderUnitTest, Retry_4, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isDestructor_ = false;
+    EXPECT_FALSE(downloader->Retry(Request_));
+}
+
+HWTEST_F(DownloaderUnitTest, Retry_5, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isDestructor_ = false;
+    downloader->shouldStartNextRequest = false;
+    EXPECT_TRUE(downloader->Retry(Request_));
+}
+
+HWTEST_F(DownloaderUnitTest, Retry_6, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isDestructor_ = false;
+    downloader->shouldStartNextRequest = false;
+    downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    EXPECT_TRUE(downloader->Retry(Request_));
+}
+
 HWTEST_F(DownloaderUnitTest, StopBufferring_1, TestSize.Level1)
 {
     downloader->StopBufferring();
