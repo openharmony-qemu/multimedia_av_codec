@@ -76,8 +76,7 @@
           "curl",
           "openssl",
           "hiview",
-          "cJSON",
-          "init"
+          "cJSON"
         ],
         "third_party": [
           "bounds_checking_function"

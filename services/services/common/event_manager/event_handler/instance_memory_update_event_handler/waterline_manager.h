@@ -16,24 +16,34 @@
 #ifndef CONFIG_JSON_PARSER_H
 #define CONFIG_JSON_PARSER_H
 
-#include <cstdint>
-#include <string>
-#include <vector>
-#include "cJSON.h"
+#include "client/memory_collector_client.h"
+#include "config_json_parser.h"
+#include <map>
 
 namespace OHOS {
 namespace MediaAVCodec {
-class ConfigJsonParser {
-public:
-    ConfigJsonParser();
-    ~ConfigJsonParser();
+using ConfigMap = std::map <std::string, uint32_t>;
 
-    bool InitJsonFile(const std::string &path);
-    const cJSON* GetSubNode(const std::string &key, const cJSON* node) const;
-    int GetIntValue(const std::string &key, const cJSON* node) const;
-    int GetRootNode() const;
-private:
-    cJSON* root_ { nullptr };
+class DeviceDetector {
+public:
+    static void TryToGetDeviceType();
+    static std::string deviceType_;
 };
+
+class WaterLineManager {
+public:
+    WaterLineManager();
+    ~WaterLineManager() = default;
+    uint32_t GetWaterLine();
+    void ReportHiview(int32_t appId);
+
+private:
+    void DoParseConfig(std::string filePath);
+
+    ConfigMap configParam_;
+    ConfigJsonParser parser_;
+    std::shared_ptr<HiviewDFX::UCollectClient::MemoryCollector> collector_;
+}; // WaterLineManager
 } // MediaAVCodec
 } // OHOS
+#endif // CONFIG_JSON_PARSER_H

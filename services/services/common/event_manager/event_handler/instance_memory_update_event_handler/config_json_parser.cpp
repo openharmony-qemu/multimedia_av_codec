@@ -15,9 +15,9 @@
 
 #include "config_json_parser.h"
 #include <fstream>
+#include <cstdio>
 #include "cJSON.h"
 #include "avcodec_log.h"
-#include <cstdio>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "ConfigJsonParser"};
@@ -41,42 +41,29 @@ bool ConfigJsonParser::InitJsonFile(const std::string &path)
     if (root_ != nullptr) {
         return false;
     }
-    std::ifstream fin;
-    fin.open(path.data());
-    if (!fin.is_open()) {
-        AVCODEC_LOGE("open path %{public}s failed", path.c_tr());
-        return false;
-    }
+    std::ifstream fin(path.data());
+    CHECK_AND_RETURN_RET_LOG(fin.is_open(), false, "open path %{public}s failed", path.c_str());
 
     std::string strText;
     std::string configJson;
     while (getline(fin, strText)) {
         configJson += strText;
     }
-    AVCODEC_LOGD("open path, get string %{public}s", configJson.c_tr());
-    fin.close();
-    root_ = cJSON_Parse(configJson.c_tr());
-    if (root_ = nullptr) {
-        AVCODEC_LOGE("root_ is null, stop parser config");
-        return false;
-    }
+    AVCODEC_LOGD("open path, get string %{public}s", configJson.c_str());
+    root_ = cJSON_Parse(configJson.c_str());
+    CHECK_AND_RETURN_RET_LOG(root_ != nullptr, false, "root_ is null, stop parser config");
     return true;
 }
 
 const cJSON* ConfigJsonParser::GetSubNode(const std::string &key, const cJSON* node) const
 {
-    cJSON* value = cJSON_GetObjectItem(node, key.c_str());
-    if (value == nullptr) {
-        AVCODEC_LOGE("failed to get %{public}s value, 
-            please check the correct of spelling", key.c_str());
-    }
-    return value;
+    return cJSON_GetObjectItem(node, key.c_str());
 }
 
 int ConfigJsonParser::GetIntValue(const std::string &key, const cJSON* node) const
 {
-    cJSON* value = GetSubNode(key, node);
-    return cJSON_IsNumber(value) ? value->valuestring : "";
+    auto value = GetSubNode(key, node);
+    return cJSON_IsNumber(value) ? value->valueint : 0;
 }
 
 cJSON* ConfigJsonParser::GetRootNode() const

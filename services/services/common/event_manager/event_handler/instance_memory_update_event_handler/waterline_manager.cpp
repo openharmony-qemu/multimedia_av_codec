@@ -12,12 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "waterline_manager.h"
-#include <cstudio>
-#include "parameters.h"
 
-using namespace std;
-using namespace OHOS::HiviewDFX;
+#include "waterline_manager.h"
+#include <cstdio>
+#include "parameters.h"
+#include "avcodec_log.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "WaterLineManager"};
@@ -30,8 +29,6 @@ const std::string PC = "pc";
 const std::string WATCH = "watch";
 const std::string UNKNOWN = "unknown";
 }
-
-
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -70,24 +67,23 @@ uint32_t WaterLineManager::GetWaterLine()
 {
     std::string deviceType =  DeviceDetector::deviceType_;
     if (configParam_.find(deviceType) != configParam_.end()){
-        return configParam_.find(deviceType).second;
+        return configParam_.find(deviceType)->second;
     }
     return DEFAULT_WATER_LINE;
 }
 
 void WaterLineManager::ReportHiview(int32_t appId)
 {
-    if (collector_ == nullptr) {
-        AVCODEC_LOGE("collector_ is null");
-        return;
-    }
-    std::vector <UCollectClient::MemoryCaller> memList;
-    UCollectClient::MemoryCaller memoryCaller;
-    memoryCaller.pid = appId;
-    memoryCaller.resourceType = "AVCodec";
-    memoryCaller.limitValue = GetWaterLine();
-    memList.push_back(memoryCaller);
-    collector_->SetSplitMemoryValue(memList);
+    CHECK_AND_RETURN_LOG(collector_ != nullptr, "collector_ is null");
+
+    std::vector<HiviewDFX::UCollectClient::MemoryCaller> memList;
+    HiviewDFX::UCollectClient::MemoryCaller memoryCaller = {
+        .pid = appId,
+        .resourceType = "AVCodec",
+        .limitValue = GetWaterLine(),
+    };
+    memList.emplace_back(memoryCaller);
+    // collector_->SetSplitMemoryValue(memList);
 }
 
 } // MediaAVCodec

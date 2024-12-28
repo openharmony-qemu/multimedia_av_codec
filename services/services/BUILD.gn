@@ -169,10 +169,6 @@ ohos_shared_library("av_codec_service") {
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
-    "hiview:libucollection_client",
-    "cJSON:cjson",
-    "c_utils:utils",
-    "init:libbegetutil",
   ]
 
   public_external_deps = [ "json:nlohmann_json_static" ]

@@ -31,15 +31,14 @@ ohos_source_set("event_manager") {
     "./",
     "../",
     "../../../../interfaces/inner_api/native/",
-    "./event_handler/instance_memory_update_event_handler/",
   ]
 
-  sources = [
-    "./event_handler/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
-    "./event_manager.cpp",
-  ]
+  sources = [ "./event_manager.cpp" ]
 
-  deps = [ "../../sa_avcodec:sa_manager" ]
+  deps = [
+    "../../sa_avcodec:sa_manager",
+    "./event_handler/instance_memory_update_event_handler:instance_memory_update_event_handler",
+  ]
 
   subsystem_name = "multimedia"
   part_name = "av_codec"

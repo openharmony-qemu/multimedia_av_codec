@@ -13,34 +13,29 @@
  * limitations under the License.
  */
 
-#include "client/memory_collector_client.h"
-#include "config_json_parser.h"
-#include <map>
+#ifndef AVCODEC_CONFIG_JSON_PARSER_H
+#define AVCODEC_CONFIG_JSON_PARSER_H
+
+#include <cstdint>
+#include <string>
+#include <vector>
+#include "cJSON.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-using ConfigMap = std::map <std::string, uint32_t>;
-
-class DeviceDetector {
+class ConfigJsonParser {
 public:
-    static void TryToGetDeviceType();
-    static std::string deviceType_;
+    ConfigJsonParser();
+    ~ConfigJsonParser();
+
+    bool InitJsonFile(const std::string &path);
+    const cJSON* GetSubNode(const std::string &key, const cJSON* node) const;
+    int GetIntValue(const std::string &key, const cJSON* node) const;
+    cJSON* GetRootNode() const;
+
+private:
+    cJSON* root_ { nullptr };
 };
-
-class WaterLineManager {
-public:
-    WaterLineManager();
-    ~WaterLineManager() = default;
-    uint32_t GetWaterLine();
-    void ReportHiview(int32_t appId);
-
-private:
-    void DoParseConfig(std::string filePath);
-
-private:
-    ConfigMap configParam_;
-    ConfigJsonParser parser_;
-    std::shared_ptr<HiviewDFX::UCollectClient::MemoryCollector> collector_;
-}; // WaterLineManager
 } // MediaAVCodec
 } // OHOS
+#endif // AVCODEC_CONFIG_JSON_PARSER_H
