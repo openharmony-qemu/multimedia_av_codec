@@ -59,6 +59,7 @@ ohos_unittest("demuxer_native_module_test") {
   if (av_codec_support_codec) {
     sources = [
       #"./src/perf_test.cpp",
+      #"./src/reli2_test.cpp",
       #"./src/reli_test.cpp",
       "./src/InnerAPI/api_test.cpp",
       "./src/InnerAPI/func_test.cpp",
@@ -68,7 +69,9 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/api_test.cpp",
       "./src/func2_test.cpp",
       "./src/func_test.cpp",
+      "./src/movfunc_test.cpp",
       "./src/randomseek_test.cpp",
+      "./src/seek2_test.cpp",
       "./src/seek_test.cpp",
 
       #"./src/net_test.cpp",

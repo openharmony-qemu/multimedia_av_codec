@@ -1048,4 +1048,46 @@ HWTEST_F(DemuxerNet2NdkTest, DEMUXER_VVC_NET_0600, TestSize.Level0)
         }
     }
 }
+
+/**
+ * @tc.number    : MOV_DEMUXER_FUNCTION_TEST_1800
+ * @tc.name      : demuxer URI mov file, read
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerNet2NdkTest, MOV_DEMUXER_FUNCTION_TEST_1800, TestSize.Level2)
+{
+    if (memory == nullptr) {
+        memory = OH_AVMemory_Create(g_width * g_height);
+    }
+    int trackType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool videoIsEnd = false;
+    int videoFrame = 0;
+    const char *uri = "http://192.168.3.17:8080/share/MOV_H264_baseline@level5_1920_1080_30_AAC_48K_1.mov";
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int vKeyCount = 0;
+    while (!videoIsEnd) {
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &trackType));
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
+        if (videoIsEnd) {
+            continue;
+        }
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+    }
+    ASSERT_EQ(videoFrame, 60);
+    ASSERT_EQ(vKeyCount, 12);
+}
 } // namespace
