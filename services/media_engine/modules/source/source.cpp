@@ -308,7 +308,6 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::INITIAL_BUFFER_SUCCESS) {
         MEDIA_LOG_I("initial buffer success.");
-        printf("mediaDemuxerCallback_->OnEvent(event) INITIAL_BUFFER_SUCCESS\n");
         mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::DASH_SEEK_READY) {
         MEDIA_LOG_D("Onevent dash seek ready.");
