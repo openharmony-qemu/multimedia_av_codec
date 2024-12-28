@@ -451,6 +451,12 @@ bool HttpSourcePlugin::GetHLSDiscontinuity()
     return false;
 }
 
+bool HttpSourcePlugin::SetSourceInitialBufferSize(int32_t offset, int32_t size)
+{
+    FALSE_RETURN_V_MSG_W(downloader_ != nullptr, false, "SetInitialBufferSize downloader is nullptr");
+    return downloader_->SetInitialBufferSize(offset, size);
+}
+
 Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
 {
     if (downloader_ == nullptr) {

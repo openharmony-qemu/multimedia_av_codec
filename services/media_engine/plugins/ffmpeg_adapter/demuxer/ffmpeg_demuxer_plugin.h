@@ -77,6 +77,7 @@ public:
     Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
         const uint32_t index, uint64_t &relativePresentationTimeUs) override;
     void SetCacheLimit(uint32_t limitSize) override;
+    bool GetProbeSize(int32_t &offset, int32_t &size) override;
 
 private:
     enum DumpMode : unsigned long {
@@ -135,6 +136,8 @@ private:
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
+    bool HasCodecParameters();
+    Status GetMediaInfo();
 
     void ParserFirstDts();
     Status InitIoContext();
@@ -175,6 +178,7 @@ private:
     IOContext ioContext_;
     std::vector<uint32_t> selectedTrackIds_;
     BlockQueuePool cacheQueue_;
+    MediaInfo mediaInfo_;
 
     std::shared_ptr<AVInputFormat> pluginImpl_ {nullptr};
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};

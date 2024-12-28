@@ -61,6 +61,7 @@ public:
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
+    bool SetSourceInitialBufferSize(int32_t offset, int32_t size) override;
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
 

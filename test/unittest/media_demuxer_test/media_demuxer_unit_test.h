@@ -47,6 +47,7 @@ public:
         mapStatus_["StatusErrorNoMemory"] = Status::ERROR_NO_MEMORY;
         mapStatus_["StatusAgain"] = Status::ERROR_AGAIN;
         mapStatus_["StatusErrorNullPoint"] = Status::ERROR_NULL_POINTER;
+        mapStatus_["StatusErrorNotEnoughData"] = Status::ERROR_NOT_ENOUGH_DATA;
         name_ = name;
     }
     ~DemuxerPluginMock()
@@ -157,6 +158,34 @@ private:
     std::string name_;
 };
 
+template<size_t MaxFailCount>
+class DemuxerPluginSetDataSourceFailMock : public DemuxerPluginMock {
+public:
+    explicit DemuxerPluginSetDataSourceFailMock(std::string name) : DemuxerPluginMock(name)
+    {
+    }
+    ~DemuxerPluginSetDataSourceFailMock()
+    {
+    }
+    Status SetDataSource(const std::shared_ptr<DataSource>& source) override
+    {
+        if (failCount_ < MaxFailCount) {
+            failCount_++;
+            return Status::ERROR_NOT_ENOUGH_DATA;
+        }
+        return Status::OK;
+    }
+private:
+    size_t failCount_ = 0;
+};
+
+class StreamDemuxerMock : public StreamDemuxer {
+    bool SetSourceInitialBufferSize(int32_t offset, int32_t size) override
+    {
+        return true;
+    }
+};
+
 class SourcePluginMock : public Plugins::SourcePlugin {
 public:
     explicit SourcePluginMock(std::string name) : SourcePlugin(name)
@@ -204,6 +233,40 @@ private:
     std::string name_;
 };
 
+class SourceCallback : public Plugins::Callback {
+public:
+    explicit SourceCallback(std::shared_ptr<DemuxerPluginManager> demuxerPluginManager)
+        : demuxerPluginManager_(demuxerPluginManager) {}
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        switch (event.type) {
+            case PluginEventType::INITIAL_BUFFER_SUCCESS: {
+                demuxerPluginManager_->NotifyInitialBufferingEnd(true);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
+};
+
+template<size_t FailOffset, size_t MaxFailCount>
+class StreamDemuxerPullDataFailMock : public StreamDemuxer {
+public:
+    StreamDemuxerPullDataFailMock() : StreamDemuxer() {}
+private:
+    Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+        size_t expectedLen) override
+    {
+        if (offset > FailOffset && failCount_ < MaxFailCount) {
+            failCount_++;
+            return Status::ERROR_AGAIN;
+        }
+        return StreamDemuxer::CallbackReadAt(streamID, offset, buffer, expectedLen);
+    }
+    size_t failCount_ = 0;
+};
 }
 }
 

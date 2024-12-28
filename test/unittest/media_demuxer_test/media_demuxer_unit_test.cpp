@@ -18,6 +18,8 @@
 #include <sys/stat.h>
 #include <cinttypes>
 #include <fcntl.h>
+#include <thread>
+#include <chrono>
 #include "media_demuxer_unit_test.h"
 #include "http_server_demo.h"
 #include "plugin/plugin_event.h"
@@ -128,6 +130,137 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetDataSource_002, TestSize.Level1)
     EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
     std::map<uint32_t, sptr<AVBufferQueueProducer>> curBufferQueueProducerMap = demuxer->GetBufferQueueProducerMap();
     EXPECT_EQ(curBufferQueueProducerMap.size(), 1);
+}
+
+void TestPullDataFailReadSample(std::shared_ptr<DemuxerPluginManager> demuxerPluginManager)
+{
+    std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    EXPECT_EQ(avAllocator != nullptr, true);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, 3840 * 2160); // 3840 2160 max pic size
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager->GetPluginByStreamID(0);
+    pluginTemp->SelectTrack(0);
+    pluginTemp->SelectTrack(1);
+    int eosFlag[2] = {0, 0};
+    int frames[2] = {0, 0};
+    while (!eosFlag[0] || !eosFlag[1]) {
+        if (eosFlag[0] == 0) {
+            if (pluginTemp->ReadSample(0, buffer) != Status::OK) {
+                break;
+            }
+            if (buffer->flag_ == (uint32_t)(AVBufferFlag::EOS)) {
+                eosFlag[0] = 1;
+            } else {
+                frames[0]++;
+            }
+        }
+        if (eosFlag[1] == 0) {
+            if (pluginTemp->ReadSample(1, buffer) != Status::OK) {
+                break;
+            }
+            if (buffer->flag_ == (uint32_t)(AVBufferFlag::EOS)) {
+                eosFlag[1] = 1;
+            } else {
+                frames[1]++;
+            }
+        }
+    }
+    EXPECT_EQ(frames[0], 6622); // 6622 帧数
+    EXPECT_EQ(frames[1], 4739); // 4739 帧数
+}
+
+/**
+ * @tc.name: DemuxerPluginManager_SetDataSource_001
+ * @tc.desc: test SetDataSource (success to pull data)
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_001, TestSize.Level1)
+{
+    string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    string srtPath = "H264_AAC_multi_track.mp4";
+    std::string uri = "http://127.0.0.1:46666/" + srtPath;
+
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    SourceCallback cb = SourceCallback(demuxerPluginManager);
+    std::shared_ptr<Source> source = std::make_shared<Source>();
+    source->SetCallback(&cb);
+    EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::vector<StreamInfo> streams;
+    source->GetStreamInfo(streams);
+    demuxerPluginManager->InitDefaultPlay(streams);
+
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerPullDataFailMock<100, 0>>();
+    streamDemuxer->SetInterruptState(false);
+    streamDemuxer->SetSource(source);
+    streamDemuxer->Init("");
+
+    std::thread initPluginThread([demuxerPluginManager, streamDemuxer, pluginName]() {
+        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+    });
+    initPluginThread.join();
+    TestPullDataFailReadSample(demuxerPluginManager);
+}
+
+/**
+ * @tc.name: DemuxerPluginManager_SetDataSource_002
+ * @tc.desc: test SetDataSource (Fail to pull data once)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_002, TestSize.Level1)
+{
+    string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    string srtPath = "H264_AAC_multi_track.mp4";
+    std::string uri = "http://127.0.0.1:46666/" + srtPath;
+
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    SourceCallback cb = SourceCallback(demuxerPluginManager);
+    std::shared_ptr<Source> source = std::make_shared<Source>();
+    source->SetCallback(&cb);
+    EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::vector<StreamInfo> streams;
+    source->GetStreamInfo(streams);
+    demuxerPluginManager->InitDefaultPlay(streams);
+
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerPullDataFailMock<100, 1>>();
+    streamDemuxer->SetInterruptState(false);
+    streamDemuxer->SetSource(source);
+    streamDemuxer->Init("");
+
+    std::thread initPluginThread([demuxerPluginManager, streamDemuxer, pluginName]() {
+        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+    });
+    initPluginThread.join();
+    TestPullDataFailReadSample(demuxerPluginManager);
+}
+
+/**
+ * @tc.name: DemuxerPluginManager_SetDataSource_003
+ * @tc.desc: test SetDataSource (Fail to pull data twice)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_003, TestSize.Level1)
+{
+    string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    string srtPath = "H264_AAC_multi_track.mp4";
+    std::string uri = "http://127.0.0.1:46666/" + srtPath;
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    SourceCallback cb = SourceCallback(demuxerPluginManager);
+    std::shared_ptr<Source> source = std::make_shared<Source>();
+    source->SetCallback(&cb);
+    EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::vector<StreamInfo> streams;
+    source->GetStreamInfo(streams);
+    demuxerPluginManager->InitDefaultPlay(streams);
+
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerPullDataFailMock<100, 5>>();
+    streamDemuxer->SetInterruptState(false);
+    streamDemuxer->SetSource(source);
+    streamDemuxer->Init("");
+
+    std::thread initPluginThread([demuxerPluginManager, streamDemuxer, pluginName]() {
+        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), false);
+    });
+    initPluginThread.join();
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectTrack_003, TestSize.Level1)
@@ -1066,6 +1199,89 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_Start_016, TestSize.Level1)
     EXPECT_EQ(demuxerManager->Flush(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->SeekTo(1, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime), Status::OK);
 }
+
+HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_001, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerManager = std::make_shared<DemuxerPluginManager>();
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+
+    MediaStreamInfo info;
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginMock =
+        std::make_shared<DemuxerPluginSetDataSourceFailMock<0>>("StatusOK");
+    info.plugin = pluginMock;
+    info.pluginName = pluginName;
+    demuxerManager->streamInfoMap_[0] = info;
+
+    std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
+    std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+    });
+    initPluginThread.join();
+}
+
+HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_002, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerManager = std::make_shared<DemuxerPluginManager>();
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+
+    MediaStreamInfo info;
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginMock =
+        std::make_shared<DemuxerPluginSetDataSourceFailMock<1>>("StatusOK");
+    info.plugin = pluginMock;
+    info.pluginName = pluginName;
+    demuxerManager->streamInfoMap_[0] = info;
+
+    std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
+    std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    demuxerManager->NotifyInitialBufferingEnd(true);
+    initPluginThread.join();
+}
+
+HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_003, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerManager = std::make_shared<DemuxerPluginManager>();
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+
+    MediaStreamInfo info;
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginMock =
+        std::make_shared<DemuxerPluginSetDataSourceFailMock<1>>("StatusOK");
+    info.plugin = pluginMock;
+    info.pluginName = pluginName;
+    demuxerManager->streamInfoMap_[0] = info;
+
+    std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
+    std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), false);
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    demuxerManager->NotifyInitialBufferingEnd(false);
+    initPluginThread.join();
+}
+
+HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_004, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerManager = std::make_shared<DemuxerPluginManager>();
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+
+    MediaStreamInfo info;
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginMock =
+        std::make_shared<DemuxerPluginSetDataSourceFailMock<2>>("StatusOK");
+    info.plugin = pluginMock;
+    info.pluginName = pluginName;
+    demuxerManager->streamInfoMap_[0] = info;
+
+    std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
+    std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), false);
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    demuxerManager->NotifyInitialBufferingEnd(true);
+    initPluginThread.join();
+}
+
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_016, TestSize.Level1)
 {

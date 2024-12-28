@@ -110,6 +110,7 @@ public:
     size_t GetSegmentOffset();
     bool GetHLSDiscontinuity();
     void WaitForBufferingEnd();
+    bool SetInitialBufferSize(int32_t offset, int32_t size);
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

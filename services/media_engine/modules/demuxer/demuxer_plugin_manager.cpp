@@ -40,6 +40,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerPluginManager" };
 constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
+constexpr int WAIT_INITIAL_BUFFERING_END_TIME_MS = 3000;
 }
 
 namespace OHOS {
@@ -502,7 +503,39 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
     streamInfoMap_[id].dataSource->SetIsDash(isDash_);
 
     Status st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource);
+    if (st == Status::ERROR_NOT_ENOUGH_DATA) {
+        int32_t offset = 0;
+        int32_t size = 0;
+        FALSE_RETURN_V(streamInfoMap_[id].plugin->GetProbeSize(offset, size), false);
+        WaitForInitialBufferingEnd(streamDemuxer, offset, size);
+        if (isInitialBufferingSucc_.load()) {
+            st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource);
+        }
+    }
     return st == Status::OK;
+}
+
+void DemuxerPluginManager::WaitForInitialBufferingEnd(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+    int32_t offset, int32_t size)
+{
+    AutoLock lk(initialBufferingEndMutex_);
+    MEDIA_LOG_I("WaitForInitialBufferingEnd");
+    isInitialBufferingSucc_.store(false);
+    bool isSetSucc = streamDemuxer->SetSourceInitialBufferSize(offset, size);
+    // already initial buffering end, set buffer size failed
+    if (!isSetSucc) {
+        MEDIA_LOG_I("already initial buffering end, set buffer size failed");
+        isInitialBufferingSucc_.store(true);
+        return;
+    }
+    bool ret = false;
+    int32_t count = 0;
+    while (!ret) {
+        ret = initialBufferingEndCond_.WaitFor(lk, WAIT_INITIAL_BUFFERING_END_TIME_MS);
+        count++;
+        MEDIA_LOG_I("WaitForInitialBufferingEnd count " PUBLIC_LOG_D32, count);
+    }
+    MEDIA_LOG_I("initial buffering success");
 }
 
 bool DemuxerPluginManager::IsDash() const
@@ -883,6 +916,13 @@ int32_t DemuxerPluginManager::AddExternalSubtitle()
         return streamIndex;
     }
     return INVALID_STREAM_OR_TRACK_ID;
+}
+
+void DemuxerPluginManager::NotifyInitialBufferingEnd(bool isInitialBufferingSucc)
+{
+    MEDIA_LOG_I("NotifyInitialBufferingEnd, bufferingEndCond NotifyAll.");
+    isInitialBufferingSucc_.store(isInitialBufferingSucc);
+    initialBufferingEndCond_.NotifyAll();
 }
 
 } // namespace Media

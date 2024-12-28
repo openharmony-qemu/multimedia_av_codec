@@ -80,6 +80,7 @@ public:
     {
         return isRingBuffer_ && request->GetFileContentLengthNoWait() == 0;
     }
+    bool SetInitialBufferSize(int32_t offset, int32_t size) override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -114,6 +115,8 @@ private:
     bool ClearHasReadBuffer();
     void ClearCacheBuffer();
     void CheckDownloadPos(unsigned int wantReadLength);
+    void HandleWaterline();
+    bool CacheBufferFullLoop();
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -192,6 +195,9 @@ private:
     bool isSeekWait_ {false};
     bool isReportedErrorCode_ {false};
     bool isNeedClearHasRead_ {false};
+    std::atomic<int32_t> expectOffset_ {-1};
+    std::atomic<int32_t> initCacheSize_ {-1};
+    Mutex initCacheMutex_ {};
 };
 }
 }

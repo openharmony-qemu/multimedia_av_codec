@@ -167,6 +167,7 @@ struct DemuxerPlugin : public PluginBase {
         const uint32_t index, uint64_t &relativePresentationTimeUs) = 0;
 
     virtual void SetCacheLimit(uint32_t limitSize) = 0;
+    virtual bool GetProbeSize(int32_t &offset, int32_t &size) { return false; };
 };
 
 /// Demuxer plugin api major number.

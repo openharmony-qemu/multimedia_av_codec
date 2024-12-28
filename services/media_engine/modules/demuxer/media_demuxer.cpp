@@ -696,6 +696,9 @@ void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
     if (subStreamDemuxer_ != nullptr) {
         subStreamDemuxer_->SetInterruptState(isInterruptNeeded);
     }
+    if (demuxerPluginManager_ != nullptr) {
+        demuxerPluginManager_->NotifyInitialBufferingEnd(false);
+    }
 }
 
 void MediaDemuxer::SetBundleName(const std::string& bundleName)
@@ -1994,17 +1997,13 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
             MEDIA_LOG_E("OnEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
+            demuxerPluginManager_->NotifyInitialBufferingEnd(false);
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
             break;
         }
-        case PluginEventType::BUFFERING_END: {
-            MEDIA_LOG_D("OnEvent pause");
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
-            break;
-        }
-        case PluginEventType::BUFFERING_START: {
-            MEDIA_LOG_D("OnEvent start");
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
+        case PluginEventType::INITIAL_BUFFER_SUCCESS: {
+            MEDIA_LOG_I("OnEvent initial buffer success");
+            demuxerPluginManager_->NotifyInitialBufferingEnd(true);
             break;
         }
         case PluginEventType::CACHED_DURATION: {
@@ -2015,6 +2014,25 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::SOURCE_BITRATE_START: {
             MEDIA_LOG_D("OnEvent source bitrate start");
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_BITRATE_START, event.param});
+            break;
+        }
+        default:
+            break;
+    }
+    OnEventBuffer(event);
+}
+
+void MediaDemuxer::OnEventBuffer(const Plugins::PluginEvent &event)
+{
+    switch (event.type) {
+        case PluginEventType::BUFFERING_END: {
+            MEDIA_LOG_D("OnEvent pause");
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
+            break;
+        }
+        case PluginEventType::BUFFERING_START: {
+            MEDIA_LOG_D("OnEvent start");
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
             break;
         }
         case PluginEventType::EVENT_BUFFER_PROGRESS: {

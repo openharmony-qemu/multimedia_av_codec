@@ -124,6 +124,7 @@ public:
     virtual int32_t GetNewSubtitleStreamID();
     bool CanDoChangeStream();
     void SetChangeFlag(bool flag);
+    virtual bool SetSourceInitialBufferSize(int32_t offset, int32_t size);
     void SetSourceType(SourceType type);
     bool GetIsDataSrcNoSeek();
 protected:
