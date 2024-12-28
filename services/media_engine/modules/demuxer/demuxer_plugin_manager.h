@@ -166,6 +166,7 @@ private:
     bool needResetEosStatus_ = false;
     FairMutex initialBufferingEndMutex_ {};
     std::atomic<bool> isInitialBufferingSucc_ = false;
+    std::atomic<bool> isInitialBufferingNotified_ = false;
     ConditionVariable initialBufferingEndCond_;
 };
 } // namespace Media
