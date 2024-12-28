@@ -137,6 +137,7 @@ private:
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
     bool HasCodecParameters();
+    Status GetMediaInfo();
 
     void ParserFirstDts();
     Status InitIoContext();

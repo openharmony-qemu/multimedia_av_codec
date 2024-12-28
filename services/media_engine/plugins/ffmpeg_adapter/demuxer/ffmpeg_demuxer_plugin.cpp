@@ -1048,9 +1048,12 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     formatContext_ = InitAVFormatContext(&ioContext_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     InitParser();
-
     NotifyInitializationCompleted();
-    GetMediaInfo(mediaInfo_);
+
+    // parse media info
+    GetMediaInfo();
+
+    // check param
     if (ioContext_.retry && !HasCodecParameters()) {
         ioContext_.retry = false;
         formatContext_ = nullptr;
@@ -1133,14 +1136,15 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
 
 Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
 {
-    if (mediaInfo_.tracks.size() > 0) {
-        mediaInfo = mediaInfo_;
-        return Status::OK;
-    }
-    MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetMediaInfo");
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    mediaInfo = mediaInfo_;
+    return Status::OK;
+}
 
+Status FFmpegDemuxerPlugin::GetMediaInfo()
+{
+    MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetMediaInfo");
     Status ret = GetSeiInfo();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSeiInfo failed");
 
@@ -1175,7 +1179,6 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
         mediaInfo_.tracks.push_back(meta);
         DemuxerLogCompressor::StringifyMeta(meta, trackIndex);
     }
-    mediaInfo = mediaInfo_;
     return Status::OK;
 }
 
