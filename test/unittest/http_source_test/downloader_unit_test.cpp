@@ -71,7 +71,8 @@ HWTEST_F(DownloaderUnitTest, Retry_1, TestSize.Level1)
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
         return true;
     };
-    std::shared_ptr<DownloadRequest> Request_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     EXPECGT_FALSE(downloader->Retry(Request_));
 }
 
@@ -87,7 +88,8 @@ HWTEST_F(DownloaderUnitTest, Retry_2, TestSize.Level1)
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
         return true;
     };
-    std::shared_ptr<DownloadRequest> Request_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isAppBackground_ = true;
     EXPECGT_TRUE(downloader->Retry(Request_));
 }
@@ -104,7 +106,8 @@ HWTEST_F(DownloaderUnitTest, Retry_3, TestSize.Level1)
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
         return true;
     };
-    std::shared_ptr<DownloadRequest> Request_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isDestructor_ = true;
     EXPECGT_FALSE(downloader->Retry(Request_));
 }
@@ -121,7 +124,8 @@ HWTEST_F(DownloaderUnitTest, Retry_4, TestSize.Level1)
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
         return true;
     };
-    std::shared_ptr<DownloadRequest> Request_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isDestructor_ = false;
     EXPECGT_FALSE(downloader->Retry(Request_));
 }
@@ -138,7 +142,8 @@ HWTEST_F(DownloaderUnitTest, Retry_5, TestSize.Level1)
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
         return true;
     };
-    std::shared_ptr<DownloadRequest> Request_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isDestructor_ = false;
     downloader->shouldStartNextRequest = false;
     EXPECGT_TRUE(downloader->Retry(Request_));
