@@ -306,6 +306,8 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     } else if (event.type == PluginEventType::EVENT_BUFFER_PROGRESS) {
         MEDIA_LOG_I("buffer percent update.");
         mediaDemuxerCallback_->OnEvent(event);
+    } else if (event.type == PluginEventType::INITIAL_BUFFER_SUCCESS) {
+        MEDIA_LOG_I("initial buffer success.");
     } else if (event.type == PluginEventType::DASH_SEEK_READY) {
         MEDIA_LOG_D("Onevent dash seek ready.");
         mediaDemuxerCallback_->OnEvent(event);
@@ -496,6 +498,12 @@ bool Source::GetHLSDiscontinuity()
 {
     FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "GetHLSDiscontinuity source plugin is nullptr!");
     return plugin_->GetHLSDiscontinuity();
+}
+
+bool Source::SetInitialBufferSize(int32_t offset, int32_t size)
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "SetInitialBufferSize source plugin is nullptr");
+    return plugin_->SetSourceInitialBufferSize(offset, size);
 }
 
 void Source::WaitForBufferingEnd()

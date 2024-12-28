@@ -266,6 +266,12 @@ void HttpMediaDownloader::OnClientErrorEvent()
 
 bool HttpMediaDownloader::HandleBuffering()
 {
+    if (isBuffering_ && GetBufferingTimeOut() && callback_) {
+        MEDIA_LOG_I("HTTP cachebuffer buffering time out.");
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "buffering"});
+        isBuffering_ = false;
+        return false;
+    }
     if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
         bufferingTime_ = 0;
         return false;
@@ -280,25 +286,7 @@ bool HttpMediaDownloader::HandleBuffering()
     }
     UpdateWaterLineAbove();
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
-    {
-        AutoLock lk(bufferingEndMutex_);
-        if (!canWrite_) {
-            MEDIA_LOG_I("HTTP canWrite_ false");
-            isBuffering_ = false;
-        }
-        if (GetCurrentBufferSize() >= waterLineAbove_) {
-            MEDIA_LOG_I("HTTP Buffer is enough, bufferSize:" PUBLIC_LOG_ZU " waterLineAbove: " PUBLIC_LOG_ZU
-                " avgDownloadSpeed: " PUBLIC_LOG_F, GetCurrentBufferSize(), waterLineAbove_, avgDownloadSpeed_);
-            isBuffering_ = false;
-        }
-        if (HandleBreak()) {
-            isBuffering_ = false;
-        }
-        if (!isBuffering_) {
-            MEDIA_LOG_I("HandleBuffering bufferingEndCond NotifyAll.");
-            bufferingEndCond_.NotifyAll();
-        }
-    }
+    HandleWaterline();
     if (!isBuffering_ && !isFirstFrameArrived_) {
         bufferingTime_ = 0;
     }
@@ -312,6 +300,42 @@ bool HttpMediaDownloader::HandleBuffering()
         bufferingTime_ = 0;
     }
     return isBuffering_.load();
+}
+
+void HttpMediaDownloader::HandleWaterline()
+{
+    AutoLock lk(bufferingEndMutex_);
+    if (!canWrite_) {
+        MEDIA_LOG_I("HTTP canWrite_ false");
+        isBuffering_ = false;
+    }
+    size_t currentWaterLine = waterLineAbove_;
+    size_t currentOffset = readOffset_;
+    {
+        AutoLock lock(initCacheMutex_);
+        if (initCacheSize_.load() != -1) {
+            currentWaterLine = static_cast<size_t>(initCacheSize_.load());
+            currentOffset = static_cast<size_t>(expectOffset_.load());
+            MEDIA_LOG_I("currentOffset:" PUBLIC_LOG_ZU, currentOffset);
+        }
+        if (GetCurrentBufferSize() >= currentWaterLine || HandleBreak()) {
+            MEDIA_LOG_I("HTTP Buffer is enough, bufferSize:" PUBLIC_LOG_ZU " waterLineAbove: " PUBLIC_LOG_ZU
+                " avgDownloadSpeed: " PUBLIC_LOG_F, GetCurrentBufferSize(), currentWaterLine, avgDownloadSpeed_);
+            MEDIA_LOG_I("initCacheSize_: " PUBLIC_LOG_D32, static_cast<int32_t>(initCacheSize_.load()));
+            isBuffering_ = false;
+            if (initCacheSize_.load() != -1) {
+                callback_->OnEvent({PluginEventType::INITIAL_BUFFER_SUCCESS,
+                                        {BufferingInfoType::BUFFERING_END}, "end"});
+                MEDIA_LOG_I("initCacheSize_: " PUBLIC_LOG_D32, static_cast<int32_t>(initCacheSize_.load()));
+                initCacheSize_.store(-1);
+                expectOffset_.store(-1);
+            }
+        }
+    }
+    if (!isBuffering_) {
+        MEDIA_LOG_I("HandleBuffering bufferingEndCond NotifyAll.");
+        bufferingEndCond_.NotifyAll();
+    }
 }
 
 bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
@@ -881,6 +905,27 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     return ret;
 }
 
+bool HttpMediaDownloader::CacheBufferFullLoop()
+{
+    {
+        AutoLock lock(initCacheMutex_);
+        if (initCacheSize_.load() != -1 &&
+            GetBufferSize() >= static_cast<size_t>(initCacheSize_.load())) {
+            callback_->OnEvent({PluginEventType::INITIAL_BUFFER_SUCCESS,
+                                    {BufferingInfoType::BUFFERING_END}, "end"});
+            initCacheSize_.store(-1);
+            expectOffset_.store(-1);
+        }
+    }
+    MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "HTTP CacheMediaBuffer full, waiting seek or read.");
+    if (isHitSeeking_ || isNeedDropData_) {
+        canWrite_ = true;
+        return true;
+    }
+    OSAL::SleepFor(ONE_HUNDRED_MILLIONSECOND);
+    return false;
+}
+
 bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
 {
     if (isNeedClean_) {
@@ -915,12 +960,9 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         canWrite_ = false;
         HandleBuffering();
         while (!isInterrupt_.load() && !isNeedClean_.load() && !canWrite_.load() && !isInterruptNeeded_.load()) {
-            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "HTTP CacheMediaBuffer full, waiting seek or read.");
-            if (isHitSeeking_ || isNeedDropData_) {
-                canWrite_ = true;
+            if (CacheBufferFullLoop()) {
                 return true;
             }
-            OSAL::SleepFor(ONE_HUNDRED_MILLIONSECOND);
         }
         canWrite_ = true;
     }
@@ -933,6 +975,15 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
 
 void HttpMediaDownloader::OnWriteBuffer(uint32_t len)
 {
+    {
+        AutoLock lock(initCacheMutex_);
+        if (initCacheSize_.load() != -1 &&
+            GetCurrentBufferSize() >= static_cast<size_t>(initCacheSize_.load())) {
+            callback_->OnEvent({ PluginEventType::INITIAL_BUFFER_SUCCESS, {BufferingInfoType::BUFFERING_END}, "end"});
+            initCacheSize_.store(-1);
+            expectOffset_.store(-1);
+        }
+    }
     if (startDownloadTime_ == 0) {
         int64_t nowTime = steadyClock_.ElapsedMilliseconds();
         startDownloadTime_ = nowTime;
@@ -1415,6 +1466,20 @@ void HttpMediaDownloader::ClearCacheBuffer()
 void HttpMediaDownloader::SetIsReportedErrorCode()
 {
     isReportedErrorCode_ = true;
+}
+
+bool HttpMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
+{
+    AutoLock lock(initCacheMutex_);
+    bool isInitBufferSizeOk = GetCurrentBufferSize() >= size || HandleBreak();
+    if (isInitBufferSizeOk || !downloader_ || !downloadRequest_) {
+        MEDIA_LOG_I("HTTP SetInitialBufferSize initCacheSize ok.");
+        return false;
+    }
+    MEDIA_LOG_I("HTTP SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32, size);
+    expectOffset_.store(offset);
+    initCacheSize_.store(size);
+    return true;
 }
 }
 }

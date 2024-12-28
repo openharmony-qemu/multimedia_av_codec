@@ -175,5 +175,10 @@ void BaseStreamDemuxer::SetChangeFlag(bool flag)
 {
     return changeStreamFlag_.store(flag);
 }
+
+bool BaseStreamDemuxer::SetSourceInitialBufferSize(int32_t offset, int32_t size)
+{
+    return source_->SetInitialBufferSize(offset, size);
+}
 } // namespace Media
 } // namespace OHOS

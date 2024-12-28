@@ -452,6 +452,11 @@ void DownloadMonitor::GetClientMediaServiceErrorCode(int32_t errorCode, int32_t&
         MEDIA_LOG_D("clientCode: " PUBLIC_LOG_D32, static_cast<int32_t>(clientCode));
     }
 }
+
+bool DownloadMonitor::SetInitialBufferSize(int32_t offset, int32_t size)
+{
+    return downloader_->SetInitialBufferSize(offset, size);
+}
 }
 }
 }

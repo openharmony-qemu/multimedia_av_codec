@@ -33,6 +33,8 @@
 #include "plugin/plugin_time.h"
 #include "plugin/demuxer_plugin.h"
 #include "source/source.h"
+#include "osal/task/mutex.h"
+#include "osal/task/condition_variable.h"
 
 namespace OHOS {
 namespace Media {
@@ -135,6 +137,7 @@ public:
     bool CheckTrackIsActive(int32_t trackId);
     int32_t AddExternalSubtitle();
     Status localSubtitleSeekTo(int64_t seekTime);
+    void NotifyInitialBufferingEnd(bool isInitialBufferingSucc);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
@@ -149,6 +152,7 @@ private:
     Status AddTrackMapInfo(int32_t streamID, int32_t trackIndex);
     Status UpdateMediaInfo(int32_t streamID);
     bool IsSubtitleMime(const std::string& mime);
+    void WaitForInitialBufferingEnd(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, int32_t offset, int32_t size);
 private:
     std::map<int32_t, MediaStreamInfo> streamInfoMap_; // <streamId, MediaStreamInfo>
     std::map<int32_t, MediaTrackMap> trackInfoMap_;    // 保存所有的track信息，使用映射的trackID <trackId, MediaTrackMap>
@@ -160,6 +164,9 @@ private:
     Plugins::MediaInfo curMediaInfo_;
     bool isDash_ = false;
     bool needResetEosStatus_ = false;
+    FairMutex initialBufferingEndMutex_ {};
+    std::atomic<bool> isInitialBufferingSucc_ = false;
+    ConditionVariable initialBufferingEndCond_;
 };
 } // namespace Media
 } // namespace OHOS
