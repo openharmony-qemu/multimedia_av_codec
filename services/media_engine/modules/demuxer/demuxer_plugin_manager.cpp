@@ -528,10 +528,11 @@ void DemuxerPluginManager::WaitForInitialBufferingEnd(std::shared_ptr<BaseStream
         isInitialBufferingSucc_.store(true);
         return;
     }
-    bool ret = false;
+    isInitialBufferingNotified_.store(false);
     int32_t count = 0;
-    while (!ret) {
-        ret = initialBufferingEndCond_.WaitFor(lk, WAIT_INITIAL_BUFFERING_END_TIME_MS);
+    while (!isInitialBufferingNotified_.load()) {
+        initialBufferingEndCond_.WaitFor(lk, WAIT_INITIAL_BUFFERING_END_TIME_MS,
+            [&] {return isInitialBufferingNotified_.load();});
         count++;
         MEDIA_LOG_I("WaitForInitialBufferingEnd count " PUBLIC_LOG_D32, count);
     }
@@ -921,6 +922,8 @@ int32_t DemuxerPluginManager::AddExternalSubtitle()
 void DemuxerPluginManager::NotifyInitialBufferingEnd(bool isInitialBufferingSucc)
 {
     MEDIA_LOG_I("NotifyInitialBufferingEnd, bufferingEndCond NotifyAll.");
+    AutoLock lk(initialBufferingEndMutex_);
+    isInitialBufferingNotified_.store(true);
     isInitialBufferingSucc_.store(isInitialBufferingSucc);
     initialBufferingEndCond_.NotifyAll();
 }
