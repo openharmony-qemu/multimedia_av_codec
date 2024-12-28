@@ -141,7 +141,10 @@ private:
     struct MaintainBaseInfo {
         int64_t segmentOffset = -1;
         int64_t basePts = -1;
+        int64_t candidateBasePts = -1;
         int64_t lastPts = 0;
+        int64_t lastPtsModifyedMax = -1;
+        bool isLastPtsChange = false;
     };
     bool isHttpSource_ = false;
     std::string videoMime_{};
