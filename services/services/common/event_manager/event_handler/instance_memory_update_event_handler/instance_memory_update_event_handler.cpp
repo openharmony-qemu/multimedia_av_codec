@@ -125,7 +125,7 @@ void InstanceMemoryUpdateEventHandler::UploadAppMemory(pid_t callerPid, pid_t fo
     InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(forwardCallerPid);
 
     auto memoryCollector = HiviewDFX::UCollectClient::MemoryCollector::Create();
-    // CHECK_AND_RETURN_LOG(collector != nullptr, "Create Hiview DFX memory collector failed");
+    CHECK_AND_RETURN_LOG(memoryCollector != nullptr, "Create Hiview DFX memory collector failed");
 
     auto memory = GetAppMemory(callerPid, forwardCallerPid);
     // std::vector<HiviewDFX::UCollectClient::MemoryCaller> memList;
