@@ -20,6 +20,7 @@
 #include <functional>
 #include <unordered_map>
 #include <mutex>
+#include <memory>
 #include "avcodec_xcollie.h"
 #include "meta.h"
 #include "instance_info.h"
@@ -36,17 +37,22 @@ public:
 private:
     std::optional<std::function<uint64_t(uint32_t)>> GetCalculator(const Media::Meta &meta);
     uint32_t GetBlockCount(const Media::Meta &meta);
-    pid_t GetActualPidByInstanceInfo(const InstanceInfo &info);
     std::optional<InstanceInfo> UpdateInstanceMemory(int32_t instanceId, uint64_t memory);
 
     void UpdateAppMemoryThreshold();
-    static uint64_t GetAppMemory(pid_t pid);
-    static void UploadAppMemory(pid_t pid);
-    void DeterminAppMemoryLeak(pid_t pid);
+    static uint64_t GetAppMemory(pid_t callerPid, pid_t forwardCallerPid);
+    static void UploadAppMemory(pid_t callerPid, pid_t forwardCallerPid);
+    void DeterminAppMemoryLeak(pid_t callerPid, pid_t forwardCallerPid);
 
     uint32_t appMemoryThreshold_ = 0;
     std::mutex timerMutex_;
     std::unordered_map<pid_t, AVCodecXcollieTimer> timerMap_;
+
+private:
+    class ThresholdParser {
+    public:
+        static uint32_t GetThreshold();
+    };
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

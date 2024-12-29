@@ -14,15 +14,21 @@
  */
 
 #include "instance_memory_update_event_handler.h"
+#include <fstream>
+#include <cmath>
+#include "cJSON.h"
+#include "client/memory_collector_client.h"
+#include "parameters.h"
 #include "avcodec_server_manager.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include "meta/meta_key.h"
 #include "event_info_extended_key.h"
-
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceMemoryUpdateEventHandler"};
 constexpr int32_t MEMORY_LEAK_UPLOAD_TIMEOUT = 180; // seconds
+constexpr uint32_t APP_MEMORY_THRESHOLD_MIN = 524'288; // 524288KB, 512MB
 } // namespace
 
 namespace OHOS {
@@ -45,12 +51,14 @@ void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta 
     auto instanceInfo = UpdateInstanceMemory(instanceId, instanceMemory);
     CHECK_AND_RETURN_LOG(instanceInfo != std::nullopt, "Update instance memory failed");
 
-    DeterminAppMemoryLeak(GetActualPidByInstanceInfo(instanceInfo.value()));
+    DeterminAppMemoryLeak(instanceInfo.value().caller.pid, instanceInfo.value().forwardCaller.pid);
 }
 
 void InstanceMemoryUpdateEventHandler::OnInstanceRelease(const Media::Meta &meta)
 {
-    (void)meta;
+    auto instanceId = GetInstanceIdFromMeta(meta);
+    auto instanceInfo = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
+    DeterminAppMemoryLeak(instanceInfo.value().caller.pid, instanceInfo.value().forwardCaller.pid);
 }
 
 void InstanceMemoryUpdateEventHandler::RemoveTimer(pid_t pid)
@@ -67,13 +75,13 @@ std::optional<std::function<uint64_t(uint32_t)>> InstanceMemoryUpdateEventHandle
 
 uint32_t InstanceMemoryUpdateEventHandler::GetBlockCount(const Media::Meta &meta)
 {
-    (void)meta;
-    return 0;
-}
-
-pid_t InstanceMemoryUpdateEventHandler::GetActualPidByInstanceInfo(const InstanceInfo &info)
-{
-    return info.forwardCaller.pid != INVALID_PID ? info.forwardCaller.pid : info.caller.pid;
+    int32_t width = 0;
+    int32_t length = 0;
+    meta.GetData(Media::Tag::VIDEO_WIDTH, width);
+    meta.GetData(Media::Tag::VIDEO_WIDTH, length);
+    constexpr int32_t blockWidth = 16;
+    constexpr int32_t blockLength = 16;
+    return std::ceil(width / blockWidth) * std::ceil(length / blockLength);
 }
 
 std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemory(int32_t instanceId, uint64_t memory)
@@ -91,40 +99,78 @@ std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemo
 
 void InstanceMemoryUpdateEventHandler::UpdateAppMemoryThreshold()
 {
-    // if (appMemoryThreshold_ == INVALID) {
-        (void)appMemoryThreshold_;
-    // }
+    if (appMemoryThreshold_ != 0) {
+        return;
+    }
+    auto threshold = ThresholdParser::GetThreshold();
+    appMemoryThreshold_ = threshold > APP_MEMORY_THRESHOLD_MIN ? threshold : APP_MEMORY_THRESHOLD_MIN;
+    AVCODEC_LOGI("App memory threshold updated to %{public}u KB", appMemoryThreshold_);
 }
 
-uint64_t InstanceMemoryUpdateEventHandler::GetAppMemory(pid_t pid)
+uint64_t InstanceMemoryUpdateEventHandler::GetAppMemory(pid_t callerPid, pid_t forwardCallerPid)
 {
-    return 0;
+    auto instanceInfoList = AVCodecServerManager::GetInstance().GetInstanceInfoListByPid(callerPid);
+    uint64_t appMemoryUsage = 0;
+    for (const auto &info : instanceInfoList) {
+        if (forwardCallerPid != info.second.forwardCaller.pid) {
+            continue;
+        }
+        appMemoryUsage += info.second.memoryUsage;
+    }
+    return appMemoryUsage;
 }
 
-void InstanceMemoryUpdateEventHandler::UploadAppMemory(pid_t pid)
+void InstanceMemoryUpdateEventHandler::UploadAppMemory(pid_t callerPid, pid_t forwardCallerPid)
 {
-    auto memory = GetAppMemory(pid);
+    InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(forwardCallerPid);
+
+    auto memoryCollector = HiviewDFX::UCollectClient::MemoryCollector::Create();
+    // CHECK_AND_RETURN_LOG(collector != nullptr, "Create Hiview DFX memory collector failed");
+
+    auto memory = GetAppMemory(callerPid, forwardCallerPid);
+    // std::vector<HiviewDFX::UCollectClient::MemoryCaller> memList;
+    // HiviewDFX::UCollectClient::MemoryCaller memoryCaller = {
+    //     .pid = appId,
+    //     .resourceType = "AVCodec",
+    //     .limitValue = appMemoryThreshold_,
+    // };
     (void)memory;
-
-
-    InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(pid);
+    // memList.emplace_back(memoryCaller);
+    // collector->SetSplitMemoryValue(memList);
 }
 
-void InstanceMemoryUpdateEventHandler::DeterminAppMemoryLeak(pid_t pid)
+void InstanceMemoryUpdateEventHandler::DeterminAppMemoryLeak(pid_t callerPid, pid_t forwardCallerPid)
 {
     UpdateAppMemoryThreshold();
 
-    auto memory = GetAppMemory(pid);
-    if (memory > appMemoryThreshold_ && timerMap_.count(pid) == 0) {
-        auto timeName = std::string("Pid_") + std::to_string(pid) + " memory leak";
+    auto memory = GetAppMemory(callerPid, forwardCallerPid);
+    if (memory > appMemoryThreshold_ && timerMap_.count(forwardCallerPid) == 0) {
+        auto timeName = std::string("Pid_") + std::to_string(forwardCallerPid) + " memory leak";
         AVCodecXcollieTimer timer(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT,
-            [=](void *) -> void { UploadAppMemory(pid); });
+            [=](void *) -> void { UploadAppMemory(callerPid, forwardCallerPid); });
 
         std::lock_guard<std::mutex> lock(timerMutex_);
-        timerMap_.emplace(pid, timer);
-    } else if (memory <= appMemoryThreshold_ && timerMap_.count(pid) != 0) {
-        InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(pid);
+        timerMap_.emplace(forwardCallerPid, timer);
+    } else if (memory <= appMemoryThreshold_ && timerMap_.count(forwardCallerPid) != 0) {
+        InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(forwardCallerPid);
     }
+}
+
+uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
+{
+    std::ifstream thresholdConfigFile("/system/etc/hiview/kernel_leak_config.json");
+    CHECK_AND_RETURN_RET_LOG(thresholdConfigFile.is_open(), UINT32_MAX, "Can not open threshold config json file");
+
+    std::string configJson;
+    while (thresholdConfigFile >> configJson);
+    std::shared_ptr<cJSON> root_ = std::shared_ptr<cJSON>(cJSON_Parse(configJson.c_str()), cJSON_Delete);
+    CHECK_AND_RETURN_RET_LOG(root_ != nullptr, UINT32_MAX, "Can not parse threshold config json");
+
+    std::string deviceType = OHOS::system::GetParameter("cosnt.product.devicetype", "unknown");
+    auto value = cJSON_GetObjectItem(root_.get(), "av_codec_config");
+    CHECK_AND_RETURN_RET_LOG(value != nullptr && cJSON_IsNumber(value),
+        UINT32_MAX, "Can not find av_codec_config from threshold config json");
+    return value->valueint;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

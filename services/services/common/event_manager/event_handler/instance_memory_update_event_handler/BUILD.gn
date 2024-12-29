@@ -32,11 +32,7 @@ ohos_source_set("instance_memory_update_event_handler") {
     "../../../../../../interfaces/inner_api/native/",
   ]
 
-  sources = [
-    "./config_json_parser.cpp",
-    "./instance_memory_update_event_handler.cpp",
-    "./waterline_manager.cpp",
-  ]
+  sources = [ "./instance_memory_update_event_handler.cpp" ]
 
   deps = [
     "../../../../../dfx:av_codec_service_dfx",
