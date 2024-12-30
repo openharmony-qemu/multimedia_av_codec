@@ -1385,9 +1385,6 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
     }
-    if (streamParser_ != nullptr && seekTime == 0) {
-        streamParser_->ResetXPSSendStatus();
-    }
     return Status::OK;
 }
 
