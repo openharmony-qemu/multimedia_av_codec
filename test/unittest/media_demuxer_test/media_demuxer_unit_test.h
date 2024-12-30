@@ -153,6 +153,12 @@ public:
     {
         return;
     }
+    bool GetProbeSize(int32_t &offset, int32_t &size) override
+    {
+        offset = 0;
+        size = 5000000;
+        return true;
+    }
 private:
     std::map<std::string, Status> mapStatus_;
     std::string name_;
@@ -228,12 +234,7 @@ public:
     {
         return mapStatus_[name_];
     }
-    bool GetProbeSize(int32_t &offset, int32_t &size) override
-    {
-        offset = 0;
-        size = 5000000;
-        return true;
-    }
+
 private:
     std::map<std::string, Status> mapStatus_;
     std::string name_;
