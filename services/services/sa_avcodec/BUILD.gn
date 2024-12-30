@@ -30,7 +30,12 @@ ohos_source_set("sa_manager") {
     "./server/include/",
     "../common/",
     "../../../interfaces/inner_api/native/",
+    "../codec/ipc/",
+    "../codeclist/ipc/",
+    "../../include/",
   ]
+
+  defines = av_codec_defines
 
   sources = [
     "ipc/avcodec_listener_proxy.cpp",

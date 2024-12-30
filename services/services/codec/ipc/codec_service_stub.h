@@ -18,8 +18,9 @@
 
 #include <map>
 #include <shared_mutex>
+#include "meta.h"
+#include "i_codec_service.h"
 #include "avcodec_death_recipient.h"
-#include "codec_server.h"
 #include "i_standard_codec_listener.h"
 #include "i_standard_codec_service.h"
 #include "nocopyable.h"
@@ -34,7 +35,7 @@ public:
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
     int32_t SetListenerObject(const sptr<IRemoteObject> &object) override;
 
-    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo) override;
+    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Media::Meta &callerInfo) override;
     int32_t Configure(const Format &format) override;
     int32_t Prepare() override;
     int32_t Start() override;

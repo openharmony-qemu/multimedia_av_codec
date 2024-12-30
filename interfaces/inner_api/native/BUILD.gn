@@ -211,6 +211,7 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/services/codec/ipc/buffer_converter.cpp",
       "$av_codec_root_dir/services/services/codec/ipc/codec_listener_stub.cpp",
       "$av_codec_root_dir/services/services/codec/ipc/codec_service_proxy.cpp",
+      "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_parcel.cpp",
     ]
   }
   if (av_codec_support_codeclist) {
@@ -276,7 +277,6 @@ ohos_shared_library("av_codec_client") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
-    "$av_codec_root_dir/services/services/common/event_manager:event_manager",
   ]
 
   if (av_codec_client_support_codec) {

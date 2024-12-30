@@ -75,8 +75,6 @@ int32_t AVCodecXCollie::SetTimer(const std::string &name, bool recovery, uint32_
 int32_t AVCodecXCollie::SetInterfaceTimer(const std::string &name, bool isService, bool recovery, uint32_t timeout)
 {
 #ifdef HICOLLIE_ENABLE
-    std::lock_guard<std::mutex> lock(mutex_);
-
     std::function<void (void *)> func = isService ?
         [](void *data) { AVCodecXCollie::ServiceInterfaceTimerCallback(data); } :
         [](void *data) { AVCodecXCollie::ClientInterfaceTimerCallback(data); };

@@ -34,7 +34,9 @@
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
+#ifndef CLIENT_SUPPORT_CODEC
 #include "event_manager.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
@@ -166,9 +168,11 @@ CodecServer::~CodecServer()
     avBufCallback_ = nullptr;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
+#ifndef CLIENT_SUPPORT_CODEC
     Media::Meta eventInfo;
     eventInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, eventInfo);
+#endif
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -191,8 +195,10 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
                              "Init failed. isMimeType:(%{public}d), name:(%{public}s), error:(%{public}d)", isMimeType,
                              name.c_str(), ret);
     SetCallerInfo(callerInfo);
+#ifndef CLIENT_SUPPORT_CODEC
     callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
+#endif
 
     shareBufCallback_ = std::make_shared<CodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(shareBufCallback_);
@@ -697,18 +703,13 @@ int32_t CodecServer::ReleaseOutputBufferOfCodec(uint32_t index, bool render)
     return ret;
 }
 
-void CodecServer::OnInstanceInitEvent()
-{
-    Meta meta;
-    // todo
-    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, meta);
-}
-
 void CodecServer::OnInstanceMemoryEvent()
 {
+#ifndef CLIENT_SUPPORT_CODEC
     Meta meta;
     // todo
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_MEMORY_UPDATE, meta);
+#endif
 }
 
 int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)

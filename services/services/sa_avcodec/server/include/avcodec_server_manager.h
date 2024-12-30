@@ -43,7 +43,6 @@ public:
     void SetCritical(const bool isKeyService);
     uint32_t GetInstanceCount();
     std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> GetInstanceInfoListByPid(pid_t pid);
-    std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> GetInstanceInfoListByForwardCallerPid(pid_t pid);
     std::optional<InstanceInfo> GetInstanceInfoByInstanceId(uint32_t instanceId);
     void SetInstanceInfoByInstanceId(uint32_t instanceId, const InstanceInfo &info);
 
