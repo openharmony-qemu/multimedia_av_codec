@@ -59,6 +59,7 @@ const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 const int64_t INIT_TIME_THRESHOLD = 1000;
 const uint32_t ID3V2_HEADER_SIZE = 10;
+const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -1078,8 +1079,9 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
                 FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY, "No memory");
                 FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
                     Status::ERROR_WRONG_STATE, "Get first frame failed");
-                streamParser_->ConvertExtraDataToAnnexb(
+                bool convertRet = streamParser_->ConvertExtraDataToAnnexb(
                     avStream->codecpar->extradata, avStream->codecpar->extradata_size);
+                FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_INVALID_DATA, "ConvertExtraDataToAnnexb failed");
                 streamParserInited_ = true;
                 break;
             }
