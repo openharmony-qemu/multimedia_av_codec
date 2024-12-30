@@ -185,7 +185,6 @@ Status MediaSyncManager::Reset()
         prerolledSyncers_.clear();
     }
     isFrameAfterSeeked_ = false;
-    startPts_ = HST_TIME_NONE;
     lastReportMediaTime_ = HST_TIME_NONE;
     firstMediaTimeAfterSeek_ = HST_TIME_NONE;
     return Status::OK;
