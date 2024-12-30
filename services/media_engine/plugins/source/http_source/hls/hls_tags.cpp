@@ -27,24 +27,24 @@ struct {
     const char* name;
     HlsTag type;
 } const g_exttagmapping[] = {
-    {"EXT-X-BYTERANGE",              HlsTag::EXTXBYTERANGE},
-    {"EXT-X-DISCONTINUITY",          HlsTag::EXTXDISCONTINUITY},
-    {"EXT-X-KEY",                    HlsTag::EXTXKEY},
-    {"EXT-X-MAP",                    HlsTag::EXTXMAP},
-    {"EXT-X-VERSION",                HlsTag::EXTXVERSION},
-    {"EXT-X-PROGRAM-DATE-TIME",      HlsTag::EXTXPROGRAMDATETIME},
-    {"EXT-X-TARGETDURATION",         HlsTag::EXTXTARGETDURATION},
-    {"EXT-X-MEDIA-SEQUENCE",         HlsTag::EXTXMEDIASEQUENCE},
-    {"EXT-X-DISCONTINUITY-SEQUENCE", HlsTag::EXTXDISCONTINUITYSEQUENCE},
-    {"EXT-X-ENDLIST",                HlsTag::EXTXENDLIST},
-    {"EXT-X-PLAYLIST-TYPE",          HlsTag::EXTXPLAYLISTTYPE},
-    {"EXT-X-I-FRAMES-ONLY",          HlsTag::EXTXIFRAMESONLY},
-    {"EXT-X-MEDIA",                  HlsTag::EXTXMEDIA},
-    {"EXT-X-START",                  HlsTag::EXTXSTART},
-    {"EXT-X-STREAM-INF",             HlsTag::EXTXSTREAMINF},
-    {"EXT-X-I-FRAME-STREAM-INF",     HlsTag::EXTXIFRAMESTREAMINF},
-    {"EXT-X-SESSION-KEY",            HlsTag::EXTXSESSIONKEY},
-    {"EXTINF",                       HlsTag::EXTINF},
+    {"ext-x-byterange",              HlsTag::EXTXBYTERANGE},
+    {"ext-x-discontinuity",          HlsTag::EXTXDISCONTINUITY},
+    {"ext-x-key",                    HlsTag::EXTXKEY},
+    {"ext-x-map",                    HlsTag::EXTXMAP},
+    {"ext-x-version",                HlsTag::EXTXVERSION},
+    {"ext-x-program-date-time",      HlsTag::EXTXPROGRAMDATETIME},
+    {"ext-x-targetduration",         HlsTag::EXTXTARGETDURATION},
+    {"ext-x-media-sequence",         HlsTag::EXTXMEDIASEQUENCE},
+    {"ext-x-discontinuity-sequence", HlsTag::EXTXDISCONTINUITYSEQUENCE},
+    {"ext-x-endlist",                HlsTag::EXTXENDLIST},
+    {"ext-x-playlist-type",          HlsTag::EXTXPLAYLISTTYPE},
+    {"ext-x-i-frames-only",          HlsTag::EXTXIFRAMESONLY},
+    {"ext-x-media",                  HlsTag::EXTXMEDIA},
+    {"ext-x-start",                  HlsTag::EXTXSTART},
+    {"ext-x-stream-inf",             HlsTag::EXTXSTREAMINF},
+    {"ext-x-i-frame-stream-inf",     HlsTag::EXTXIFRAMESTREAMINF},
+    {"ext-x-session-key",            HlsTag::EXTXSESSIONKEY},
+    {"extinf",                       HlsTag::EXTINF},
     {"",                             HlsTag::URI}
 };
 
@@ -353,6 +353,7 @@ static void ParseTag(std::list<std::shared_ptr<Tag>>& entriesList, std::shared_p
             value = line.substr(key.length() + 1);
         }
         if (!key.empty()) {
+            std::transform(key.begin(), key.end(), key.begin(), ::tolower);
             auto tag = TagFactory::CreateTagByName(key, value);
             if (tag) {
                 entriesList.push_back(tag);
