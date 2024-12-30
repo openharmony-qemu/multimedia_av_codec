@@ -332,6 +332,7 @@ bool Source::CanAutoSelectBitRate()
 
 void Source::SetInterruptState(bool isInterruptNeeded)
 {
+    MEDIA_LOG_D("Source OnInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
     if (plugin_) {
         plugin_->SetInterruptState(isInterruptNeeded_);

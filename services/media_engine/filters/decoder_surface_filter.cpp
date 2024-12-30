@@ -522,8 +522,9 @@ void DecoderSurfaceFilter::SetCallingInfo(int32_t appUid, int32_t appPid, std::s
     instanceId_ = instanceId;
 }
 
-void DecoderSurfaceFilter::SetInterruptState(bool isInterruptNeeded)
+void DecoderSurfaceFilter::OnInterrupted(bool isInterruptNeeded)
 {
+    MEDIA_LOG_D("DecoderSurfaceFilter onInterrupted %{public}d", isInterruptNeeded);
     std::lock_guard<std::mutex> lock(prerollMutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     prerollDoneCond_.notify_all();

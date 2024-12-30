@@ -111,15 +111,20 @@ DemuxerFilter::DemuxerFilter(std::string name, FilterType type) : Filter(name, t
 DemuxerFilter::~DemuxerFilter()
 {
     MEDIA_LOG_D_SHORT("~DemuxerFilter enter");
+    if (interruptMonitor_) {
+        interruptMonitor_->DeregisterListener(demuxer_);
+    }
 }
 
 void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
-    const std::shared_ptr<FilterCallback> &callback)
+    const std::shared_ptr<FilterCallback> &callback,
+    const std::shared_ptr<InterruptMonitor> &monitor)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Init");
     MEDIA_LOG_I_SHORT("DemuxerFilter Init");
     this->receiver_ = receiver;
     this->callback_ = callback;
+    this->interruptMonitor_ = monitor;
     MEDIA_LOG_D_SHORT("DemuxerFilter Init for drm callback");
 
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback =
@@ -127,6 +132,9 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     demuxer_->SetDrmCallback(drmCallback);
     demuxer_->SetEventReceiver(receiver);
     demuxer_->SetPlayerId(groupId_);
+    if (interruptMonitor_) {
+        interruptMonitor_->RegisterListener(demuxer_);
+    }
 }
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
@@ -146,11 +154,6 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 Status DemuxerFilter::SetSubtitleSource(const std::shared_ptr<MediaSource> source)
 {
     return demuxer_->SetSubtitleSource(source);
-}
-
-void DemuxerFilter::SetInterruptState(bool isInterruptNeeded)
-{
-    demuxer_->SetInterruptState(isInterruptNeeded);
 }
 
 void DemuxerFilter::SetBundleName(const std::string& bundleName)

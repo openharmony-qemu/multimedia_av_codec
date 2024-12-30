@@ -684,8 +684,9 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
     return ret;
 }
 
-void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
+void MediaDemuxer::OnInterrupted(bool isInterruptNeeded)
 {
+    MEDIA_LOG_D("MediaDemuxer OnInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
     if (source_ != nullptr) {
         source_->SetInterruptState(isInterruptNeeded);

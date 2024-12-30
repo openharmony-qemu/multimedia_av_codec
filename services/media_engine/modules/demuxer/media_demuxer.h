@@ -36,6 +36,7 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_time.h"
 #include "plugin/demuxer_plugin.h"
+#include "interrupt_listerner.h"
 
 namespace OHOS {
 namespace Media {
@@ -46,7 +47,8 @@ class Source;
 
 class AVBufferQueueProducer;
 
-class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>, public Plugins::Callback {
+class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>, public Plugins::Callback,
+    public InterruptListener {
 public:
     explicit MediaDemuxer();
     ~MediaDemuxer() override;
@@ -101,7 +103,7 @@ public:
     Status SetDecoderFramerateUpperLimit(int32_t decoderFramerateUpperLimit, uint32_t trackId);
     Status SetSpeed(float speed);
     Status SetFrameRate(double framerate, uint32_t trackId);
-    void SetInterruptState(bool isInterruptNeeded);
+    void OnInterrupted(bool isInterruptNeeded) override;
     void OnDumpInfo(int32_t fd);
     bool IsLocalDrmInfosExisted();
     Status DisableMediaTrack(Plugins::MediaType mediaType);
