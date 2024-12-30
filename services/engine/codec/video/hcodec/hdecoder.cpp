@@ -38,7 +38,7 @@ HDecoder::~HDecoder()
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     if (vpeHandle_ == nullptr) {
         return;
-    } 
+    }
     if (VrrDestroyFunc_ != nullptr) {
         VrrDestroyFunc_(vrrHandle_);
     }
