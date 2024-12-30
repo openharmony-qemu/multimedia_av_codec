@@ -359,7 +359,8 @@ bool AudioServerSinkPlugin::StopRender()
     if (audioRenderer_) {
         //The audio stop interface cannot be quickly stopped.
         if (audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING) {
-            FALSE_RETURN_V_MSG_W(audioRenderer_->Pause(), false, "renderer pause fail.");
+            MEDIA_LOG_I_T("pause entered.");
+            return audioRenderer_->Pause();
         }
         FALSE_RETURN_V_MSG(audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_STOPPED,
             true, "AudioRenderer is already in stopped state.");
