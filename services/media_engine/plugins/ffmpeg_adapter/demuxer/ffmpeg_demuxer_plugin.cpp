@@ -57,7 +57,7 @@ const uint32_t NAL_START_CODE_SIZE = 4;
 const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
-const int32_t INIT_TIME_THRESHOLD = 1000;
+const int64_t INIT_TIME_THRESHOLD = 1000;
 const uint32_t ID3V2_HEADER_SIZE = 10;
 
 // id3v2 tag position
@@ -930,7 +930,7 @@ int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputForma
     MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
 
     AVIOContext* avioContext = formatContext->pb;
-    auto begin = std::chrono::system_clock::now();
+    auto begin = std::chrono::steady_clock::now();
     int ret = avformat_open_input(&formatContext, nullptr, pluginImpl.get(), options);
     if (ret < 0) {
         FreeContext(formatContext, avioContext);
@@ -939,17 +939,19 @@ int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputForma
         return ret;
     }
 
-    auto open = std::chrono::system_clock::now();
+    auto open = std::chrono::steady_clock::now();
     if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
         formatContext->probesize = LIVE_FLV_PROBE_SIZE;
     }
 
     ret = avformat_find_stream_info(formatContext, NULL);
-    auto parse = std::chrono::system_clock::now();
-    int openSpend = static_cast<int>(static_cast<std::chrono::duration<double, std::milli>>(open - begin).count());
-    int parseSpend = static_cast<int>(static_cast<std::chrono::duration<double, std::milli>>(parse - open).count());
-    if (openSpend + parseSpend > INIT_TIME_THRESHOLD) {
-        MEDIA_LOG_W("Spend [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]", openSpend, parseSpend);
+    auto parse = std::chrono::steady_clock::now();
+    int64_t openSpend = static_cast<int64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(open - begin).count());
+    int64_t parseSpend = static_cast<int64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(parse - open).count());
+    if ((parseSpend < 0) || (openSpend > INT64_MAX - parseSpend) || (openSpend + parseSpend > INIT_TIME_THRESHOLD)) {
+        MEDIA_LOG_W("Spend [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]", openSpend, parseSpend);
     }
     if (ret < 0) {
         FreeContext(formatContext, avioContext);
@@ -1600,10 +1602,26 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
             cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
         }
         cttsCurNum--;
-        pts = (dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) *
-                1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
+        if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
+            ((dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) /
+            static_cast<int64_t>(avStream->time_scale))) {
+                MEDIA_LOG_E("pts overflow");
+                return Status::ERROR_INVALID_DATA;
+        }
+        double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
+        double ptsTemp = static_cast<double>(dts) + static_cast<double>(avStream->ctts_data[cttsIndex].duration);
+        pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
+        if (mode == GET_ALL_FRAME_PTS &&
+            static_cast<uint32_t>(ptsListOrg_.size()) >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
+            MEDIA_LOG_I("PTS list has reached the maximum limit");
+            break;
+        }
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
         sttsCurNum--;
+        if ((INT64_MAX - dts) < (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {
+            MEDIA_LOG_E("dts overflow");
+            return Status::ERROR_INVALID_DATA;
+        }
         dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
         if (sttsCurNum == 0) {
             sttsIndex++;
@@ -1624,9 +1642,25 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
 
     while (sttsIndex < avStream->stts_count && sttsCurNum >= 0) {
-        pts = dts * 1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is for converting pts to us
+        if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
+            (dts / static_cast<int64_t>(avStream->time_scale))) {
+                MEDIA_LOG_E("pts overflow");
+                return Status::ERROR_INVALID_DATA;
+        }
+        double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
+        double ptsTemp = static_cast<double>(dts);
+        pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
+        if (mode == GET_ALL_FRAME_PTS &&
+            static_cast<uint32_t>(ptsListOrg_.size()) >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
+            MEDIA_LOG_I("PTS list has reached the maximum limit");
+            break;
+        }
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
         sttsCurNum--;
+        if ((INT64_MAX - dts) < (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {
+            MEDIA_LOG_E("dts overflow");
+            return Status::ERROR_INVALID_DATA;
+        }
         dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
         if (sttsCurNum == 0) {
             sttsIndex++;
