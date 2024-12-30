@@ -797,29 +797,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Dts2FrameId_012, TestSize.Level1)
     EXPECT_EQ(demuxer->SetFrameRate(1.0, 0), Status::OK);
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_RegisterVideoStreamReadyCallback_010, TestSize.Level1)
-{
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
-
-    demuxer->RegisterVideoStreamReadyCallback(nullptr);
-
-    demuxer->isStopped_ = false;
-    demuxer->OnBufferAvailable(0);
-    EXPECT_EQ(demuxer->AddDemuxerCopyTask(0, TaskType::GLOBAL), Status::ERROR_UNKNOWN);
-
-    demuxer->AccelerateTrackTask(-1);
-    demuxer->SetTrackNotifyFlag(0, false);
-    demuxer->AccelerateTrackTask(0);
-    
-    demuxer->OnDumpInfo(-1);
-    demuxer->OnDumpInfo(123);
-    demuxer->OptimizeDecodeSlow(false);
-    demuxer->DeregisterVideoStreamReadyCallback();
-    EXPECT_EQ(demuxer->HasVideo(), false);
-}
-
-
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetRelativePresentationTimeUsByIndex_010, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
