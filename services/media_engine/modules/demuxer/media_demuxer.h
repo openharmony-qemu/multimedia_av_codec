@@ -36,7 +36,7 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_time.h"
 #include "plugin/demuxer_plugin.h"
-#include "interrupt_listerner.h"
+#include "interrupt_listener.h"
 
 namespace OHOS {
 namespace Media {
