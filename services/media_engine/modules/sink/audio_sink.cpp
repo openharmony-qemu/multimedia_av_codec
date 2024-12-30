@@ -477,12 +477,30 @@ void AudioSink::DrainOutputBuffer()
     lastBufferWriteSuccess_ = (plugin_->Write(filledOutputBuffer) == Status::OK);
     int64_t nowClockTime = 0;
     GetSyncCenterClockTime(nowClockTime);
+    auto audioWriteMs = plugin_->GetWriteDurationMs();
     lagDetector_.UpdateDrainTimeGroup(
-        { lastAnchorClockTime_, bufferDurationSinceLastAnchor_, plugin_->GetWriteDurationMs(), nowClockTime });
+        { lastAnchorClockTime_, bufferDurationSinceLastAnchor_, audioWriteMs, nowClockTime });
+    PerfRecord(audioWriteMs);
     lagDetector_.CalcLag(filledOutputBuffer);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+}
+
+Status AudioSink::SetPerfRecEnabled(bool isPerfRecEnabled)
+{
+    isPerfRecEnabled_ = isPerfRecEnabled;
+    return Status::OK;
+}
+
+void AudioSink::PerfRecord(int64_t audioWriteMs)
+{
+    FALSE_RETURN_NOLOG(isPerfRecEnabled_);
+    FALSE_RETURN_NOLOG(perfRecorder_.Record(audioWriteMs) == PerfRecorder::FULL);
+    FALSE_RETURN_MSG(playerEventReceiver_ != nullptr, "Report perf failed, event receiver is nullptr");
+    playerEventReceiver_->OnDfxEvent(
+        { "audioSink", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
+    perfRecorder_.Reset();
 }
 
 void AudioSink::ResetSyncInfo()

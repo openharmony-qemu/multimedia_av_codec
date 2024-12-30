@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+* Copyright (c) 2023-2025 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -128,7 +128,23 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     }
     dropFrameContinuouslyCnt_.fetch_add(1);
     discardFrameCnt_++;
+    PerfRecord(waitTime);
     return -1;
+}
+
+Status VideoSink::SetPerfRecEnabled(bool isPerfRecEnabled)
+{
+    isPerfRecEnabled_ = isPerfRecEnabled;
+    return Status::OK;
+}
+
+void VideoSink::PerfRecord(int64_t waitTime)
+{
+    FALSE_RETURN_NOLOG(isPerfRecEnabled_);
+    FALSE_RETURN_NOLOG(perfRecorder_.Record(Plugins::Us2Ms(waitTime)) == PerfRecorder::FULL);
+    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "Report perf failed, callback is nullptr");
+    eventReceiver_->OnDfxEvent({ "videoSink", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
+    perfRecorder_.Reset();
 }
 
 void VideoSink::ResetSyncInfo()
@@ -142,6 +158,7 @@ void VideoSink::ResetSyncInfo()
     lastClockTime_ = HST_TIME_NONE;
     needUpdateTimeAnchor_ = true;
     lagDetector_.Reset();
+    perfRecorder_.Reset();
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)
@@ -247,6 +264,7 @@ void VideoSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
 void VideoSink::SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver)
 {
     this->eventReceiver_ = receiver;
+    lagDetector_.SetEventReceiver(receiver);
 }
 
 void VideoSink::SetFirstPts(int64_t pts)
