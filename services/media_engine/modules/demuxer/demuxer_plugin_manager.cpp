@@ -528,7 +528,6 @@ void DemuxerPluginManager::WaitForInitialBufferingEnd(std::shared_ptr<BaseStream
         isInitialBufferingSucc_.store(true);
         return;
     }
-    isInitialBufferingNotified_.store(false);
     int32_t count = 0;
     while (!isInitialBufferingNotified_.load()) {
         initialBufferingEndCond_.WaitFor(lk, WAIT_INITIAL_BUFFERING_END_TIME_MS,
