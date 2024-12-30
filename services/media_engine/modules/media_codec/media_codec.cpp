@@ -825,15 +825,14 @@ void MediaCodec::OnDumpInfo(int32_t fd)
 
 Status MediaCodec::HandleDrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuffer)
 {
-    Status ret;
-    ret = Status::OK;
     if (drmDecryptor_ != nullptr) {
-        ret = DrmAudioCencDecrypt(filledInputBuffer);
+        Status ret = DrmAudioCencDecrypt(filledInputBuffer);
         if (ret != Status::OK) {
             HandleAudioCencDecryptError();
         }
+        return ret;
     }
-    return ret;
+    return Status::OK;
 }
 } // namespace Media
 } // namespace OHOS
