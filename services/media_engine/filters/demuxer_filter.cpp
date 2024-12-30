@@ -117,6 +117,12 @@ DemuxerFilter::~DemuxerFilter()
 }
 
 void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
+    const std::shared_ptr<FilterCallback> &callback)
+{
+    Init(receiver, callback, nullptr);
+}
+
+void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback,
     const std::shared_ptr<InterruptMonitor> &monitor)
 {

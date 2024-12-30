@@ -34,8 +34,9 @@ public:
     explicit DemuxerFilter(std::string name, FilterType type);
     ~DemuxerFilter() override;
 
+    void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback,
-              const std::shared_ptr<InterruptMonitor>& monitor = nullptr) override;
+              const std::shared_ptr<InterruptMonitor>& monitor) override;
     Status DoPrepare() override;
     Status DoStart() override;
     Status DoStop() override;
