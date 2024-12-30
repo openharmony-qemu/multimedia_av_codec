@@ -63,6 +63,7 @@ constexpr int32_t COUNTDUAL = 2;
 constexpr int32_t BITRATEMONO = 64000;
 constexpr int32_t BITRATEDUAL = 705600;
 constexpr int32_t FRAME_REMAINING = 100;
+constexpr int64_t START_TIME_NUM = 5011;
 void DemuxerProcNdkTest::SetUpTestCase() {}
 void DemuxerProcNdkTest::TearDownTestCase() {}
 void DemuxerProcNdkTest::SetUp()
@@ -1168,6 +1169,28 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3500, TestSize.Level0)
     ASSERT_EQ(0, startTime);
     close(fd);
 }
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_3510
+ * @tc.name      : demuxer MP4 ,startTime Non-zero
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3510, TestSize.Level0)
+{
+    int64_t startTime;
+    const char *file = "/data/test/media/test_starttime.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_START_TIME, &startTime));
+    cout << "---startTime---" << startTime << endl;
+    ASSERT_EQ(START_TIME_NUM, startTime);
+    close(fd);
+}
+
 /**
  * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_3600
  * @tc.name      : demuxer MP4 ,SAR,bitsPreCodedSample,sampleFormat
