@@ -1,17 +1,17 @@
 /*
-* Copyright (c) 2023-2023 Huawei Device Co., Ltd.
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef FILTERS_CODEC_FILTER_H
 #define FILTERS_CODEC_FILTER_H
@@ -20,6 +20,7 @@
 #include "media_codec/media_codec.h"
 #include "filter/filter.h"
 #include "plugin/plugin_time.h"
+#include "audio_decoder_adapter.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
@@ -75,7 +76,6 @@ public:
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
 
-    void OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer);
 
     Status SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         bool svp);
@@ -110,7 +110,7 @@ private:
 
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
 
-    std::shared_ptr<MediaCodec> mediaCodec_;
+    std::shared_ptr<AudioDecoderAdapter> audioDecoder_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
 
     bool isDrmProtected_ = false;

@@ -52,6 +52,8 @@ public:
 
     int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter) override;
 
+    int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta) override;
+
     void ProcessInputBuffer() override;
 
 private:

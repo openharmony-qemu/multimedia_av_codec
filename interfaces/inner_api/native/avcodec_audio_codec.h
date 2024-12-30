@@ -51,6 +51,8 @@ public:
 
     virtual int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter);
 
+    virtual int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta);
+
     virtual void ProcessInputBuffer();
 };
 

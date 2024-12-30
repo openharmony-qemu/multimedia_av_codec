@@ -193,6 +193,15 @@ int32_t AVCodecAudioCodecInnerImpl::GetOutputFormat(std::shared_ptr<Media::Meta>
     return ret;
 }
 
+int32_t AVCodecAudioCodecInnerImpl::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
+{
+    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl ChangePlugin");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
+                             "service died");
+    int32_t ret = codecService_->ChangePlugin(mime, isEncoder, meta);
+    return ret;
+}
+
 void AVCodecAudioCodecInnerImpl::ProcessInputBuffer()
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl ProcessInputBuffer");

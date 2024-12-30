@@ -60,6 +60,13 @@ public:
     virtual int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) = 0;
     virtual int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) = 0;
     virtual int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback) = 0;
+    virtual int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
+    {
+        (void)mime;
+        (void)isEncoder;
+        (void)meta;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
     virtual int32_t GetInputFormat(Format &format) = 0;
     virtual int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag)

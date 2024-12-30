@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -128,6 +128,8 @@ public:
     Status ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta);
 
     void OnDumpInfo(int32_t fd);
+
+    Status HandleDrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuffer);
 
 private:
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);

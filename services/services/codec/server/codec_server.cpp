@@ -763,6 +763,12 @@ int32_t CodecServer::GetInputFormat(Format &format)
     return codecBase_->GetInputFormat(format);
 }
 
+int32_t CodecServer::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta)
+{
+    AVCODEC_LOGI("ChangePlugin in");
+    return codecBase_->ChangePlugin(mime, isEncoder, meta);
+}
+
 int32_t CodecServer::DumpInfo(int32_t fd)
 {
     CHECK_AND_RETURN_RET_LOG(fd >= 0, AVCS_ERR_OK, "Get a invalid fd");
