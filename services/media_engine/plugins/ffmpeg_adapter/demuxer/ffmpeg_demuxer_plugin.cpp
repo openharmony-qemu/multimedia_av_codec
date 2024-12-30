@@ -68,7 +68,7 @@ const int32_t POS_1 = 1;
 const int32_t POS_2 = 2;
 const int32_t POS_3 = 3;
 const int32_t POS_4 = 4;
-const int32_t POS_5 = 4;
+const int32_t POS_5 = 5;
 const int32_t POS_6 = 6;
 const int32_t POS_7 = 7;
 const int32_t POS_8 = 8;
@@ -405,6 +405,7 @@ Status FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Call av_bsf_send_packet failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
     av_packet_unref(&pkt);
+
     ret = av_bsf_receive_packet(avbsfContext_.get(), &pkt);
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Call av_bsf_receive_packet failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
@@ -656,9 +657,9 @@ bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket *pkt)
     } else {    // vtte
         if (cacheQueue_.HasCache(trackId)) {
             std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
-            if (cacheSamplePacket != nullptr && cacheSamplePacket->pkts[0]->duration == 0) {
+            if (cacheSamplePacket != nullptr && cacheSamplePacket->pkts.size() > 0 &&
+                cacheSamplePacket->pkts[0] != nullptr && cacheSamplePacket->pkts[0]->duration == 0) {
                 cacheSamplePacket->pkts[0]->duration = pkt->pts - cacheSamplePacket->pkts[0]->pts;
-            }
         }
     }
     av_packet_free(&pkt);
@@ -869,11 +870,11 @@ int64_t FFmpegDemuxerPlugin::AVSeek(void* opaque, int64_t offset, int whence)
             break;
         case SEEK_END:
         case AVSEEK_SIZE: {
+            FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, newPos, "DataSource is nullptr");
             if (ioContext->dataSource->IsDash()) {
                 return -1;
             }
             uint64_t mediaDataSize = 0;
-            FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, newPos, "DataSource is nullptr");
             if (ioContext->dataSource->GetSize(mediaDataSize) == Status::OK && (mediaDataSize > 0)) {
                 newPos = mediaDataSize + offset;
                 MEDIA_LOG_D("Whence: " PUBLIC_LOG_D32 ", pos = " PUBLIC_LOG_D64 ", newPos = " PUBLIC_LOG_U64,
