@@ -660,6 +660,7 @@ bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket *pkt)
             if (cacheSamplePacket != nullptr && cacheSamplePacket->pkts.size() > 0 &&
                 cacheSamplePacket->pkts[0] != nullptr && cacheSamplePacket->pkts[0]->duration == 0) {
                 cacheSamplePacket->pkts[0]->duration = pkt->pts - cacheSamplePacket->pkts[0]->pts;
+            }
         }
     }
     av_packet_free(&pkt);
