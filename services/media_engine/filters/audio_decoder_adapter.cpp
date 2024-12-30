@@ -82,10 +82,6 @@ Status AudioDecoderAdapter::Init(bool isMimeType, const std::string &name)
 {
     AutoLock lock(stateMutex_);
     MEDIA_LOG_I("AudioDecoderAdapter::Init enter: " PUBLIC_LOG_S, name.c_str());
-    // if (state_ != CodecState::UNINITIALIZED) {
-    //     MEDIA_LOG_E("Init failed, state = %{public}s .", StateToString(state_).data());
-    //     return Status::ERROR_INVALID_STATE;
-    // }
     FALSE_RETURN_V_MSG(state_ == CodecState::UNINITIALIZED,
         Status::ERROR_INVALID_STATE,
         "Init failed, state = %{public}s .",
@@ -156,10 +152,6 @@ Status AudioDecoderAdapter::Stop()
     AutoLock lock(stateMutex_);
     MEDIA_LOG_I("Stop enter.");
     FALSE_RETURN_V(state_ != CodecState::PREPARED, Status::OK);
-    // if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::STOPPING || state_ == CodecState::RELEASING) {
-    //     MEDIA_LOG_D("Stop, state_=%{public}s", StateToString(state_).data());
-    //     return Status::OK;
-    // }
     FALSE_RETURN_V_MSG_W(
         state_ != CodecState::UNINITIALIZED && state_ != CodecState::STOPPING && state_ != CodecState::RELEASING,
         Status::OK,
@@ -179,10 +171,6 @@ Status AudioDecoderAdapter::Flush()
 {
     AutoLock lock(stateMutex_);
     MEDIA_LOG_I("Flush enter.");
-    // if (state_ == CodecState::FLUSHED) {
-    //     MEDIA_LOG_W("Flush, state is already flushed, state_=%{public}s .", StateToString(state_).data());
-    //     return Status::OK;
-    // }
     FALSE_RETURN_V_MSG_W(state_ != CodecState::FLUSHED,
         Status::OK,
         "Flush, state is already flushed, state_=%{public}s .",
@@ -203,10 +191,6 @@ Status AudioDecoderAdapter::Reset()
 {
     AutoLock lock(stateMutex_);
     MEDIA_LOG_I("Reset enter.");
-    // if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
-    //     MEDIA_LOG_W("adapter reset, state is already released, state =%{public}s .", StateToString(state_).data());
-    //     return Status::OK;
-    // }
     FALSE_RETURN_V_MSG_W(state_ != CodecState::UNINITIALIZED && state_ != CodecState::RELEASING,
         Status::OK,
         "reset, state is already released, state =%{public}s .",
@@ -227,10 +211,6 @@ Status AudioDecoderAdapter::Release()
 {
     AutoLock lock(stateMutex_);
     MEDIA_LOG_I("Release enter.");
-    // if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
-    //     MEDIA_LOG_W("Release, state isnot completely correct, state =%{public}s .", StateToString(state_).data());
-    //     return Status::OK;
-    // }
     FALSE_RETURN_V_MSG_W(state_ != CodecState::UNINITIALIZED && state_ != CodecState::RELEASING,
         Status::OK,
         "Release, state isnot completely correct, state =%{public}s .",
