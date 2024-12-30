@@ -76,7 +76,6 @@ public:
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
 
-
     Status SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         bool svp);
 
