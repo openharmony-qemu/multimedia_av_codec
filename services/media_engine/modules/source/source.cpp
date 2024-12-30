@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -358,12 +358,42 @@ std::string Source::GetUriSuffix(const std::string& uri)
 
 Status Source::Read(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
-    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "Read, Source plugin is nullptr");
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "ReadData, Source plugin is nullptr");
+    FALSE_RETURN_V(!perfRecEnabled_, ReadWithPerfRecord(streamID, buffer, offset, expectedLen));
     if (seekToTimeFlag_) {
         return plugin_->Read(streamID, buffer, offset, expectedLen);
     }
     return plugin_->Read(buffer, offset, expectedLen);
 }
+
+Status Source::SetPerfRecEnabled(bool perfRecEnabled)
+{
+    perfRecEnabled_ = perfRecEnabled;
+    return Status::OK;
+}
+
+Status Source::ReadWithPerfRecord(
+    int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+{
+    int64_t readDuration = 0;
+    Status readRes = Status::OK;
+    if (seekToTimeFlag_) {
+        readDuration = CALC_EXPR_TIME_MS(readRes = plugin_->Read(streamID, buffer, offset, expectedLen));
+    } else {
+        readDuration = CALC_EXPR_TIME_MS(readRes = plugin_->Read(buffer, offset, expectedLen));
+    }
+    int64_t readDurationUs = 0;
+    FALSE_RETURN_V_MSG(
+        Plugins::Ms2Us(readDuration, readDurationUs), readRes, "Invalid readDuration %{public}" PRId64, readDuration);
+    int64_t readSpeed = expectedLen / readDurationUs;
+    FALSE_RETURN_V_NOLOG(perfRecorder_.Record(readSpeed) == PerfRecorder::FULL, readRes);
+    FALSE_RETURN_V_MSG(mediaDemuxerCallback_ != nullptr, readRes, "Report perf failed, callback is nullptr");
+    mediaDemuxerCallback_->OnDfxEvent(
+        { .type = Plugins::PluginDfxEventType::PERF_SOURCE, .param = perfRecorder_.GetMainPerfData() });
+    perfRecorder_.Reset();
+    return readRes;
+}
+
 Status Source::SeekTo(uint64_t offset)
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "SeekTo, Source plugin is nullptr");

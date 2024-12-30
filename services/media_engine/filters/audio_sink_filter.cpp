@@ -224,6 +224,14 @@ Status AudioSinkFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta>&
     return Filter::OnLinked(inType, meta, callback);
 }
 
+Status AudioSinkFilter::DoSetPerfRecEnabled(bool isPerfRecEnabled)
+{
+    isPerfRecEnabled_ = isPerfRecEnabled;
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::OK);
+    audioSink_->SetPerfRecEnabled(isPerfRecEnabled);
+    return Status::OK;
+}
+
 Status AudioSinkFilter::SetVolume(float volume)
 {
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);

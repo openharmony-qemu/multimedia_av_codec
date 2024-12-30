@@ -68,6 +68,9 @@ constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY 
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
 constexpr int32_t DEFAULT_MULTI_VIDEO_TRACK_NUM = 5;
+const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
+    { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
+};
 }
 
 enum SceneCode : int32_t {
@@ -1926,8 +1929,8 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Demuxer plugin is nullptr");
     }
- 
-    Status ret = pluginTemp->ReadSample(innerTrackID, sample);
+
+    Status ret = ReadSampleWithPerfRecord(pluginTemp, innerTrackID, sample);
     if (ret == Status::END_OF_STREAM) {
         MEDIA_LOG_I("Read eos for track " PUBLIC_LOG_U32, trackId);
     } else if (ret != Status::OK) {
@@ -1938,10 +1941,33 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
     return ret;
 }
 
+Status MediaDemuxer::ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp,
+    const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample)
+{
+    FALSE_RETURN_V(perfRecEnabled_, pluginTemp->ReadSample(innerTrackID, sample));
+    Status ret = Status::OK;
+    int64_t demuxDuration = CALC_EXPR_TIME_MS(ret = pluginTemp->ReadSample(innerTrackID, sample));
+    FALSE_RETURN_V_MSG(eventReceiver_ != nullptr, Status::OK, "Report perf failed, callback is nullptr");
+    FALSE_RETURN_V_NOLOG(perfRecorder_.Record(demuxDuration) == PerfRecorder::FULL, ret);
+    eventReceiver_->OnDfxEvent({ "DEMUX", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
+    perfRecorder_.Reset();
+    return ret;
+}
+
+Status MediaDemuxer::SetPerfRecEnabled(bool isPerfRecEnabled)
+{
+    MEDIA_LOG_I("widdraw DoSetPerfRecEnabled %{public}d", isPerfRecEnabled);
+    perfRecEnabled_ = isPerfRecEnabled;
+    FALSE_RETURN_V_MSG(source_ != nullptr, Status::ERROR_NO_MEMORY, "Source not exist, no memory");
+    source_->SetPerfRecEnabled(isPerfRecEnabled);
+    return Status::OK;
+}
+
 int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
 {
     if (streamDemuxer_->GetIsIgnoreParse() || isStopped_ || isPaused_ || isSeekError_) {
         MEDIA_LOG_D("ReadLoop pausing or error, track " PUBLIC_LOG_U32, trackId);
+        perfRecorder_.Reset();
         return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
     } else {
         Status ret = CopyFrameToUserQueue(trackId);
@@ -2091,6 +2117,14 @@ void MediaDemuxer::OnSeekReadyEvent(const Plugins::PluginEvent &event)
             break;
     }
     rebootPluginCondition_.notify_all();
+}
+
+void MediaDemuxer::OnDfxEvent(const Plugins::PluginDfxEvent &event)
+{
+    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "Dfx event report error, receiver is nullptr");
+    auto it = DFX_EVENT_MAP.find(event.type);
+    FALSE_RETURN_MSG(it != DFX_EVENT_MAP.end(), "No mapped dfx event type, src type %{public}d", event.type);
+    eventReceiver_->OnDfxEvent({ it->second.first, it->second.second, event.param });
 }
 
 Status MediaDemuxer::OptimizeDecodeSlow(bool isDecodeOptimizationEnabled)
