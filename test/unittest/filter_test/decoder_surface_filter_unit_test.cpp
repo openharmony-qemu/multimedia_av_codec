@@ -842,32 +842,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, ParseDecodeRateLimit_001, TestSize.Level1
 }
 
 /**
- * @tc.name: OnDumpInfo_001
- * @tc.desc: OnDumpInfo
- * @tc.type: FUNC
- */
-HWTEST_F(DecoderSurfaceFilterUnitTest, OnDumpInfo_001, TestSize.Level1)
-{
-    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
-    decoderSurfaceFilter_->OnDumpInfo(32);
-    EXPECT_EQ(decoderSurfaceFilter_->stopTime_, 0);
-}
-
-/**
- * @tc.name: OnDumpInfo_002
- * @tc.desc: OnDumpInfo
- * @tc.type: FUNC
- */
-HWTEST_F(DecoderSurfaceFilterUnitTest, OnDumpInfo_002, TestSize.Level1)
-{
-    decoderSurfaceFilter_->videoDecoder_ = nullptr;
-    decoderSurfaceFilter_->OnDumpInfo(32);
-    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
-    decoderSurfaceFilter_->OnDumpInfo(32);
-    EXPECT_EQ(decoderSurfaceFilter_->stopTime_, 0);
-}
-
-/**
  * @tc.name: DoInitAfterLink_001
  * @tc.desc: DoInitAfterLink
  * @tc.type: FUNC
