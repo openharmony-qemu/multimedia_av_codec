@@ -173,8 +173,7 @@ int32_t MediaCodec::SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &buff
 
 int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<CodecCallback> &codecCallback)
 {
-    AutoLock lock(stateMutex_);
-    
+    AutoLock lock(stateMutex_); 
     FALSE_RETURN_V(state_ == CodecState::INITIALIZED || state_ == CodecState::CONFIGURED,
                    (int32_t)Status::ERROR_INVALID_STATE);
     FALSE_RETURN_V_MSG_E(codecCallback != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER,
