@@ -157,8 +157,7 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_006, TestSize.Level1)
     audioDecoder1->Init(nullptr, filterCallback);
 
     audioDecoder->meta_ = std::make_shared<Meta>();
-    EXPECT_EQ(audioDecoder->LinkNext(audioDecoder1, Pipeline::StreamType::STREAMTYPE_PACKED),
-                                        Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(audioDecoder->LinkNext(audioDecoder1, Pipeline::StreamType::STREAMTYPE_PACKED), Status::ERROR_INVALID_PARAMETER);
 }
 
 }

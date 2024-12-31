@@ -54,6 +54,11 @@ public:
     virtual int32_t SignalRequestIDRFrame();
     virtual int32_t GetInputFormat(Format& format);
     virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer);
+    virtual int32_t SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback)
+    {
+        (void)codecCallback;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
     virtual int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
     {
         (void)mime;

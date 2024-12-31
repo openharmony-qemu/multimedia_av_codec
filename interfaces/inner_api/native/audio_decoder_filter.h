@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+* Copyright (c) 2023-2023 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -21,6 +21,7 @@
 #include "filter/filter.h"
 #include "plugin/plugin_time.h"
 #include "audio_decoder_adapter.h"
+#include "avcodec_common.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
@@ -76,6 +77,8 @@ public:
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
 
+    void OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer);
+
     Status SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         bool svp);
 
@@ -128,14 +131,15 @@ private:
     std::atomic<bool> isReleased_ {false};
 };
 
-class AudioDecoderCallback : public AudioBaseCodecCallback {
+class AudioDecoderCallback : public MediaAVCodec::MediaCodecCallback {
 public:
     explicit AudioDecoderCallback(std::shared_ptr<AudioDecoderFilter> audioDecoderFilter);
     virtual ~AudioDecoderCallback();
 
-    void OnError(CodecErrorType errorType, int32_t errorCode) override;
-
-    void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override;
+    void OnOutputFormatChanged(const Format &format) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
 
 private:
     std::weak_ptr<AudioDecoderFilter> audioDecoderFilter_;

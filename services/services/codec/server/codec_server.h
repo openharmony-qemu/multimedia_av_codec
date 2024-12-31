@@ -78,6 +78,7 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
     int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta) override;
+    int32_t SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback) override;
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag) override;

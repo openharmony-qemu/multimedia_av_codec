@@ -78,6 +78,28 @@ private:
     std::weak_ptr<AudioDecoderFilter> codecFilter_;
 };
 
+class CodecBrokerListener : public IBrokerListener {
+public:
+    explicit CodecBrokerListener(std::shared_ptr<AudioDecoderFilter> codecFilter)
+        : codecFilter_(codecFilter) {}
+
+    sptr<IRemoteObject> AsObject() override
+    {
+        return nullptr;
+    }
+
+    void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override
+    {
+        if (auto codecFilter = codecFilter_.lock()) {
+            codecFilter->OnBufferFilled(avBuffer);
+        } else {
+            MEDIA_LOG_I_SHORT("invalid codecFilter");
+        }
+    }
+
+private:
+    std::weak_ptr<AudioDecoderFilter> codecFilter_;
+};
 
 AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type)
 {
@@ -206,7 +228,7 @@ void AudioDecoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 
 void AudioDecoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_I("AudioDecoderFilter.GetParameter");
+    MEDIA_LOG_E("AudioDecoderFilter::GetParameter");
     audioDecoder_->GetOutputFormat(parameter);
 }
 
@@ -338,6 +360,9 @@ sptr<AVBufferQueueProducer> AudioDecoderFilter::GetInputBufferQueue()
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::GetInputBufferQueue.");
     inputBufferQueueProducer_ = audioDecoder_->GetInputBufferQueue();
+    sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
+    FALSE_RETURN_V(inputBufferQueueProducer_ != nullptr, sptr<AVBufferQueueProducer>());
+    inputBufferQueueProducer_->SetBufferFilledListener(listener);
     return inputBufferQueueProducer_;
 }
 
@@ -374,7 +399,10 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     FALSE_RETURN(audioDecoder_ != nullptr);
     audioDecoder_->SetOutputBufferQueue(outputBufferQueue);
     audioDecoder_->Prepare();
-    inputBufferQueueProducer_ = GetInputBufferQueue();
+    inputBufferQueueProducer_ = audioDecoder_->GetInputBufferQueue();
+    FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
+    sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
+    inputBufferQueueProducer_->SetBufferFilledListener(listener);
     FALSE_RETURN(onLinkedResultCallback_ != nullptr);
     onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta_);
 }
@@ -387,6 +415,15 @@ void AudioDecoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
 void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
     meta_ = meta;
+}
+
+void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
+{
+    MEDIA_LOG_D_SHORT("AudioDecoderFilter::OnBufferFilled. pts: %{public}" PRId64,
+            (inputBuffer == nullptr ? -1 : inputBuffer->pts_));
+    FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
+    FALSE_RETURN(inputBuffer != nullptr);
+    inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
 }
 
 void AudioDecoderFilter::OnDumpInfo(int32_t fd)
@@ -436,18 +473,39 @@ AudioDecoderCallback::~AudioDecoderCallback()
     MEDIA_LOG_I("~AudioDecoderCallback");
 }
 
-void AudioDecoderCallback::OnError(CodecErrorType errorType, int32_t errorCode)
+void AudioDecoderCallback::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
 {
     if (auto codecFilter = audioDecoderFilter_.lock()) {
-        codecFilter->OnError(errorType, errorCode);
+        switch (errorType) {
+            case AVCodecErrorType::AVCODEC_ERROR_DECRYTION_FAILED:
+                codecFilter->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED, errorCode);
+                break;
+            default:
+                codecFilter->OnError(CodecErrorType::CODEC_ERROR_INTERNAL, errorCode);
+                break;
+        }
     } else {
         MEDIA_LOG_I("OnError failed due to the codecFilter is invalid");
     }
 }
 
-void AudioDecoderCallback::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer)
+void AudioDecoderCallback::OnOutputFormatChanged(const Format &format)
 {
-    (void)outputBuffer;
+    (void)format;
+}
+
+void AudioDecoderCallback::OnInputBufferAvailable(uint32_t index,
+                                                    std::shared_ptr<AVBuffer> buffer)
+{
+    (void)index;
+    (void)buffer;
+}
+
+void AudioDecoderCallback::OnOutputBufferAvailable(uint32_t index, 
+                                                    std::shared_ptr<AVBuffer> buffer)
+{
+    (void)index;
+    (void)buffer;
 }
 } // namespace Pipeline
 } // namespace MEDIA

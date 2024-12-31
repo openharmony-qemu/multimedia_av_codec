@@ -20,6 +20,7 @@
 #include "meta/format.h"
 #include "meta/meta.h"
 #include "buffer/avbuffer_queue_producer.h"
+#include "drm_i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -52,6 +53,11 @@ public:
     virtual int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter);
 
     virtual int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta);
+
+    virtual int32_t SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback);
+
+    virtual int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag);
 
     virtual void ProcessInputBuffer();
 };

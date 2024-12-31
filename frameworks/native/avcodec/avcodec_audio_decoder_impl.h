@@ -12,37 +12,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AVCODEC_AUDIO_DECODER_IMPL_H
-#define AVCODEC_AUDIO_DECODER_IMPL_H
+#ifndef AVCODEC_AUDIO_CODEC_INNER_IMPL_H
+#define AVCODEC_AUDIO_CODEC_INNER_IMPL_H
 
-#include "avcodec_audio_decoder.h"
+#include "avcodec_audio_codec.h"
 #include "nocopyable.h"
 #include "i_avcodec_service.h"
+#include "drm_i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-class AVCodecAudioDecoderImpl : public AVCodecAudioDecoder, public NoCopyable {
+class AVCodecAudioCodecInnerImpl : public AVCodecAudioCodec, public NoCopyable {
 public:
-    AVCodecAudioDecoderImpl();
-    ~AVCodecAudioDecoderImpl();
+    AVCodecAudioCodecInnerImpl();
+    ~AVCodecAudioCodecInnerImpl();
 
-    int32_t Configure(const Format &format) override;
-    int32_t Prepare() override;
-    int32_t Start() override;
-    int32_t Stop() override;
-    int32_t Flush() override;
-    int32_t Reset() override;
-    int32_t Release() override;
-    int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    int32_t GetOutputFormat(Format &format) override;
-    int32_t ReleaseOutputBuffer(uint32_t index) override;
-    int32_t SetParameter(const Format &format) override;
-    int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name);
+
+    int32_t Configure(const std::shared_ptr<Media::Meta> &meta) override;
+
+    int32_t SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer) override;
+
+    int32_t Prepare() override;
+
+    sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
+
+    int32_t Start() override;
+
+    int32_t Stop() override;
+
+    int32_t Flush() override;
+
+    int32_t Reset() override;
+
+    int32_t Release() override;
+
+    int32_t NotifyEos() override;
+
+    int32_t SetParameter(const std::shared_ptr<Media::Meta> &parameter) override;
+
+    int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter) override;
+
+    int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta) override;
+
+    int32_t SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback) override;
+
+    int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag) override;
+
+    void ProcessInputBuffer() override;
 
 private:
     std::shared_ptr<ICodecService> codecService_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_AUDIO_DECODER_IMPL_H
+#endif // AVCODEC_AUDIO_CODEC_INNER_IMPL_H

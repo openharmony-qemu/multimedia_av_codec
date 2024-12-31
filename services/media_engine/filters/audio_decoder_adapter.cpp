@@ -40,29 +40,6 @@ namespace Media {
 
 using namespace MediaAVCodec;
 
-class AdapterBrokerListener : public IBrokerListener {
-public:
-    explicit AdapterBrokerListener(std::shared_ptr<AudioDecoderAdapter> codecAdapter) : codecAdapter_(codecAdapter)
-    {}
-
-    sptr<IRemoteObject> AsObject() override
-    {
-        return nullptr;
-    }
-
-    void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override
-    {
-        if (auto codecAdapter = codecAdapter_.lock()) {
-            codecAdapter->OnBufferFilled(avBuffer);
-        } else {
-            MEDIA_LOG_I("invalid codecAdapter");
-        }
-    }
-
-private:
-    std::weak_ptr<AudioDecoderAdapter> codecAdapter_;
-};
-
 AudioDecoderAdapter::AudioDecoderAdapter()
 {
     state_ = CodecState::UNINITIALIZED;
@@ -74,14 +51,13 @@ AudioDecoderAdapter::~AudioDecoderAdapter()
     state_ = CodecState::UNINITIALIZED;
     MEDIA_LOG_I("~AudioDecoderAdapter.");
     FALSE_RETURN_MSG(audiocodec_ != nullptr, "audiocodec_ is nullptr");
-    mediaCodec_->Release();
     audiocodec_->Release();
 }
 
 Status AudioDecoderAdapter::Init(bool isMimeType, const std::string &name)
 {
-    AutoLock lock(stateMutex_);
     MEDIA_LOG_I("AudioDecoderAdapter::Init enter: " PUBLIC_LOG_S, name.c_str());
+    AutoLock lock(stateMutex_);
     FALSE_RETURN_V_MSG(state_ == CodecState::UNINITIALIZED,
         Status::ERROR_INVALID_STATE,
         "Init failed, state = %{public}s .",
@@ -96,15 +72,14 @@ Status AudioDecoderAdapter::Init(bool isMimeType, const std::string &name)
         MEDIA_LOG_I("AudioDecoderAdapter::Init CreateByName");
     }
     FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
-    mediaCodec_ = std::make_shared<MediaCodec>();
     state_ = CodecState::INITIALIZED;
     return Status::OK;
 }
 
 Status AudioDecoderAdapter::Configure(const std::shared_ptr<Meta> &parameter)
 {
-    AutoLock lock(stateMutex_);
     MEDIA_LOG_I("Configure enter.");
+    AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ == CodecState::INITIALIZED, Status::ERROR_INVALID_STATE);
     int32_t ret = audiocodec_->Configure(parameter);
     state_ = CodecState::CONFIGURED;
@@ -113,8 +88,8 @@ Status AudioDecoderAdapter::Configure(const std::shared_ptr<Meta> &parameter)
 
 Status AudioDecoderAdapter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
-    AutoLock lock(stateMutex_);
     MEDIA_LOG_I("SetParameter enter.");
+    AutoLock lock(stateMutex_);
     FALSE_RETURN_V(parameter != nullptr, Status::ERROR_INVALID_PARAMETER);
     FALSE_RETURN_V(
         state_ != CodecState::UNINITIALIZED && state_ != CodecState::INITIALIZED && state_ != CodecState::PREPARED,
@@ -125,8 +100,8 @@ Status AudioDecoderAdapter::SetParameter(const std::shared_ptr<Meta> &parameter)
 
 Status AudioDecoderAdapter::Prepare()
 {
-    AutoLock lock(stateMutex_);
     MEDIA_LOG_I("Prepare enter.");
+    AutoLock lock(stateMutex_);
     FALSE_RETURN_V_MSG_W(state_ != CodecState::FLUSHED, Status::ERROR_AGAIN, "state is flushed, no need prepare");
     FALSE_RETURN_V(state_ != CodecState::PREPARED, Status::OK);
     FALSE_RETURN_V(state_ == CodecState::CONFIGURED, Status::ERROR_INVALID_STATE);
@@ -137,8 +112,8 @@ Status AudioDecoderAdapter::Prepare()
 
 Status AudioDecoderAdapter::Start()
 {
-    AutoLock lock(stateMutex_);
     MEDIA_LOG_I("Start enter.");
+    AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ != CodecState::RUNNING, Status::OK);
     FALSE_RETURN_V(state_ == CodecState::PREPARED || state_ == CodecState::FLUSHED, Status::ERROR_INVALID_STATE);
     state_ = CodecState::STARTING;
@@ -149,8 +124,8 @@ Status AudioDecoderAdapter::Start()
 
 Status AudioDecoderAdapter::Stop()
 {
-    AutoLock lock(stateMutex_);
     MEDIA_LOG_I("Stop enter.");
+    AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ != CodecState::PREPARED, Status::OK);
     FALSE_RETURN_V_MSG_W(
         state_ != CodecState::UNINITIALIZED && state_ != CodecState::STOPPING && state_ != CodecState::RELEASING,
@@ -169,8 +144,8 @@ Status AudioDecoderAdapter::Stop()
 
 Status AudioDecoderAdapter::Flush()
 {
-    AutoLock lock(stateMutex_);
     MEDIA_LOG_I("Flush enter.");
+    AutoLock lock(stateMutex_);
     FALSE_RETURN_V_MSG_W(state_ != CodecState::FLUSHED,
         Status::OK,
         "Flush, state is already flushed, state_=%{public}s .",
@@ -201,7 +176,6 @@ Status AudioDecoderAdapter::Reset()
         state_ = CodecState::INITIALIZED;
         return Status::OK;
     }
-
     int32_t ret = audiocodec_->Reset();
     state_ = CodecState::INITIALIZED;
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
@@ -240,13 +214,10 @@ Status AudioDecoderAdapter::SetOutputBufferQueue(const sptr<Media::AVBufferQueue
 
 sptr<Media::AVBufferQueueProducer> AudioDecoderAdapter::GetInputBufferQueue()
 {
-    AutoLock lock(stateMutex_);
     MEDIA_LOG_I("GetInputBufferQueue enter.");
+    AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ == CodecState::PREPARED, sptr<AVBufferQueueProducer>());
     inputBufferQueueProducer_ = audiocodec_->GetInputBufferQueue();
-    sptr<IBrokerListener> listener = new AdapterBrokerListener(shared_from_this());
-    FALSE_RETURN_V(inputBufferQueueProducer_ != nullptr, sptr<AVBufferQueueProducer>());
-    inputBufferQueueProducer_->SetBufferFilledListener(listener);
     return inputBufferQueueProducer_;
 }
 
@@ -286,7 +257,11 @@ void AudioDecoderAdapter::OnDumpInfo(int32_t fd)
     }
     std::string dumpString;
     dumpString +=
-        "AudioDecoderAdapter buffer size is:" + std::to_string(inputBufferQueueProducer_->GetQueueSize()) + "\n";
+        "AudioDecoderAdapter inputBufferQueueProducer_ size is:" + std::to_string(inputBufferQueueProducer_->GetQueueSize()) + "\n";
+    dumpString +=
+        "AudioDecoderAdapter outputBufferQueueProducer_ size is:" + std::to_string(outputBufferQueueProducer_->GetQueueSize()) + "\n";
+    dumpString +=
+        "state_ is:" + StateToString(state_) + "\n";
     int ret = write(fd, dumpString.c_str(), dumpString.size());
     if (ret < 0) {
         MEDIA_LOG_E("AudioDecoderAdapter::OnDumpInfo write failed.");
@@ -304,30 +279,17 @@ int32_t AudioDecoderAdapter::NotifyEos()
     return ret;
 }
 
-void AudioDecoderAdapter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
-{
-    MEDIA_LOG_D("AudioDecoderAdapter::OnBufferFilled. pts: %{public}" PRId64,
-        (inputBuffer == nullptr ? -1 : inputBuffer->pts_));
-    FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
-    FALSE_RETURN(inputBuffer != nullptr);
-    FALSE_RETURN(mediaCodec_ != nullptr);
-
-    mediaCodec_->HandleDrmAudioCencDecrypt(inputBuffer);
-
-    inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
-}
-
-int32_t AudioDecoderAdapter::SetCodecCallback(const std::shared_ptr<AudioBaseCodecCallback> &codecCallback)
+int32_t AudioDecoderAdapter::SetCodecCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &codecCallback)
 {
     MEDIA_LOG_I("SetCodecCallback enter.");
-    return mediaCodec_->SetCodecCallback(codecCallback);
+    return audiocodec_->SetCodecCallback(codecCallback);
 }
 
 int32_t AudioDecoderAdapter::SetAudioDecryptionConfig(
     const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
 {
     MEDIA_LOG_I("SetAudioDecryptionConfig enter.");
-    return mediaCodec_->SetAudioDecryptionConfig(keySession, svpFlag);
+    return audiocodec_->SetAudioDecryptionConfig(keySession, svpFlag);
 }
 
 std::string AudioDecoderAdapter::StateToString(CodecState state)

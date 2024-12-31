@@ -680,7 +680,6 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
 int32_t CodecServer::ReleaseOutputBufferOfCodec(uint32_t index, bool render)
 {
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-
     int32_t ret;
     if (render) {
         ret = codecBase_->RenderOutputBuffer(index);
@@ -741,6 +740,13 @@ int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecCallback> &call
     return AVCS_ERR_OK;
 }
 
+int32_t CodecServer::SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback)
+{
+    AVCODEC_LOGI("CodecServer::SetCodecCallback");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    return codecBase_->SetCodecCallback(codecCallback);
+}
+
 int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)
 {
     (void)callback;
@@ -766,6 +772,7 @@ int32_t CodecServer::GetInputFormat(Format &format)
 int32_t CodecServer::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta)
 {
     AVCODEC_LOGI("ChangePlugin in");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     return codecBase_->ChangePlugin(mime, isEncoder, meta);
 }
 

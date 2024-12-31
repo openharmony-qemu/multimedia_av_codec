@@ -17,10 +17,10 @@
 #include "common/log.h"
 #include "osal/task/autolock.h"
 #include "plugin/plugin_manager_v2.h"
+#include "avcodec_log.h"
 #include "osal/utils/dump_buffer.h"
 #include "avcodec_trace.h"
 #include "plugin/plugin_manager_v2.h"
-#include "avcodec_log.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
@@ -174,6 +174,7 @@ int32_t MediaCodec::SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &buff
 int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<CodecCallback> &codecCallback)
 {
     AutoLock lock(stateMutex_);
+    
     FALSE_RETURN_V(state_ == CodecState::INITIALIZED || state_ == CodecState::CONFIGURED,
                    (int32_t)Status::ERROR_INVALID_STATE);
     FALSE_RETURN_V_MSG_E(codecCallback != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER,
@@ -821,18 +822,6 @@ void MediaCodec::OnDumpInfo(int32_t fd)
         MEDIA_LOG_E("MediaCodec::OnDumpInfo write failed.");
         return;
     }
-}
-
-Status MediaCodec::HandleDrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuffer)
-{
-    if (drmDecryptor_ != nullptr) {
-        Status ret = DrmAudioCencDecrypt(filledInputBuffer);
-        if (ret != Status::OK) {
-            HandleAudioCencDecryptError();
-        }
-        return ret;
-    }
-    return Status::OK;
 }
 } // namespace Media
 } // namespace OHOS

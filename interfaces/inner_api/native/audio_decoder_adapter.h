@@ -1,17 +1,18 @@
 /*
-* Copyright (c) 2024 Huawei Device Co., Ltd.
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef AUDIO_DECODER_ADAPTER_H
 #define AUDIO_DECODER_ADAPTER_H
 
@@ -27,6 +28,7 @@
 #include "video_sink.h"
 #include "avcodec_audio_codec.h"
 #include "media_codec.h"
+#include "avcodec_common.h"
 
 namespace OHOS {
 namespace Media {
@@ -67,17 +69,13 @@ public:
 
     void OnDumpInfo(int32_t fd);
 
-    void OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer);
-
-    int32_t SetCodecCallback(const std::shared_ptr<AudioBaseCodecCallback> &codecCallback);
+    int32_t SetCodecCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &codecCallback);
 
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
 
 private:
     std::string StateToString(CodecState state);
-
-    std::shared_ptr<MediaCodec> mediaCodec_;
 
     std::shared_ptr<MediaAVCodec::AVCodecAudioCodec> audiocodec_;
     
