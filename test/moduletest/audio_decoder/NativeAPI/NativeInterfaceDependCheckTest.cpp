@@ -1534,7 +1534,7 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_
     ASSERT_EQ(AV_ERR_OK, ret);
 
     ret = Flush(decoderDemo, handle);
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     Destroy(decoderDemo, handle);
     delete decoderDemo;
@@ -1660,7 +1660,7 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_
     ASSERT_EQ(AV_ERR_OK, ret);
 
     ret = Stop(decoderDemo, handle);
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     Destroy(decoderDemo, handle);
     delete decoderDemo;
@@ -1842,7 +1842,7 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_
     ASSERT_EQ(AV_ERR_OK, ret);
 
     ret = Stop(decoderDemo, handle);
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     Destroy(decoderDemo, handle);
     delete decoderDemo;
