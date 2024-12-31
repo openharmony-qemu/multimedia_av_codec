@@ -956,8 +956,7 @@ Status MediaDemuxer::UnselectTrack(int32_t trackId)
 
 Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
 {
-    FALSE_RETURN_V_MSG_E(!subStreamDemuxer_ || trackId != static_cast<int32_t>(subtitleTrackId_),
-        Status::ERROR_NULL_POINTER, "subStreamDemuxer is nullptr");
+    FALSE_RETURN_V(!subStreamDemuxer_ || trackId != static_cast<int32_t>(subtitleTrackId_), Status::OK);
     Status ret = Status::OK;
     if (static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
@@ -969,8 +968,10 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
         {
             std::unique_lock<std::mutex> lock(rebootPluginMutex_);
             rebootPluginCondition_.wait(lock, [this, streamType] {
-                return seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) != seekReadyStreamInfo_.end();
+                return isInterruptNeeded_.load() ||
+                    seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) != seekReadyStreamInfo_.end();
             });
+            FALSE_RETURN_V(isInterruptNeeded_.load() != true, Status::OK);
             seekReadyInfo = seekReadyStreamInfo_[static_cast<int32_t>(streamType)];
             seekReadyStreamInfo_.erase(static_cast<int32_t>(streamType));
         }
@@ -996,14 +997,14 @@ Status MediaDemuxer::SeekToTimeAfter()
     if (shouldCheckSubtitleFramePts_) {
         shouldCheckSubtitleFramePts_ = false;
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot subtitle demuxer plugin failed");
+    FALSE_LOG_MSG_W(ret == Status::OK, "Reboot subtitle demuxer plugin failed");
 
     isDemuxerPluginRebooted = true;
     ret = HandleRebootPlugin(audioTrackId_, isDemuxerPluginRebooted);
     if (shouldCheckAudioFramePts_) {
         shouldCheckAudioFramePts_ = false;
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot audio demuxer plugin failed");
+    FALSE_LOG_MSG_W(ret == Status::OK, "Reboot audio demuxer plugin failed");
 
     isDemuxerPluginRebooted = true;
     ret = HandleRebootPlugin(videoTrackId_, isDemuxerPluginRebooted);
@@ -1811,7 +1812,7 @@ bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
     int32_t currentStreamID = demuxerPluginManager_->GetStreamIDByTrackType(type);
     int32_t newStreamID = demuxerPluginManager_->GetStreamDemuxerNewStreamID(type, streamDemuxer_);
     bool ret = false;
-    FALSE_RETURN_V_NOLOG(currentStreamID != newStreamID, ret);
+    FALSE_RETURN_V_NOLOG(newStreamID != -1 && currentStreamID != newStreamID, ret);
 
     MEDIA_LOG_I("Change stream begin, currentStreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
         currentStreamID, newStreamID);
