@@ -28,7 +28,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceMemoryUpdateEventHandler"};
 constexpr int32_t MEMORY_LEAK_UPLOAD_TIMEOUT = 180; // seconds
-constexpr uint32_t APP_MEMORY_THRESHOLD_MIN = 524'288; // 524288KB, 512MB
+constexpr uint32_t APP_MEMORY_THRESHOLD_MIN = 262'144; // 262144, 256MB
 } // namespace
 
 namespace OHOS {
@@ -105,7 +105,6 @@ void InstanceMemoryUpdateEventHandler::UpdateAppMemoryThreshold()
     }
     auto threshold = ThresholdParser::GetThreshold();
     appMemoryThreshold_ = threshold > APP_MEMORY_THRESHOLD_MIN ? threshold : APP_MEMORY_THRESHOLD_MIN;
-    AVCODEC_LOGI("App memory threshold updated to %{public}u KB", appMemoryThreshold_);
 }
 
 uint32_t InstanceMemoryUpdateEventHandler::GetAppMemory(pid_t callerPid, pid_t forwardCallerPid)
@@ -159,7 +158,7 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryLeak(pid_t callerPid, pi
 
 uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
 {
-    std::ifstream thresholdConfigFile("/system/etc/hiview/kernel_leak_config.json");
+    std::ifstream thresholdConfigFile("/system/etc/hiview/native_leak_config.json");
     CHECK_AND_RETURN_RET_LOG(thresholdConfigFile.is_open(), UINT32_MAX, "Can not open threshold config json file");
 
     std::string line;
@@ -170,11 +169,19 @@ uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
     std::shared_ptr<cJSON> root = std::shared_ptr<cJSON>(cJSON_Parse(configJson.c_str()), cJSON_Delete);
     CHECK_AND_RETURN_RET_LOG(root != nullptr, UINT32_MAX, "Can not parse threshold config json");
 
-    std::string deviceType = OHOS::system::GetParameter("cosnt.product.devicetype", "unknown");
-    auto value = cJSON_GetObjectItem(root.get(), "av_codec_config");
-    CHECK_AND_RETURN_RET_LOG(value != nullptr && cJSON_IsNumber(value),
+    std::string deviceType = system::GetDeviceType();
+    CHECK_AND_RETURN_RET_LOG(deviceType != "unknown", UINT32_MAX, "Can not get device type");
+
+    auto avcodecConfigItem = cJSON_GetObjectItem(root.get(), "av_codec_config");
+    CHECK_AND_RETURN_RET_LOG(avcodecConfigItem != nullptr,
         UINT32_MAX, "Can not find av_codec_config from threshold config json");
-    return value->valueint;
+
+    auto thresholdItem = cJSON_GetObjectItem(avcodecConfigItem, deviceType.c_str());
+    CHECK_AND_RETURN_RET_LOG(thresholdItem != nullptr && cJSON_IsNumber(thresholdItem),
+        UINT32_MAX, "Can not find threshold of %{public}s from av_codec_config", deviceType.c_str());
+
+    AVCODEC_LOGI("Got threshold of %{public}s, %{public}u KB", deviceType.c_str(), thresholdItem->valueint);
+    return thresholdItem->valueint;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
