@@ -136,7 +136,7 @@ void InstanceMemoryUpdateEventHandler::UploadAppMemory(pid_t callerPid, pid_t fo
         .limitValue = memory,
     };
     memList.emplace_back(memoryCaller);
-    memoryCollector->SetSplitMemoryValue(memList);
+    // memoryCollector->SetSplitMemoryValue(memList);
     AVCODEC_LOGI("The memory usage of pid %{public}d is %{public}u", forwardCallerPid, memory);
 }
 
