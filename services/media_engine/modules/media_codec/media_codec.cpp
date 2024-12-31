@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +17,10 @@
 #include "common/log.h"
 #include "osal/task/autolock.h"
 #include "plugin/plugin_manager_v2.h"
-#include "avcodec_log.h"
 #include "osal/utils/dump_buffer.h"
 #include "avcodec_trace.h"
 #include "plugin/plugin_manager_v2.h"
+#include "avcodec_log.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
