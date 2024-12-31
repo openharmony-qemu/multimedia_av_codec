@@ -136,7 +136,7 @@ void InstanceMemoryUpdateEventHandler::UploadAppMemory(pid_t callerPid, pid_t fo
     };
     memList.emplace_back(memoryCaller);
     // memoryCollector->SetSplitMemoryValue(memList);
-    AVCODEC_LOGI("The memory usage of pid %{public}d is %{public}u", forwardCallerPid, memory);
+    AVCODEC_LOGI("The memory usage of pid %{public}d is %{public}u KB", forwardCallerPid, memory);
 }
 
 void InstanceMemoryUpdateEventHandler::DeterminAppMemoryLeak(pid_t callerPid, pid_t forwardCallerPid)
