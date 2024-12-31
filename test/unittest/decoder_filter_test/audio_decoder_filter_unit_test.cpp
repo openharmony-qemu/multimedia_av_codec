@@ -67,9 +67,9 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_001, TestSize.Level1)
 
     std::shared_ptr<Pipeline::AudioDecoderCallback> audioDecoderCallback =
         std::make_shared<Pipeline::AudioDecoderCallback>(audioDecoder);
-    audioDecoderCallback->OnOutputBufferDone(nullptr);
-    audioDecoderCallback->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED, 111);
-    audioDecoderCallback->OnError(CodecErrorType::CODEC_ERROR_EXTEND_START, 111);
+    audioDecoderCallback->OnOutputBufferAvailable(1, nullptr);
+    audioDecoderCallback->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_DECRYTION_FAILED, 111);
+    audioDecoderCallback->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_EXTEND_START, 111);
 
     EXPECT_EQ(audioDecoder->UpdateNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
     EXPECT_EQ(audioDecoder->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
@@ -132,7 +132,7 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_005, TestSize.Level1)
 {
     std::shared_ptr<Pipeline::AudioDecoderCallback> audioDecoderCallback =
         std::make_shared<Pipeline::AudioDecoderCallback>(nullptr);
-    audioDecoderCallback->OnError(CodecErrorType::CODEC_ERROR_EXTEND_START, 111);
+    audioDecoderCallback->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_EXTEND_START, 111);
 
     std::shared_ptr<Pipeline::AudioDecoderFilter> audioDecoder =
         std::make_shared<Pipeline::AudioDecoderFilter>("AudioDecoderFilter", Pipeline::FilterType::FILTERTYPE_SOURCE);
