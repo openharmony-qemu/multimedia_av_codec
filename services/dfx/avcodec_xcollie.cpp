@@ -61,8 +61,9 @@ int32_t AVCodecXCollie::SetTimer(const std::string &name, bool recovery, uint32_
     flag |= recovery ? HiviewDFX::XCOLLIE_FLAG_RECOVERY : 0;
 
     TimerInfo timerInfo = {
-        name.data(),
-        std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())
+        .name = name.data(),
+        .startTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()),
+        .timeout = timeout
     };
     int32_t id = HiviewDFX::XCollie::GetInstance().SetTimer(
         name.data(), timeout, callback, reinterpret_cast<void *>(&timerInfo), flag);
@@ -124,6 +125,12 @@ int32_t AVCodecXCollie::Dump(int32_t fd)
         dumpControler.AddInfo(DUMP_XCOLLIE_INDEX + (timeInfoIndex++ << DUMP_OFFSET_8), "TimerName", iter.second.name);
         dumpControler.AddInfo(DUMP_XCOLLIE_INDEX + (timeInfoIndex++ << DUMP_OFFSET_8),
             "StartTime", GetTimeString(iter.second.startTime).c_str());
+        dumpControler.AddInfo(DUMP_XCOLLIE_INDEX + (timeInfoIndex++ << DUMP_OFFSET_8),
+            "TimeLeft", std::to_string(
+                            iter.second.timeout + iter.second.startTime -
+                                std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())
+                        )
+        );
         dumperIndex++;
     }
 

@@ -35,12 +35,12 @@ public:
     void RemoveTimer(pid_t pid);
 
 private:
-    std::optional<std::function<uint64_t(uint32_t)>> GetCalculator(const Media::Meta &meta);
+    std::optional<std::function<uint32_t(uint32_t)>> GetCalculator(const Media::Meta &meta);
     uint32_t GetBlockCount(const Media::Meta &meta);
-    std::optional<InstanceInfo> UpdateInstanceMemory(int32_t instanceId, uint64_t memory);
+    std::optional<InstanceInfo> UpdateInstanceMemory(int32_t instanceId, uint32_t memory);
 
     void UpdateAppMemoryThreshold();
-    static uint64_t GetAppMemory(pid_t callerPid, pid_t forwardCallerPid);
+    static uint32_t GetAppMemory(pid_t callerPid, pid_t forwardCallerPid);
     static void UploadAppMemory(pid_t callerPid, pid_t forwardCallerPid);
     void DeterminAppMemoryLeak(pid_t callerPid, pid_t forwardCallerPid);
 

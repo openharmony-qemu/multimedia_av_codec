@@ -67,10 +67,11 @@ void InstanceMemoryUpdateEventHandler::RemoveTimer(pid_t pid)
     timerMap_.erase(pid);
 }
 
-std::optional<std::function<uint64_t(uint32_t)>> InstanceMemoryUpdateEventHandler::GetCalculator(const Media::Meta &meta)
+std::optional<std::function<uint32_t(uint32_t)>>
+InstanceMemoryUpdateEventHandler::GetCalculator(const Media::Meta &meta)
 {
     (void)meta;
-    return std::optional<std::function<uint64_t(uint32_t)>>();
+    return std::optional<std::function<uint32_t(uint32_t)>>();
 }
 
 uint32_t InstanceMemoryUpdateEventHandler::GetBlockCount(const Media::Meta &meta)
@@ -84,7 +85,7 @@ uint32_t InstanceMemoryUpdateEventHandler::GetBlockCount(const Media::Meta &meta
     return std::ceil(width / blockWidth) * std::ceil(length / blockLength);
 }
 
-std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemory(int32_t instanceId, uint64_t memory)
+std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemory(int32_t instanceId, uint32_t memory)
 {
     auto instanceInfo = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
     CHECK_AND_RETURN_RET_LOG(instanceInfo != std::nullopt,
@@ -92,7 +93,7 @@ std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemo
 
     instanceInfo.value().memoryUsage = memory;
     AVCodecServerManager::GetInstance().SetInstanceInfoByInstanceId(instanceId, instanceInfo.value());
-    AVCODEC_LOGI("The memory usage of instance %{public}d has been updated to %{public}" PRIu64, instanceId, memory);
+    AVCODEC_LOGI("The memory usage of instance %{public}d has been updated to %{public}u", instanceId, memory);
 
     return instanceInfo;
 }
@@ -107,10 +108,10 @@ void InstanceMemoryUpdateEventHandler::UpdateAppMemoryThreshold()
     AVCODEC_LOGI("App memory threshold updated to %{public}u KB", appMemoryThreshold_);
 }
 
-uint64_t InstanceMemoryUpdateEventHandler::GetAppMemory(pid_t callerPid, pid_t forwardCallerPid)
+uint32_t InstanceMemoryUpdateEventHandler::GetAppMemory(pid_t callerPid, pid_t forwardCallerPid)
 {
     auto instanceInfoList = AVCodecServerManager::GetInstance().GetInstanceInfoListByPid(callerPid);
-    uint64_t appMemoryUsage = 0;
+    uint32_t appMemoryUsage = 0;
     for (const auto &info : instanceInfoList) {
         if (forwardCallerPid != info.second.forwardCaller.pid) {
             continue;
@@ -128,15 +129,15 @@ void InstanceMemoryUpdateEventHandler::UploadAppMemory(pid_t callerPid, pid_t fo
     CHECK_AND_RETURN_LOG(memoryCollector != nullptr, "Create Hiview DFX memory collector failed");
 
     auto memory = GetAppMemory(callerPid, forwardCallerPid);
-    // std::vector<HiviewDFX::UCollectClient::MemoryCaller> memList;
-    // HiviewDFX::UCollectClient::MemoryCaller memoryCaller = {
-    //     .pid = appId,
-    //     .resourceType = "AVCodec",
-    //     .limitValue = appMemoryThreshold_,
-    // };
-    (void)memory;
-    // memList.emplace_back(memoryCaller);
-    // collector->SetSplitMemoryValue(memList);
+    std::vector<HiviewDFX::UCollectClient::MemoryCaller> memList;
+    HiviewDFX::UCollectClient::MemoryCaller memoryCaller = {
+        .pid = forwardCallerPid,
+        .resourceType = "AVCodec",
+        .limitValue = memory,
+    };
+    memList.emplace_back(memoryCaller);
+    memoryCollector->SetSplitMemoryValue(memList);
+    AVCODEC_LOGI("The memory usage of pid %{public}d is %{public}u", forwardCallerPid, memory);
 }
 
 void InstanceMemoryUpdateEventHandler::DeterminAppMemoryLeak(pid_t callerPid, pid_t forwardCallerPid)
@@ -163,11 +164,11 @@ uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
 
     std::string configJson;
     while (thresholdConfigFile >> configJson);
-    std::shared_ptr<cJSON> root_ = std::shared_ptr<cJSON>(cJSON_Parse(configJson.c_str()), cJSON_Delete);
-    CHECK_AND_RETURN_RET_LOG(root_ != nullptr, UINT32_MAX, "Can not parse threshold config json");
+    std::shared_ptr<cJSON> root = std::shared_ptr<cJSON>(cJSON_Parse(configJson.c_str()), cJSON_Delete);
+    CHECK_AND_RETURN_RET_LOG(root != nullptr, UINT32_MAX, "Can not parse threshold config json");
 
     std::string deviceType = OHOS::system::GetParameter("cosnt.product.devicetype", "unknown");
-    auto value = cJSON_GetObjectItem(root_.get(), "av_codec_config");
+    auto value = cJSON_GetObjectItem(root.get(), "av_codec_config");
     CHECK_AND_RETURN_RET_LOG(value != nullptr && cJSON_IsNumber(value),
         UINT32_MAX, "Can not find av_codec_config from threshold config json");
     return value->valueint;

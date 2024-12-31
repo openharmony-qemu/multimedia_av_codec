@@ -36,6 +36,7 @@ private:
     struct TimerInfo {
         std::string name;
         std::time_t startTime;
+        uint32_t timeout;
     };
 
     AVCodecXCollie() = default;
