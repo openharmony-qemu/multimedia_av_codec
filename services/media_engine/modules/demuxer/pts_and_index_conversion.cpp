@@ -403,7 +403,7 @@ Status TimeAndIndexConversion::GetIndexByRelativePresentationTimeUs(const uint32
 Status TimeAndIndexConversion::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
-    if (trackIndex >= trakInfoVec_.size()) {
+    if (trackIndex >= static_cast<uint32_t>(trakInfoVec_.size())) {
         MEDIA_LOG_E("Track is out of range");
         return Status::ERROR_INVALID_DATA;
     }
