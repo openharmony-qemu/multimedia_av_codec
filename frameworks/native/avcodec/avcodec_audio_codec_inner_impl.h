@@ -18,6 +18,7 @@
 #include "avcodec_audio_codec.h"
 #include "nocopyable.h"
 #include "i_avcodec_service.h"
+#include "drm_i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -53,6 +54,11 @@ public:
     int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter) override;
 
     int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta) override;
+
+    int32_t SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback) override;
+
+    int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag) override;
 
     void ProcessInputBuffer() override;
 
