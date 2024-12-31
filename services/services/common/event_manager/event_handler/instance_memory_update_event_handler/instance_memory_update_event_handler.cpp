@@ -162,8 +162,11 @@ uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
     std::ifstream thresholdConfigFile("/system/etc/hiview/kernel_leak_config.json");
     CHECK_AND_RETURN_RET_LOG(thresholdConfigFile.is_open(), UINT32_MAX, "Can not open threshold config json file");
 
+    std::string line;
     std::string configJson;
-    while (thresholdConfigFile >> configJson);
+    while (thresholdConfigFile >> line) {
+        configJson += line;
+    }
     std::shared_ptr<cJSON> root = std::shared_ptr<cJSON>(cJSON_Parse(configJson.c_str()), cJSON_Delete);
     CHECK_AND_RETURN_RET_LOG(root != nullptr, UINT32_MAX, "Can not parse threshold config json");
 
