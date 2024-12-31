@@ -74,7 +74,6 @@ public:
         return AVCODEC_ERROR_EXTEND_START;
     }
 
-
     virtual int32_t GetInputFormat(Format &format) = 0;
     virtual int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag)

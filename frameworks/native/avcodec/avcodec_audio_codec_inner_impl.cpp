@@ -194,30 +194,31 @@ int32_t AVCodecAudioCodecInnerImpl::GetOutputFormat(std::shared_ptr<Media::Meta>
     return ret;
 }
 
-int32_t AVCodecAudioCodecInnerImpl::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
+int32_t AVCodecAudioCodecInnerImpl::ChangePlugin(
+    const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl ChangePlugin");
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
-                             "service died");
+    CHECK_AND_RETURN_RET_LOG(
+        codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
     int32_t ret = codecService_->ChangePlugin(mime, isEncoder, meta);
     return ret;
 }
 
 int32_t AVCodecAudioCodecInnerImpl::SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback)
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl ChangePlugin");
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
-                             "service died");
+    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetCodecCallback");
+    CHECK_AND_RETURN_RET_LOG(
+        codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
     int32_t ret = codecService_->SetCodecCallback(codecCallback);
     return ret;
 }
 
-int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
-        const bool svpFlag)
+int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(
+    const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl ChangePlugin");
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
-                             "service died");
+    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetAudioDecryptionConfig");
+    CHECK_AND_RETURN_RET_LOG(
+        codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
     int32_t ret = codecService_->SetAudioDecryptionConfig(keySession, svpFlag);
     return ret;
 }

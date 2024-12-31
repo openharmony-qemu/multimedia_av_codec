@@ -256,10 +256,10 @@ void AudioDecoderAdapter::OnDumpInfo(int32_t fd)
         return;
     }
     std::string dumpString;
-    dumpString +=
-        "AudioDecoderAdapter inputBufferQueueProducer_ size is:" + std::to_string(inputBufferQueueProducer_->GetQueueSize()) + "\n";
-    dumpString +=
-        "AudioDecoderAdapter outputBufferQueueProducer_ size is:" + std::to_string(outputBufferQueueProducer_->GetQueueSize()) + "\n";
+    dumpString += "AudioDecoderAdapter inputBufferQueueProducer_ size is:" +
+                  std::to_string(inputBufferQueueProducer_->GetQueueSize()) + "\n";
+    dumpString += "AudioDecoderAdapter outputBufferQueueProducer_ size is:" +
+                  std::to_string(outputBufferQueueProducer_->GetQueueSize()) + "\n";
     dumpString +=
         "state_ is:" + StateToString(state_) + "\n";
     int ret = write(fd, dumpString.c_str(), dumpString.size());
