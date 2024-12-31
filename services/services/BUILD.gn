@@ -158,6 +158,8 @@ ohos_shared_library("av_codec_service") {
     ]
   }
 
+  defines = [ "AVCODEC_SUPPORT_EVENT_MANAGER" ]
+
   external_deps = [
     "c_utils:utils",
     "drm_framework:drm_framework",

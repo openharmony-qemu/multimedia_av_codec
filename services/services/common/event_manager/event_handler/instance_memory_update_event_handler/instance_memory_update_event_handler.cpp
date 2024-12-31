@@ -93,7 +93,7 @@ std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemo
 
     instanceInfo.value().memoryUsage = memory;
     AVCodecServerManager::GetInstance().SetInstanceInfoByInstanceId(instanceId, instanceInfo.value());
-    AVCODEC_LOGI("The memory usage of instance %{public}d has been updated to %{public}u", instanceId, memory);
+    AVCODEC_LOGI("The memory usage of instance[%{public}d] has been updated to %{public}u", instanceId, memory);
 
     return instanceInfo;
 }
