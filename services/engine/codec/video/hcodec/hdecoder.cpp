@@ -36,14 +36,13 @@ HDecoder::~HDecoder()
 {
     MsgHandleLoop::Stop();
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    if (vpeHandle_ == nullptr) {
-        return;
+    if (vpeHandle_ != nullptr) {
+        if (VrrDestroyFunc_ != nullptr) {
+            VrrDestroyFunc_(vrrHandle_);
+        }
+        dlclose(vpeHandle_);
+        vpeHandle_ = nullptr;
     }
-    if (VrrDestroyFunc_ != nullptr) {
-        VrrDestroyFunc_(vrrHandle_);
-    }
-    dlclose(vpeHandle_);
-    vpeHandle_ = nullptr;
 #endif
 }
 
