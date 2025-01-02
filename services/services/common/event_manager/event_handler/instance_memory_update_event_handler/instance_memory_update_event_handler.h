@@ -40,13 +40,13 @@ private:
     std::optional<InstanceInfo> UpdateInstanceMemory(int32_t instanceId, uint32_t memory);
 
     void UpdateAppMemoryThreshold();
-    static uint32_t GetAppMemory(pid_t callerPid, pid_t forwardCallerPid);
-    static void UploadAppMemory(pid_t callerPid, pid_t forwardCallerPid);
+    static uint32_t GetAppMemory(pid_t callerPid, pid_t actualCallerPid);
+    static void ReportAppMemory(pid_t callerPid, pid_t actualCallerPid);
     void DeterminAppMemoryLeak(pid_t callerPid, pid_t forwardCallerPid);
 
     uint32_t appMemoryThreshold_ = 0;
     std::mutex timerMutex_;
-    std::unordered_map<pid_t, AVCodecXcollieTimer> timerMap_;
+    std::unordered_map<pid_t, std::shared_ptr<AVCodecXcollieTimer>> timerMap_;
 
 private:
     class ThresholdParser {

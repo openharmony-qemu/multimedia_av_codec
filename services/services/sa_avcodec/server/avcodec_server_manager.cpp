@@ -49,8 +49,9 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
     if (fd < 0) {
         return OHOS::NO_ERROR;
     }
-    std::lock_guard<std::mutex> lock(mutex_);
+    AVCodecXCollie::GetInstance().Dump(fd);
 
+    std::lock_guard<std::mutex> lock(mutex_);
     constexpr std::string_view dumpStr = "[Codec_Server]\n";
     write(fd, dumpStr.data(), dumpStr.size());
 

@@ -65,6 +65,7 @@ void InstanceMemoryUpdateEventHandler::RemoveTimer(pid_t pid)
 {
     std::lock_guard<std::mutex> lock(timerMutex_);
     timerMap_.erase(pid);
+    AVCODEC_LOGI("Timer for pid %{public}d has been removed", pid);
 }
 
 std::optional<std::function<uint32_t(uint32_t)>>
@@ -107,12 +108,12 @@ void InstanceMemoryUpdateEventHandler::UpdateAppMemoryThreshold()
     appMemoryThreshold_ = threshold > APP_MEMORY_THRESHOLD_MIN ? threshold : APP_MEMORY_THRESHOLD_MIN;
 }
 
-uint32_t InstanceMemoryUpdateEventHandler::GetAppMemory(pid_t callerPid, pid_t forwardCallerPid)
+uint32_t InstanceMemoryUpdateEventHandler::GetAppMemory(pid_t callerPid, pid_t actualCallerPid)
 {
     auto instanceInfoList = AVCodecServerManager::GetInstance().GetInstanceInfoListByPid(callerPid);
     uint32_t appMemoryUsage = 0;
     for (const auto &info : instanceInfoList) {
-        if (forwardCallerPid != info.second.forwardCaller.pid) {
+        if (actualCallerPid != callerPid && actualCallerPid != info.second.forwardCaller.pid) {
             continue;
         }
         appMemoryUsage += info.second.memoryUsage;
@@ -120,39 +121,42 @@ uint32_t InstanceMemoryUpdateEventHandler::GetAppMemory(pid_t callerPid, pid_t f
     return appMemoryUsage;
 }
 
-void InstanceMemoryUpdateEventHandler::UploadAppMemory(pid_t callerPid, pid_t forwardCallerPid)
+void InstanceMemoryUpdateEventHandler::ReportAppMemory(pid_t callerPid, pid_t actualCallerPid)
 {
-    InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(forwardCallerPid);
+    InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(actualCallerPid);
 
     auto memoryCollector = HiviewDFX::UCollectClient::MemoryCollector::Create();
     CHECK_AND_RETURN_LOG(memoryCollector != nullptr, "Create Hiview DFX memory collector failed");
 
-    auto memory = GetAppMemory(callerPid, forwardCallerPid);
+    auto memory = GetAppMemory(callerPid, actualCallerPid);
     std::vector<HiviewDFX::UCollectClient::MemoryCaller> memList;
     HiviewDFX::UCollectClient::MemoryCaller memoryCaller = {
-        .pid = forwardCallerPid,
+        .pid = actualCallerPid,
         .resourceType = "AVCodec",
         .limitValue = memory,
     };
     memList.emplace_back(memoryCaller);
     // memoryCollector->SetSplitMemoryValue(memList);
-    AVCODEC_LOGI("The memory usage of pid %{public}d is %{public}u KB", forwardCallerPid, memory);
+    AVCODEC_LOGI("The memory usage of pid %{public}d is %{public}u KB, report to hivew", actualCallerPid, memory);
 }
 
 void InstanceMemoryUpdateEventHandler::DeterminAppMemoryLeak(pid_t callerPid, pid_t forwardCallerPid)
 {
     UpdateAppMemoryThreshold();
 
-    auto memory = GetAppMemory(callerPid, forwardCallerPid);
-    if (memory > appMemoryThreshold_ && timerMap_.count(forwardCallerPid) == 0) {
-        auto timeName = std::string("Pid_") + std::to_string(forwardCallerPid) + " memory leak";
-        AVCodecXcollieTimer timer(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT,
-            [=](void *) -> void { UploadAppMemory(callerPid, forwardCallerPid); });
+    auto actualCallerPid = forwardCallerPid == INVALID_PID ? callerPid : forwardCallerPid;
+    auto memory = GetAppMemory(callerPid, actualCallerPid);
+    if (memory > appMemoryThreshold_ && timerMap_.count(actualCallerPid) == 0) {
+        auto timeName = std::string("Pid_") + std::to_string(actualCallerPid) + " memory leak";
+        auto timer = std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT,
+            [=](void *) -> void { ReportAppMemory(callerPid, actualCallerPid); });
 
         std::lock_guard<std::mutex> lock(timerMutex_);
-        timerMap_.emplace(forwardCallerPid, timer);
-    } else if (memory <= appMemoryThreshold_ && timerMap_.count(forwardCallerPid) != 0) {
-        InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(forwardCallerPid);
+        timerMap_.emplace(actualCallerPid, timer);
+        AVCODEC_LOGI("Determined pid %{public}d memory leak(%{public}u KB), event timer added",
+            actualCallerPid, memory);
+    } else if (memory <= appMemoryThreshold_ && timerMap_.count(actualCallerPid) != 0) {
+        InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(actualCallerPid);
     }
 }
 
