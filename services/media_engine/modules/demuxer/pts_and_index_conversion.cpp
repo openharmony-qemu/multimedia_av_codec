@@ -182,11 +182,18 @@ void TimeAndIndexConversion::ParseMoov(uint32_t boxSize)
         BoxHeader header{0};
         ReadBoxHeader(buffer, header);
         FALSE_RETURN_MSG(header.size > 0, "ParseMoov failed due to error box size");
+        uint64_t boxSize = static_cast<uint64_t>(header.size);
+        if (boxSize == 1 || boxSize == 0) { // 0 and 1 are used to verify whether there is a large size
+            uint64_t largeSize = 0;
+            ReadLargeSize(buffer, largeSize);
+            boxSize = largeSize;
+        }
+        FALSE_RETURN_MSG(boxSize >= BOX_HEAD_SIZE, "ParseMoov failed due to error box size");
         if (strncmp(header.type, BOX_TYPE_TRAK, sizeof(header.type)) == 0) {
             offset_ += BOX_HEAD_SIZE;
             ParseTrak(header.size - BOX_HEAD_SIZE);
-        } else if (header.size > BOX_HEAD_SIZE) {
-            offset_ += static_cast<uint64_t>(header.size);
+        } else {
+            offset_ += boxSize;
         }
     }
 }
@@ -216,12 +223,19 @@ void TimeAndIndexConversion::ParseBox(uint32_t boxSize)
         BoxHeader header{0};
         ReadBoxHeader(buffer, header);
         FALSE_RETURN_MSG(header.size > 0, "ParseBox failed due to error box size");
+        uint64_t boxSize = static_cast<uint64_t>(header.size);
+        if (boxSize == 1 || boxSize == 0) { // 0 and 1 are used to verify whether there is a large size
+            uint64_t largeSize = 0;
+            ReadLargeSize(buffer, largeSize);
+            boxSize = largeSize;
+        }
+        FALSE_RETURN_MSG(boxSize >= BOX_HEAD_SIZE, "ParseBox failed due to error box size");
         auto it = boxParsers.find(std::string(header.type));
         if (it != boxParsers.end()) {
             offset_ += BOX_HEAD_SIZE;
             (this->*(it->second))(header.size - BOX_HEAD_SIZE);
         } else {
-            offset_ += static_cast<uint64_t>(header.size);
+            offset_ += boxSize;
         }
     }
 }
