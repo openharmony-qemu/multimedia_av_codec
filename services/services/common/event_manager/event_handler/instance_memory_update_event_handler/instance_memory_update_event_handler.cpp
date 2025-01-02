@@ -170,11 +170,11 @@ uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
     while (thresholdConfigFile >> line) {
         configJson += line;
     }
-    std::shared_ptr<cJSON> root = std::shared_ptr<cJSON>(cJSON_Parse(configJson.c_str()), cJSON_Delete);
+    auto root = std::shared_ptr<cJSON>(cJSON_Parse(configJson.c_str()), cJSON_Delete);
     CHECK_AND_RETURN_RET_LOG(root != nullptr, UINT32_MAX, "Can not parse threshold config json");
 
-    std::string deviceType = system::GetDeviceType();
-    CHECK_AND_RETURN_RET_LOG(deviceType != "unknown", UINT32_MAX, "Can not get device type");
+    auto deviceType = system::GetDeviceType();
+    CHECK_AND_RETURN_RET_LOG(deviceType != "" && deviceType != "unknown", UINT32_MAX, "Can not get device type");
 
     auto avcodecConfigItem = cJSON_GetObjectItem(root.get(), "av_codec_config");
     CHECK_AND_RETURN_RET_LOG(avcodecConfigItem != nullptr,
