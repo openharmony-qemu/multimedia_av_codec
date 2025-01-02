@@ -227,7 +227,7 @@ void TimeAndIndexConversion::ParseBox(uint32_t boxSize)
         FALSE_RETURN_MSG(buffer != nullptr, "ParseBox failed due to read buffer error");
         BoxHeader header{0};
         ReadBoxHeader(buffer, header);
-        FALSE_RETURN_MSG(header.size > 0, "ParseBox failed due to error box size");
+        FALSE_RETURN_MSG(header.size >= 0, "ParseBox failed due to error box size");
         uint64_t childBoxSize = static_cast<uint64_t>(header.size);
         uint32_t headerSize = BOX_HEAD_SIZE;
         if (childBoxSize == 1 || childBoxSize == 0) { // 0 and 1 are used to verify whether there is a large size
