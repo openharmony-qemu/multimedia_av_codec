@@ -149,6 +149,10 @@ MediaDemuxer::~MediaDemuxer()
 {
     MEDIA_LOG_D("In");
     ResetInner();
+    if (parserRefInfoTask_ != nullptr) {
+        parserRefInfoTask_->Stop();
+        parserRefInfoTask_ = nullptr;
+    }
     demuxerPluginManager_ = nullptr;
     mediaSource_ = nullptr;
     source_ = nullptr;
@@ -157,11 +161,6 @@ MediaDemuxer::~MediaDemuxer()
     requestBufferErrorCountMap_.clear();
     streamDemuxer_ = nullptr;
     localDrmInfos_.clear();
-
-    if (parserRefInfoTask_ != nullptr) {
-        parserRefInfoTask_->Stop();
-        parserRefInfoTask_ = nullptr;
-    }
 }
 
 std::shared_ptr<Plugins::DemuxerPlugin> MediaDemuxer::GetCurFFmpegPlugin()
