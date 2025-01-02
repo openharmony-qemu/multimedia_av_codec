@@ -454,4 +454,4 @@ bool StreamDemuxer::IsSupportDragging()
     return source_ != nullptr && source_->IsSupportDragging();
 }
 } // namespace Media
-} // namespace OHOS
+} // namespace OHOS
