@@ -64,6 +64,8 @@ public:
     bool SetSourceInitialBufferSize(int32_t offset, int32_t size) override;
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
+    SourcePluginType GetSourcePluginType() override;
+    bool IsNetworkSource() override;
 
 private:
     void CloseUri(bool isAsync = false);

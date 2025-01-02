@@ -449,5 +449,9 @@ Status StreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shar
     return Status::OK;
 }
 
+bool StreamDemuxer::IsSupportDragging()
+{
+    return source_ != nullptr && source_->IsSupportDragging();
+}
 } // namespace Media
-} // namespace OHOS
+} // namespace OHOS

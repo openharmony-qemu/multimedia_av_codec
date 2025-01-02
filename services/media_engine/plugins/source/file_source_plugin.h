@@ -53,6 +53,8 @@ public:
     Status GetSize(uint64_t& size) override;
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
+    SourcePluginType GetSourcePluginType() override;
+    bool IsNetworkSource() override;
 
     std::shared_ptr<Allocator> GetAllocator();
 private:

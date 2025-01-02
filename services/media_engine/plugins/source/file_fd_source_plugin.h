@@ -58,6 +58,8 @@ public:
     void NotifyBufferingEnd();
     void NotifyReadFail();
     void SetEnableOnlineFdCache(bool isEnableFdCache) override;
+    SourcePluginType GetSourcePluginType() override;
+    bool IsNetworkSource() override;
 private:
     Status ParseUriInfo(const std::string& uri);
     Status ReadOfflineFile(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);

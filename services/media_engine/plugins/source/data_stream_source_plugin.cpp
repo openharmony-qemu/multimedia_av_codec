@@ -277,6 +277,16 @@ bool DataStreamSourcePlugin::IsNeedPreDownload()
 {
     return true;
 }
+
+Plugins::SourcePluginType DataStreamSourcePlugin::GetSourcePluginType()
+{
+    return Plugins::SourcePluginType::SOURCE_PLUGIN_DATA_STREAM;
+}
+
+bool DataStreamSourcePlugin::IsNetworkSource()
+{
+    return false;
+}
 } // namespace DataStreamSourcePlugin
 } // namespace Plugin
 } // namespace Media

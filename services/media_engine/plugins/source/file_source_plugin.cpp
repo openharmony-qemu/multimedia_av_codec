@@ -325,6 +325,16 @@ void FileSourcePlugin::CloseFile()
         fp_ = nullptr;
     }
 }
+
+SourcePluginType FileSourcePlugin::GetSourcePluginType()
+{
+    return SourcePluginType::SOURCE_PLUGIN_FILE_PATH;
+}
+
+bool FileSourcePlugin::IsNetworkSource()
+{
+    return false;
+}
 } // namespace FileSource
 } // namespace Plugin
 } // namespace Media

@@ -163,6 +163,7 @@ private:
 
     Plugins::MediaInfo curMediaInfo_;
     bool isDash_ = false;
+    std::mutex readMutex_;
     bool needResetEosStatus_ = false;
     FairMutex initialBufferingEndMutex_ {};
     std::atomic<bool> isInitialBufferingSucc_ = false;

@@ -48,6 +48,7 @@ public:
     MOCK_METHOD(int32_t, GetNewSubtitleStreamID, (), (override));
     MOCK_METHOD(int32_t, GetNewVideoStreamID, (), (override));
     MOCK_METHOD(std::string, SnifferMediaType, (int32_t streamID), (override));
+    MOCK_METHOD(bool, IsSupportDragging, (), (override));
 };
 } // namespace Media
 } // namespace OHOS

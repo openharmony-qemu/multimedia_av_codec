@@ -123,6 +123,26 @@ HWTEST_F(FileSourceUnitTest, FileSource_ParseFileName_0100, TestSize.Level1)
     fileSourcePlugin_->SetSource(source);
     EXPECT_EQ(Status::OK, fileSourcePlugin_->Deinit());
 }
+
+/**
+ * @tc.name: GetSourcePluginType_001
+ * @tc.desc: test GetSourcePluginType func
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceUnitTest, GetSourcePluginType_001, TestSize.Level1)
+{
+    EXPECT_EQ(fileSourcePlugin_->GetSourcePluginType(), SourcePluginType::SOURCE_PLUGIN_FILE_PATH);
+}
+
+/**
+ * @tc.name: IsNetworkSource_001
+ * @tc.desc: test IsNetworkSource func
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceUnitTest, IsNetworkSource_001, TestSize.Level1)
+{
+    EXPECT_FALSE(fileSourcePlugin_->IsNetworkSource());
+}
 } // namespace FileSource
 } // namespace Plugins
 } // namespace Media

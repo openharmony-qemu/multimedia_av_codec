@@ -153,6 +153,12 @@ bool Source::IsSeekToTimeSupported()
     return seekToTimeFlag_;
 }
 
+bool Source::IsSupportDragging()
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "IsSupportDragging source plugin is nullptr");
+    return plugin_->GetSourcePluginType() == SourcePluginType::SOURCE_PLUGIN_FILE_FD && !plugin_->IsNetworkSource();
+}
+
 Status Source::Start()
 {
     MEDIA_LOG_I("Start entered.");

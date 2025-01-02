@@ -429,5 +429,14 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamIDByTrackType_001, TestSize.Leve
     EXPECT_EQ(demuxerPluginManager_->GetStreamIDByTrackType(trackType), -1);
 }
 
+/**
+ * @tc.name: IsSupportDragging_001
+ * @tc.desc: test StreamDemuxer#IsSupportDragging func
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginManagerUnitTest, StreamDemuxer_IsSupportDragging_001, TestSize.Level1)
+{
+    EXPECT_FALSE(streamDemuxer_->IsSupportDragging());
+}
 }
 }

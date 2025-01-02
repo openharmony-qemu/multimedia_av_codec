@@ -115,6 +115,7 @@ public:
     virtual std::string SnifferMediaType(int32_t streamID);
     bool IsDash() const;
     void SetIsDash(bool flag);
+    virtual bool IsSupportDragging();
 
     Status SetNewAudioStreamID(int32_t streamID);
     Status SetNewVideoStreamID(int32_t streamID);

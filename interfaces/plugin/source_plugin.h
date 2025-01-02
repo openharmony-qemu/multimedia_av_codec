@@ -44,6 +44,14 @@ enum VideoType {
     VIDEO_TYPE_HDR_10
 };
 
+enum SourcePluginType {
+    SOURCE_PLUGIN_NONE = 0,
+    SOURCE_PLUGIN_FILE_FD = 1,
+    SOURCE_PLUGIN_FILE_PATH = 2,
+    SOURCE_PLUGIN_DATA_STREAM = 3,
+    SOURCE_PLUGIN_HTTP = 4,
+};
+
 class StreamInfo {
 public:
     int32_t streamId;
@@ -152,6 +160,10 @@ public:
     virtual Status SeekTo(uint64_t offset) = 0;
 
     virtual Status Reset() = 0;
+
+    virtual SourcePluginType GetSourcePluginType() = 0;
+
+    virtual bool IsNetworkSource() = 0;
 
     virtual void SetDemuxerState(int32_t streamId) {}
 
