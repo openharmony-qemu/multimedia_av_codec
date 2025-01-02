@@ -343,6 +343,9 @@ int32_t CodecServer::Start()
         GetCodecDfxInfo(codecDfxInfo);
         CodecStartEventWrite(codecDfxInfo);
     }
+    Format codecFormat;
+    codecBase_->GetOutputFormat(codecFormat);
+    OnInstanceMemoryUpdateEvent(*codecFormat.GetMeta());
     return ret;
 }
 
