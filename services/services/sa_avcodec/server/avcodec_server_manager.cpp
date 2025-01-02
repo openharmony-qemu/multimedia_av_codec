@@ -141,9 +141,10 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
 
     pid_t pid = IPCSkeleton::GetCallingPid();
     InstanceInfo instanceInfo = {
-        .instanceId = instanceId++,
+        .instanceId = instanceId,
         .caller = { .pid = pid },
     };
+    instanceId++;
     codecStubMap_.emplace(pid, std::make_pair(object, instanceInfo));
 
     SetCritical(true);

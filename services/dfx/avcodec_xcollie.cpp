@@ -53,7 +53,7 @@ AVCodecXCollie &AVCodecXCollie::GetInstance()
 }
 
 int32_t AVCodecXCollie::SetTimer(const std::string &name, bool recovery, uint32_t timeout,
-                                  std::function<void(void *)> callback)
+                                 std::function<void(void *)> callback)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -125,11 +125,9 @@ int32_t AVCodecXCollie::Dump(int32_t fd)
         dumpControler.AddInfo(titleIndex + (timeInfoIndex++ << DUMP_OFFSET_8),
             "StartTime", GetTimeString(iter.second.startTime).c_str());
         dumpControler.AddInfo(titleIndex + (timeInfoIndex++ << DUMP_OFFSET_8),
-            "TimeLeft", std::to_string(
-                            iter.second.timeout + iter.second.startTime -
-                                std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())
-                        )
-        );
+            "TimeLeft",
+            std::to_string(iter.second.timeout + iter.second.startTime -
+                std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())));
         dumperIndex++;
     }
 

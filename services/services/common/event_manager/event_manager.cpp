@@ -35,13 +35,12 @@ EventManager &EventManager::GetInstance()
 void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
 {
     CHECK_AND_RETURN_LOG(type > EventType::UNKNOWN && type < EventType::END, "Unknown event type, ignore");
-    std::lock_guard<std::mutex> lock(eventMutex_);
-    auto instanceId = INVALID_INSTANCE_ID;
-    meta.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
+    auto instanceId = EventInfoExtentedKey::GetInstanceIdFromMeta(meta);
     if (instanceId == INVALID_INSTANCE_ID) {
         return;
     }
 
+    std::lock_guard<std::mutex> lock(eventMutex_);
     switch (type) {
         case EventType::INSTANCE_INIT:
             OnInstanceInitEvent(meta);
@@ -66,7 +65,7 @@ void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
 
 void EventManager::OnInstanceInitEvent(Media::Meta &meta)
 {
-    auto instanceId = GetInstanceIdFromMeta(meta);
+    auto instanceId = EventInfoExtentedKey::GetInstanceIdFromMeta(meta);
     auto instanceInfoOpt = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
     CHECK_AND_RETURN_LOG(instanceInfoOpt != std::nullopt, "Can not find this instance, id: %{public}d", instanceId);
     auto instanceInfo = instanceInfoOpt.value();

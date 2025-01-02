@@ -23,16 +23,14 @@
 namespace OHOS {
 namespace MediaAVCodec {
 constexpr pid_t INVALID_PID = -1;
-struct CallerInfo
-{
+struct CallerInfo {
     pid_t pid = -1;
     uid_t uid = 0;
     std::string processName = "";
 };
 
 constexpr int32_t INVALID_INSTANCE_ID = -1;
-struct InstanceInfo
-{
+struct InstanceInfo {
     int32_t instanceId = INVALID_INSTANCE_ID;
     CallerInfo caller;
     CallerInfo forwardCaller;

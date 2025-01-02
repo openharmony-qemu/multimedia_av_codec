@@ -27,6 +27,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using CalculatorType = std::function<uint32_t(uint32_t)>;
 class InstanceMemoryUpdateEventHandler {
 public:
     static InstanceMemoryUpdateEventHandler &GetInstance();
@@ -35,7 +36,8 @@ public:
     void RemoveTimer(pid_t pid);
 
 private:
-    std::optional<std::function<uint32_t(uint32_t)>> GetCalculator(const Media::Meta &meta);
+    std::optional<CalculatorType> GetCalculator(const Media::Meta &meta);
+    
     uint32_t GetBlockCount(const Media::Meta &meta);
     std::optional<InstanceInfo> UpdateInstanceMemory(int32_t instanceId, uint32_t memory);
 

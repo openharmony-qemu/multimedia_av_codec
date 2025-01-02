@@ -34,7 +34,7 @@ enum class EventType {
     END,
 };
 
-class EventManager{
+class EventManager {
 public:
     static EventManager &GetInstance();
     void OnInstanceEvent(EventType type, Media::Meta &meta);

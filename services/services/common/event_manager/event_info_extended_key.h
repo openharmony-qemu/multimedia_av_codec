@@ -29,14 +29,14 @@ public:
     static constexpr std::string_view IS_HARDWARE = "av_codec_event_info_codec_type";
     static constexpr std::string_view BIT_DEPTH = "av_codec_event_info_bit_depth";
     static constexpr std::string_view ENABLE_POST_PROCESSING = "av_codec_event_info_enable_post_processing";
-};
 
-static inline int32_t GetInstanceIdFromMeta(const Media::Meta &meta)
-{
-    auto instanceId = INVALID_INSTANCE_ID;
-    meta.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
-    return instanceId;
-}
+    static int32_t GetInstanceIdFromMeta(const Media::Meta &meta)
+    {
+        auto instanceId = INVALID_INSTANCE_ID;
+        meta.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
+        return instanceId;
+    }
+};
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_EVENT_INFO_EXTENDED_KEY_H

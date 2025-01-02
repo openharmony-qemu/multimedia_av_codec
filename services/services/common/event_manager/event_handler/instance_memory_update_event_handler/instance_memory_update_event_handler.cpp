@@ -41,7 +41,7 @@ InstanceMemoryUpdateEventHandler &InstanceMemoryUpdateEventHandler::GetInstance(
 
 void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta &meta)
 {
-    auto instanceId = GetInstanceIdFromMeta(meta);
+    auto instanceId = EventInfoExtentedKey::GetInstanceIdFromMeta(meta);
     CHECK_AND_RETURN_LOG(instanceId != INVALID_INSTANCE_ID, "Can not find instance id");
 
     auto calculator = GetCalculator(meta);
@@ -56,7 +56,7 @@ void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta 
 
 void InstanceMemoryUpdateEventHandler::OnInstanceRelease(const Media::Meta &meta)
 {
-    auto instanceId = GetInstanceIdFromMeta(meta);
+    auto instanceId = EventInfoExtentedKey::GetInstanceIdFromMeta(meta);
     auto instanceInfo = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
     DeterminAppMemoryLeak(instanceInfo.value().caller.pid, instanceInfo.value().forwardCaller.pid);
 }
@@ -68,8 +68,7 @@ void InstanceMemoryUpdateEventHandler::RemoveTimer(pid_t pid)
     AVCODEC_LOGI("Timer for pid %{public}d has been removed", pid);
 }
 
-std::optional<std::function<uint32_t(uint32_t)>>
-InstanceMemoryUpdateEventHandler::GetCalculator(const Media::Meta &meta)
+std::optional<CalculatorType> InstanceMemoryUpdateEventHandler::GetCalculator(const Media::Meta &meta)
 {
     (void)meta;
     return std::optional<std::function<uint32_t(uint32_t)>>();
