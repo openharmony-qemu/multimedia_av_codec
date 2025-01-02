@@ -34,6 +34,7 @@
 #include "common/media_core.h"
 #include "common/seek_callback.h"
 #include "drm_i_keysession_service.h"
+#include "interrupt_listener.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
@@ -41,7 +42,8 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-class DecoderSurfaceFilter : public Filter, public std::enable_shared_from_this<DecoderSurfaceFilter> {
+class DecoderSurfaceFilter : public Filter, public std::enable_shared_from_this<DecoderSurfaceFilter>,
+    public InterruptListener {
 public:
     explicit DecoderSurfaceFilter(const std::string& name, FilterType type);
     ~DecoderSurfaceFilter() override;
@@ -67,7 +69,7 @@ public:
 
     void SetParameter(const std::shared_ptr<Meta>& parameter) override;
     void GetParameter(std::shared_ptr<Meta>& parameter) override;
-    void SetInterruptState(bool isInterruptNeeded);
+    void OnInterrupted(bool isInterruptNeeded) override;
 
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;

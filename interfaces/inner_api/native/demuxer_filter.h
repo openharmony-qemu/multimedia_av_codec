@@ -24,6 +24,7 @@
 #include "meta/meta.h"
 #include "meta/media_types.h"
 #include "osal/task/mutex.h"
+#include "interrupt_monitor.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,6 +35,8 @@ public:
     ~DemuxerFilter() override;
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
+    void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback,
+              const std::shared_ptr<InterruptMonitor>& monitor) override;
     Status DoPrepare() override;
     Status DoStart() override;
     Status DoStop() override;
@@ -96,7 +99,6 @@ public:
     bool GetDuration(int64_t& durationMs);
     Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
     Status SetSpeed(float speed);
-    void SetInterruptState(bool isInterruptNeeded);
     void SetDumpFlag(bool isdump);
     void OnDumpInfo(int32_t fd);
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
