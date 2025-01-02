@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include "media_types.h"
 #define MEDIA_PLUGIN
 #include <unistd.h>
 #include <algorithm>
