@@ -77,7 +77,7 @@ Status DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, s
 {
     MediaAVCodec::AVCodecTrace trace("DataSourceImpl::ReadAt");
     std::unique_lock<std::mutex> lock;
-    if (stream_->IsSupportDragging()) {
+    if (stream_->IsLocalFD()) {
         lock = std::unique_lock(readMutex_);
     }
     if (!buffer || !IsOffsetValid(offset)) {

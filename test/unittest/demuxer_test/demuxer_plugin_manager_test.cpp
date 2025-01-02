@@ -430,13 +430,13 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamIDByTrackType_001, TestSize.Leve
 }
 
 /**
- * @tc.name: IsSupportDragging_001
- * @tc.desc: test StreamDemuxer#IsSupportDragging func
+ * @tc.name: IsLocalFD_001
+ * @tc.desc: test StreamDemuxer#IsLocalFD func
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerPluginManagerUnitTest, StreamDemuxer_IsSupportDragging_001, TestSize.Level1)
+HWTEST_F(DemuxerPluginManagerUnitTest, StreamDemuxer_IsLocalFD_001, TestSize.Level1)
 {
-    EXPECT_FALSE(streamDemuxer_->IsSupportDragging());
+    EXPECT_FALSE(streamDemuxer_->IsLocalFD());
 }
 }
 }

@@ -65,6 +65,7 @@ private:
     std::shared_ptr<BaseStreamDemuxer> stream_;
     int32_t streamID_;
     bool isDash_ = false;
+    std::mutex readMutex_;
 };
 
 class MediaStreamInfo {
@@ -163,7 +164,6 @@ private:
 
     Plugins::MediaInfo curMediaInfo_;
     bool isDash_ = false;
-    std::mutex readMutex_;
     bool needResetEosStatus_ = false;
     FairMutex initialBufferingEndMutex_ {};
     std::atomic<bool> isInitialBufferingSucc_ = false;

@@ -127,7 +127,7 @@ void BaseStreamDemuxer::SetIsDash(bool flag)
     isDash_ = flag;
 }
 
-bool BaseStreamDemuxer::IsSupportDragging()
+bool BaseStreamDemuxer::IsLocalFD()
 {
     return false;
 }
