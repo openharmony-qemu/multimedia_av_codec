@@ -428,5 +428,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamIDByTrackType_001, TestSize.Leve
     trackType = TRACK_INVALID;
     EXPECT_EQ(demuxerPluginManager_->GetStreamIDByTrackType(trackType), -1);
 }
+
 }
 }
