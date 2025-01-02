@@ -702,27 +702,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_PauseDownloadTask_0100, TestSize.Lev
     fileFdSourcePlugin_->PauseDownloadTask(false);
     ASSERT_TRUE(fileFdSourcePlugin_->downloadSize_ == 0);
 }
-
-/**
- * @tc.name: GetSourcePluginType_001
- * @tc.desc: test GetSourcePluginType func
- * @tc.type: FUNC
- */
-HWTEST_F(FileFdSourceUnitTest, GetSourcePluginType_001, TestSize.Level1)
-{
-    EXPECT_EQ(fileFdSourcePlugin_->GetSourcePluginType(), SourcePluginType::SOURCE_PLUGIN_FILE_FD);
-}
-
-/**
- * @tc.name: IsNetworkSource_001
- * @tc.desc: test IsNetworkSource func
- * @tc.type: FUNC
- */
-HWTEST_F(FileFdSourceUnitTest, IsNetworkSource_001, TestSize.Level1)
-{
-    fileFdSourcePlugin_->isCloudFile_ = false;
-    EXPECT_FALSE(fileFdSourcePlugin_->IsNetworkSource());
-}
 } // namespace FileSource
 } // namespace Plugins
 } // namespace Media

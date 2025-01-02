@@ -127,11 +127,6 @@ void BaseStreamDemuxer::SetIsDash(bool flag)
     isDash_ = flag;
 }
 
-bool BaseStreamDemuxer::IsLocalFD()
-{
-    return false;
-}
-
 Status BaseStreamDemuxer::SetNewVideoStreamID(int32_t streamID)
 {
     MEDIA_LOG_I_SHORT("SetNewVideoStreamID id: " PUBLIC_LOG_D32, streamID);

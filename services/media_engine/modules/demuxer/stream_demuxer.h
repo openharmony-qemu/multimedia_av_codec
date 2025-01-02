@@ -53,7 +53,6 @@ public:
         size_t expectedLen) override;
     Status ResetCache(int32_t streamID) override;
     Status ResetAllCache() override;
-    bool IsLocalFD() override;
 private:
     Status PullData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
     Status PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);

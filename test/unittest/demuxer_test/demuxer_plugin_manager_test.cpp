@@ -428,15 +428,5 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamIDByTrackType_001, TestSize.Leve
     trackType = TRACK_INVALID;
     EXPECT_EQ(demuxerPluginManager_->GetStreamIDByTrackType(trackType), -1);
 }
-
-/**
- * @tc.name: IsLocalFD_001
- * @tc.desc: test StreamDemuxer#IsLocalFD func
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerPluginManagerUnitTest, StreamDemuxer_IsLocalFD_001, TestSize.Level1)
-{
-    EXPECT_FALSE(streamDemuxer_->IsLocalFD());
-}
 }
 }

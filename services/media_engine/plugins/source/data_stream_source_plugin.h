@@ -41,8 +41,6 @@ public:
     Status Reset() override;
     bool IsNeedPreDownload() override;
     void SetInterruptState(bool isInterruptNeeded) override;
-    Plugins::SourcePluginType GetSourcePluginType() override;
-    bool IsNetworkSource() override;
 private:
     std::shared_ptr<Plugins::Buffer> WrapAVSharedMemory(
         const std::shared_ptr<AVSharedMemory>& avSharedMemory, int32_t realLen);

@@ -234,14 +234,6 @@ public:
     {
         return mapStatus_[name_];
     }
-    SourcePluginType GetSourcePluginType() override
-    {
-        return SourcePluginType::SOURCE_PLUGIN_FILE_FD;
-    }
-    bool IsNetworkSource() override
-    {
-        return false;
-    }
 
 private:
     std::map<std::string, Status> mapStatus_;

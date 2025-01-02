@@ -90,7 +90,6 @@ public:
     bool CanAutoSelectBitRate() override;
 
     bool IsSeekToTimeSupported();
-    bool IsLocalFD();
     int64_t GetDuration();
     Status SeekToTime(int64_t seekTime, SeekMode mode);
     Status GetBitRates(std::vector<uint32_t>& bitRates);

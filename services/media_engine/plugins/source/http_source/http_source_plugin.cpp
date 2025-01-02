@@ -484,16 +484,6 @@ bool HttpSourcePlugin::CheckIsM3U8Uri()
     }
     return false;
 }
-
-SourcePluginType HttpSourcePlugin::GetSourcePluginType()
-{
-    return SourcePluginType::SOURCE_PLUGIN_HTTP;
-}
-
-bool HttpSourcePlugin::IsNetworkSource()
-{
-    return true;
-}
 }
 }
 }
