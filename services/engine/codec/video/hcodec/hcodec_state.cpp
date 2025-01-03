@@ -157,6 +157,17 @@ void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
 /**************************** UninitializedState start ****************************/
 void HCodec::UninitializedState::OnStateEntered()
 {
+    codec_->gotFirstInput_ = false;
+    codec_->gotFirstOutput_ = false;
+    codec_->inTotalCnt_ = 0;
+    codec_->outRecord_.totalCnt = 0;
+    codec_->outRecord_.totalCostUs = 0;
+    codec_->inTimeMap_.clear();
+    codec_->inputWaitFenceCostUs_ = 0;
+    codec_->outputWaitFenceCostUs_ = 0;
+    codec_->inputDiscardCnt_ = 0;
+    codec_->outputDiscardCnt_ = 0;
+    codec_->circulateWarnPrintedTimes_ = 0;
     codec_->OnEnterUninitializedState();
     codec_->ReleaseComponent();
 }
@@ -861,6 +872,8 @@ void HCodec::FlushingState::ChangeStateIfWeOwnAllBuffers()
     }
     codec_->inputPortEos_ = false;
     codec_->outputPortEos_ = false;
+    codec_->gotFirstInput_ = false;
+    codec_->gotFirstOutput_ = false;
     codec_->ChangeStateTo(codec_->runningState_);
 }
 
