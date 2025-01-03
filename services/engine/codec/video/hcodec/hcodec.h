@@ -324,8 +324,16 @@ protected:
     struct CallerInfo {
         int32_t pid = -1;
         std::string processName;
-    } playerCaller_, avcodecCaller_;
-    bool calledByAvcodec_ = true;
+    };
+    struct Caller {
+        CallerInfo playerCaller;
+        CallerInfo avcodecCaller;
+        CallerInfo app;
+        bool calledByAvcodec = true;
+    } caller_;
+    static std::shared_mutex g_mtx;
+    static std::unordered_map<std::string, HCodec::Caller> g_callers;
+
     bool debugMode_ = false;
     DumpMode dumpMode_ = DUMP_NONE;
     sptr<CodecHDI::ICodecCallback> compCb_ = nullptr;
@@ -516,6 +524,8 @@ private:
     int32_t DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply,
                                   uint32_t waitMs = FIVE_SECONDS_IN_MS);
     void PrintCaller();
+    void PrintAllCaller();
+    void RemoveCaller();
     int32_t OnAllocateComponent();
     void ReleaseComponent();
     void CleanUpOmxNode();

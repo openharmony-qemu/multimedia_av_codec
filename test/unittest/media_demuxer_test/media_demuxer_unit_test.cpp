@@ -121,7 +121,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetDataSource_002, TestSize.Level1)
 
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-    demuxer->SetInterruptState(false);
+    demuxer->OnInterrupted(false);
     demuxer->SetBundleName("test");
 
     std::shared_ptr<AVBufferQueue> inputBufferQueue =

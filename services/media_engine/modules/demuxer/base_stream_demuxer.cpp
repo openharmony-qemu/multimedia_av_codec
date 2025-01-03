@@ -100,6 +100,7 @@ void BaseStreamDemuxer::SetBundleName(const std::string& bundleName)
 
 void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
+    MEDIA_LOG_D("BaseStreamDemuxer onInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
 }
 

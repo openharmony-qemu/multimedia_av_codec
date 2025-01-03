@@ -149,6 +149,10 @@ MediaDemuxer::~MediaDemuxer()
 {
     MEDIA_LOG_D("In");
     ResetInner();
+    if (parserRefInfoTask_ != nullptr) {
+        parserRefInfoTask_->Stop();
+        parserRefInfoTask_ = nullptr;
+    }
     demuxerPluginManager_ = nullptr;
     mediaSource_ = nullptr;
     source_ = nullptr;
@@ -157,11 +161,6 @@ MediaDemuxer::~MediaDemuxer()
     requestBufferErrorCountMap_.clear();
     streamDemuxer_ = nullptr;
     localDrmInfos_.clear();
-
-    if (parserRefInfoTask_ != nullptr) {
-        parserRefInfoTask_->Stop();
-        parserRefInfoTask_ = nullptr;
-    }
 }
 
 std::shared_ptr<Plugins::DemuxerPlugin> MediaDemuxer::GetCurFFmpegPlugin()
@@ -684,9 +683,13 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
     return ret;
 }
 
-void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
+void MediaDemuxer::OnInterrupted(bool isInterruptNeeded)
 {
+    MEDIA_LOG_D("MediaDemuxer OnInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
+    if (demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash()) {
+        rebootPluginCondition_.notify_all();
+    }
     if (source_ != nullptr) {
         source_->SetInterruptState(isInterruptNeeded);
     }
@@ -967,11 +970,14 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
         std::pair<int32_t, bool> seekReadyInfo;
         {
             std::unique_lock<std::mutex> lock(rebootPluginMutex_);
-            rebootPluginCondition_.wait(lock, [this, streamType] {
-                return isInterruptNeeded_.load() ||
-                    seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) != seekReadyStreamInfo_.end();
-            });
-            FALSE_RETURN_V(isInterruptNeeded_.load() != true, Status::OK);
+            if (!isInterruptNeeded_.load() &&
+                seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) == seekReadyStreamInfo_.end()) {
+                rebootPluginCondition_.wait(lock, [this, streamType] {
+                    return isInterruptNeeded_.load() ||
+                        seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) != seekReadyStreamInfo_.end();
+                });
+            }
+            FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::OK);
             seekReadyInfo = seekReadyStreamInfo_[static_cast<int32_t>(streamType)];
             seekReadyStreamInfo_.erase(static_cast<int32_t>(streamType));
         }
@@ -989,7 +995,7 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
 
 Status MediaDemuxer::SeekToTimeAfter()
 {
-    FALSE_RETURN_V_NOLOG(demuxerPluginManager_->IsDash(), Status::OK);
+    FALSE_RETURN_V_NOLOG(demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash(), Status::OK);
     MEDIA_LOG_D("Reboot plugin begin");
     Status ret = Status::OK;
     bool isDemuxerPluginRebooted = true;
@@ -1008,6 +1014,10 @@ Status MediaDemuxer::SeekToTimeAfter()
 
     isDemuxerPluginRebooted = true;
     ret = HandleRebootPlugin(videoTrackId_, isDemuxerPluginRebooted);
+    {
+        std::unique_lock<std::mutex> lock(rebootPluginMutex_);
+        seekReadyStreamInfo_.clear();
+    }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot video demuxer plugin failed");
     MEDIA_LOG_D("Reboot plugin success");
     return Status::OK;

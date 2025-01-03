@@ -50,10 +50,7 @@ namespace Ffmpeg {
 void FFmpegDemuxerPlugin::ParserBoxInfo()
 {
     std::string formatName(formatContext_.get()->iformat->name);
-    if (formatName.find("mp4") == std::string::npos) {
-        MEDIA_LOG_D("Do not support " PUBLIC_LOG_S, formatName.c_str());
-        return;
-    }
+    FALSE_RETURN_MSG(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4, "FileType is not MP4");
     int videoStreamIdx = av_find_best_stream(formatContext_.get(), AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
     FALSE_RETURN_MSG(videoStreamIdx >= 0, "Can not find video stream");
     AVStream *videoStream = formatContext_->streams[videoStreamIdx];
