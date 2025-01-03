@@ -20,7 +20,6 @@
 #include <memory>
 #include <string>
 #include "meta.h"
-#include "event_info_extended_key.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -29,8 +28,6 @@ enum class EventType {
     INSTANCE_INIT,
     INSTANCE_RELEASE,
     INSTANCE_MEMORY_UPDATE,
-    INSTANCE_FREEZE,
-    INSTANCE_UNFREEZE,
     END,
 };
 
@@ -47,8 +44,6 @@ private:
     void OnInstanceInitEvent(Media::Meta &meta);
     void OnInstanceReleaseEvent(Media::Meta &meta);
     void OnInstanceMemoryUpdateEvent(Media::Meta &meta);
-    void OnAppFreezeEvent(Media::Meta &meta);
-    void OnAppUnfreezeEvent(Media::Meta &meta);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

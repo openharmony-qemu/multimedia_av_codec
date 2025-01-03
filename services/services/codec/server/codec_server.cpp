@@ -168,11 +168,6 @@ CodecServer::~CodecServer()
     avBufCallback_ = nullptr;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
-#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
-    Media::Meta eventInfo;
-    eventInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
-    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, eventInfo);
-#endif
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 

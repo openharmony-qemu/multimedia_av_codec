@@ -23,7 +23,6 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "meta/meta_key.h"
-#include "event_info_extended_key.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceMemoryUpdateEventHandler"};
@@ -56,9 +55,11 @@ void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta 
 
 void InstanceMemoryUpdateEventHandler::OnInstanceRelease(const Media::Meta &meta)
 {
-    auto instanceId = EventInfoExtentedKey::GetInstanceIdFromMeta(meta);
-    auto instanceInfo = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
-    DeterminAppMemoryLeak(instanceInfo.value().caller.pid, instanceInfo.value().forwardCaller.pid);
+    auto callerPid = INVALID_PID;
+    auto forwardCallerPid = INVALID_PID;
+    meta.GetData(Media::Tag::AV_CODEC_CALLER_PID, callerPid);
+    meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCallerPid);
+    DeterminAppMemoryLeak(callerPid, forwardCallerPid);
 }
 
 void InstanceMemoryUpdateEventHandler::RemoveTimer(pid_t pid)

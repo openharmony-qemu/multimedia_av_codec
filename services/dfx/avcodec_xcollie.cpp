@@ -120,7 +120,7 @@ int32_t AVCodecXCollie::Dump(int32_t fd)
     for (const auto &iter : dfxDumper_) {
         uint32_t timeInfoIndex = 1;
         auto titleIndex = DUMP_XCOLLIE_INDEX + (dumperIndex << DUMP_OFFSET_16);
-        dumpControler.AddInfo(titleIndex, "Timer "s + std::to_string(dumperIndex));
+        dumpControler.AddInfo(titleIndex, "Timer_"s + std::to_string(dumperIndex));
         dumpControler.AddInfo(titleIndex + (timeInfoIndex++ << DUMP_OFFSET_8), "TimerName", iter.second.name);
         dumpControler.AddInfo(titleIndex + (timeInfoIndex++ << DUMP_OFFSET_8),
             "StartTime", GetTimeString(iter.second.startTime).c_str());

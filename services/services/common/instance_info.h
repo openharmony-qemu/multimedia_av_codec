@@ -19,17 +19,36 @@
 #include <sys/types.h>
 #include <string>
 #include "avcodec_log.h"
+#include "meta.h"
+#include "meta/meta_key.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 constexpr pid_t INVALID_PID = -1;
+constexpr int32_t INVALID_INSTANCE_ID = -1;
+
+class EventInfoExtentedKey {
+public:
+    static constexpr std::string_view INSTANCE_ID = "av_codec_event_info_instance_id";
+    static constexpr std::string_view CODEC_TYPE = "av_codec_event_info_codec_type";
+    static constexpr std::string_view IS_HARDWARE = "av_codec_event_info_codec_type";
+    static constexpr std::string_view BIT_DEPTH = "av_codec_event_info_bit_depth";
+    static constexpr std::string_view ENABLE_POST_PROCESSING = "av_codec_event_info_enable_post_processing";
+
+    static int32_t GetInstanceIdFromMeta(const Media::Meta &meta)
+    {
+        auto instanceId = INVALID_INSTANCE_ID;
+        meta.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
+        return instanceId;
+    }
+};
+
 struct CallerInfo {
     pid_t pid = -1;
     uid_t uid = 0;
     std::string processName = "";
 };
 
-constexpr int32_t INVALID_INSTANCE_ID = -1;
 struct InstanceInfo {
     int32_t instanceId = INVALID_INSTANCE_ID;
     CallerInfo caller;
@@ -42,6 +61,23 @@ struct InstanceInfo {
         AVCODEC_LOGI("InstanceId: %{public}d, Caller: [%{public}d, %{public}s], ForwardCaller: [%{public}d, %{public}s]"
             ", MemoryUsage: %{public}" PRIu64, instanceId, caller.pid, caller.processName.c_str(), forwardCaller.pid,
             forwardCaller.processName.c_str(), memoryUsage);
+    }
+
+    std::shared_ptr<Media::Meta> TransToMeta()
+    {
+        auto meta = std::make_shared<Media::Meta>();
+        if (meta == nullptr) {
+            return nullptr;
+        }
+
+        meta->GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
+        meta->GetData(Media::Tag::AV_CODEC_CALLER_PID, caller.pid);
+        meta->GetData(Media::Tag::AV_CODEC_CALLER_UID, caller.uid);
+        meta->GetData(Media::Tag::AV_CODEC_CALLER_PROCESS_NAME, caller.processName);
+        meta->GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller.pid);
+        meta->GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_UID, forwardCaller.uid);
+        meta->GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardCaller.processName);
+        return meta;
     }
 };
 } // namespace MediaAVCodec

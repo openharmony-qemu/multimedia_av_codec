@@ -33,6 +33,7 @@ ohos_source_set("sa_manager") {
     "../codec/ipc/",
     "../codeclist/ipc/",
     "../../include/",
+    "../common/event_manager/",
   ]
 
   defines = av_codec_defines
