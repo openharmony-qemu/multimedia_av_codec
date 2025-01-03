@@ -30,6 +30,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "T
 namespace OHOS {
 namespace Media {
 const uint32_t BOX_HEAD_SIZE = 8;
+const uint32_t BOX_HEAD_LARGE_SIZE = 16;
 TimeAndIndexConversion::TimeAndIndexConversion()
     : source_(std::make_shared<Source>())
 {
@@ -101,17 +102,19 @@ void TimeAndIndexConversion::StartParse()
         FALSE_RETURN_MSG(buffer != nullptr, "StartParse failed due to read buffer error");
         BoxHeader header{0};
         ReadBoxHeader(buffer, header);
-        FALSE_RETURN_MSG(header.size > 0, "StartParse failed due to error box size");
+        FALSE_RETURN_MSG(header.size >= 0, "StartParse failed due to error box size");
         uint64_t boxSize = static_cast<uint64_t>(header.size);
+        uint32_t headerSize = BOX_HEAD_SIZE;
         if (boxSize == 1 || boxSize == 0) { // 0 and 1 are used to verify whether there is a large size
             uint64_t largeSize = 0;
             ReadLargeSize(buffer, largeSize);
             boxSize = largeSize;
+            headerSize = BOX_HEAD_LARGE_SIZE;
         }
-        FALSE_RETURN_MSG(boxSize >= BOX_HEAD_SIZE, "StartParse failed due to error box size");
+        FALSE_RETURN_MSG(boxSize >= headerSize, "StartParse failed due to error box size");
         if (strncmp(header.type, BOX_TYPE_MOOV, sizeof(header.type)) == 0) {
-            offset_ += BOX_HEAD_SIZE;
-            ParseMoov(header.size - BOX_HEAD_SIZE);
+            offset_ += headerSize;
+            ParseMoov(boxSize - headerSize);
         } else {
             offset_ += boxSize;
         }
@@ -180,12 +183,21 @@ void TimeAndIndexConversion::ParseMoov(uint32_t boxSize)
         FALSE_RETURN_MSG(buffer != nullptr, "ParseMoov failed due to read buffer error");
         BoxHeader header{0};
         ReadBoxHeader(buffer, header);
-        FALSE_RETURN_MSG(header.size > 0, "ParseMoov failed due to error box size");
+        FALSE_RETURN_MSG(header.size >= 0, "ParseMoov failed due to error box size");
+        uint64_t childBoxSize = static_cast<uint64_t>(header.size);
+        uint32_t headerSize = BOX_HEAD_SIZE;
+        if (childBoxSize == 1 || childBoxSize == 0) { // 0 and 1 are used to verify whether there is a large size
+            uint64_t largeSize = 0;
+            ReadLargeSize(buffer, largeSize);
+            childBoxSize = largeSize;
+            headerSize = BOX_HEAD_LARGE_SIZE;
+        }
+        FALSE_RETURN_MSG(childBoxSize >= headerSize, "ParseMoov failed due to error box size");
         if (strncmp(header.type, BOX_TYPE_TRAK, sizeof(header.type)) == 0) {
-            offset_ += BOX_HEAD_SIZE;
-            ParseTrak(header.size - BOX_HEAD_SIZE);
-        } else if (header.size > BOX_HEAD_SIZE) {
-            offset_ += static_cast<uint64_t>(header.size);
+            offset_ += headerSize;
+            ParseTrak(childBoxSize - headerSize);
+        } else {
+            offset_ += childBoxSize;
         }
     }
 }
@@ -214,13 +226,22 @@ void TimeAndIndexConversion::ParseBox(uint32_t boxSize)
         FALSE_RETURN_MSG(buffer != nullptr, "ParseBox failed due to read buffer error");
         BoxHeader header{0};
         ReadBoxHeader(buffer, header);
-        FALSE_RETURN_MSG(header.size > 0, "ParseBox failed due to error box size");
+        FALSE_RETURN_MSG(header.size >= 0, "ParseBox failed due to error box size");
+        uint64_t childBoxSize = static_cast<uint64_t>(header.size);
+        uint32_t headerSize = BOX_HEAD_SIZE;
+        if (childBoxSize == 1 || childBoxSize == 0) { // 0 and 1 are used to verify whether there is a large size
+            uint64_t largeSize = 0;
+            ReadLargeSize(buffer, largeSize);
+            childBoxSize = largeSize;
+            headerSize = BOX_HEAD_LARGE_SIZE;
+        }
+        FALSE_RETURN_MSG(childBoxSize >= headerSize, "ParseBox failed due to error box size");
         auto it = boxParsers.find(std::string(header.type));
         if (it != boxParsers.end()) {
-            offset_ += BOX_HEAD_SIZE;
-            (this->*(it->second))(header.size - BOX_HEAD_SIZE);
+            offset_ += headerSize;
+            (this->*(it->second))(childBoxSize - headerSize);
         } else {
-            offset_ += static_cast<uint64_t>(header.size);
+            offset_ += childBoxSize;
         }
     }
 }
