@@ -145,11 +145,15 @@ struct M3U8VariantStream {
 };
 
 struct M3U8MasterPlaylist {
-    M3U8MasterPlaylist(const std::string& playList, const std::string& uri,
+    M3U8MasterPlaylist(const std::string& playList, const std::string& uri, uint32_t initResolution = 0,
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>());
     void UpdateMediaPlaylist();
     void UpdateMasterPlaylist();
     void DownloadSessionKey(std::shared_ptr<Tag>& tag);
+    void ChooseStreamByResolution();
+    bool IsNearToInitResolution(const std::shared_ptr<M3U8VariantStream> &choosedStream,
+    const std::shared_ptr<M3U8VariantStream> &currentStream);
+    uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
     std::string uri_;
@@ -166,6 +170,7 @@ struct M3U8MasterPlaylist {
     bool hasDiscontinuity_ {false};
     std::vector<size_t> segmentOffsets_;
     std::map<std::string, std::string> httpHeader_ {};
+    uint32_t initResolution_ {0};
 };
 }
 }

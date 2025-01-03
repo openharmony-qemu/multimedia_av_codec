@@ -1107,7 +1107,20 @@ size_t DashMediaDownloader::GetBufferSize() const
 
 bool DashMediaDownloader::GetPlayable()
 {
-    return GetBufferSize() > 0;
+    std::shared_ptr<DashSegmentDownloader> vidSegmentDownloader =
+        GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    std::shared_ptr<DashSegmentDownloader> audSegmentDownloader =
+        GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
+    if (vidSegmentDownloader != nullptr && audSegmentDownloader != nullptr) {
+        return !vidSegmentDownloader->GetBufferringStatus() && !audSegmentDownloader->GetBufferringStatus();
+    } else if (vidSegmentDownloader != nullptr) {
+        return !vidSegmentDownloader->GetBufferringStatus();
+    } else if (audSegmentDownloader != nullptr) {
+        return !audSegmentDownloader->GetBufferringStatus();
+    } else {
+        MEDIA_LOG_E("GetPlayable error.");
+        return false;
+    }
 }
 
 void DashMediaDownloader::SetAppUid(int32_t appUid)
