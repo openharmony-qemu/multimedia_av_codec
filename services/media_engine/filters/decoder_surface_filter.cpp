@@ -925,6 +925,11 @@ int32_t DecoderSurfaceFilter::GetDecRateUpperLimit()
     return rateUpperLimit_;
 }
 
+bool DecoderSurfaceFilter::GetIsSupportSeekWithoutFlush()
+{
+    
+}
+
 void DecoderSurfaceFilter::OnDumpInfo(int32_t fd)
 {
     MEDIA_LOG_D("DecoderSurfaceFilter::OnDumpInfo called.");
