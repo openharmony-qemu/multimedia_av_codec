@@ -432,7 +432,7 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
             MEDIA_LOG_W("HLS Read back, this is the first ts: " PUBLIC_LOG_U64, readOffset_);
             return;
         }
-        if (tsStorageInfo_.find(readTsIndex_ - 1) != tsStorageInfo_.end()) {
+        if (tsStorageInfo_.find(readTsIndex_ - 1) == tsStorageInfo_.end()) {
             readOffset_ = readOffset_ > curTsHaveRead ? readOffset_ - curTsHaveRead : 0;
             MEDIA_LOG_W("HLS Read back, last ts is not ready, update readOffset to readTsIndex head: "
                 PUBLIC_LOG_U64, readOffset_);
@@ -1848,6 +1848,17 @@ bool HlsMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
     expectOffset_.store(offset);
     initCacheSize_.store(size);
     return true;
+}
+
+void HlsMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy)
+{
+    if (playlistDownloader_ == nullptr || playStrategy == nullptr) {
+        MEDIA_LOG_E("SetPlayStrategy error.");
+        return;
+    }
+    if (playStrategy->width > 0 && playStrategy->height > 0) {
+        playlistDownloader_->SetInitResolution(playStrategy->width, playStrategy->height);
+    }
 }
 }
 }
