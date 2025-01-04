@@ -307,7 +307,8 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
     segmentSp->startNumberSeq_ = 1;
     segmentSp->numberSeq_ = 2;
 
-    bool result = segmentDownloader->SeekToTime(seekSegment);
+    int32_t streamId = -1;
+    bool result = segmentDownloader->SeekToTime(seekSegment, streamId);
     segmentDownloader->Close(true, true);
     segmentDownloader = nullptr;
     
