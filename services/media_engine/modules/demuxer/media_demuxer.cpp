@@ -859,11 +859,6 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
         return Status::OK;
     }
 
-    if (curTrackId == trackId) {
-        MEDIA_LOG_W("Same track");
-        return Status::OK;
-    }
-
     if (targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)) {
         MEDIA_LOG_I("Select stream");
         {
