@@ -17,15 +17,11 @@
 #define AUDIO_DECODER_ADAPTER_H
 
 #include <shared_mutex>
-#include <vector>
-#include "surface.h"
-#include "avcodec_video_decoder.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avbuffer_queue.h"
 #include "buffer/avbuffer_queue_producer.h"
 #include "osal/task/condition_variable.h"
 #include "meta/format.h"
-#include "video_sink.h"
 #include "avcodec_audio_codec.h"
 #include "media_codec.h"
 #include "avcodec_common.h"

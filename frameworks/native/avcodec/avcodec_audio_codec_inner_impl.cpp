@@ -200,8 +200,7 @@ int32_t AVCodecAudioCodecInnerImpl::ChangePlugin(
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl ChangePlugin");
     CHECK_AND_RETURN_RET_LOG(
         codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
-    int32_t ret = codecService_->ChangePlugin(mime, isEncoder, meta);
-    return ret;
+    return codecService_->ChangePlugin(mime, isEncoder, meta);
 }
 
 int32_t AVCodecAudioCodecInnerImpl::SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback)
@@ -209,8 +208,7 @@ int32_t AVCodecAudioCodecInnerImpl::SetCodecCallback(const std::shared_ptr<Media
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetCodecCallback");
     CHECK_AND_RETURN_RET_LOG(
         codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
-    int32_t ret = codecService_->SetCodecCallback(codecCallback);
-    return ret;
+    return codecService_->SetCodecCallback(codecCallback);
 }
 
 int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(
@@ -219,8 +217,7 @@ int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetAudioDecryptionConfig");
     CHECK_AND_RETURN_RET_LOG(
         codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
-    int32_t ret = codecService_->SetAudioDecryptionConfig(keySession, svpFlag);
-    return ret;
+    return codecService_->SetAudioDecryptionConfig(keySession, svpFlag);
 }
 
 void AVCodecAudioCodecInnerImpl::ProcessInputBuffer()

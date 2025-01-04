@@ -17,8 +17,6 @@
 #include <malloc.h>
 #include <map>
 #include <unistd.h>
-#include <vector>
-#include "avcodec_audio_decoder.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
 #include "common/log.h"
@@ -42,7 +40,6 @@ using namespace MediaAVCodec;
 
 AudioDecoderAdapter::AudioDecoderAdapter()
 {
-    state_ = CodecState::UNINITIALIZED;
     MEDIA_LOG_I("AudioDecoderAdapter instances create.");
 }
 
@@ -64,12 +61,11 @@ Status AudioDecoderAdapter::Init(bool isMimeType, const std::string &name)
         StateToString(state_).data());
 
     MEDIA_LOG_I("state from %{public}s to INITIALIZING", StateToString(state_).data());
+    MEDIA_LOG_I("AudioDecoderAdapter::Init isMimeType is %{public}i", isMimeType);
     if (isMimeType) {
         audiocodec_ = MediaAVCodec::AudioCodecFactory::CreateByMime(name, false);
-        MEDIA_LOG_I("AudioDecoderAdapter::Init CreateByMime");
     } else {
         audiocodec_ = MediaAVCodec::AudioCodecFactory::CreateByName(name);
-        MEDIA_LOG_I("AudioDecoderAdapter::Init CreateByName");
     }
     FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     state_ = CodecState::INITIALIZED;
@@ -78,12 +74,14 @@ Status AudioDecoderAdapter::Init(bool isMimeType, const std::string &name)
 
 Status AudioDecoderAdapter::Configure(const std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_I("Configure enter.");
+    MEDIA_LOG_I("In");
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ == CodecState::INITIALIZED, Status::ERROR_INVALID_STATE);
     int32_t ret = audiocodec_->Configure(parameter);
+    FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     state_ = CodecState::CONFIGURED;
-    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
+    MEDIA_LOG_I("out");
+    return Status::OK;
 }
 
 Status AudioDecoderAdapter::SetParameter(const std::shared_ptr<Meta> &parameter)
@@ -100,51 +98,54 @@ Status AudioDecoderAdapter::SetParameter(const std::shared_ptr<Meta> &parameter)
 
 Status AudioDecoderAdapter::Prepare()
 {
-    MEDIA_LOG_I("Prepare enter.");
+    MEDIA_LOG_I("In");
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V_MSG_W(state_ != CodecState::FLUSHED, Status::ERROR_AGAIN, "state is flushed, no need prepare");
     FALSE_RETURN_V(state_ != CodecState::PREPARED, Status::OK);
     FALSE_RETURN_V(state_ == CodecState::CONFIGURED, Status::ERROR_INVALID_STATE);
     int32_t ret = audiocodec_->Prepare();
+    FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     state_ = CodecState::PREPARED;
-    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
+    MEDIA_LOG_I("out");
+    return Status::OK;
 }
 
 Status AudioDecoderAdapter::Start()
 {
-    MEDIA_LOG_I("Start enter.");
+    MEDIA_LOG_I("In");
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ != CodecState::RUNNING, Status::OK);
     FALSE_RETURN_V(state_ == CodecState::PREPARED || state_ == CodecState::FLUSHED, Status::ERROR_INVALID_STATE);
     state_ = CodecState::STARTING;
     int32_t ret = audiocodec_->Start();
+    FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     state_ = CodecState::RUNNING;
-    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
+    MEDIA_LOG_I("out");
+    return Status::OK;
 }
 
 Status AudioDecoderAdapter::Stop()
 {
-    MEDIA_LOG_I("Stop enter.");
+    MEDIA_LOG_I("In");
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ != CodecState::PREPARED, Status::OK);
     FALSE_RETURN_V_MSG_W(
         state_ != CodecState::UNINITIALIZED && state_ != CodecState::STOPPING && state_ != CodecState::RELEASING,
-        Status::OK,
-        "Stop, state_=%{public}s",
-        StateToString(state_).data());
-
+        Status::OK, "Stop, state_=%{public}s", StateToString(state_).data());
     FALSE_RETURN_V(
         state_ == CodecState::RUNNING || state_ == CodecState::END_OF_STREAM || state_ == CodecState::FLUSHED,
         Status::ERROR_INVALID_STATE);
     state_ = CodecState::STOPPING;
     int32_t ret = audiocodec_->Stop();
+    FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     state_ = CodecState::PREPARED;
-    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
+    MEDIA_LOG_I("out");
+    return Status::OK;
 }
 
 Status AudioDecoderAdapter::Flush()
 {
-    MEDIA_LOG_I("Flush enter.");
+    MEDIA_LOG_I("In");
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V_MSG_W(state_ != CodecState::FLUSHED,
         Status::OK,
@@ -158,14 +159,16 @@ Status AudioDecoderAdapter::Flush()
     MEDIA_LOG_I("Flush, state from %{public}s to FLUSHING", StateToString(state_).data());
     state_ = CodecState::FLUSHING;
     int32_t ret = audiocodec_->Flush();
+    FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     state_ = CodecState::FLUSHED;
-    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
+    MEDIA_LOG_I("out");
+    return Status::OK;
 }
 
 Status AudioDecoderAdapter::Reset()
 {
+    MEDIA_LOG_I("In");
     AutoLock lock(stateMutex_);
-    MEDIA_LOG_I("Reset enter.");
     FALSE_RETURN_V_MSG_W(state_ != CodecState::UNINITIALIZED && state_ != CodecState::RELEASING,
         Status::OK,
         "reset, state is already released, state =%{public}s .",
@@ -177,14 +180,16 @@ Status AudioDecoderAdapter::Reset()
         return Status::OK;
     }
     int32_t ret = audiocodec_->Reset();
+    FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     state_ = CodecState::INITIALIZED;
-    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
+    MEDIA_LOG_I("out");
+    return Status::OK;
 }
 
 Status AudioDecoderAdapter::Release()
 {
+    MEDIA_LOG_I("In");
     AutoLock lock(stateMutex_);
-    MEDIA_LOG_I("Release enter.");
     FALSE_RETURN_V_MSG_W(state_ != CodecState::UNINITIALIZED && state_ != CodecState::RELEASING,
         Status::OK,
         "Release, state isnot completely correct, state =%{public}s .",
@@ -198,8 +203,10 @@ Status AudioDecoderAdapter::Release()
     MEDIA_LOG_I("state from %{public}s to RELEASING", StateToString(state_).data());
     state_ = CodecState::RELEASING;
     int32_t ret = audiocodec_->Release();
+    FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     state_ = CodecState::UNINITIALIZED;
-    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
+    MEDIA_LOG_I("out");
+    return Status::OK;
 }
 
 Status AudioDecoderAdapter::SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer)
