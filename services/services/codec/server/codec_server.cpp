@@ -744,7 +744,8 @@ int32_t CodecServer::SetCodecCallback(const std::shared_ptr<MediaCodecCallback> 
 {
     AVCODEC_LOGI("CodecServer::SetCodecCallback");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    return codecBase_->SetCodecCallback(codecCallback);
+    avBufCallback_ = codecCallback;
+    return codecBase_->SetCallback(codecCallback);
 }
 
 int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)

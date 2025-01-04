@@ -266,11 +266,6 @@ public:
         (void)meta;
         return AVCODEC_ERROR_EXTEND_START;
     }
-    virtual int32_t SetCodecCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &codecCallback)
-    {
-        (void)codecCallback;
-        return AVCODEC_ERROR_EXTEND_START;
-    }
 
     /* API12 audio codec interface for drm*/
     virtual int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
