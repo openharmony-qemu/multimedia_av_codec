@@ -842,12 +842,7 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
         return Status::ERROR_UNKNOWN;
     }
 
-    if (curTrackId == trackId) {
-        MEDIA_LOG_W("Same track");
-        return Status::OK;
-    }
-
-    if (targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)) {
+    if (curTrackId == trackId || targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)) {
         MEDIA_LOG_I("Select stream");
         selectTrackTrackID_ = static_cast<uint32_t>(trackId);
         isSelectTrack_.store(true);
@@ -933,11 +928,6 @@ Status MediaDemuxer::SelectTrack(int32_t trackId)
         Status::ERROR_INVALID_PARAMETER, "Select track failed");
     if (!useBufferQueue_) {
         return InnerSelectTrack(trackId);
-    }
-    if (trackId == static_cast<int32_t>(videoTrackId_) || trackId == static_cast<int32_t>(audioTrackId_)
-        || trackId == static_cast<int32_t>(subtitleTrackId_)) {
-        MEDIA_LOG_W("same trackId, can not SelectTrack");
-        return Status::ERROR_WRONG_STATE;
     }
     if (demuxerPluginManager_->IsDash()) {
         if (streamDemuxer_->CanDoChangeStream() == false) {
