@@ -83,7 +83,7 @@ private:
 
     std::string dumpPrefix_ = "";
 
-    std::atomic<CodecState> state_;
+    std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
 
     Mutex stateMutex_;
 };
