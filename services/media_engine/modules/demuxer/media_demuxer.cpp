@@ -688,6 +688,7 @@ void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
     if (demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash()) {
+        std::unique_lock<std::mutex> lock(rebootPluginMutex_);
         rebootPluginCondition_.notify_all();
     }
     if (source_ != nullptr) {
