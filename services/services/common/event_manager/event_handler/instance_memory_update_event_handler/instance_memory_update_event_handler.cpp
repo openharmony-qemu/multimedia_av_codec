@@ -28,6 +28,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceMemoryUpdateEventHandler"};
 constexpr int32_t MEMORY_LEAK_UPLOAD_TIMEOUT = 180; // seconds
 constexpr uint32_t APP_MEMORY_THRESHOLD_MIN = 262'144; // 262144, 256MB
+constexpr uint32_t THRESHOLD_CONFIG_FILE_SIZE_MAX = 1024'576; // 1024576, 1M
 } // namespace
 
 namespace OHOS {
@@ -167,7 +168,7 @@ uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
 
     std::string line;
     std::string configJson;
-    while (thresholdConfigFile >> line) {
+    while (thresholdConfigFile >> line && configJson.size() < THRESHOLD_CONFIG_FILE_SIZE_MAX) {
         configJson += line;
     }
     auto root = std::shared_ptr<cJSON>(cJSON_Parse(configJson.c_str()), cJSON_Delete);

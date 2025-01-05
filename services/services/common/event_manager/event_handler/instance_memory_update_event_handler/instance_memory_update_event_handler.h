@@ -19,6 +19,7 @@
 #include <optional>
 #include <functional>
 #include <unordered_map>
+#include <unordered_set>
 #include <mutex>
 #include <memory>
 #include "avcodec_xcollie.h"
@@ -48,7 +49,9 @@ private:
 
     uint32_t appMemoryThreshold_ = 0;
     std::mutex timerMutex_;
+    std::mutex appMemoryLeakListMutex_;
     std::unordered_map<pid_t, std::shared_ptr<AVCodecXcollieTimer>> timerMap_;
+    std::unordered_set<pid_t> appMemoryLeakList_;
 
 private:
     class ThresholdParser {
