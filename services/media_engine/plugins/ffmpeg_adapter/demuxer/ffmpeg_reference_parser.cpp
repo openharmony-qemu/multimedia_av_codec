@@ -95,7 +95,7 @@ AVStream *FFmpegDemuxerPlugin::GetVideoStream()
 
 bool FFmpegDemuxerPlugin::IsRefParserSupported()
 {
-    std::shared_ptr formatContext = parserRefFormatContext_ != nullptr ?
+    std::shared_ptr<AVFormatContext> formatContext = parserRefFormatContext_ != nullptr ?
         parserRefFormatContext_ : formatContext_;
     FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
     FileType type = FFmpegFormatHelper::GetFileTypeByName(*formatContext);

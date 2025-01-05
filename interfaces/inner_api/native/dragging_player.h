@@ -38,7 +38,7 @@ public:
     virtual void Release() = 0;
 };
 
-extern "C" attribute((visibility("default"))) bool IsDraggingSupported(Pipeline::DemuxerFilter *demuxer,
+extern "C" __attribute__((visibility("default"))) bool IsDraggingSupported(Pipeline::DemuxerFilter *demuxer,
     Pipeline::DecoderSurfaceFilter *decoder);
 extern "C" __attribute__((visibility("default"))) DraggingPlayer *CreateDraggingPlayer();
 extern "C" __attribute__((visibility("default"))) void DestroyDraggingPlayer(DraggingPlayer *draggingPlayer);
