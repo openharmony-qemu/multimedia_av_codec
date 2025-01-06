@@ -1190,7 +1190,6 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0800, TestSize.Level0)
  * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_0900
  * @tc.name      : demux MPEG2_simple_320_240_24_MP3_48K_2.mpg
  * @tc.desc      : function test
- * 
  */
 HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0900, TestSize.Level0)
 {
