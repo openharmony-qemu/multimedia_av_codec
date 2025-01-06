@@ -1115,3 +1115,163 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_RANDOM_SEEK_0109, TestSize.Level2)
 {
     CheckSeekResult("/data/test/media/MPEG2_simple_320_240_24_MP3_48K_2.mpg", SEEKTIMES);
 }
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_0100
+ * @tc.name      : demuxer random seek,AVI_H263_baseline@level10_352_288_AAC_2.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_0100, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_H263_baseline@level10_352_288_AAC_2.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_0200
+ * @tc.name      : demuxer random seek, AVI_H263_baseline@level20_352_288_MP2_1.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_0200, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_H263_baseline@level20_352_288_MP2_1.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_0300
+ * @tc.name      : demuxer random seek, AVI_H263_baseline@level60_704_576_MP3_2.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_0300, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_H263_baseline@level60_704_576_MP3_2.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_0400
+ * @tc.name      : demuxer random seek, AVI_H263_baseline@level70_1408_1152_PCM_mulaw_1.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_0400, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_H263_baseline@level70_1408_1152_PCM_mulaw_1.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_0500
+ * @tc.name      : demuxer random seek, AVI_H264_baseline@level4.1_1280_720_AAC_2.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_0500, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_H264_constrained_baseline@level4.1_1280_720_AAC_2.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_0600
+ * @tc.name      : demuxer random seek, AVI_H264_main@level5_1920_1080_PM2_1.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_0600, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_H264_main@level5_1920_1080_MP2_1.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_0700
+ * @tc.name      : demuxer random seek, AVI_H264_high@level5.1_1920_1080_PM3_2.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_0700, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_H264_high@level5.1_1920_1080_MP3_2.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_0800
+ * @tc.name      : demuxer random seek, AVI_H264_h422@level5.1_2560_1920_PCM_mulaw_1.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_0800, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_H264_high@level5_2560_1920_PCM_mulaw_1.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_0900
+ * @tc.name      : demuxer random seek, AVI_MPEG2_simple@low_320_240_AAC_2.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_0900, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_MPEG2_simple@low_320_240_AAC_2.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_1000
+ * @tc.name      : demuxer random seek, AVI_MPEG2_main@mian_720_480_MP2_1.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_1000, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_MPEG2_main@mian_640_480_MP2_1.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_1100
+ * @tc.name      : demuxer random seek, AVI_MPEG2_high@high_1440_1080_MP3_2.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_1100, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_MPEG2_simple@main_640_480_MP3_2.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_1200
+ * @tc.name      : demuxer random seek, AVI_MPEG2_422P@high_1920_1080_PCM_s24_1.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_1200, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_MPEG2_422P@high_1920_1080_PCM_s24_1.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_1300
+ * @tc.name      : demuxer random seek, AVI_MPEG4_simple@level5_720_480_AAC_2.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_1300, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_MPEG4_simple@level1_640_480_AAC_2.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_1400
+ * @tc.name      : demuxer random seek, AVI_MPEG4_advanced_simple@level6_1280_720_MP2_1.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_1400, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_MPEG4_advanced_simple@level6_1280_720_MP2_1.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_1500
+ * @tc.name      : demuxer random seek, AVI_MPEG4_advanced_simple@level3_352_288_MP3_2.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_1500, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_MPEG4_advanced_simple@level3_352_288_MP3_2.avi", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_RANDOM_SEEK_1600
+ * @tc.name      : demuxer random seek, AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_1600, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi", SEEKTIMES);
+}

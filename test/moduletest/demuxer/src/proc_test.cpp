@@ -165,6 +165,18 @@ static void IsHdrVivid(OH_AVFormat *paramFormat)
     }
 }
 
+static void CheckFile(const char *fileName, int fd, OH_AVSource **src, OH_AVDemuxer **Demuxer, int32_t *trackCount)
+{
+    int64_t size = GetFileSize(fileName);
+    cout << fileName << "----------------------" << fd << "---------" << size << endl;
+    *src = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(*src, nullptr);
+    *Demuxer = OH_AVDemuxer_CreateWithSource(*src);
+    ASSERT_NE(*Demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, trackCount));
+}
+
 static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
 {
     int tarckType = 0;
@@ -1843,5 +1855,111 @@ HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0400, TestSize.Level0)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, num, SEEK_MODE_CLOSEST_SYNC));
         }
     }
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_AVI_PROCESS_0100
+ * @tc.name      : demuxer video and 2 audio file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0100, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/video_2audio.avi";
+    int fd = open(file, O_RDONLY);
+    CheckFile(file, fd, &source, &demuxer, &g_trackCount);
+    int tarckType = 0;
+    int auidoTrackCount = 2;
+    bool videoIsEnd = false;
+    int videoFrame = 0;
+    ASSERT_EQ(auidoTrackCount + 1, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int vKeyCount = 0;
+    int aKeyCount[2] = {};
+    int audioFrame[2] = {};
+    bool audioIsEnd1 = false;
+    bool audioIsEnd2 = false;
+    while (!audioIsEnd1 || !audioIsEnd2 || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((videoIsEnd && (index == 0)) || (audioIsEnd1 && (index == 1)) || (audioIsEnd2 && (index == 2))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+            }else if (tarckType == MEDIA_TYPE_AUD && index ==1) {
+                SetAudioValue(attr, audioIsEnd1, audioFrame[index-1], aKeyCount[index-1]);
+            }else if (tarckType == MEDIA_TYPE_AUD && index ==2) {
+                SetAudioValue(attr, audioIsEnd2, audioFrame[index-1], aKeyCount[index-1]);
+            }
+        }
+    }
+    ASSERT_EQ(videoFrame, 25);
+    ASSERT_EQ(vKeyCount, 3);
+    ASSERT_EQ(audioFrame[0], 39);
+    ASSERT_EQ(aKeyCount[0], 39);
+    ASSERT_EQ(audioFrame[1], 14);
+    ASSERT_EQ(aKeyCount[1], 14);
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_AVI_PROCESS_0200
+ * @tc.name      : demuxer audio and 2 video file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0200, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/audio_2video.avi";
+    int fd = open(file, O_RDONLY);
+    CheckFile(file, fd, &source, &demuxer, &g_trackCount);
+    int tarckType = 0;
+    int videoTrackCount = 2;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    ASSERT_EQ(videoTrackCount + 1, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int aKeyCount = 0;
+    int vKeyCount[2] = {};
+    int videoFrame[2] = {};
+    bool videoIsEnd1 = false;
+    bool videoIsEnd2 = false;
+    while (!audioIsEnd || !videoIsEnd1 || !videoIsEnd2) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (index == 2)) || (videoIsEnd1 && (index == 0)) || (videoIsEnd2 && (index == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            }else if (tarckType == MEDIA_TYPE_VID && index == 0) {
+                SetVideoValue(attr, videoIsEnd1, videoFrame[index], vKeyCount[index]);
+            }else if (tarckType == MEDIA_TYPE_VID && index == 1) {
+                SetVideoValue(attr, videoIsEnd2, videoFrame[index], vKeyCount[index]);
+            }
+        }
+    }
+    ASSERT_EQ(videoFrame[0], 29);
+    ASSERT_EQ(vKeyCount[0], 1);
+    ASSERT_EQ(videoFrame[1], 29);
+    ASSERT_EQ(vKeyCount[1], 1);
+    ASSERT_EQ(audioFrame, 40);
+    ASSERT_EQ(aKeyCount, 40);
     close(fd);
 }

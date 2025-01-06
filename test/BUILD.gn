@@ -175,6 +175,8 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxerape_fuzzer:DemuxerApeFuzzTest",
       "fuzztest/demuxerapeapi11_fuzzer:DemuxerApeAPI11FuzzTest",
       "fuzztest/demuxerapi11_fuzzer:DemuxerAPI11FuzzTest",
+      "fuzztest/demuxeravi_fuzzer:DemuxerAviFuzzTest",
+      "fuzztest/demuxeraviapi11_fuzzer:DemuxerAviAPI11FuzzTest",
       "fuzztest/demuxerflac_fuzzer:DemuxerFlacFuzzTest",
       "fuzztest/demuxerflacapi11_fuzzer:DemuxerFlacAPI11FuzzTest",
       "fuzztest/demuxerflv_fuzzer:DemuxerFlvFuzzTest",
