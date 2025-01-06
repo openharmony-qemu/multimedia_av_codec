@@ -22,6 +22,7 @@
 #include <shared_mutex>
 #include <unordered_set>
 
+#include "osal/task/condition_variable.h"
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
@@ -89,6 +90,7 @@ public:
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
+    void OnSeekReadyEvent(const Plugins::PluginEvent &event);
 
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
@@ -178,7 +180,6 @@ private:
     bool CheckTrackEnabledById(uint32_t trackId);
     bool HandleDashChangeStream(uint32_t trackId);
 
-    Status SeekToTimePre();
     Status SeekToTimeAfter();
     bool SelectBitRateChangeStream(uint32_t trackId);
     bool SelectTrackChangeStream(uint32_t trackId);
@@ -209,8 +210,7 @@ private:
     Status HandleSelectTrack(int32_t trackId);
     Status HandleDashSelectTrack(int32_t trackId);
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
-    void HandleStopPlugin(int32_t trackId);
-    void HandleStartPlugin(int32_t trackId);
+    Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
     bool DashCheckChangeStream(uint32_t trackId);
 
     bool IsSubtitleMime(const std::string& mime);
@@ -230,6 +230,8 @@ private:
     int64_t videoStartTime_{0};
 
     std::shared_mutex drmMutex{};
+    std::mutex isSelectTrackMutex_{};
+    std::mutex rebootPluginMutex_{};
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
 
@@ -280,7 +282,9 @@ private:
     std::mutex prerollMutex_ {};
     std::atomic<bool> inPreroll_ = false;
 
-    uint32_t selectTrackTrackID_ { TRACK_ID_DUMMY };
+    std::map<int32_t, int32_t> inSelectTrackType_{};
+    std::map<int32_t, std::pair<int32_t, int32_t>> seekReadyStreamInfo_{};
+    std::condition_variable rebootPluginCondition_;
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;

@@ -805,7 +805,7 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
     return false;
 }
 
-bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segment)
+bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segment, int32_t& streamId)
 {
     std::lock_guard<std::mutex> lock(segmentMutex_);
     std::shared_ptr<DashBufferSegment> desSegment;
@@ -821,6 +821,7 @@ bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segme
         if (buffer_->SetHead(desSegment->bufferPosHead_)) {
             // set init segment when seek on buffered, before read first segment demuxer plugin need reboot
             UpdateInitSegmentState(desSegment->streamId_);
+            streamId = desSegment->streamId_;
             return true;
         }
     }
