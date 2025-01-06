@@ -189,6 +189,8 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxermovapi11_fuzzer:DemuxerMovAPI11FuzzTest",
       "fuzztest/demuxermp3_fuzzer:DemuxerMp3FuzzTest",
       "fuzztest/demuxermp3api11_fuzzer:DemuxerMp3API11FuzzTest",
+      "fuzztest/demuxermpg_fuzzer:DemuxerMpgFuzzTest",
+      "fuzztest/demuxermpgapi11_fuzzer:DemuxerMpgAPI11FuzzTest",
       "fuzztest/demuxerogg_fuzzer:DemuxerOggFuzzTest",
       "fuzztest/demuxeroggapi11_fuzzer:DemuxerOggAPI11FuzzTest",
       "fuzztest/demuxersrt_fuzzer:DemuxerSrtFuzzTest",
