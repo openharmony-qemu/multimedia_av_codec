@@ -299,12 +299,12 @@ extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
 extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT;
 
 /**
- * @brief Enumerates the MIME types of audio pcm codec.
+ * @brief Enumerates the MIME types of audio raw codec.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 14
  */
-extern const char *OH_AVCODEC_MIMETYPE_AUDIO_PCM;
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW;
 
 /**
  * @brief The extra data's key of surface Buffer
