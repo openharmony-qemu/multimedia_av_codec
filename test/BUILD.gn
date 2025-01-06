@@ -209,6 +209,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/hevcswdecodersetparameter_fuzzer:HevcSwdecoderSetParameterFuzzTest",
       "fuzztest/hwdecoder_fuzzer:HwdecoderFuzzTest",
       "fuzztest/hwdecoderapi11_fuzzer:HwdecoderApi11FuzzTest",
+      "fuzztest/ptsandindexconversion_fuzzer:PtsAndIndexConversionFuzzTest",
       "fuzztest/referenceparser_fuzzer:ReferenceparserFuzzTest",
       "fuzztest/swdecoderconfigure_fuzzer:SwdecoderConfigureFuzzTest",
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
