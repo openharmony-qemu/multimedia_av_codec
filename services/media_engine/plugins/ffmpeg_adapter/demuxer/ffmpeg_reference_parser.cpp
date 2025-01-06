@@ -49,13 +49,11 @@ namespace Ffmpeg {
 
 void FFmpegDemuxerPlugin::ParserBoxInfo()
 {
-    std::string formatName(formatContext_.get()->iformat->name);
-    FALSE_RETURN_MSG(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4, "FileType is not MP4");
-    int videoStreamIdx = av_find_best_stream(formatContext_.get(), AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
-    FALSE_RETURN_MSG(videoStreamIdx >= 0, "Can not find video stream");
-    AVStream *videoStream = formatContext_->streams[videoStreamIdx];
+    if (!IsRefParserSupported()) {
+        return;
+    }
+    AVStream *videoStream = GetVideoStream();
     FALSE_RETURN_MSG(videoStream != nullptr, "Video stream is nullptr");
-    parserRefVideoStreamIdx_ = videoStreamIdx;
     if (videoStream->avg_frame_rate.den == 0 || videoStream->avg_frame_rate.num == 0) {
         fps_ = videoStream->r_frame_rate.num / (double)videoStream->r_frame_rate.den;
     } else {
@@ -70,8 +68,8 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
         }
         av_destory_key_frame_pos_list(keyFramePosInfo);
     }
-    FALSE_RETURN_MSG(GetPresentationTimeUsFromFfmpegMOV(GET_ALL_FRAME_PTS, videoStreamIdx, 0, 0) == Status::OK,
-        "get all frame pts failed.");
+    FALSE_RETURN_MSG(GetPresentationTimeUsFromFfmpegMOV(
+        GET_ALL_FRAME_PTS, parserRefVideoStreamIdx_, 0, 0) == Status::OK, "get all frame pts failed.");
     ptsListFromZero_.clear();
     for (size_t ptsIdx = 0; ptsIdx < ptsListOrg_.size(); ptsIdx++) {
         ptsListFromZero_.emplace_back(ptsListOrg_[ptsIdx] - absolutePTSIndexZero_);
@@ -82,12 +80,34 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
     MEDIA_LOG_I("Success parse, fps: " PUBLIC_LOG_F ", IFramePos size: " PUBLIC_LOG_ZU, fps_, IFramePos_.size());
 }
 
+AVStream *FFmpegDemuxerPlugin::GetVideoStream()
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, nullptr, "AVFormatContext is nullptr");
+    if (parserRefVideoStreamIdx_ < 0 || parserRefVideoStreamIdx_ >= static_cast<int32_t>(formatContext_->nb_streams)) {
+        int32_t streamIdx = av_find_best_stream(formatContext_.get(), AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+        FALSE_RETURN_V_MSG_E(streamIdx >= 0 && streamIdx < static_cast<int32_t>(formatContext_->nb_streams), nullptr,
+            "Can not find video stream, streamIdx " PUBLIC_LOG_D32 ", nb_streams " PUBLIC_LOG_U32,
+            streamIdx, formatContext_->nb_streams);
+        parserRefVideoStreamIdx_ = streamIdx;
+    }
+    return formatContext_->streams[static_cast<uint32_t>(parserRefVideoStreamIdx_)];
+}
+
+bool FFmpegDemuxerPlugin::IsRefParserSupported()
+{
+    std::shared_ptr<AVFormatContext> formatContext = parserRefFormatContext_ != nullptr ?
+        parserRefFormatContext_ : formatContext_;
+    FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
+    FileType type = FFmpegFormatHelper::GetFileTypeByName(*formatContext);
+    FALSE_RETURN_V_MSG_E(type == FileType::MP4 || type == FileType::MOV, false,
+        "Unsupported file type " PUBLIC_LOG_U32, type);
+    FALSE_RETURN_V_MSG_E(ParserRefCheckVideoValid(GetVideoStream()) == Status::OK, false, "Unsupported stream type");
+    return true;
+}
+
 Status FFmpegDemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForward)
 {
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
-    std::string formatName(formatContext_.get()->iformat->name);
-    FALSE_RETURN_V_MSG_E(formatName.find("mp4") != std::string::npos, Status::ERROR_UNSUPPORTED_FORMAT,
-                         "Only support mp4");
+    FALSE_RETURN_V_MSG_E(IsRefParserSupported(), Status::ERROR_UNSUPPORTED_FORMAT, "Unsupported ref parser");
     int64_t clipTimeStampMs = std::max(timeStampMs, static_cast<int64_t>(0));
     if (IFramePos_.size() == 0 || referenceParser_ == nullptr) {
         MEDIA_LOG_W("Parse failed, size: " PUBLIC_LOG_ZU, IFramePos_.size());
@@ -162,14 +182,8 @@ Status FFmpegDemuxerPlugin::InitIoContext()
 
 Status FFmpegDemuxerPlugin::ParserRefCheckVideoValid(const AVStream *videoStream)
 {
-    if (videoStream == nullptr) {
-        MEDIA_LOG_E("videoStream is nullptr: video track id %{public}d, trackNums %{public}u",
-            parserRefVideoStreamIdx_, parserRefFormatContext_->nb_streams);
-        return Status::ERROR_UNKNOWN;
-    }
-    if (videoStream->codecpar == nullptr) {
-        MEDIA_LOG_E("videoStream->codecpar is nullptr: video track id %{public}d, trackNums %{public}u",
-            parserRefVideoStreamIdx_, parserRefFormatContext_->nb_streams);
+    if (videoStream == nullptr || videoStream->codecpar == nullptr) {
+        MEDIA_LOG_D("videoStream or codecpar is nullptr: video track id " PUBLIC_LOG_D32, parserRefVideoStreamIdx_);
         return Status::ERROR_UNKNOWN;
     }
     FALSE_RETURN_V_MSG_E(
@@ -190,22 +204,18 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
     FALSE_RETURN_V_MSG_E(InitIoContext() == Status::OK, Status::ERROR_UNKNOWN, "Init IOContext failed");
     parserRefFormatContext_ = InitAVFormatContext(&parserRefIoContext_);
     FALSE_RETURN_V_MSG_E(parserRefFormatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
-    std::string formatName(parserRefFormatContext_.get()->iformat->name);
-    FALSE_RETURN_V_MSG_E(formatName.find("mp4") != std::string::npos, Status::ERROR_UNSUPPORTED_FORMAT, "Mp4 only");
+    FALSE_RETURN_V_MSG_E(IsRefParserSupported(), Status::ERROR_UNSUPPORTED_FORMAT, "Unsupported ref parser");
     for (uint32_t trackIndex = 0; trackIndex < parserRefFormatContext_->nb_streams; trackIndex++) {
         AVStream *stream = parserRefFormatContext_->streams[trackIndex];
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_UNKNOWN,
             "AVStream or codecpar is nullptr, track " PUBLIC_LOG_U32, trackIndex);
         if (stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
             stream->discard = AVDISCARD_ALL;
-        } else {
-            parserRefVideoStreamIdx_ = static_cast<int32_t>(trackIndex);
         }
     }
-    FALSE_RETURN_V_MSG_E(parserRefVideoStreamIdx_ >= 0, Status::ERROR_UNKNOWN, "Can not find video stream");
-    AVStream *videoStream = parserRefFormatContext_->streams[parserRefVideoStreamIdx_];
-    FALSE_RETURN_V_MSG_E(ParserRefCheckVideoValid(videoStream) == Status::OK, Status::ERROR_UNKNOWN,
-        "ParserRefCheckVideoValid failed");
+    AVStream *videoStream = GetVideoStream();
+    FALSE_RETURN_V_MSG_E(videoStream != nullptr && videoStream->codecpar != nullptr, Status::ERROR_UNKNOWN,
+        "AVStream or codecpar is nullptr");
     processingIFrame_.assign(IFramePos_.begin(), IFramePos_.end());
     ParserFirstDts();
     CodecType codecType = videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC ? CodecType::H265 : CodecType::H264;

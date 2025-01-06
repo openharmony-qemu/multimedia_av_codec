@@ -110,6 +110,10 @@ public:
     {
         return;
     }
+    bool IsRefParserSupported() override
+    {
+        return false;
+    }
     Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override
     {
         return mapStatus_[name_];

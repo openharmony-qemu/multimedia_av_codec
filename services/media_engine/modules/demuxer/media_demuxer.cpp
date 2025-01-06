@@ -187,6 +187,14 @@ static void ReportSceneCodeForDemuxer(SceneCode scene)
     }
 }
 
+bool MediaDemuxer::IsRefParserSupported()
+{
+    FALSE_RETURN_V_MSG_E(videoTrackId_ != TRACK_ID_DUMMY, false, "Video track is nullptr");
+    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
+    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, false, "Demuxer plugin is nullptr");
+    return videoPlugin->IsRefParserSupported();
+}
+
 Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
 {
     FALSE_RETURN_V_MSG_E(startTimeMs >= 0, Status::ERROR_UNKNOWN,
