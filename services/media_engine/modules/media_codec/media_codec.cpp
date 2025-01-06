@@ -598,10 +598,13 @@ void MediaCodec::ProcessInputBuffer()
         MEDIA_LOG_E("status changed, current status is not running in ProcessInputBuffer");
         return;
     }
-    ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("ProcessInputBuffer AcquireBuffer fail");
-        return;
+    {
+        MediaAVCodec::AVCodecTrace traceAcquireBuffer("MediaCodec::ProcessInputBuffer-AcquireBuffer");
+        ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("ProcessInputBuffer AcquireBuffer fail");
+            return;
+        }
     }
     if (state_ != CodecState::RUNNING) {
         MEDIA_LOG_D("ProcessInputBuffer ReleaseBuffer name:MediaCodecInputBufferQueue");
@@ -695,12 +698,16 @@ Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const s
 Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
 {
     MEDIA_LOG_D("HandleOutputBuffer enter");
+    MediaAVCodec::AVCodecTrace trace("MediaCodec::HandleOutputBuffer");
     Status ret = Status::OK;
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
-    do {
-        ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
-    } while (ret != Status::OK && state_ == CodecState::RUNNING);
+    {
+        MediaAVCodec::AVCodecTrace traceRequestBuffer("MediaCodec::HandleOutputBuffer-RequestBuffer");
+        do {
+            ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
+        } while (ret != Status::OK && state_ == CodecState::RUNNING);
+    }
     if (emptyOutputBuffer) {
         emptyOutputBuffer->flag_ = eosStatus;
     } else if (state_ != CodecState::RUNNING) {
