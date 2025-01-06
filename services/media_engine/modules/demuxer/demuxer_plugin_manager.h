@@ -65,6 +65,7 @@ private:
     std::shared_ptr<BaseStreamDemuxer> stream_;
     int32_t streamID_;
     bool isDash_ = false;
+    std::mutex readMutex_;
 };
 
 class MediaStreamInfo {
