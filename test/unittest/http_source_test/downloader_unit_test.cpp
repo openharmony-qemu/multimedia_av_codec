@@ -175,7 +175,7 @@ bool TestLastCheck(CacheMediaChunkBuffer& cachedMediaBuffer)
     auto pos = fragmentCacheBuffer.begin();
     while (pos != fragmentCacheBuffer.end()) {
         cachedMediaBuffer.impl_->lruCache_.Delete(pos->offsetBegin);
-        cachedMediaBuffer.impl_->totalReadSize_ -= pos->totalReadSize_;
+        cachedMediaBuffer.impl_->totalReadSize_ -= pos->totalReadSize;
         cachedMediaBuffer.impl_->freeChunks_.splice(cachedMediaBuffer.impl_->freeChunks_.end(), pos->chunks);
         pos = fragmentCacheBuffer.erase(pos);
     }
@@ -189,7 +189,7 @@ bool TestLastCheck(CacheMediaChunkBuffer& cachedMediaBuffer)
 
 bool TestCheck(CacheMediaChunkBuffer& cachedMediaBuffer)
 {
-    auto & success = cachedMediaBuffer.impl_->Check();
+    auto success = cachedMediaBuffer.impl_->Check();
     if (!success) {
     cachedMediaBuffer.Dump(0);
     }
@@ -199,9 +199,9 @@ bool TestCheck(CacheMediaChunkBuffer& cachedMediaBuffer)
 HWTEST_F(DownloaderUnitTest, cachedMediaBuffer, TestSize.Level1)
 {
     CacheMediaChunkBuffer cachedMediaBuffer;
-    ASSERT_EQ(true, cachedMediaBuffer.Init(MAX_BUFFER_SIZE, CHUNK_SIZE));
+    ASSERT_EQ(true, cachedMediaBuffer.Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE));
     EXPECT_EQ(0u, cachedMediaBuffer.GetBufferSize(0));
-    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferSize(0));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(0));
 
     constexper int64_t mediaSize = 1024 * 1024 * 3;
     std::unique_ptr<uint8_t[]> mp4Data = std::make_unique<uint8_t[]>(mediaSize);
@@ -236,7 +236,7 @@ HWTEST_F(DownloaderUnitTest, DeleteOtherHasReadFragmentCache, TestSize.Level1)
     CacheMediaChunkBuffer cachedMediaBuffer;
     uint64_t totalSize = 128 * 1024;
     uint32_t chunkSize = 128;
-    EXPECT_EQ(true, cachedMediaBuffer.Init(totalSize, CHUNK_SIZE));
+    EXPECT_EQ(true, cachedMediaBuffer.Init(totalSize, chunkSize));
 
     int64_t mediaSize = 1024 * 8;
     std::unique_ptr<uint8_t[]> mp4Data = std::make_unique<uint8_t[]>(mediaSize);
