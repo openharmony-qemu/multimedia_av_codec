@@ -300,4 +300,150 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_RELI_9400, TestSize.Level3)
     }
     close(fd);
 }
+
+/**
+ * @tc.number    : DEMUXER_RELI_9500
+ * @tc.name      : create 16 instances create-destory
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_RELI_9500, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    while (num < 10) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            char file[256] = {};
+            sprintf_s(file, len, "/data/test/media/16/%d_creat_destroy.mpg", i);
+            g_fdList[i] = open(file, O_RDONLY);
+            int64_t size = GetFileSize(file);
+            cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
+
+            source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
+            ASSERT_NE(source_list[i], nullptr);
+
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+
+            close(g_fdList[i]);
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_9600
+ * @tc.name      : create 16 instances create-destory
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_RELI_9600, TestSize.Level3)
+{
+    int num = 0;
+    while (num < 10) {
+        num++;
+        vector<std::thread> vecThread;
+        const char *uri = "http://192.168.3.17:8080/share/MPG_H264_baseline@level5_1920_1080_30_MP2_44.1K_1.mpg";
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            cout << i << "  uri:  " << uri << endl;
+            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+            ASSERT_NE(source_list[i], nullptr);
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+
+/**
+ * @tc.number    : DEMUXER_RELI_9700
+ * @tc.name      : one instance demux long file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_RELI_9700, TestSize.Level3)
+{
+    int num = 0;
+    OH_AVCodecBufferAttr attr;
+
+    const char *file = "/data/test/media/long.mpg";
+
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    num++;
+    cout << num << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    for (int32_t index = 0; index < 2; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < 2; index++) {
+            if ((audioIsEnd && (index == MEDIA_TYPE_AUD)) || (videoIsEnd && (index == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+
+            if (index == MEDIA_TYPE_AUD) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (index == MEDIA_TYPE_VID) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+    close(fd);
+}
 }

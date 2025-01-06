@@ -665,3 +665,300 @@ HWTEST_F(DemuxerSeek2NdkTest, DEMUXER_SEEK_0101, TestSize.Level0)
      SEEK_MODE_CLOSEST_SYNC, 1966667, 10, 10, 0};
     CheckSeekMode(fileTest8);
 }
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0102
+ * @tc.name      : demuxer seek, H264_base@5_1920_1080_30_MP2_44.1K_1.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeek2NdkTest, DEMUXER_SEEK_0102, TestSize.Level0)
+{
+    seekInfo fileTest1{"/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_NEXT_SYNC, 0, 60, 77, 0};
+    CheckSeekMode(fileTest1);
+    seekInfo fileTest2{"/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_NEXT_SYNC, 800000, 36, 72, 0};
+    CheckSeekMode(fileTest2);
+    seekInfo fileTest3{"/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 0, 60, 77, 0};
+    CheckSeekMode(fileTest3);
+    seekInfo fileTest4{"/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 800000, 36, 72, 0};
+    CheckSeekMode(fileTest4);
+    seekInfo fileTest5{"/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 2000000, 2, 28, 0};
+    CheckSeekMode(fileTest5);
+    seekInfo fileTest6{"/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 0, 60, 77, 0};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{"/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 800000, 36, 72, 0};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{"/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 2000000, 2, 28, 0};
+    CheckSeekMode(fileTest8);
+}
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0103
+ * @tc.name      : demuxer seek, H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeek2NdkTest, DEMUXER_SEEK_0103, TestSize.Level0)
+{
+    seekInfo fileTest1{"/data/test/media/H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg",
+     SEEK_MODE_NEXT_SYNC, 0, 118, 82, 0};
+    CheckSeekMode(fileTest1);
+    seekInfo fileTest2{"/data/test/media/H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg",
+     SEEK_MODE_NEXT_SYNC, 940000, 59, 69, 0};
+    CheckSeekMode(fileTest2);
+    seekInfo fileTest3{"/data/test/media/H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 0, 118, 82, 0};
+    CheckSeekMode(fileTest3);
+    seekInfo fileTest4{"/data/test/media/H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 940000, 62, 73, 0};
+    CheckSeekMode(fileTest4);
+    seekInfo fileTest5{"/data/test/media/H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 1950000, 2, 29, 0};
+    CheckSeekMode(fileTest5);
+    seekInfo fileTest6{"/data/test/media/H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 0, 118, 82, 0};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{"/data/test/media/H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 940000, 62, 73, 0};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{"/data/test/media/H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 1950000, 2, 29, 0};
+    CheckSeekMode(fileTest8);
+}
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0104
+ * @tc.name      : demuxer seek, H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeek2NdkTest, DEMUXER_SEEK_0104, TestSize.Level0)
+{
+    seekInfo fileTest1{"/data/test/media/H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg",
+     SEEK_MODE_NEXT_SYNC, 0, 59, 68, 0};
+    CheckSeekMode(fileTest1);
+    seekInfo fileTest2{"/data/test/media/H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg",
+     SEEK_MODE_NEXT_SYNC, 940000, 29, 48, 0};
+    CheckSeekMode(fileTest2);
+    seekInfo fileTest3{"/data/test/media/H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 0, 59, 68, 0};
+    CheckSeekMode(fileTest3);
+    seekInfo fileTest4{"/data/test/media/H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 940000, 30, 58, 0};
+    CheckSeekMode(fileTest4);
+    seekInfo fileTest5{"/data/test/media/H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 2000000, 1, 17, 0};
+    CheckSeekMode(fileTest5);
+    seekInfo fileTest6{"/data/test/media/H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 0, 59, 68, 0};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{"/data/test/media/H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 940000, 30, 58, 0};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{"/data/test/media/H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 2000000, 1, 17, 0};
+    CheckSeekMode(fileTest8);
+}
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0105
+ * @tc.name      : demuxer seek, H264_main@4.2_1280_720_60_MP3_32K_2.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeek2NdkTest, DEMUXER_SEEK_0105, TestSize.Level0)
+{
+    seekInfo fileTest1{"/data/test/media/H264_main@4.2_1280_720_60_MP3_32K_2.mpg",
+     SEEK_MODE_NEXT_SYNC, 0, 118, 53, 0};
+    CheckSeekMode(fileTest1);
+    seekInfo fileTest2{"/data/test/media/H264_main@4.2_1280_720_60_MP3_32K_2.mpg",
+     SEEK_MODE_NEXT_SYNC, 700000, 74, 46, 0};
+    CheckSeekMode(fileTest2);
+    seekInfo fileTest3{"/data/test/media/H264_main@4.2_1280_720_60_MP3_32K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 0, 118, 53, 0};
+    CheckSeekMode(fileTest3);
+    seekInfo fileTest4{"/data/test/media/H264_main@4.2_1280_720_60_MP3_32K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 700000, 78, 46, 0};
+    CheckSeekMode(fileTest4);
+    seekInfo fileTest5{"/data/test/media/H264_main@4.2_1280_720_60_MP3_32K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 1983333, 3, 15, 0};
+    CheckSeekMode(fileTest5);
+    seekInfo fileTest6{"/data/test/media/H264_main@4.2_1280_720_60_MP3_32K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 0, 118, 53, 0};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{"/data/test/media/H264_main@4.2_1280_720_60_MP3_32K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 700000, 74, 46, 0};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{"/data/test/media/H264_main@4.2_1280_720_60_MP3_32K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 1983333, 3, 15, 0};
+    CheckSeekMode(fileTest8);
+}
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0106
+ * @tc.name      : demuxer seek, MPEG2_422p_1280_720_60_MP3_32K_1.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeek2NdkTest, DEMUXER_SEEK_0106, TestSize.Level0)
+{
+    seekInfo fileTest1{"/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg",
+     SEEK_MODE_NEXT_SYNC, 0, 118, 47, 0};
+    CheckSeekMode(fileTest1);
+    seekInfo fileTest2{"/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg",
+     SEEK_MODE_NEXT_SYNC, 700000, 76, 38, 0};
+    CheckSeekMode(fileTest2);
+    seekInfo fileTest3{"/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 0, 118, 47, 0};
+    CheckSeekMode(fileTest3);
+    seekInfo fileTest4{"/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 700000, 78, 38, 0};
+    CheckSeekMode(fileTest4);
+    seekInfo fileTest5{"/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 1983333, 2, 1, 0};
+    CheckSeekMode(fileTest5);
+    seekInfo fileTest6{"/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 0, 118, 47, 0};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{"/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 700000, 78, 38, 0};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{"/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 1983333, 2, 1, 0};
+    CheckSeekMode(fileTest8);
+}
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0107
+ * @tc.name      : demuxer seek, MPEG2_high_720_480_30_MP2_32K_2.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeek2NdkTest, DEMUXER_SEEK_0107, TestSize.Level0)
+{
+    seekInfo fileTest1{"/data/test/media/MPEG2_high_720_480_30_MP2_32K_2.mpg",
+     SEEK_MODE_NEXT_SYNC, 0, 59, 57, 0};
+    CheckSeekMode(fileTest1);
+    seekInfo fileTest2{"/data/test/media/MPEG2_high_720_480_30_MP2_32K_2.mpg",
+     SEEK_MODE_NEXT_SYNC, 790000, 36, 52, 0};
+    CheckSeekMode(fileTest2);
+    seekInfo fileTest3{"/data/test/media/MPEG2_high_720_480_30_MP2_32K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 0, 59, 57, 0};
+    CheckSeekMode(fileTest3);
+    seekInfo fileTest4{"/data/test/media/MPEG2_high_720_480_30_MP2_32K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 790000, 38, 55, 0};
+    CheckSeekMode(fileTest4);
+    seekInfo fileTest5{"/data/test/media/MPEG2_high_720_480_30_MP2_32K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 2000000, 2, 20, 0};
+    CheckSeekMode(fileTest5);
+    seekInfo fileTest6{"/data/test/media/MPEG2_high_720_480_30_MP2_32K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 0, 59, 57, 0};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{"/data/test/media/MPEG2_high_720_480_30_MP2_32K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 790000, 36, 52, 0};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{"/data/test/media/MPEG2_high_720_480_30_MP2_32K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 2000000, 2, 20, 0};
+    CheckSeekMode(fileTest8);
+}
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0108
+ * @tc.name      : demuxer seek, MPEG2_main_352_288_30_MP2_44.1K_1.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeek2NdkTest, DEMUXER_SEEK_0108, TestSize.Level0)
+{
+    seekInfo fileTest1{"/data/test/media/MPEG2_main_352_288_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_NEXT_SYNC, 0, 60, 79, 0};
+    CheckSeekMode(fileTest1);
+    seekInfo fileTest2{"/data/test/media/MPEG2_main_352_288_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_NEXT_SYNC, 1260000, 20, 52, 0};
+    CheckSeekMode(fileTest2);
+    seekInfo fileTest3{"/data/test/media/MPEG2_main_352_288_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 0, 60, 79, 0};
+    CheckSeekMode(fileTest3);
+    seekInfo fileTest4{"/data/test/media/MPEG2_main_352_288_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 1260000, 23, 54, 0};
+    CheckSeekMode(fileTest4);
+    seekInfo fileTest5{"/data/test/media/MPEG2_main_352_288_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 1933333, 3, 31, 0};
+    CheckSeekMode(fileTest5);
+    seekInfo fileTest6{"/data/test/media/MPEG2_main_352_288_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 0, 60, 79, 0};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{"/data/test/media/MPEG2_main_352_288_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 1260000, 23, 54, 0};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{"/data/test/media/MPEG2_main_352_288_30_MP2_44.1K_1.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 1933333, 3, 31, 0};
+    CheckSeekMode(fileTest8);
+}
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0109
+ * @tc.name      : demuxer seek, MPEG2_main_1920_1080_30_MP3_48K_2.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeek2NdkTest, DEMUXER_SEEK_0109, TestSize.Level0)
+{
+    seekInfo fileTest1{"/data/test/media/MPEG2_main_1920_1080_30_MP3_48K_2.mpg",
+     SEEK_MODE_NEXT_SYNC, 0, 60, 79, 0};
+    CheckSeekMode(fileTest1);
+    seekInfo fileTest2{"/data/test/media/MPEG2_main_1920_1080_30_MP3_48K_2.mpg",
+     SEEK_MODE_NEXT_SYNC, 1190000, 24, 48, 0};
+    CheckSeekMode(fileTest2);
+    seekInfo fileTest3{"/data/test/media/MPEG2_main_1920_1080_30_MP3_48K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 0, 60, 79, 0};
+    CheckSeekMode(fileTest3);
+    seekInfo fileTest4{"/data/test/media/MPEG2_main_1920_1080_30_MP3_48K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 1190000, 25, 48, 0};
+    CheckSeekMode(fileTest4);
+    seekInfo fileTest5{"/data/test/media/MPEG2_main_1920_1080_30_MP3_48K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 2000000, 2, 16, 0};
+    CheckSeekMode(fileTest5);
+    seekInfo fileTest6{"/data/test/media/MPEG2_main_1920_1080_30_MP3_48K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 0, 60, 79, 0};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{"/data/test/media/MPEG2_main_1920_1080_30_MP3_48K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 1190000, 24, 48, 0};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{"/data/test/media/MPEG2_main_1920_1080_30_MP3_48K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 2000000, 2, 16, 0};
+    CheckSeekMode(fileTest8);
+}
+
+/**
+ * @tc.number    : DEMUXER_SEEK_0110
+ * @tc.name      : demuxer seek, MPEG2_simple_320_240_24_MP3_48K_2.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerSeek2NdkTest, DEMUXER_SEEK_0110, TestSize.Level0)
+{
+    seekInfo fileTest1{"/data/test/media/MPEG2_simple_320_240_24_MP3_48K_2.mpg",
+     SEEK_MODE_NEXT_SYNC, 0, 48, 79, 0};
+    CheckSeekMode(fileTest1);
+    seekInfo fileTest2{"/data/test/media/MPEG2_simple_320_240_24_MP3_48K_2.mpg",
+     SEEK_MODE_NEXT_SYNC, 833333, 28, 74, 0};
+    CheckSeekMode(fileTest2);
+    seekInfo fileTest3{"/data/test/media/MPEG2_simple_320_240_24_MP3_48K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 0, 48, 79, 0};
+    CheckSeekMode(fileTest3);
+    seekInfo fileTest4{"/data/test/media/MPEG2_simple_320_240_24_MP3_48K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 833333, 34, 74, 0};
+    CheckSeekMode(fileTest4);
+    seekInfo fileTest5{"/data/test/media/MPEG2_simple_320_240_24_MP3_48K_2.mpg",
+     SEEK_MODE_PREVIOUS_SYNC, 1939689, 5, 32, 0};
+    CheckSeekMode(fileTest5);
+    seekInfo fileTest6{"/data/test/media/MPEG2_simple_320_240_24_MP3_48K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 0, 48, 79, 0};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{"/data/test/media/MPEG2_simple_320_240_24_MP3_48K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 833333, 28, 74, 0};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{"/data/test/media/MPEG2_simple_320_240_24_MP3_48K_2.mpg",
+     SEEK_MODE_CLOSEST_SYNC, 1939689, 5, 32, 0};
+    CheckSeekMode(fileTest8);
+}

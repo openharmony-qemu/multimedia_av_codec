@@ -320,6 +320,48 @@ static void CheckMOVAudioKey()
     ASSERT_EQ(sampleRateResult, sampleRate);
 }
 
+static void CheckMPGVideoKey()
+{
+    int64_t bitrate = 0;
+    const char* mimeType = nullptr;
+    double frameRate;
+    int32_t currentWidth = 0;
+    int32_t currentHeight = 0;
+    ASSERT_FALSE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    int expectNum = 0;
+    ASSERT_EQ(expectNum, strcmp(mimeType, OH_AVCODEC_MIMETYPE_VIDEO_AVC));
+    ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &frameRate));
+    int frameRateResult = 30.000000;
+    ASSERT_EQ(frameRateResult, frameRate);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_HEIGHT, &currentHeight));
+    int currentHeightResult = 1080;
+    ASSERT_EQ(currentHeightResult, currentHeight);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_WIDTH, &currentWidth));
+    int currentWidthResult = 1920;
+    ASSERT_EQ(currentWidthResult, currentWidth);
+}
+
+static void CheckMPGAudioKey()
+{
+    int32_t audioCount = 0;
+    int64_t bitrate = 0;
+    const char* mimeType = nullptr;
+    int32_t sampleRate = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &audioCount));
+    int audioCountResult = 1;
+    ASSERT_EQ(audioCountResult, audioCount);
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
+    int bitrateResult = 384000;
+    ASSERT_EQ(bitrateResult, bitrate);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    int expectNum = 0;
+    ASSERT_EQ(expectNum, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_MPEG));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sampleRate));
+    int sampleRateResult = 44100;
+    ASSERT_EQ(sampleRateResult, sampleRate);
+}
+
 /**
  * @tc.number    : MOV_DEMUXER_FUNCTION_TEST_0100
  * @tc.name      : demux H264_base@5_1920_1080_30_AAC_48K_1.mov
@@ -1002,6 +1044,386 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3700, TestSize.Level3)
     uint32_t trackIndex = 0;
     OH_AVCodecBufferAttr attr;
     const char *file = "/data/test/media/H264_base@5_1920_1080_30_AAC_48K_1.mov";
+    srand(time(nullptr));
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
+    ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_0100
+ * @tc.name      : demux H264_base@5_1920_1080_30_MP2_44.1K_1.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0100, TestSize.Level0)
+{
+    const char *file = "/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckFrames(60, 6, 77, 77);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_0200
+ * @tc.name      : demux H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0200, TestSize.Level2)
+{
+    const char *file = "/data/test/media/H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckFrames(119, 12, 84, 84);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_0300
+ * @tc.name      : demux H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0300, TestSize.Level2)
+{
+    const char *file = "/data/test/media/H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckFrames(60, 6, 78, 78);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_0400
+ * @tc.name      : demux H264_main@4.2_1280_720_60_MP3_32K_2.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0400, TestSize.Level0)
+{
+    const char *file = "/data/test/media/H264_main@4.2_1280_720_60_MP3_32K_2.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckFrames(119, 12, 57, 57);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_0500
+ * @tc.name      : demux MPEG2_422p_1280_720_60_MP3_32K_1.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0500, TestSize.Level2)
+{
+    const char *file = "/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckFrames(119, 12, 57, 57);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_0600
+ * @tc.name      : demux MPEG2_high_720_480_30_MP2_32K_2.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0600, TestSize.Level0)
+{
+    const char *file = "/data/test/media/MPEG2_high_720_480_30_MP2_32K_2.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckFrames(60, 6, 56, 56);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_0700
+ * @tc.name      : demux MPEG2_main_352_288_30_MP2_44.1K_1.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0700, TestSize.Level0)
+{
+    const char *file = "/data/test/media/MPEG2_main_352_288_30_MP2_44.1K_1.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckFrames(60, 6, 77, 77);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_0800
+ * @tc.name      : demux MPEG2_main_1920_1080_30_MP3_48K_2.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0800, TestSize.Level0)
+{
+    const char *file = "/data/test/media/MPEG2_main_1920_1080_30_MP3_48K_2.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckFrames(60, 6, 85, 85);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_0900
+ * @tc.name      : demux MPEG2_simple_320_240_24_MP3_48K_2.mpg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0900, TestSize.Level0)
+{
+    const char *file = "/data/test/media/MPEG2_simple_320_240_24_MP3_48K_2.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckFrames(48, 5, 85, 85);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_1100
+ * @tc.name      : demuxer mpg file, check key
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1100, TestSize.Level2)
+{
+    int trackType = 0;
+    int64_t duration = 0;
+    int64_t startTime;
+    const char *file = "/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenSourceFormat(file, fd, &source, &sourceFormat);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration));
+    ASSERT_EQ(2011433, duration);
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_START_TIME, &startTime));
+    ASSERT_EQ(500000, startTime);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    const char* mimeType = nullptr;
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    OH_AVCodecBufferAttr attr;
+    int vKeyCount = 0;
+    int aKeyCount = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+
+    for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &trackType));
+            if ((audioIsEnd && (trackType == MEDIA_TYPE_AUD) && index == MEDIA_TYPE_AUD) ||
+             (videoIsEnd && (trackType == MEDIA_TYPE_VID) && index == MEDIA_TYPE_VID)) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+            if (trackType == MEDIA_TYPE_AUD) {
+                SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+                CheckMPGAudioKey();
+            } else if (trackType == MEDIA_TYPE_VID) {
+                SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+                CheckMPGVideoKey();
+            }
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+        }
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_1200
+ * @tc.name      : demux multi track mpg file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1200, TestSize.Level2)
+{
+    const char *file = "/data/test/media/multi_trk.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 4);
+    CheckTrackSelect();
+    FramesMultiTrks(167, 17, 142, 142);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_1300
+ * @tc.name      : create source with error mpg file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1300, TestSize.Level3)
+{
+    const char *file = "/data/test/media/error.mpg";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    OH_AVCodecBufferAttr attr;
+    ASSERT_NE(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_1400
+ * @tc.name      : demux mpg , zero track
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1400, TestSize.Level3)
+{
+    const char *file = "/data/test/media/zero_track.mpg";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 0);
+
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_1500
+ * @tc.name      : seek to a invalid time, closest mode
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1500, TestSize.Level3)
+{
+    const char *file = "/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg";
+    srand(time(nullptr));
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+
+    ASSERT_NE(demuxer, nullptr);
+    int64_t invalidPts = 12000 * 16666;
+    ret = OH_AVDemuxer_SeekToTime(demuxer, invalidPts, SEEK_MODE_CLOSEST_SYNC);
+    ASSERT_NE(ret, AV_ERR_OK);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_1600
+ * @tc.name      : remove track before add track
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1600, TestSize.Level3)
+{
+    const char *file = "/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg";
+    srand(time(nullptr));
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    ret = OH_AVDemuxer_UnselectTrackByID(demuxer, 0);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_1700
+ * @tc.name      : remove all tracks before demux finish
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1700, TestSize.Level3)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg";
+    bool isEnd = false;
+    int count = 0;
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    srand(time(nullptr));
+    int pos = rand() % 60;
+    cout << " pos= " << pos << endl;
+    while (!isEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (count == pos) {
+                cout << count << " count == pos!!!!!!!!!" << endl;
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_UnselectTrackByID(demuxer, 0));
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_UnselectTrackByID(demuxer, 1));
+                ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+                isEnd = true;
+                break;
+            }
+
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                isEnd = true;
+                cout << "is end !!!!!!!!!!!!!!!" << endl;
+            }
+            if (index == MEDIA_TYPE_AUD) {
+                count++;
+            }
+        }
+    }
+    close(fd);
+}
+
+/**
+ * @tc.number    : MPG_DEMUXER_FUNCTION_TEST_1800
+ * @tc.name      : start demux bufore add track
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1800, TestSize.Level3)
+{
+    uint32_t trackIndex = 0;
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg";
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
