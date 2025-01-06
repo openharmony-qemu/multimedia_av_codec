@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -39,9 +39,9 @@ private:
     uint32_t index_ = 0;
     uint32_t trackIndex_ = 0;
     uint64_t relativePresentationTimeUs_ = 0;
-    std::shared_ptr<TimeAndIndexConversion> TimeAndIndexConversions_ = nullptr;
+    std::shared_ptr<TimeAndIndexConversion> timeandindexConversions_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif // DEMUXER_SAMPLE_H
+#endif // PTS_AND_INDEX_CONVERSION_SAMPLE_H

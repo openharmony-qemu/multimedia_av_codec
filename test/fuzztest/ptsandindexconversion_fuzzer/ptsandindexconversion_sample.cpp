@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -52,9 +52,9 @@ bool PtsAndIndexConversion::Init(const uint8_t *data, size_t size)
         return false;
     }
     std::string uri = "fd://" + std::to_string(fd_) + "?offset=0&size=" + std::to_string(size);
-    TimeAndIndexConversions_ = std::make_shared<TimeAndIndexConversion>();
+    timeandindexConversions_ = std::make_shared<TimeAndIndexConversion>();
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(uri);
-    Status ret = TimeAndIndexConversions_->SetDataSource(mediaSource);
+    Status ret = timeandindexConversions_->SetDataSource(mediaSource);
     close(fd_);
     fd_ = -1;
     if (ret == Status::OK) {
@@ -63,13 +63,13 @@ bool PtsAndIndexConversion::Init(const uint8_t *data, size_t size)
         relativePresentationTimeUs_ = data[size - RELATIVEPRESENTATIONTIMEUS_MAX];
         return true;
     }
-    TimeAndIndexConversions_ = nullptr;
+    timeandindexConversions_ = nullptr;
     return false;
 }
 
 void PtsAndIndexConversion::RunNormalTimeAndIndexConversions()
 {
-    TimeAndIndexConversions_->GetIndexByRelativePresentationTimeUs(trackIndex_, relativePresentationTimeUs_, index_);
-    TimeAndIndexConversions_->GetRelativePresentationTimeUsByIndex(trackIndex_, index_, relativePresentationTimeUs_);
-    TimeAndIndexConversions_->GetFirstVideoTrackIndex(trackIndex_);
+    timeandindexConversions_->GetIndexByRelativePresentationTimeUs(trackIndex_, relativePresentationTimeUs_, index_);
+    timeandindexConversions_->GetRelativePresentationTimeUsByIndex(trackIndex_, index_, relativePresentationTimeUs_);
+    timeandindexConversions_->GetFirstVideoTrackIndex(trackIndex_);
 }

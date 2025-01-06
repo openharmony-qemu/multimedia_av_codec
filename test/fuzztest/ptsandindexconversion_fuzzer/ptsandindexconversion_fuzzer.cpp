@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,16 +18,15 @@
 #include <iostream>
 #include "ptsandindexconversion_sample.h"
 
-
 #define FUZZ_PROJECT_NAME "ptsandindexconversion_fuzzer"
 using namespace std;
 using namespace OHOS::Media;
 namespace OHOS {
 void PtsAndIndexConversionWithFunc(const uint8_t *data, size_t size)
 {
-    std::shared_ptr<PtsAndIndexConversion>PtsAndIndexConversions = std::make_shared<PtsAndIndexConversion>();
-    if (PtsAndIndexConversions->Init(data, size)) {
-        PtsAndIndexConversions->RunNormalTimeAndIndexConversions();
+    std::shared_ptr<PtsAndIndexConversion> ptsandindexConversions = std::make_shared<PtsAndIndexConversion>();
+    if (ptsandindexConversions->Init(data, size)) {
+        ptsandindexConversions->RunNormalTimeAndIndexConversions();
     }
 }
 }
