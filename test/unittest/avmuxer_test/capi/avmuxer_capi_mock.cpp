@@ -80,5 +80,14 @@ int32_t AVMuxerCapiMock::SetRotation(int32_t rotation)
 {
     return OH_AVMuxer_SetRotation(muxer_, rotation);
 }
+
+int32_t AVMuxerCapiMock::SetFormat(OH_AVMuxer *muxer)
+{
+    OH_AVFormat *format = OH_AVFormat_Create();
+    if (format != nullptr) {
+        return muxer_->SetFormat(muxer);
+    }
+    return AV_ERR_UNKNOWN;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

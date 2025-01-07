@@ -1825,6 +1825,97 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Destroy_004, TestSize.Level0)
     ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
     OH_AVFormat_Destroy(format);
 }
+
+/**
+ * @tc.name: Muxer_SetFormat_001
+ * @tc.desc: Muxer set format with valid creating time
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_001, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    OH_AVMuxer *muxer = OH_AVMuxer_Create(fd_, outputFormat);
+    ASSERT_NE(muxer, nullptr);
+
+    OH_AVFormat *format = OH_AVFormat_Create();
+    ASSERT_NE(format, nullptr);
+    OH_AVFormat_SetStringValue(format, OH_MD_KEY_CREATION_TIME, "2023-12-19T03:16:00.000000Z");
+
+    int32_t ret = OH_AVMuxer_SetFormat(muxer, format);
+    ASSERT_EQ(ret, 0);
+    OH_AVFormat_Destroy(format);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_002
+ * @tc.desc: Muxer set format with invalid length
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_002, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    OH_AVMuxer *muxer = OH_AVMuxer_Create(fd_, outputFormat);
+    ASSERT_NE(muxer, nullptr);
+
+    OH_AVFormat *format = OH_AVFormat_Create();
+    ASSERT_NE(format, nullptr);
+    OH_AVFormat_SetStringValue(format, OH_MD_KEY_CREATION_TIME, "2023-12-19T03:16:00.00000000Z");
+
+    int32_t ret = OH_AVMuxer_SetFormat(muxer, format);
+    ASSERT_EQ(ret, 3);
+    OH_AVFormat_Destroy(format);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_003
+ * @tc.desc: Muxer set format and fill several bits with char which should have been int
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_003, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    OH_AVMuxer *muxer = OH_AVMuxer_Create(fd_, outputFormat);
+    ASSERT_NE(muxer, nullptr);
+
+    OH_AVFormat *format = OH_AVFormat_Create();
+    ASSERT_NE(format, nullptr);
+    OH_AVFormat_SetStringValue(format, OH_MD_KEY_CREATION_TIME, "202a-12-19T03:16:0b.0000c0Z");
+
+    int32_t ret = OH_AVMuxer_SetFormat(muxer, format);
+    ASSERT_EQ(ret, 3);
+    OH_AVFormat_Destroy(format);
+}
+/**
+ * @tc.name: Muxer_SetFormat_004
+ * @tc.desc: Muxer set format without valid key in Meta
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_004, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    OH_AVMuxer *muxer = OH_AVMuxer_Create(fd_, outputFormat);
+    ASSERT_NE(muxer, nullptr);
+
+    OH_AVFormat *format = OH_AVFormat_Create();
+    ASSERT_NE(format, nullptr);
+    OH_AVFormat_SetStringValue(format, nullptr, nullptr);
+
+    int32_t ret = OH_AVMuxer_SetFormat(muxer, format);
+    ASSERT_EQ(ret, 0);
+    OH_AVFormat_Destroy(format);
+}
 #endif // AVMUXER_UNITTEST_CAPI
 
 #ifdef AVMUXER_UNITTEST_INNER_API

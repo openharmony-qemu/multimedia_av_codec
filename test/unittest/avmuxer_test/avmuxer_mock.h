@@ -21,6 +21,7 @@
 #include "avformat_mock.h"
 #include "native_avcodec_base.h"
 #include "nocopyable.h"
+#include "native_avmuxer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -36,6 +37,7 @@ public:
     virtual int32_t WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer *sample)  = 0;
     virtual int32_t SetRotation(int32_t rotation) = 0;
     virtual int32_t SetTimedMetadata() = 0;
+    virtual int32_t SetFormat(OH_AVMuxer *muxer) = 0;
 };
 
 class __attribute__((visibility("default"))) AVMuxerMockFactory {
