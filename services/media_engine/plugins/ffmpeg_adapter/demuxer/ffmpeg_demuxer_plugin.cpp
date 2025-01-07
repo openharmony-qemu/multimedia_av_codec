@@ -552,7 +552,7 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
         ret = ConvertAvcToAnnexb(*srcAVPacket);
         SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_H264);
     }
-    if (ioContext_.retry) {
+    if (ioContext_.retry && ret != Status::OK) {
         ioContext_.retry = false;
         formatContext_->pb->eof_reached = 0;
         formatContext_->pb->error = 0;
@@ -691,7 +691,8 @@ void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(const AVPacket *pkt)
         AVStream *avStream = formatContext_->streams[trackId];
         if (IsWebvttMP4(avStream) && pkt->size == 0 && cacheQueue_.HasCache(trackId)) {
             std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
-            if (cacheSamplePacket != nullptr && cacheSamplePacket->pkts[0]->duration == 0) {
+            if (cacheSamplePacket != nullptr && cacheSamplePacket->pkts.size() > 0 &&
+                cacheSamplePacket->pkts[0] != nullptr && cacheSamplePacket->pkts[0]->duration == 0) {
                 cacheSamplePacket->pkts[0]->duration =
                     formatContext_->streams[pkt->stream_index]->duration - cacheSamplePacket->pkts[0]->pts;
             }
