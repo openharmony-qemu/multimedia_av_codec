@@ -100,7 +100,7 @@ int AVMuxerInnerMock::SetFormat(OH_AVMuxer *muxer)
 {
     if (muxer_ != nullptr) {
         std::shared_ptr<Meta> param = std::make_shared<Meta>();
-        para->SetData("use_timed_meta_track", 1);
+        param->SetData("use_timed_meta_track", 1);
         return muxer_->SetParameter(param);
     }
     return AV_ERR_UNKNOWN;
