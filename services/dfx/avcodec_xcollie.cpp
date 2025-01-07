@@ -55,10 +55,10 @@ AVCodecXCollie &AVCodecXCollie::GetInstance()
 int32_t AVCodecXCollie::SetTimer(const std::string &name, bool recovery, uint32_t timeout,
                                  std::function<void(void *)> callback)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
 
     unsigned int flag = HiviewDFX::XCOLLIE_FLAG_LOG | HiviewDFX::XCOLLIE_FLAG_NOOP;
-    flag |= recovery ? HiviewDFX::XCOLLIE_FLAG_RECOVERY : 0;
+    flag |= (recovery ? HiviewDFX::XCOLLIE_FLAG_RECOVERY : 0);
 
     TimerInfo timerInfo = {
         .name = name.data(),
@@ -86,30 +86,27 @@ int32_t AVCodecXCollie::SetInterfaceTimer(const std::string &name, bool isServic
 #endif
 }
 
-void AVCodecXCollie::CancelTimer(int32_t timerId)
+void AVCodecXCollie::CancelTimer([[maybe_unused]]int32_t timerId)
 {
 #ifdef HICOLLIE_ENABLE
     if (timerId == COLLIE_INVALID_INDEX) {
         return;
     }
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     HiviewDFX::XCollie::GetInstance().CancelTimer(timerId);
 
-    std::lock_guard<std::mutex> lock(mutex_);
     auto it = dfxDumper_.find(timerId);
     if (it == dfxDumper_.end()) {
         return;
     }
     dfxDumper_.erase(it);
-#else
-    (void)timerId;
-    return;
 #endif
 }
 
 int32_t AVCodecXCollie::Dump(int32_t fd)
 {
     using namespace std::string_literals;
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     if (dfxDumper_.empty()) {
         return AVCS_ERR_OK;
     }

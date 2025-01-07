@@ -18,7 +18,7 @@
 
 #include <string>
 #include <map>
-#include <mutex>
+#include <shared_mutex>
 #include <functional>
 #include <ctime>
 
@@ -42,7 +42,7 @@ private:
     AVCodecXCollie() = default;
     ~AVCodecXCollie() = default;
 
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
     std::map<int32_t, TimerInfo> dfxDumper_;
 
 // For interfacec timer
