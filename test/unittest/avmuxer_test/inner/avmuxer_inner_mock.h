@@ -35,7 +35,7 @@ public:
     int32_t WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer *sample) override;
     int32_t SetRotation(int32_t rotation) override;
     int32_t SetTimedMetadata() override;
-    int32_t SetFormat(OH_AVMuxer *muxer) override;
+    int32_t SetFormat(std::shared_ptr<FormatMock> &format) override;
 private:
     std::shared_ptr<AVMuxer> muxer_ = nullptr;
 };
