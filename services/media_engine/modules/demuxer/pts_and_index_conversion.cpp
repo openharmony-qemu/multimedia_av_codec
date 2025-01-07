@@ -398,6 +398,7 @@ bool TimeAndIndexConversion::IsWithinPTSAndIndexConversionMaxFrames(uint32_t tra
 {
     uint32_t frames = 0;
     for (auto sttsEntry : trakInfoVec_[trackIndex].sttsEntries) {
+        FALSE_RETURN_V_MSG_E(frames <= UINT32_MAX - sttsEntry.sampleCount, false, "Frame count exceeds limit");
         frames += sttsEntry.sampleCount;
         FALSE_RETURN_V_MSG_E(frames <= PTS_AND_INDEX_CONVERSION_MAX_FRAMES, false, "Frame count exceeds limit");
     }
