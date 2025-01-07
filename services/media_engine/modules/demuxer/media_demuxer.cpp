@@ -1085,8 +1085,10 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
             return Status::OK;
         }
         isSelectBitRate_.store(true);
+    } else {
+        streamDemuxer_->ResetAllCache();
     }
-    streamDemuxer_->ResetAllCache();
+
     Status ret = source_->SelectBitRate(bitRate);
     if (ret != Status::OK) {
         MEDIA_LOG_E("Source select bitrate failed");
