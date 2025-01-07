@@ -129,7 +129,7 @@ private:
     void SetFreeStatus(bool isFree);
     int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
-    void OnInstanceMemoryUpdateEvent(Media::Meta &meta);
+    void OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta = nullptr);
 
     CodecStatus status_ = UNINITIALIZED;
 

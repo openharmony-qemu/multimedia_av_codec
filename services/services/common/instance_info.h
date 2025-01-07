@@ -31,7 +31,7 @@ class EventInfoExtentedKey {
 public:
     static constexpr std::string_view INSTANCE_ID = "av_codec_event_info_instance_id";
     static constexpr std::string_view CODEC_TYPE = "av_codec_event_info_codec_type";
-    static constexpr std::string_view IS_HARDWARE = "av_codec_event_info_codec_type";
+    static constexpr std::string_view IS_HARDWARE = "IS_VENDOR";
     static constexpr std::string_view BIT_DEPTH = "av_codec_event_info_bit_depth";
     static constexpr std::string_view ENABLE_POST_PROCESSING = "av_codec_event_info_enable_post_processing";
 

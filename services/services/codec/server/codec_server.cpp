@@ -338,9 +338,7 @@ int32_t CodecServer::Start()
         GetCodecDfxInfo(codecDfxInfo);
         CodecStartEventWrite(codecDfxInfo);
     }
-    Format codecFormat;
-    codecBase_->GetOutputFormat(codecFormat);
-    OnInstanceMemoryUpdateEvent(*codecFormat.GetMeta());
+    OnInstanceMemoryUpdateEvent();
     return ret;
 }
 
@@ -701,11 +699,23 @@ int32_t CodecServer::ReleaseOutputBufferOfCodec(uint32_t index, bool render)
     return ret;
 }
 
-void CodecServer::OnInstanceMemoryUpdateEvent(Media::Meta &meta)
+void CodecServer::OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta)
 {
 #ifdef AVCODEC_SUPPORT_EVENT_MANAGER
-    meta.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
-    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_MEMORY_UPDATE, meta);
+    if (meta == nullptr) {
+        Format codecFormat;
+        codecBase_->GetOutputFormat(codecFormat);
+        meta = codecFormat.GetMeta();
+    }
+    if (meta == nullptr) {
+        return;
+    }
+
+    meta->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), codecType_);
+    meta->SetData(EventInfoExtentedKey::.data(), codecType_);
+    meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    meta->SetData(EventInfoExtentedKey::ENABLE_POST_PROCESSING.data(), postProcessing_ != nullptr);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_MEMORY_UPDATE, *meta);
 #endif
 }
 
@@ -888,7 +898,7 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
         codecCb_->OnOutputFormatChanged(format);
     }
     auto formatTemp = format;
-    OnInstanceMemoryUpdateEvent(*formatTemp.GetMeta());
+    OnInstanceMemoryUpdateEvent(formatTemp.GetMeta());
 }
 
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)

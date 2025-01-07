@@ -38,7 +38,7 @@ public:
 
 private:
     std::optional<CalculatorType> GetCalculator(const Media::Meta &meta);
-    
+
     uint32_t GetBlockCount(const Media::Meta &meta);
     std::optional<InstanceInfo> UpdateInstanceMemory(int32_t instanceId, uint32_t memory);
 

@@ -70,12 +70,6 @@ void InstanceMemoryUpdateEventHandler::RemoveTimer(pid_t pid)
     AVCODEC_LOGI("Timer for pid %{public}d has been removed", pid);
 }
 
-std::optional<CalculatorType> InstanceMemoryUpdateEventHandler::GetCalculator(const Media::Meta &meta)
-{
-    (void)meta;
-    return std::optional<std::function<uint32_t(uint32_t)>>();
-}
-
 uint32_t InstanceMemoryUpdateEventHandler::GetBlockCount(const Media::Meta &meta)
 {
     int32_t width = 0;
