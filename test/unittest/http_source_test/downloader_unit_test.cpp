@@ -14,6 +14,8 @@
  */
 
 #include "download/downloader.h"
+#include "monitor/download_monitor.h"
+#include "util/media_cached_buffer.h"
 #include "download/network_client/http_curl_client.h"
 #include "gtest/gtest.h"
 
