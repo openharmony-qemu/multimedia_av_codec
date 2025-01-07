@@ -1706,6 +1706,17 @@ void HlsMediaDownloader::SetIsReportedErrorCode()
 {
     isReportedErrorCode_ = true;
 }
+
+void HlsMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy)
+{
+    if (playlistDownloader_ == nullptr || playStrategy == nullptr) {
+        MEDIA_LOG_E("SetPlayStrategy error.");
+        return;
+    }
+    if (playStrategy->width > 0 && playStrategy->height > 0) {
+        playlistDownloader_->SetInitResolution(playStrategy->width, playStrategy->height);
+    }
+}
 }
 }
 }
