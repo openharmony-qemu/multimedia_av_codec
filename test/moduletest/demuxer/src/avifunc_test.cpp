@@ -58,7 +58,7 @@ protected:
     const char *INP_DIR_16 = "/data/test/media/AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi";
 };
 
-static int fd = -1;
+static int g_fd = -1;
 static OH_AVMemory *memory = nullptr;
 static OH_AVSource *source = nullptr;
 static OH_AVErrCode ret = AV_ERR_OK;
@@ -82,9 +82,9 @@ void DemuxerAviFuncNdkTest::SetUp()
 }
 void DemuxerAviFuncNdkTest::TearDown()
 {
-    if (fd >0) {
-        close(fd);
-        fd = -1;
+    if (g_fd > 0) {
+        close(g_fd);
+        g_fd = -1;
     }
 
     if (trackFormat != nullptr) {
@@ -149,10 +149,10 @@ struct seekInfo {
 static void CheckSeekModefromEnd(seekInfo seekInfo)
 {
     int tarckType = 0;
-    fd = open(seekInfo.fileName, O_RDONLY);
+    g_fd = open(seekInfo.fileName, O_RDONLY);
     int64_t size = GetFileSize(seekInfo.fileName);
-    cout << seekInfo.fileName << "-------" << fd << "-------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << seekInfo.fileName << "-------" << g_fd << "-------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
@@ -169,17 +169,18 @@ static void CheckSeekModefromEnd(seekInfo seekInfo)
         ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
         ASSERT_EQ(AV_ERR_UNKNOWN, OH_AVDemuxer_SeekToTime(demuxer, seekInfo.millisecond / THOUSAND, seekInfo.seekmode));
     }
-    close(fd);
+    close(g_fd);
+    g_fd = -1;
 }
 
 static void CheckSeekMode(seekInfo seekInfo)
 {
     int tarckType = 0;
     OH_AVCodecBufferAttr attr;
-    fd = open(seekInfo.fileName, O_RDONLY);
+    g_fd = open(seekInfo.fileName, O_RDONLY);
     int64_t size = GetFileSize(seekInfo.fileName);
-    cout << seekInfo.fileName << "-------" << fd << "-------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << seekInfo.fileName << "-------" << g_fd << "-------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
@@ -214,7 +215,8 @@ static void CheckSeekMode(seekInfo seekInfo)
             ASSERT_EQ(seekInfo.audioCount, frameNum);
         }
     }
-    close(fd);
+    close(g_fd);
+    g_fd = -1;
 }
 
 static void SetAudioValue(OH_AVCodecBufferAttr attr, bool &audioIsEnd, int &audioFrame, int &aKeyCount)
@@ -252,10 +254,10 @@ static void DemuxerResult(const char *fileName)
     bool videoIsEnd = false;
     int audioFrame = 0;
     int videoFrame = 0;
-    fd = open(fileName, O_RDONLY);
+    g_fd = open(fileName, O_RDONLY);
     int64_t size = GetFileSize(fileName);
-    cout << fileName << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << fileName << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
@@ -285,7 +287,7 @@ static void DemuxerResult(const char *fileName)
             }
         }
     }
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -297,16 +299,16 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0100, TestSize.Level2)
 {
     int32_t height = 0;
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_HEIGHT, &height));
     ASSERT_EQ(height, 288);
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -318,16 +320,16 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0200, TestSize.Level2)
 {
     int32_t weight = 0;
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_WIDTH, &weight));
     ASSERT_EQ(weight, 352);
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -339,16 +341,16 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0300, TestSize.Level2)
 {
     const char *stringVal;
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "title"));
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -359,16 +361,16 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0300, TestSize.Level2)
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0400, TestSize.Level2)
 {
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     const char *stringVal;
     ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM_ARTIST, &stringVal));
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -379,17 +381,17 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0400, TestSize.Level2)
 HWTEST_F(DemuxerAviFuncNdkTest,  DEMUXER_AVI_FUNC_0500, TestSize.Level2)
 {
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     const char *stringVal;
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DATE, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "2023"));
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -400,17 +402,17 @@ HWTEST_F(DemuxerAviFuncNdkTest,  DEMUXER_AVI_FUNC_0500, TestSize.Level2)
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0600, TestSize.Level2)
 {
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     const char *stringVal;
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "COMMENT"));
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -421,17 +423,17 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0600, TestSize.Level2)
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0700, TestSize.Level2)
 {
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     const char *stringVal;
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_GENRE, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "Classical"));
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -442,16 +444,16 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0700, TestSize.Level2)
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0800, TestSize.Level2)
 {
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     const char *stringVal;
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COPYRIGHT, &stringVal));
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -462,16 +464,16 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0800, TestSize.Level2)
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0900, TestSize.Level2)
 {
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
 
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(g_trackCount, TWO);
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -483,16 +485,16 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1000, TestSize.Level2)
 {
     int64_t br = 0;
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
     ASSERT_EQ(br, 1092058);
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -504,16 +506,16 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1100, TestSize.Level2)
 {
     int32_t cc = 0;
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     trackFormat = OH_AVSource_GetTrackFormat(source, 1);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &cc));
     ASSERT_EQ(cc, 2);
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -525,16 +527,16 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1200, TestSize.Level2)
 {
     int32_t sr = 0;
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     trackFormat = OH_AVSource_GetTrackFormat(source, 1);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
     ASSERT_EQ(sr, 48000);
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -546,16 +548,16 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1300, TestSize.Level2)
 {
     const char *stringVal;
     const char *file = INP_DIR_13;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4));
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -567,21 +569,21 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1400, TestSize.Level2)
 {
     int32_t type = 0;
     const char *file = INP_DIR_1;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     trackFormat = OH_AVSource_GetTrackFormat(source, 1);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &type));
     ASSERT_EQ(type, MEDIA_TYPE_AUD);
-    close(fd);
+    close(g_fd);
 }
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_1500
- * @tc.name      : create source with fd,avcc avi
+ * @tc.name      : create source with g_fd,avcc avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1500, TestSize.Level2)
@@ -593,10 +595,10 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1500, TestSize.Level2)
     int audioFrame = 0;
     int videoFrame = 0;
     const char *file = INP_DIR_7;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
@@ -631,12 +633,12 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1500, TestSize.Level2)
     ASSERT_EQ(videoFrame, 26);
     ASSERT_EQ(aKeyCount, 14);
     ASSERT_EQ(vKeyCount, 1);
-    close(fd);
+    close(g_fd);
 }
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_1600
- * @tc.name      : create source with fd,AVI_H263_baseline@level10_352_288_AAC_2.avi
+ * @tc.name      : create source with g_fd,AVI_H263_baseline@level10_352_288_AAC_2.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1600, TestSize.Level3)
@@ -646,7 +648,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1600, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_1700
- * @tc.name      : create source with fd,AVI_H263_baseline@level20_352_288_MP2_1.avi
+ * @tc.name      : create source with g_fd,AVI_H263_baseline@level20_352_288_MP2_1.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1700, TestSize.Level3)
@@ -656,7 +658,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1700, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_1800
- * @tc.name      : create source with fd,AVI_H263_baseline@level60_704_576_MP3_2.avi
+ * @tc.name      : create source with g_fd,AVI_H263_baseline@level60_704_576_MP3_2.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1800, TestSize.Level3)
@@ -666,7 +668,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1800, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_1900
- * @tc.name      : create source with fd,AVI_H263_baseline@level70_1408_1152_PCM_mulaw_1.avi
+ * @tc.name      : create source with g_fd,AVI_H263_baseline@level70_1408_1152_PCM_mulaw_1.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1900, TestSize.Level3)
@@ -676,7 +678,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1900, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_2000
- * @tc.name      : create source with fd,AVI_H264_baseline@level4.1_1280_720_AAC_2.avi
+ * @tc.name      : create source with g_fd,AVI_H264_baseline@level4.1_1280_720_AAC_2.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2000, TestSize.Level3)
@@ -686,7 +688,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2000, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_2100
- * @tc.name      : create source with fd,AVI_H264_main@level5_1920_1080_PM2_1.avi
+ * @tc.name      : create source with g_fd,AVI_H264_main@level5_1920_1080_PM2_1.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2100, TestSize.Level3)
@@ -696,7 +698,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2100, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_2200
- * @tc.name      : create source with fd,AVI_H264_high@level5.1_1920_1080_PM3_2.avi
+ * @tc.name      : create source with g_fd,AVI_H264_high@level5.1_1920_1080_PM3_2.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2200, TestSize.Level3)
@@ -706,7 +708,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2200, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_2300
- * @tc.name      : create source with fd,AVI_H264_h422@level5.1_2560_1920_PCM_mulaw_1.avi
+ * @tc.name      : create source with g_fd,AVI_H264_h422@level5.1_2560_1920_PCM_mulaw_1.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2300, TestSize.Level3)
@@ -716,7 +718,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2300, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_2400
- * @tc.name      : create source with fd,AVI_MPEG2_simple@low_320_240_AAC_2.avi
+ * @tc.name      : create source with g_fd,AVI_MPEG2_simple@low_320_240_AAC_2.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2400, TestSize.Level3)
@@ -726,7 +728,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2400, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_2500
- * @tc.name      : create source with fd,AVI_MPEG2_main@mian_720_480_MP2_1.avi
+ * @tc.name      : create source with g_fd,AVI_MPEG2_main@mian_720_480_MP2_1.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2500, TestSize.Level3)
@@ -736,7 +738,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2500, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_2600
- * @tc.name      : create source with fd,AVI_MPEG2_high@high_1440_1080_MP3_2.avi
+ * @tc.name      : create source with g_fd,AVI_MPEG2_high@high_1440_1080_MP3_2.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2600, TestSize.Level3)
@@ -746,7 +748,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2600, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_2700
- * @tc.name      : create source with fd,AVI_MPEG2_422P@high_1920_1080_PCM_s24_1.avi
+ * @tc.name      : create source with g_fd,AVI_MPEG2_422P@high_1920_1080_PCM_s24_1.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2700, TestSize.Level3)
@@ -756,7 +758,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2700, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_2800
- * @tc.name      : create source with fd,AVI_MPEG4_simple@level5_720_480_AAC_2.avi
+ * @tc.name      : create source with g_fd,AVI_MPEG4_simple@level5_720_480_AAC_2.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2800, TestSize.Level3)
@@ -766,7 +768,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2800, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_2900
- * @tc.name      : create source with fd,AVI_MPEG4_advanced_simple@level6_1280_720_MP2_1.avi
+ * @tc.name      : create source with g_fd,AVI_MPEG4_advanced_simple@level6_1280_720_MP2_1.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2900, TestSize.Level3)
@@ -776,7 +778,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2900, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_3000
- * @tc.name      : create source with fd,AVI_MPEG4_advanced_simple@level3_352_288_MP3_2.avi
+ * @tc.name      : create source with g_fd,AVI_MPEG4_advanced_simple@level3_352_288_MP3_2.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_3000, TestSize.Level3)
@@ -786,7 +788,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_3000, TestSize.Level3)
 
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_3100
- * @tc.name      : create source with fd,AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi
+ * @tc.name      : create source with g_fd,AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_3100, TestSize.Level3)
@@ -1175,10 +1177,10 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4100, TestSize.Level2)
     OH_AVCodecBufferAttr attr;
     bool videoIsEnd = false;
     const char *file = "/data/test/media/error.avi";
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
@@ -1210,7 +1212,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4100, TestSize.Level2)
             break;
         }
     }
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -1221,10 +1223,10 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4100, TestSize.Level2)
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4200, TestSize.Level2)
 {
     const char *file = "/data/test/media/zero_track.avi";
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
@@ -1234,7 +1236,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4200, TestSize.Level2)
     ASSERT_EQ(g_trackCount, 0);
 
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -1246,10 +1248,10 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4300, TestSize.Level2)
 {
     const char *file = INP_DIR_12;
     srand(time(nullptr));
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -1259,7 +1261,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4300, TestSize.Level2)
     int64_t invalidPts = 12000 * 16666;
     ret = OH_AVDemuxer_SeekToTime(demuxer, invalidPts, SEEK_MODE_CLOSEST_SYNC);
     ASSERT_NE(ret, AV_ERR_OK);
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -1271,10 +1273,10 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4400, TestSize.Level2)
 {
     const char *file = INP_DIR_7;
     srand(time(nullptr));
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
@@ -1282,7 +1284,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4400, TestSize.Level2)
     ASSERT_EQ(ret, AV_ERR_OK);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
     ASSERT_EQ(ret, AV_ERR_OK);
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -1296,10 +1298,10 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4500, TestSize.Level2)
     const char *file = INP_DIR_13;
     bool isEnd = false;
     int count = 0;
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
@@ -1332,7 +1334,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4500, TestSize.Level2)
             }
         }
     }
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -1346,30 +1348,30 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4600, TestSize.Level2)
     OH_AVCodecBufferAttr attr;
     const char *file = INP_DIR_2;
     srand(time(nullptr));
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
-    close(fd);
+    close(g_fd);
 }
 
 /**
  * @tc.number    : DEMUXER_AVI_ILLEGAL_PARA_0100
- * @tc.name      : input invalid avi fd file
+ * @tc.name      : input invalid avi g_fd file
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_ILLEGAL_PARA_0100, TestSize.Level2)
 {
     const char *file = "/data/test/media/invalid.avi";
-    fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_EQ(source, nullptr);
 }
 

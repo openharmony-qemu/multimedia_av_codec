@@ -74,7 +74,7 @@ void DemuxerProcNdkTest::SetUp()
 }
 void DemuxerProcNdkTest::TearDown()
 {
-    if (g_fd >0) {
+    if (g_fd > 0) {
         close(g_fd);
         g_fd = -1;
     }
