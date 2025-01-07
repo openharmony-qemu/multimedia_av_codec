@@ -24,6 +24,11 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
 
+const size_t INDEX_MAX = 32;
+const size_t EXPECT_SIZE = 64;
+const size_t TRACKINDEX_MAX = 32;
+const size_t RELATIVE_PRESENTATION_TIMEUS_MAX = 64;
+
 PtsAndIndexConversion::~PtsAndIndexConversion()
 {
     if (fd_ > 0) {
@@ -60,7 +65,7 @@ bool PtsAndIndexConversion::Init(const uint8_t *data, size_t size)
     if (ret == Status::OK) {
         index_ = data[size - INDEX_MAX];
         trackIndex_ = data[size - TRACKINDEX_MAX];
-        relativePresentationTimeUs_ = data[size - RELATIVEPRESENTATIONTIMEUS_MAX];
+        relativePresentationTimeUs_ = data[size - RELATIVE_PRESENTATION_TIMEUS_MAX];
         return true;
     }
     timeandindexConversions_ = nullptr;

@@ -20,11 +20,6 @@
 #include "native_avmemory.h"
 #include "pts_and_index_conversion.h"
 
-#define INDEX_MAX 32
-#define EXPECT_SIZE 64
-#define TRACKINDEX_MAX 32
-#define RELATIVEPRESENTATIONTIMEUS_MAX 64
-
 namespace OHOS {
 namespace Media {
 class PtsAndIndexConversion {
