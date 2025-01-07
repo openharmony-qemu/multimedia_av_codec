@@ -34,6 +34,7 @@ public:
     static constexpr std::string_view IS_HARDWARE = "IS_VENDOR";
     static constexpr std::string_view BIT_DEPTH = "av_codec_event_info_bit_depth";
     static constexpr std::string_view ENABLE_POST_PROCESSING = "av_codec_event_info_enable_post_processing";
+    static constexpr std::string_view PIXEL_FORMAT_STRING = "pixel_format_string";
 
     static int32_t GetInstanceIdFromMeta(const Media::Meta &meta)
     {

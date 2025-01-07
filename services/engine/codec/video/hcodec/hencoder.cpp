@@ -649,6 +649,7 @@ int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format, std::optional
 
     HEVCProfile profile;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, *reinterpret_cast<int *>(&profile))) {
+        inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, profile);
         optional<CodecHevcProfile> omxHevcProfile = TypeConverter::InnerHevcProfileToOmxProfile(profile);
         if (omxHevcProfile.has_value()) {
             hevcType.profile = omxHevcProfile.value();

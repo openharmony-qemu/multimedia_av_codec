@@ -157,6 +157,7 @@ bool HDecoder::UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt)
         HLOGI("GraphicPixelFormat need update: configured(%s) -> portdefinition(%s)",
             configuredFmt_.strFmt.c_str(), fmt->strFmt.c_str());
         configuredFmt_ = fmt.value();
+        outputFormat_->PutStringValue("pixel_format_string", configuredFmt_.strFmt.c_str());
     }
     return true;
 }

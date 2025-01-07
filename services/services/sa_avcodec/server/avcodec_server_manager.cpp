@@ -31,9 +31,6 @@
 #ifdef SUPPORT_CODECLIST
 #include "codeclist_service_stub.h"
 #endif
-#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
-#include "event_manager.h"
-#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServerManager"};
@@ -170,12 +167,7 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
             CHECK_AND_BREAK_LOG(it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
 
             AVCODEC_LOGI("destroy codec stub services(%{public}zu) pid(%{public}d)", codecStubMap_.size(), pid);
-            auto instanceInfo = it->second.second;
             codecStubMap_.erase(it);
-#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
-            auto instanceInfoMeta = instanceInfo.TransToMeta();
-            EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, *instanceInfoMeta);
-#endif
             break;
         }
         case CODECLIST: {
@@ -217,12 +209,7 @@ void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
     for (auto it = codecStubMap_.begin(); it != codecStubMap_.end();) {
         if (it->first == pid) {
             executor_.Commit(it->second.first);
-            auto instanceInfo = it->second.second;
             it = codecStubMap_.erase(it);
-#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
-            auto instanceInfoMeta = instanceInfo.TransToMeta();
-            EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, *instanceInfoMeta);
-#endif
         } else {
             it++;
         }

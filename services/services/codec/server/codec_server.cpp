@@ -168,6 +168,14 @@ CodecServer::~CodecServer()
     avBufCallback_ = nullptr;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
+#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
+    Media::Meta meta;
+    meta.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    meta.GetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
+    meta.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, meta);
+#endif
+
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -703,16 +711,16 @@ void CodecServer::OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta)
 {
 #ifdef AVCODEC_SUPPORT_EVENT_MANAGER
     if (meta == nullptr) {
-        Format codecFormat;
-        codecBase_->GetOutputFormat(codecFormat);
-        meta = codecFormat.GetMeta();
+        Format format;
+        (void)(codecType_ == AVCODEC_TYPE_VIDEO_DECODER ?
+            codecBase_->GetOutputFormat(format) : codecBase_->GetInputFormat(format));
+        meta = format.GetMeta();
     }
     if (meta == nullptr) {
         return;
     }
 
     meta->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), codecType_);
-    meta->SetData(EventInfoExtentedKey::.data(), codecType_);
     meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
     meta->SetData(EventInfoExtentedKey::ENABLE_POST_PROCESSING.data(), postProcessing_ != nullptr);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_MEMORY_UPDATE, *meta);

@@ -47,7 +47,7 @@ CalculatorParameterPixelFormat VideoPixelFormat2CalculatorParameterPixelFormat(V
 
 struct CalculatorParameter {
     AVCodecType codecType = AVCODEC_TYPE_VIDEO_DECODER;
-    std::string_view mimeType = CodecMimeType::VIDEO_AVC;
+    std::string mimeType = CodecMimeType::VIDEO_AVC.data();
     CalculatorParameterPixelFormat pixelFormat = CalculatorParameterPixelFormat::YUV420;
     BitDepth bitDepth = BitDepth::BIT_8;
     bool isHardware = true;
@@ -64,126 +64,126 @@ struct CalculatorParameter {
     }
 };
 
-constexpr static CalculatorParameter HardwareDecoderHevc10BitYUV420Parameter = {
+static CalculatorParameter HardwareDecoderHevc10BitYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
-    CodecMimeType::VIDEO_HEVC,
+    CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
     BitDepth::BIT_10,
     true,
     false
 };
 
-constexpr static CalculatorParameter HardwareDecoderHevc10BitYUV420PostProcessingParameter = {
+static CalculatorParameter HardwareDecoderHevc10BitYUV420PostProcessingParameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
-    CodecMimeType::VIDEO_HEVC,
+    CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
     BitDepth::BIT_10,
     true,
     true
 };
 
-constexpr static CalculatorParameter HardwareDecoderVvc10BitYUV420Parameter = {
+static CalculatorParameter HardwareDecoderVvc10BitYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
-    CodecMimeType::VIDEO_VVC,
+    CodecMimeType::VIDEO_VVC.data(),
     CalculatorParameterPixelFormat::YUV420,
     BitDepth::BIT_10,
     true,
     false
 };
 
-constexpr static CalculatorParameter HardwareDecoderVvcYUV420Parameter = {
+static CalculatorParameter HardwareDecoderVvcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
-    CodecMimeType::VIDEO_VVC,
+    CodecMimeType::VIDEO_VVC.data(),
     CalculatorParameterPixelFormat::YUV420,
     BitDepth::BIT_8,
     true,
     false
 };
 
-constexpr static CalculatorParameter HardwareDecoderAvcYUV420Parameter = {
+static CalculatorParameter HardwareDecoderAvcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
-    CodecMimeType::VIDEO_AVC,
+    CodecMimeType::VIDEO_AVC.data(),
     CalculatorParameterPixelFormat::YUV420,
     BitDepth::BIT_8,
     true,
     false
 };
 
-constexpr static CalculatorParameter HardwareDecoderHevcYUV420Parameter = {
+static CalculatorParameter HardwareDecoderHevcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
-    CodecMimeType::VIDEO_HEVC,
+    CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
     BitDepth::BIT_8,
     true,
     false
 };
 
-constexpr static CalculatorParameter HardwareEncoderHevc10BitYUV420Parameter = {
+static CalculatorParameter HardwareEncoderHevc10BitYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_ENCODER,
-    CodecMimeType::VIDEO_HEVC,
+    CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
     BitDepth::BIT_10,
     true,
     false
 };
 
-constexpr static CalculatorParameter HardwareEncoderAvcRGBAParameter = {
+static CalculatorParameter HardwareEncoderAvcRGBAParameter = {
     AVCODEC_TYPE_VIDEO_ENCODER,
-    CodecMimeType::VIDEO_AVC,
+    CodecMimeType::VIDEO_AVC.data(),
     CalculatorParameterPixelFormat::RGBA,
     BitDepth::BIT_8,
     true,
     false
 };
 
-constexpr static CalculatorParameter HardwareEncoderHevcRGBAParameter = {
+static CalculatorParameter HardwareEncoderHevcRGBAParameter = {
     AVCODEC_TYPE_VIDEO_ENCODER,
-    CodecMimeType::VIDEO_HEVC,
+    CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::RGBA,
     BitDepth::BIT_8,
     true,
     false
 };
 
-constexpr static CalculatorParameter HardwareEncoderAvcYUV420Parameter = {
+static CalculatorParameter HardwareEncoderAvcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_ENCODER,
-    CodecMimeType::VIDEO_AVC,
+    CodecMimeType::VIDEO_AVC.data(),
     CalculatorParameterPixelFormat::YUV420,
     BitDepth::BIT_8,
     true,
     false
 };
 
-constexpr static CalculatorParameter HardwareEncoderHevcYUV420Parameter = {
+static CalculatorParameter HardwareEncoderHevcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_ENCODER,
-    CodecMimeType::VIDEO_HEVC,
+    CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
     BitDepth::BIT_8,
     true,
     false
 };
 
-constexpr static CalculatorParameter SoftwareDecoderAvcRGBAParameter = {
+static CalculatorParameter SoftwareDecoderAvcRGBAParameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
-    CodecMimeType::VIDEO_AVC,
+    CodecMimeType::VIDEO_AVC.data(),
     CalculatorParameterPixelFormat::RGBA,
     BitDepth::BIT_8,
     false,
     false
 };
 
-constexpr static CalculatorParameter SoftwareDecoderAvcYUV420Parameter = {
+static CalculatorParameter SoftwareDecoderAvcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
-    CodecMimeType::VIDEO_AVC,
+    CodecMimeType::VIDEO_AVC.data(),
     CalculatorParameterPixelFormat::YUV420,
     BitDepth::BIT_8,
     false,
     false
 };
 
-constexpr static CalculatorParameter SoftwareDecoderHevcYUV420Parameter = {
+static CalculatorParameter SoftwareDecoderHevcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
-    CodecMimeType::VIDEO_HEVC,
+    CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
     BitDepth::BIT_8,
     false,
@@ -287,13 +287,22 @@ std::optional<CalculatorType> InstanceMemoryUpdateEventHandler::GetCalculator(co
 {
     VideoPixelFormat pixelFormat;
     CalculatorParameter calculatorParameter;
+    std::string pixelFormatStr;
+    int32_t profile = 0;
     meta.GetData(Media::Tag::VIDEO_PIXEL_FORMAT, pixelFormat);
     meta.GetData(Media::Tag::MIME_TYPE, calculatorParameter.mimeType);
     meta.GetData(EventInfoExtentedKey::CODEC_TYPE.data(), calculatorParameter.codecType);
     meta.GetData(EventInfoExtentedKey::IS_HARDWARE.data(), calculatorParameter.isHardware);
-    meta.GetData(EventInfoExtentedKey::BIT_DEPTH.data(), calculatorParameter.bitDepth);
     meta.GetData(EventInfoExtentedKey::ENABLE_POST_PROCESSING.data(), calculatorParameter.enablePostProcessing);
+    meta.GetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), pixelFormatStr);
+    meta.GetData(Media::Tag::MEDIA_PROFILE, profile);
     calculatorParameter.pixelFormat = VideoPixelFormat2CalculatorParameterPixelFormat(pixelFormat);
+
+    if (pixelFormatStr == "nv12_10bit" ||
+        pixelFormatStr == "nv21_10bit" ||
+        (calculatorParameter.mimeType == CodecMimeType::VIDEO_HEVC.data() && profile == HEVC_PROFILE_MAIN_10)) {
+        calculatorParameter.bitDepth = BitDepth::BIT_10;
+    }
 
     auto it = CALCULATOR_MAP.find(calculatorParameter);
     return (it != CALCULATOR_MAP.end()) ?
