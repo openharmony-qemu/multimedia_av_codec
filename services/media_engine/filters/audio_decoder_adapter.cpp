@@ -92,7 +92,7 @@ Status AudioDecoderAdapter::Prepare()
 Status AudioDecoderAdapter::Start()
 {
     MEDIA_LOG_D("In");
-    if ( isRunning_.load() ) {
+    if (isRunning_.load()) {
         return Status::OK;
     }
     int32_t ret = audiocodec_->Start();
