@@ -85,7 +85,7 @@ int32_t AVMuxerCapiMock::SetFormat(OH_AVMuxer *muxer)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
     if (format != nullptr) {
-        return muxer_->SetFormat(muxer);
+        return OH_AVMuxer_SetFormat(muxer_, format);
     }
     return AV_ERR_UNKNOWN;
 }
