@@ -41,6 +41,7 @@ public:
     void TearDown(void);
 };
 
+static int g_fd = -1;
 static OH_AVMemory *memory = nullptr;
 static OH_AVSource *source = nullptr;
 static OH_AVDemuxer *demuxer = nullptr;
@@ -65,6 +66,11 @@ void DemuxerReli2NdkTest::SetUp()
 }
 void DemuxerReli2NdkTest::TearDown()
 {
+    if (g_fd >0) {
+        close(g_fd);
+        g_fd = -1;
+    }
+
     if (trackFormat != nullptr) {
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
@@ -461,12 +467,12 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_AVI_RELI_0100, TestSize.Level2)
     bool audioIsEnd = false;
     bool videoIsEnd = false;
 
-    int fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
     num++;
     cout << num << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -501,7 +507,7 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_AVI_RELI_0100, TestSize.Level2)
         OH_AVDemuxer_Destroy(demuxer);
         demuxer = nullptr;
     }
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -518,9 +524,9 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_AVI_RELI_0200, TestSize.Level2)
     bool audioIsEnd = false;
     bool videoIsEnd = false;
 
-    int fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
     num++;
     cout << num << endl;
     source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
@@ -558,7 +564,7 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_AVI_RELI_0200, TestSize.Level2)
         OH_AVDemuxer_Destroy(demuxer);
         demuxer = nullptr;
     }
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -760,20 +766,17 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_AVI_RELI_0700, TestSize.Level3)
 {
     int num = 0;
     OH_AVCodecBufferAttr attr;
-
     const char *file = "/data/test/media/long.avi";
-
     bool audioIsEnd = false;
     bool videoIsEnd = false;
     int audioFrame = 0;
     int videoFrame = 0;
-
-    int fd = open(file, O_RDONLY);
+    g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
     num++;
     cout << num << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -796,6 +799,6 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_AVI_RELI_0700, TestSize.Level3)
             }
         }
     }
-    close(fd);
+    close(g_fd);
 }
 }

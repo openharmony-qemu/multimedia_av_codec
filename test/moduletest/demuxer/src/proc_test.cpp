@@ -41,6 +41,7 @@ public:
     void TearDown(void);
 };
 
+static int g_fd = -1;
 static OH_AVMemory *memory = nullptr;
 static OH_AVSource *source = nullptr;
 static OH_AVDemuxer *demuxer = nullptr;
@@ -73,6 +74,11 @@ void DemuxerProcNdkTest::SetUp()
 }
 void DemuxerProcNdkTest::TearDown()
 {
+    if (g_fd >0) {
+        close(g_fd);
+        g_fd = -1;
+    }
+
     if (trackFormat != nullptr) {
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
@@ -114,6 +120,8 @@ using namespace testing::ext;
 
 string g_mp4Vvc8bitPath = string("/data/test/media/vvc_8bit_3840_2160.mp4");
 string g_mp4Vvc10bitPath = string("/data/test/media/vvc_aac_10bit_1920_1080.mp4");
+const char *INP_DIR_1 = "/data/test/media/video_2audio.avi";
+const char *INP_DIR_2 = "/data/test/media/audio_2video.avi";
 
 static int64_t GetFileSize(const char *fileName)
 {
@@ -1866,9 +1874,9 @@ HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0400, TestSize.Level0)
 HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0100, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
-    const char *file = "/data/test/media/video_2audio.avi";
-    int fd = open(file, O_RDONLY);
-    CheckFile(file, fd, &source, &demuxer, &g_trackCount);
+    const char *file = INP_DIR_1;
+    g_fd = open(file, O_RDONLY);
+    CheckFile(file, g_fd, &source, &demuxer, &g_trackCount);
     int tarckType = 0;
     int auidoTrackCount = 2;
     bool videoIsEnd = false;
@@ -1908,7 +1916,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0100, TestSize.Level2
     ASSERT_EQ(aKeyCount[0], 39);
     ASSERT_EQ(audioFrame[1], 14);
     ASSERT_EQ(aKeyCount[1], 14);
-    close(fd);
+    close(g_fd);
 }
 
 /**
@@ -1919,9 +1927,9 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0100, TestSize.Level2
 HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0200, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
-    const char *file = "/data/test/media/audio_2video.avi";
-    int fd = open(file, O_RDONLY);
-    CheckFile(file, fd, &source, &demuxer, &g_trackCount);
+    const char *file = INP_DIR_2;
+    g_fd = open(file, O_RDONLY);
+    CheckFile(file, g_fd, &source, &demuxer, &g_trackCount);
     int tarckType = 0;
     int videoTrackCount = 2;
     bool audioIsEnd = false;
@@ -1961,5 +1969,5 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0200, TestSize.Level2
     ASSERT_EQ(vKeyCount[1], 1);
     ASSERT_EQ(audioFrame, 40);
     ASSERT_EQ(aKeyCount, 40);
-    close(fd);
+    close(g_fd);
 }
