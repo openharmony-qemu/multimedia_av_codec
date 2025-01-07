@@ -1068,7 +1068,9 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
     SCOPED_TRACE_FMT("id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
     if (!gotFirstOutput_) {
         HLOGI("got first output id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
+#ifndef AV_CODEC_HCODEC_ENABLE_QOS_THE_WHOLE_TIME
         OHOS::QOS::ResetThreadQos();
+#endif
         gotFirstOutput_ = true;
     }
     info.BeginCpuAccess();
