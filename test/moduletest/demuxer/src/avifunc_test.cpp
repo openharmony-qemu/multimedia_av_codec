@@ -288,6 +288,7 @@ static void DemuxerResult(const char *fileName)
         }
     }
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
