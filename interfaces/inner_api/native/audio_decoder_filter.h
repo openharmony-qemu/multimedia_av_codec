@@ -112,7 +112,7 @@ private:
 
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
 
-    std::shared_ptr<AudioDecoderAdapter> audioDecoder_;
+    std::shared_ptr<AudioDecoderAdapter> decoder_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
 
     bool isDrmProtected_ = false;
