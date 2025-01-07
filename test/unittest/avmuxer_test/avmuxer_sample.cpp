@@ -97,7 +97,7 @@ int32_t AVMuxerSample::SetRotation(int32_t rotation)
     return muxer_->SetRotation(rotation);
 }
 
-int32_t SetFormat(OH_AVMuxer *muxer)
+int32_t AVMuxerSample::SetFormat(OH_AVMuxer *muxer)
 {
     if (muxer_ == nullptr) {
         return AV_ERR_INVALID_VAL;
