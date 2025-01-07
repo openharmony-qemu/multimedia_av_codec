@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,7 +23,6 @@
 #include "osal/task/condition_variable.h"
 #include "meta/format.h"
 #include "avcodec_audio_codec.h"
-#include "media_codec.h"
 #include "avcodec_common.h"
 
 namespace OHOS {
@@ -71,7 +70,6 @@ public:
         const bool svpFlag);
 
 private:
-    std::string StateToString(CodecState state);
 
     std::shared_ptr<MediaAVCodec::AVCodecAudioCodec> audiocodec_;
     
@@ -79,11 +77,7 @@ private:
 
     sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_;
 
-    bool isDump_ = false;
-
-    std::string dumpPrefix_ = "";
-
-    std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
+    std::atomic<bool> isRunning_{false};
 
     Mutex stateMutex_;
 };

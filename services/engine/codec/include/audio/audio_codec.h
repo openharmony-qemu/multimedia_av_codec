@@ -73,6 +73,11 @@ public:
         return StatusToAVCodecServiceErrCode(static_cast<Media::Status>(mediaCodec_->SetCodecCallback(mediaCallback_)));
     }
 
+    void SetDumpInfo(bool isDump, uint64_t instanceId) override
+    {
+        mediaCodec_->SetDumpInfo(isDump, instanceId);
+    }
+
     int32_t Prepare() override
     {
         return StatusToAVCodecServiceErrCode(static_cast<Media::Status>(mediaCodec_->Prepare()));

@@ -60,6 +60,8 @@ public:
         const bool svpFlag);
 
     virtual void ProcessInputBuffer();
+
+    virtual void SetDumpInfo(bool isDump, uint64_t instanceId);
 };
 
 class __attribute__((visibility("default"))) AudioCodecFactory {

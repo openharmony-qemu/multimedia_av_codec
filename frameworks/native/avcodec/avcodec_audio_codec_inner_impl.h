@@ -62,6 +62,8 @@ public:
 
     void ProcessInputBuffer() override;
 
+    void SetDumpInfo(bool isDump, uint64_t instanceId) override;
+
 private:
     std::shared_ptr<ICodecService> codecService_ = nullptr;
 };

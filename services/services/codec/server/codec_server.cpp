@@ -777,6 +777,13 @@ int32_t CodecServer::ChangePlugin(const std::string &mime, bool isEncoder, const
     return codecBase_->ChangePlugin(mime, isEncoder, meta);
 }
 
+void CodecServer::SetDumpInfo(bool isDump, uint64_t instanceId)
+{
+    AVCODEC_LOGI("SetDumpInfo in");
+    CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "Codecbase is nullptr");
+    return codecBase_->SetDumpInfo(isDump, instanceId);
+}
+
 int32_t CodecServer::DumpInfo(int32_t fd)
 {
     CHECK_AND_RETURN_RET_LOG(fd >= 0, AVCS_ERR_OK, "Get a invalid fd");

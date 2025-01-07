@@ -62,6 +62,12 @@ public:
         return AVCODEC_ERROR_EXTEND_START;
     }
 
+    virtual void SetDumpInfo(bool isDump, uint64_t instanceId)
+    {
+        (void)isDump;
+        (void)instanceId;
+    }
+
     virtual std::string GetHidumperInfo()
     {
         return "";

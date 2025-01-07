@@ -74,6 +74,12 @@ public:
         return AVCODEC_ERROR_EXTEND_START;
     }
 
+    virtual void SetDumpInfo(bool isDump, uint64_t instanceId)
+    {
+        (void)isDump;
+        (void)instanceId;
+    }
+
     virtual int32_t GetInputFormat(Format &format) = 0;
     virtual int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag)

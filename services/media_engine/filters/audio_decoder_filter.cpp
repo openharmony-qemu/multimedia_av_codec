@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -302,6 +302,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
         }
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
+    audioDecoder_->SetDumpInfo(isDump_, instanceId_);
     if (isDrmProtected_) {
         MEDIA_LOG_D_SHORT("AudioDecoderFilter::isDrmProtected_ true.");
 #ifdef SUPPORT_DRM
@@ -387,9 +388,6 @@ Status AudioDecoderFilter::SetDecryptionConfig(const sptr<DrmStandard::IMediaKey
 void AudioDecoderFilter::SetDumpFlag(bool isDump)
 {
     isDump_ = isDump;
-    if (audioDecoder_ != nullptr) {
-        audioDecoder_->SetDumpInfo(isDump_, instanceId_);
-    }
 }
 
 void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,

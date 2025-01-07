@@ -220,6 +220,13 @@ int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(
     return codecService_->SetAudioDecryptionConfig(keySession, svpFlag);
 }
 
+void AVCodecAudioCodecInnerImpl::SetDumpInfo(bool isDump, uint64_t instanceId)
+{
+    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetDumpInfo");
+    CHECK_AND_RETURN_LOG(codecService_ != nullptr, "service died");
+    return codecService_->SetDumpInfo(isDump, instanceId);
+}
+
 void AVCodecAudioCodecInnerImpl::ProcessInputBuffer()
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl ProcessInputBuffer");
