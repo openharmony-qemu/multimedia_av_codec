@@ -34,6 +34,7 @@ public:
     int32_t WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer *sample) override;
     int32_t SetRotation(int32_t rotation) override;
     int32_t SetTimedMetadata() override;
+    int32_t SetFormat(OH_AVMuxer *muxer) override;
 private:
     OH_AVMuxer *muxer_ = nullptr;
 };
