@@ -58,6 +58,19 @@ void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
     source_ = source;
     source_->GetSize(mediaDataSize_);
     seekable_ = source_->GetSeekable();
+    isDataSrcNoSeek_ = (seekable_ == Plugins::Seekable::UNSEEKABLE && sourceType_ == SourceType::SOURCE_TYPE_STREAM);
+    MEDIA_LOG_I("mediaDataSize_: " PUBLIC_LOG_U64 ", seekable_: " PUBLIC_LOG_D32 ", source_->GetSourceType(): "
+        PUBLIC_LOG_D32 ", isDataSrcNoSeek_: " PUBLIC_LOG_D32, mediaDataSize_, seekable_, sourceType_, isDataSrcNoSeek_);
+}
+
+bool BaseStreamDemuxer::GetIsDataSrcNoSeek()
+{
+    return isDataSrcNoSeek_;
+}
+
+void BaseStreamDemuxer::SetSourceType(SourceType type)
+{
+    sourceType_ = type;
 }
 
 std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
@@ -87,6 +100,7 @@ void BaseStreamDemuxer::SetBundleName(const std::string& bundleName)
 
 void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
+    MEDIA_LOG_D("BaseStreamDemuxer onInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
 }
 
@@ -161,6 +175,11 @@ bool BaseStreamDemuxer::CanDoChangeStream()
 void BaseStreamDemuxer::SetChangeFlag(bool flag)
 {
     return changeStreamFlag_.store(flag);
+}
+
+bool BaseStreamDemuxer::SetSourceInitialBufferSize(int32_t offset, int32_t size)
+{
+    return source_->SetInitialBufferSize(offset, size);
 }
 } // namespace Media
 } // namespace OHOS

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -105,9 +105,10 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
     }
     if (isNeedCleanFiles) {
         files_.clear();
+        segmentOffsets_.clear();
     }
     MEDIA_LOG_I("media playlist");
-    auto tags = ParseEntries(playList);
+    std::list<std::shared_ptr<Tag>> tags = ParseEntries(playList);
     UpdateFromTags(tags);
     tags.clear();
     playList_ = playList;
@@ -177,9 +178,11 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 {
     M3U8Info info;
     bLive_ = !info.bVod;
-    segmentOffsets_.clear();
     size_t segmentTimeOffset = 0;
     size_t duration = 0;
+    for (const auto &frag : files_) {
+        duration += static_cast<size_t>(frag->duration_ * SECOND_TO_MICROSECOND);
+    }
     for (auto& tag : tags) {
         HlsTag hlsTag = tag->GetType();
         if (hlsTag == HlsTag::EXTXENDLIST && !isPlayTypeFound_) {
@@ -415,12 +418,13 @@ M3U8VariantStream::M3U8VariantStream(std::string name, std::string uri, std::sha
 {
 }
 
-M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::string& uri,
+M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::string& uri, uint32_t initResolution,
     const std::map<std::string, std::string>& httpHeader)
 {
     playList_ = playList;
     uri_ = uri;
     httpHeader_ = httpHeader;
+    initResolution_ = initResolution;
     if (!StrHasPrefix(playList_, "#EXTM3U")) {
         MEDIA_LOG_I("playlist doesn't start with #EXTM3U ");
         isParseSuccess_ = false;
@@ -519,6 +523,46 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
         defaultVariant_ = variants_.front();
     }
     tags.clear();
+}
+
+void M3U8MasterPlaylist::ChooseStreamByResolution()
+{
+    if (initResolution_ == 0) {
+        return;
+    }
+    for (const auto &variant : variants_) {
+        if (variant == nullptr) {
+            continue;
+        }
+        if (IsNearToInitResolution(defaultVariant_, variant)) {
+            defaultVariant_ = variant;
+        }
+    }
+    MEDIA_LOG_I("resolution, width:" PUBLIC_LOG_U32 ", height:" PUBLIC_LOG_U32,
+                defaultVariant_->width_, defaultVariant_->height_);
+}
+
+bool M3U8MasterPlaylist::IsNearToInitResolution(const std::shared_ptr<M3U8VariantStream> &choosedStream,
+    const std::shared_ptr<M3U8VariantStream> &currentStream)
+{
+    if (choosedStream == nullptr || currentStream == nullptr || initResolution_ == 0) {
+        return false;
+    }
+
+    uint32_t choosedDelta = GetResolutionDelta(choosedStream->width_, choosedStream->height_);
+    uint32_t currentDelta = GetResolutionDelta(currentStream->width_, currentStream->height_);
+    return (currentDelta < choosedDelta)
+           || (currentDelta == choosedDelta && currentStream->bandWidth_ < choosedStream->bandWidth_);
+}
+
+uint32_t M3U8MasterPlaylist::GetResolutionDelta(uint32_t width, uint32_t height)
+{
+    uint32_t resolution = width * height;
+    if (resolution > initResolution_) {
+        return resolution - initResolution_;
+    } else {
+        return initResolution_ - resolution;
+    }
 }
 }
 }

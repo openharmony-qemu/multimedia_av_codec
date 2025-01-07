@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -106,6 +106,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
     auto downloadDoneCallback = [this] (const std::string& url, const std::string& location) {
         UpdateDownloadFinished(url, location);
     };
+    downloadRequest_->SetIsM3u8Request(true);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     if (downloader_ != nullptr) {
         downloader_->Download(downloadRequest_, -1); // -1
@@ -345,6 +346,7 @@ void PlayListDownloader::StopBufferring(bool isAppBackground)
     downloader_->SetAppState(isAppBackground);
     downloader_->StopBufferring();
 }
+
 }
 }
 }

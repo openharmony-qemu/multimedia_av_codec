@@ -23,7 +23,6 @@ ohos_fuzztest("EncoderSetParameterFuzzTest") {
   fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/encodersetparameter_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
-    "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
     "$MEDIA_ROOT_DIR/test/fuzztest/encoderconfigure_fuzzer",
   ]
   cflags = [
@@ -39,8 +38,9 @@ ohos_fuzztest("EncoderSetParameterFuzzTest") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "ipc:ipc_core",
+    "ipc:ipc_single",
     "media_foundation:native_media_core",
+    "openssl:libcrypto_shared",
     "window_manager:libwm",
   ]
   deps = [

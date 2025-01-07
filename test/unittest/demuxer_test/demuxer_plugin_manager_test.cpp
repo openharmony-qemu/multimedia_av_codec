@@ -16,7 +16,6 @@
 #include "demuxer_plugin_manager_test.h"
 
 #include "gtest/gtest.h"
-#include "stream_demuxer.h"
 #include "demuxer_plugin_manager.h"
 
 #define LOCAL true
@@ -24,6 +23,7 @@
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
+using namespace testing;
 using namespace std;
 
 namespace OHOS {
@@ -35,14 +35,16 @@ void DemuxerPluginManagerUnitTest::TearDownTestCase(void) {}
 void DemuxerPluginManagerUnitTest::SetUp(void)
 {
     demuxerPluginManager_ = std::make_shared<DemuxerPluginManager>();
-    std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxer>();
+    streamDemuxer_ = std::make_shared<MockBaseStreamDemuxer>();
     int32_t streamId = 0;
-    dataSourceImpl_ = std::make_shared<DataSourceImpl>(streamDemuxer, streamId);
+    dataSourceImpl_ = std::make_shared<DataSourceImpl>(streamDemuxer_, streamId);
+    dataSourceImpl_->stream_ = streamDemuxer_;
 }
 
 void DemuxerPluginManagerUnitTest::TearDown(void)
 {
     demuxerPluginManager_ = nullptr;
+    streamDemuxer_ = nullptr;
     dataSourceImpl_ = nullptr;
 }
 
@@ -70,9 +72,8 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamCount_001, TestSize.Level1)
 HWTEST_F(DemuxerPluginManagerUnitTest, LoadCurrentSubtitlePlugin_001, TestSize.Level1)
 {
     demuxerPluginManager_->curSubTitleStreamID_ = -1;
-    std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxer>();
     Plugins::MediaInfo mediaInfo;
-    Status status = demuxerPluginManager_->LoadCurrentSubtitlePlugin(streamDemuxer, mediaInfo);
+    Status status = demuxerPluginManager_->LoadCurrentSubtitlePlugin(streamDemuxer_, mediaInfo);
 
     EXPECT_EQ(status, Status::ERROR_UNKNOWN);
 }
@@ -283,5 +284,150 @@ HWTEST_F(DemuxerPluginManagerUnitTest, SetResetEosStatus_001, TestSize.Level1)
     // 3. Verify the result
     EXPECT_EQ(demuxerPluginManager_->needResetEosStatus_, flag);
 }
+
+HWTEST_F(DemuxerPluginManagerUnitTest, ReadAt_001, TestSize.Level1)
+{
+    int64_t offset = 1;
+    std::shared_ptr<Buffer> buffer = nullptr;
+    size_t expectedLen = 0;
+    dataSourceImpl_->stream_->seekable_ = Plugins::Seekable::UNSEEKABLE;
+    dataSourceImpl_->stream_->mediaDataSize_  = 0;
+    EXPECT_CALL(*streamDemuxer_, CallbackReadAt).WillRepeatedly(Return(Status::OK));
+    EXPECT_EQ(dataSourceImpl_->ReadAt(offset, buffer, expectedLen), Status::ERROR_UNKNOWN);
+    buffer = std::shared_ptr<Buffer>();
+    EXPECT_EQ(dataSourceImpl_->ReadAt(offset, buffer, expectedLen), Status::ERROR_UNKNOWN);
+    buffer = nullptr;
+    dataSourceImpl_->stream_->seekable_ = Plugins::Seekable::SEEKABLE;
+    dataSourceImpl_->stream_->mediaDataSize_  = 0;
+    offset = 1;
+    EXPECT_EQ(dataSourceImpl_->ReadAt(offset, buffer, expectedLen), Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, UpdateTempTrackMapInfo_001, TestSize.Level1)
+{
+    int32_t oldTrackId = 0;
+    int32_t newTrackId = 0;
+    int32_t newInnerTrackIndex = 0;
+    demuxerPluginManager_->temp2TrackInfoMap_[oldTrackId] = MediaTrackMap();
+    demuxerPluginManager_->temp2TrackInfoMap_[oldTrackId].streamID = 0;
+    demuxerPluginManager_->temp2TrackInfoMap_[oldTrackId].innerTrackIndex = 0;
+    demuxerPluginManager_->temp2TrackInfoMap_[newTrackId] = MediaTrackMap();
+    demuxerPluginManager_->temp2TrackInfoMap_[newTrackId].streamID = 0;
+    demuxerPluginManager_->temp2TrackInfoMap_[newTrackId].innerTrackIndex = 0;
+    demuxerPluginManager_->UpdateTempTrackMapInfo(oldTrackId, newTrackId, newInnerTrackIndex);
+    EXPECT_EQ(demuxerPluginManager_->temp2TrackInfoMap_[oldTrackId].innerTrackIndex, newInnerTrackIndex);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, SingleStreamSeekTo_001, TestSize.Level1)
+{
+    Plugins::SeekMode mode = Plugins::SeekMode::SEEK_NEXT_SYNC;
+    int64_t seekTime = 0;
+    int32_t streamID = 0;
+    int64_t realSeekTime = 0;
+    demuxerPluginManager_->streamInfoMap_[0] = MediaStreamInfo();
+    demuxerPluginManager_->streamInfoMap_[0].plugin = nullptr;
+    // 110
+    EXPECT_EQ(demuxerPluginManager_->SingleStreamSeekTo(seekTime, mode, streamID, realSeekTime), Status::OK);
+    // 100
+    streamID = 2;
+    EXPECT_EQ(demuxerPluginManager_->SingleStreamSeekTo(seekTime, mode, streamID, realSeekTime), Status::OK);
+    // 000
+    streamID = -1;
+    EXPECT_EQ(demuxerPluginManager_->SingleStreamSeekTo(seekTime, mode, streamID, realSeekTime), Status::OK);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, GetCurrentBitRate_001, TestSize.Level1)
+{
+    uint32_t bitRate = 10;
+    uint32_t ret = 0;
+    demuxerPluginManager_->curVideoStreamID_ = 1;
+    demuxerPluginManager_->streamInfoMap_[demuxerPluginManager_->curVideoStreamID_] = MediaStreamInfo();
+    demuxerPluginManager_->streamInfoMap_[demuxerPluginManager_->curVideoStreamID_].bitRate = bitRate;
+    demuxerPluginManager_->isDash_ = true;
+    // 11
+    EXPECT_EQ(demuxerPluginManager_->GetCurrentBitRate(), bitRate);
+    // 10
+    demuxerPluginManager_->curVideoStreamID_ = -1;
+    EXPECT_EQ(demuxerPluginManager_->GetCurrentBitRate(), ret);
+    // 00
+    demuxerPluginManager_->isDash_ = false;
+    EXPECT_EQ(demuxerPluginManager_->GetCurrentBitRate(), ret);
+    // 01
+    demuxerPluginManager_->curVideoStreamID_ = 1;
+    EXPECT_EQ(demuxerPluginManager_->GetCurrentBitRate(), ret);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, RebootPlugin_001, TestSize.Level1)
+{
+    int32_t streamId = 0;
+    int32_t newStreamID = 1;
+    TrackType trackType = TRACK_AUDIO;
+    bool isRebooted;
+    demuxerPluginManager_->streamInfoMap_[0] = MediaStreamInfo();
+    demuxerPluginManager_->streamInfoMap_[1] = MediaStreamInfo();
+    EXPECT_CALL(*streamDemuxer_, ResetCache).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*streamDemuxer_, SetDemuxerState).WillRepeatedly(Return());
+    std::string str = "";
+    EXPECT_CALL(*streamDemuxer_, SnifferMediaType).WillRepeatedly(Return(str));
+    EXPECT_CALL(*streamDemuxer_, GetNewAudioStreamID()).WillRepeatedly(Return(newStreamID));
+    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted),
+        Status::OK);
+    streamId = 1;
+    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted),
+        Status::ERROR_INVALID_PARAMETER);
+    trackType = TRACK_INVALID;
+    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted),
+        Status::ERROR_INVALID_PARAMETER);
+    streamId = 0;
+    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted),
+        Status::ERROR_INVALID_PARAMETER);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamDemuxerNewStreamID_001, TestSize.Level1)
+{
+    int32_t newStreamID = 1;
+    EXPECT_CALL(*streamDemuxer_, GetNewAudioStreamID()).WillRepeatedly(Return(newStreamID));
+    EXPECT_CALL(*streamDemuxer_, GetNewSubtitleStreamID()).WillRepeatedly(Return(newStreamID));
+    EXPECT_CALL(*streamDemuxer_, GetNewVideoStreamID()).WillRepeatedly(Return(newStreamID));
+    EXPECT_EQ(streamDemuxer_->GetNewAudioStreamID(), newStreamID);
+    TrackType trackType = TRACK_AUDIO;
+    EXPECT_EQ(demuxerPluginManager_->GetStreamDemuxerNewStreamID(trackType, streamDemuxer_), newStreamID);
+    trackType = TRACK_SUBTITLE;
+    EXPECT_EQ(demuxerPluginManager_->GetStreamDemuxerNewStreamID(trackType, streamDemuxer_), newStreamID);
+    trackType = TRACK_VIDEO;
+    EXPECT_EQ(demuxerPluginManager_->GetStreamDemuxerNewStreamID(trackType, streamDemuxer_), newStreamID);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, StartPlugin_001, TestSize.Level1)
+{
+    int32_t streamId = 0;
+    EXPECT_EQ(demuxerPluginManager_->StartPlugin(streamId, streamDemuxer_), Status::OK);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, StopPlugin_001, TestSize.Level1)
+{
+    int32_t streamId = 0;
+    EXPECT_CALL(*streamDemuxer_, ResetCache).WillRepeatedly(Return(Status::OK));
+    EXPECT_EQ(demuxerPluginManager_->StopPlugin(streamId, streamDemuxer_), Status::OK);
+    demuxerPluginManager_->streamInfoMap_[streamId] = MediaStreamInfo();
+    demuxerPluginManager_->streamInfoMap_[streamId].plugin = nullptr;
+    EXPECT_EQ(demuxerPluginManager_->StopPlugin(streamId, streamDemuxer_), Status::OK);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamIDByTrackType_001, TestSize.Level1)
+{
+    TrackType trackType = TRACK_VIDEO;
+    demuxerPluginManager_->curVideoStreamID_ = 1;
+    EXPECT_EQ(demuxerPluginManager_->GetStreamIDByTrackType(trackType), demuxerPluginManager_->curVideoStreamID_);
+    trackType = TRACK_AUDIO;
+    demuxerPluginManager_->curAudioStreamID_ = 2;
+    EXPECT_EQ(demuxerPluginManager_->GetStreamIDByTrackType(trackType), demuxerPluginManager_->curAudioStreamID_);
+    trackType = TRACK_SUBTITLE;
+    demuxerPluginManager_->curSubTitleStreamID_ = 3;
+    EXPECT_EQ(demuxerPluginManager_->GetStreamIDByTrackType(trackType), demuxerPluginManager_->curSubTitleStreamID_);
+    trackType = TRACK_INVALID;
+    EXPECT_EQ(demuxerPluginManager_->GetStreamIDByTrackType(trackType), -1);
+}
+
 }
 }

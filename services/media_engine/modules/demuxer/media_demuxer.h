@@ -22,6 +22,7 @@
 #include <shared_mutex>
 #include <unordered_set>
 
+#include "osal/task/condition_variable.h"
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
@@ -35,14 +36,10 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_time.h"
 #include "plugin/demuxer_plugin.h"
+#include "interrupt_listener.h"
 
 namespace OHOS {
 namespace Media {
-namespace {
-    constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
-    constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
-}
-
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 class BaseStreamDemuxer;
 class DemuxerPluginManager;
@@ -50,7 +47,8 @@ class Source;
 
 class AVBufferQueueProducer;
 
-class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>, public Plugins::Callback {
+class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>, public Plugins::Callback,
+    public InterruptListener {
 public:
     explicit MediaDemuxer();
     ~MediaDemuxer() override;
@@ -70,8 +68,10 @@ public:
     Status Stop();
     Status Pause();
     Status PauseDragging();
+    Status PauseAudioAlign();
     Status Resume();
     Status ResumeDragging();
+    Status ResumeAudioAlign();
     Status Flush();
     Status Preroll();
     Status PausePreroll();
@@ -88,6 +88,8 @@ public:
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
+    void OnEventBuffer(const Plugins::PluginEvent &event);
+    void OnSeekReadyEvent(const Plugins::PluginEvent &event);
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
     bool IsRenderNextVideoFrameSupported();
@@ -101,7 +103,7 @@ public:
     Status SetDecoderFramerateUpperLimit(int32_t decoderFramerateUpperLimit, uint32_t trackId);
     Status SetSpeed(float speed);
     Status SetFrameRate(double framerate, uint32_t trackId);
-    void SetInterruptState(bool isInterruptNeeded);
+    void OnInterrupted(bool isInterruptNeeded) override;
     void OnDumpInfo(int32_t fd);
     bool IsLocalDrmInfosExisted();
     Status DisableMediaTrack(Plugins::MediaType mediaType);
@@ -110,11 +112,13 @@ public:
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override;
     bool CanAutoSelectBitRate() override;
 
+    bool IsRefParserSupported();
     Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
     bool IsVideoEos();
+    bool HasEosTrack();
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
@@ -129,6 +133,7 @@ public:
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     void WaitForBufferingEnd();
+    int32_t GetCurrentVideoTrackId();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -140,10 +145,16 @@ private:
     struct MaintainBaseInfo {
         int64_t segmentOffset = -1;
         int64_t basePts = -1;
+        int64_t candidateBasePts = -1;
         int64_t lastPts = 0;
+        int64_t lastPtsModifyedMax = -1;
+        bool isLastPtsChange = false;
     };
     bool isHttpSource_ = false;
     std::string videoMime_{};
+
+    static constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
+    static constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
 
     Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
@@ -169,16 +180,16 @@ private:
     bool HasVideo();
     void DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer);
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
-    void CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
+    bool CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     bool IsTrackDisabled(Plugins::MediaType mediaType);
     bool CheckTrackEnabledById(uint32_t trackId);
     bool HandleDashChangeStream(uint32_t trackId);
 
-    Status SeekToTimePre();
     Status SeekToTimeAfter();
     bool SelectBitRateChangeStream(uint32_t trackId);
     bool SelectTrackChangeStream(uint32_t trackId);
     bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
+    void HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackId);
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
 
     Plugins::Seekable seekable_;
@@ -205,11 +216,11 @@ private:
     Status HandleSelectTrack(int32_t trackId);
     Status HandleDashSelectTrack(int32_t trackId);
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
-    void HandleStopPlugin(int32_t trackId);
-    void HandleStartPlugin(int32_t trackId);
+    Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
     bool IsSubtitleMime(const std::string& mime);
     void HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
     void InitPtsInfo();
+    void InitMediaStartPts();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -223,6 +234,8 @@ private:
     int64_t videoStartTime_{0};
 
     std::shared_mutex drmMutex{};
+    std::mutex isSelectTrackMutex_{};
+    std::mutex rebootPluginMutex_{};
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
 
@@ -265,7 +278,9 @@ private:
     std::mutex prerollMutex_ {};
     std::atomic<bool> inPreroll_ = false;
 
-    uint32_t selectTrackTrackID_ { TRACK_ID_DUMMY };
+    std::map<int32_t, int32_t> inSelectTrackType_{};
+    std::map<int32_t, std::pair<int32_t, int32_t>> seekReadyStreamInfo_{};
+    std::condition_variable rebootPluginCondition_;
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;
@@ -280,6 +295,7 @@ private:
     std::atomic<bool> isInterruptNeeded_ {false};
     bool isAutoMaintainPts_ = false;
     std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
+    int64_t mediaStartPts_ {HST_TIME_NONE};
 };
 } // namespace Media
 } // namespace OHOS

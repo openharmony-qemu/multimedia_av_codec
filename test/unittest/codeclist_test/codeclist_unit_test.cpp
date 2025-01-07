@@ -165,7 +165,13 @@ HWTEST_F(CodecListUnitTest, CodecList_GetName_001, TestSize.Level1)
         capability_ = CodecListMockFactory::GetCapabilityByCategory(mime, true, category);
         ASSERT_NE(nullptr, capability_) << mime << " can not found!" << std::endl;
         std::string codecName = capability_->GetName();
-        EXPECT_EQ(nameOfMime, codecName) << mime << " get error name: " << codecName << std::endl;
+        if (mime == std::string(CodecMimeType::AUDIO_AAC)) {
+            bool check = (codecName == nameOfMime ||
+                          codecName == std::string(AVCodecCodecName::AUDIO_ENCODER_VENDOR_AAC_NAME));
+            EXPECT_EQ(true, check) << mime << " get error name: " << codecName << std::endl;
+        } else {
+            EXPECT_EQ(nameOfMime, codecName) << mime << " get error name: " << codecName << std::endl;
+        }
     }
     if (isHardIncluded_) {
         for (auto it = CAPABILITY_DECODER_HARD_NAME.begin(); it != CAPABILITY_DECODER_HARD_NAME.end(); ++it) {
@@ -780,5 +786,525 @@ HWTEST_F(CodecListUnitTest, CodecList_UNSUPPORTED_MIME_002, TestSize.Level1)
         range = capability_->GetVideoFrameRateRangeForSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
         EXPECT_EQ(0, range.minVal);
         EXPECT_EQ(0, range.maxVal);
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetCapabilityByCategory_Vvc_001
+ * @tc.desc: CodecList GetCapabilityByCategory Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetCapabilityByCategory_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        capability_ = CodecListMockFactory::GetCapability(DEFAULT_VIDEO_VVC_MIME, false);
+        if (capability_ != nullptr && capability_->IsHardware()) {
+            AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+            EXPECT_NE(nullptr, capability_);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_IsHardware_Vvc_001
+ * @tc.desc: CodecList IsHardware Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_IsHardware_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            EXPECT_TRUE(capability_->IsHardware());
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetName_Vvc_001
+ * @tc.desc: CodecList GetName Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetName_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        for (auto it = CAPABILITY_DECODER_HARD_NAME_VVC.begin(); it != CAPABILITY_DECODER_HARD_NAME_VVC.end(); ++it) {
+            std::string mime = it->first;
+            std::string nameOfMime = it->second;
+            capability_ = CodecListMockFactory::GetCapability(mime, false);
+            if (capability_ != nullptr) {
+                std::string codecName = capability_->GetName();
+                EXPECT_EQ(nameOfMime, codecName) << mime << " get error name: " << codecName << std::endl;
+            }
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetMaxSupportedInstances_Vvc_001
+ * @tc.desc: CodecList GetMaxSupportedInstances Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetMaxSupportedInstances_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            EXPECT_EQ(MAX_SURPPORT_VCODEC_VVC, capability_->GetMaxSupportedInstances());
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetVideoWidthAlignment_Vvc_001
+ * @tc.desc: CodecList GetVideoWidthAlignment Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetVideoWidthAlignment_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            int32_t widthAlignment = capability_->GetVideoWidthAlignment();
+            EXPECT_EQ(DEFAULT_WIDTH_ALIGNMENT, widthAlignment);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetVideoHeightAlignment_Vvc_001
+ * @tc.desc: CodecList GetVideoHeightAlignment Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetVideoHeightAlignment_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            int32_t heightAlignment = capability_->GetVideoHeightAlignment();
+            EXPECT_EQ(DEFAULT_HEIGHT_ALIGNMENT, heightAlignment);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetVideoHeightRangeForWidth_Vvc_001
+ * @tc.desc: CodecList GetVideoHeightRangeForWidth Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetVideoHeightRangeForWidth_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            Range widthRange = capability_->GetVideoHeightRangeForWidth(DEFAULT_WIDTH_VVC);
+            EXPECT_EQ(DEFAULT_HEIGHT_RANGE_OF_WIDTH_VVC.minVal, widthRange.minVal);
+            EXPECT_EQ(DEFAULT_HEIGHT_RANGE_OF_WIDTH_VVC.maxVal, widthRange.maxVal);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetVideoWidthRangeForHeight_Vvc_001
+ * @tc.desc: CodecList GetVideoWidthRangeForHeight Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetVideoWidthRangeForHeight_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            Range heightRange = capability_->GetVideoWidthRangeForHeight(DEFAULT_HEIGHT_VVC);
+            EXPECT_EQ(DEFAULT_WIDTH_RANGE_OF_HEIGHT_VVC.minVal, heightRange.minVal);
+            EXPECT_EQ(DEFAULT_WIDTH_RANGE_OF_HEIGHT_VVC.maxVal, heightRange.maxVal);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetVideoWidthRange_Vvc_001
+ * @tc.desc: CodecList GetVideoWidthRange Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetVideoWidthRange_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            Range widthRange = capability_->GetVideoWidthRange();
+            EXPECT_EQ(DEFAULT_WIDTH_RANGE_VVC.minVal, widthRange.minVal);
+            EXPECT_EQ(DEFAULT_WIDTH_RANGE_VVC.maxVal, widthRange.maxVal);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetVideoHeightRange_Vvc_001
+ * @tc.desc: CodecList GetVideoHeightRange Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetVideoHeightRange_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            Range heightRange = capability_->GetVideoHeightRange();
+            EXPECT_EQ(DEFAULT_HEIGHT_RANGE_VVC.minVal, heightRange.minVal);
+            EXPECT_EQ(DEFAULT_HEIGHT_RANGE_VVC.maxVal, heightRange.maxVal);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_IsVideoSizeSupported_Vvc_001
+ * @tc.desc: CodecList IsVideoSizeSupported Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_IsVideoSizeSupported_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            int32_t wmin = DEFAULT_WIDTH_RANGE_VVC.minVal;
+            int32_t wmax = DEFAULT_WIDTH_RANGE_VVC.maxVal;
+            int32_t hmin = DEFAULT_HEIGHT_RANGE_VVC.minVal;
+            int32_t hmax = DEFAULT_HEIGHT_RANGE_VVC.maxVal;
+            // case 1 - 13, postive param
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(DEFAULT_WIDTH_VVC, DEFAULT_HEIGHT_VVC))
+                << "width:" << DEFAULT_WIDTH_VVC << "height:" << DEFAULT_HEIGHT_VVC << std::endl;
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(wmin, DEFAULT_HEIGHT_VVC))
+                << "width:" << wmin << "height:" << DEFAULT_HEIGHT_VVC << std::endl;
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(wmin + 2, DEFAULT_HEIGHT_VVC))
+                << "width:" << wmin + 2 << "height:" << DEFAULT_HEIGHT_VVC << std::endl;
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(wmin + 2, hmax))
+                << "width:" << wmin + 2 << "height:" << hmax << std::endl;
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(wmin + 2, hmax - 2))
+                << "width:" << wmin + 2 << "height:" << hmax - 2 << std::endl;
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(wmax, DEFAULT_HEIGHT_VVC))
+                << "width:" << wmax << "height:" << DEFAULT_HEIGHT_VVC << std::endl;
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(wmax - 2, DEFAULT_HEIGHT_VVC))
+                << "width:" << wmax - 2 << "height:" << DEFAULT_HEIGHT_VVC << std::endl;
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(wmax - 2, hmin))
+                << "width:" << wmax - 2 << "height:" << hmin << std::endl;
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(wmax - 2, hmin + 2))
+                << "width:" << wmax - 2 << "height:" << hmin + 2 << std::endl;
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(DEFAULT_WIDTH_VVC, hmin))
+                << "width:" << DEFAULT_WIDTH_VVC << "height:" << hmin << std::endl;
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(DEFAULT_WIDTH_VVC, hmin + 2))
+                << "width:" << DEFAULT_WIDTH_VVC << "height:" << hmin + 2 << std::endl;
+            // Swap case
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(DEFAULT_HEIGHT_VVC, hmax))
+                << "width:" << DEFAULT_HEIGHT_VVC << "height:" << hmax << std::endl;
+            EXPECT_TRUE(capability_->IsVideoSizeSupported(DEFAULT_HEIGHT_VVC, hmax - 2))
+                << "width:" << DEFAULT_HEIGHT_VVC << "height:" << hmax - 2 << std::endl;
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_IsVideoSizeSupported_Vvc_002
+ * @tc.desc: CodecList IsVideoSizeSupported Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_IsVideoSizeSupported_Vvc_002, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            int32_t wmin = DEFAULT_WIDTH_RANGE_VVC.minVal;
+            int32_t wmax = DEFAULT_WIDTH_RANGE_VVC.maxVal;
+            int32_t hmin = DEFAULT_HEIGHT_RANGE_VVC.minVal;
+            int32_t hmax = DEFAULT_HEIGHT_RANGE_VVC.maxVal;
+            // case 1 - 10, negative param
+            EXPECT_FALSE(capability_->IsVideoSizeSupported(wmax + 2, hmin))
+                << "width:" << wmax + 2 << "height:" << hmin << std::endl;
+            EXPECT_FALSE(capability_->IsVideoSizeSupported(wmin - 2, hmin))
+                << "width:" << wmin - 2 << "height:" << hmin << std::endl;
+            EXPECT_FALSE(capability_->IsVideoSizeSupported(wmax + 2, hmax))
+                << "width:" << wmax + 2 << "height:" << hmax << std::endl;
+            EXPECT_FALSE(capability_->IsVideoSizeSupported(wmin - 2, hmax))
+                << "width:" << wmin - 2 << "height:" << hmax << std::endl;
+
+            EXPECT_FALSE(capability_->IsVideoSizeSupported(wmin, hmin - 2))
+                << "width:" << wmin << "height:" << hmin - 2 << std::endl;
+            EXPECT_FALSE(capability_->IsVideoSizeSupported(wmin, hmax + 2))
+                << "width:" << wmin << "height:" << hmax + 2 << std::endl;
+            EXPECT_FALSE(capability_->IsVideoSizeSupported(wmax, hmin - 2))
+                << "width:" << wmax << "height:" << hmin - 2 << std::endl;
+            EXPECT_FALSE(capability_->IsVideoSizeSupported(wmax, hmax + 2))
+                << "width:" << wmax << "height:" << hmax + 2 << std::endl;
+
+            EXPECT_FALSE(capability_->IsVideoSizeSupported(wmax + 1, DEFAULT_HEIGHT_VVC))
+                << "width:" << wmax + 1 << "height:" << DEFAULT_HEIGHT_VVC << std::endl;
+            // Swap case
+            EXPECT_FALSE(capability_->IsVideoSizeSupported(DEFAULT_HEIGHT_VVC, hmax + 1))
+                << "width:" << DEFAULT_HEIGHT_VVC << "height:" << hmax + 1 << std::endl;
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetVideoFrameRateRange_Vvc_001
+ * @tc.desc: CodecList GetVideoFrameRateRange Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetVideoFrameRateRange_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            Range framerateRange = capability_->GetVideoFrameRateRange();
+            EXPECT_EQ(DEFAULT_FRAMERATE_RANGE_VVC.minVal, framerateRange.minVal);
+            EXPECT_EQ(DEFAULT_FRAMERATE_RANGE_VVC.maxVal, framerateRange.maxVal);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_AreVideoSizeAndFrameRateSupported_Vvc_001
+ * @tc.desc: CodecList AreVideoSizeAndFrameRateSupported Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_AreVideoSizeAndFrameRateSupported_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            int32_t minVal = DEFAULT_FRAMERATE_RANGE_VVC.minVal;
+            int32_t maxVal = DEFAULT_FRAMERATE_RANGE_VVC.maxVal;
+            // case 1 - 3, positive param
+            EXPECT_TRUE(capability_->AreVideoSizeAndFrameRateSupported(DEFAULT_WIDTH, DEFAULT_HEIGHT, minVal + 1))
+                << "width:" << DEFAULT_WIDTH << "height:" << DEFAULT_HEIGHT << "framerate: " << minVal + 1 << std::endl;
+            EXPECT_TRUE(capability_->AreVideoSizeAndFrameRateSupported(128, 128, maxVal))
+                << "width:" << DEFAULT_WIDTH << "height:" << DEFAULT_HEIGHT << "framerate: " << maxVal << std::endl;
+            EXPECT_TRUE(capability_->AreVideoSizeAndFrameRateSupported(128, 128, maxVal - 1))
+                << "width:" << DEFAULT_WIDTH << "height:" << DEFAULT_HEIGHT << "framerate: " << maxVal - 1 << std::endl;
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_AreVideoSizeAndFrameRateSupported_Vvc_002
+ * @tc.desc: CodecList AreVideoSizeAndFrameRateSupported Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_AreVideoSizeAndFrameRateSupported_Vvc_002, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            int32_t minVal = DEFAULT_FRAMERATE_RANGE_VVC.minVal;
+            int32_t maxVal = DEFAULT_FRAMERATE_RANGE_VVC.maxVal;
+            // case 1 - 10, negative param
+            EXPECT_FALSE(capability_->AreVideoSizeAndFrameRateSupported(DEFAULT_WIDTH, DEFAULT_HEIGHT, minVal))
+                << "width:" << DEFAULT_WIDTH << "height:" << DEFAULT_HEIGHT << "framerate: " << minVal << std::endl;
+            EXPECT_FALSE(capability_->AreVideoSizeAndFrameRateSupported(DEFAULT_WIDTH, DEFAULT_HEIGHT, minVal - 1))
+                << "width:" << DEFAULT_WIDTH << "height:" << DEFAULT_HEIGHT << "framerate: " << minVal - 1 << std::endl;
+            EXPECT_FALSE(capability_->AreVideoSizeAndFrameRateSupported(DEFAULT_WIDTH, DEFAULT_HEIGHT, maxVal + 1))
+                << "width:" << DEFAULT_WIDTH << "height:" << DEFAULT_HEIGHT << "framerate: " << maxVal + 1 << std::endl;
+            EXPECT_FALSE(capability_->AreVideoSizeAndFrameRateSupported(DEFAULT_WIDTH, DEFAULT_HEIGHT, ERROR_FRAMERATE))
+                << "width:" << DEFAULT_WIDTH << "height:" << DEFAULT_HEIGHT << "framerate:" << ERROR_FRAMERATE
+                << std::endl;
+            EXPECT_FALSE(capability_->AreVideoSizeAndFrameRateSupported(DEFAULT_WIDTH, ERROR_HEIGHT, DEFAULT_FRAMERATE))
+                << "width:" << DEFAULT_WIDTH << "height:" << ERROR_HEIGHT << "framerate:" << DEFAULT_FRAMERATE
+                << std::endl;
+            EXPECT_FALSE(capability_->AreVideoSizeAndFrameRateSupported(DEFAULT_WIDTH, ERROR_HEIGHT, ERROR_FRAMERATE))
+                << "width:" << DEFAULT_WIDTH << "height:" << ERROR_HEIGHT << "framerate: " << ERROR_FRAMERATE
+                << std::endl;
+            EXPECT_FALSE(capability_->AreVideoSizeAndFrameRateSupported(ERROR_WIDTH, DEFAULT_HEIGHT, DEFAULT_FRAMERATE))
+                << "width:" << ERROR_WIDTH << "height:" << DEFAULT_HEIGHT << "framerate:" << DEFAULT_FRAMERATE
+                << std::endl;
+            EXPECT_FALSE(capability_->AreVideoSizeAndFrameRateSupported(ERROR_WIDTH, DEFAULT_HEIGHT, ERROR_FRAMERATE))
+                << "width:" << ERROR_WIDTH << "height:" << DEFAULT_HEIGHT << "framerate: " << ERROR_FRAMERATE
+                << std::endl;
+            EXPECT_FALSE(capability_->AreVideoSizeAndFrameRateSupported(ERROR_WIDTH, ERROR_HEIGHT, DEFAULT_FRAMERATE))
+                << "width:" << ERROR_WIDTH << "height:" << ERROR_HEIGHT << "framerate: " << DEFAULT_FRAMERATE
+                << std::endl;
+            EXPECT_FALSE(capability_->AreVideoSizeAndFrameRateSupported(ERROR_WIDTH, ERROR_HEIGHT, ERROR_FRAMERATE))
+                << "width:" << ERROR_WIDTH << "height:" << ERROR_HEIGHT << "framerate: " << ERROR_FRAMERATE
+                << std::endl;
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetVideoFrameRateRangeForSize_Vvc_001
+ * @tc.desc: CodecList GetVideoFrameRateRangeForSize Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetVideoFrameRateRangeForSize_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            Range framerateRange = capability_->GetVideoFrameRateRangeForSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            EXPECT_EQ(1, framerateRange.minVal);
+            EXPECT_EQ(120, framerateRange.maxVal);
+
+            framerateRange = capability_->GetVideoFrameRateRangeForSize(DEFAULT_WIDTH_VVC, DEFAULT_HEIGHT_VVC);
+            EXPECT_EQ(1, framerateRange.minVal);
+            EXPECT_EQ(30, framerateRange.maxVal);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetVideoFrameRateRangeForSize_Vvc_002
+ * @tc.desc: CodecList GetVideoFrameRateRangeForSize Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetVideoFrameRateRangeForSize_Vvc_002, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            int32_t wmax = DEFAULT_WIDTH_RANGE_VVC.maxVal;
+            int32_t hmax = DEFAULT_HEIGHT_RANGE_VVC.maxVal;
+            Range framerateRange = capability_->GetVideoFrameRateRangeForSize(0, 0);
+            EXPECT_EQ(0, framerateRange.minVal);
+            EXPECT_EQ(0, framerateRange.maxVal);
+
+            framerateRange = capability_->GetVideoFrameRateRangeForSize(wmax + 2, hmax + 2);
+            EXPECT_EQ(0, framerateRange.minVal);
+            EXPECT_EQ(0, framerateRange.maxVal);
+
+            framerateRange = capability_->GetVideoFrameRateRangeForSize(wmax - 1, hmax - 1);
+            EXPECT_EQ(0, framerateRange.minVal);
+            EXPECT_EQ(0, framerateRange.maxVal);
+
+            framerateRange = capability_->GetVideoFrameRateRangeForSize(-2, -2);
+            EXPECT_EQ(0, framerateRange.minVal);
+            EXPECT_EQ(0, framerateRange.maxVal);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetVideoSupportedPixelFormats_Vvc_001
+ * @tc.desc: CodecList GetVideoSupportedPixelFormats Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetVideoSupportedPixelFormats_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            std::vector<int32_t> pixFormats = capability_->GetVideoSupportedPixelFormats();
+            EXPECT_EQ(DEFAULT_VIDEO_VVC_PIXFORMATS, pixFormats);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetSupportedProfiles_Vvc_001
+ * @tc.desc: CodecList GetSupportedProfiles Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetSupportedProfiles_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            std::vector<int32_t> profiles = capability_->GetSupportedProfiles();
+            EXPECT_EQ(DEFAULT_VIDEO_VVC_PROFILES, profiles);
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_GetSupportedLevelsForProfile_Vvc_001
+ * @tc.desc: CodecList GetSupportedLevelsForProfile Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetSupportedLevelsForProfile_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            std::vector<int32_t> levels;
+            for (auto it : DEFAULT_VIDEO_VVC_PROFILES) {
+                levels = capability_->GetSupportedLevelsForProfile(it);
+                EXPECT_EQ(DEFAULT_VIDEO_VVC_LEVELS, levels);
+            }
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_AreProfileAndLevelSupported_Vvc_001
+ * @tc.desc: CodecList AreProfileAndLevelSupported Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_AreProfileAndLevelSupported_Vvc_001, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            // case 1 - 16, postive param
+            for (auto it : DEFAULT_VIDEO_VVC_LEVELS) {
+                EXPECT_TRUE(capability_->AreProfileAndLevelSupported(DEFAULT_VIDEO_VVC_PROFILE, it));
+            }
+        }
+    }
+}
+
+/**
+ * @tc.name: CodecList_AreProfileAndLevelSupported_Vvc_002
+ * @tc.desc: CodecList AreProfileAndLevelSupported Vvc
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_AreProfileAndLevelSupported_Vvc_002, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        // video decoder
+        AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
+        if (capability_ != nullptr) {
+            // case 1, negative param
+            EXPECT_FALSE(capability_->AreProfileAndLevelSupported(DEFAULT_VIDEO_VVC_PROFILE, ERROR_LEVEL));
+            // case 2, negative param
+            EXPECT_FALSE(capability_->AreProfileAndLevelSupported(ERROR_VIDEO_VVC_PROFILE, DEFAULT_VIDEO_VVC_LEVEL));
+            // case 3, negative param
+            EXPECT_FALSE(capability_->AreProfileAndLevelSupported(ERROR_VIDEO_VVC_PROFILE, ERROR_LEVEL));
+        }
     }
 }

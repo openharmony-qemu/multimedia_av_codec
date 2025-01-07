@@ -33,6 +33,8 @@
 #include "plugin/plugin_time.h"
 #include "plugin/demuxer_plugin.h"
 #include "source/source.h"
+#include "osal/task/mutex.h"
+#include "osal/task/condition_variable.h"
 
 namespace OHOS {
 namespace Media {
@@ -63,6 +65,7 @@ private:
     std::shared_ptr<BaseStreamDemuxer> stream_;
     int32_t streamID_;
     bool isDash_ = false;
+    std::mutex readMutex_;
 };
 
 class MediaStreamInfo {
@@ -101,6 +104,8 @@ public:
     int32_t GetInnerTrackIDByTrackID(int32_t trackId);
     StreamType GetStreamTypeByTrackID(int32_t trackId);
     int32_t GetStreamIDByTrackID(int32_t trackId);
+    int32_t GetStreamIDByTrackType(TrackType type);
+    int32_t GetStreamDemuxerNewStreamID(TrackType trackType, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     
     TrackType GetTrackTypeByTrackID(int32_t trackID);
 
@@ -119,9 +124,12 @@ public:
     bool IsSubtitle() const;
     Status StopPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StartPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
+    Status RebootPlugin(int32_t streamId, TrackType trackType, std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+        bool& isRebooted);
     Status StartAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StopAllPlugin();
     Status UpdateDefaultStreamID(Plugins::MediaInfo& mediaInfo, StreamType type, int32_t newStreamID);
+    Status SingleStreamSeekTo(int64_t seekTime, Plugins::SeekMode mode, int32_t streamID, int64_t& realSeekTime);
 
     std::shared_ptr<Meta> GetUserMeta();
     uint32_t GetCurrentBitRate();
@@ -130,6 +138,7 @@ public:
     bool CheckTrackIsActive(int32_t trackId);
     int32_t AddExternalSubtitle();
     Status localSubtitleSeekTo(int64_t seekTime);
+    void NotifyInitialBufferingEnd(bool isInitialBufferingSucc);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
@@ -144,6 +153,7 @@ private:
     Status AddTrackMapInfo(int32_t streamID, int32_t trackIndex);
     Status UpdateMediaInfo(int32_t streamID);
     bool IsSubtitleMime(const std::string& mime);
+    void WaitForInitialBufferingEnd(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, int32_t offset, int32_t size);
 private:
     std::map<int32_t, MediaStreamInfo> streamInfoMap_; // <streamId, MediaStreamInfo>
     std::map<int32_t, MediaTrackMap> trackInfoMap_;    // 保存所有的track信息，使用映射的trackID <trackId, MediaTrackMap>
@@ -155,6 +165,10 @@ private:
     Plugins::MediaInfo curMediaInfo_;
     bool isDash_ = false;
     bool needResetEosStatus_ = false;
+    FairMutex initialBufferingEndMutex_ {};
+    std::atomic<bool> isInitialBufferingSucc_ = false;
+    std::atomic<bool> isInitialBufferingNotified_ = false;
+    ConditionVariable initialBufferingEndCond_;
 };
 } // namespace Media
 } // namespace OHOS

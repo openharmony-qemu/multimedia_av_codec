@@ -97,7 +97,7 @@ const std::string DEFAULT_UNSUPPORTED_MIME = std::string(CodecMimeType::IMAGE_PN
 constexpr int32_t MAX_SURPPORT_ACODEC = 16;
 constexpr int32_t MAX_SURPPORT_VCODEC = 64;
 
-constexpr OH_AVRange DEFAULT_BITRATE_RANGE = {8000, 448000};
+constexpr OH_AVRange DEFAULT_BITRATE_RANGE = {1, 500000};
 constexpr OH_AVRange DEFAULT_QUALITY_RANGE = {0, 0};
 constexpr OH_AVRange DEFAULT_COMPLEXITY_RANGE = {0, 0};
 constexpr OH_AVRange DEFAULT_CHANNELCOUNT_RANGE = {1, 8};
@@ -111,7 +111,7 @@ constexpr OH_AVRange DEFAULT_FRAMERATE_RANGE = {0, 120};
 constexpr OH_AVRange DEFAULT_BITRATE_RANGE_ENC = {10000, 100000000};
 constexpr OH_AVRange DEFAULT_VIDEO_QUALITY_RANGE = {0, 100};
 
-const std::vector<int32_t> DEFAULT_AUDIO_ACC_SAMPLES = {8000,  11025, 12000, 16000, 22050, 24000,
+const std::vector<int32_t> DEFAULT_AUDIO_ACC_SAMPLES = {7350, 8000,  11025, 12000, 16000, 22050, 24000,
                                                         32000, 44100, 48000, 64000, 88200, 96000};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_PIXFORMATS = {
     static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
@@ -140,9 +140,9 @@ constexpr int32_t ERROR_LEVEL = -1;
 constexpr uint32_t MAX_VIDEO_BITRATE = 300000000;
 constexpr uint32_t MAX_AUDIO_BITRATE = 320000;
 constexpr uint32_t MIN_AUDIO_BITRATE = 32000;
-constexpr uint32_t MAX_AUDIO_BITRATE_AAC = 448000;
+constexpr uint32_t MAX_AUDIO_BITRATE_AAC = 500000;
 constexpr uint32_t DEFAULT_SAMPLE_RATE = 8000;
-constexpr uint32_t DEFAULT_SAMPLE_RATE_SIZE = 12;
+constexpr uint32_t DEFAULT_SAMPLE_RATE_SIZE = 13;
 constexpr uint32_t MAX_CHANNEL_COUNT = 8;
 constexpr uint32_t MAX_CHANNEL_COUNT_MP3 = 2;
 constexpr int AUDIO_MIN_BIT_RATE_VIVID_DECODER = 16000;
@@ -162,6 +162,34 @@ const std::vector<std::string> audioDecoderList = {
     std::string(CodecMimeType::AUDIO_VORBIS), std::string(CodecMimeType::AUDIO_FLAC)};
 
 const std::vector<std::string> audioEncoderList = {std::string(CodecMimeType::AUDIO_AAC)};
+
+const std::map<std::string, std::string> CAPABILITY_DECODER_HARD_NAME_VVC = {
+    {std::string(CodecMimeType::VIDEO_VVC), "OMX.hisi.video.decoder.vvc"}};
+const std::string DEFAULT_VIDEO_VVC_MIME = std::string(CodecMimeType::VIDEO_VVC);
+
+constexpr int32_t MAX_SURPPORT_VCODEC_VVC = 4;
+constexpr int32_t DEFAULT_WIDTH_VVC = 3840;
+constexpr int32_t DEFAULT_HEIGHT_VVC = 2160;
+constexpr int32_t DEFAULT_VIDEO_VVC_PROFILE = VVC_PROFILE_MULTI_MAIN_10_444;
+constexpr int32_t DEFAULT_VIDEO_VVC_LEVEL = VVC_LEVEL_1;
+constexpr int32_t ERROR_VIDEO_VVC_PROFILE = -1;
+
+constexpr OH_AVRange DEFAULT_HEIGHT_RANGE_VVC = {128, 3840};
+constexpr OH_AVRange DEFAULT_WIDTH_RANGE_VVC = {128, 3840};
+constexpr OH_AVRange DEFAULT_HEIGHT_RANGE_OF_WIDTH_VVC = {128, 2176};
+constexpr OH_AVRange DEFAULT_WIDTH_RANGE_OF_HEIGHT_VVC = {128, 3840};
+constexpr OH_AVRange DEFAULT_FRAMERATE_RANGE_VVC = {1, 240};
+
+const std::vector<int32_t> DEFAULT_VIDEO_VVC_PIXFORMATS = {
+    static_cast<int32_t>(VideoPixelFormat::NV12), static_cast<int32_t>(VideoPixelFormat::NV12),
+    static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::NV21)};
+const std::vector<int32_t> DEFAULT_VIDEO_VVC_PROFILES = {
+    VVC_PROFILE_MAIN_10, VVC_PROFILE_MULTI_MAIN_10,
+    VVC_PROFILE_MAIN_10_444, VVC_PROFILE_MULTI_MAIN_10_444,
+    VVC_PROFILE_MAIN_10_STILL, VVC_PROFILE_MAIN_10_444_STILL};
+const std::vector<int32_t> DEFAULT_VIDEO_VVC_LEVELS = {
+    VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31,
+    VVC_LEVEL_4, VVC_LEVEL_41, VVC_LEVEL_5, VVC_LEVEL_51};
 } // namespace CodecListTestParam
 } // namespace MediaAVCodec
 } // namespace OHOS

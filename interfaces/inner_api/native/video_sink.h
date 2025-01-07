@@ -38,21 +38,42 @@ public:
     void SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver);
     void SetFirstPts(int64_t pts);
     void SetSeekFlag();
-    void SetLastPts(int64_t lastPts);
+    void SetLastPts(int64_t lastPts, int64_t renderDelay = 0);
     Status SetParameter(const std::shared_ptr<Meta>& meta);
-    void UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+    void UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t renderDelay = 0);
+    Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
 private:
-    float GetSpeed(float speed);
+    int64_t CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer,
+        int64_t bufferAnchoredClockTime, int64_t currentClockTime, float playbackRate);
+    float AdjustPlaybackRate(float speed);
+    int64_t SmoothDeltaTime(int64_t accumulatedDeltaTime, int64_t currentDeltaTime);
     void UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
         const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+
+    class VideoLagDetector : public LagDetector {
+    public:
+        void Reset() override;
+        bool CalcLag(std::shared_ptr<AVBuffer> buffer) override;
+        void GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
+        void ResolveLagEvent(const int64_t &lagTimeMs);
+        void SetEventReceiver(const std::shared_ptr<EventReceiver> eventReceiver);
+    private:
+        int64_t lagTimes_ = 0;
+        int64_t maxLagDuration_ = 0;
+        int64_t lastSystemTimeMs_ = 0;
+        int64_t lastBufferTimeMs_ = 0;
+        int64_t totalLagDuration_ = 0;
+        std::shared_ptr<EventReceiver> eventReceiver_ { nullptr };
+    };
+
     std::atomic<bool> needUpdateTimeAnchor_ {true};
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};
     uint32_t frameRate_ {0};
     int64_t firstFramePts_ {0};
-    int64_t firstFrameNowct_ {0};
-    int64_t lastTimeStamp_ {HST_TIME_NONE};
-    int64_t lastBufferTime_ {HST_TIME_NONE};
+    int64_t firstFrameClockTime_ {0};
+    int64_t lastBufferRelativePts_ {HST_TIME_NONE};
+    int64_t lastBufferAnchoredClockTime_ {HST_TIME_NONE};
     int64_t deltaTimeAccu_ {0};
     VideoScaleType videoScaleType_ {VideoScaleType::VIDEO_SCALE_TYPE_FIT};
 
@@ -64,10 +85,11 @@ private:
     int64_t firstPts_ {HST_TIME_NONE};
     int64_t fixDelay_ {0};
     bool seekFlag_{false};
-    std::atomic<bool> lastFrameDropped_ {false};
+    std::atomic<int32_t> dropFrameContinuouslyCnt_ {0};
     int64_t lastPts_ = -1;
     int64_t lastClockTime_ = -1;
     std::atomic<bool> isRenderStarted_{false};
+    VideoLagDetector lagDetector_ {};
 };
 } // namespace Pipeline
 } // namespace Media

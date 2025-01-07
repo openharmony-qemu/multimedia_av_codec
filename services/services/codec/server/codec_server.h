@@ -120,7 +120,6 @@ private:
     int32_t InitServer();
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
-    void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     void StatusChanged(CodecStatus newStatus);
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
@@ -194,6 +193,8 @@ private:
     std::atomic<uint64_t> decodedFrameCount_{0};
     std::atomic<uint64_t> processedFrameCount_{0};
     std::atomic<bool> decoderIsEOS_{false};
+    std::shared_ptr<AVCodecCallback> shareBufCallback_ = nullptr;
+    std::shared_ptr<MediaCodecCallback> avBufCallback_ = nullptr;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

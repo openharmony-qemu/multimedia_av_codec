@@ -21,6 +21,7 @@
 #include "common/native_mfmagic.h"
 #include "native_avcodec_audiocodec.h"
 #include "avcodec_audio_encoder.h"
+#include <fuzzer/FuzzedDataProvider.h>
 #define FUZZ_PROJECT_NAME "audiodecoderConfigure_fuzzer"
 namespace OHOS {
 bool AudioAACConfigureFuzzTest(const uint8_t *data, size_t size)
@@ -30,8 +31,9 @@ bool AudioAACConfigureFuzzTest(const uint8_t *data, size_t size)
     }
     OH_AVCodec *source =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_AAC, true);
 
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);
@@ -83,8 +85,9 @@ bool AudioFlacConfigureFuzzTest(const uint8_t *data, size_t size)
     if (decodersource == nullptr) {
         return false;
     }
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);
@@ -135,8 +138,9 @@ bool AudioMP3ConfigureFuzzTest(const uint8_t *data, size_t size)
     if (decodersource == nullptr) {
         return false;
     }
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);
@@ -165,8 +169,9 @@ bool AudioVorbisConfigureFuzzTest(const uint8_t *data, size_t size)
     if (decodersource == nullptr) {
         return false;
     }
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);
@@ -195,8 +200,9 @@ bool AudioLBVCConfigureFuzzTest(const uint8_t *data, size_t size)
     if (decodersource == nullptr) {
         return false;
     }
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);
@@ -247,8 +253,9 @@ bool AudioAMRNBConfigureFuzzTest(const uint8_t *data, size_t size)
     if (decodersource == nullptr) {
         return false;
     }
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);
@@ -299,8 +306,9 @@ bool AudioAMRWBConfigureFuzzTest(const uint8_t *data, size_t size)
     if (decodersource == nullptr) {
         return false;
     }
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);
@@ -351,8 +359,9 @@ bool AudioAPEConfigureFuzzTest(const uint8_t *data, size_t size)
     if (decodersource == nullptr) {
         return false;
     }
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);
@@ -403,8 +412,9 @@ bool AudioOPUSConfigureFuzzTest(const uint8_t *data, size_t size)
     if (decodersource == nullptr) {
         return false;
     }
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);
@@ -455,8 +465,9 @@ bool AudioG711ConfigureFuzzTest(const uint8_t *data, size_t size)
     if (decodersource == nullptr) {
         return false;
     }
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);
@@ -507,8 +518,9 @@ bool AudioVividConfigureFuzzTest(const uint8_t *data, size_t size)
     if (decodersource == nullptr) {
         return false;
     }
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);

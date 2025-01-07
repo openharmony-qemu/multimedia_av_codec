@@ -14,13 +14,6 @@
  */
 
 #include "video_decoder_sample.h"
-#include "refbase.h"
-#include "surface/window.h"
-#include "surface.h"
-
-#include "ui/rs_surface_node.h"
-#include "window_option.h"
-
 #include "avcodec_trace.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
@@ -33,23 +26,25 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "Video
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-VideoDecoderSample::~VideoDecoderSample()
-{
-    if (context_) {
-        context_->videoCodec = nullptr;
-    }
-    if (rosenWindow_) {
-        rosenWindow_->Destroy();
-        rosenWindow_ = nullptr;
-    }
-}
-
 int32_t VideoDecoderSample::Init()
 {
     auto &info = *context_->sampleInfo;
     if (!(info.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
-        int32_t ret = CreateWindow(info.window);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create window failed");
+        switch (info.codecConsumerType) {
+            case CODEC_COMSUMER_TYPE_DEFAULT:
+                context_->windowWrapper =
+                    WindowManager::GetInstance().CreateWindowWrapper(SampleWindowType::NATIVE_IMAGE);
+                break;
+#ifdef SAMPLE_BUILD_TO_EXECUTOR
+            case CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT:
+                context_->windowWrapper = WindowManager::GetInstance().CreateWindowWrapper(SampleWindowType::ROSEN);
+                break;
+#endif
+            default:
+                AVCODEC_LOGE("Not supported codec consumer type: %{public}d", info.codecConsumerType);
+                break;
+        }
+        CHECK_AND_RETURN_RET_LOG(context_->windowWrapper != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
     }
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -109,49 +104,6 @@ void VideoDecoderSample::OutputThread()
     OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputBufferQueue.GetFrameCount());
     NotifySampleDone();
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputBufferQueue.GetFrameCount());
-}
-
-int32_t VideoDecoderSample::CreateWindow(std::shared_ptr<NativeWindow> &window)
-{
-    sptr<OHOS::Surface> surfaceProducer;
-    if (context_->sampleInfo->codecConsumerType == CODEC_COMSUMER_TYPE_DEFAULT) {
-        surfaceConsumer_ = OHOS::Surface::CreateSurfaceAsConsumer("VideoCodecDemo");
-        OHOS::sptr<OHOS::IBufferConsumerListener> listener = this;
-        surfaceConsumer_->RegisterConsumerListener(listener);
-        auto producer = surfaceConsumer_->GetProducer();
-        surfaceProducer = OHOS::Surface::CreateSurfaceAsProducer(producer);
-    } else if (context_->sampleInfo->codecConsumerType == CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT) {
-        sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
-        option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_FLOAT);
-        option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FULLSCREEN);
-        rosenWindow_ = Rosen::Window::Create("VideoCodecDemo", option);
-        CHECK_AND_RETURN_RET_LOG(rosenWindow_ != nullptr && rosenWindow_->GetSurfaceNode() != nullptr,
-            AVCODEC_SAMPLE_ERR_ERROR, "Create display window failed");
-        rosenWindow_->SetTurnScreenOn(!rosenWindow_->IsTurnScreenOn());
-        rosenWindow_->SetKeepScreenOn(true);
-        rosenWindow_->Show();
-        surfaceProducer = rosenWindow_->GetSurfaceNode()->GetSurface();
-    }
-    window = std::shared_ptr<NativeWindow>(reinterpret_cast<NativeWindow *>(
-        CreateNativeWindowFromSurface(&surfaceProducer)), [](NativeWindow *window) -> void { (void)window; });
-    CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
-
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-void VideoDecoderSample::OnBufferAvailable()
-{
-    OHOS::sptr<OHOS::SurfaceBuffer> buffer;
-    int64_t timestamp = 0;
-    OHOS::Rect damage = {};
-    int32_t flushFence;
-    surfaceConsumer_->AcquireBuffer(buffer, flushFence, timestamp, damage);
-
-    if (context_->sampleInfo->needDumpOutput) {
-        CodecBufferInfo bufferInfo(reinterpret_cast<uint8_t *>(buffer->GetVirAddr()), buffer->GetSize());
-        DumpOutput(bufferInfo);
-    }
-    surfaceConsumer_->ReleaseBuffer(buffer, flushFence);
 }
 } // Sample
 } // MediaAVCodec

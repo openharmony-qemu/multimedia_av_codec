@@ -17,6 +17,7 @@
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
 #include "videodec_sample.h"
+#include <fuzzer/FuzzedDataProvider.h>
 #define FUZZ_PROJECT_NAME "swdecodersetparameter_fuzzer"
 using namespace std;
 using namespace OHOS;
@@ -43,18 +44,27 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         vDecSample->Start();
     }
     OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/avc", DEFAULT_WIDTH, DEFAULT_HEIGHT);
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
-    double doubleData = *reinterpret_cast<const double *>(data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, intData);
+    FuzzedDataProvider fdp(data, size);
+    int intData0 = fdp.ConsumeIntegral<int32_t>();
+    int intData1 = fdp.ConsumeIntegral<int32_t>();
+    int intData2 = fdp.ConsumeIntegral<int32_t>();
+    int intData3 = fdp.ConsumeIntegral<int32_t>();
+    int intData4 = fdp.ConsumeIntegral<int32_t>();
+    int intData5 = fdp.ConsumeIntegral<int32_t>();
+    int intData6 = fdp.ConsumeIntegral<int32_t>();
+    int intData7 = fdp.ConsumeIntegral<int32_t>();
+    int intData8 = fdp.ConsumeIntegral<int32_t>();
+    int longData = fdp.ConsumeIntegral<int64_t>();
+    double doubleData = fdp.ConsumeFloatingPoint<double>();
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, intData0);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, intData1);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, intData2);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, intData3);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, intData4);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, intData5);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, intData6);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, intData7);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, intData8);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, longData);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, doubleData);
 

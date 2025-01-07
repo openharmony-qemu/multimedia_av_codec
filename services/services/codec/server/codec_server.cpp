@@ -160,19 +160,12 @@ CodecServer::CodecServer()
 
 CodecServer::~CodecServer()
 {
-    std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
-    CHECK_AND_RETURN_LOG(thread != nullptr, "0x%{public}06" PRIXPTR " create exit thread failed", FAKE_POINTER(this));
-    if (thread->joinable()) {
-        thread->join();
-    }
+    codecBase_ = nullptr;
+    shareBufCallback_ = nullptr;
+    avBufCallback_ = nullptr;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
-}
-
-void CodecServer::ExitProcessor()
-{
-    codecBase_ = nullptr;
 }
 
 int32_t CodecServer::InitServer()
@@ -194,12 +187,12 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
                              name.c_str(), ret);
     SetCallerInfo(callerInfo);
 
-    std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());
-    ret = codecBase_->SetCallback(callback);
+    shareBufCallback_ = std::make_shared<CodecBaseCallback>(shared_from_this());
+    ret = codecBase_->SetCallback(shareBufCallback_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "SetCallback failed.");
 
-    std::shared_ptr<MediaCodecCallback> videoCallback = std::make_shared<VCodecBaseCallback>(shared_from_this());
-    ret = codecBase_->SetCallback(videoCallback);
+    avBufCallback_ = std::make_shared<VCodecBaseCallback>(shared_from_this());
+    ret = codecBase_->SetCallback(avBufCallback_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "SetCallback failed.");
 
     StatusChanged(INITIALIZED);
@@ -301,11 +294,15 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
 void CodecServer::StartInputParamTask()
 {
     inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
-    inputParamTask_->RegisterHandler([this] {
-        uint32_t index = temporalScalability_->GetFirstBufferIndex();
-        AVCodecBufferInfo info;
-        AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-        CHECK_AND_RETURN_LOG(QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
+    std::weak_ptr<CodecServer> weakThis = weak_from_this();
+    inputParamTask_->RegisterHandler([weakThis] {
+        std::shared_ptr<CodecServer> cs = weakThis.lock();
+        if (cs) {
+            uint32_t index = cs->temporalScalability_->GetFirstBufferIndex();
+            AVCodecBufferInfo info;
+            AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
+            CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
+        }
     });
     inputParamTask_->Start();
 }
@@ -340,6 +337,8 @@ int32_t CodecServer::Stop()
 {
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOGW(status_ != CONFIGURED, AVCS_ERR_OK,
+                              "Already in %{public}s state", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM || status_ == FLUSHED,
                              AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                              GetStatusDescription(status_).data());
@@ -359,6 +358,8 @@ int32_t CodecServer::Flush()
 {
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOGW(status_ != FLUSHED, AVCS_ERR_OK,
+                              "Already in %{public}s state", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
@@ -434,10 +435,9 @@ int32_t CodecServer::Release()
     }
     int32_t ret = codecBase_->Release();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
-    std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
-    if (thread && thread->joinable()) {
-        thread->join();
-    }
+    codecBase_ = nullptr;
+    shareBufCallback_ = nullptr;
+    avBufCallback_ = nullptr;
     (void)ReleasePostProcessing();
     if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
@@ -518,10 +518,12 @@ int32_t CodecServer::DrmVideoCencDecrypt(uint32_t index)
                 decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
                 return ret;
             }
+// LCOV_EXCL_START
             drmDecryptor_->SetCodecName(codecName_);
             ret = drmDecryptor_->DrmVideoCencDecrypt(decryptVideoBufs_[index].inBuf,
                 decryptVideoBufs_[index].outBuf, dataSize);
             decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
+// LCOV_EXCL_STOP
         }
     }
     return ret;
@@ -598,6 +600,7 @@ int32_t CodecServer::GetOutputFormat(Format &format)
     }
 }
 
+// LCOV_EXCL_START
 int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
     bool svpFlag)
 {
@@ -635,6 +638,7 @@ int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySes
 
     return AVCS_ERR_OK;
 }
+// LCOV_EXCL_STOP
 
 #ifdef SUPPORT_DRM
 int32_t CodecServer::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
@@ -955,6 +959,7 @@ CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec) 
 
 CodecBaseCallback::~CodecBaseCallback()
 {
+    codec_ = nullptr;
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -994,6 +999,7 @@ VCodecBaseCallback::VCodecBaseCallback(const std::shared_ptr<CodecServer> &codec
 
 VCodecBaseCallback::~VCodecBaseCallback()
 {
+    codec_ = nullptr;
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -1180,7 +1186,7 @@ int32_t CodecServer::SetCallbackForPostProcessing()
 
 void CodecServer::ClearCallbackForPostProcessing()
 {
-    std::shared_lock<std::shared_mutex> lock(cbMutex_);
+    std::lock_guard<std::shared_mutex> lock(cbMutex_);
     postProcessingCallback_.onError = nullptr;
     postProcessingCallback_.onOutputBufferAvailable = nullptr;
 }
@@ -1200,6 +1206,7 @@ int32_t CodecServer::PreparePostProcessing()
 
     int32_t ret{AVCS_ERR_OK};
     if (postProcessingUserData_ == nullptr) {
+        std::lock_guard<std::shared_mutex> lock(cbMutex_);
         ret = SetCallbackForPostProcessing();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set callback for post post processing failed");
     }

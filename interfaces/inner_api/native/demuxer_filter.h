@@ -24,6 +24,7 @@
 #include "meta/meta.h"
 #include "meta/media_types.h"
 #include "osal/task/mutex.h"
+#include "interrupt_monitor.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,13 +35,17 @@ public:
     ~DemuxerFilter() override;
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
+    void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback,
+              const std::shared_ptr<InterruptMonitor>& monitor) override;
     Status DoPrepare() override;
     Status DoStart() override;
     Status DoStop() override;
     Status DoPause() override;
     Status DoPauseDragging() override;
+    Status DoPauseAudioAlign() override;
     Status DoResume() override;
     Status DoResumeDragging() override;
+    Status DoResumeAudioAlign() override;
     Status DoFlush() override;
     Status DoPreroll() override;
     Status DoWaitPrerollDone(bool render) override;
@@ -57,6 +62,7 @@ public:
     void SetBundleName(const std::string& bundleName);
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
 
+    bool IsRefParserSupported();
     Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
@@ -94,17 +100,19 @@ public:
     bool GetDuration(int64_t& durationMs);
     Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
     Status SetSpeed(float speed);
-    void SetInterruptState(bool isInterruptNeeded);
     void SetDumpFlag(bool isdump);
     void OnDumpInfo(int32_t fd);
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
     bool IsVideoEos();
+    bool HasEosTrack();
     Status DisableMediaTrack(Plugins::MediaType mediaType);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
     void DeregisterVideoStreamReadyCallback();
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
     void WaitForBufferingEnd();
+    int32_t GetCurrentVideoTrackId();
+    void SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -141,6 +149,7 @@ private:
     std::string videoMime_;
     std::string audioMime_;
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
+    bool isNotPrepareBeforeStart_ {true};
 };
 } // namespace Pipeline
 } // namespace Media

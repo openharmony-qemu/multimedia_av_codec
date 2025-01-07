@@ -111,15 +111,26 @@ DemuxerFilter::DemuxerFilter(std::string name, FilterType type) : Filter(name, t
 DemuxerFilter::~DemuxerFilter()
 {
     MEDIA_LOG_D_SHORT("~DemuxerFilter enter");
+    if (interruptMonitor_) {
+        interruptMonitor_->DeregisterListener(demuxer_);
+    }
 }
 
 void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
+    Init(receiver, callback, nullptr);
+}
+
+void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
+    const std::shared_ptr<FilterCallback> &callback,
+    const std::shared_ptr<InterruptMonitor> &monitor)
+{
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Init");
     MEDIA_LOG_I_SHORT("DemuxerFilter Init");
     this->receiver_ = receiver;
     this->callback_ = callback;
+    this->interruptMonitor_ = monitor;
     MEDIA_LOG_D_SHORT("DemuxerFilter Init for drm callback");
 
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback =
@@ -127,6 +138,9 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     demuxer_->SetDrmCallback(drmCallback);
     demuxer_->SetEventReceiver(receiver);
     demuxer_->SetPlayerId(groupId_);
+    if (interruptMonitor_) {
+        interruptMonitor_->RegisterListener(demuxer_);
+    }
 }
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
@@ -146,11 +160,6 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 Status DemuxerFilter::SetSubtitleSource(const std::shared_ptr<MediaSource> source)
 {
     return demuxer_->SetSubtitleSource(source);
-}
-
-void DemuxerFilter::SetInterruptState(bool isInterruptNeeded)
-{
-    demuxer_->SetInterruptState(isInterruptNeeded);
 }
 
 void DemuxerFilter::SetBundleName(const std::string& bundleName)
@@ -305,16 +314,12 @@ void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
 
 Status DemuxerFilter::PrepareBeforeStart()
 {
-    Status ret = Status::OK;
     if (isLoopStarted.load()) {
         MEDIA_LOG_I_SHORT("Loop is started. Not need start again.");
-        return ret;
+        return Status::OK;
     }
-    ret = Filter::Start();
-    FALSE_RETURN_V(ret == Status::OK, ret);
-    ret = Filter::WaitAllState(FilterState::RUNNING);
-    MEDIA_LOG_I_SHORT("PrepareBeforeStart done ret = %{public}d", ret);
-    return ret;
+    SetIsNotPrepareBeforeStart(false);
+    return Filter::Start();
 }
 
 Status DemuxerFilter::DoStart()
@@ -349,6 +354,12 @@ Status DemuxerFilter::DoPauseDragging()
     return demuxer_->PauseDragging();
 }
 
+Status DemuxerFilter::DoPauseAudioAlign()
+{
+    MEDIA_LOG_I("DoPauseAudioAlign in");
+    return demuxer_->PauseAudioAlign();
+}
+
 Status DemuxerFilter::PauseForSeek()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::PauseForSeek");
@@ -379,31 +390,26 @@ Status DemuxerFilter::DoResumeDragging()
     return demuxer_->ResumeDragging();
 }
 
+Status DemuxerFilter::DoResumeAudioAlign()
+{
+    MEDIA_LOG_I("DoResumeAudioAlign in");
+    return demuxer_->ResumeAudioAlign();
+}
+
 Status DemuxerFilter::ResumeForSeek()
 {
+    FALSE_RETURN_V_MSG(isNotPrepareBeforeStart_, Status::OK, "Current is not need resumeForSeek");
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::ResumeForSeek");
     MEDIA_LOG_I_SHORT("ResumeForSeek in size: %{public}zu", nextFiltersMap_.size());
     auto it = nextFiltersMap_.find(StreamType::STREAMTYPE_ENCODED_VIDEO);
     if (it != nextFiltersMap_.end() && it->second.size() == 1) {
         auto filter = it->second.back();
         if (filter != nullptr) {
-            if (filter->IsDesignatedState(FilterState::RUNNING)) {
-                MEDIA_LOG_I_SHORT("current filter state is running");
-                return Status::OK;
-            }
             MEDIA_LOG_I_SHORT("filter resume");
             filter->Resume();
         }
     }
-    demuxer_->Resume();
-    if (it != nextFiltersMap_.end() && it->second.size() == 1) {
-        auto filter = it->second.back();
-        if (filter != nullptr) {
-            MEDIA_LOG_I_SHORT("filter WaitAllState");
-            return filter->WaitAllState(FilterState::RUNNING);
-        }
-    }
-    return Status::OK;
+    return demuxer_->Resume();
 }
 
 Status DemuxerFilter::DoFlush()
@@ -437,6 +443,13 @@ Status DemuxerFilter::Reset()
         track_id_map_.clear();
     }
     return demuxer_->Reset();
+}
+
+bool DemuxerFilter::IsRefParserSupported()
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::IsRefParserSupported");
+    MEDIA_LOG_D("IsRefParserSupported entered");
+    return demuxer_->IsRefParserSupported();
 }
 
 Status DemuxerFilter::StartReferenceParser(int64_t startTimeMs, bool isForward)
@@ -792,10 +805,27 @@ bool DemuxerFilter::IsVideoEos()
     return demuxer_->IsVideoEos();
 }
 
+bool DemuxerFilter::HasEosTrack()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->HasEosTrack();
+}
+
 void DemuxerFilter::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
     demuxer_->WaitForBufferingEnd();
+}
+
+int32_t DemuxerFilter::GetCurrentVideoTrackId()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, -1, "demuxer_ is nullptr");
+    return demuxer_->GetCurrentVideoTrackId();
+}
+
+void DemuxerFilter::SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart)
+{
+    isNotPrepareBeforeStart_ = isNotPrepareBeforeStart;
 }
 } // namespace Pipeline
 } // namespace Media

@@ -52,20 +52,20 @@ StreamDemuxer::StreamDemuxer() : position_(0)
 
 StreamDemuxer::~StreamDemuxer()
 {
-    MEDIA_LOG_D("~VodStreamDemuxer called");
+    MEDIA_LOG_I("~VodStreamDemuxer called");
     ResetAllCache();
 }
 
 Status StreamDemuxer::ReadFrameData(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Buffer>& bufferPtr)
 {
-    if (IsDash()) {
-        MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
+    if (IsDash() || GetIsDataSrcNoSeek()) {
+        MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64 " streamID: " PUBLIC_LOG_D32, offset, streamID);
         if (cacheDataMap_.find(streamID) != cacheDataMap_.end() && cacheDataMap_[streamID].CheckCacheExist(offset)) {
             MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
             auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
             if (memory != nullptr && memory->GetSize() > 0) {
-                MEDIA_LOG_D("GetPeekRange read cache, Read data from cache data.");
+                MEDIA_LOG_D("GetPeekRange read cache, Read data from cache data. streamID: " PUBLIC_LOG_D32, streamID);
                 return PullDataWithCache(streamID, offset, size, bufferPtr);
             }
         }
@@ -96,10 +96,16 @@ Status StreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t siz
         return Status::ERROR_INVALID_PARAMETER;
     }
     bufferPtr->streamID = streamID;
+    Status ret = Status::OK;
     if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
-        return ReadFrameData(streamID, offset, size, bufferPtr);
+        ret = ReadFrameData(streamID, offset, size, bufferPtr);
+    } else {
+        ret = ReadHeaderData(streamID, offset, size, bufferPtr);
     }
-    return ReadHeaderData(streamID, offset, size, bufferPtr);
+    if (ret != Status::OK) {
+        return ret;
+    }
+    return CheckChangeStreamID(streamID, bufferPtr);
 }
 
 Status StreamDemuxer::Init(const std::string& uri)
@@ -123,10 +129,10 @@ Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_
     FALSE_RETURN_V_MSG_E(bufferPtr->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "bufferPtr invalid");
     auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
     FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "memory invalid");
-
-    MEDIA_LOG_D("PullDataWithCache, Read data from cache data.");
+    MEDIA_LOG_D("PullDataWithCache, Read data from cache data. streamID: " PUBLIC_LOG_D32, streamID);
     uint64_t offsetInCache = offset - cacheDataMap_[streamID].GetOffset();
     if (size <= memory->GetSize() - offsetInCache) {
+        MEDIA_LOG_D("Readfromcache. streamID: " PUBLIC_LOG_D32, streamID);
         bufferPtr->GetMemory()->Write(memory->GetReadOnlyData() + offsetInCache, size, 0);
         return Status::OK;
     }
@@ -231,11 +237,15 @@ Status StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, si
 Status StreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Plugins::Buffer>& data)
 {
-    FALSE_RETURN_V_MSG_E(data->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "get memory invalid");
+    FALSE_RETURN_V_MSG_E(data->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "getmemory invalid");
     Status err = Status::OK;
     int32_t retryTimes = 0;
     while (true && !isInterruptNeeded_.load()) {
         err = source_->Read(streamID, data, offset, size);
+        if (IsDash() && streamID != data->streamID) {
+            break;
+        }
+        FALSE_RETURN_V_MSG_E(err != Status::ERROR_UNKNOWN, Status::ERROR_UNKNOWN, "error unknown");
         if (err != Status::END_OF_STREAM && data->GetMemory()->GetSize() == 0) {
             OSAL::SleepFor(TRY_READ_SLEEP_TIME);
             retryTimes++;
@@ -351,11 +361,12 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
     }
     Status ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
     if (ret == Status::OK) {
-        Status result = CheckChangeStreamID(streamID, buffer);
-        FALSE_RETURN_V(result == Status::OK, result);
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
         return ret;
     }
+    // Under the current specifications, change buffer->streamID only in the scenario of switching tracks.
+    FALSE_RETURN_V_NOLOG(!IsDash() || buffer == nullptr || buffer->streamID == streamID, Status::END_OF_STREAM);
+
     if (mediaDataSize_ == LIVE_CONTENT_LENGTH) {
         return Status::OK;
     }
@@ -388,8 +399,6 @@ Status StreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::sh
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
     Status ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
     if (ret == Status::OK) {
-        Status result = CheckChangeStreamID(streamID, buffer);
-        FALSE_RETURN_V(result == Status::OK, result);
         DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
         DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
         if (buffer != nullptr && buffer->GetMemory() != nullptr &&

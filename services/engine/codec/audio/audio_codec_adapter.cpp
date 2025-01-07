@@ -61,21 +61,8 @@ int32_t AudioCodecAdapter::SetCallback(const std::shared_ptr<AVCodecCallback> &c
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
-int32_t AudioCodecAdapter::Configure(const Format &format)
+int32_t AudioCodecAdapter::Init(Media::Meta &callerInfo)
 {
-    AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("state %{public}s to INITIALIZING then INITIALIZED, name:%{public}s",
-        stateToString(state_).data(), name_.data());
-    if (!format.ContainKey(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT)) {
-        AVCODEC_LOGE("Configure failed, missing channel count key in format.");
-        return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_MISMATCH_CHANNEL_COUNT;
-    }
-
-    if (!format.ContainKey(MediaDescriptionKey::MD_KEY_SAMPLE_RATE)) {
-        AVCODEC_LOGE("Configure failed,missing sample rate key in format.");
-        return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_SAMPLE_RATE;
-    }
-
     if (state_ != CodecState::RELEASED) {
         AVCODEC_LOGE("Configure failed, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
@@ -89,8 +76,23 @@ int32_t AudioCodecAdapter::Configure(const Format &format)
         AVCODEC_LOGE("Configure failed, state =%{public}s", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
+    return AVCodecServiceErrCode::AVCS_ERR_OK;
+}
 
-    ret = doConfigure(format);
+int32_t AudioCodecAdapter::Configure(const Format &format)
+{
+    AVCODEC_SYNC_TRACE;
+    if (!format.ContainKey(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT)) {
+        AVCODEC_LOGE("Configure failed, missing channel count key in format.");
+        return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_MISMATCH_CHANNEL_COUNT;
+    }
+
+    if (!format.ContainKey(MediaDescriptionKey::MD_KEY_SAMPLE_RATE)) {
+        AVCODEC_LOGE("Configure failed,missing sample rate key in format.");
+        return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_SAMPLE_RATE;
+    }
+
+    int32_t ret = doConfigure(format);
     AVCODEC_LOGD("Configure exit");
     return ret;
 }
@@ -111,7 +113,7 @@ int32_t AudioCodecAdapter::Start()
         return doResume();
     }
 
-    if (state_ != CodecState::INITIALIZED) {
+    if (state_ != CodecState::CONFIGURED) {
         AVCODEC_LOGE("Start is incorrect, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
@@ -129,14 +131,14 @@ int32_t AudioCodecAdapter::Stop()
         "Stop failed, call back not initialized.");
 
     if (state_ == CodecState::INITIALIZED || state_ == CodecState::RELEASED || state_ == CodecState::STOPPING ||
-        state_ == CodecState::RELEASING) {
+        state_ == CodecState::RELEASING || state_ == CodecState::CONFIGURED) {
         AVCODEC_LOGD("Stop, state_=%{public}s", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_OK;
     }
     state_ = CodecState::STOPPING;
     auto ret = doStop();
     AVCODEC_LOGI("state %{public}s to INITIALIZED", stateToString(state_).data());
-    state_ = CodecState::INITIALIZED;
+    state_ = CodecState::CONFIGURED;
     return ret;
 }
 
@@ -166,15 +168,6 @@ int32_t AudioCodecAdapter::Reset()
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("adapter Reset enter");
-    if (state_ == CodecState::RELEASED || state_ == CodecState::RELEASING) {
-        AVCODEC_LOGW("adapter reset, state is already released, state =%{public}s .", stateToString(state_).data());
-        return AVCodecServiceErrCode::AVCS_ERR_OK;
-    }
-    if (state_ == CodecState::INITIALIZING) {
-        AVCODEC_LOGW("adapter reset, state is initialized, state =%{public}s .", stateToString(state_).data());
-        state_ = CodecState::RELEASED;
-        return AVCodecServiceErrCode::AVCS_ERR_OK;
-    }
     int32_t status = AVCodecServiceErrCode::AVCS_ERR_OK;
     if (worker_) {
         worker_->Release();
@@ -183,11 +176,12 @@ int32_t AudioCodecAdapter::Reset()
     }
     if (audioCodec) {
         status = audioCodec->Reset();
-        audioCodec.reset();
-        audioCodec = nullptr;
+        AVCODEC_LOGI("state %{public}s to INITIALIZED",  stateToString(state_).data());
+        state_ = CodecState::INITIALIZED;
+    } else {
+        auto ret = doInit();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret, "unknown error.");
     }
-    state_ = CodecState::RELEASED;
-    AVCODEC_LOGI("state %{public}s to INITIALIZED",  stateToString(state_).data());
     return status;
 }
 
@@ -344,7 +338,7 @@ int32_t AudioCodecAdapter::doInit()
         AVCODEC_LOGE("Initlize failed, because create codec failed. name: %{public}s.", name_.data());
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
-    AVCODEC_LOGD("adapter doInit, state from %{public}s to INITIALIZED",
+    AVCODEC_LOGI("adapter doInit, state from %{public}s to INITIALIZED",
         stateToString(state_).data());
     state_ = CodecState::INITIALIZED;
     return AVCodecServiceErrCode::AVCS_ERR_OK;
@@ -365,9 +359,9 @@ int32_t AudioCodecAdapter::doConfigure(const Format &format)
     int32_t ret = audioCodec->Init(format);
     if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
         AVCODEC_LOGE("configure failed, because codec init failed,error:%{public}d.", static_cast<int>(ret));
-        state_ = CodecState::RELEASED;
         return ret;
     }
+    state_ = CodecState::CONFIGURED;
     return ret;
 }
 
@@ -466,6 +460,7 @@ std::string_view AudioCodecAdapter::stateToString(CodecState state)
         {CodecState::INITIALIZING, " INITIALIZING"}, {CodecState::STARTING, " STARTING"},
         {CodecState::STOPPING, " STOPPING"},         {CodecState::FLUSHING, " FLUSHING"},
         {CodecState::RESUMING, " RESUMING"},         {CodecState::RELEASING, " RELEASING"},
+        {CodecState::CONFIGURED, " CONFIGURED"},
     };
     return stateStrMap[state];
 }

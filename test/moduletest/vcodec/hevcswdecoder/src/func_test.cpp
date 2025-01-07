@@ -22,7 +22,6 @@
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
 #include "native_avcapability.h"
-#include "openssl/sha.h"
 
 using namespace std;
 using namespace OHOS;

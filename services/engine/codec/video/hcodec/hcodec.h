@@ -90,6 +90,7 @@ protected:
         OMX_FILL_BUFFER_DONE,
         GET_BUFFER_FROM_SURFACE,
         CHECK_IF_REPEAT,
+        SUBMIT_DYNAMIC_IF_EOS,
         CHECK_IF_STUCK,
         FORCE_SHUTDOWN,
     };
@@ -230,6 +231,7 @@ protected:
 
     // output buffer circulation
     virtual void DynamicModeSubmitBuffer() {}
+    virtual void DynamicModeSubmitIfEos() {}
     int32_t NotifyOmxToFillThisOutBuffer(BufferInfo &info);
     void OnOMXFillBufferDone(const CodecHDI::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
@@ -322,8 +324,16 @@ protected:
     struct CallerInfo {
         int32_t pid = -1;
         std::string processName;
-    } playerCaller_, avcodecCaller_;
-    bool calledByAvcodec_ = true;
+    };
+    struct Caller {
+        CallerInfo playerCaller;
+        CallerInfo avcodecCaller;
+        CallerInfo app;
+        bool calledByAvcodec = true;
+    } caller_;
+    static std::shared_mutex g_mtx;
+    static std::unordered_map<std::string, HCodec::Caller> g_callers;
+
     bool debugMode_ = false;
     DumpMode dumpMode_ = DUMP_NONE;
     sptr<CodecHDI::ICodecCallback> compCb_ = nullptr;
@@ -348,7 +358,7 @@ protected:
 
     // VRR
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    bool isVrrEnable_ = false;
+    bool isVrrInitialized_ = false;
     virtual int32_t VrrPrediction(BufferInfo &info) { return AVCS_ERR_UNSUPPORT; }
 #endif
 
@@ -362,8 +372,8 @@ protected:
     TotalCntAndCost outRecord_;
     std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
 
-    // normal: every 200 frames, debug: whole life time
-    static constexpr uint64_t PRINT_PER_FRAME = 200;
+    // normal: every 400 frames, debug: whole life time
+    static constexpr uint64_t PRINT_PER_FRAME = 400;
     std::array<TotalCntAndCost, OWNER_CNT> inputHoldTimeRecord_;
     std::array<TotalCntAndCost, OWNER_CNT> outputHoldTimeRecord_;
     std::chrono::time_point<std::chrono::steady_clock> firstInTime_;
@@ -510,9 +520,12 @@ private:
     };
 
 private:
-    int32_t DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper);
-    int32_t DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply);
+    int32_t DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper, uint32_t waitMs = FIVE_SECONDS_IN_MS);
+    int32_t DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply,
+                                  uint32_t waitMs = FIVE_SECONDS_IN_MS);
     void PrintCaller();
+    void PrintAllCaller();
+    void RemoveCaller();
     int32_t OnAllocateComponent();
     void ReleaseComponent();
     void CleanUpOmxNode();

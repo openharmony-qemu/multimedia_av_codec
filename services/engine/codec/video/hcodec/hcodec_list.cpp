@@ -48,7 +48,7 @@ public:
 static bool DecideMode(bool supportPassthrough, bool isSecure)
 {
 #ifdef BUILD_ENG_VERSION
-    string mode = OHOS::system::GetParameter("hcodec.usePassthrough", "");
+    string mode = OHOS::system::GetParameter("persist.hcodec.usePassthrough", "");
     if (mode == "1") {
         LOGI("force passthrough");
         return true;
@@ -67,7 +67,7 @@ static bool DecideMode(bool supportPassthrough, bool isSecure)
         }
     }
 #endif
-    LOGI("supportPassthrough = %d", supportPassthrough);
+    LOGD("supportPassthrough = %d", supportPassthrough);
     return supportPassthrough;
 }
 
@@ -112,7 +112,7 @@ vector<CodecCompCapability> GetCapList()
     if (capList.empty()) {
         LOGE("GetComponentCapabilityList return empty");
     } else {
-        LOGI("GetComponentCapabilityList return %zu components", capList.size());
+        LOGD("GetComponentCapabilityList return %zu components", capList.size());
     }
     return capList;
 }
@@ -249,6 +249,21 @@ void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, Capabi
             userCap.profileLevelsMap[innerProfile.value()] = allLevel;
             LOGI("role %d support (inner) profile %d and level up to %d",
                 hdiCap.role, innerProfile.value(), innerLevel.value());
+        }
+
+        if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_VVC) {
+            optional<int32_t> innerProfileVvc;
+            optional<int32_t> innerLevelVvc;
+            innerProfileVvc = TypeConverter::OmxVvcProfileToInnerProfile(static_cast<CodecVvcProfile>(profile));
+            innerLevelVvc = TypeConverter::OmxVvcLevelToInnerLevel(static_cast<CodecVvcLevel>(maxLevel));
+            if (innerProfileVvc.has_value() && innerLevelVvc.has_value() && innerLevelVvc.value() >= 0) {
+                userCap.profiles.emplace_back(innerProfileVvc.value());
+                optional<vector<int32_t>> allLevel =
+                    TypeConverter::InnerVvcMaxLevelToAllLevels(static_cast<VVCLevel>(innerLevelVvc.value()));
+                userCap.profileLevelsMap[innerProfileVvc.value()] = allLevel.value();
+                LOGI("role %d support (inner) profile %d and level up to %d",
+                    hdiCap.role, innerProfileVvc.value(), innerLevelVvc.value());
+            }
         }
     }
 }

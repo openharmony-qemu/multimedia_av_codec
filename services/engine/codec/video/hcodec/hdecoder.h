@@ -83,6 +83,7 @@ private:
     void SurfaceModeSubmitBufferFromFreeList();
     bool SurfaceModeSubmitOneItem(SurfaceBufferItem& item);
     void DynamicModeSubmitBuffer() override;
+    void DynamicModeSubmitIfEos() override;
     void DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator nullSlot);
 
     // switch surface
@@ -95,15 +96,27 @@ private:
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
     void OnClearBufferPool(OMX_DIRTYPE portIndex) override;
-    void CancelBufferToSurface(BufferInfo &info);
     void OnEnterUninitializedState() override;
 
     // VRR
-#ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t SetVrrEnable(const Format &format);
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t VrrPrediction(BufferInfo &info) override;
+    int32_t InitVrr();
     static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
-    std::shared_ptr<OHOS::Media::VideoProcessingEngine::VideoRefreshRatePrediction> vrrPredictor_;
+    using VrrCreate = Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* (*)();
+    using VrrDestroy = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*);
+    using VrrCheckSupport = int32_t (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*,
+        const char *processName);
+    using VrrProcess = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*,
+        OH_NativeBuffer*, int32_t, int32_t);
+    VrrCreate VrrCreateFunc_ = nullptr;
+    VrrDestroy VrrDestroyFunc_ = nullptr;
+    VrrCheckSupport VrrCheckSupportFunc_ = nullptr;
+    VrrProcess VrrProcessFunc_ = nullptr;
+    void *vpeHandle_ = nullptr;
+    bool vrrDynamicSwitch_ = false;
+    Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* vrrHandle_ = nullptr;
 #endif
 
 private:

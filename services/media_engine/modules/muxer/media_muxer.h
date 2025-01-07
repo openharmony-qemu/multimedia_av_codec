@@ -31,17 +31,17 @@ class MediaMuxer : public Plugins::Callback {
 public:
     MediaMuxer(int32_t appUid, int32_t appPid);
     virtual ~MediaMuxer();
-    Status Init(int32_t fd, Plugins::OutputFormat format);
-    Status Init(FILE *file, Plugins::OutputFormat format);
-    Status SetParameter(const std::shared_ptr<Meta> &param);
-    Status SetUserMeta(const std::shared_ptr<Meta> &userMeta);
-    Status AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc);
-    sptr<AVBufferQueueProducer> GetInputBufferQueue(uint32_t trackIndex);
-    Status Start();
-    Status WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
-    Status Stop();
-    Status Reset();
-    void OnEvent(const Plugins::PluginEvent &event) override;
+    virtual Status Init(int32_t fd, Plugins::OutputFormat format);
+    virtual Status Init(FILE *file, Plugins::OutputFormat format);
+    virtual Status SetParameter(const std::shared_ptr<Meta> &param);
+    virtual Status SetUserMeta(const std::shared_ptr<Meta> &userMeta);
+    virtual Status AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc);
+    virtual sptr<AVBufferQueueProducer> GetInputBufferQueue(uint32_t trackIndex);
+    virtual Status Start();
+    virtual Status WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
+    virtual Status Stop();
+    virtual Status Reset();
+    virtual void OnEvent(const Plugins::PluginEvent &event) override;
 
 private:
     enum class State {

@@ -21,6 +21,7 @@
 #include "osal/task/task.h"
 #include "utils/time_utils.h"
 #include "utils/bitrate_process_utils.h"
+#include "format.h"
 
 namespace OHOS {
 namespace Media {
@@ -43,6 +44,7 @@ DashMediaDownloader::~DashMediaDownloader()
     if (mpdDownloader_ != nullptr) {
         mpdDownloader_->Close(false);
     }
+
     segmentDownloaders_.clear();
 }
 
@@ -104,9 +106,6 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     if (ret == DASH_READ_END) {
         MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", readDataInfo.streamId_);
         readDataInfo.isEos_ = true;
-        if (callback_ != nullptr) {
-            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
-        }
         return Status::END_OF_STREAM;
     } else if (ret == DASH_READ_AGAIN) {
         return Status::ERROR_AGAIN;
@@ -243,12 +242,10 @@ std::vector<uint32_t> DashMediaDownloader::GetBitRates()
 bool DashMediaDownloader::SelectBitRate(uint32_t bitrate)
 {
     std::lock_guard<std::mutex> sidxLock(parseSidxMutex_);
+    MEDIA_LOG_I("Dash SelectBitRate bitrate:" PUBLIC_LOG_U32, bitrate);
     {
-        if (mpdDownloader_->IsBitrateSame(bitrate)) {
-            MEDIA_LOG_W("Dash SelectBitRate is same bitrate.");
-            return true;
-        }
-        
+        isAutoSelectBitrate_ = false;
+
         std::lock_guard<std::mutex> lock(switchMutex_);
         // The bit rate is being switched. Wait until the sidx download and parsing are complete.
         if (bitrateParam_.waitSidxFinish_ ||
@@ -264,8 +261,9 @@ bool DashMediaDownloader::SelectBitRate(uint32_t bitrate)
         
         bitrateParam_.bitrate_ = bitrate;
         bitrateParam_.type_ = DASH_MPD_SWITCH_TYPE_SMOOTH;
+        bitrateParam_.waitSidxFinish_ = true;
     }
-    
+
     int64_t remainLastNumberSeq = -1;
     bool bufferCleanFlag = true;
     CleanVideoSegmentBuffer(bufferCleanFlag, remainLastNumberSeq);
@@ -297,7 +295,7 @@ void DashMediaDownloader::SeekToTs(int64_t seekTime)
     int64_t seekTimeMs;
     std::lock_guard<std::mutex> lock(parseSidxMutex_);
     {
-        if (seekTime < 0 || seekTime >= mpdDownloader_->GetDuration()) {
+        if (seekTime < 0 || seekTime > mpdDownloader_->GetDuration()) {
             return;
         }
         seekTimeMs = seekTime / MS_2_NS;
@@ -447,7 +445,11 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             // no need to auto switch
             if (bitrateParam_.waitSegmentFinish_) {
                 bitrateParam_.waitSegmentFinish_  = false;
+            } else {
+                MEDIA_LOG_I("old segment download finish, should get next segment in select bitrate");
+                return;
             }
+
             if (bitrateParam_.waitSidxFinish_) {
                 MEDIA_LOG_I("wait sidx download finish, should not get next segment");
                 return;
@@ -461,7 +463,7 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             if (callback_ != nullptr) {
                 switchFlag = callback_->CanAutoSelectBitRate();
             }
-            if (switchFlag) {
+            if (switchFlag && isAutoSelectBitrate_) {
                 bool flag = CheckAutoSelectBitrate(streamId);
                 if (callback_ != nullptr) {
                     callback_->SetSelectBitRateFlag(flag, bitrateParam_.bitrate_);
@@ -550,7 +552,7 @@ bool DashMediaDownloader::SelectBitrateInternal(bool bufferCleanFlag, int64_t re
 
     // 2. switch to destination bitrate
     bitrateParam_.position_ = remainLastNumberSeq; // update by segment sequence, -1 means no segment downloading
-    
+
     if (!bufferCleanFlag) {
         bitrateParam_.waitSegmentFinish_ = true;
     } else {
@@ -562,17 +564,31 @@ bool DashMediaDownloader::SelectBitrateInternal(bool bufferCleanFlag, int64_t re
         MEDIA_LOG_W("Dash SelectBitRate Stream:" PUBLIC_LOG_D32 " GetNextVideoStream failed.", bitrateParam_.streamId_);
         return false;
     }
-    
+
     if (ret == DASH_MPD_GET_UNDONE) {
         bitrateParam_.waitSidxFinish_ = true;
         MEDIA_LOG_I("Dash SelectBitRate wait sidx finish");
         return true;
+    } else {
+        bitrateParam_.waitSidxFinish_ = false;
     }
 
     if (bitrateParam_.waitSegmentFinish_) {
-        return true;
+        std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
+            MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+        if (segmentDownloader == nullptr) {
+            MEDIA_LOG_W("SelectBitrateInternal can not get segmentDownloader.");
+            return false;
+        }
+
+        if (!segmentDownloader->IsSegmentFinish()) {
+            return true;
+        }
+
+        // old segment download finish, should get next segment
+        bitrateParam_.waitSegmentFinish_ = false;
     }
-    
+
     // 3. get dest segment and download
     bitrateParam_.bitrate_ = 0;
     bitrateParam_.type_ = DASH_MPD_SWITCH_TYPE_NONE;
@@ -700,14 +716,35 @@ bool DashMediaDownloader::IsSeekingInSwitch()
     return isSwitching;
 }
 
+void DashMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos)
+{
+    Format seekReadyInfo {};
+    seekReadyInfo.PutIntValue("currentStreamType", streamType);
+    seekReadyInfo.PutIntValue("currentStreamId", streamId);
+    seekReadyInfo.PutIntValue("isEOS", isEos);
+    MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: " PUBLIC_LOG_D32,
+        streamType, streamId, isEos);
+    if (callback_ != nullptr) {
+        MEDIA_LOG_D("Onevent dash seek ready");
+        callback_->OnEvent({PluginEventType::DASH_SEEK_READY, seekReadyInfo, "dash_seek_ready"});
+    }
+}
+
 void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
 {
     bool isSwitching = IsSeekingInSwitch();
 
     for (auto &segmentDownloader : segmentDownloaders_) {
         std::shared_ptr<DashSegment> segment;
+        int32_t streamId = static_cast<int32_t>(segmentDownloader->GetStreamId());
         mpdDownloader_->SeekToTs(segmentDownloader->GetStreamId(), seekTimeMs, segment);
         if (segment == nullptr) {
+            MEDIA_LOG_I("Dash SeekToTs end streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
+                segmentDownloader->GetStreamId(), segmentDownloader->GetStreamType());
+            int64_t remainLastNumberSeq = -1;
+            segmentDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
+            segmentDownloader->SetAllSegmentFinished();
+            HandleSeekReady(static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, 1);
             continue;
         }
 
@@ -715,11 +752,10 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
             PUBLIC_LOG_U32, segment->numberSeq_, segment->duration_);
         std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
             segmentDownloader->GetStreamId());
-        if (!isSwitching && segmentDownloader->SeekToTime(segment)) {
+        if (!isSwitching && segmentDownloader->SeekToTime(segment, streamId)) {
             MEDIA_LOG_I("Dash SeekToTs of buffered streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
                 segmentDownloader->GetStreamId(), segmentDownloader->GetStreamType());
             segmentDownloader->SetInitSegment(initSeg, true);
-            continue;
         } else {
             int64_t remainLastNumberSeq = -1;
             segmentDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
@@ -727,6 +763,7 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
             segmentDownloader->SetInitSegment(initSeg, true);
             segmentDownloader->Open(segment);
         }
+        HandleSeekReady(static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, 0);
     }
 }
 
@@ -835,13 +872,22 @@ Status DashMediaDownloader::SelectSubtitleInternal(const std::shared_ptr<DashStr
     return Status::OK;
 }
 
-bool DashMediaDownloader::DoPreparedSwitchBitrate(bool preActionSwitchBitrate, int &streamId)
+bool DashMediaDownloader::DoPreparedSwitchBitrate(bool switchBitrateOk, bool &needDownload, int &streamId)
 {
     bool needSwitchBitrate = false;
     {
         std::lock_guard<std::mutex> lock(switchMutex_);
-        if (preActionSwitchBitrate) {
-            bitrateParam_.waitSidxFinish_ = false;
+        if (switchBitrateOk) {
+            if (!bitrateParam_.waitSegmentFinish_) {
+                ResetBitrateParam();
+            } else {
+                bitrateParam_.waitSidxFinish_ = false;
+                // wait segment download finish, no need to download video segment
+                MEDIA_LOG_I("SwitchBitrate sidx ok and need wait segment finish");
+                needDownload = false;
+            }
+        } else {
+            ResetTrackParam();
         }
 
         if (preparedAction_.preparedBitrateParam_.type_ != DASH_MPD_SWITCH_TYPE_NONE) {
@@ -849,6 +895,8 @@ bool DashMediaDownloader::DoPreparedSwitchBitrate(bool preActionSwitchBitrate, i
             needSwitchBitrate = true;
             bitrateParam_.bitrate_ = preparedAction_.preparedBitrateParam_.bitrate_;
             bitrateParam_.type_ = DASH_MPD_SWITCH_TYPE_SMOOTH;
+            // keep wait sidx finish flag, avoid to reset bitrateParam after video segment download finish
+            bitrateParam_.waitSidxFinish_ = true;
             preparedAction_.preparedBitrateParam_.bitrate_ = 0;
             preparedAction_.preparedBitrateParam_.type_ = DASH_MPD_SWITCH_TYPE_NONE;
         }
@@ -858,11 +906,22 @@ bool DashMediaDownloader::DoPreparedSwitchBitrate(bool preActionSwitchBitrate, i
         int64_t remainLastNumberSeq = -1;
         bool bufferCleanFlag = true;
         CleanVideoSegmentBuffer(bufferCleanFlag, remainLastNumberSeq);
-        
-        SelectBitrateInternal(bufferCleanFlag, remainLastNumberSeq);
-        if (bitrateParam_.type_ != DASH_MPD_SWITCH_TYPE_NONE && bitrateParam_.waitSidxFinish_) {
-            // switch bitrate and sidx is downloading, should wait sidx finish. just return
-            MEDIA_LOG_I("DoPreparedAction switch bitrate wait sidx finish:" PUBLIC_LOG_U32, bitrateParam_.bitrate_);
+        MEDIA_LOG_I("PreparedSwitchBitrate: " PUBLIC_LOG_U32, bitrateParam_.bitrate_);
+        return SelectBitrateInternal(bufferCleanFlag, remainLastNumberSeq);
+    }
+
+    return false;
+}
+
+bool DashMediaDownloader::DoPreparedSwitchAudio(int &streamId)
+{
+    if (preparedAction_.preparedAudioParam_.streamId_ != -1) {
+        ResetTrackParam();
+        std::shared_ptr<DashStreamDescription> streamDesc =
+            mpdDownloader_->GetStreamByStreamId(preparedAction_.preparedAudioParam_.streamId_);
+        MEDIA_LOG_I("PreparedSwitchAudio id:" PUBLIC_LOG_D32, preparedAction_.preparedAudioParam_.streamId_);
+        preparedAction_.preparedAudioParam_.streamId_ = -1;
+        if (streamDesc != nullptr && SelectAudioInternal(streamDesc) == Status::OK) {
             return true;
         }
     }
@@ -870,99 +929,78 @@ bool DashMediaDownloader::DoPreparedSwitchBitrate(bool preActionSwitchBitrate, i
     return false;
 }
 
-bool DashMediaDownloader::DoPreparedSwitchAudio(bool preActionSwitchAduio, int &streamId)
-{
-    if (preparedAction_.preparedAudioParam_.streamId_ != -1) {
-        ResetTrackParam();
-        std::shared_ptr<DashStreamDescription> streamDesc =
-            mpdDownloader_->GetStreamByStreamId(preparedAction_.preparedAudioParam_.streamId_);
-        if (streamDesc != nullptr) {
-            SelectAudioInternal(streamDesc);
-        }
-        
-        MEDIA_LOG_I("DoPreparedSwitchAudio streamId:" PUBLIC_LOG_D32, trackParam_.streamId_);
-        preparedAction_.preparedAudioParam_.streamId_ = -1;
-        if (trackParam_.waitSidxFinish_) {
-            MEDIA_LOG_I("DoPreparedAction switch audio wait sidx finish:" PUBLIC_LOG_D32, trackParam_.streamId_);
-            if (preActionSwitchAduio) {
-                MEDIA_LOG_I("audio sidx parse ok and wait new audio sidx parse, no need to download audio segment.");
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-bool DashMediaDownloader::DoPreparedSwitchSubtitle(bool preActionSwitchSubtitle, int &streamId)
+bool DashMediaDownloader::DoPreparedSwitchSubtitle(int &streamId)
 {
     if (preparedAction_.preparedSubtitleParam_.streamId_ != -1) {
         ResetTrackParam();
         std::shared_ptr<DashStreamDescription> streamDesc =
             mpdDownloader_->GetStreamByStreamId(preparedAction_.preparedSubtitleParam_.streamId_);
-        if (streamDesc != nullptr) {
-            SelectSubtitleInternal(streamDesc);
-        }
-        
-        MEDIA_LOG_I("DoPreparedSwitchSubtitle streamId:" PUBLIC_LOG_D32, trackParam_.streamId_);
+        MEDIA_LOG_I("PreparedSwitchSubtitle id:" PUBLIC_LOG_D32, preparedAction_.preparedSubtitleParam_.streamId_);
         preparedAction_.preparedSubtitleParam_.streamId_ = -1;
-        if (trackParam_.waitSidxFinish_) {
-            MEDIA_LOG_I("wait sidx finish:" PUBLIC_LOG_D32, trackParam_.streamId_);
-            if (preActionSwitchSubtitle) {
-                MEDIA_LOG_I("subtitle sidx parse ok and wait new subtitle sidx parse.");
-                return true;
-            }
+
+        if (streamDesc != nullptr && SelectSubtitleInternal(streamDesc) == Status::OK) {
+            return true;
         }
     }
 
     return false;
 }
 
-bool DashMediaDownloader::DoPreparedAction(int &streamId)
+bool DashMediaDownloader::DoPreparedSwitchAction(bool switchBitrateOk,
+    bool switchAudioOk, bool switchSubtitleOk, int &streamId)
 {
-    bool switchBitrateOk = bitrateParam_.waitSidxFinish_;
-    if (DoPreparedSwitchBitrate(switchBitrateOk, streamId)) {
-        return true;
+    bool segmentNeedDownload = true;
+    // first should check switch bitrate
+    if (DoPreparedSwitchBitrate(switchBitrateOk, segmentNeedDownload, streamId)) {
+        // previous action is switch bitrate, no need to get segment when do prepare switch bitrate
+        segmentNeedDownload = !switchBitrateOk;
+        if (bitrateParam_.type_ != DASH_MPD_SWITCH_TYPE_NONE && bitrateParam_.waitSidxFinish_) {
+            MEDIA_LOG_I("DoPreparedAction switch bitrate wait sidx finish:" PUBLIC_LOG_U32, bitrateParam_.bitrate_);
+            return switchBitrateOk;
+        }
     }
-    
-    bool switchAudioOk = (trackParam_.waitSidxFinish_ && trackParam_.type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
-    bool switchSubtitleOk =
-        (trackParam_.waitSidxFinish_ && trackParam_.type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
-    if (DoPreparedSwitchAudio(switchAudioOk, streamId)) {
-        return true;
+
+    if (DoPreparedSwitchAudio(streamId)) {
+        // previous action is switch audio, no need to get segment when do prepare switch audio
+        segmentNeedDownload = switchAudioOk ? false : segmentNeedDownload;
+        if (trackParam_.waitSidxFinish_) {
+            MEDIA_LOG_I("DoPreparedAction switch audio wait sidx finish:" PUBLIC_LOG_D32, trackParam_.streamId_);
+            return switchAudioOk ? true : !segmentNeedDownload;
+        }
     }
-    
-    if (DoPreparedSwitchSubtitle(switchSubtitleOk, streamId)) {
-        return true;
+
+    if (DoPreparedSwitchSubtitle(streamId)) {
+        // previous action is switch subtitle, no need to get segment when do prepare switch subtitle
+        segmentNeedDownload = switchSubtitleOk ? false : segmentNeedDownload;
+        if (trackParam_.waitSidxFinish_) {
+            MEDIA_LOG_I("DoPreparedAction switch subtitle wait sidx finish:" PUBLIC_LOG_D32, trackParam_.streamId_);
+            return switchSubtitleOk ? true : !segmentNeedDownload;
+        }
     }
-    
+
     int64_t seekPosition = -1;
     if (preparedAction_.seekPosition_ != -1) {
-        // seek after switch ok
         seekPosition = preparedAction_.seekPosition_;
         preparedAction_.seekPosition_ = -1;
     }
     
     if (seekPosition > -1) {
-        SeekInternal(seekPosition);
+        SeekInternal(seekPosition); // seek after switch ok
         return true;
-    } else {
-        std::lock_guard<std::mutex> lock(switchMutex_);
-        if (switchBitrateOk) {
-            if (bitrateParam_.waitSegmentFinish_) {
-                MEDIA_LOG_I("wait video segment download finish, should not get next segment");
-                return true;
-            }
-            
-            streamId = bitrateParam_.streamId_;
-            ResetBitrateParam();
-        } else {
-            streamId = trackParam_.streamId_;
-            ResetTrackParam();
-        }
     }
-    
-    return false;
+
+    return !segmentNeedDownload;
+}
+
+bool DashMediaDownloader::DoPreparedAction(int &streamId)
+{
+    bool switchBitrateOk = bitrateParam_.waitSidxFinish_;
+    bool switchAudioOk = (trackParam_.waitSidxFinish_ && trackParam_.type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
+    bool switchSubtitleOk =
+        (trackParam_.waitSidxFinish_ && trackParam_.type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
+
+    streamId = switchBitrateOk ? bitrateParam_.streamId_ : trackParam_.streamId_;
+    return DoPreparedSwitchAction(switchBitrateOk, switchAudioOk, switchSubtitleOk, streamId);
 }
 
 void DashMediaDownloader::UpdateSegmentIndexAfterSidxParseOk()
@@ -1067,16 +1105,29 @@ size_t DashMediaDownloader::GetBufferSize() const
     return segmentDownloader->GetBufferSize();
 }
 
+bool DashMediaDownloader::GetPlayable()
+{
+    std::shared_ptr<DashSegmentDownloader> vidSegmentDownloader =
+        GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    std::shared_ptr<DashSegmentDownloader> audSegmentDownloader =
+        GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
+    if (vidSegmentDownloader != nullptr && audSegmentDownloader != nullptr) {
+        return !vidSegmentDownloader->GetBufferringStatus() && !audSegmentDownloader->GetBufferringStatus();
+    } else if (vidSegmentDownloader != nullptr) {
+        return !vidSegmentDownloader->GetBufferringStatus();
+    } else if (audSegmentDownloader != nullptr) {
+        return !audSegmentDownloader->GetBufferringStatus();
+    } else {
+        MEDIA_LOG_E("GetPlayable error.");
+        return false;
+    }
+}
+
 void DashMediaDownloader::SetAppUid(int32_t appUid)
 {
     for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
         segmentDownloaders_[i]->SetAppUid(appUid);
     }
-}
-
-bool DashMediaDownloader::GetPlayable()
-{
-    return GetBufferSize() >= 0;
 }
 
 bool DashMediaDownloader::GetBufferingTimeOut()

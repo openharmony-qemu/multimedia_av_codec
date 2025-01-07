@@ -157,6 +157,17 @@ void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
 /**************************** UninitializedState start ****************************/
 void HCodec::UninitializedState::OnStateEntered()
 {
+    codec_->gotFirstInput_ = false;
+    codec_->gotFirstOutput_ = false;
+    codec_->inTotalCnt_ = 0;
+    codec_->outRecord_.totalCnt = 0;
+    codec_->outRecord_.totalCostUs = 0;
+    codec_->inTimeMap_.clear();
+    codec_->inputWaitFenceCostUs_ = 0;
+    codec_->outputWaitFenceCostUs_ = 0;
+    codec_->inputDiscardCnt_ = 0;
+    codec_->outputDiscardCnt_ = 0;
+    codec_->circulateWarnPrintedTimes_ = 0;
     codec_->OnEnterUninitializedState();
     codec_->ReleaseComponent();
 }
@@ -334,7 +345,6 @@ void HCodec::StartingState::OnStateEntered()
 
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
-    codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 
     int32_t ret = AllocateBuffers();
     if (ret != AVCS_ERR_OK) {
@@ -342,6 +352,8 @@ void HCodec::StartingState::OnStateEntered()
         hasError_ = true;
         ReplyStartMsg(ret);
         codec_->ChangeStateTo(codec_->initializedState_);
+    } else {
+        codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
     }
 }
 
@@ -484,6 +496,12 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             }
             codec_->OnQueueInputBuffer(info, inputMode_);
             break;
+        case MsgWhat::SUBMIT_DYNAMIC_IF_EOS:
+            if (codec_->inputPortEos_ && !codec_->outputPortEos_) {
+                codec_->DynamicModeSubmitBuffer();
+                codec_->DynamicModeSubmitIfEos();
+            }
+            break;
         case MsgWhat::NOTIFY_EOS:
             codec_->OnSignalEndOfInputStream(info);
             break;
@@ -493,14 +511,14 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
         case MsgWhat::RELEASE_OUTPUT_BUFFER:
             codec_->OnReleaseOutputBuffer(info, outputMode_);
             break;
-        case MsgWhat::SET_OUTPUT_SURFACE: {
+        case MsgWhat::SET_OUTPUT_SURFACE:
             codec_->OnSetOutputSurface(info, outputMode_);
             return;
-        }
-        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER:
             codec_->OnPrintAllBufferOwner(info);
             return;
-        }
+        case MsgWhat::CHECK_IF_STUCK:
+            return;
         default:
             BaseState::OnMsgReceived(info);
             break;
@@ -561,7 +579,7 @@ void HCodec::RunningState::OnShutDown(const MsgInfo &info)
 void HCodec::RunningState::OnFlush(const MsgInfo &info)
 {
     codec_->isBufferCirculating_ = false;
-    SLOGI("begin to ask omx to flush");
+    SLOGD("begin to ask omx to flush");
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_FLUSH, OMX_ALL, {});
     if (ret == HDF_SUCCESS) {
         codec_->ReplyToSyncMsgLater(info);
@@ -626,6 +644,8 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
             codec_->OnPrintAllBufferOwner(info);
             return;
         }
+        case MsgWhat::GET_BUFFER_FROM_SURFACE:
+            return;
         default: {
             BaseState::OnMsgReceived(info);
         }
@@ -684,6 +704,12 @@ void HCodec::OutputPortChangedState::OnCodecEvent(CodecEventType event, uint32_t
                 HandleOutputPortEnabled();
             }
             return;
+        }
+        case CODEC_EVENT_PORT_SETTINGS_CHANGED: {
+            if (data2 == OMX_IndexColorAspects) {
+                codec_->UpdateColorAspects();
+            }
+            break;
         }
         default: {
             BaseState::OnCodecEvent(event, data1, data2);
@@ -748,7 +774,7 @@ void HCodec::FlushingState::OnStateEntered()
     flushCompleteFlag_[OMX_DirOutput] = false;
     codec_->ReclaimBuffer(OMX_DirInput, BufferOwner::OWNED_BY_USER);
     codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_USER);
-    SLOGI("all buffer owned by user are now owned by us");
+    SLOGD("all buffer owned by user are now owned by us");
 
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
@@ -846,6 +872,8 @@ void HCodec::FlushingState::ChangeStateIfWeOwnAllBuffers()
     }
     codec_->inputPortEos_ = false;
     codec_->outputPortEos_ = false;
+    codec_->gotFirstInput_ = false;
+    codec_->gotFirstOutput_ = false;
     codec_->ChangeStateTo(codec_->runningState_);
 }
 

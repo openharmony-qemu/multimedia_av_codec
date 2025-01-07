@@ -255,10 +255,10 @@ int32_t AVMuxerDemo::AddTrack(OH_AVMuxer* muxer, int32_t& trackIndex, AudioTrack
         return AV_ERR_INVALID_VAL;
     }
     // set codec config
-    int extraSize = 0;
+    int extraSize = inputdatasize > configBufferSize ? configBufferSize : inputdatasize;
     unsigned char buffer[configBufferSize] = {0};
     errno_t res = 0;
-    res = strncpy_s(reinterpret_cast<char*>(buffer), extraSize, inputdata.c_str(), extraSize);
+    res = strncpy_s(reinterpret_cast<char*>(buffer), configBufferSize, inputdata.c_str(), extraSize);
     if (res != 0) {
         return res;
     }

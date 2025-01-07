@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Copyright (c) 2023-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -36,6 +36,8 @@ demuxer_unittest_cflags = [
   "-Wimplicit-fallthrough",
   "-Wsign-compare",
   "-Wunused-parameter",
+  "-Dprivate=public",
+  "-Dprotected=public",
 ]
 
 #################################################################################################################
@@ -71,10 +73,12 @@ ohos_unittest("demuxer_capi_unit_test") {
       "$av_codec_root_dir/test/unittest/avsource_test/capi/avsource_capi_mock_factory.cpp",
       "./capi/demuxer_capi_mock.cpp",
       "./capi/demuxer_capi_mock_factory.cpp",
+      "./demuxer_func_unit_test.cpp",
       "./demuxer_hevc_unit_test.cpp",
       "./demuxer_plugin_manager_test.cpp",
       "./demuxer_unit_test.cpp",
       "./demuxer_uri_unit_test.cpp",
+      "./demuxer_video_mpg_unit_test.cpp",
     ]
   }
 
@@ -100,6 +104,7 @@ ohos_unittest("demuxer_capi_unit_test") {
     "av_codec:av_codec_client",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
+    "googletest:gmock_main",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
@@ -149,9 +154,11 @@ ohos_unittest("demuxer_inner_unit_test") {
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock_factory.cpp",
+      "./demuxer_func_unit_test.cpp",
       "./demuxer_hevc_unit_test.cpp",
       "./demuxer_unit_test.cpp",
       "./demuxer_uri_unit_test.cpp",
+      "./demuxer_video_mpg_unit_test.cpp",
       "./inner/demuxer_inner_mock.cpp",
       "./inner/demuxer_inner_mock_factory.cpp",
     ]
@@ -171,6 +178,7 @@ ohos_unittest("demuxer_inner_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "ipc:ipc_single",
   ]
 
   resource_config_file =
@@ -208,9 +216,11 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
       "$av_codec_root_dir/test/unittest/avsource_test/capi/avsource_capi_mock_factory.cpp",
       "./capi/demuxer_capi_buffer_mock.cpp",
       "./capi/demuxer_capi_mock_factory.cpp",
+      "./demuxer_func_unit_test.cpp",
       "./demuxer_hevc_unit_test.cpp",
       "./demuxer_unit_test.cpp",
       "./demuxer_uri_unit_test.cpp",
+      "./demuxer_video_mpg_unit_test.cpp",
     ]
   }
 
@@ -235,6 +245,7 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "ipc:ipc_single",
   ]
 
   resource_config_file =
@@ -270,9 +281,11 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock_factory.cpp",
+      "./demuxer_func_unit_test.cpp",
       "./demuxer_hevc_unit_test.cpp",
       "./demuxer_unit_test.cpp",
       "./demuxer_uri_unit_test.cpp",
+      "./demuxer_video_mpg_unit_test.cpp",
       "./inner/demuxer_inner_buffer_mock.cpp",
       "./inner/demuxer_inner_mock_factory.cpp",
     ]
@@ -292,6 +305,7 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "ipc:ipc_single",
   ]
 
   resource_config_file =

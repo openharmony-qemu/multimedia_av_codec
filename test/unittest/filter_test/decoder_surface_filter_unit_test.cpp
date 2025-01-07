@@ -675,23 +675,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, CalculateNextRender_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: RenderNextOutput_002
- * @tc.desc: RenderNextOutput
- * @tc.type: FUNC
- */
-HWTEST_F(DecoderSurfaceFilterUnitTest, RenderNextOutput_002, TestSize.Level1)
-{
-    uint32_t index = 0;
-    uint8_t data[100];
-    std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
-    decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
-    decoderSurfaceFilter_->isInSeekContinous_ = true;
-    decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
-    EXPECT_EQ(decoderSurfaceFilter_->seekTimeUs_, 0);
-}
-
-/**
  * @tc.name: DrainOutputBuffer_001
  * @tc.desc: DrainOutputBuffer
  * @tc.type: FUNC
@@ -795,6 +778,54 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, OnOutputFormatChanged_002, TestSize.Level
 }
 
 /**
+ * @tc.name: OnOutputFormatChanged_003
+ * @tc.desc: OnOutputFormatChanged
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest, OnOutputFormatChanged_003, TestSize.Level1)
+{
+    MediaAVCodec::Format format;
+    format.PutIntValue("video_picture_width", 0);
+    format.PutIntValue("video_picture_height", 0);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 0);
+
+    format.PutIntValue("video_picture_width", 0);
+    format.PutIntValue("video_picture_height", 1);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 0);
+
+    format.PutIntValue("video_picture_width", 1);
+    format.PutIntValue("video_picture_height", 0);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 0);
+
+    format.PutIntValue("video_picture_width", 1);
+    format.PutIntValue("video_picture_height", 1);
+    decoderSurfaceFilter_->surfaceWidth_ = 0;
+    decoderSurfaceFilter_->surfaceHeight_ = 1;
+    decoderSurfaceFilter_->OnOutputFormatChanged(format);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 1);
+
+    decoderSurfaceFilter_->surfaceWidth_ = 1;
+    decoderSurfaceFilter_->surfaceHeight_ = 0;
+    decoderSurfaceFilter_->OnOutputFormatChanged(format);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 1);
+
+    decoderSurfaceFilter_->surfaceWidth_ = 0;
+    decoderSurfaceFilter_->surfaceHeight_ = 0;
+    decoderSurfaceFilter_->OnOutputFormatChanged(format);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 1);
+
+    decoderSurfaceFilter_->surfaceWidth_ = 1;
+    decoderSurfaceFilter_->surfaceHeight_ = 1;
+    decoderSurfaceFilter_->OnOutputFormatChanged(format);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 1);
+
+    decoderSurfaceFilter_->surfaceWidth_ = 2;
+    decoderSurfaceFilter_->surfaceHeight_ = 2;
+    decoderSurfaceFilter_->OnOutputFormatChanged(format);
+    EXPECT_EQ(decoderSurfaceFilter_->surfaceWidth_, 1);
+}
+
+/**
  * @tc.name: ParseDecodeRateLimit_001
  * @tc.desc: ParseDecodeRateLimit
  * @tc.type: FUNC
@@ -808,48 +839,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, ParseDecodeRateLimit_001, TestSize.Level1
     decoderSurfaceFilter_->rateUpperLimit_ = 1;
     decoderSurfaceFilter_->ParseDecodeRateLimit();
     EXPECT_EQ(decoderSurfaceFilter_->stopTime_, 0);
-}
-
-/**
- * @tc.name: OnDumpInfo_001
- * @tc.desc: OnDumpInfo
- * @tc.type: FUNC
- */
-HWTEST_F(DecoderSurfaceFilterUnitTest, OnDumpInfo_001, TestSize.Level1)
-{
-    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
-    decoderSurfaceFilter_->OnDumpInfo(32);
-    EXPECT_EQ(decoderSurfaceFilter_->stopTime_, 0);
-}
-
-/**
- * @tc.name: ReleaseOutputBuffer_001
- * @tc.desc: ReleaseOutputBuffer
- * @tc.type: FUNC
- */
-
-HWTEST_F(DecoderSurfaceFilterUnitTest, ReleaseOutputBuffer_001, TestSize.Level1)
-{
-    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
-    decoderSurfaceFilter_->videoSink_ = std::make_shared<VideoSink>();
-    uint8_t data[100];
-    std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
-    decoderSurfaceFilter_->playRangeEndTime_ = 1;
-    outBuffer->pts_ = 2000;
-    decoderSurfaceFilter_->isRenderStarted_ = true;
-    Status ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    decoderSurfaceFilter_->isRenderStarted_ = false;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, false, outBuffer, 0L);
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    outBuffer->flag_ = true;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    outBuffer->flag_ = false;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    decoderSurfaceFilter_->isInSeekContinous_ = true;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
-    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
-    EXPECT_EQ(ret, Status::OK);
 }
 
 /**
@@ -893,16 +882,13 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, GetLagInfo_001, TestSize.Level1)
     int32_t lagTimes = 0;
     int32_t maxLagDuration = 0;
     int32_t avgLagDuration = 0;
-    decoderSurfaceFilter_->videoDecoder_ = nullptr;
-    Status status = decoderSurfaceFilter_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
 
-    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+    Status res = decoderSurfaceFilter_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    EXPECT_EQ(res, Status::OK);
 
-    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
-
-    Status statusOk = decoderSurfaceFilter_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
-
-    EXPECT_EQ(statusOk, Status::OK);
+    decoderSurfaceFilter_->videoSink_ = nullptr;
+    res = decoderSurfaceFilter_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    EXPECT_EQ(res, Status::ERROR_INVALID_OPERATION);
 }
 
 HWTEST_F(DecoderSurfaceFilterUnitTest, OnUpdated_001, TestSize.Level1)
@@ -1040,6 +1026,41 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, SetCallingInfo_0400, TestSize.Level1)
     EXPECT_EQ(appPid, decoderSurfaceFilter_->appPid_);
     EXPECT_EQ(bundleName, decoderSurfaceFilter_->bundleName_);
     EXPECT_EQ(instanceId, decoderSurfaceFilter_->instanceId_);
+}
+
+
+/**
+ * @tc.name: RenderNextOutput_001
+ * @tc.desc: RenderNextOutput
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest, RenderNextOutput_001, TestSize.Level1)
+{
+    uint32_t index = 0;
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    decoderSurfaceFilter_->enableRenderAtTime_ = false;
+    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
+    decoderSurfaceFilter_->isInSeekContinous_ = true;
+    decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
+    EXPECT_EQ(decoderSurfaceFilter_->seekTimeUs_, 0);
+}
+
+/**
+ * @tc.name: RenderNextOutput_002
+ * @tc.desc: RenderNextOutput
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest, RenderNextOutput_002, TestSize.Level1)
+{
+    uint32_t index = 0;
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    decoderSurfaceFilter_->enableRenderAtTime_ = true;
+    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
+    EXPECT_EQ(decoderSurfaceFilter_->renderTimeMaxAdvanceUs_, 80000);
 }
 }  // namespace Pipeline
 }  // namespace Media

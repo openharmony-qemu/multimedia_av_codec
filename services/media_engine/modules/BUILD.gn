@@ -14,6 +14,10 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
+config("av_codec_media_engine_modules_pts_and_index_convert_config") {
+  include_dirs = [ "$av_codec_root_dir/services/media_engine/modules/demuxer" ]
+}
+
 config("av_codec_media_engine_modules_config") {
   defines = [
     "HST_ANY_WITH_NO_RTTI",
@@ -63,6 +67,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "demuxer/base_stream_demuxer.cpp",
     "demuxer/demuxer_plugin_manager.cpp",
     "demuxer/media_demuxer.cpp",
+    "demuxer/pts_and_index_conversion.cpp",
     "demuxer/stream_demuxer.cpp",
     "demuxer/type_finder.cpp",
     "media_codec/media_codec.cpp",
@@ -83,7 +88,10 @@ ohos_shared_library("av_codec_media_engine_modules") {
 
   deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
 
-  public_configs = [ "$audio_framework_root_dir/frameworks/native/audiocapturer:audio_capturer_config" ]
+  public_configs = [
+    "$audio_framework_root_dir/frameworks/native/audiocapturer:audio_capturer_config",
+    ":av_codec_media_engine_modules_pts_and_index_convert_config",
+  ]
 
   external_deps = [
     "audio_framework:audio_capturer",

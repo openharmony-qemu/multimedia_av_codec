@@ -41,12 +41,6 @@ void clearIntqueue(std::queue<uint32_t> &q)
     swap(empty, q);
 }
 
-void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
-{
-    std::queue<OH_AVCodecBufferAttr> empty;
-    swap(empty, q);
-}
-
 void clearAvBufferQueue(std::queue<OH_AVMemory *> &q)
 {
     std::queue<OH_AVMemory *> empty;
@@ -407,16 +401,18 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
     lock.unlock();
     int32_t bufferSize = OH_AVMemory_GetSize(buffer);
     uint8_t *bufferAddr = OH_AVMemory_GetAddr(buffer);
-
-    if (memcpy_s(bufferAddr, bufferSize, data, size) != EOK) {
-        cout << "Fatal: memcpy fail" << endl;
-        return AV_ERR_NO_MEMORY;
-    }
     OH_AVCodecBufferAttr attr;
-    attr.pts = GetSystemTimeUs();
     attr.size = bufferSize;
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+    if (memcpy_s(bufferAddr, bufferSize, data, size) != EOK) {
+        cout << "Fatal: memcpy fail" << endl;
+        OH_VideoDecoder_PushInputData(vdec_, index, attr);
+        signal_->inIdxQueue_.pop();
+        signal_->inBufferQueue_.pop();
+        return AV_ERR_NO_MEMORY;
+    }
+    attr.pts = GetSystemTimeUs();
     OH_AVErrCode ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);
     signal_->inIdxQueue_.pop();
     signal_->inBufferQueue_.pop();
@@ -440,11 +436,6 @@ int32_t VDecFuzzSample::Flush()
     clearIntqueue(signal_->inIdxQueue_);
     signal_->inCond_.notify_all();
     inLock.unlock();
-    unique_lock<mutex> outLock(signal_->outMutex_);
-    clearIntqueue(signal_->outIdxQueue_);
-    clearBufferqueue(signal_->attrQueue_);
-    signal_->outCond_.notify_all();
-    outLock.unlock();
     isRunning_.store(false);
     return OH_VideoDecoder_Flush(vdec_);
 }
@@ -476,8 +467,6 @@ int32_t VDecFuzzSample::Release()
 int32_t VDecFuzzSample::Stop()
 {
     StopInLoop();
-    clearIntqueue(signal_->outIdxQueue_);
-    clearBufferqueue(signal_->attrQueue_);
     ReleaseInFile();
     return OH_VideoDecoder_Stop(vdec_);
 }

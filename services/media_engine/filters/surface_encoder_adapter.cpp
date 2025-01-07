@@ -27,12 +27,15 @@
 #include "common/log.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "SurfaceEncoderAdapter" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "SurfaceEncoderAdapter" };
 }
 
 constexpr uint32_t TIME_OUT_MS = 1000;
 constexpr uint32_t NS_PER_US = 1000;
 constexpr int64_t SEC_TO_NS = 1000000000;
+constexpr uint32_t STOP_TIME_OUT_MS = 2000;
+//Codec wait timeout with no video frame received
+constexpr uint32_t AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED = 50001 ;
 namespace OHOS {
 namespace Media {
 
@@ -334,7 +337,13 @@ Status SurfaceEncoderAdapter::Stop()
 
     if (isStart_ && !isTransCoderMode) {
         std::unique_lock<std::mutex> lock(stopMutex_);
-        stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
+        std::cv_status waitStatus = stopCondition_.wait_for(lock, std::chrono::milliseconds(STOP_TIME_OUT_MS));
+        // Waiting timeout with no video frame received
+        if (waitStatus == std::cv_status::timeout && currentKeyFramePts_ == -1) {
+            MEDIA_LOG_E("Codec wait timeout with no video frame received");
+            encoderAdapterCallback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL,
+                                             AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED);
+        }
         AddStopPts();
     }
     if (releaseBufferTask_) {

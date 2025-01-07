@@ -26,6 +26,7 @@
 #include "video_sink.h"
 #include "sink/media_synchronous_sink.h"
 #include "common/status.h"
+#include "video_decoder_adapter.h"
 #include "meta/meta.h"
 #include "meta/format.h"
 #include "filter/filter.h"
@@ -33,15 +34,16 @@
 #include "common/media_core.h"
 #include "common/seek_callback.h"
 #include "drm_i_keysession_service.h"
+#include "interrupt_listener.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
 
 namespace OHOS {
 namespace Media {
-class VideoDecoderAdapter;
 namespace Pipeline {
-class DecoderSurfaceFilter : public Filter, public std::enable_shared_from_this<DecoderSurfaceFilter> {
+class DecoderSurfaceFilter : public Filter, public std::enable_shared_from_this<DecoderSurfaceFilter>,
+    public InterruptListener {
 public:
     explicit DecoderSurfaceFilter(const std::string& name, FilterType type);
     ~DecoderSurfaceFilter() override;
@@ -67,7 +69,7 @@ public:
 
     void SetParameter(const std::shared_ptr<Meta>& parameter) override;
     void GetParameter(std::shared_ptr<Meta>& parameter) override;
-    void SetInterruptState(bool isInterruptNeeded);
+    void OnInterrupted(bool isInterruptNeeded) override;
 
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -118,9 +120,16 @@ private:
     void ParseDecodeRateLimit();
     void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer, int64_t renderTime);
-    bool AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer);
+    bool AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer,
+        int64_t renderTime = 0);
+    bool DrainSeekContinuous(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     bool DrainPreroll(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     bool DrainSeekClosest(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
+    void HandleFirstOutput();
+    void HandleEosOutput(int index);
+    void ReportEosEvent();
+    void RenderAtTimeDfx(int64_t renderTimeNs, int64_t currentTimeNs, int64_t lastRenderTimeNs);
+    int64_t GetSystimeTimeNs();
 
     std::string name_;
     FilterType filterType_;
@@ -186,6 +195,13 @@ private:
     bool isInSeekContinous_{false};
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferMap_;
     std::mutex draggingMutex_ {};
+    std::unique_ptr<Task> eosTask_ {nullptr};
+    std::atomic<int64_t> lastRenderTimeNs_ = HST_TIME_NONE;
+    int64_t renderTimeMaxAdvanceUs_ { 80000 };
+    bool enableRenderAtTime_ {true};
+    bool enableRenderAtTimeDfx_ {false};
+    std::list<int64_t> renderTimeQueue_;
+    std::string logMessage;
 };
 } // namespace Pipeline
 } // namespace Media

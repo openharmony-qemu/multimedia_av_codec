@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -160,7 +160,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         url_ = location;
     }
     if (!master_) {
-        master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, httpHeader_);
+        master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, initResolution_, httpHeader_);
         currentVariant_ = master_->defaultVariant_;
         if (currentVariant_ && currentVariant_->m3u8_) {
             currentVariant_->m3u8_->httpHeader_ = httpHeader_;
@@ -187,19 +187,22 @@ void HlsPlayListDownloader::UpdateMasterAndNotifyList(bool isPreParse)
     bool ret = false;
     if (!master_->isSimple_) {
         currentVariant_ = master_->defaultVariant_;
+        if (currentVariant_ && currentVariant_->m3u8_) {
+            ret = currentVariant_->m3u8_->Update(playList_, true);
+        }
     }
     if (currentVariant_ && currentVariant_->m3u8_) {
         currentVariant_->m3u8_->httpHeader_ = httpHeader_;
-        ret = currentVariant_->m3u8_->Update(playList_, true);
     }
-    if (master_->isSimple_) {
+    if (master_->isSimple_ && currentVariant_ && currentVariant_->m3u8_) {
+        ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
         master_->isParseSuccess_ = ret;
     }
     if (ret) {
+        UpdateMasterInfo(isPreParse);
         if (!master_->isSimple_) {
             master_->isSimple_ = true;
         }
-        UpdateMasterInfo(isPreParse);
         NotifyListChange();
     }
 }
@@ -264,6 +267,9 @@ bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
     uint32_t maxGap = 0;
     bool isFirstSelect = true;
     for (const auto &item : master_->variants_) {
+        if (item == nullptr) {
+            continue;
+        }
         uint32_t tempGap = (item->bandWidth_ > bitRate) ? (item->bandWidth_ - bitRate) : (bitRate - item->bandWidth_);
         if (isFirstSelect || (tempGap < maxGap)) {
             isFirstSelect = false;
@@ -281,7 +287,7 @@ std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
 {
     std::vector<uint32_t> bitRates;
     for (const auto &item : master_->variants_) {
-        if (item->bandWidth_) {
+        if (item) {
             bitRates.push_back(item->bandWidth_);
         }
     }
@@ -290,7 +296,7 @@ std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
 
 uint32_t HlsPlayListDownloader::GetCurBitrate()
 {
-    if (currentVariant_==nullptr) {
+    if (currentVariant_ == nullptr) {
         return 0;
     }
     return currentVariant_->bandWidth_;
@@ -298,7 +304,7 @@ uint32_t HlsPlayListDownloader::GetCurBitrate()
 
 uint64_t HlsPlayListDownloader::GetCurrentBitRate()
 {
-    if (currentVariant_==nullptr) {
+    if (currentVariant_ == nullptr) {
         return 0;
     }
     MEDIA_LOG_I("HlsPlayListDownloader currentBitrate: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
@@ -307,7 +313,7 @@ uint64_t HlsPlayListDownloader::GetCurrentBitRate()
 
 int HlsPlayListDownloader::GetVedioWidth()
 {
-    if (currentVariant_==nullptr) {
+    if (currentVariant_ == nullptr) {
         return 0;
     }
     MEDIA_LOG_I("HlsPlayListDownloader currentWidth: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
@@ -316,7 +322,7 @@ int HlsPlayListDownloader::GetVedioWidth()
 
 int HlsPlayListDownloader::GetVedioHeight()
 {
-    if (currentVariant_==nullptr) {
+    if (currentVariant_ == nullptr) {
         return 0;
     }
     MEDIA_LOG_I("HlsPlayListDownloader currentHeight: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
@@ -373,6 +379,13 @@ bool HlsPlayListDownloader::GetHLSDiscontinuity()
     return false;
 }
 
+void HlsPlayListDownloader::SetInitResolution(uint32_t width, uint32_t height)
+{
+    MEDIA_LOG_I("SetInitResolution, width:" PUBLIC_LOG_U32 ", height:" PUBLIC_LOG_U32, width, height);
+    if (width > 0 && height > 0) {
+        initResolution_ = width * height;
+    }
+}
 }
 }
 }

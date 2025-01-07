@@ -22,7 +22,6 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
-#include "meta/meta_key.h"
 #include "codec_ability_singleton.h"
 #include "media_description.h"
 #include "meta/meta_key.h"
@@ -36,6 +35,7 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
 constexpr int32_t DEFAULT_QUALITY = 50;
+constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 1000;
 
 const std::unordered_map<CodecScenario, std::string_view> CODEC_SCENARIO_TO_STRING = {
     {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, "encoder normal"},
@@ -89,8 +89,9 @@ int32_t PixelFormatChecker(CapabilityData &capData, Format &format, CodecScenari
 int32_t FramerateChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t VideoProfileChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
-int32_t RotaitonChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t RotationChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t QPChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t IFrameIntervalChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t UniformlyScaledReferenceChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
@@ -114,6 +115,7 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     BitrateAndQualityChecker,
     VideoProfileChecker,
     QPChecker,
+    IFrameIntervalChecker,
     ColorPrimariesChecker,
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
@@ -127,6 +129,7 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     BitrateAndQualityChecker,
     VideoProfileChecker,
     QPChecker,
+    IFrameIntervalChecker,
     TemporalGopSizeChecker,
     TemporalGopReferenceModeChecker,
     UniformlyScaledReferenceChecker,
@@ -140,7 +143,7 @@ const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
     ResolutionChecker,
     PixelFormatChecker,
     FramerateChecker,
-    RotaitonChecker,
+    RotationChecker,
     ScalingModeChecker,
     PostProcessingChecker,
 };
@@ -341,7 +344,7 @@ int32_t VideoProfileChecker(CapabilityData &capData, Format &format, CodecScenar
     return AVCS_ERR_OK;
 }
 
-int32_t RotaitonChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+int32_t RotationChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
     (void)capData;
     (void)scenario;
@@ -406,6 +409,21 @@ int32_t QPChecker(CapabilityData &capData, Format &format, CodecScenario scenari
     CHECK_AND_RETURN_RET_LOG(qpMax <= MAX_QP && qpMax >= qpMin, AVCS_ERR_INVALID_VAL,
         "Param invalid, QP range: %{public}d-%{public}d", qpMin, qpMax);
     
+    return AVCS_ERR_OK;
+}
+
+int32_t IFrameIntervalChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    (void)scenario;
+
+    int32_t iFrameInterval;
+    bool iFrameIntervalExist = format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
+    PrintParam(iFrameIntervalExist, Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
+    if (!iFrameIntervalExist) {
+        format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
+    }
+
     return AVCS_ERR_OK;
 }
 

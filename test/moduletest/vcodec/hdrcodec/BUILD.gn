@@ -22,7 +22,6 @@ hdrcodec_moduletest_native_include_dirs = [
   "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
   "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
-  "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
 ]
 
 hdrcodec_moduletest_cflags = [
@@ -78,9 +77,10 @@ ohos_unittest("hdrcodec_native_module_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "ipc:ipc_core",
+    "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
+    "openssl:libcrypto_shared",
     "window_manager:libwm",
   ]
   resource_config_file =

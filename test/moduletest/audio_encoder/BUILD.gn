@@ -90,7 +90,7 @@ ohos_unittest("audio_encoder_module_test") {
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "hilog:libhilog",
-    "ipc:ipc_core",
+    "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]

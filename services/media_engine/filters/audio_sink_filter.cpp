@@ -88,6 +88,9 @@ Status AudioSinkFilter::DoPrepare()
 {
     audioSink_->Prepare();
     inputBufferQueueConsumer_ = audioSink_->GetBufferQueueConsumer();
+    if (inputBufferQueueConsumer_ == nullptr) {
+        return Status::ERROR_INVALID_OPERATION;
+    }
     sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
     inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
     if (onLinkedResultCallback_ != nullptr) {
@@ -100,7 +103,7 @@ Status AudioSinkFilter::DoPrepare()
 Status AudioSinkFilter::DoStart()
 {
     MEDIA_LOG_I("start called");
-    if (state_ == FilterState::RUNNING) {
+    if (state_ == FilterState::RUNNING || isCancelStart_) {
         return Status::OK;
     }
     if (state_ != FilterState::READY && state_ != FilterState::PAUSED) {
@@ -121,7 +124,7 @@ Status AudioSinkFilter::DoStart()
 Status AudioSinkFilter::DoPause()
 {
     MEDIA_LOG_I("audio sink filter pause start");
-    if (state_ == FilterState::PAUSED) {
+    if (state_ == FilterState::PAUSED || state_ == FilterState::STOPPED) {
         return Status::OK;
     }
     // only worked when state is working
@@ -155,11 +158,6 @@ Status AudioSinkFilter::DoResume()
 
 Status AudioSinkFilter::DoFlush()
 {
-    // only worked when state is working
-    if (state_ != FilterState::PAUSED && state_ != FilterState::STOPPED) {
-        MEDIA_LOG_W("audio sink cannot flush when not paused or stopped");
-        return Status::ERROR_INVALID_OPERATION;
-    }
     MEDIA_LOG_I("audio sink flush start");
     if (audioSink_ != nullptr) {
         audioSink_->Flush();
@@ -333,6 +331,11 @@ Status AudioSinkFilter::SetSeekTime(int64_t seekTime)
     MEDIA_LOG_D("SetSeekTime");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->SetSeekTime(seekTime);
+}
+
+void AudioSinkFilter::SetIsCancelStart(bool isCancelStart)
+{
+    isCancelStart_ = isCancelStart;
 }
 } // namespace Pipeline
 } // namespace Media

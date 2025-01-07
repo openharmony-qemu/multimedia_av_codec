@@ -46,7 +46,6 @@ ohos_unittest("capability_module_test") {
     "$MEDIA_ROOT_DIR/services/services/factory",
     "$MEDIA_ROOT_DIR/services/utils/include",
     "$MEDIA_ROOT_DIR/test/nativedemo/include",
-    "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
   ]
 
@@ -84,9 +83,10 @@ ohos_unittest("capability_module_test") {
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "ipc:ipc_core",
+    "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
+    "openssl:libcrypto_shared",
     "window_manager:libwm",
   ]
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -83,11 +83,11 @@ public:
                     bool requestWholeFile = false);
     DownloadRequest(const std::string& url, double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
-    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
+    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
                     bool requestWholeFile = false);
-    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
+    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
                     bool requestWholeFile = false);
-
+    ~DownloadRequest();
     size_t GetFileContentLength() const;
     size_t GetFileContentLengthNoWait() const;
     void SaveHeader(const HeaderInfo* header);
@@ -116,6 +116,8 @@ public:
     bool IsM3u8Request() const;
     bool IsServerAcceptRange() const;
     void GetLocation(std::string& location) const;
+    void SetIsM3u8Request(bool isM3u8Request);
+    std::atomic<bool> isHeaderUpdated_ {false};
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
@@ -123,12 +125,10 @@ private:
     DataSaveFunc saveData_;
     StatusCallbackFunc statusCallback_;
     DownloadDoneCbFunc downloadDoneCallback_;
-
+    mutable std::atomic<bool> isHeaderUpdating_ {false};
     HeaderInfo headerInfo_;
     std::map<std::string, std::string> httpHeader_;
-    RequestInfo mediaSouce_ {};
-
-    bool isHeaderUpdated {false};
+    RequestInfo requestInfo_ {};
     bool isEos_ {false}; // file download finished
     int64_t startPos_ {0};
     int64_t endPos_ {-1};
@@ -145,11 +145,12 @@ private:
     int64_t realRecvContentLen_ {0};
     friend class Downloader;
     std::string location_;
-    mutable size_t times_ {0};
+    mutable std::atomic<size_t> times_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
     std::atomic<bool> retryOnGoing_ {false};
     int64_t dropedDataLen_ {0};
     std::atomic<bool> isFirstRangeRequestReady_ {false};
+    bool isM3u8Request_ {false};
 };
 
 class Downloader {

@@ -71,9 +71,16 @@ public:
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
+    bool GetReadTimeOut() override;
     void SetAppUid(int32_t appUid) override;
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
+    void SetIsReportedErrorCode() override;
+    bool isNotRetry(const std::shared_ptr<DownloadRequest>& request) override
+    {
+        return isRingBuffer_ && request->GetFileContentLengthNoWait() == 0;
+    }
+    bool SetInitialBufferSize(int32_t offset, int32_t size) override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -108,6 +115,8 @@ private:
     bool ClearHasReadBuffer();
     void ClearCacheBuffer();
     void CheckDownloadPos(unsigned int wantReadLength);
+    void HandleWaterline();
+    bool CacheBufferFullLoop();
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -169,9 +178,9 @@ private:
     std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 
-    SteadyClock cachedDurationClock_;
     volatile size_t wantedReadLength_ {0};
     volatile size_t bufferingTime_ {0};
+    volatile size_t readTime_ {0};
 
     uint64_t minReadOffset_ {0};
     uint64_t maxReadOffset_ {0};
@@ -179,10 +188,16 @@ private:
     int32_t maxOffsetNotUpdateCount_ {0};
     std::atomic<bool> isMinAndMaxOffsetUpdate_ {false};
 
+    std::atomic<bool> isLargeOffsetSpan_ {false};
+    int32_t stateChangeCount_ {0};
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
     bool isSeekWait_ {false};
-    int32_t seekHitDataNotEnoughCount_ {0};
+    bool isReportedErrorCode_ {false};
+    bool isNeedClearHasRead_ {false};
+    std::atomic<int32_t> expectOffset_ {-1};
+    std::atomic<int32_t> initCacheSize_ {-1};
+    Mutex initCacheMutex_ {};
 };
 }
 }

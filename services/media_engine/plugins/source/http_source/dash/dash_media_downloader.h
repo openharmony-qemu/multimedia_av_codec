@@ -67,8 +67,8 @@ public:
     void SetDemuxerState(int32_t streamId) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     size_t GetBufferSize() const override;
-    void SetAppUid(int32_t appUid) override;
     bool GetPlayable() override;
+    void SetAppUid(int32_t appUid) override;
     bool GetBufferingTimeOut() override;
 
 private:
@@ -87,9 +87,10 @@ private:
     Status SelectAudioInternal(const std::shared_ptr<DashStreamDescription> &streamDesc);
     Status SelectSubtitle(const std::shared_ptr<DashStreamDescription> &streamDesc);
     Status SelectSubtitleInternal(const std::shared_ptr<DashStreamDescription> &streamDesc);
-    bool DoPreparedSwitchBitrate(bool preActionSwitchBitrate, int &streamId);
-    bool DoPreparedSwitchAudio(bool preActionSwitchAduio, int &streamId);
-    bool DoPreparedSwitchSubtitle(bool preActionSwitchSubtitle, int &streamId);
+    bool DoPreparedSwitchBitrate(bool switchBitrateOk, bool &needDownload, int &streamId);
+    bool DoPreparedSwitchAudio(int &streamId);
+    bool DoPreparedSwitchSubtitle(int &streamId);
+    bool DoPreparedSwitchAction(bool switchBitrateOk, bool switchAudioOk, bool switchSubtitleOk, int &streamId);
     bool DoPreparedAction(int &streamId);
     void UpdateSegmentIndexAfterSidxParseOk();
     void ResetBitrateParam();
@@ -98,13 +99,14 @@ private:
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloaderByType(MediaAVCodec::MediaType type) const;
     void OpenInitSegment(const std::shared_ptr<DashStreamDescription> &streamDesc,
                          const std::shared_ptr<DashSegment> &seg);
+    void HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos);
 
 private:
 
     Callback* callback_ {nullptr};
     StatusCallbackFunc statusCallback_ {nullptr};
 
-    std::shared_ptr<DashMpdDownloader> mpdDownloader_;
+    std::shared_ptr<DashMpdDownloader> mpdDownloader_ {nullptr};
     std::vector<std::shared_ptr<DashSegmentDownloader>> segmentDownloaders_;
 
     std::atomic<bool> isInterruptNeeded_{false};

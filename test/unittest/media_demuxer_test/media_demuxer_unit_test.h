@@ -47,114 +47,153 @@ public:
         mapStatus_["StatusErrorNoMemory"] = Status::ERROR_NO_MEMORY;
         mapStatus_["StatusAgain"] = Status::ERROR_AGAIN;
         mapStatus_["StatusErrorNullPoint"] = Status::ERROR_NULL_POINTER;
+        mapStatus_["StatusErrorNotEnoughData"] = Status::ERROR_NOT_ENOUGH_DATA;
         name_ = name;
     }
     ~DemuxerPluginMock()
     {
     }
-    virtual Status Reset()
+    Status Reset() override
     {
         return mapStatus_[name_];
     }
-    virtual Status Start()
+    Status Start() override
     {
         return mapStatus_[name_];
     }
-    virtual Status Stop()
+    Status Stop() override
     {
         return mapStatus_[name_];
     }
-    virtual Status Flush()
+    Status Flush() override
     {
         return mapStatus_[name_];
     }
-    virtual Status SetDataSource(const std::shared_ptr<DataSource>& source)
+    Status SetDataSource(const std::shared_ptr<DataSource>& source) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetMediaInfo(MediaInfo& mediaInfo)
+    Status GetMediaInfo(MediaInfo& mediaInfo) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetUserMeta(std::shared_ptr<Meta> meta)
+    Status GetUserMeta(std::shared_ptr<Meta> meta) override
     {
         return mapStatus_[name_];
     }
-    virtual Status SelectTrack(uint32_t trackId)
+    Status SelectTrack(uint32_t trackId) override
     {
         return mapStatus_[name_];
     }
-    virtual Status UnselectTrack(uint32_t trackId)
+    Status UnselectTrack(uint32_t trackId) override
     {
         return mapStatus_[name_];
     }
-    virtual Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode,
-        int64_t& realSeekTime)
+    Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode,
+        int64_t& realSeekTime) override
     {
         return mapStatus_[name_];
     }
-    virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
+    Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size)
+    Status GetNextSampleSize(uint32_t trackId, int32_t& size) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
+    Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override
     {
         return mapStatus_[name_];
     }
-    virtual void ResetEosStatus()
+    void ResetEosStatus() override
     {
         return;
     }
-    virtual Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true)
+    bool IsRefParserSupported() override
+    {
+        return false;
+    }
+    Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override
     {
         return mapStatus_[name_];
     }
-    virtual Status ParserRefInfo() override
+    Status ParserRefInfo() override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample,
-        FrameLayerInfo &frameLayerInfo)
+    Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample,
+        FrameLayerInfo &frameLayerInfo) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
+    Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
+    Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetIFramePos(std::vector<uint32_t> &IFramePos)
+    Status GetIFramePos(std::vector<uint32_t> &IFramePos) override
     {
         return mapStatus_[name_];
     }
-    virtual Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true)
+    Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
-        const uint64_t relativePresentationTimeUs, uint32_t &index)
+    Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+        const uint64_t relativePresentationTimeUs, uint32_t &index) override
     {
         return mapStatus_[name_];
     }
-    virtual  Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
-        const uint32_t index, uint64_t &relativePresentationTimeUs)
+    Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+        const uint32_t index, uint64_t &relativePresentationTimeUs) override
     {
         return mapStatus_[name_];
     }
-    virtual void SetCacheLimit(uint32_t limitSize)
+    void SetCacheLimit(uint32_t limitSize) override
     {
         return;
+    }
+    bool GetProbeSize(int32_t &offset, int32_t &size) override
+    {
+        offset = 0;
+        size = 5000000; // cache for 5000000
+        return true;
     }
 private:
     std::map<std::string, Status> mapStatus_;
     std::string name_;
+};
+
+template<size_t MaxFailCount>
+class DemuxerPluginSetDataSourceFailMock : public DemuxerPluginMock {
+public:
+    explicit DemuxerPluginSetDataSourceFailMock(std::string name) : DemuxerPluginMock(name)
+    {
+    }
+    ~DemuxerPluginSetDataSourceFailMock()
+    {
+    }
+    Status SetDataSource(const std::shared_ptr<DataSource>& source) override
+    {
+        if (failCount_ < MaxFailCount) {
+            failCount_++;
+            return Status::ERROR_NOT_ENOUGH_DATA;
+        }
+        return Status::OK;
+    }
+private:
+    size_t failCount_ = 0;
+};
+
+class StreamDemuxerMock : public StreamDemuxer {
+    bool SetSourceInitialBufferSize(int32_t offset, int32_t size) override
+    {
+        return true;
+    }
 };
 
 class SourcePluginMock : public Plugins::SourcePlugin {
@@ -171,39 +210,74 @@ public:
     ~SourcePluginMock()
     {
     }
-    virtual Status SetSource(std::shared_ptr<MediaSource> source)
+    Status SetSource(std::shared_ptr<MediaSource> source) override
     {
         return mapStatus_[name_];
     }
-    virtual Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+    Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override
     {
         return mapStatus_[name_];
     }
-    virtual Status Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+    Status Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override
     {
         return mapStatus_[name_];
     }
-    virtual Status GetSize(uint64_t& size)
+    Status GetSize(uint64_t& size) override
     {
         return mapStatus_[name_];
     }
-    virtual Seekable GetSeekable()
+    Seekable GetSeekable() override
     {
         return Seekable::SEEKABLE;
     }
-    virtual Status SeekTo(uint64_t offset)
+    Status SeekTo(uint64_t offset) override
     {
         return mapStatus_[name_];
     }
-    virtual Status Reset()
+    Status Reset() override
     {
         return mapStatus_[name_];
     }
+
 private:
     std::map<std::string, Status> mapStatus_;
     std::string name_;
 };
 
+class SourceCallback : public Plugins::Callback {
+public:
+    explicit SourceCallback(std::shared_ptr<DemuxerPluginManager> demuxerPluginManager)
+        : demuxerPluginManager_(demuxerPluginManager) {}
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        switch (event.type) {
+            case PluginEventType::INITIAL_BUFFER_SUCCESS: {
+                demuxerPluginManager_->NotifyInitialBufferingEnd(true);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
+};
+
+template<size_t FailOffset, size_t MaxFailCount>
+class StreamDemuxerPullDataFailMock : public StreamDemuxer {
+public:
+    StreamDemuxerPullDataFailMock() : StreamDemuxer() {}
+private:
+    Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+        size_t expectedLen) override
+    {
+        if (offset > FailOffset && failCount_ < MaxFailCount) {
+            failCount_++;
+            return Status::ERROR_AGAIN;
+        }
+        return StreamDemuxer::CallbackReadAt(streamID, offset, buffer, expectedLen);
+    }
+    size_t failCount_ = 0;
+};
 }
 }
 

@@ -13,6 +13,28 @@
  * limitations under the License.
  */
 
+/**
+ * @addtogroup CodecBase
+ * @{
+ *
+ * @brief The CodecBase module provides variables, properties, and functions
+ * for audio and video muxer, demuxer, and basic encoding and decoding functions.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 9
+ */
+
+/**
+ * @file avcodec_audio_channel_layout.h
+ *
+ * @brief Declare the enumeration used for audio encoding and decoding.
+ *
+ * @kit AVCodecKit
+ * @library libnative_media_codecbase.so
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 9
+ */
+
 #ifndef AVCODEC_AUDIO_CHANNEL_LAYOUT_H
 #define AVCODEC_AUDIO_CHANNEL_LAYOUT_H
 #include <cstdint>
@@ -162,4 +184,5 @@ enum AudioChannelLayout : uint64_t {
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif // AVCODEC_AUDIO_CHANNEL_LAYOUT_H
+/** @} */

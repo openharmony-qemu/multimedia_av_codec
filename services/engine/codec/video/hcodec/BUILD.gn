@@ -87,15 +87,10 @@ ohos_shared_library("hcodec") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
-    "ipc:ipc_core",
+    "ipc:ipc_single",
     "media_foundation:media_foundation",
     "qos_manager:qos",
   ]
-
-  if (defined(av_codec_support_video_processing_engine) &&
-      av_codec_support_video_processing_engine) {
-    external_deps += [ "video_processing_engine:videoprocessingengine" ]
-  }
 
   if (build_variant != "user") {
     defines += [ "BUILD_ENG_VERSION" ]

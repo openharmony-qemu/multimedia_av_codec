@@ -322,7 +322,9 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     if (NV21_FLAG) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV21);
     }
-
+    if (enableVRR) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_ENABLE_VRR, 1);
+    }
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -946,7 +948,7 @@ void VDecAPI11Sample::RenderOutAtTime(uint32_t index)
         int32_t usTimeNum = 1000;
         int32_t msTimeNum = 1000000;
         if (renderTimestampNs == 0) {
-            renderTimestampNs = GetSystemTimeUs() / usTimeNum;
+            renderTimestampNs = GetSystemTimeUs() * usTimeNum;
         }
         renderTimestampNs = renderTimestampNs + (usTimeNum / DEFAULT_FRAME_RATE * msTimeNum);
         OH_AVErrCode code = OH_VideoDecoder_RenderOutputBufferAtTime(vdec_, index, renderTimestampNs);

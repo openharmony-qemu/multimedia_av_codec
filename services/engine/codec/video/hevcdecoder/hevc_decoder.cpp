@@ -593,7 +593,7 @@ void HevcDecoder::SetSurfaceParameter(const Format &format, const std::string_vi
         AVCODEC_LOGW("Set parameter failed: %{public}s", formatKey.data());
         return;
     }
-    AVCODEC_LOGI("Set parameter %{public}s success, val %{publid}d", formatKey.data(), val);
+    AVCODEC_LOGI("Set parameter %{public}s success, val %{public}d", formatKey.data(), val);
 }
 
 int32_t HevcDecoder::SetParameter(const Format &format)
@@ -731,9 +731,9 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
                                    "output surface memory %{public}d create fail", i);
             outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
             buf->avBuffer = AVBuffer::CreateAVBuffer(buf->sMemory->GetBase(), buf->sMemory->GetSize());
-            AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}d, addr=%{public}p, size=%{public}d, "
+            AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}d, size=%{public}d, "
                          "stride=%{public}d",
-                         i, buf->sMemory->GetBase(), buf->sMemory->GetSize(),
+                         i, buf->sMemory->GetSize(),
                          buf->sMemory->GetSurfaceBufferStride());
         }
         CHECK_AND_CONTINUE_LOG(buf->avBuffer != nullptr, "Allocate output buffer failed, index=%{public}d", i);
@@ -976,7 +976,11 @@ void HevcDecoder::SendFrame()
     std::unique_lock<std::mutex> runLock(decRunMutex_);
     do {
         ret = DecodeFrameOnce();
-    } while (ret == 0 && isSendEos_);
+        if (!isSendEos_) {
+            hevcDecoderInputArgs_.uiStreamLen -= hevcDecoderOutpusArgs_.uiBytsConsumed;
+            hevcDecoderInputArgs_.pStream += hevcDecoderOutpusArgs_.uiBytsConsumed;
+        }
+    } while ((ret != -1) && ((!isSendEos_ && hevcDecoderInputArgs_.uiStreamLen != 0) || (isSendEos_ && ret == 0)));
     runLock.unlock();
 
     if (isSendEos_) {

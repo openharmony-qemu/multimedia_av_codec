@@ -50,12 +50,19 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-const uint32_t MAX_VALUE_LEN = 256;
 const uint32_t DOUBLE_BYTES = 2;
 const uint32_t KEY_PREFIX_LEN = 20;
 const uint32_t VALUE_PREFIX_LEN = 8;
 const uint32_t VALID_LOCATION_LEN = 2;
 const int32_t VIDEO_ROTATION_360 = 360;
+const int32_t AV3A_SAMPLE_8BITS = 8;
+const int32_t AV3A_SAMPLE_16BITS = 16;
+const int32_t AV3A_SAMPLE_24BITS = 24;
+
+const unsigned char MASK_80 = 0x80;
+const unsigned char MASK_C0 = 0xC0;
+const int32_t MIN_BYTES = 2;
+const int32_t MAX_BYTES = 6;
 
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
@@ -106,6 +113,8 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"ogg", FileType::OGG},
     {"wav", FileType::WAV},
     {"flv", FileType::FLV},
+    {"avi", FileType::AVI},
+    {"mpeg", FileType::MPEGPS},
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
     {"webvtt", FileType::VTT},
@@ -159,24 +168,82 @@ std::string SwitchCase(const std::string& str)
     return res;
 }
 
-int ConvertGBK2UTF8(char* input, const size_t inputLen, char* output, const size_t outputLen)
+bool IsUTF8Char(unsigned char chr, int32_t &nBytes)
 {
-    MEDIA_LOG_D("Convert GBK to UTF-8, inputLen=" PUBLIC_LOG_ZU, inputLen);
-    int resultLen = -1;
-    size_t inputTempLen = inputLen;
-    size_t outputTempLen = outputLen;
-    iconv_t cd = iconv_open("UTF-8", "GB2312");
-    if (cd != reinterpret_cast<iconv_t>(-1)) {
-        size_t ret = iconv(cd, &input, &inputTempLen, &output, &outputTempLen);
-        if (ret != static_cast<size_t>(-1))  {
-            resultLen = static_cast<int>(outputLen - outputTempLen);
-        } else {
-            MEDIA_LOG_D("Convert failed");
+    if (nBytes == 0) {
+        if ((chr & MASK_80) == 0) {
+            return true;
         }
-        iconv_close(cd);
+        while ((chr & MASK_80) == MASK_80) {
+            chr <<= 1;
+            nBytes++;
+        }
+
+        if (nBytes < MIN_BYTES || nBytes > MAX_BYTES) {
+            return false;
+        }
+        nBytes--;
+    } else {
+        if ((chr & MASK_C0) != MASK_80) {
+            return false;
+        }
+        nBytes--;
     }
-    MEDIA_LOG_D("Convert GBK to UTF-8, resultLen=" PUBLIC_LOG_D32, resultLen);
-    return resultLen;
+    return true;
+}
+
+bool IsUTF8(const std::string &data)
+{
+    int32_t nBytes = 0;
+    for (size_t i = 0; i < data.size(); ++i) {
+        if (!IsUTF8Char(static_cast<char>(data[i]), nBytes)) {
+            MEDIA_LOG_D("Detect char not in uft8");
+            return false;
+        }
+    }
+    return true;
+}
+
+std::string ConvertGBKToUTF8(const std::string &strGbk)
+{
+    if (strGbk.length() == 0) {
+        return "";
+    }
+
+    const std::string fromCharset = "gb18030";
+    const std::string toCharset = "utf-8";
+    iconv_t cd = iconv_open(toCharset.c_str(), fromCharset.c_str());
+    if (cd == reinterpret_cast<iconv_t>(-1)) {
+        MEDIA_LOG_D("Call iconv_open failed");
+        return "";
+    }
+    size_t inLen = strGbk.length();
+    size_t outLen = inLen * 4; // max for chinese character
+    char* inBuf = const_cast<char*>(strGbk.c_str());
+    if (inBuf == nullptr) {
+        MEDIA_LOG_D("Get in buffer failed");
+        iconv_close(cd);
+        return "";
+    }
+    char* outBuf = new char[outLen];
+    if (outBuf == nullptr) {
+        MEDIA_LOG_D("Get out buffer failed");
+        iconv_close(cd);
+        return "";
+    }
+    char* outBufBack = outBuf;
+    if (iconv(cd, &inBuf, &inLen, &outBuf, &outLen) == static_cast<size_t>(-1)) {
+        MEDIA_LOG_D("Call iconv failed");
+        delete[] outBufBack;
+        outBufBack = nullptr;
+        iconv_close(cd);
+        return "";
+    }
+    std::string strOut(outBufBack, outBuf - outBufBack);
+    delete[] outBufBack;
+    outBufBack = nullptr;
+    iconv_close(cd);
+    return strOut;
 }
 
 bool IsGBK(const char* data)
@@ -258,14 +325,14 @@ inline int ConvFp(int32_t x)
     return static_cast<int32_t>(x / (1 << 16)); // 16 is used for digital conversion
 }
 
-std::string ConvertArrayToString(const int* Array, size_t size)
+std::string ConvertArrayToString(const int* array, size_t size)
 {
     std::string result;
     for (size_t i = 0; i < size; ++i) {
         if (i > 0) {
             result += ' ';
         }
-        result += std::to_string(Array[i]);
+        result += std::to_string(array[i]);
     }
     return result;
 }
@@ -279,15 +346,44 @@ bool IsPCMStream(AVCodecID codecID)
 
 int64_t GetDefaultTrackStartTime(const AVFormatContext& avFormatContext)
 {
-    int64_t dafaultTime = 0;
+    int64_t defaultTime = 0;
     for (uint32_t trackIndex = 0; trackIndex < avFormatContext.nb_streams; ++trackIndex) {
         auto avStream = avFormatContext.streams[trackIndex];
         if (avStream != nullptr && avStream->codecpar != nullptr &&
             avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && avStream->start_time != AV_NOPTS_VALUE) {
-            dafaultTime = AvTime2Us(ConvertTimeFromFFmpeg(avStream->start_time, avStream->time_base));
+            defaultTime = AvTime2Us(ConvertTimeFromFFmpeg(avStream->start_time, avStream->time_base));
         }
     }
-    return dafaultTime;
+    return defaultTime;
+}
+
+static int FfAv3aGetNbObjects(AVChannelLayout *channelLayout)
+{
+    int nbObjects = 0;
+    if (channelLayout->order != AV_CHANNEL_ORDER_CUSTOM) {
+        return 0;
+    }
+    for (int i = 0; i < channelLayout->nb_channels; i++) {
+        if (channelLayout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
+            nbObjects++;
+        }
+    }
+    return nbObjects;
+}
+
+static uint64_t FfAv3aGetChannelLayoutMask(AVChannelLayout *channelLayout)
+{
+    uint64_t mask = 0L;
+    if (channelLayout->order != AV_CHANNEL_ORDER_CUSTOM) {
+        return 0;
+    }
+    for (int i = 0; i < channelLayout->nb_channels; i++) {
+        if (channelLayout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
+            return mask;
+        }
+        mask |= (1ULL << channelLayout->u.map[i].id);
+    }
+    return mask;
 }
 
 void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, Meta& format)
@@ -369,7 +465,7 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
     std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
     std::sregex_iterator end;
     // at least contain latitude and longitude
-    if (std::distance(numbers, end) < VALID_LOCATION_LEN) {
+    if (static_cast<uint32_t>(std::distance(numbers, end)) < VALID_LOCATION_LEN) {
         MEDIA_LOG_D("Info format error");
         return;
     }
@@ -464,11 +560,14 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
     if (StartWith(fileName, "mov,mp4,m4a")) {
         const AVDictionaryEntry *type = av_dict_get(avFormatContext.metadata, "major_brand", NULL, 0);
         if (type == nullptr) {
-            return FileType::UNKNOW;
+            MEDIA_LOG_D("Not found ftyp");
+            return FileType::MP4;
         }
         if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A") ||
             StartWith(type->value, "m4v") || StartWith(type->value, "M4V")) {
             fileType = FileType::M4A;
+        } else if (StartWith(type->value, "qt") || StartWith(type->value, "QT")) {
+            fileType = FileType::MOV;
         } else {
             fileType = FileType::MP4;
         }
@@ -659,13 +758,10 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
         avStream.codecpar->channel_layout, channels);
     format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(channelLayout);
     format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
-    
-    AudioSampleFormat fmt;
-    if (!IsPCMStream(avStream.codecpar->codec_id)) {
-        fmt = FFMpegConverter::ConvertFFMpegToOHAudioFormat(static_cast<AVSampleFormat>(avStream.codecpar->format));
-    } else {
-        fmt = FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(avStream.codecpar->codec_id);
-    }
+
+    AudioSampleFormat fmt = (IsPCMStream(avStream.codecpar->codec_id)) ?
+        FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(avStream.codecpar->codec_id) :
+        FFMpegConverter::ConvertFFMpegToOHAudioFormat(static_cast<AVSampleFormat>(avStream.codecpar->format));
     format.Set<Tag::AUDIO_SAMPLE_FORMAT>(fmt);
 
     if (avStream.codecpar->codec_id == AV_CODEC_ID_AAC) {
@@ -675,6 +771,83 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     }
     format.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(avStream.codecpar->bits_per_coded_sample);
     format.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(avStream.codecpar->bits_per_raw_sample);
+
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_AVS3DA) {
+        format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
+        format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
+        if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM ||
+            avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC) {
+            ParseAv3aInfo(avStream, format);
+        }
+        ConvertAv3aSampleFormat(avStream, format);
+    }
+}
+
+void FFmpegFormatHelper::ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format)
+{
+    AudioSampleFormat fmt;
+    switch (avStream.codecpar->bits_per_raw_sample) {
+        case AV3A_SAMPLE_8BITS: // 8 bits
+            fmt = AudioSampleFormat::SAMPLE_U8;
+            break;
+        case AV3A_SAMPLE_16BITS: // 16 bits
+            fmt = AudioSampleFormat::SAMPLE_S16LE;
+            break;
+        case AV3A_SAMPLE_24BITS: // 24 bits
+            fmt = AudioSampleFormat::SAMPLE_S24LE;
+            break;
+        default:
+            fmt = AudioSampleFormat::INVALID_WIDTH;
+            break;
+    }
+    format.Set<Tag::AUDIO_SAMPLE_FORMAT>(fmt);
+}
+
+void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
+{
+    int channels = avStream.codecpar->channels; // 总通道数
+    AudioChannelLayout channelLayout = AudioChannelLayout::UNKNOWN;
+    int objectNumber = 0; // 对象数量
+    uint64_t channelLayoutMask = 0L;
+    if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM) {
+        // 获取mask（如果是纯对象模式则不包含声场，返回0L）
+        channelLayoutMask = FfAv3aGetChannelLayoutMask(&avStream.codecpar->ch_layout);
+        objectNumber = FfAv3aGetNbObjects(&avStream.codecpar->ch_layout); // 获取对象数量，如果不包含对象返回0
+        if (channelLayoutMask > 0L) {
+            channelLayout = FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(
+                channelLayoutMask, channels - objectNumber);
+            if (channelLayoutMask != static_cast<uint64_t>(channelLayout)) {
+                MEDIA_LOG_W("Get channel layout failed, use default channel layout");
+            }
+        } else {
+            channelLayout = AudioChannelLayout::UNKNOWN;
+        }
+    } else if (avStream.codecpar->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC) {
+        int hoaOrder = static_cast<int>(sqrt(channels)) - 1;
+        if (hoaOrder == 1) {
+            channelLayout = AudioChannelLayout::HOA_ORDER1_ACN_SN3D;
+        } else if (hoaOrder == 2) { // hoaOrder is 2
+            channelLayout = AudioChannelLayout::HOA_ORDER2_ACN_SN3D;
+        } else if (hoaOrder == 3) { // hoaOrder is 3
+            channelLayout = AudioChannelLayout::HOA_ORDER3_ACN_SN3D;
+        } else {
+            MEDIA_LOG_W("Get hoa order failed");
+        }
+        format.Set<Tag::AUDIO_HOA_ORDER>(hoaOrder);
+    } else {
+        MEDIA_LOG_W("Get channel layout failed");
+    }
+    format.Set<Tag::AUDIO_OBJECT_NUMBER>(objectNumber);
+    format.Set<Tag::AUDIO_SOUNDBED_CHANNELS_NUMBER>(channels - objectNumber);
+    // 设置一个整个音频内容通道总数
+    format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(channelLayout);
+    format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
+    if (channels > 0) {
+        format.Set<Tag::AUDIO_OUTPUT_CHANNELS>(static_cast<uint32_t>(channels));
+        format.Set<Tag::AUDIO_CHANNEL_COUNT>(static_cast<uint32_t>(channels));
+    } else {
+        MEDIA_LOG_D("Parse channel count failed: " PUBLIC_LOG_D32, channels);
+    }
 }
 
 void FFmpegFormatHelper::ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format)
@@ -801,21 +974,13 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         return;
     }
     format.SetData(key, std::string(valPtr->value));
-    if (IsGBK(valPtr->value)) {
-        int inputLen = strlen(valPtr->value);
-        char* utf8Result = new char[MAX_VALUE_LEN + 1];
-        utf8Result[MAX_VALUE_LEN] = '\0';
-        int resultLen = ConvertGBK2UTF8(valPtr->value, inputLen, utf8Result, MAX_VALUE_LEN);
-        if (resultLen >= 0) { // In some case, utf8Result will contains extra characters, extract the valid parts
-            char *subStr = new char[resultLen + 1];
-            int ret = memcpy_s(subStr, resultLen, utf8Result, resultLen);
-            if (ret == EOK) {
-                subStr[resultLen] = '\0';
-                format.SetData(key, std::string(subStr));
-            }
-            delete[] subStr;
+    if (!IsUTF8(valPtr->value) && IsGBK(valPtr->value)) {
+        std::string resultStr = ConvertGBKToUTF8(std::string(valPtr->value));
+        if (resultStr.length() > 0) {
+            format.SetData(key, resultStr);
+        } else {
+            MEDIA_LOG_D("Convert utf8 failed");
         }
-        delete[] utf8Result;
     }
 }
 } // namespace Ffmpeg

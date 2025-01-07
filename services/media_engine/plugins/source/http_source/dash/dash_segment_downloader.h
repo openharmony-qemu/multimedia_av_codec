@@ -148,7 +148,7 @@ public:
     void SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc);
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
     bool CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd);
-    bool SeekToTime(const std::shared_ptr<DashSegment>& segment);
+    bool SeekToTime(const std::shared_ptr<DashSegment>& segment, int32_t& streamId);
     void SetInitSegment(std::shared_ptr<DashInitSegment> initSegment, bool needUpdateState = false);
     void UpdateStreamId(int streamId);
     void SetCurrentBitRate(int32_t bitRate);
@@ -167,11 +167,13 @@ public:
     void SetAppUid(int32_t appUid);
     void SetInterruptState(bool isInterruptNeeded);
     uint32_t GetBufferSize() const;
+    bool GetBufferringStatus() const;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     void PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos, const std::string &url);
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
+    bool UpdateInitSegmentFinish();
     uint32_t GetSegmentRemainDuration(const std::shared_ptr<DashBufferSegment>& currentSegment);
     std::shared_ptr<DashInitSegment> GetDashInitSegment(int32_t streamId);
     bool CleanAllSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
@@ -196,6 +198,7 @@ private:
     void CalculateBitRate(size_t fragmentSize, double duration);
     void UpdateCachedPercent(BufferingInfoType infoType);
     void UpdateBufferSegment(const std::shared_ptr<DashBufferSegment> &mediaSegment, uint32_t len);
+    void DoBufferingEndEvent();
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
@@ -206,6 +209,7 @@ private:
     std::list<std::shared_ptr<DashBufferSegment>> segmentList_;
     std::vector<std::shared_ptr<DashInitSegment>> initSegments_;
     std::mutex segmentMutex_;
+    std::mutex initSegmentMutex_;
     DataSaveFunc dataSave_;
     StatusCallbackFunc statusCallback_;
     SegmentDownloadDoneCbFunc downloadDoneCbFunc_;

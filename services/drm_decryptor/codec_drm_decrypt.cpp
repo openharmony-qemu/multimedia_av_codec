@@ -205,10 +205,8 @@ void CodecDrmDecrypt::DrmModifyCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_
     uint32_t skipBytes = 0;
     uint32_t delLen = 0;
     uint32_t i;
-    if (inBuf->memory_ == nullptr || inBuf->memory_->GetAddr() == nullptr || dataSize == 0 ||
-        dataSize > DRM_MAX_STREAM_DATA_SIZE) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG((inBuf->memory_ != nullptr && inBuf->memory_->GetAddr() != nullptr && dataSize != 0 &&
+        dataSize <= DRM_MAX_STREAM_DATA_SIZE), "parameter err");
     uint8_t *data = inBuf->memory_->GetAddr();
     DrmGetSkipClearBytes(skipBytes);
     nalType = DrmGetFinalNalTypeAndIndex(data, dataSize, posStartIndex, posEndIndex);
@@ -442,10 +440,7 @@ int CodecDrmDecrypt::DrmGetKeyId(uint8_t *data, uint32_t &dataSize, uint32_t &po
     if (encryptionFlag != 0) {
         CHECK_AND_RETURN_RET_LOG(((offset + META_DRM_KEY_ID_SIZE) <= dataSize), -1, "cei data too short");
         errno_t res = memcpy_s(cencInfo->keyId, META_DRM_KEY_ID_SIZE, data + offset, META_DRM_KEY_ID_SIZE);
-        if (res != EOK) {
-            AVCODEC_LOGE("copy keyid err");
-            return -1;
-        }
+        CHECK_AND_RETURN_RET_LOG((res == EOK), -1, "copy keyid err");
         cencInfo->keyIdLen = META_DRM_KEY_ID_SIZE;
         offset += META_DRM_KEY_ID_SIZE;
     } else {
@@ -469,10 +464,7 @@ int CodecDrmDecrypt::DrmGetKeyIv(const uint8_t *data, uint32_t dataSize, uint32_
         return -1;
     } else {
         errno_t res = memcpy_s(cencInfo->iv, META_DRM_IV_SIZE, data + offset, ivLen);
-        if (res != EOK) {
-            AVCODEC_LOGE("copy iv err");
-            return -1;
-        }
+        CHECK_AND_RETURN_RET_LOG((res == EOK), -1, "copy iv err");
         cencInfo->ivLen = ivLen;
         offset += ivLen;
     }
@@ -506,10 +498,7 @@ void CodecDrmDecrypt::DrmSetKeyInfo(const uint8_t *data, uint32_t dataSize, uint
     CHECK_AND_RETURN_LOG((dataSize != 0), "DrmSetKeyInfo dataSize is 0");
     CHECK_AND_RETURN_LOG((pos + DRM_LEGACY_LEN < totalSize), "cei data too short");
     ceiBuf = reinterpret_cast<uint8_t *>(malloc(dataSize));
-    if (ceiBuf == nullptr) {
-        AVCODEC_LOGE("malloc cei data failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG((ceiBuf != nullptr), "malloc cei data failed");
     errno_t res = memcpy_s(ceiBuf, dataSize, data, dataSize);
     if (res != EOK) {
         free(ceiBuf);
@@ -746,9 +735,11 @@ int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo
     retCode = AVCS_ERR_INVALID_VAL;
     CHECK_AND_RETURN_RET_LOG((decryptModuleProxy_ != nullptr), retCode,
         "SetDecryptConfig decryptModuleProxy_ nullptr");
+// LCOV_EXCL_START
     retCode = decryptModuleProxy_->DecryptMediaData(svpFlag_, cryptInfo, inDrmBuffer, outDrmBuffer);
     CHECK_AND_RETURN_RET_LOG((retCode == 0), AVCS_ERR_UNKNOWN, "CodecDrmDecrypt decrypt failed!");
     return AVCS_ERR_OK;
+// LCOV_EXCL_STOP
 #else
     (void)cencInfo;
     (void)inBuf;

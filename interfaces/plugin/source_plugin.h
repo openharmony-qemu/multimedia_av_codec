@@ -253,6 +253,10 @@ public:
     }
 
     virtual void WaitForBufferingEnd() {}
+    virtual bool SetSourceInitialBufferSize(int32_t offset, int32_t size)
+    {
+        return false;
+    }
 };
 
 /// Source plugin api major number.

@@ -208,8 +208,8 @@ HWTEST_F(AttributeUnitTest, ParseAttributes, TestSize.Level1)
 
 HWTEST_F(AttributeUnitTest, CreateTagByName, TestSize.Level1)
 {
-    auto extinfTag = TagFactory::CreateTagByName("EXTINF", "10,Segment Title");
-    auto extxkeyTag = TagFactory::CreateTagByName("EXT-X-KEY",
+    auto extinfTag = TagFactory::CreateTagByName("extinf", "10,Segment Title");
+    auto extxkeyTag = TagFactory::CreateTagByName("ext-x-key",
         "METHOD=AES-128,URI=\"https://test.com/key\",IV=0x1234567890ABCDEF");
     auto invalidTag = TagFactory::CreateTagByName("INVALID_TAG", "");
     EXPECT_NE(extinfTag, nullptr);

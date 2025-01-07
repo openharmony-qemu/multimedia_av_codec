@@ -18,6 +18,7 @@
 #include "native_averrors.h"
 #include "native_avcodec_base.h"
 #include "videodec_api11_sample.h"
+#include <fuzzer/FuzzedDataProvider.h>
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -45,7 +46,12 @@ void RunNormalDecoder()
     vDecSample->defaultWidth = DEFAULT_WIDTH;
     vDecSample->defaultHeight = DEFAULT_HEIGHT;
     vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-    vDecSample->CreateVideoDecoder();
+    int32_t ret = vDecSample->CreateVideoDecoder();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return;
+    }
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();
     vDecSample->StartVideoDecoder();
@@ -57,7 +63,12 @@ void RunNormalDecoder()
     vDecSample->defaultWidth = DEFAULT_WIDTH;
     vDecSample->defaultHeight = DEFAULT_HEIGHT;
     vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-    vDecSample->CreateVideoDecoder();
+    ret = vDecSample->CreateVideoDecoder();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return;
+    }
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();
     vDecSample->StartVideoDecoder();
@@ -76,29 +87,32 @@ bool HwdecoderApi11FuzzTest(const uint8_t *data, size_t size)
         g_needRunNormalDecoder = false;
         RunNormalDecoder();
     }
-    int32_t data_ = *reinterpret_cast<const int32_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int data0 = fdp.ConsumeIntegral<int32_t>();
     if (!g_vDecSample) {
         g_vDecSample = new VDecApi11FuzzSample();
         g_vDecSample->defaultWidth = DEFAULT_WIDTH;
         g_vDecSample->defaultHeight = DEFAULT_HEIGHT;
         g_vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-        g_vDecSample->CreateVideoDecoder();
+        int32_t ret = g_vDecSample->CreateVideoDecoder();
+        if (ret != 0) {
+            delete g_vDecSample;
+            g_vDecSample = nullptr;
+            return true;
+        }
         g_vDecSample->ConfigureVideoDecoder();
         g_vDecSample->SetVideoDecoderCallback();
         g_vDecSample->Start();
         g_vDecSample->InputFuncFUZZ(SPS, SPS_SIZE + START_CODE_SIZE);
         g_vDecSample->InputFuncFUZZ(PPS, PPS_SIZE + START_CODE_SIZE);
     }
-    OH_AVErrCode ret = g_vDecSample->InputFuncFUZZ(data, size);
-    g_vDecSample->SetParameter(data_);
-    if (ret == AV_ERR_NO_MEMORY) {
-        g_vDecSample->Flush();
-        g_vDecSample->Stop();
-        g_vDecSample->Reset();
-        delete g_vDecSample;
-        g_vDecSample = nullptr;
-        return false;
-    }
+    g_vDecSample->InputFuncFUZZ(data, size);
+    g_vDecSample->SetParameter(data0);
+    g_vDecSample->Flush();
+    g_vDecSample->Stop();
+    g_vDecSample->Reset();
+    delete g_vDecSample;
+    g_vDecSample = nullptr;
     return true;
 }
 } // namespace OHOS

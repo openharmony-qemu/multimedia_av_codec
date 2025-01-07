@@ -17,7 +17,6 @@
 #include "avcodec_errors.h"
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
-#include "buffer_client_producer.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
@@ -202,6 +201,7 @@ int32_t CodecServiceProxy::NotifyEos()
 
 int32_t CodecServiceProxy::Reset()
 {
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Listener is nullptr");
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
@@ -249,7 +249,7 @@ sptr<OHOS::Surface> CodecServiceProxy::CreateInputSurface()
     sptr<IRemoteObject> object = reply.ReadRemoteObject();
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "Read surface object failed");
 
-    sptr<IBufferProducer> producer(new BufferClientProducer(object));
+    sptr<IBufferProducer> producer = iface_cast<IBufferProducer>(object);
     CHECK_AND_RETURN_RET_LOG(producer != nullptr, nullptr, "Convert object to producer failed");
 
     return OHOS::Surface::CreateSurfaceAsProducer(producer);
@@ -449,6 +449,7 @@ int32_t CodecServiceProxy::GetInputFormat(Format &format)
 
 int32_t CodecServiceProxy::DestroyStub()
 {
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Listener is nullptr");
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;

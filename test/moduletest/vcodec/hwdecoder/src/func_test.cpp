@@ -1251,4 +1251,42 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_1000, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_VRR_0001
+ * @tc.name      : decode to NV12 format, enable VRR
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VRR_0001, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_FRAME_RATE = 60.0;
+    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+    vDecSample->enableVRR = true;
+    vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VRR_0002
+ * @tc.name      : decode to NV21 format, enable VRR
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VRR_0002, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_FRAME_RATE = 60.0;
+    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+    vDecSample->enableVRR = true;
+    vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+    if (!access("/system/lib64/media/", 0)) {
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    }
+}
 } // namespace

@@ -14,6 +14,7 @@
  */
 
 #include "native_avmuxer.h"
+#include <regex>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avmuxer.h"
@@ -56,6 +57,40 @@ OH_AVErrCode OH_AVMuxer_SetRotation(OH_AVMuxer *muxer, int32_t rotation)
     int32_t ret = object->muxer_->SetParameter(param);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "muxer_ SetRotation failed!");
+
+    return AV_ERR_OK;
+}
+
+OH_AVErrCode OH_AVMuxer_SetFormat(OH_AVMuxer *muxer, OH_AVFormat *format)
+{
+    CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
+    CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "input format is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL,
+        "format magic error!");
+
+    struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
+    CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
+
+    std::shared_ptr<Meta> param = std::make_shared<Meta>();
+    std::shared_ptr<Meta> meta = format->format_.GetMeta();
+    CHECK_AND_RETURN_RET_LOG(meta != nullptr, AV_ERR_INVALID_VAL, "input format is nullptr!");
+    if (meta->Find(Tag::MEDIA_CREATION_TIME) != meta->end()) {
+        AVCODEC_LOGI("set format key %{public}s", Tag::MEDIA_CREATION_TIME);
+        std::string value;
+        meta->Get<Tag::MEDIA_CREATION_TIME>(value);
+        std::regex pattern(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(.\d{1,6})?((\+|-\d{4})?)Z?)");
+        std::smatch match;
+        CHECK_AND_RETURN_RET_LOG(std::regex_match(value, match, pattern), AV_ERR_INVALID_VAL,
+            "format key %{public}s, value invalid", Tag::MEDIA_CREATION_TIME);
+        param->Set<Tag::MEDIA_CREATION_TIME>(value);
+    } else {
+        AVCODEC_LOGW("input format does not have a valid key!");
+        return AV_ERR_OK;
+    }
+    int32_t ret = object->muxer_->SetParameter(param);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+        "muxer_ SetFormat failed!");
 
     return AV_ERR_OK;
 }
@@ -110,6 +145,7 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer, uint32_t trackIndex,
 
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(sample->memory_->GetBase() + info.offset,
         sample->memory_->GetSize(), info.size);
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_NO_MEMORY, "create buffer failed");
     buffer->pts_ = info.pts;
     buffer->flag_ = info.flags;
 

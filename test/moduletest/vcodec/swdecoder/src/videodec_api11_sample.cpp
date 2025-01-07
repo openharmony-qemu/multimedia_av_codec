@@ -767,7 +767,7 @@ void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index, int
             int32_t usTimeNum = 1000;
             int32_t msTimeNum = 1000000;
             if (renderTimestampNs == 0) {
-                renderTimestampNs = GetSystemTimeUs() / usTimeNum;
+                renderTimestampNs = GetSystemTimeUs() * usTimeNum;
             }
             renderTimestampNs = renderTimestampNs + (usTimeNum / DEFAULT_FRAME_RATE * msTimeNum);
             if (OH_VideoDecoder_RenderOutputBufferAtTime(vdec_, index, renderTimestampNs) != AV_ERR_OK) {

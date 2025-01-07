@@ -68,6 +68,8 @@ string g_doubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4")
 string g_doubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_hls = TEST_URI_PATH2 + string("index_265.m3u8");
 string g_mp4265InfoParsePath = TEST_FILE_PATH + string("test_265_B_Gop25_4sec.mp4");
+string g_265pcmPath = TEST_FILE_PATH + string("265_pcm_s16le.mov");
+string g_265pcmUri = TEST_URI_PATH + string("265_pcm_s16le.mov");
 
 std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"hdrVivid",   {{"frames", {76,   125}}, {"kFrames", {3, 125}}}},
@@ -75,6 +77,7 @@ std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"mkvHevcAcc", {{"frames", {242,  173}}, {"kFrames", {1, 173}}}},
     {"mkvAvcOpus", {{"frames", {240,  199}}, {"kFrames", {4, 199}}}},
     {"mkvAvcMp3",  {{"frames", {239,  153}}, {"kFrames", {4, 153}}}},
+    {"movHevc",    {{"frames", {604,  433}}, {"kFrames", {3, 433}}}},
     {"tsHevcAac",  {{"frames", {303,  433}}, {"kFrames", {11, 433}}}},
     {"fmp4Hevc",  {{"frames", {604,  433}}, {"kFrames", {3, 433}}}},
     {"doubleVivid",  {{"frames", {76,  116}}, {"kFrames", {3, 116}}}},
@@ -304,6 +307,44 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1215, TestSize.Level1)
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(frames_[idx], infoMap["mkvAvcMp3"]["frames"][idx]);
         ASSERT_EQ(keyFrames_[idx], infoMap["mkvAvcMp3"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_2306
+ * @tc.desc: copy current sample to buffer(265-pcm), local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2306, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    ReadSample(g_265pcmPath, LOCAL);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["movHevc"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["movHevc"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_2307
+ * @tc.desc: copy current sample to buffer(265-pcm), uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2307, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    ReadSample(g_265pcmUri, URI);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["movHevc"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["movHevc"]["kFrames"][idx]);
     }
     RemoveValue();
     selectedTrackIds_.clear();
@@ -623,6 +664,90 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1182, TestSize.Level1)
             selectedTrackIds_.clear();
         }
     }
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_2308
+ * @tc.desc: seek to the specified time(h265-pcm), local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2308, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_265pcmPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 4500, 7000, 2000}; // ms
+    vector<int32_t> videoVals = {604, 604, 604, 107, 358, 358, 107, 358, 107, 358, 604, 604};
+    vector<int32_t> audioVals = {433, 433, 433, 76, 257, 257, 76, 257, 76, 256, 433, 433};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            printf("time = %" PRId64 " | frames_[1]=%d\n", *toPts, frames_[1]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            ASSERT_EQ(frames_[1], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+    ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_2309+
+ * @tc.desc: seek to the specified time(h265-pcm), uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2309, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_265pcmUri, URI);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 4500, 7000, 2000}; // ms
+    vector<int32_t> videoVals = {604, 604, 604, 107, 358, 358, 107, 358, 107, 358, 604, 604};
+    vector<int32_t> audioVals = {433, 433, 433, 76, 257, 257, 76, 257, 76, 256, 433, 433};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            printf("time = %" PRId64 " | frames_[1]=%d\n", *toPts, frames_[1]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            ASSERT_EQ(frames_[1], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+    ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
 }
 
 /**

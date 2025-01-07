@@ -39,7 +39,8 @@ protected:
     virtual int32_t Prepare();
     void Release();
     void DumpOutput(const CodecBufferInfo &bufferInfo);
-    void WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr);
+    void WriteOutputFileWithStrideYUV420P(uint8_t *bufferAddr);
+    void WriteOutputFileWithStrideYUV420SP(uint8_t *bufferAddr);
     void WriteOutputFileWithStrideRGBA(uint8_t *bufferAddr);
     void PushEosFrame();
 

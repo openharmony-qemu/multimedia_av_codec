@@ -199,7 +199,7 @@ void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnStateChange(
 }
 
 void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnOutputDeviceChange(
-    const AudioStandard::DeviceInfo &deviceInfo, const AudioStandard::AudioStreamDeviceChangeReason reason)
+    const AudioStandard::AudioDeviceDescriptor &deviceInfo, const AudioStandard::AudioStreamDeviceChangeReason reason)
 {
     MEDIA_LOG_D_SHORT("DeviceChange reason is " PUBLIC_LOG_D32, static_cast<int32_t>(reason));
     auto param = std::make_pair(deviceInfo, reason);
@@ -357,6 +357,11 @@ Status AudioServerSinkPlugin::Prepare()
 bool AudioServerSinkPlugin::StopRender()
 {
     if (audioRenderer_) {
+        //The audio stop interface cannot be quickly stopped.
+        if (audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING) {
+            MEDIA_LOG_I_T("pause entered.");
+            return audioRenderer_->Pause();
+        }
         FALSE_RETURN_V_MSG(audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_STOPPED,
             true, "AudioRenderer is already in stopped state.");
         sliceCount_++;
@@ -889,7 +894,9 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
     size_t destLength = bufferSize;
     while (destLength > 0) {
         MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::WriteAudioBuffer: " + std::to_string(destLength));
+        auto systemTimeBeforeWriteMs = Plugins::GetCurrentMillisecond();
         int32_t ret = audioRenderer_->Write(destBuffer, destLength);
+        writeDuration_ = std::max(Plugins::GetCurrentMillisecond() - systemTimeBeforeWriteMs, writeDuration_);
         if (ret < 0) {
             if (audioRenderer_->GetStatus() == AudioStandard::RendererState::RENDERER_PAUSED) {
                 MEDIA_LOG_W("WriteAudioBuffer error because audioRenderer_ paused, cache data.");
@@ -1100,6 +1107,13 @@ Status AudioServerSinkPlugin::SetMuted(bool isMuted)
     audioRenderer_->SetSilentModeAndMixWithOthers(isMuted);
     MEDIA_LOG_I("SetMuted out");
     return Status::OK;
+}
+
+int64_t AudioServerSinkPlugin::GetWriteDurationMs()
+{
+    int64_t writeDuration = writeDuration_;
+    writeDuration_ = 0;
+    return writeDuration;
 }
 } // namespace Plugin
 } // namespace Media

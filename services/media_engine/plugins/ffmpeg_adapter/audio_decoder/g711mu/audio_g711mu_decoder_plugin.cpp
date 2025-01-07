@@ -37,7 +37,7 @@ constexpr int AVCODEC_G711MU_QUANT_MASK = 0xf;
 constexpr int AVCODEC_G711MU_SHIFT = 4;
 constexpr int AVCODEC_G711MU_SEG_MASK = 0x70;
 constexpr int G711MU_LINEAR_BIAS = 0x84;
-
+constexpr float TIME_ONE_SECOND = 1000000.f;
 
 Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register>& reg)
 {
@@ -79,7 +79,8 @@ AudioG711muDecoderPlugin::AudioG711muDecoderPlugin(const std::string& name)
       sampleRate_(SUPPORT_SAMPLE_RATE),
       pts_(0),
       maxInputSize_(INPUT_BUFFER_SIZE_DEFAULT),
-      maxOutputSize_(OUTPUT_BUFFER_SIZE_DEFAULT)
+      maxOutputSize_(OUTPUT_BUFFER_SIZE_DEFAULT),
+      sampleFormat_(AudioSampleFormat::INVALID_WIDTH)
 {
 }
 
@@ -150,8 +151,8 @@ Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
 
 Status AudioG711muDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer)
 {
-    if (!outputBuffer) {
-        AVCODEC_LOGE("AudioG711muDecoderPlugin Queue out buffer is null.");
+    if (!outputBuffer || !channels_) {
+        AVCODEC_LOGE("AudioG711muDecoderPlugin Queue out buffer is null or channels is 0.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     {
@@ -162,6 +163,10 @@ Status AudioG711muDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
         memory->Write(reinterpret_cast<const uint8_t *>(decodeResult_.data()), outSize, 0);
         memory->SetSize(outSize);
         outputBuffer->pts_ = pts_;
+        float usPerSample = TIME_ONE_SECOND / sampleRate_;
+        if (sampleFormat_ == SAMPLE_S16LE) {
+            outputBuffer->duration_ = static_cast<uint32_t>((outSize / 2.0f / channels_) * usPerSample); // 2 bytes
+        }
         dataCallback_->OnOutputBufferDone(outputBuffer);
     }
     return Status::OK;
@@ -212,6 +217,11 @@ Status AudioG711muDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
     if (!CheckFormat()) {
         AVCODEC_LOGE("AudioG711muDecoderPlugin CheckFormat Failure");
         ret = Status::ERROR_INVALID_PARAMETER;
+    }
+    if (parameter->Find(Tag::AUDIO_SAMPLE_FORMAT) != parameter->end()) {
+        parameter->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat_);
+    } else {
+        AVCODEC_LOGW("AudioG711muDecoderPlugin no AUDIO_SAMPLE_FORMAT");
     }
 
     audioParameter_ = *parameter;

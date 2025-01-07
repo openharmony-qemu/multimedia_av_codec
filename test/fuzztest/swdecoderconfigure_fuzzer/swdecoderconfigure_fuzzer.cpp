@@ -22,22 +22,26 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "swdecoderconfigure_fuzzer"
-
+const size_t EXPECT_SIZE = 6;
+const size_t WIDTH_SIZE = 1;
+const size_t HEIGHT_SIZE = 2;
+const size_t FRAME_RATE_SIZE = 3;
+const size_t ROTATION_SIZE = 4;
+const size_t PIXELFORMAT_SIZE = 5;
 namespace OHOS {
 bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int32_t)) {
+    if (size < EXPECT_SIZE) {
         return false;
     }
     bool result = false;
-    int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
     vDecSample->inpDir = "/data/test/media/1280_720_30_10Mb.h264";
-    vDecSample->defaultWidth = data_;
-    vDecSample->defaultHeight = data_;
-    vDecSample->defaultFrameRate = data_;
-    vDecSample->defaultRotation = data_;
-    vDecSample->defaultPixelFormat = data_;
+    vDecSample->defaultWidth = data[size - WIDTH_SIZE];
+    vDecSample->defaultHeight = data[size - HEIGHT_SIZE];
+    vDecSample->defaultFrameRate = data[size - FRAME_RATE_SIZE];
+    vDecSample->defaultRotation = data[size - ROTATION_SIZE];
+    vDecSample->defaultPixelFormat = data[size - PIXELFORMAT_SIZE];
     vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();

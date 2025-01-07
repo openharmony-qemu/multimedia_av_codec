@@ -24,6 +24,7 @@ ohos_fuzztest("HevcSwdecoderConfigureFuzzTest") {
       "$MEDIA_ROOT_DIR/test/fuzztest/hevcswdecoderconfigure_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
+    "$MEDIA_ROOT_DIR/services/engine/codec/video/hevcdecoder/include",
     "$MEDIA_ROOT_DIR/test/fuzztest/hevcswdecoderconfigure_fuzzer/include",
   ]
   cflags = [
@@ -33,14 +34,15 @@ ohos_fuzztest("HevcSwdecoderConfigureFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
+    "hevcserverdec_sample.cpp",
     "hevcswdecoderconfigure_fuzzer.cpp",
-    "videodec_sample.cpp",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "hilog:libhilog",
-    "ipc:ipc_core",
+    "ipc:ipc_single",
     "media_foundation:native_media_core",
     "window_manager:libwm",
   ]
@@ -48,6 +50,7 @@ ohos_fuzztest("HevcSwdecoderConfigureFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
+    "$MEDIA_ROOT_DIR/services/engine/codec/video/hevcdecoder:hevc_decoder",
   ]
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"

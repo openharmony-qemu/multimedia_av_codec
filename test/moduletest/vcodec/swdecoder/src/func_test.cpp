@@ -22,7 +22,6 @@
 #include "avcodec_codec_name.h"
 #include "native_avcapability.h"
 #include "native_avformat.h"
-#include "openssl/sha.h"
 
 #ifdef SUPPORT_DRM
 #include "native_mediakeysession.h"

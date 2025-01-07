@@ -133,6 +133,7 @@ ohos_unittest("avcodec_info_coverage_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "ipc:ipc_single",
     "media_foundation:media_foundation",
   ]
 
@@ -150,6 +151,12 @@ ohos_static_library("av_codec_engine_codeclist_mock") {
   if (av_codec_enable_special_codec) {
     defines += [ "AV_CODEC_AUDIO_VIVID_CAPACITY" ]
   }
+  if (target_cpu == "arm64") {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+  defines += [ "AV_CODEC_PATH=${av_codec_path}" ]
   sanitize = av_codec_sanitize
   include_dirs = codeclist_coverage_include_dirs
 

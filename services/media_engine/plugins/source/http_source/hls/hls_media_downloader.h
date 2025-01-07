@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,8 +29,8 @@
 #include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
-#include "utils/write_bitrate_caculator.h"
 #include "utils/media_cached_buffer.h"
+#include "utils/write_bitrate_caculator.h"
 #include <utility>
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
@@ -100,11 +100,15 @@ public:
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
+    bool GetReadTimeOut() override;
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
+    void SetIsReportedErrorCode() override;
+    bool SetInitialBufferSize(int32_t offset, int32_t size) override;
+    void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -155,6 +159,9 @@ private:
     bool SaveCacheBufferData(uint8_t* data, uint32_t len);
     bool ClearChunksOfFragment();
     size_t GetCrossTsBuffersize();
+    bool IsCachedInitSizeReady(int32_t wantInitSize);
+    void HandleWaterLine();
+    bool CacheBufferFullLoop();
 
 private:
     size_t totalBufferSize_ {0};
@@ -187,7 +194,6 @@ private:
     uint32_t writeTsIndex_ = 0;
     bool isAutoSelectBitrate_ {true};
     uint64_t seekTime_ = 0;
-    uint64_t readTime_ {0};
 
     bool isReadFrame_ {false};
     bool isTimeOut_ {false};
@@ -278,12 +284,16 @@ private:
     uint64_t ffmpegOffset_ = 0;
     volatile size_t wantedReadLength_ {0};
     volatile size_t bufferingTime_ {0};
+    volatile size_t readTime_ {0};
     FairMutex tsStorageInfoMutex_ {};
-
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
+    bool isReportedErrorCode_ {false};
+    std::atomic<int32_t> expectOffset_ {-1};
+    std::atomic<int32_t> initCacheSize_ {-1};
+    Mutex initCacheMutex_ {};
 };
 }
 }

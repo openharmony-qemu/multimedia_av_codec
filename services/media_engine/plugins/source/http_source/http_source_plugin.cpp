@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,6 +30,9 @@ namespace HttpPlugin {
 namespace {
 constexpr int DEFAULT_BUFFER_SIZE = 200 * 1024;
 constexpr int ERROR_COUNT = 5;
+const std::string LOWER_M3U8 = "m3u8";
+const std::string DASH_SUFFIX = ".mpd";
+
 }
 
 std::shared_ptr<SourcePlugin> HttpSourcePluginCreater(const std::string& name)
@@ -136,7 +139,7 @@ Status HttpSourcePlugin::Stop()
 Status HttpSourcePlugin::Pause()
 {
     MEDIA_LOG_I("Pause enter.");
-    if (downloader_ != nullptr && uri_.find(".m3u8") != std::string::npos) {
+    if (downloader_ != nullptr && CheckIsM3U8Uri()) {
         downloader_->Pause();
     }
     return Status::OK;
@@ -145,7 +148,7 @@ Status HttpSourcePlugin::Pause()
 Status HttpSourcePlugin::Resume()
 {
     MEDIA_LOG_I("Resume enter.");
-    if (downloader_ != nullptr && uri_.find(".m3u8") != std::string::npos) {
+    if (downloader_ != nullptr && CheckIsM3U8Uri()) {
         downloader_->Resume();
     }
     return Status::OK;
@@ -219,6 +222,9 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
             downloader_ = std::make_shared<DownloadMonitor>(
                             std::make_shared<HlsMediaDownloader>(httpHeader_));
         }
+        if (playStrategy != nullptr) {
+            downloader_->SetPlayStrategy(playStrategy);
+        }
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         if (playStrategy != nullptr && playStrategy->duration > 0) {
@@ -242,7 +248,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
 bool HttpSourcePlugin::IsSeekToTimeSupported()
 {
     if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
-        return uri_.find("m3u8") != std::string::npos || uri_.find(".mpd") != std::string::npos;
+        return CheckIsM3U8Uri() || uri_.find(DASH_SUFFIX) != std::string::npos;
     }
     MEDIA_LOG_I("IsSeekToTimeSupported return true");
     return true;
@@ -330,7 +336,7 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
     MEDIA_LOG_I("SeekTo enter, offset = " PUBLIC_LOG_U64, offset);
     MEDIA_LOG_I("SeekTo enter, content length = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
     FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
-    if (offset > downloader_->GetContentLength()) {
+    if (offset > downloader_->GetContentLength() && downloader_->GetContentLength() != 0) {
         MEDIA_LOG_I("SeekTo enter fail, offset = " PUBLIC_LOG_U64, offset);
         MEDIA_LOG_I("SeekTo enter fail, content = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
         seekErrorCount_++;
@@ -448,6 +454,12 @@ bool HttpSourcePlugin::GetHLSDiscontinuity()
     return false;
 }
 
+bool HttpSourcePlugin::SetSourceInitialBufferSize(int32_t offset, int32_t size)
+{
+    FALSE_RETURN_V_MSG_W(downloader_ != nullptr, false, "SetInitialBufferSize downloader is nullptr");
+    return downloader_->SetInitialBufferSize(offset, size);
+}
+
 Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
 {
     if (downloader_ == nullptr) {
@@ -461,6 +473,19 @@ void HttpSourcePlugin::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(downloader_ != nullptr, "WaitForBufferingEnd downloader is nullptr");
     downloader_->WaitForBufferingEnd();
+}
+
+bool HttpSourcePlugin::CheckIsM3U8Uri()
+{
+    if (uri_.empty()) {
+        return false;
+    }
+    std::string uri = uri_;
+    std::transform(uri.begin(), uri.end(), uri.begin(), ::tolower);
+    if (uri.find(LOWER_M3U8) != std::string::npos) {
+        return true;
+    }
+    return false;
 }
 }
 }

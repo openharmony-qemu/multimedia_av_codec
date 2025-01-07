@@ -22,14 +22,27 @@
 #include "native_avmemory.h"
 
 namespace OHOS {
+    struct Params {
+        int64_t time;
+        int64_t setTrackType;
+        long setDuration;
+        float setHeight;
+        double setFrameRate;
+        int64_t setCodecConfigSize;
+        int32_t sampleRate;
+        int32_t channelCount;
+        int32_t setVideoHeight;
+        int32_t setVideoWidth;
+    };
 namespace Media {
 class DemuxerSample {
 public:
     DemuxerSample() = default;
     ~DemuxerSample();
     const char *filePath = "/data/test/fuzz_create.mp4";
-    void RunNormalDemuxer();
-    void RunNormalDemuxerApi11();
+    void RunNormalDemuxer(uint32_t createSize, const char *uri, const char *setLanguage, Params params);
+    void RunNormalDemuxerApi11(uint32_t createSize, const char *uri, const char *setLanguage, Params params);
+    void GetAndSetFormat(const char *setLanguage, Params params);
 private:
     void ResetFlag();
     int CreateDemuxer();
@@ -41,10 +54,17 @@ private:
     bool gReadEnd = false;
     int fd;
     OH_AVFormat *sourceFormat;
+    OH_AVFormat *format;
+    OH_AVFormat *audioFormat;
+    OH_AVFormat *videoFormat;
     OH_AVSource *source;
+    OH_AVSource *uriSource;
     OH_AVDemuxer *demuxer;
     OH_AVMemory *memory;
     OH_AVBuffer *buffer;
+    const uint8_t *g_baseFuzzData = nullptr;
+    size_t g_baseFuzzSize = 0;
+    size_t g_baseFuzzPos;
 };
 } // namespace Media
 } // namespace OHOS

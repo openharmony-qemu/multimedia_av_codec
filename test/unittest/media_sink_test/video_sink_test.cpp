@@ -74,7 +74,7 @@ HWTEST_F(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     auto setParam = videoSink_->SetParameter(meta);
     ASSERT_TRUE(setParam == Status::OK);
     videoSink_->ResetSyncInfo();
-    videoSink_->SetLastPts(0);
+    videoSink_->SetLastPts(0, 0);
     videoSink_->SetFirstPts(HST_TIME_NONE);
     videoSink_->SetSeekFlag();
     uint64_t latency = 0;
@@ -90,11 +90,11 @@ HWTEST_F(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     buffer->flag_ = BUFFER_FLAG_EOS;
     videoSink_->DoSyncWrite(buffer);
     buffer->pts_ = 1;
-    videoSink_->lastBufferTime_ = 1;
+    videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
     (void)videoSink_->CheckBufferLatenessMayWait(buffer);
     float speed = 0;
-    videoSink_->GetSpeed(speed);
+    videoSink_->AdjustPlaybackRate(speed);
 }
 
 HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
@@ -110,7 +110,7 @@ HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
     auto setParam = videoSink_->SetParameter(meta);
     ASSERT_TRUE(setParam == Status::OK);
     videoSink_->ResetSyncInfo();
-    videoSink_->SetLastPts(0);
+    videoSink_->SetLastPts(0, 0);
     videoSink_->SetFirstPts(HST_TIME_NONE);
     videoSink_->SetSeekFlag();
     AVBufferConfig config;
@@ -125,11 +125,11 @@ HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
     buffer->flag_ = 0; // not eos
     videoSink_->DoSyncWrite(buffer2);
     buffer->pts_ = 1;
-    videoSink_->lastBufferTime_ = 1;
+    videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
     (void)videoSink_->CheckBufferLatenessMayWait(buffer);
     float speed = 0;
-    videoSink_->GetSpeed(speed);
+    videoSink_->AdjustPlaybackRate(speed);
 }
 
 HWTEST_F(TestVideoSink, do_sync_write_eos, TestSize.Level1)
@@ -145,7 +145,7 @@ HWTEST_F(TestVideoSink, do_sync_write_eos, TestSize.Level1)
     auto setParam = videoSink_->SetParameter(meta);
     ASSERT_TRUE(setParam == Status::OK);
     videoSink_->ResetSyncInfo();
-    videoSink_->SetLastPts(0);
+    videoSink_->SetLastPts(0, 0);
     videoSink_->SetFirstPts(HST_TIME_NONE);
     videoSink_->SetSeekFlag();
     AVBufferConfig config;
@@ -159,11 +159,11 @@ HWTEST_F(TestVideoSink, do_sync_write_eos, TestSize.Level1)
     buffer->flag_ = BUFFER_FLAG_EOS;
     videoSink_->DoSyncWrite(buffer);
     buffer->pts_ = 1;
-    videoSink_->lastBufferTime_ = 1;
+    videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
     (void)videoSink_->CheckBufferLatenessMayWait(buffer);
     float speed = 0;
-    videoSink_->GetSpeed(speed);
+    videoSink_->AdjustPlaybackRate(speed);
 }
 
 HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_001, TestSize.Level1)
@@ -224,7 +224,7 @@ HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_004, TestSize.Level1)
     ASSERT_TRUE(buffer != nullptr);
     auto syncCenter = std::make_shared<MockMediaSyncCenter>();
     videoSink_->SetSyncCenter(syncCenter);
-    videoSink_->lastBufferTime_ = 1000;
+    videoSink_->lastBufferAnchoredClockTime_ = 1000;
     syncCenter->returnInt64Queue_.push(1000);
     syncCenter->returnInt64Queue_.push(2000);
     buffer->pts_ = 1500;
@@ -249,19 +249,19 @@ HWTEST_F(TestVideoSink, SetFirstPts_ShouldNotChangeFirstPts_WhenFirstPtsIsNotNon
     EXPECT_EQ(videoSink_->firstPts_, 200);
 }
 
-// Scenario1: Test when speed is 0.0f then GetSpeed returns 1.0f.
-HWTEST_F(TestVideoSink, GetSpeed_ShouldReturn1_WhenSpeedIs0, TestSize.Level0)
+// Scenario1: Test when speed is 0.0f then AdjustPlaybackRate returns 1.0f.
+HWTEST_F(TestVideoSink, AdjustPlaybackRate_ShouldReturn1_WhenSpeedIs0, TestSize.Level0)
 {
     float speed = 0.0f;
-    float result = videoSink_->GetSpeed(speed);
+    float result = videoSink_->AdjustPlaybackRate(speed);
     ASSERT_EQ(result, 1.0f);
 }
 
-// Scenario2: Test when speed is not 0.0f then GetSpeed returns the same speed.
-HWTEST_F(TestVideoSink, GetSpeed_ShouldReturnSameSpeed_WhenSpeedIsNot0, TestSize.Level0)
+// Scenario2: Test when speed is not 0.0f then AdjustPlaybackRate returns the same speed.
+HWTEST_F(TestVideoSink, AdjustPlaybackRate_ShouldReturnSameSpeed_WhenSpeedIsNot0, TestSize.Level0)
 {
     float speed = 0.5f;
-    float result = videoSink_->GetSpeed(speed);
+    float result = videoSink_->AdjustPlaybackRate(speed);
     ASSERT_EQ(result, speed);
 }
 
@@ -271,7 +271,7 @@ HWTEST_F(TestVideoSink, SetLastPts_001, TestSize.Level0)
     videoSink_->SetSyncCenter(syncCenter);
     syncCenter->returnInt64Queue_.push(987654321);
     int64_t lastPts = 123456789;
-    videoSink_->SetLastPts(lastPts);
+    videoSink_->SetLastPts(lastPts, 0);
     EXPECT_EQ(videoSink_->lastPts_, lastPts);
 }
 
@@ -280,8 +280,23 @@ HWTEST_F(TestVideoSink, SetLastPts_002, TestSize.Level0)
     auto syncCenter = std::make_shared<MockMediaSyncCenter>();
     videoSink_->SetSyncCenter(nullptr);
     int64_t lastPts = 123456789;
-    videoSink_->SetLastPts(lastPts);
+    videoSink_->SetLastPts(lastPts, 0);
     EXPECT_EQ(videoSink_->lastPts_, lastPts);
+}
+
+HWTEST_F(TestVideoSink, GetLagInfo_001, TestSize.Level0)
+{
+    int32_t lagTimes = 0;
+    int32_t maxLagDuration = 0;
+    int32_t avgLagDuration = 0;
+    videoSink_->lagDetector_.totalLagDuration_ = 10000;
+    videoSink_->lagDetector_.lagTimes_ = 0;
+    videoSink_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    EXPECT_EQ(avgLagDuration, 0);
+    videoSink_->lagDetector_.lagTimes_ = 10;
+    videoSink_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    EXPECT_EQ(avgLagDuration, static_cast<int32_t>(videoSink_->lagDetector_.totalLagDuration_ /
+        videoSink_->lagDetector_.lagTimes_));
 }
 }  // namespace Test
 }  // namespace Media

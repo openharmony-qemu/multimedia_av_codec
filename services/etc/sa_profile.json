@@ -1,0 +1,11 @@
+{
+    "process": "av_codec_service",
+    "systemability": [
+        {
+            "name": 3011,
+            "libpath": "libav_codec_service.z.so",
+            "run-on-create": true,
+            "distributed": false
+        }
+    ]
+}

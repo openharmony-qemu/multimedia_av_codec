@@ -65,6 +65,7 @@ public:
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override;
+    bool IsRefParserSupported() override;
     Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override;
     Status ParserRefInfo() override;
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
@@ -77,6 +78,7 @@ public:
     Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
         const uint32_t index, uint64_t &relativePresentationTimeUs) override;
     void SetCacheLimit(uint32_t limitSize) override;
+    bool GetProbeSize(int32_t &offset, int32_t &size) override;
 
 private:
     enum DumpMode : unsigned long {
@@ -135,6 +137,8 @@ private:
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
+    bool HasCodecParameters();
+    Status GetMediaInfo();
 
     void ParserFirstDts();
     Status InitIoContext();
@@ -142,6 +146,7 @@ private:
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
     Status SelectProGopId();
     void ParserBoxInfo();
+    AVStream *GetVideoStream();
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
     void WebvttMP4EOSProcess(const AVPacket *pkt);
@@ -175,6 +180,7 @@ private:
     IOContext ioContext_;
     std::vector<uint32_t> selectedTrackIds_;
     BlockQueuePool cacheQueue_;
+    MediaInfo mediaInfo_;
 
     std::shared_ptr<AVInputFormat> pluginImpl_ {nullptr};
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
@@ -193,6 +199,7 @@ private:
     std::shared_ptr<ReferenceParserManager> referenceParser_{nullptr};
     int32_t parserCurGopId_ = 0;
     int64_t pendingSeekMsTime_ = -1;
+    int64_t parserRefStartTime_ = -1;
     std::list<uint32_t> processingIFrame_;
     std::vector<uint32_t> IFramePos_;
     double fps_{0};

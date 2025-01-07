@@ -306,6 +306,12 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     } else if (event.type == PluginEventType::EVENT_BUFFER_PROGRESS) {
         MEDIA_LOG_I("buffer percent update.");
         mediaDemuxerCallback_->OnEvent(event);
+    } else if (event.type == PluginEventType::INITIAL_BUFFER_SUCCESS) {
+        MEDIA_LOG_I("initial buffer success.");
+        mediaDemuxerCallback_->OnEvent(event);
+    } else if (event.type == PluginEventType::DASH_SEEK_READY) {
+        MEDIA_LOG_D("Onevent dash seek ready.");
+        mediaDemuxerCallback_->OnEvent(event);
     } else {
         MEDIA_LOG_I("on event type undefined.");
     }
@@ -326,6 +332,7 @@ bool Source::CanAutoSelectBitRate()
 
 void Source::SetInterruptState(bool isInterruptNeeded)
 {
+    MEDIA_LOG_I("Source OnInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
     if (plugin_) {
         plugin_->SetInterruptState(isInterruptNeeded_);
@@ -493,6 +500,12 @@ bool Source::GetHLSDiscontinuity()
 {
     FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "GetHLSDiscontinuity source plugin is nullptr!");
     return plugin_->GetHLSDiscontinuity();
+}
+
+bool Source::SetInitialBufferSize(int32_t offset, int32_t size)
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "SetInitialBufferSize source plugin is nullptr");
+    return plugin_->SetSourceInitialBufferSize(offset, size);
 }
 
 void Source::WaitForBufferingEnd()

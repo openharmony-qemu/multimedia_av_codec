@@ -62,11 +62,10 @@ ohos_shared_library("media_plugin_Mp3AudioEncoder") {
 
   sources = [ "audio_mp3_encoder_plugin.cpp" ]
 
-  public_external_deps = [ "lame:lame" ]
-
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "ipc:ipc_single",
     "lame:lame",
     "media_foundation:media_foundation",
   ]
