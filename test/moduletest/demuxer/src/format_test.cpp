@@ -770,7 +770,7 @@ HWTEST_F(DemuxerFormatNdkTest, VIDEO_DEMUXER_VVC_0600, TestSize.Level0)
  * @tc.name      : demux mp3 file with gbk, check key
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0010, TestSize.Level0)
+HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0010, TestSize.Level2)
 {
     const char* artist = nullptr;
     const char* album = nullptr;
@@ -800,7 +800,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0010, TestSize.Level0)
  * @tc.name      : demux mp3 file with gb2312, check key
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0020, TestSize.Level0)
+HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0020, TestSize.Level2)
 {
     const char* artist = nullptr;
     const char* album = nullptr;
@@ -826,11 +826,11 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0020, TestSize.Level0)
 }
 
 /**
- * @tc.number    : DEMUXER_GBK_0020
+ * @tc.number    : DEMUXER_GBK_0030
  * @tc.name      : demux mp3 file with gb18030, check key
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0030, TestSize.Level0)
+HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0030, TestSize.Level2)
 {
     const char* artist = nullptr;
     const char* album = nullptr;
