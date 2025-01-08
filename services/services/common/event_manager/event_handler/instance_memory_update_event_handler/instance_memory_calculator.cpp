@@ -63,7 +63,7 @@ struct CalculatorParameter {
     }
 };
 
-static CalculatorParameter HardwareDecoderHevc10BitYUV420Parameter = {
+static const CalculatorParameter HardwareDecoderHevc10BitYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
     CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
@@ -72,7 +72,7 @@ static CalculatorParameter HardwareDecoderHevc10BitYUV420Parameter = {
     false
 };
 
-static CalculatorParameter HardwareDecoderHevc10BitYUV420PostProcessingParameter = {
+static const CalculatorParameter HardwareDecoderHevc10BitYUV420PostProcessingParameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
     CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
@@ -81,7 +81,7 @@ static CalculatorParameter HardwareDecoderHevc10BitYUV420PostProcessingParameter
     true
 };
 
-static CalculatorParameter HardwareDecoderVvc10BitYUV420Parameter = {
+static const CalculatorParameter HardwareDecoderVvc10BitYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
     CodecMimeType::VIDEO_VVC.data(),
     CalculatorParameterPixelFormat::YUV420,
@@ -90,7 +90,7 @@ static CalculatorParameter HardwareDecoderVvc10BitYUV420Parameter = {
     false
 };
 
-static CalculatorParameter HardwareDecoderVvcYUV420Parameter = {
+static const CalculatorParameter HardwareDecoderVvcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
     CodecMimeType::VIDEO_VVC.data(),
     CalculatorParameterPixelFormat::YUV420,
@@ -99,7 +99,7 @@ static CalculatorParameter HardwareDecoderVvcYUV420Parameter = {
     false
 };
 
-static CalculatorParameter HardwareDecoderAvcYUV420Parameter = {
+static const CalculatorParameter HardwareDecoderAvcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
     CodecMimeType::VIDEO_AVC.data(),
     CalculatorParameterPixelFormat::YUV420,
@@ -108,7 +108,7 @@ static CalculatorParameter HardwareDecoderAvcYUV420Parameter = {
     false
 };
 
-static CalculatorParameter HardwareDecoderHevcYUV420Parameter = {
+static const CalculatorParameter HardwareDecoderHevcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
     CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
@@ -117,7 +117,7 @@ static CalculatorParameter HardwareDecoderHevcYUV420Parameter = {
     false
 };
 
-static CalculatorParameter HardwareEncoderHevc10BitYUV420Parameter = {
+static const CalculatorParameter HardwareEncoderHevc10BitYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_ENCODER,
     CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
@@ -126,7 +126,7 @@ static CalculatorParameter HardwareEncoderHevc10BitYUV420Parameter = {
     false
 };
 
-static CalculatorParameter HardwareEncoderAvcRGBAParameter = {
+static const CalculatorParameter HardwareEncoderAvcRGBAParameter = {
     AVCODEC_TYPE_VIDEO_ENCODER,
     CodecMimeType::VIDEO_AVC.data(),
     CalculatorParameterPixelFormat::RGBA,
@@ -135,7 +135,7 @@ static CalculatorParameter HardwareEncoderAvcRGBAParameter = {
     false
 };
 
-static CalculatorParameter HardwareEncoderHevcRGBAParameter = {
+static const CalculatorParameter HardwareEncoderHevcRGBAParameter = {
     AVCODEC_TYPE_VIDEO_ENCODER,
     CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::RGBA,
@@ -144,7 +144,7 @@ static CalculatorParameter HardwareEncoderHevcRGBAParameter = {
     false
 };
 
-static CalculatorParameter HardwareEncoderAvcYUV420Parameter = {
+static const CalculatorParameter HardwareEncoderAvcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_ENCODER,
     CodecMimeType::VIDEO_AVC.data(),
     CalculatorParameterPixelFormat::YUV420,
@@ -153,7 +153,7 @@ static CalculatorParameter HardwareEncoderAvcYUV420Parameter = {
     false
 };
 
-static CalculatorParameter HardwareEncoderHevcYUV420Parameter = {
+static const CalculatorParameter HardwareEncoderHevcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_ENCODER,
     CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
@@ -162,7 +162,7 @@ static CalculatorParameter HardwareEncoderHevcYUV420Parameter = {
     false
 };
 
-static CalculatorParameter SoftwareDecoderAvcRGBAParameter = {
+static const CalculatorParameter SoftwareDecoderAvcRGBAParameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
     CodecMimeType::VIDEO_AVC.data(),
     CalculatorParameterPixelFormat::RGBA,
@@ -171,7 +171,7 @@ static CalculatorParameter SoftwareDecoderAvcRGBAParameter = {
     false
 };
 
-static CalculatorParameter SoftwareDecoderAvcYUV420Parameter = {
+static const CalculatorParameter SoftwareDecoderAvcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
     CodecMimeType::VIDEO_AVC.data(),
     CalculatorParameterPixelFormat::YUV420,
@@ -180,7 +180,7 @@ static CalculatorParameter SoftwareDecoderAvcYUV420Parameter = {
     false
 };
 
-static CalculatorParameter SoftwareDecoderHevcYUV420Parameter = {
+static const CalculatorParameter SoftwareDecoderHevcYUV420Parameter = {
     AVCODEC_TYPE_VIDEO_DECODER,
     CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,

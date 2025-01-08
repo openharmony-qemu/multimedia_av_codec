@@ -149,7 +149,7 @@ void InstanceMemoryUpdateEventHandler::ReportAppMemory(pid_t callerPid, pid_t ac
         .limitValue = memory,
     };
     memList.emplace_back(memoryCaller);
-    // memoryCollector->SetSplitMemoryValue(memList);
+    memoryCollector->SetSplitMemoryValue(memList);
     AVCODEC_LOGI("The memory usage of pid %{public}d is %{public}u KB, report to hivew", actualCallerPid, memory);
 }
 

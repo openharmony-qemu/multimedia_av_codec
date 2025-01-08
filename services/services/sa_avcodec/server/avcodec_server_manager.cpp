@@ -160,10 +160,8 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
     switch (type) {
         case CODEC: {
             auto it = find_if(codecStubMap_.begin(), codecStubMap_.end(),
-                [object](std::pair<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> objectPair) -> bool {
-                    return objectPair.second.first == object;
-                }
-            );
+                [object] (std::pair<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> objectPair) -> bool {
+                    return objectPair.second.first == object; });
             CHECK_AND_BREAK_LOG(it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
 
             AVCODEC_LOGI("destroy codec stub services(%{public}zu) pid(%{public}d)", codecStubMap_.size(), pid);
@@ -172,10 +170,8 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
         }
         case CODECLIST: {
             auto it = find_if(codecListStubMap_.begin(), codecListStubMap_.end(),
-                [object](std::pair<sptr<IRemoteObject>, pid_t> objectPair) -> bool {
-                    return objectPair.first == object;
-                }
-            );
+                [object] (std::pair<sptr<IRemoteObject>, pid_t> objectPair) -> bool {
+                    return objectPair.first == object; });
             CHECK_AND_BREAK_LOG(it != codecListStubMap_.end(), "find codeclist object failed, pid(%{public}d)", pid);
 
             AVCODEC_LOGI("destroy codeclist stub services(%{public}zu) pid(%{public}d)", codecListStubMap_.size(), pid);
