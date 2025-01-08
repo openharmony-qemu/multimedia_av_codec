@@ -128,7 +128,7 @@ uint32_t InstanceMemoryUpdateEventHandler::SumAppMemory(pid_t callerPid, pid_t a
     return appMemoryUsage;
 }
 
-void InstanceMemoryUpdateEventHandler::ReportAppMemory(pid_t callerPid, pid_t actualCallerPid, 
+void InstanceMemoryUpdateEventHandler::ReportAppMemory(pid_t callerPid, pid_t actualCallerPid,
                                                        bool isInTimer, uint32_t memory)
 {
     if (memory == 0) {

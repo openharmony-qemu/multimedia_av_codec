@@ -193,7 +193,7 @@ constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1 = 3762;
 constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1 = 8036;
 constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_5_1 = 36686;
 
-/*******  The unit of memory returned by all calculator is KB  ******/ 
+/*******  The unit of memory returned by all calculator is KB  ******/
 
 uint32_t HardwareDecoderHevc10BitYUV420(uint32_t blockSize)
 {
