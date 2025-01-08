@@ -100,6 +100,7 @@ void BaseStreamDemuxer::SetBundleName(const std::string& bundleName)
 
 void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
+    MEDIA_LOG_D("BaseStreamDemuxer onInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
 }
 
@@ -174,6 +175,11 @@ bool BaseStreamDemuxer::CanDoChangeStream()
 void BaseStreamDemuxer::SetChangeFlag(bool flag)
 {
     return changeStreamFlag_.store(flag);
+}
+
+bool BaseStreamDemuxer::SetSourceInitialBufferSize(int32_t offset, int32_t size)
+{
+    return source_->SetInitialBufferSize(offset, size);
 }
 } // namespace Media
 } // namespace OHOS

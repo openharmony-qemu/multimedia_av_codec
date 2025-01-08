@@ -70,23 +70,50 @@ std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
 
 int32_t HCodec::Init(Media::Meta &callerInfo)
 {
-    if (callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, playerCaller_.pid) &&
-        callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, playerCaller_.processName)) {
-        calledByAvcodec_ = false;
-    } else if (callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, avcodecCaller_.pid) &&
-               callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, avcodecCaller_.processName)) {
-        calledByAvcodec_ = true;
+    if (callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, caller_.playerCaller.pid) &&
+        callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, caller_.playerCaller.processName)) {
+        caller_.calledByAvcodec = false;
+        caller_.app = caller_.playerCaller;
+    } else if (callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, caller_.avcodecCaller.pid) &&
+               callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, caller_.avcodecCaller.processName)) {
+        caller_.calledByAvcodec = true;
+        caller_.app = caller_.avcodecCaller;
     }
     return DoSyncCall(MsgWhat::INIT, nullptr);
 }
 
+std::shared_mutex HCodec::g_mtx;
+std::unordered_map<std::string, HCodec::Caller> HCodec::g_callers;
+
 void HCodec::PrintCaller()
 {
-    if (calledByAvcodec_) {
-        HLOGI("[pid %d][%s] -> avcodec", avcodecCaller_.pid, avcodecCaller_.processName.c_str());
+    if (caller_.calledByAvcodec) {
+        HLOGI("[pid %d][%s] -> avcodec", caller_.avcodecCaller.pid, caller_.avcodecCaller.processName.c_str());
     } else {
-        HLOGI("[pid %d][%s] -> player -> avcodec", playerCaller_.pid, playerCaller_.processName.c_str());
+        HLOGI("[pid %d][%s] -> player -> avcodec", caller_.playerCaller.pid, caller_.playerCaller.processName.c_str());
     }
+    std::unique_lock<std::shared_mutex> lk(g_mtx);
+    g_callers[compUniqueStr_] = caller_;
+}
+
+void HCodec::PrintAllCaller()
+{
+    std::shared_lock<std::shared_mutex> lk(g_mtx);
+    for (const auto& [inst, caller] : g_callers) {
+        if (caller.calledByAvcodec) {
+            LOGI("%s: [pid %d][%s] -> avcodec", inst.c_str(),
+                caller.avcodecCaller.pid, caller.avcodecCaller.processName.c_str());
+        } else {
+            LOGI("%s: [pid %d][%s] -> player -> avcodec", inst.c_str(),
+                caller.playerCaller.pid, caller.playerCaller.processName.c_str());
+        }
+    }
+}
+
+void HCodec::RemoveCaller()
+{
+    std::unique_lock<std::shared_mutex> lk(g_mtx);
+    g_callers.erase(compUniqueStr_);
 }
 
 int32_t HCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
@@ -394,7 +421,7 @@ int32_t HCodec::SetFrameRateAdaptiveMode(const Format &format)
 
 int32_t HCodec::SetProcessName()
 {
-    const std::string& processName = calledByAvcodec_ ? avcodecCaller_.processName : playerCaller_.processName;
+    const std::string& processName = caller_.app.processName;
     HLOGI("processName is %s", processName.c_str());
 
     ProcessNameParam param {};
@@ -532,9 +559,9 @@ int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
 void HCodec::PrintPortDefinition(const OMX_PARAM_PORTDEFINITIONTYPE& def)
 {
     const OMX_VIDEO_PORTDEFINITIONTYPE& video = def.format.video;
-    HLOGI("%s: bufCnt %u, bufSize %u, %u x %u @ %u(%.2f)",
+    HLOGI("%s: bufCntAct %u, bufCntMin %u bufSize %u, %u x %u @ %u(%.2f)",
         (def.nPortIndex == OMX_DirInput) ? "INPUT" : "OUTPUT",
-        def.nBufferCountActual, def.nBufferSize, video.nFrameWidth, video.nFrameHeight,
+        def.nBufferCountActual, def.nBufferCountMin, def.nBufferSize, video.nFrameWidth, video.nFrameHeight,
         video.xFramerate, video.xFramerate / FRAME_RATE_COEFFICIENT);
 }
 
@@ -888,7 +915,7 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         return;
     }
     if (!gotFirstInput_) {
-        HLOGI("got first input");
+        HLOGI("got first input, id: %d, pts: %" PRId64, bufferId, bufferInfo->avBuffer->pts_);
         gotFirstInput_ = true;
     }
     bufferInfo->omxBuffer->filledLen = static_cast<uint32_t>
@@ -1040,8 +1067,10 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     SCOPED_TRACE_FMT("id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
     if (!gotFirstOutput_) {
-        HLOGI("got first output");
+        HLOGI("got first output id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
+#ifndef AV_CODEC_HCODEC_ENABLE_QOS_THE_WHOLE_TIME
         OHOS::QOS::ResetThreadQos();
+#endif
         gotFirstOutput_ = true;
     }
     info.BeginCpuAccess();
@@ -1354,6 +1383,7 @@ int32_t HCodec::OnAllocateComponent()
         compCb_ = nullptr;
         compMgr_ = nullptr;
         HLOGE("CreateComponent failed, ret=%d", ret);
+        PrintAllCaller();
         return AVCS_ERR_UNKNOWN;
     }
     compUniqueStr_ = "[" + to_string(componentId_) + "][" + shortName_ + "]";
@@ -1370,6 +1400,7 @@ void HCodec::ReleaseComponent()
 {
     CleanUpOmxNode();
     if (compMgr_ != nullptr) {
+        RemoveCaller();
         compMgr_->DestroyComponent(componentId_);
     }
     compNode_ = nullptr;

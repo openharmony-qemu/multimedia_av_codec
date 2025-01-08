@@ -1124,6 +1124,10 @@ void DashSegmentDownloader::SetInterruptState(bool isInterruptNeeded)
     }
 }
 
+bool DashSegmentDownloader::GetBufferringStatus() const
+{
+    return isBuffering_.load();
+}
 }
 }
 }

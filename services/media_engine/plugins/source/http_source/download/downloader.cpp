@@ -478,6 +478,10 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
             client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
             requestQue_->SetActive(true);
             currentRequest_->isEos_ = false;
+            if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&
+                currentRequest_->endPos_ >= currentRequest_->startPos_) {
+                currentRequest_->requestSize_ = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
+            }
         }
     }
     task_->Start();

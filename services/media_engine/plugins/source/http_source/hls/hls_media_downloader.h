@@ -107,6 +107,8 @@ public:
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
     void SetIsReportedErrorCode() override;
+    bool SetInitialBufferSize(int32_t offset, int32_t size) override;
+    void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -157,6 +159,9 @@ private:
     bool SaveCacheBufferData(uint8_t* data, uint32_t len);
     bool ClearChunksOfFragment();
     size_t GetCrossTsBuffersize();
+    bool IsCachedInitSizeReady(int32_t wantInitSize);
+    void HandleWaterLine();
+    bool CacheBufferFullLoop();
 
 private:
     size_t totalBufferSize_ {0};
@@ -286,6 +291,9 @@ private:
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
     bool isReportedErrorCode_ {false};
+    std::atomic<int32_t> expectOffset_ {-1};
+    std::atomic<int32_t> initCacheSize_ {-1};
+    Mutex initCacheMutex_ {};
 };
 }
 }

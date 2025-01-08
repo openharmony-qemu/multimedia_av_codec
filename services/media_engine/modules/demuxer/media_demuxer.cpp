@@ -60,6 +60,7 @@ namespace Media {
 constexpr uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes 0ms means no retry
 constexpr int32_t START = 1;
 constexpr int32_t PAUSE = 2;
+constexpr int32_t SEEK_TO_EOS = 1;
 constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY if no buffer in avbufferqueue producer.
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
@@ -148,6 +149,10 @@ MediaDemuxer::~MediaDemuxer()
 {
     MEDIA_LOG_D("In");
     ResetInner();
+    if (parserRefInfoTask_ != nullptr) {
+        parserRefInfoTask_->Stop();
+        parserRefInfoTask_ = nullptr;
+    }
     demuxerPluginManager_ = nullptr;
     mediaSource_ = nullptr;
     source_ = nullptr;
@@ -156,11 +161,6 @@ MediaDemuxer::~MediaDemuxer()
     requestBufferErrorCountMap_.clear();
     streamDemuxer_ = nullptr;
     localDrmInfos_.clear();
-
-    if (parserRefInfoTask_ != nullptr) {
-        parserRefInfoTask_->Stop();
-        parserRefInfoTask_ = nullptr;
-    }
 }
 
 std::shared_ptr<Plugins::DemuxerPlugin> MediaDemuxer::GetCurFFmpegPlugin()
@@ -185,6 +185,14 @@ static void ReportSceneCodeForDemuxer(SceneCode scene)
     if (ret != MSERR_OK) {
         MEDIA_LOG_W("Report failed");
     }
+}
+
+bool MediaDemuxer::IsRefParserSupported()
+{
+    FALSE_RETURN_V_MSG_E(videoTrackId_ != TRACK_ID_DUMMY, false, "Video track is nullptr");
+    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
+    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, false, "Demuxer plugin is nullptr");
+    return videoPlugin->IsRefParserSupported();
 }
 
 Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
@@ -683,9 +691,13 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
     return ret;
 }
 
-void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
+void MediaDemuxer::OnInterrupted(bool isInterruptNeeded)
 {
+    MEDIA_LOG_D("MediaDemuxer OnInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
+    if (demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash()) {
+        rebootPluginCondition_.notify_all();
+    }
     if (source_ != nullptr) {
         source_->SetInterruptState(isInterruptNeeded);
     }
@@ -694,6 +706,9 @@ void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
     }
     if (subStreamDemuxer_ != nullptr) {
         subStreamDemuxer_->SetInterruptState(isInterruptNeeded);
+    }
+    if (demuxerPluginManager_ != nullptr) {
+        demuxerPluginManager_->NotifyInitialBufferingEnd(false);
     }
 }
 
@@ -952,8 +967,7 @@ Status MediaDemuxer::UnselectTrack(int32_t trackId)
 
 Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
 {
-    FALSE_RETURN_V_MSG_E(!subStreamDemuxer_ || trackId != static_cast<int32_t>(subtitleTrackId_),
-        Status::ERROR_NULL_POINTER, "subStreamDemuxer is nullptr");
+    FALSE_RETURN_V(!subStreamDemuxer_ || trackId != static_cast<int32_t>(subtitleTrackId_), Status::OK);
     Status ret = Status::OK;
     if (static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
@@ -964,15 +978,20 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
         std::pair<int32_t, bool> seekReadyInfo;
         {
             std::unique_lock<std::mutex> lock(rebootPluginMutex_);
-            rebootPluginCondition_.wait(lock, [this, streamType] {
-                return seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) != seekReadyStreamInfo_.end();
-            });
+            if (!isInterruptNeeded_.load() &&
+                seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) == seekReadyStreamInfo_.end()) {
+                rebootPluginCondition_.wait(lock, [this, streamType] {
+                    return isInterruptNeeded_.load() ||
+                        seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) != seekReadyStreamInfo_.end();
+                });
+            }
+            FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::OK);
             seekReadyInfo = seekReadyStreamInfo_[static_cast<int32_t>(streamType)];
             seekReadyStreamInfo_.erase(static_cast<int32_t>(streamType));
         }
-        if (seekReadyInfo.second || seekReadyInfo.first != streamID) {
+        if (seekReadyInfo.second == SEEK_TO_EOS || (seekReadyInfo.first >= 0 && seekReadyInfo.first != streamID)) {
             MEDIA_LOG_I("End of stream or streamID changed, isEOS: " PUBLIC_LOG_D32 ", streamId: " PUBLIC_LOG_D32,
-                static_cast<int32_t>(seekReadyInfo.second), seekReadyInfo.first);
+                seekReadyInfo.second, seekReadyInfo.first);
             return Status::OK;
         }
         ret = demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer_, isRebooted);
@@ -984,7 +1003,7 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
 
 Status MediaDemuxer::SeekToTimeAfter()
 {
-    FALSE_RETURN_V_NOLOG(demuxerPluginManager_->IsDash(), Status::OK);
+    FALSE_RETURN_V_NOLOG(demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash(), Status::OK);
     MEDIA_LOG_D("Reboot plugin begin");
     Status ret = Status::OK;
     bool isDemuxerPluginRebooted = true;
@@ -992,17 +1011,21 @@ Status MediaDemuxer::SeekToTimeAfter()
     if (shouldCheckSubtitleFramePts_) {
         shouldCheckSubtitleFramePts_ = false;
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot subtitle demuxer plugin failed");
+    FALSE_LOG_MSG_W(ret == Status::OK, "Reboot subtitle demuxer plugin failed");
 
     isDemuxerPluginRebooted = true;
     ret = HandleRebootPlugin(audioTrackId_, isDemuxerPluginRebooted);
     if (shouldCheckAudioFramePts_) {
         shouldCheckAudioFramePts_ = false;
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot audio demuxer plugin failed");
+    FALSE_LOG_MSG_W(ret == Status::OK, "Reboot audio demuxer plugin failed");
 
     isDemuxerPluginRebooted = true;
     ret = HandleRebootPlugin(videoTrackId_, isDemuxerPluginRebooted);
+    {
+        std::unique_lock<std::mutex> lock(rebootPluginMutex_);
+        seekReadyStreamInfo_.clear();
+    }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot video demuxer plugin failed");
     MEDIA_LOG_D("Reboot plugin success");
     return Status::OK;
@@ -1062,8 +1085,10 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
             return Status::OK;
         }
         isSelectBitRate_.store(true);
+    } else {
+        streamDemuxer_->ResetAllCache();
     }
-    streamDemuxer_->ResetAllCache();
+
     Status ret = source_->SelectBitRate(bitRate);
     if (ret != Status::OK) {
         MEDIA_LOG_E("Source select bitrate failed");
@@ -1807,7 +1832,7 @@ bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
     int32_t currentStreamID = demuxerPluginManager_->GetStreamIDByTrackType(type);
     int32_t newStreamID = demuxerPluginManager_->GetStreamDemuxerNewStreamID(type, streamDemuxer_);
     bool ret = false;
-    FALSE_RETURN_V_NOLOG(currentStreamID != newStreamID, ret);
+    FALSE_RETURN_V_NOLOG(newStreamID != -1 && currentStreamID != newStreamID, ret);
 
     MEDIA_LOG_I("Change stream begin, currentStreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
         currentStreamID, newStreamID);
@@ -1993,17 +2018,13 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
             MEDIA_LOG_E("OnEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
+            demuxerPluginManager_->NotifyInitialBufferingEnd(false);
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
             break;
         }
-        case PluginEventType::BUFFERING_END: {
-            MEDIA_LOG_D("OnEvent pause");
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
-            break;
-        }
-        case PluginEventType::BUFFERING_START: {
-            MEDIA_LOG_D("OnEvent start");
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
+        case PluginEventType::INITIAL_BUFFER_SUCCESS: {
+            MEDIA_LOG_I("OnEvent initial buffer success");
+            demuxerPluginManager_->NotifyInitialBufferingEnd(true);
             break;
         }
         case PluginEventType::CACHED_DURATION: {
@@ -2014,6 +2035,25 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::SOURCE_BITRATE_START: {
             MEDIA_LOG_D("OnEvent source bitrate start");
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_BITRATE_START, event.param});
+            break;
+        }
+        default:
+            break;
+    }
+    OnEventBuffer(event);
+}
+
+void MediaDemuxer::OnEventBuffer(const Plugins::PluginEvent &event)
+{
+    switch (event.type) {
+        case PluginEventType::BUFFERING_END: {
+            MEDIA_LOG_D("OnEvent pause");
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
+            break;
+        }
+        case PluginEventType::BUFFERING_START: {
+            MEDIA_LOG_D("OnEvent start");
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
             break;
         }
         case PluginEventType::EVENT_BUFFER_PROGRESS: {
@@ -2035,7 +2075,7 @@ void MediaDemuxer::OnSeekReadyEvent(const Plugins::PluginEvent &event)
     Format param = AnyCast<Format>(event.param);
     int32_t currentStreamType = -1;
     param.GetIntValue("currentStreamType", currentStreamType);
-    int32_t isEOS = 0;
+    int32_t isEOS = -1;
     param.GetIntValue("isEOS", isEOS);
     int32_t currentStreamId = -1;
     param.GetIntValue("currentStreamId", currentStreamId);
@@ -2043,16 +2083,13 @@ void MediaDemuxer::OnSeekReadyEvent(const Plugins::PluginEvent &event)
         " isEos: " PUBLIC_LOG_D32, currentStreamType, currentStreamId, isEOS);
     switch (currentStreamType) {
         case static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_VID):
-            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId,
-                static_cast<bool>(isEOS));
+            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId, isEOS);
             break;
         case static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_AUD):
-            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId,
-                static_cast<bool>(isEOS));
+            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::AUDIO)] = std::make_pair(currentStreamId, isEOS);
             break;
         case static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE):
-            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId,
-                static_cast<bool>(isEOS));
+            seekReadyStreamInfo_[static_cast<int32_t>(StreamType::SUBTITLE)] = std::make_pair(currentStreamId, isEOS);
             break;
         default:
             break;

@@ -383,13 +383,11 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
 
 void AVCodecAudioCodecImpl::ClearCache()
 {
+    std::unique_lock lock(outputMutex_);
     for (auto iter = outputBufferObjMap_.begin(); iter != outputBufferObjMap_.end();) {
         std::shared_ptr<AVBuffer> buffer;
-        {
-            std::unique_lock lock(outputMutex_);
-            buffer = iter->second;
-            iter = outputBufferObjMap_.erase(iter);
-        }
+        buffer = iter->second;
+        iter = outputBufferObjMap_.erase(iter);
         implConsumer_->ReleaseBuffer(buffer);
     }
 }

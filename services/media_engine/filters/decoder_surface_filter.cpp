@@ -184,7 +184,6 @@ void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     videoSink_->SetEventReceiver(eventReceiver_);
     FALSE_RETURN(videoDecoder_ != nullptr);
     videoDecoder_->SetEventReceiver(eventReceiver_);
-    eosTask_ = std::make_unique<Task>("OS_EOSv", groupId_, TaskType::VIDEO, TaskPriority::HIGH, false);
 }
 
 Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
@@ -241,6 +240,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
 #endif
     }
     videoSink_->SetParameter(meta_);
+    eosTask_ = std::make_unique<Task>("OS_EOSv", groupId_, TaskType::VIDEO, TaskPriority::HIGH, false);
     return Status::OK;
 }
 
@@ -522,8 +522,9 @@ void DecoderSurfaceFilter::SetCallingInfo(int32_t appUid, int32_t appPid, std::s
     instanceId_ = instanceId;
 }
 
-void DecoderSurfaceFilter::SetInterruptState(bool isInterruptNeeded)
+void DecoderSurfaceFilter::OnInterrupted(bool isInterruptNeeded)
 {
+    MEDIA_LOG_D("DecoderSurfaceFilter onInterrupted %{public}d", isInterruptNeeded);
     std::lock_guard<std::mutex> lock(prerollMutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     prerollDoneCond_.notify_all();

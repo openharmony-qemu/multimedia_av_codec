@@ -560,7 +560,8 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
     if (StartWith(fileName, "mov,mp4,m4a")) {
         const AVDictionaryEntry *type = av_dict_get(avFormatContext.metadata, "major_brand", NULL, 0);
         if (type == nullptr) {
-            return FileType::UNKNOW;
+            MEDIA_LOG_D("Not found ftyp");
+            return FileType::MP4;
         }
         if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A") ||
             StartWith(type->value, "m4v") || StartWith(type->value, "M4V")) {

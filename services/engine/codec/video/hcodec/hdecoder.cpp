@@ -36,10 +36,10 @@ HDecoder::~HDecoder()
 {
     MsgHandleLoop::Stop();
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    if (VrrDestroyFunc_ != nullptr) {
-        VrrDestroyFunc_(vrrHandle_);
-    }
     if (vpeHandle_ != nullptr) {
+        if (VrrDestroyFunc_ != nullptr) {
+            VrrDestroyFunc_(vrrHandle_);
+        }
         dlclose(vpeHandle_);
         vpeHandle_ = nullptr;
     }
@@ -475,8 +475,7 @@ int32_t HDecoder::InitVrr()
         return AVCS_ERR_UNSUPPORT;
     }
     vrrHandle_ = VrrCreateFunc_();
-    int32_t ret = VrrCheckSupportFunc_(vrrHandle_, calledByAvcodec_ ? avcodecCaller_.processName.c_str() :
-        playerCaller_.processName.c_str());
+    int32_t ret = VrrCheckSupportFunc_(vrrHandle_, caller_.app.processName.c_str());
     if (ret != AVCS_ERR_OK) {
         HLOGE("VRR check ltpo support failed");
         VrrDestroyFunc_(vrrHandle_);
@@ -507,14 +506,23 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
     if (!isDynamic_) {
         return AVCS_ERR_OK;
     }
-    auto inCnt = std::count_if(inputBufferPool_.begin(), inputBufferPool_.end(), [](const BufferInfo& info) {
-        return info.owner == BufferOwner::OWNED_BY_OMX;
-    });
-    inCnt++; // at least submit one out buffer to omx
-    while (inCnt > 0) {
-        DynamicModeSubmitBuffer();
-        inCnt--;
+    uint32_t outputBufferCnt = 0;
+    OMX_PARAM_PORTDEFINITIONTYPE def;
+    InitOMXParam(def);
+    def.nPortIndex = OMX_DirOutput;
+    if (!GetParameter(OMX_IndexParamPortDefinition, def)) {
+        HLOGE("get input port definition failed");
+        return AVCS_ERR_UNKNOWN;
     }
+    if (outPortHasChanged_) {
+        outputBufferCnt = def.nBufferCountMin;
+    } else {
+        outputBufferCnt = inTotalCnt_ > def.nBufferCountMin ? def.nBufferCountMin : inTotalCnt_;
+    }
+    for (uint32_t i = 0; i < outputBufferCnt; i++) {
+        DynamicModeSubmitBuffer();
+    }
+    HLOGI("submit buffer count[%u]", outputBufferCnt);
     DynamicModeSubmitIfEos();
     return AVCS_ERR_OK;
 }
@@ -573,7 +581,7 @@ void HDecoder::SetCallerToBuffer(int fd)
     if (currSurface_.surface_ == nullptr) {
         return; // only set on surface mode
     }
-    string pid = std::to_string(calledByAvcodec_ ? avcodecCaller_.pid : playerCaller_.pid);
+    string pid = std::to_string(caller_.app.pid);
     int ret = ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
     if (ret != 0) {
         HLOGW("set pid %s to fd %d failed", pid.c_str(), fd);

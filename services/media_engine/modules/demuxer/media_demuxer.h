@@ -36,6 +36,7 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_time.h"
 #include "plugin/demuxer_plugin.h"
+#include "interrupt_listener.h"
 
 namespace OHOS {
 namespace Media {
@@ -46,7 +47,8 @@ class Source;
 
 class AVBufferQueueProducer;
 
-class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>, public Plugins::Callback {
+class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>, public Plugins::Callback,
+    public InterruptListener {
 public:
     explicit MediaDemuxer();
     ~MediaDemuxer() override;
@@ -86,6 +88,7 @@ public:
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
+    void OnEventBuffer(const Plugins::PluginEvent &event);
     void OnSeekReadyEvent(const Plugins::PluginEvent &event);
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
@@ -100,7 +103,7 @@ public:
     Status SetDecoderFramerateUpperLimit(int32_t decoderFramerateUpperLimit, uint32_t trackId);
     Status SetSpeed(float speed);
     Status SetFrameRate(double framerate, uint32_t trackId);
-    void SetInterruptState(bool isInterruptNeeded);
+    void OnInterrupted(bool isInterruptNeeded) override;
     void OnDumpInfo(int32_t fd);
     bool IsLocalDrmInfosExisted();
     Status DisableMediaTrack(Plugins::MediaType mediaType);
@@ -109,6 +112,7 @@ public:
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override;
     bool CanAutoSelectBitRate() override;
 
+    bool IsRefParserSupported();
     Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
@@ -141,7 +145,10 @@ private:
     struct MaintainBaseInfo {
         int64_t segmentOffset = -1;
         int64_t basePts = -1;
+        int64_t candidateBasePts = -1;
         int64_t lastPts = 0;
+        int64_t lastPtsModifyedMax = -1;
+        bool isLastPtsChange = false;
     };
     bool isHttpSource_ = false;
     std::string videoMime_{};
@@ -272,7 +279,7 @@ private:
     std::atomic<bool> inPreroll_ = false;
 
     std::map<int32_t, int32_t> inSelectTrackType_{};
-    std::map<int32_t, std::pair<int32_t, bool>> seekReadyStreamInfo_{};
+    std::map<int32_t, std::pair<int32_t, int32_t>> seekReadyStreamInfo_{};
     std::condition_variable rebootPluginCondition_;
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;

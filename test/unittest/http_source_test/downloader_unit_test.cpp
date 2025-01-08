@@ -14,6 +14,8 @@
  */
 
 #include "download/downloader.h"
+#include "monitor/download_monitor.h"
+#include "utils/media_cached_buffer.h"
 #include "download/network_client/http_curl_client.h"
 #include "gtest/gtest.h"
 
@@ -35,6 +37,8 @@ protected:
 };
 
 constexpr int START_POS = 10;
+constexpr int ONE_KILO = 1024;
+constexpr int FIR_BUFFER = 128;
 
 void DownloaderUnitTest::SetUpTestCase(void)
 {
@@ -57,6 +61,497 @@ void DownloaderUnitTest::TearDown(void)
 HWTEST_F(DownloaderUnitTest, Downloader_Construct_nullptr, TestSize.Level1)
 {
     EXPECT_NE(downloader->client_, nullptr);
+}
+
+HWTEST_F(DownloaderUnitTest, Retry_1, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    EXPECT_FALSE(downloader->Retry(Request_));
+}
+
+HWTEST_F(DownloaderUnitTest, Retry_2, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isAppBackground_ = true;
+    EXPECT_TRUE(downloader->Retry(Request_));
+}
+
+HWTEST_F(DownloaderUnitTest, Retry_3, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isDestructor_ = true;
+    EXPECT_FALSE(downloader->Retry(Request_));
+}
+
+HWTEST_F(DownloaderUnitTest, Retry_4, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isDestructor_ = false;
+    EXPECT_FALSE(downloader->Retry(Request_));
+}
+
+HWTEST_F(DownloaderUnitTest, Retry_5, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isDestructor_ = false;
+    downloader->shouldStartNextRequest = false;
+    EXPECT_TRUE(downloader->Retry(Request_));
+}
+
+HWTEST_F(DownloaderUnitTest, Retry_6, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->isDestructor_ = false;
+    downloader->shouldStartNextRequest = false;
+    downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    EXPECT_TRUE(downloader->Retry(Request_));
+}
+
+bool TestLastCheck(CacheMediaChunkBuffer& cachedMediaBuffer)
+{
+    auto& fragmentCacheBuffer = cachedMediaBuffer.impl_->fragmentCacheBuffer_;
+    auto pos = fragmentCacheBuffer.begin();
+    while (pos != fragmentCacheBuffer.end()) {
+        cachedMediaBuffer.impl_->lruCache_.Delete(pos->offsetBegin);
+        cachedMediaBuffer.impl_->totalReadSize_ -= pos->totalReadSize;
+        cachedMediaBuffer.impl_->freeChunks_.splice(cachedMediaBuffer.impl_->freeChunks_.end(), pos->chunks);
+        pos = fragmentCacheBuffer.erase(pos);
+    }
+
+    auto success = cachedMediaBuffer.impl_->Check();
+    if (!success) {
+        cachedMediaBuffer.Dump(0);
+    }
+    return success;
+}
+
+bool TestCheck(CacheMediaChunkBuffer& cachedMediaBuffer)
+{
+    auto success = cachedMediaBuffer.impl_->Check();
+    if (!success) {
+        cachedMediaBuffer.Dump(0);
+    }
+    return success;
+}
+
+HWTEST_F(DownloaderUnitTest, cachedMediaBuffer, TestSize.Level1)
+{
+    CacheMediaChunkBuffer cachedMediaBuffer;
+    ASSERT_EQ(true, cachedMediaBuffer.Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetBufferSize(0));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(0));
+
+    constexpr int64_t mediaSize = ONE_KILO * ONE_KILO * 3;
+    std::unique_ptr<uint8_t[]> mp4Data = std::make_unique<uint8_t[]>(mediaSize);
+    size_t writeLen = ONE_KILO;
+    size_t* data = (size_t*)mp4Data.get();
+    for (size_t i = 0; i < mediaSize / sizeof(size_t); i++) {
+        data[i] = i;
+    }
+
+    int64_t offset1 = 0;
+    ASSERT_EQ(writeLen, cachedMediaBuffer.Write(mp4Data.get(), offset1, writeLen));
+    EXPECT_EQ(writeLen, cachedMediaBuffer.GetBufferSize(offset1));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset1));
+
+    int64_t offset2 = (int64_t)writeLen * 3;
+    ASSERT_EQ(writeLen, cachedMediaBuffer.Write(mp4Data.get(), offset2, writeLen));
+    EXPECT_EQ(writeLen, cachedMediaBuffer.GetBufferSize(offset1));
+    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1));
+    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen - 3));
+
+    cachedMediaBuffer.Dump(0);
+    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen));
+    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen + 1));
+    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset2 - 2));
+
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset2));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset2 + writeLen));
+}
+
+HWTEST_F(DownloaderUnitTest, DeleteOtherHasReadFragmentCache, TestSize.Level1)
+{
+    CacheMediaChunkBuffer cachedMediaBuffer;
+    uint64_t totalSize = FIR_BUFFER * ONE_KILO;
+    uint32_t chunkSize = FIR_BUFFER;
+    EXPECT_EQ(true, cachedMediaBuffer.Init(totalSize, chunkSize));
+
+    int64_t mediaSize = ONE_KILO * 8;
+    std::unique_ptr<uint8_t[]> mp4Data = std::make_unique<uint8_t[]>(mediaSize);
+    size_t* data = (size_t*)mp4Data.get();
+    for (size_t i = 0; i < mediaSize / sizeof(size_t); i++) {
+        data[i] = i;
+    }
+
+    size_t writeLen = FIR_BUFFER * 2;
+    int64_t offset1 = 0;
+    ASSERT_EQ(writeLen, cachedMediaBuffer.Write(mp4Data.get(), offset1, writeLen));
+    EXPECT_EQ(true, cachedMediaBuffer.Check());
+
+    int64_t offset2 = FIR_BUFFER * 10;
+    size_t writeLen2 = FIR_BUFFER * 2;
+    ASSERT_EQ(writeLen2, cachedMediaBuffer.Write(mp4Data.get() + offset2, offset2, writeLen2));
+    EXPECT_EQ(true, cachedMediaBuffer.Check());
+
+    int64_t offset3 = FIR_BUFFER * 15;
+    size_t writeLen3 = FIR_BUFFER * 2;
+    ASSERT_EQ(writeLen3, cachedMediaBuffer.Write(mp4Data.get() + offset3, offset3, writeLen3));
+    EXPECT_EQ(true, cachedMediaBuffer.Check());
+
+    uint32_t buffer[ONE_KILO * 2] = {0};
+    size_t readSize = 128u;
+    ASSERT_EQ(readSize, cachedMediaBuffer.Read(buffer, offset2, readSize));
+    ASSERT_EQ(writeLen, cachedMediaBuffer.Read(buffer, offset1, writeLen));
+    EXPECT_EQ(true, cachedMediaBuffer.Check());
+
+    int64_t offset5 = writeLen;
+    size_t writeLen5 = FIR_BUFFER * 3;
+    ASSERT_EQ(writeLen5, cachedMediaBuffer.Write(mp4Data.get() + offset5, offset5, writeLen5));
+    EXPECT_EQ(true, cachedMediaBuffer.Check());
+
+    ASSERT_EQ(writeLen, cachedMediaBuffer.Read(buffer, offset1 + writeLen, writeLen));
+    EXPECT_EQ(true, cachedMediaBuffer.Check());
+
+    int64_t offset7 = writeLen5 + offset5;
+    size_t writeLen7 = FIR_BUFFER;
+    ASSERT_EQ(writeLen7, cachedMediaBuffer.Write(mp4Data.get() + offset7, offset7, writeLen7));
+    EXPECT_EQ(true, cachedMediaBuffer.Check());
+}
+
+HWTEST_F(DownloaderUnitTest, ReadSplitChunk_0, TestSize.Level1)
+{
+    CacheMediaChunkBuffer cachedMediaBuffer;
+    constexpr uint32_t chunkNum = 2 * 15 * 100;
+    constexpr uint32_t chunKSizePer = 512;
+    uint64_t totalSize = chunKSizePer * chunkNum;
+    uint32_t chunkSize = chunKSizePer;
+    ASSERT_EQ(true, cachedMediaBuffer.Init(totalSize, chunkSize));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetBufferSize(0));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(0));
+    constexpr int64_t mediaSize = ONE_KILO * (chunkNum + 1);
+    std::unique_ptr<uint8_t[]> mp4Data = std::make_unique<uint8_t[]>(mediaSize);
+    size_t writeLen1 = chunKSizePer * 20 + 8;
+    int64_t offset1 = 0;
+    ASSERT_EQ(writeLen1, cachedMediaBuffer.Write(mp4Data.get(), offset1, writeLen1));
+    EXPECT_EQ(writeLen1, cachedMediaBuffer.GetBufferSize(offset1));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset1));
+    auto fragmentInfo = cachedMediaBuffer.impl_->fragmentCacheBuffer_.front();
+    EXPECT_EQ(0, fragmentInfo.chunks.front()->offset);
+    size_t readLen2 = chunkSize - 8;
+    char buffer[chunKSizePer * chunkNum] = {0};
+    EXPECT_EQ(readLen2, cachedMediaBuffer.Read(buffer, offset1, readLen2));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset1, readLen2));
+    cachedMediaBuffer.Dump(0);
+    int64_t chunkOffsetReadBegin = 16;
+    size_t readLen3 = 512 + 8;
+    int64_t offset3 = chunKSizePer * 2 * 6 + chunkOffsetReadBegin;
+    EXPECT_EQ(true, cachedMediaBuffer.Seek(offset3));
+    EXPECT_EQ(readLen3, cachedMediaBuffer.Read(buffer, offset3, readLen3));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset3, readLen3));
+
+    fragmentInfo = cachedMediaBuffer.impl_->fragmentCacheBuffer_.front();
+    EXPECT_EQ(offset1 + (int64_t)readLen2, fragmentInfo.accessLength);
+    EXPECT_EQ((int64_t)readLen2, fragmentInfo.accessLength);
+    EXPECT_EQ(0, fragmentInfo.offsetBegin);
+    EXPECT_EQ(offset3, fragmentInfo.dataLength); // changed
+    EXPECT_EQ(*fragmentInfo.chunks.begin(), *fragmentInfo.accessPos);
+
+    fragmentInfo = cachedMediaBuffer.impl_->fragmentCacheBuffer_.back();
+    EXPECT_EQ((int64_t)readLen3, fragmentInfo.accessLength);
+    EXPECT_EQ(offset3, fragmentInfo.offsetBegin);
+    EXPECT_EQ((int64_t)writeLen1 - offset3, fragmentInfo.dataLength); // changed
+    EXPECT_EQ(*std::next(fragmentInfo.chunks.begin()), *fragmentInfo.accessPos);
+    cachedMediaBuffer.Dump(0);
+    ASSERT_EQ(true, TestCheck(cachedMediaBuffer));
+
+    EXPECT_EQ((size_t)offset3, cachedMediaBuffer.Read(buffer, offset1, (size_t)offset3));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset1, (size_t)offset3));
+
+    EXPECT_EQ(writeLen1 - (size_t)offset3, cachedMediaBuffer.Read(buffer, offset3, writeLen1 - (size_t)offset3));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset3, writeLen1 - (size_t)offset3));
+    ASSERT_EQ(true, TestLastCheck(cachedMediaBuffer));
+}
+
+HWTEST_F(DownloaderUnitTest, ReadSplitChunk_1, TestSize.Level1)
+{
+    CacheMediaChunkBuffer cachedMediaBuffer;
+    constexpr uint32_t chunkNum = 2 * 15 * 100;
+    constexpr uint32_t chunKSizePer = 512;
+    uint64_t totalSize = chunKSizePer * chunkNum;
+    uint32_t chunkSize = chunKSizePer;
+    ASSERT_EQ(true, cachedMediaBuffer.Init(totalSize, chunkSize));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetBufferSize(0));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(0));
+
+    constexpr int64_t mediaSize = ONE_KILO * (chunkNum + 1);
+    std::unique_ptr<uint8_t[]> mp4Data = std::make_unique<uint8_t[]>(mediaSize);
+    size_t writeLen1 = chunKSizePer * 20 + 8;
+    int64_t offset1 = 0;
+    ASSERT_EQ(writeLen1, cachedMediaBuffer.Write(mp4Data.get(), offset1, writeLen1));
+    EXPECT_EQ(writeLen1, cachedMediaBuffer.GetBufferSize(offset1));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset1));
+    auto fragmentInfo = cachedMediaBuffer.impl_->fragmentCacheBuffer_.front();
+    EXPECT_EQ(0, fragmentInfo.chunks.front()->offset);
+
+    size_t readLen2 = chunkSize - 8;
+    char buffer[chunKSizePer * chunkNum] = {0};
+    EXPECT_EQ(readLen2, cachedMediaBuffer.Read(buffer, offset1, readLen2));
+
+    cachedMediaBuffer.Dump(0);
+
+    int64_t chunkOffsetReadBegin = 0;
+    size_t readLen3 = 512 + 8;
+    int64_t offset3 = chunKSizePer * 2 * 6 + chunkOffsetReadBegin;
+    EXPECT_EQ(true, cachedMediaBuffer.Seek(offset3));
+    EXPECT_EQ(readLen3, cachedMediaBuffer.Read(buffer, offset3, readLen3));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset3, readLen3));
+
+    fragmentInfo = cachedMediaBuffer.impl_->fragmentCacheBuffer_.front();
+    EXPECT_EQ(offset1 + (int64_t)readLen2, fragmentInfo.accessLength);
+    EXPECT_EQ((int64_t)readLen2, fragmentInfo.accessLength);
+    EXPECT_EQ(0, fragmentInfo.offsetBegin);
+    EXPECT_EQ(offset3, fragmentInfo.dataLength);
+    EXPECT_EQ(*fragmentInfo.chunks.begin(), *fragmentInfo.accessPos);
+
+    fragmentInfo = cachedMediaBuffer.impl_->fragmentCacheBuffer_.back();
+    EXPECT_EQ((int64_t)readLen3, fragmentInfo.accessLength);
+    EXPECT_EQ(offset3, fragmentInfo.offsetBegin);
+    EXPECT_EQ((int64_t)writeLen1 - offset3, fragmentInfo.dataLength);
+    EXPECT_EQ(*std::next(fragmentInfo.chunks.begin()), *fragmentInfo.accessPos);
+    cachedMediaBuffer.Dump(0);
+    ASSERT_EQ(true, TestCheck(cachedMediaBuffer));
+
+    EXPECT_EQ((size_t)offset3, cachedMediaBuffer.Read(buffer, offset1, (size_t)offset3));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset1, (size_t)offset3));
+
+    EXPECT_EQ(writeLen1 - (size_t)offset3, cachedMediaBuffer.Read(buffer, offset3, writeLen1 - (size_t)offset3));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset3, writeLen1 - (size_t)offset3));
+    ASSERT_EQ(true, TestLastCheck(cachedMediaBuffer));
+}
+
+HWTEST_F(DownloaderUnitTest, ReadSplitChunk_2, TestSize.Level1)
+{
+    CacheMediaChunkBuffer cachedMediaBuffer;
+    constexpr uint32_t chunkNum = 2 * 15 * 100;
+    constexpr uint32_t chunKSizePer = 512;
+    uint64_t totalSize = chunKSizePer * chunkNum;
+    uint32_t chunkSize = chunKSizePer;
+    ASSERT_EQ(true, cachedMediaBuffer.Init(totalSize, chunkSize));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetBufferSize(0));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(0));
+
+    constexpr int64_t mediaSize = ONE_KILO * (chunkNum + 1);
+    std::unique_ptr<uint8_t[]> mp4Data = std::make_unique<uint8_t[]>(mediaSize);
+
+    size_t writeLen1 = chunKSizePer * 20 + 8;
+    int64_t offset1 = 0;
+    ASSERT_EQ(writeLen1, cachedMediaBuffer.Write(mp4Data.get(), offset1, writeLen1));
+    EXPECT_EQ(writeLen1, cachedMediaBuffer.GetBufferSize(offset1));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset1));
+    auto fragmentInfo = cachedMediaBuffer.impl_->fragmentCacheBuffer_.front();
+    EXPECT_EQ(0, fragmentInfo.chunks.front()->offset);
+
+
+    size_t writeLen2 = 10;
+    int64_t wrOffset2 = chunKSizePer * 25 + 8;
+    ASSERT_EQ(writeLen2, cachedMediaBuffer.Write(mp4Data.get(), wrOffset2, writeLen2));
+
+    size_t readLen2 = chunkSize - 8;
+    char buffer[chunKSizePer * chunkNum] = {0};
+    EXPECT_EQ(readLen2, cachedMediaBuffer.Read(buffer, offset1, readLen2));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset1, readLen2));
+
+    cachedMediaBuffer.Dump(0);
+
+    int64_t chunkOffsetReadBegin = 0;
+    size_t readLen3 = 512 + 8;
+    int64_t offset3 = chunKSizePer * 2 * 6 + chunkOffsetReadBegin;
+    EXPECT_EQ(true, cachedMediaBuffer.Seek(offset3));
+    EXPECT_EQ(readLen3, cachedMediaBuffer.Read(buffer, offset3, readLen3));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset3, readLen3));
+
+    fragmentInfo = cachedMediaBuffer.impl_->fragmentCacheBuffer_.front();
+    EXPECT_EQ(offset1 + (int64_t)readLen2, fragmentInfo.accessLength);
+    EXPECT_EQ((int64_t)readLen2, fragmentInfo.accessLength);
+    EXPECT_EQ(0, fragmentInfo.offsetBegin);
+    EXPECT_EQ(offset3, fragmentInfo.dataLength);
+    EXPECT_EQ(*fragmentInfo.chunks.begin(), *fragmentInfo.accessPos);
+
+    fragmentInfo = *std::next(cachedMediaBuffer.impl_->fragmentCacheBuffer_.begin()) ;
+    EXPECT_EQ((int64_t)readLen3, fragmentInfo.accessLength);
+    EXPECT_EQ(offset3, fragmentInfo.offsetBegin);
+    EXPECT_EQ((int64_t)writeLen1 - offset3, fragmentInfo.dataLength);
+    EXPECT_EQ(*std::next(fragmentInfo.chunks.begin()), *fragmentInfo.accessPos);
+    cachedMediaBuffer.Dump(0);
+    ASSERT_EQ(true, TestCheck(cachedMediaBuffer));
+
+    EXPECT_EQ((size_t)offset3, cachedMediaBuffer.Read(buffer, offset1, (size_t)offset3));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset1, (size_t)offset3));
+
+    EXPECT_EQ(writeLen1 - (size_t)offset3, cachedMediaBuffer.Read(buffer, offset3, writeLen1 - (size_t)offset3));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset3, writeLen1 - (size_t)offset3));
+}
+
+HWTEST_F(DownloaderUnitTest, ReadSplitChunk_3, TestSize.Level1)
+{
+    CacheMediaChunkBuffer cachedMediaBuffer;
+    constexpr uint32_t chunkNum = 2 * 15 * 100;
+    constexpr uint32_t chunKSizePer = 512;
+    uint64_t totalSize = chunKSizePer * chunkNum;
+    uint32_t chunkSize = chunKSizePer;
+    ASSERT_EQ(true, cachedMediaBuffer.Init(totalSize, chunkSize));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetBufferSize(0));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(0));
+
+    constexpr int64_t mediaSize = ONE_KILO * (chunkNum + 1);
+    std::unique_ptr<uint8_t[]> mp4Data = std::make_unique<uint8_t[]>(mediaSize);
+
+    size_t writeLen1 = chunKSizePer * 20 + 8;
+    int64_t offset1 = chunKSizePer + 8;
+    ASSERT_EQ(writeLen1, cachedMediaBuffer.Write(mp4Data.get() + offset1, offset1, writeLen1));
+    EXPECT_EQ(writeLen1, cachedMediaBuffer.GetBufferSize(offset1));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset1));
+    auto fragmentInfo = cachedMediaBuffer.impl_->fragmentCacheBuffer_.front();
+    EXPECT_EQ(offset1, fragmentInfo.chunks.front()->offset);
+
+    size_t writeLen2 = 10;
+    int64_t wrOffset2 = 0;
+    ASSERT_EQ(writeLen2, cachedMediaBuffer.Write(mp4Data.get(), wrOffset2, writeLen2));
+
+    size_t readLen2 = chunkSize - 8;
+    char buffer[chunKSizePer * chunkNum] = {0};
+    EXPECT_EQ(readLen2, cachedMediaBuffer.Read(buffer, offset1, readLen2));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset1, readLen2));
+
+    cachedMediaBuffer.Dump(0);
+
+    int64_t chunkOffsetReadBegin = 0;
+    size_t readLen3 = 512 + 8;
+    int64_t offset3 = chunKSizePer * 2 * 6 + chunkOffsetReadBegin;
+    EXPECT_EQ(true, cachedMediaBuffer.Seek(offset3));
+    EXPECT_EQ(readLen3, cachedMediaBuffer.Read(buffer, offset3, readLen3));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset3, readLen3));
+    cachedMediaBuffer.Dump(0);
+    EXPECT_EQ(writeLen1, cachedMediaBuffer.GetBufferSize(offset1));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset1));
+
+    fragmentInfo = cachedMediaBuffer.impl_->fragmentCacheBuffer_.back();
+    EXPECT_EQ((int64_t)readLen3, fragmentInfo.accessLength);
+    EXPECT_EQ(offset3, fragmentInfo.offsetBegin);
+    int64_t splitFirstLeftLenght = offset3 - offset1;
+    EXPECT_EQ((int64_t)writeLen1 - splitFirstLeftLenght, fragmentInfo.dataLength);
+    cachedMediaBuffer.Dump(0);
+
+    ASSERT_EQ(true, TestCheck(cachedMediaBuffer));
+
+    EXPECT_EQ((size_t)splitFirstLeftLenght, cachedMediaBuffer.Read(buffer, offset1, (size_t)splitFirstLeftLenght));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset1, (size_t)splitFirstLeftLenght));
+
+    EXPECT_GT(writeLen1, (size_t)splitFirstLeftLenght);
+    EXPECT_EQ(writeLen1, cachedMediaBuffer.Read(buffer, offset1, writeLen1));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset1, writeLen1));
+
+    EXPECT_EQ(writeLen1 - (size_t)offset3, cachedMediaBuffer.Read(buffer, offset3, writeLen1 - (size_t)offset3));
+    EXPECT_EQ(0, memcmp(buffer, mp4Data.get() + offset3, writeLen1 - (size_t)offset3));
+}
+
+HWTEST_F(DownloaderUnitTest, ReadSplitChunk_4, TestSize.Level1)
+{
+    CacheMediaChunkBuffer cachedMediaBuffer;
+    constexpr uint32_t chunkNum = 2 * 15 * 100;
+    constexpr uint32_t chunKSizePer = 512;
+    uint64_t totalSize = chunKSizePer * chunkNum;
+    uint32_t chunkSize = chunKSizePer;
+    ASSERT_EQ(true, cachedMediaBuffer.Init(totalSize, chunkSize));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetBufferSize(0));
+    EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(0));
+
+    constexpr int64_t mediaSize = ONE_KILO * (chunkNum + 1);
+    std::unique_ptr<uint8_t[]> mp4Data = std::make_unique<uint8_t[]>(mediaSize);
+    size_t* data = (size_t*) mp4Data.get();
+    for (size_t i = 0; i < mediaSize / sizeof(size_t); ++i) {
+        data[i] = i;
+    }
+
+    for (uint32_t i = 0; i < 20; ++i) {
+        size_t writeLen1 = chunKSizePer - 16;
+        int64_t offset1 = chunKSizePer * i + 8 ;
+        ASSERT_EQ(writeLen1, cachedMediaBuffer.Write(mp4Data.get() + offset1, offset1, writeLen1));
+    }
+
+    for (uint32_t i = 0; i < 30; ++i) {
+        size_t writeLen1 = chunKSizePer - 8;
+        int64_t offset1 = chunKSizePer * i + 8 ;
+        ASSERT_EQ(writeLen1, cachedMediaBuffer.Write(mp4Data.get() + offset1, offset1, writeLen1));
+    }
+    cachedMediaBuffer.Clear();
+    ASSERT_EQ(true, TestLastCheck(cachedMediaBuffer));
 }
 
 HWTEST_F(DownloaderUnitTest, StopBufferring_1, TestSize.Level1)

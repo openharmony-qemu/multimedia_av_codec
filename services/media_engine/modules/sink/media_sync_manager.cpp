@@ -185,7 +185,6 @@ Status MediaSyncManager::Reset()
         prerolledSyncers_.clear();
     }
     isFrameAfterSeeked_ = false;
-    startPts_ = HST_TIME_NONE;
     lastReportMediaTime_ = HST_TIME_NONE;
     firstMediaTimeAfterSeek_ = HST_TIME_NONE;
     return Status::OK;
@@ -284,7 +283,7 @@ void MediaSyncManager::SetLastVideoBufferPts(int64_t bufferPts)
 
 bool MediaSyncManager::CheckSeekingMediaTime(int64_t& mediaTime)
 {
-    FALSE_RETURN_V(isSeeking_, true);
+    FALSE_RETURN_V_NOLOG(isSeeking_, true);
     // no need to bound media progress during seek
     MEDIA_LOG_D_SHORT("GetMediaTimeNow seekingMediaTime_: %{public}" PRId64, seekingMediaTime_);
     mediaTime = seekingMediaTime_;
@@ -299,7 +298,7 @@ bool MediaSyncManager::CheckPausedMediaTime(int64_t& mediaTime)
 
 bool MediaSyncManager::CheckIfMediaTimeIsNone(int64_t& mediaTime)
 {
-    FALSE_RETURN_V(mediaTime == HST_TIME_NONE, true);
+    FALSE_RETURN_V_NOLOG(mediaTime == HST_TIME_NONE, true);
     mediaTime = 0;
     return false;
 }
@@ -307,7 +306,7 @@ bool MediaSyncManager::CheckIfMediaTimeIsNone(int64_t& mediaTime)
 bool MediaSyncManager::CheckFirstMediaTimeAfterSeek(int64_t& mediaTime)
 {
     bool isAudioNotRendered = (firstMediaTimeAfterSeek_ != HST_TIME_NONE && mediaTime < firstMediaTimeAfterSeek_);
-    FALSE_RETURN_V(isAudioNotRendered, true);
+    FALSE_RETURN_V_NOLOG(isAudioNotRendered, true);
     MEDIA_LOG_W_SHORT("audio has not been rendered since seek");
     mediaTime = firstMediaTimeAfterSeek_;
     return true;
@@ -315,9 +314,9 @@ bool MediaSyncManager::CheckFirstMediaTimeAfterSeek(int64_t& mediaTime)
 
 int64_t MediaSyncManager::GetMaxMediaProgress()
 {
-    FALSE_RETURN_V(currentSyncerPriority_ != IMediaSynchronizer::AUDIO_SINK,
+    FALSE_RETURN_V_NOLOG(currentSyncerPriority_ != IMediaSynchronizer::AUDIO_SINK,
         currentAnchorMediaTime_ + lastAudioBufferDuration_);
-    FALSE_RETURN_V(currentSyncerPriority_ != IMediaSynchronizer::VIDEO_SINK,
+    FALSE_RETURN_V_NOLOG(currentSyncerPriority_ != IMediaSynchronizer::VIDEO_SINK,
         lastVideoBufferPts_);
     return currentAnchorMediaTime_;
 }
@@ -342,7 +341,7 @@ int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
 int64_t MediaSyncManager::GetMediaTimeNow()
 {
     OHOS::Media::AutoLock lock(clockMutex_);
-    int64_t currentMediaTime;
+    int64_t currentMediaTime = HST_TIME_NONE;
     for (const auto &func : setMediaTimeFuncs) {
         FALSE_RETURN_V(func(this, currentMediaTime), currentMediaTime);
     }

@@ -405,14 +405,18 @@ CapabilityData AudioCodeclistInfo::GetG711muEncoderCapability()
 
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
-    audioCapabilities_ = {GetMP3DecoderCapability(),   GetAacDecoderCapability(),    GetFlacDecoderCapability(),
+    audioCapabilities_ = {
+#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+                          GetVendorAacEncoderCapability(),
+#endif
+                          GetMP3DecoderCapability(),   GetAacDecoderCapability(),    GetFlacDecoderCapability(),
                           GetOpusDecoderCapability(),  GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(),
                           GetAmrwbDecoderCapability(), GetG711muDecoderCapability(), GetAacEncoderCapability(),
                           GetFlacEncoderCapability(),  GetOpusEncoderCapability(),   GetG711muEncoderCapability(),
                           GetAPEDecoderCapability(),   GetMP3EncoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
-                          GetLbvcDecoderCapability(),  GetLbvcEncoderCapability(),  GetVendorAacEncoderCapability(),
+                          GetLbvcDecoderCapability(),  GetLbvcEncoderCapability(),
 #endif
     };
 }

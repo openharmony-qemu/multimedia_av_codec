@@ -136,6 +136,12 @@ public:
     {
         return false;
     }
+
+    virtual bool SetInitialBufferSize(int32_t offset, int32_t size)
+    {
+        return false;
+    }
+
     virtual Status StopBufferring(bool isAppBackground)
     {
         MEDIA_LOG_W("StopBufferring is unimplemented.");
@@ -143,6 +149,7 @@ public:
     }
 
     virtual void WaitForBufferingEnd() {}
+     
     virtual void SetIsReportedErrorCode() {}
     
     virtual bool GetReadTimeOut()
