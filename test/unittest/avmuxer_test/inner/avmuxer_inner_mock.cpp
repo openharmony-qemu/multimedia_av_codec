@@ -99,7 +99,7 @@ int32_t AVMuxerInnerMock::SetRotation(int32_t rotation)
 int AVMuxerInnerMock::SetFormat(OH_AVMuxer *muxer)
 {
     if (muxer_ != nullptr) {
-        auto formatMock = std::static_pointer_cast<AVFormatCapiMock>(format);
+        auto formatMock = std::static_pointer_cast<AVFormatInnerMock>(format);
         return muxer_->SetParameter(formatMock->GetFormat().GetMeta());
     }
     return AV_ERR_UNKNOWN;
