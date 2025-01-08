@@ -764,3 +764,93 @@ HWTEST_F(DemuxerFormatNdkTest, VIDEO_DEMUXER_VVC_0600, TestSize.Level0)
     }
     close(fd);
 }
+
+/**
+ * @tc.number    : DEMUXER_GBK_0010
+ * @tc.name      : demux mp3 file with gbk, check key
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0010, TestSize.Level0)
+{
+    const char* artist = nullptr;
+    const char* album = nullptr;
+    const char* title = nullptr;
+    const char *file = "/data/test/media/audio/gbk.mp3";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
+    ASSERT_EQ(0, strcmp(title, "bom"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ARTIST, &artist));
+    ASSERT_EQ(0, strcmp(artist, "张三"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
+    ASSERT_EQ(0, strcmp(album, "a"));
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_GBK_0020
+ * @tc.name      : demux mp3 file with gb2312, check key
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0020, TestSize.Level0)
+{
+    const char* artist = nullptr;
+    const char* album = nullptr;
+    const char* title = nullptr;
+    const char *file = "/data/test/media/audio/gb2312.mp3";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
+    ASSERT_EQ(0, strcmp(title, "bom"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ARTIST, &artist));
+    ASSERT_EQ(0, strcmp(artist, "张三"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
+    ASSERT_EQ(0, strcmp(album, "a"));
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_GBK_0020
+ * @tc.name      : demux mp3 file with gb18030, check key
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0030, TestSize.Level0)
+{
+    const char* artist = nullptr;
+    const char* album = nullptr;
+    const char* title = nullptr;
+    const char *file = "/data/test/media/audio/gb18030.mp3";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
+    ASSERT_EQ(0, strcmp(title, "bom"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ARTIST, &artist));
+    ASSERT_EQ(0, strcmp(artist, "张三"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
+    ASSERT_EQ(0, strcmp(album, "a"));
+    close(fd);
+}
