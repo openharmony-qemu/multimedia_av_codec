@@ -159,6 +159,7 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 
 Status DemuxerFilter::SetSubtitleSource(const std::shared_ptr<MediaSource> source)
 {
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->SetSubtitleSource(source);
 }
 
@@ -187,6 +188,7 @@ void DemuxerFilter::RegisterVideoStreamReadyCallback(const std::shared_ptr<Video
 void DemuxerFilter::DeregisterVideoStreamReadyCallback()
 {
     MEDIA_LOG_I_SHORT("DeregisterVideoStreamReadyCallback step into");
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
     demuxer_->DeregisterVideoStreamReadyCallback();
 }
 
@@ -331,6 +333,7 @@ Status DemuxerFilter::DoStart()
     MEDIA_LOG_I_SHORT("Loop is not started. PrepareBeforeStart firstly.");
     isLoopStarted = true;
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->Start();
 }
 
@@ -338,6 +341,7 @@ Status DemuxerFilter::DoStop()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
     MEDIA_LOG_I_SHORT("Stop in");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->Stop();
 }
 
@@ -345,18 +349,21 @@ Status DemuxerFilter::DoPause()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Pause");
     MEDIA_LOG_I_SHORT("Pause in");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->Pause();
 }
 
 Status DemuxerFilter::DoPauseDragging()
 {
     MEDIA_LOG_I("DoPauseDragging in");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->PauseDragging();
 }
 
 Status DemuxerFilter::DoPauseAudioAlign()
 {
     MEDIA_LOG_I("DoPauseAudioAlign in");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->PauseAudioAlign();
 }
 
@@ -365,6 +372,7 @@ Status DemuxerFilter::PauseForSeek()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::PauseForSeek");
     MEDIA_LOG_I_SHORT("PauseForSeek in");
     // demuxer pause first for auido render immediatly
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     demuxer_->Pause();
     auto it = nextFiltersMap_.find(StreamType::STREAMTYPE_ENCODED_VIDEO);
     if (it != nextFiltersMap_.end() && it->second.size() == 1) {
@@ -381,18 +389,21 @@ Status DemuxerFilter::DoResume()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Resume");
     MEDIA_LOG_I_SHORT("Resume in");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->Resume();
 }
 
 Status DemuxerFilter::DoResumeDragging()
 {
     MEDIA_LOG_I("DoResumeDragging in");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->ResumeDragging();
 }
 
 Status DemuxerFilter::DoResumeAudioAlign()
 {
     MEDIA_LOG_I("DoResumeAudioAlign in");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->ResumeAudioAlign();
 }
 
@@ -409,6 +420,7 @@ Status DemuxerFilter::ResumeForSeek()
             filter->Resume();
         }
     }
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->Resume();
 }
 
@@ -416,12 +428,14 @@ Status DemuxerFilter::DoFlush()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Flush");
     MEDIA_LOG_D_SHORT("Flush entered");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->Flush();
 }
 
 Status DemuxerFilter::DoPreroll()
 {
     MEDIA_LOG_I("DoPreroll in");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     Status ret = demuxer_->Preroll();
     isLoopStarted.store(true);
     return ret;
@@ -431,6 +445,7 @@ Status DemuxerFilter::DoWaitPrerollDone(bool render)
 {
     (void)render;
     MEDIA_LOG_I("DoWaitPrerollDone in.");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->PausePreroll();
 }
 
@@ -442,6 +457,7 @@ Status DemuxerFilter::Reset()
         AutoLock lock(mapMutex_);
         track_id_map_.clear();
     }
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->Reset();
 }
 
@@ -456,6 +472,7 @@ Status DemuxerFilter::StartReferenceParser(int64_t startTimeMs, bool isForward)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::StartReferenceParser");
     MEDIA_LOG_D_SHORT("StartReferenceParser entered");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->StartReferenceParser(startTimeMs, isForward);
 }
 
@@ -463,6 +480,7 @@ Status DemuxerFilter::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, F
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::GetFrameLayerInfo");
     MEDIA_LOG_D_SHORT("GetFrameLayerInfo entered");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->GetFrameLayerInfo(videoSample, frameLayerInfo);
 }
 
@@ -470,6 +488,7 @@ Status DemuxerFilter::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameL
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::GetFrameLayerInfo");
     MEDIA_LOG_D_SHORT("GetFrameLayerInfo entered");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->GetFrameLayerInfo(frameId, frameLayerInfo);
 }
 
@@ -477,6 +496,7 @@ Status DemuxerFilter::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::GetGopLayerInfo");
     MEDIA_LOG_D_SHORT("GetGopLayerInfo entered");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->GetGopLayerInfo(gopId, gopLayerInfo);
 }
 
@@ -484,6 +504,7 @@ Status DemuxerFilter::GetIFramePos(std::vector<uint32_t> &IFramePos)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::GetIFramePos");
     MEDIA_LOG_D_SHORT("GetIFramePos entered");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->GetIFramePos(IFramePos);
 }
 
@@ -491,6 +512,7 @@ Status DemuxerFilter::Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Dts2FrameId");
     MEDIA_LOG_D_SHORT("Dts2FrameId entered");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->Dts2FrameId(dts, frameId, offset);
 }
 
@@ -519,6 +541,7 @@ std::map<uint32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueuePro
 
 Status DemuxerFilter::PauseTaskByTrackId(int32_t trackId)
 {
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->PauseTaskByTrackId(trackId);
 }
 
@@ -526,11 +549,13 @@ Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& 
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SeekTo");
     MEDIA_LOG_D_SHORT("SeekTo in");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->SeekTo(seekTime, mode, realSeekTime);
 }
 
 Status DemuxerFilter::StartTask(int32_t trackId)
 {
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->StartTask(trackId);
 }
 
@@ -538,6 +563,7 @@ Status DemuxerFilter::SelectTrack(int32_t trackId)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SelectTrack");
     MEDIA_LOG_I_SHORT("SelectTrack called");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->SelectTrack(trackId);
 }
 
@@ -747,6 +773,7 @@ void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vecto
 
 bool DemuxerFilter::GetDuration(int64_t& durationMs)
 {
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->GetDuration(durationMs);
 }
 
