@@ -694,7 +694,7 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_ENABLE_VRR;
 /**
  * @brief Key applies only when configuring a video encoder in surface mode, value type is int32_t.
  * If no new frame became available since the last frame submitted to the encoder,
- * it will sumbit the previous frame repeatly in microseconds. It is used in configure.
+ * it will sumbit the previous frame repeatly in milliseconds. It is used in configure.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 16
