@@ -40,7 +40,6 @@ void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
         return;
     }
 
-    std::lock_guard<std::mutex> lock(eventMutex_);
     switch (type) {
         case EventType::INSTANCE_INIT:
             OnInstanceInitEvent(meta);

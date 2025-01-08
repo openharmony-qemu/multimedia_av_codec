@@ -35,6 +35,7 @@ public:
     void OnInstanceMemoryUpdate(const Media::Meta &meta);
     void OnInstanceRelease(const Media::Meta &meta);
     void RemoveTimer(pid_t pid);
+    void AddApp2ExceedThresholdList(pid_t pid);
 
 private:
     InstanceMemoryUpdateEventHandler();
@@ -45,14 +46,14 @@ private:
 
     void UpdateAppMemoryThreshold();
     static uint32_t SumAppMemory(pid_t callerPid, pid_t actualCallerPid);
-    static void ReportAppMemory(pid_t callerPid, pid_t actualCallerPid);
+    static void ReportAppMemory(pid_t callerPid, pid_t actualCallerPid, bool isInTimer = true, uint32_t memory = 0);
     void DeterminAppMemoryExceedThresholdAndReport(pid_t callerPid, pid_t forwardCallerPid);
 
     uint32_t appMemoryThreshold_ = 0;
     std::mutex timerMutex_;
-    std::mutex appMemoryLeakListMutex_;
+    std::mutex appMemoryExceedThresholdListMutex_;
     std::unordered_map<pid_t, std::shared_ptr<AVCodecXcollieTimer>> timerMap_;
-    std::unordered_set<pid_t> appMemoryLeakList_;
+    std::unordered_set<pid_t> appMemoryExceedThresholdList_;
 
 private:
     class ThresholdParser {

@@ -40,6 +40,9 @@ InstanceMemoryUpdateEventHandler &InstanceMemoryUpdateEventHandler::GetInstance(
 
 void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta &meta)
 {
+    if (appMemoryThreshold_ == UINT32_MAX) {
+        return;
+    }
     auto instanceId = EventInfoExtentedKey::GetInstanceIdFromMeta(meta);
     CHECK_AND_RETURN_LOG(instanceId != INVALID_INSTANCE_ID, "Can not find instance id");
 
@@ -55,6 +58,9 @@ void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta 
 
 void InstanceMemoryUpdateEventHandler::OnInstanceRelease(const Media::Meta &meta)
 {
+    if (appMemoryThreshold_ == UINT32_MAX) {
+        return;
+    }
     auto callerPid = INVALID_PID;
     auto forwardCallerPid = INVALID_PID;
     meta.GetData(Media::Tag::AV_CODEC_CALLER_PID, callerPid);
@@ -67,6 +73,12 @@ void InstanceMemoryUpdateEventHandler::RemoveTimer(pid_t pid)
     std::lock_guard<std::mutex> lock(timerMutex_);
     auto num = timerMap_.erase(pid);
     EXPECT_AND_LOGI(num > 0, "Timer for pid %{public}d has been removed", pid);
+}
+
+void InstanceMemoryUpdateEventHandler::AddApp2ExceedThresholdList(pid_t pid)
+{
+    std::lock_guard<std::mutex> lock(appMemoryExceedThresholdListMutex_);
+    appMemoryExceedThresholdList_.emplace(pid);
 }
 
 InstanceMemoryUpdateEventHandler::InstanceMemoryUpdateEventHandler()
@@ -116,14 +128,20 @@ uint32_t InstanceMemoryUpdateEventHandler::SumAppMemory(pid_t callerPid, pid_t a
     return appMemoryUsage;
 }
 
-void InstanceMemoryUpdateEventHandler::ReportAppMemory(pid_t callerPid, pid_t actualCallerPid)
+void InstanceMemoryUpdateEventHandler::ReportAppMemory(pid_t callerPid, pid_t actualCallerPid, 
+                                                       bool isInTimer, uint32_t memory)
 {
-    InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(actualCallerPid);
+    if (memory == 0) {
+        memory = SumAppMemory(callerPid, actualCallerPid);
+    }
+    if (isInTimer) {
+        InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(actualCallerPid);
+        InstanceMemoryUpdateEventHandler::GetInstance().AddApp2ExceedThresholdList(actualCallerPid);
+    }
 
     auto memoryCollector = HiviewDFX::UCollectClient::MemoryCollector::Create();
     CHECK_AND_RETURN_LOG(memoryCollector != nullptr, "Create Hiview DFX memory collector failed");
 
-    auto memory = SumAppMemory(callerPid, actualCallerPid);
     std::vector<HiviewDFX::UCollectClient::MemoryCaller> memList;
     HiviewDFX::UCollectClient::MemoryCaller memoryCaller = {
         .pid = actualCallerPid,
@@ -140,17 +158,26 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
 {
     auto actualCallerPid = forwardCallerPid == INVALID_PID ? callerPid : forwardCallerPid;
     auto memory = SumAppMemory(callerPid, actualCallerPid);
-    if (memory > appMemoryThreshold_ && timerMap_.count(actualCallerPid) == 0) {
+    auto appMemoryExceedThreshold = memory > appMemoryThreshold_;
+    std::lock_guard<std::mutex> timerLock(timerMutex_);
+    auto appExistTimer = timerMap_.count(actualCallerPid) != 0;
+    std::lock_guard<std::mutex> appMemoryExceedThresholdListlock(appMemoryExceedThresholdListMutex_);
+    auto appInExceedThresholdList = appMemoryExceedThresholdList_.count(actualCallerPid);
+
+    if (appMemoryExceedThreshold && !appExistTimer && !appInExceedThresholdList) {
         auto timeName = std::string("Pid_") + std::to_string(actualCallerPid) + " memory leak";
         auto timer = std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT,
             [=](void *) -> void { ReportAppMemory(callerPid, actualCallerPid); });
-
-        std::lock_guard<std::mutex> lock(timerMutex_);
         timerMap_.emplace(actualCallerPid, timer);
-        AVCODEC_LOGI("Determined pid %{public}d memory leak(%{public}u KB), event timer added",
+        AVCODEC_LOGI("Determined pid %{public}d memory exceed threshold(%{public}u KB), event timer added",
             actualCallerPid, memory);
-    } else if (memory <= appMemoryThreshold_ && timerMap_.count(actualCallerPid) != 0) {
+    } else if (!appMemoryExceedThreshold && appExistTimer && !appInExceedThresholdList) {
         InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(actualCallerPid);
+    } else if (appMemoryExceedThreshold && !appExistTimer && appInExceedThresholdList) {
+        ReportAppMemory(callerPid, actualCallerPid, false, memory);
+    } else if (!appMemoryExceedThreshold && !appExistTimer && appInExceedThresholdList) {
+        ReportAppMemory(callerPid, actualCallerPid, false, memory);
+        appMemoryExceedThresholdList_.erase(actualCallerPid);
     }
 }
 
