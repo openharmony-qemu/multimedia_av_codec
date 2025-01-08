@@ -1777,7 +1777,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_CreationTime_001, TestSize.Level0)
 
     std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
     audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
-    audioParams->PutIntValue(OH_MD_KEY_CREATION_TIME, "2023-12-19T03:16:00.000000Z");
+    audioParams->PutStringValue(OH_MD_KEY_CREATION_TIME, "2023-12-19T03:16:00.000000Z");
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_EQ(ret, 0);
 }
@@ -1798,7 +1798,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_CreationTime_002, TestSize.Level0)
 
     std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
     audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
-    audioParams->PutIntValue(OH_MD_KEY_CREATION_TIME, "2023-12-19T03:16:00.00000000Z");
+    audioParams->PutStringValue(OH_MD_KEY_CREATION_TIME, "2023-12-19T03:16:00.00000000Z");
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_EQ(ret, 3);
 }
@@ -1819,7 +1819,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_CreationTime_003, TestSize.Level0)
 
     std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
     audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
-    audioParams->PutIntValue(OH_MD_KEY_CREATION_TIME, "202a-12-19T03:16:0b.0000c0Z");
+    audioParams->PutStringValue(OH_MD_KEY_CREATION_TIME, "202a-12-19T03:16:0b.0000c0Z");
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_EQ(ret, 3);
 }
