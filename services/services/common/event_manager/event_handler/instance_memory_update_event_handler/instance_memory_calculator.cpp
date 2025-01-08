@@ -200,17 +200,18 @@ uint32_t HardwareDecoderHevc10BitYUV420(uint32_t blockSize)
     auto linearSlope = 0.0;
     auto linearIntercept = 0U;
     if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1) {
-        linearSlope = 9.616;
-        linearIntercept = 29596;
+        linearSlope = 9.616;        // 9.616: HardwareDecoderHevc10BitYUV420 level1-3.1 slope
+        linearIntercept = 29596;    // 29596: HardwareDecoderHevc10BitYUV420 level1-3.1 intercept
     } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1) {
-        linearSlope = 9.270;
-        linearIntercept = 43637;
+        linearSlope = 9.270;        // 9.270: HardwareDecoderHevc10BitYUV420 level3.1-4.1 slope
+        linearIntercept = 43637;    // 43637: HardwareDecoderHevc10BitYUV420 level3.1-4.1 intercept
     } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_5_1) {
-        linearSlope = 9.319;
-        linearIntercept = 55833;
+        linearSlope = 9.319;        // 9.319: HardwareDecoderHevc10BitYUV420 level4.1-5.1 slope
+        linearIntercept = 55833;    // 55833: HardwareDecoderHevc10BitYUV420 level4.1-5.1 intercept
+    } else {
+        linearSlope = 9.319;        // 9.319:  HardwareDecoderHevc10BitYUV420 level15.1+ slope
+        linearIntercept = 129228;   // 129228: HardwareDecoderHevc10BitYUV420 level15.1+ intercept
     }
-    linearSlope = 9.319;
-    linearIntercept = 129228;
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
@@ -219,17 +220,18 @@ uint32_t HardwareDecoderHevc10BitYUV420PostProcessing(uint32_t blockSize)
     auto linearSlope = 0.0;
     auto linearIntercept = 0U;
     if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1) {
-        linearSlope = 11.428;
-        linearIntercept = 64363;
+        linearSlope = 11.428;       // 11.428: HardwareDecoderHevc10BitYUV420PostProcessing level1-3.1 slope
+        linearIntercept = 64363;    // 64363:  HardwareDecoderHevc10BitYUV420PostProcessing level1-3.1 intercept
     } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1) {
-        linearSlope = 10.999;
-        linearIntercept = 78945;
+        linearSlope = 10.999;       // 10.999: HardwareDecoderHevc10BitYUV420PostProcessing level3.1-4.1 slope
+        linearIntercept = 78945;    // 78945:  HardwareDecoderHevc10BitYUV420PostProcessing level3.1-4.1 intercept
     } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_5_1) {
-        linearSlope = 11.149;
-        linearIntercept = 90380;
+        linearSlope = 11.149;       // 11.149: HardwareDecoderHevc10BitYUV420PostProcessing level4.1-5.1 slope
+        linearIntercept = 90380;    // 90380:  HardwareDecoderHevc10BitYUV420PostProcessing level4.1-5.1 intercept
+    } else {
+        linearSlope = 11.048;       // 11.048: HardwareDecoderHevc10BitYUV420PostProcessing level15.1+ slope
+        linearIntercept = 167618;   // 167618: HardwareDecoderHevc10BitYUV420PostProcessing level15.1+ intercept
     }
-    linearSlope = 11.048;
-    linearIntercept = 167618;
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
@@ -238,14 +240,15 @@ uint32_t HardwareDecoderVvc10BitYUV420(uint32_t blockSize)
     auto linearSlope = 0.0;
     auto linearIntercept = 0U;
     if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1) {
-        linearSlope = 4.469;
-        linearIntercept = 13035;
+        linearSlope = 4.469;        // 4.469: HardwareDecoderVvc10BitYUV420 level1-3.1 slope
+        linearIntercept = 13035;    // 13035: HardwareDecoderVvc10BitYUV420 level1-3.1 intercept
     } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1) {
-        linearSlope = 4.175;
-        linearIntercept = 20644;
+        linearSlope = 4.175;        // 4.175: HardwareDecoderVvc10BitYUV420 level3.1-4.1 slope
+        linearIntercept = 20644;    // 20644: HardwareDecoderVvc10BitYUV420 level3.1-4.1 intercept
+    } else {
+        linearSlope = 4.221;        // 4.221: HardwareDecoderVvc10BitYUV420 level4.1+ slope
+        linearIntercept = 32769;    // 32769: HardwareDecoderVvc10BitYUV420 level4.1+ intercept
     }
-    linearSlope = 4.221;
-    linearIntercept = 32769;
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
@@ -260,59 +263,60 @@ uint32_t HardwareDecoderYUV420(uint32_t blockSize)
     auto linearSlope = 0.0;
     auto linearIntercept = 0U;
     if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1) {
-        linearSlope = 5.702;
-        linearIntercept = 28934;
+        linearSlope = 5.702;        // 5.702: HardwareDecoderYUV420 level1-3.1 slope
+        linearIntercept = 28934;    // 28934: HardwareDecoderYUV420 level1-3.1 intercept
     } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1) {
-        linearSlope = 5.478;
-        linearIntercept = 42493;
+        linearSlope = 5.478;        // 5.478: HardwareDecoderYUV420 level3.1-4.1 slope
+        linearIntercept = 42493;    // 42493: HardwareDecoderYUV420 level3.1-4.1 intercept
     } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_5_1) {
-        linearSlope = 5.513;
-        linearIntercept = 54700;
+        linearSlope = 5.513;        // 5.513: HardwareDecoderYUV420 level4.1-5.1 slope
+        linearIntercept = 54700;    // 54700: HardwareDecoderYUV420 level4.1-5.1 intercept
+    } else {
+        linearSlope = 5.487;        // 5.487:  HardwareDecoderYUV420 level15.1+ slope
+        linearIntercept = 129299;   // 129299: HardwareDecoderYUV420 level15.1+ intercept
     }
-    linearSlope = 5.487;
-    linearIntercept = 129299;
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
 uint32_t HardwareEncoderHevc10BitYUV420(uint32_t blockSize)
 {
-    auto linearSlope = 5.930;
-    auto linearIntercept = 40394;
+    auto linearSlope = 5.930;       // 5.930: HardwareEncoderHevc10BitYUV420 slope
+    auto linearIntercept = 40394;   // 40394: HardwareEncoderHevc10BitYUV420 intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
 uint32_t HardwareEncoder8BitRGBA(uint32_t blockSize)
 {
-    auto linearSlope = 7.518;
-    auto linearIntercept = 6475;
+    auto linearSlope = 7.518;       // 7.518: HardwareEncoder8BitRGBA slope
+    auto linearIntercept = 6475;    // 6475:  HardwareEncoder8BitRGBA intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
 uint32_t HardwareEncoderYUV420(uint32_t blockSize)
 {
-    auto linearSlope = 4.541;
-    auto linearIntercept = 7989;
+    auto linearSlope = 4.541;       // 4.541: HardwareEncoderYUV420 slope
+    auto linearIntercept = 7989;    // 7989:  HardwareEncoderYUV420 intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
 uint32_t SoftwareDecoderAvcRGBA(uint32_t blockSize)
 {
-    auto linearSlope = 6.922;
-    auto linearIntercept = 10293;
+    auto linearSlope = 6.922;       // 6.922: SoftwareDecoderAvcRGBA slope
+    auto linearIntercept = 10293;   // 10293: SoftwareDecoderAvcRGBA intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
 uint32_t SoftwareDecoderAvcYUV420(uint32_t blockSize)
 {
-    auto linearSlope = 3.273;
-    auto linearIntercept = 10659;
+    auto linearSlope = 3.273;       // 3.273: SoftwareDecoderAvcYUV420 slope
+    auto linearIntercept = 10659;   // 10659: SoftwareDecoderAvcYUV420 intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
 uint32_t SoftwareDecoderHevcYUV420(uint32_t blockSize)
 {
-    auto linearSlope = 1.510;
-    auto linearIntercept = 277115;
+    auto linearSlope = 1.510;       // 1.510:  SoftwareDecoderHevcYUV420 slope
+    auto linearIntercept = 277115;  // 277115: SoftwareDecoderHevcYUV420 intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
