@@ -108,7 +108,7 @@ Status AudioDecoderAdapter::Start()
 Status AudioDecoderAdapter::Stop()
 {
     MEDIA_LOG_D("In");
-    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::OK, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->Stop();
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     isRunning_ = false;
@@ -130,7 +130,7 @@ Status AudioDecoderAdapter::Flush()
 Status AudioDecoderAdapter::Reset()
 {
     MEDIA_LOG_D("In");
-    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::OK, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->Reset();
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     isRunning_ = false;
@@ -141,7 +141,7 @@ Status AudioDecoderAdapter::Reset()
 Status AudioDecoderAdapter::Release()
 {
     MEDIA_LOG_D("In");
-    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::OK, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->Release();
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     isRunning_ = false;
