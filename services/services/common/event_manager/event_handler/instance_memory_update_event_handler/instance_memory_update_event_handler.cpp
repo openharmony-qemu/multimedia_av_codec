@@ -162,7 +162,7 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
     std::lock_guard<std::mutex> timerLock(timerMutex_);
     auto appExistTimer = timerMap_.count(actualCallerPid) != 0;
     std::lock_guard<std::mutex> appMemoryExceedThresholdListlock(appMemoryExceedThresholdListMutex_);
-    auto appInExceedThresholdList = appMemoryExceedThresholdList_.count(actualCallerPid);
+    auto appInExceedThresholdList = appMemoryExceedThresholdList_.count(actualCallerPid) != 0;
 
     if (appMemoryExceedThreshold && !appExistTimer && !appInExceedThresholdList) {
         auto timeName = std::string("Pid_") + std::to_string(actualCallerPid) + " memory leak";
