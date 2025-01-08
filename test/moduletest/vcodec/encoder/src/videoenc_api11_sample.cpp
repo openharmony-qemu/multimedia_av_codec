@@ -215,6 +215,12 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder()
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, DEFAULT_TRANSFER_CHARACTERISTICS);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS, DEFAULT_MATRIX_COEFFICIENTS);
     }
+    if (enableRepeat) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, DEFAULT_FRAME_AFTER);
+        if (setMaxCount) {
+            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, DEFAULT_MAX_COUNT);
+        }
+    }
     int ret = OH_VideoEncoder_Configure(venc_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -623,6 +629,26 @@ void VEncAPI11Sample::InputFuncSurface()
             break;
         }
         usleep(FRAME_INTERVAL);
+        InputEnableRepeatSleep();
+    }
+}
+
+void VEncAPI11Sample::InputEnableRepeatSleep()
+{
+    inCount = inCount + 1;
+    int32_t inCountNum = 15;
+    if (enableRepeat && inCount == inCountNum) {
+        if (setMaxCount) {
+            int32_t sleepTimeMaxCount = 730000;
+            usleep(sleepTimeMaxCount);
+        } else {
+            int32_t sleepTime = 1000000;
+            usleep(sleepTime);
+        }
+        if (enableSeekEos) {
+            inFile_->clear();
+            inFile_->seekg(-1, ios::beg);
+        }
     }
 }
 
