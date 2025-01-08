@@ -789,7 +789,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0010, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "bom"));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ARTIST, &artist));
-    ASSERT_EQ(0, strcmp(artist, "张三"));
+    ASSERT_EQ(0, strcmp(artist, "寮犱笁"));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "a"));
     close(fd);
@@ -819,7 +819,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0020, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "bom"));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ARTIST, &artist));
-    ASSERT_EQ(0, strcmp(artist, "张三"));
+    ASSERT_EQ(0, strcmp(artist, "寮犱笁"));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "a"));
     close(fd);
@@ -849,7 +849,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0030, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "bom"));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ARTIST, &artist));
-    ASSERT_EQ(0, strcmp(artist, "张三"));
+    ASSERT_EQ(0, strcmp(artist, "寮犱笁"));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "a"));
     close(fd);
