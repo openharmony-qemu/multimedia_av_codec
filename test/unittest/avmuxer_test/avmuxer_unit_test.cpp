@@ -1828,7 +1828,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_CreationTime_003, TestSize.Level0)
  * @tc.desc: Muxer set format without valid key in Meta
  * @tc.type: FUNC
  */
-HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_CreationTime_00, TestSize.Level0)
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_CreationTime_004, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
