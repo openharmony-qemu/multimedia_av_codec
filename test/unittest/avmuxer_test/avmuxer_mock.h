@@ -21,7 +21,6 @@
 #include "avformat_mock.h"
 #include "native_avcodec_base.h"
 #include "nocopyable.h"
-#include "native_avmuxer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

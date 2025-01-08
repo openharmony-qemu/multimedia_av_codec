@@ -18,7 +18,6 @@
 #include <iostream>
 #include "avformat_mock.h"
 #include "avmuxer_mock.h"
-#include "native_avmuxer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
