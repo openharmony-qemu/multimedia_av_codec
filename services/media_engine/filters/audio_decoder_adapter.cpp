@@ -209,21 +209,21 @@ void AudioDecoderAdapter::OnDumpInfo(int32_t fd)
 
 int32_t AudioDecoderAdapter::NotifyEos()
 {
-    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int ret = audiocodec_->NotifyEos();
     return ret;
 }
 
 int32_t AudioDecoderAdapter::SetCodecCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &codecCallback)
 {
-    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     return audiocodec_->SetCodecCallback(codecCallback);
 }
 
 int32_t AudioDecoderAdapter::SetAudioDecryptionConfig(
     const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
 {
-    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     return audiocodec_->SetAudioDecryptionConfig(keySession, svpFlag);
 }
 }  // namespace Media
