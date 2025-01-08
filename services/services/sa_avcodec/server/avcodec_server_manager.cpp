@@ -51,7 +51,7 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
     }
     AVCodecXCollie::GetInstance().Dump(fd);
 
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     constexpr std::string_view dumpStr = "[Codec_Server]\n";
     write(fd, dumpStr.data(), dumpStr.size());
 
@@ -93,7 +93,7 @@ void AVCodecServerManager::Init()
 
 int32_t AVCodecServerManager::CreateStubObject(StubType type, sptr<IRemoteObject> &object)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     switch (type) {
 #ifdef SUPPORT_CODECLIST
         case CODECLIST: {
@@ -155,7 +155,7 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
 
 void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> object)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     pid_t pid = IPCSkeleton::GetCallingPid();
     switch (type) {
         case CODEC: {
@@ -220,7 +220,7 @@ void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
 
 void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_LOGI("codec stub services(%{public}zu) pid(%{public}d).", codecStubMap_.size(), pid);
     EraseCodecObjectByPid(pid);
     AVCODEC_LOGI("codec stub services(%{public}zu).", codecStubMap_.size());
@@ -264,13 +264,13 @@ void AVCodecServerManager::SetCritical(const bool isKeyService)
 
 uint32_t AVCodecServerManager::GetInstanceCount()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     return codecStubMap_.size() + codecListStubMap_.size();
 }
 
 std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> AVCodecServerManager::GetInstanceInfoListByPid(pid_t pid)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> instanceInfoList;
     auto range = codecStubMap_.equal_range(pid);
     for (auto iter = range.first; iter != range.second; iter++) {
@@ -281,7 +281,7 @@ std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> AVCodecServerManager::
 
 std::optional<InstanceInfo> AVCodecServerManager::GetInstanceInfoByInstanceId(int32_t instanceId)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
         if (iter->second.second.instanceId == instanceId) {
             return iter->second.second;
@@ -292,7 +292,7 @@ std::optional<InstanceInfo> AVCodecServerManager::GetInstanceInfoByInstanceId(in
 
 void AVCodecServerManager::SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
         if (iter->second.second.instanceId == instanceId) {
             iter->second.second = info;

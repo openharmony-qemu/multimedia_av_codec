@@ -21,6 +21,7 @@
 #include <map>
 #include <list>
 #include <optional>
+#include <shared_mutex>
 #include "iremote_object.h"
 #include "ipc_skeleton.h"
 #include "nocopyable.h"
@@ -77,7 +78,7 @@ private:
     std::map<sptr<IRemoteObject>, pid_t> codecListStubMap_;
     AsyncExecutor executor_;
     pid_t pid_ = 0;
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
     using NotifyProcessStatusFunc = int32_t(*)(int32_t pid, int32_t type, int32_t status, int32_t saId);
     using SetCriticalFunc = int32_t(*)(int32_t pid, bool critical, int32_t saId);
     static constexpr char LIB_PATH[] = "libmemmgrclient.z.so";
