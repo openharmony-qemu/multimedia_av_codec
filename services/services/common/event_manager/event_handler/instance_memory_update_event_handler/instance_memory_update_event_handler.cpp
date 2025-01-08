@@ -197,6 +197,7 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
         ReportAppMemory(callerPid, actualCallerPid, false, memory);
     } else if (!appMemoryExceedThreshold && !appExistTimer && appInExceedThresholdList) {
         ReportAppMemory(callerPid, actualCallerPid, false, memory);
+        std::lock_guard<std::shared_mutex> appMemoryExceedThresholdListlock(appMemoryExceedThresholdListMutex_);
         appMemoryExceedThresholdList_.erase(actualCallerPid);
     }
 }

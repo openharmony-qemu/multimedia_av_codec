@@ -51,7 +51,7 @@ void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
             OnInstanceMemoryUpdateEvent(meta);
             break;
         case EventType::INSTANCE_MEMORY_RESET:
-            OnInstanceMemoryUpdateEvent(meta);
+            OnInstanceMemoryResetEvent(meta);
             break;
         default:
             AVCODEC_LOGW("Nothing to do with this event: %{public}d", static_cast<int32_t>(type));

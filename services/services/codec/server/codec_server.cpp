@@ -171,8 +171,8 @@ CodecServer::~CodecServer()
 #ifdef AVCODEC_SUPPORT_EVENT_MANAGER
     Media::Meta meta;
     meta.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
-    meta.GetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
-    meta.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
+    meta.SetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
+    meta.SetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, meta);
 #endif
 

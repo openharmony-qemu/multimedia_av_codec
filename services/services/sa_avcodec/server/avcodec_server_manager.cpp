@@ -51,12 +51,17 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
     }
     AVCodecXCollie::GetInstance().Dump(fd);
 
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unordered_multimap<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> codecStubMapTemp;
+    {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
+        codecStubMapTemp = codecStubMap_;
+    }
+
     constexpr std::string_view dumpStr = "[Codec_Server]\n";
     write(fd, dumpStr.data(), dumpStr.size());
 
     int32_t instanceIndex = 0;
-    for (auto iter : codecStubMap_) {
+    for (auto iter : codecStubMapTemp) {
         std::string instanceStr = std::string("    Instance_") + std::to_string(instanceIndex++) + "_Info\n";
         write(fd, instanceStr.data(), instanceStr.size());
         (void)iter.second.first->Dump(fd, args);
