@@ -105,6 +105,7 @@ public:
     bool GetHLSDiscontinuity() override;
     void WaitForBufferingEnd() override;
     void SetIsReportedErrorCode() override;
+    void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);

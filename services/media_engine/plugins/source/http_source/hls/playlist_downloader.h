@@ -62,6 +62,7 @@ public:
     virtual void PreParseManifest(const std::string& location) = 0;
     virtual bool IsParseAndNotifyFinished() = 0;
     virtual bool IsParseFinished() = 0;
+    virtual void SetInitResolution(uint32_t width, uint32_t height) = 0;
     void SetInterruptState(bool isInterruptNeeded);
     void Resume();
     void Pause(bool isAsync = false);

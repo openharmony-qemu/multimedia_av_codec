@@ -160,7 +160,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         url_ = location;
     }
     if (!master_) {
-        master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, httpHeader_);
+        master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, initResolution_, httpHeader_);
         currentVariant_ = master_->defaultVariant_;
         if (currentVariant_ && currentVariant_->m3u8_) {
             currentVariant_->m3u8_->httpHeader_ = httpHeader_;
@@ -376,6 +376,13 @@ bool HlsPlayListDownloader::GetHLSDiscontinuity()
     return false;
 }
 
+void HlsPlayListDownloader::SetInitResolution(uint32_t width, uint32_t height)
+{
+    MEDIA_LOG_I("SetInitResolution, width:" PUBLIC_LOG_U32 ", height:" PUBLIC_LOG_U32, width, height);
+    if (width > 0 && height > 0) {
+        initResolution_ = width * height;
+    }
+}
 }
 }
 }

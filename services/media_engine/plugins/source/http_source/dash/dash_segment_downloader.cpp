@@ -1115,6 +1115,10 @@ void DashSegmentDownloader::SetAppUid(int32_t appUid)
     }
 }
 
+bool DashSegmentDownloader::GetBufferringStatus() const
+{
+    return isBuffering_.load();
+}
 }
 }
 }
