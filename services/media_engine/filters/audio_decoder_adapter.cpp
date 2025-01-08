@@ -174,7 +174,7 @@ int32_t AudioDecoderAdapter::GetOutputFormat(std::shared_ptr<Meta> &parameter)
 
 Status AudioDecoderAdapter::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta)
 {
-    FALSE_RETURN_V(meta != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V(meta != nullptr, Status::ERROR_INVALID_PARAMETER);
     FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->ChangePlugin(mime, isEncoder, meta);
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
