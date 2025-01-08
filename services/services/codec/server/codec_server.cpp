@@ -368,6 +368,7 @@ int32_t CodecServer::Stop()
         return (retCodec == AVCS_ERR_OK) ? retPostProcessing : retCodec;
     }
     StatusChanged(CONFIGURED);
+    OnInstanceMemoryResetEvent();
     return AVCS_ERR_OK;
 }
 
@@ -433,6 +434,7 @@ int32_t CodecServer::Reset()
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
     }
+    OnInstanceMemoryResetEvent();
     return ret;
 }
 
@@ -724,6 +726,17 @@ void CodecServer::OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta)
     meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
     meta->SetData(EventInfoExtentedKey::ENABLE_POST_PROCESSING.data(), postProcessing_ != nullptr);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_MEMORY_UPDATE, *meta);
+#endif
+}
+
+void CodecServer::OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta)
+{
+#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
+    if (meta == nullptr) {
+        meta = std::make_shared<Media::Meta>();
+    }
+    meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_MEMORY_RESET, *meta);
 #endif
 }
 

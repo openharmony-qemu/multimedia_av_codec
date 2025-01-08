@@ -56,6 +56,20 @@ void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta 
     DeterminAppMemoryExceedThresholdAndReport(instanceInfo.value().caller.pid, instanceInfo.value().forwardCaller.pid);
 }
 
+void InstanceMemoryUpdateEventHandler::OnInstanceMemoryReset(const Media::Meta &meta)
+{
+    if (appMemoryThreshold_ == UINT32_MAX) {
+        return;
+    }
+    auto instanceId = EventInfoExtentedKey::GetInstanceIdFromMeta(meta);
+    CHECK_AND_RETURN_LOG(instanceId != INVALID_INSTANCE_ID, "Can not find instance id");
+    
+    auto instanceInfo = UpdateInstanceMemory(instanceId, 0);
+    CHECK_AND_RETURN_LOG(instanceInfo != std::nullopt, "Update instance memory failed");
+
+    DeterminAppMemoryExceedThresholdAndReport(instanceInfo.value().caller.pid, instanceInfo.value().forwardCaller.pid);
+}
+
 void InstanceMemoryUpdateEventHandler::OnInstanceRelease(const Media::Meta &meta)
 {
     if (appMemoryThreshold_ == UINT32_MAX) {
@@ -163,7 +177,6 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
     auto appExistTimer = timerMap_.count(actualCallerPid) != 0;
     std::lock_guard<std::mutex> appMemoryExceedThresholdListlock(appMemoryExceedThresholdListMutex_);
     auto appInExceedThresholdList = appMemoryExceedThresholdList_.count(actualCallerPid) != 0;
-
     if (appMemoryExceedThreshold && !appExistTimer && !appInExceedThresholdList) {
         auto timeName = std::string("Pid_") + std::to_string(actualCallerPid) + " memory leak";
         auto timer = std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT,

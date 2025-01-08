@@ -130,6 +130,7 @@ private:
     int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
     void OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta = nullptr);
+    void OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta = nullptr);
 
     CodecStatus status_ = UNINITIALIZED;
 

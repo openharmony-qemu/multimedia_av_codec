@@ -33,6 +33,7 @@ class InstanceMemoryUpdateEventHandler {
 public:
     static InstanceMemoryUpdateEventHandler &GetInstance();
     void OnInstanceMemoryUpdate(const Media::Meta &meta);
+    void OnInstanceMemoryReset(const Media::Meta &meta);
     void OnInstanceRelease(const Media::Meta &meta);
     void RemoveTimer(pid_t pid);
     void AddApp2ExceedThresholdList(pid_t pid);

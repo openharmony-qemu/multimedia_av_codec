@@ -50,6 +50,9 @@ void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
         case EventType::INSTANCE_MEMORY_UPDATE:
             OnInstanceMemoryUpdateEvent(meta);
             break;
+        case EventType::INSTANCE_MEMORY_RESET:
+            OnInstanceMemoryUpdateEvent(meta);
+            break;
         default:
             AVCODEC_LOGW("Nothing to do with this event: %{public}d", static_cast<int32_t>(type));
             break;
@@ -80,6 +83,11 @@ void EventManager::OnInstanceReleaseEvent(Media::Meta &meta)
 void EventManager::OnInstanceMemoryUpdateEvent(Media::Meta &meta)
 {
     InstanceMemoryUpdateEventHandler::GetInstance().OnInstanceMemoryUpdate(meta);
+}
+
+void EventManager::OnInstanceMemoryResetEvent(Media::Meta &meta)
+{
+    InstanceMemoryUpdateEventHandler::GetInstance().OnInstanceMemoryReset(meta);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
