@@ -64,6 +64,7 @@ Status AudioDecoderAdapter::Init(bool isMimeType, const std::string &name)
 Status AudioDecoderAdapter::Configure(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_D("In");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->Configure(parameter);
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     MEDIA_LOG_D("out");
@@ -73,7 +74,7 @@ Status AudioDecoderAdapter::Configure(const std::shared_ptr<Meta> &parameter)
 Status AudioDecoderAdapter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_D("In");
-    FALSE_RETURN_V(audiocodec_ != nullptr, Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     FALSE_RETURN_V(parameter != nullptr, Status::ERROR_INVALID_PARAMETER);
     int32_t ret = audiocodec_->SetParameter(parameter);
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
@@ -82,6 +83,7 @@ Status AudioDecoderAdapter::SetParameter(const std::shared_ptr<Meta> &parameter)
 Status AudioDecoderAdapter::Prepare()
 {
     MEDIA_LOG_D("In");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->Prepare();
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     isRunning_ = false;
@@ -95,6 +97,7 @@ Status AudioDecoderAdapter::Start()
     if (isRunning_.load()) {
         return Status::OK;
     }
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->Start();
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     isRunning_ = true;
@@ -105,6 +108,7 @@ Status AudioDecoderAdapter::Start()
 Status AudioDecoderAdapter::Stop()
 {
     MEDIA_LOG_D("In");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->Stop();
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     isRunning_ = false;
@@ -115,6 +119,7 @@ Status AudioDecoderAdapter::Stop()
 Status AudioDecoderAdapter::Flush()
 {
     MEDIA_LOG_D("In");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->Flush();
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     isRunning_ = false;
@@ -125,6 +130,7 @@ Status AudioDecoderAdapter::Flush()
 Status AudioDecoderAdapter::Reset()
 {
     MEDIA_LOG_D("In");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->Reset();
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     isRunning_ = false;
@@ -135,6 +141,7 @@ Status AudioDecoderAdapter::Reset()
 Status AudioDecoderAdapter::Release()
 {
     MEDIA_LOG_D("In");
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->Release();
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     isRunning_ = false;
@@ -144,13 +151,16 @@ Status AudioDecoderAdapter::Release()
 
 Status AudioDecoderAdapter::SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer)
 {
+    FALSE_RETURN_V(bufferQueueProducer != nullptr, Status::ERROR_INVALID_PARAMETER);
     outputBufferQueueProducer_ = bufferQueueProducer;
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->SetOutputBufferQueue(bufferQueueProducer);
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
 sptr<Media::AVBufferQueueProducer> AudioDecoderAdapter::GetInputBufferQueue()
 {
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, nullptr, "audiocodec_ is nullptr");
     inputBufferQueueProducer_ = audiocodec_->GetInputBufferQueue();
     return inputBufferQueueProducer_;
 }
@@ -158,17 +168,21 @@ sptr<Media::AVBufferQueueProducer> AudioDecoderAdapter::GetInputBufferQueue()
 int32_t AudioDecoderAdapter::GetOutputFormat(std::shared_ptr<Meta> &parameter)
 {
     FALSE_RETURN_V(parameter != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     return audiocodec_->GetOutputFormat(parameter);
 }
 
 Status AudioDecoderAdapter::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta)
 {
+    FALSE_RETURN_V(meta != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->ChangePlugin(mime, isEncoder, meta);
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
 void AudioDecoderAdapter::SetDumpInfo(bool isDump, uint64_t instanceId)
 {
+    FALSE_RETURN_MSG(audiocodec_ != nullptr, "audiocodec_ is nullptr");
     audiocodec_->SetDumpInfo(isDump, instanceId);
 }
 
@@ -180,6 +194,8 @@ void AudioDecoderAdapter::OnDumpInfo(int32_t fd)
         return;
     }
     std::string dumpString;
+    FALSE_RETURN_MSG(inputBufferQueueProducer_ != nullptr, "inputBufferQueueProducer_ is nullptr");
+    FALSE_RETURN_MSG(outputBufferQueueProducer_ != nullptr, "outputBufferQueueProducer_ is nullptr");
     dumpString += "AudioDecoderAdapter inputBufferQueueProducer_ size is:" +
                   std::to_string(inputBufferQueueProducer_->GetQueueSize()) + "\n";
     dumpString += "AudioDecoderAdapter outputBufferQueueProducer_ size is:" +
@@ -193,18 +209,21 @@ void AudioDecoderAdapter::OnDumpInfo(int32_t fd)
 
 int32_t AudioDecoderAdapter::NotifyEos()
 {
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int ret = audiocodec_->NotifyEos();
     return ret;
 }
 
 int32_t AudioDecoderAdapter::SetCodecCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &codecCallback)
 {
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     return audiocodec_->SetCodecCallback(codecCallback);
 }
 
 int32_t AudioDecoderAdapter::SetAudioDecryptionConfig(
     const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
 {
+    FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     return audiocodec_->SetAudioDecryptionConfig(keySession, svpFlag);
 }
 }  // namespace Media
