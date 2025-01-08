@@ -84,14 +84,14 @@ void InstanceMemoryUpdateEventHandler::OnInstanceRelease(const Media::Meta &meta
 
 void InstanceMemoryUpdateEventHandler::RemoveTimer(pid_t pid)
 {
-    std::lock_guard<std::mutex> lock(timerMutex_);
+    std::lock_guard<std::shared_mutex> lock(timerMutex_);
     auto num = timerMap_.erase(pid);
     EXPECT_AND_LOGI(num > 0, "Timer for pid %{public}d has been removed", pid);
 }
 
 void InstanceMemoryUpdateEventHandler::AddApp2ExceedThresholdList(pid_t pid)
 {
-    std::lock_guard<std::mutex> lock(appMemoryExceedThresholdListMutex_);
+    std::lock_guard<std::shared_mutex> lock(appMemoryExceedThresholdListMutex_);
     appMemoryExceedThresholdList_.emplace(pid);
 }
 
@@ -173,14 +173,21 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
     auto actualCallerPid = forwardCallerPid == INVALID_PID ? callerPid : forwardCallerPid;
     auto memory = SumAppMemory(callerPid, actualCallerPid);
     auto appMemoryExceedThreshold = memory > appMemoryThreshold_;
-    std::lock_guard<std::mutex> timerLock(timerMutex_);
-    auto appExistTimer = timerMap_.count(actualCallerPid) != 0;
-    std::lock_guard<std::mutex> appMemoryExceedThresholdListlock(appMemoryExceedThresholdListMutex_);
-    auto appInExceedThresholdList = appMemoryExceedThresholdList_.count(actualCallerPid) != 0;
+    auto appExistTimer = false;
+    {
+        std::shared_lock<std::shared_mutex> timerLock(timerMutex_);
+        appExistTimer = timerMap_.count(actualCallerPid) != 0;
+    }
+    auto appInExceedThresholdList = false;
+    {
+        std::shared_lock<std::shared_mutex> appMemoryExceedThresholdListlock(appMemoryExceedThresholdListMutex_);
+        appInExceedThresholdList = appMemoryExceedThresholdList_.count(actualCallerPid) != 0;
+    }
     if (appMemoryExceedThreshold && !appExistTimer && !appInExceedThresholdList) {
         auto timeName = std::string("Pid_") + std::to_string(actualCallerPid) + " memory leak";
         auto timer = std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT,
             [=](void *) -> void { ReportAppMemory(callerPid, actualCallerPid); });
+        std::lock_guard<std::shared_mutex> timerLock(timerMutex_);
         timerMap_.emplace(actualCallerPid, timer);
         AVCODEC_LOGI("Determined pid %{public}d memory exceed threshold(%{public}u KB), event timer added",
             actualCallerPid, memory);

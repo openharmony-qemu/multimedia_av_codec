@@ -20,7 +20,7 @@
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
-#include <mutex>
+#include <shared_mutex>
 #include <memory>
 #include "avcodec_xcollie.h"
 #include "meta.h"
@@ -51,8 +51,8 @@ private:
     void DeterminAppMemoryExceedThresholdAndReport(pid_t callerPid, pid_t forwardCallerPid);
 
     uint32_t appMemoryThreshold_ = 0;
-    std::mutex timerMutex_;
-    std::mutex appMemoryExceedThresholdListMutex_;
+    std::shared_mutex timerMutex_;
+    std::shared_mutex appMemoryExceedThresholdListMutex_;
     std::unordered_map<pid_t, std::shared_ptr<AVCodecXcollieTimer>> timerMap_;
     std::unordered_set<pid_t> appMemoryExceedThresholdList_;
 
