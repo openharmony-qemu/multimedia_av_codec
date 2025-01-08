@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
+#include "instance_memory_update_event_handler.h"
 #include <functional>
 #include <map>
 #include "meta/meta_key.h"
 #include "avcodec_info.h"
-#include "instance_memory_update_event_handler.h"
 #include "avcodec_log.h"
 
 namespace {
@@ -40,9 +40,8 @@ CalculatorParameterPixelFormat VideoPixelFormat2CalculatorParameterPixelFormat(V
 {
     if (format == VideoPixelFormat::RGBA) {
         return CalculatorParameterPixelFormat::RGBA;
-    } else {
-        return CalculatorParameterPixelFormat::YUV420;
     }
+    return CalculatorParameterPixelFormat::YUV420;
 }
 
 struct CalculatorParameter {
@@ -190,80 +189,92 @@ static CalculatorParameter SoftwareDecoderHevcYUV420Parameter = {
     false
 };
 
-constexpr uint32_t HARDWARED_ECODER_LEVEL_LEVEL_3_1 = 3762;
-constexpr uint32_t HARDWARED_ECODER_LEVEL_LEVEL_4_1 = 8036;
-constexpr uint32_t HARDWARED_ECODER_LEVEL_LEVEL_5_1 = 36686;
+constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1 = 3762;
+constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1 = 8036;
+constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_5_1 = 36686;
+
+/*******  The unit of memory returned by all calculator is KB  ******/ 
 
 uint32_t HardwareDecoderHevc10BitYUV420(uint32_t blockSize)
 {
-    if (blockSize <= HARDWARED_ECODER_LEVEL_LEVEL_3_1) {
-        return 0.0094 * blockSize + 28.902;
-    } else if (blockSize <= HARDWARED_ECODER_LEVEL_LEVEL_4_1) {
-        return 0.0091 * blockSize + 42.614;
-    } else if (blockSize <= HARDWARED_ECODER_LEVEL_LEVEL_5_1) {
-        return 0.0091 * blockSize + 54.524;
+    if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1) {
+        return 9.616 * blockSize + 29596;
+    } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1) {
+        return 9.270 * blockSize + 43637;
+    } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_5_1) {
+        return 9.319 * blockSize + 55833;
     }
-    return 0.0091 * blockSize + 126.2;
+    return 9.319 * blockSize + 129228;
 }
 
 uint32_t HardwareDecoderHevc10BitYUV420PostProcessing(uint32_t blockSize)
 {
-    AVCODEC_LOGW("Unsupported");
-    return 0;
+    if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1) {
+        return 11.428 * blockSize + 64363;
+    } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1) {
+        return 10.999 * blockSize + 78945;
+    } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_5_1) {
+        return 11.149 * blockSize + 90380;
+    }
+    return 11.048 * blockSize + 167618;
 }
 
 uint32_t HardwareDecoderVvc10BitYUV420(uint32_t blockSize)
 {
-    AVCODEC_LOGW("Unsupported");
-    return 0;
+    if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1) {
+        return 4.469 * blockSize + 13035;
+    } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1) {
+        return 4.175 * blockSize + 20644;
+    }
+    return 4.221 * blockSize + 32769;
 }
 
 uint32_t HardwareDecoderVvcYUV420(uint32_t blockSize)
 {
-    AVCODEC_LOGW("Unsupported");
+    AVCODEC_LOGD("Unsupported");
     return 0;
 }
 
 uint32_t HardwareDecoderYUV420(uint32_t blockSize)
 {
-    if (blockSize <= HARDWARED_ECODER_LEVEL_LEVEL_3_1) {
-        return 0.0056 * blockSize + 28.256;
-    } else if (blockSize <= HARDWARED_ECODER_LEVEL_LEVEL_4_1) {
-        return 0.0053 * blockSize + 41.502;
-    } else if (blockSize <= HARDWARED_ECODER_LEVEL_LEVEL_5_1) {
-        return 0.0054 * blockSize + 53.418;
+    if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1) {
+        return 5.702 * blockSize + 28934;
+    } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1) {
+        return 5.478 * blockSize + 42493;
+    } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_5_1) {
+        return 5.513 * blockSize + 54700;
     }
-    return 0.0054 * blockSize + 126.27;
+    return 5.487 * blockSize + 129299;
 }
 
 uint32_t HardwareEncoderHevc10BitYUV420(uint32_t blockSize)
 {
-    return 0.0058 * blockSize + 39.448;
+    return 5.930 * blockSize + 40394;
 }
 
 uint32_t HardwareEncoder8BitRGBA(uint32_t blockSize)
 {
-    return 0.0073 * blockSize + 6.3228;
+    return 7.518 * blockSize + 6475;
 }
 
 uint32_t HardwareEncoderYUV420(uint32_t blockSize)
 {
-    return 0.0044 * blockSize + 7.8013;
+    return 4.541 * blockSize + 7989;
 }
 
 uint32_t SoftwareDecoderAvcRGBA(uint32_t blockSize)
 {
-    return 0.0068 * blockSize + 10.052;
+    return 6.922 * blockSize + 10293;
 }
 
 uint32_t SoftwareDecoderAvcYUV420(uint32_t blockSize)
 {
-    return 0.0032 * blockSize + 10.409;
+    return 3.273 * blockSize + 10659;
 }
 
 uint32_t SoftwareDecoderHevcYUV420(uint32_t blockSize)
 {
-    return 0.0015 * blockSize + 270.62;
+    return 1.510 * blockSize + 277115;
 }
 
 const std::map<CalculatorParameter, uint32_t (*)(uint32_t)> CALCULATOR_MAP = {

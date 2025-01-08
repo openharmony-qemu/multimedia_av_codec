@@ -202,6 +202,7 @@ void AVCodecServerManager::EraseObject(std::map<sptr<IRemoteObject>, pid_t>& stu
             it++;
         }
     }
+    return;
 }
 
 void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
@@ -214,6 +215,7 @@ void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
             it++;
         }
     }
+    return;
 }
 
 void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)

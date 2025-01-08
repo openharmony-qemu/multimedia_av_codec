@@ -54,31 +54,14 @@ struct InstanceInfo {
     int32_t instanceId = INVALID_INSTANCE_ID;
     CallerInfo caller;
     CallerInfo forwardCaller;
-    uint64_t memoryUsage = 0;
+    uint32_t memoryUsage = 0;
 
     void Print()
     {
         constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceInfo"};
         AVCODEC_LOGI("InstanceId: %{public}d, Caller: [%{public}d, %{public}s], ForwardCaller: [%{public}d, %{public}s]"
-            ", MemoryUsage: %{public}" PRIu64, instanceId, caller.pid, caller.processName.c_str(), forwardCaller.pid,
+            ", MemoryUsage: %{public}u", instanceId, caller.pid, caller.processName.c_str(), forwardCaller.pid,
             forwardCaller.processName.c_str(), memoryUsage);
-    }
-
-    std::shared_ptr<Media::Meta> TransToMeta()
-    {
-        auto meta = std::make_shared<Media::Meta>();
-        if (meta == nullptr) {
-            return nullptr;
-        }
-
-        meta->GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
-        meta->GetData(Media::Tag::AV_CODEC_CALLER_PID, caller.pid);
-        meta->GetData(Media::Tag::AV_CODEC_CALLER_UID, caller.uid);
-        meta->GetData(Media::Tag::AV_CODEC_CALLER_PROCESS_NAME, caller.processName);
-        meta->GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller.pid);
-        meta->GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_UID, forwardCaller.uid);
-        meta->GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardCaller.processName);
-        return meta;
     }
 };
 } // namespace MediaAVCodec

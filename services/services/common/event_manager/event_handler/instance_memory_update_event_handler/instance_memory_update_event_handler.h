@@ -37,15 +37,16 @@ public:
     void RemoveTimer(pid_t pid);
 
 private:
-    std::optional<CalculatorType> GetCalculator(const Media::Meta &meta);
+    InstanceMemoryUpdateEventHandler();
 
+    std::optional<CalculatorType> GetCalculator(const Media::Meta &meta);
     uint32_t GetBlockCount(const Media::Meta &meta);
     std::optional<InstanceInfo> UpdateInstanceMemory(int32_t instanceId, uint32_t memory);
 
     void UpdateAppMemoryThreshold();
-    static uint32_t GetAppMemory(pid_t callerPid, pid_t actualCallerPid);
+    static uint32_t SumAppMemory(pid_t callerPid, pid_t actualCallerPid);
     static void ReportAppMemory(pid_t callerPid, pid_t actualCallerPid);
-    void DeterminAppMemoryLeak(pid_t callerPid, pid_t forwardCallerPid);
+    void DeterminAppMemoryExceedThresholdAndReport(pid_t callerPid, pid_t forwardCallerPid);
 
     uint32_t appMemoryThreshold_ = 0;
     std::mutex timerMutex_;

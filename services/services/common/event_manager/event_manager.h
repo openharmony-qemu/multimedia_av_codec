@@ -37,6 +37,8 @@ public:
     void OnInstanceEvent(EventType type, Media::Meta &meta);
 
 private:
+    EventManager() {}
+
     std::mutex eventMutex_;
 
 /* For extented event callback */

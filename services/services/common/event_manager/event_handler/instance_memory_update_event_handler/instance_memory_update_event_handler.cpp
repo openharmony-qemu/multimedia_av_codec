@@ -27,7 +27,6 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceMemoryUpdateEventHandler"};
 constexpr int32_t MEMORY_LEAK_UPLOAD_TIMEOUT = 180; // seconds
-constexpr uint32_t APP_MEMORY_THRESHOLD_MIN = 262'144; // 262144, 256MB
 constexpr uint32_t THRESHOLD_CONFIG_FILE_SIZE_MAX = 1024'576; // 1024576, 1M
 } // namespace
 
@@ -51,7 +50,7 @@ void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta 
     auto instanceInfo = UpdateInstanceMemory(instanceId, instanceMemory);
     CHECK_AND_RETURN_LOG(instanceInfo != std::nullopt, "Update instance memory failed");
 
-    DeterminAppMemoryLeak(instanceInfo.value().caller.pid, instanceInfo.value().forwardCaller.pid);
+    DeterminAppMemoryExceedThresholdAndReport(instanceInfo.value().caller.pid, instanceInfo.value().forwardCaller.pid);
 }
 
 void InstanceMemoryUpdateEventHandler::OnInstanceRelease(const Media::Meta &meta)
@@ -60,14 +59,19 @@ void InstanceMemoryUpdateEventHandler::OnInstanceRelease(const Media::Meta &meta
     auto forwardCallerPid = INVALID_PID;
     meta.GetData(Media::Tag::AV_CODEC_CALLER_PID, callerPid);
     meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCallerPid);
-    DeterminAppMemoryLeak(callerPid, forwardCallerPid);
+    DeterminAppMemoryExceedThresholdAndReport(callerPid, forwardCallerPid);
 }
 
 void InstanceMemoryUpdateEventHandler::RemoveTimer(pid_t pid)
 {
     std::lock_guard<std::mutex> lock(timerMutex_);
-    timerMap_.erase(pid);
-    AVCODEC_LOGI("Timer for pid %{public}d has been removed", pid);
+    auto num = timerMap_.erase(pid);
+    EXPECT_AND_LOGI(num > 0, "Timer for pid %{public}d has been removed", pid);
+}
+
+InstanceMemoryUpdateEventHandler::InstanceMemoryUpdateEventHandler()
+{
+    UpdateAppMemoryThreshold();
 }
 
 uint32_t InstanceMemoryUpdateEventHandler::GetBlockCount(const Media::Meta &meta)
@@ -96,14 +100,10 @@ std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemo
 
 void InstanceMemoryUpdateEventHandler::UpdateAppMemoryThreshold()
 {
-    if (appMemoryThreshold_ != 0) {
-        return;
-    }
-    auto threshold = ThresholdParser::GetThreshold();
-    appMemoryThreshold_ = threshold > APP_MEMORY_THRESHOLD_MIN ? threshold : APP_MEMORY_THRESHOLD_MIN;
+    appMemoryThreshold_ = ThresholdParser::GetThreshold();
 }
 
-uint32_t InstanceMemoryUpdateEventHandler::GetAppMemory(pid_t callerPid, pid_t actualCallerPid)
+uint32_t InstanceMemoryUpdateEventHandler::SumAppMemory(pid_t callerPid, pid_t actualCallerPid)
 {
     auto instanceInfoList = AVCodecServerManager::GetInstance().GetInstanceInfoListByPid(callerPid);
     uint32_t appMemoryUsage = 0;
@@ -123,7 +123,7 @@ void InstanceMemoryUpdateEventHandler::ReportAppMemory(pid_t callerPid, pid_t ac
     auto memoryCollector = HiviewDFX::UCollectClient::MemoryCollector::Create();
     CHECK_AND_RETURN_LOG(memoryCollector != nullptr, "Create Hiview DFX memory collector failed");
 
-    auto memory = GetAppMemory(callerPid, actualCallerPid);
+    auto memory = SumAppMemory(callerPid, actualCallerPid);
     std::vector<HiviewDFX::UCollectClient::MemoryCaller> memList;
     HiviewDFX::UCollectClient::MemoryCaller memoryCaller = {
         .pid = actualCallerPid,
@@ -135,12 +135,11 @@ void InstanceMemoryUpdateEventHandler::ReportAppMemory(pid_t callerPid, pid_t ac
     AVCODEC_LOGI("The memory usage of pid %{public}d is %{public}u KB, report to hivew", actualCallerPid, memory);
 }
 
-void InstanceMemoryUpdateEventHandler::DeterminAppMemoryLeak(pid_t callerPid, pid_t forwardCallerPid)
+void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport(pid_t callerPid,
+                                                                                 pid_t forwardCallerPid)
 {
-    UpdateAppMemoryThreshold();
-
     auto actualCallerPid = forwardCallerPid == INVALID_PID ? callerPid : forwardCallerPid;
-    auto memory = GetAppMemory(callerPid, actualCallerPid);
+    auto memory = SumAppMemory(callerPid, actualCallerPid);
     if (memory > appMemoryThreshold_ && timerMap_.count(actualCallerPid) == 0) {
         auto timeName = std::string("Pid_") + std::to_string(actualCallerPid) + " memory leak";
         auto timer = std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT,
