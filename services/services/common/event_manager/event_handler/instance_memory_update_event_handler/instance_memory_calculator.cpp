@@ -352,8 +352,8 @@ std::optional<CalculatorType> InstanceMemoryUpdateEventHandler::GetCalculator(co
     meta.GetData(Media::Tag::MEDIA_PROFILE, profile);
     calculatorParameter.pixelFormat = VideoPixelFormat2CalculatorParameterPixelFormat(pixelFormat);
 
-    if (pixelFormatStr == "nv12_10bit" ||
-        pixelFormatStr == "nv21_10bit" ||
+    if (pixelFormatStr == "NV12_10bit" ||
+        pixelFormatStr == "NV21_10bit" ||
         (calculatorParameter.mimeType == CodecMimeType::VIDEO_HEVC.data() && profile == HEVC_PROFILE_MAIN_10)) {
         calculatorParameter.bitDepth = BitDepth::BIT_10;
     }

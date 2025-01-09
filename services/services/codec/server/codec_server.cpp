@@ -193,6 +193,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
     codecType_ = type;
     codecName_ = name;
+    codecMime_ = isMimeType ? name : CodecAbilitySingleton::GetInstance().GetMimeByCodecName(name);
     int32_t ret = isMimeType ? InitByMime(callerInfo, apiVersion) : InitByName(callerInfo, apiVersion);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret,
                              "Init failed. isMimeType:(%{public}d), name:(%{public}s), error:(%{public}d)", isMimeType,
@@ -725,6 +726,7 @@ void CodecServer::OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta)
     meta->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), codecType_);
     meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
     meta->SetData(EventInfoExtentedKey::ENABLE_POST_PROCESSING.data(), postProcessing_ != nullptr);
+    meta->SetData(Media::Tag::MIME_TYPE, codecMime_);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_MEMORY_UPDATE, *meta);
 #endif
 }

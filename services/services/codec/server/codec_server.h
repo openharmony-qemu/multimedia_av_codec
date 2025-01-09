@@ -140,6 +140,7 @@ private:
     std::shared_mutex mutex_;
     std::shared_mutex cbMutex_;
     std::string lastErrMsg_;
+    std::string codecMime_;
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
     int32_t instanceId_ = INVALID_INSTANCE_ID;
