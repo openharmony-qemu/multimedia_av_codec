@@ -29,6 +29,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using CodecInstance = std::pair<sptr<IRemoteObject>, InstanceInfo>;
 class AVCodecServerManager : public NoCopyable {
 public:
     static AVCodecServerManager& GetInstance();
@@ -43,7 +44,8 @@ public:
     void SetMemMgrStatus(const bool isStarted);
     void SetCritical(const bool isKeyService);
     uint32_t GetInstanceCount();
-    std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> GetInstanceInfoListByPid(pid_t pid);
+    std::vector<CodecInstance> GetInstanceInfoListByPid(pid_t pid);
+    std::vector<CodecInstance> GetInstanceInfoListByActualPid(pid_t pid);
     std::optional<InstanceInfo> GetInstanceInfoByInstanceId(int32_t instanceId);
     void SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info);
 
@@ -74,7 +76,7 @@ private:
         std::mutex listMutex_;
     };
 
-    std::unordered_multimap<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> codecStubMap_;
+    std::unordered_multimap<pid_t, CodecInstance> codecStubMap_;
     std::map<sptr<IRemoteObject>, pid_t> codecListStubMap_;
     AsyncExecutor executor_;
     pid_t pid_ = 0;

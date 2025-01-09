@@ -269,13 +269,25 @@ uint32_t AVCodecServerManager::GetInstanceCount()
     return codecStubMap_.size() + codecListStubMap_.size();
 }
 
-std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> AVCodecServerManager::GetInstanceInfoListByPid(pid_t pid)
+std::vector<CodecInstance> AVCodecServerManager::GetInstanceInfoListByPid(pid_t pid)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
-    std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> instanceInfoList;
+    std::vector<CodecInstance> instanceInfoList;
     auto range = codecStubMap_.equal_range(pid);
     for (auto iter = range.first; iter != range.second; iter++) {
         instanceInfoList.emplace_back(iter->second);
+    }
+    return instanceInfoList;
+}
+
+std::vector<CodecInstance> AVCodecServerManager::GetInstanceInfoListByActualPid(pid_t pid)
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    std::vector<CodecInstance> instanceInfoList;
+    for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
+        if (iter->second.second.caller.pid == pid || iter->second.second.forwardCaller.pid == pid) {
+            instanceInfoList.emplace_back(iter->second);
+        }
     }
     return instanceInfoList;
 }

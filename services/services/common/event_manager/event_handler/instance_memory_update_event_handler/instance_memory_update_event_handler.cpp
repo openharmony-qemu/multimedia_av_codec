@@ -51,7 +51,9 @@ void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta 
     auto instanceMemory = calculator.value()(GetBlockCount(meta));
 
     auto instanceInfo = UpdateInstanceMemory(instanceId, instanceMemory);
-    CHECK_AND_RETURN_LOG(instanceInfo != std::nullopt, "Update instance memory failed");
+    if (instanceInfo == std::nullopt) {
+        return;
+    }
 
     DeterminAppMemoryExceedThresholdAndReport(instanceInfo.value().caller.pid, instanceInfo.value().forwardCaller.pid);
 }
@@ -65,7 +67,9 @@ void InstanceMemoryUpdateEventHandler::OnInstanceMemoryReset(const Media::Meta &
     CHECK_AND_RETURN_LOG(instanceId != INVALID_INSTANCE_ID, "Can not find instance id");
     
     auto instanceInfo = UpdateInstanceMemory(instanceId, 0);
-    CHECK_AND_RETURN_LOG(instanceInfo != std::nullopt, "Update instance memory failed");
+    if (instanceInfo == std::nullopt) {
+        return;
+    }
 
     DeterminAppMemoryExceedThresholdAndReport(instanceInfo.value().caller.pid, instanceInfo.value().forwardCaller.pid);
 }
@@ -93,6 +97,7 @@ void InstanceMemoryUpdateEventHandler::AddApp2ExceedThresholdList(pid_t pid)
 {
     std::lock_guard<std::shared_mutex> lock(appMemoryExceedThresholdListMutex_);
     appMemoryExceedThresholdList_.emplace(pid);
+    AVCODEC_LOGI("Pid: %{public}d has been added to exceeded threshold list", pid);
 }
 
 InstanceMemoryUpdateEventHandler::InstanceMemoryUpdateEventHandler()
@@ -117,6 +122,9 @@ std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemo
     CHECK_AND_RETURN_RET_LOG(instanceInfo != std::nullopt,
         std::nullopt, "Can not find this instance, id: %{public}d", instanceId);
 
+    if (instanceInfo.value().memoryUsage == memory) {
+        return std::nullopt;
+    }
     instanceInfo.value().memoryUsage = memory;
     AVCodecServerManager::GetInstance().SetInstanceInfoByInstanceId(instanceId, instanceInfo.value());
     AVCODEC_LOGD("The memory usage of instance[%{public}d] has been updated to %{public}u", instanceId, memory);
@@ -131,7 +139,7 @@ void InstanceMemoryUpdateEventHandler::UpdateAppMemoryThreshold()
 
 uint32_t InstanceMemoryUpdateEventHandler::SumAppMemory(pid_t callerPid, pid_t actualCallerPid)
 {
-    auto instanceInfoList = AVCodecServerManager::GetInstance().GetInstanceInfoListByPid(callerPid);
+    auto instanceInfoList = AVCodecServerManager::GetInstance().GetInstanceInfoListByActualPid(callerPid);
     uint32_t appMemoryUsage = 0;
     for (const auto &info : instanceInfoList) {
         if (actualCallerPid != callerPid && actualCallerPid != info.second.forwardCaller.pid) {
@@ -199,6 +207,7 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
         ReportAppMemory(callerPid, actualCallerPid, false, memory);
         std::lock_guard<std::shared_mutex> appMemoryExceedThresholdListlock(appMemoryExceedThresholdListMutex_);
         appMemoryExceedThresholdList_.erase(actualCallerPid);
+        AVCODEC_LOGI("Pid: %{public}d has been removed from exceeded threshold list", actualCallerPid);
     }
 }
 
