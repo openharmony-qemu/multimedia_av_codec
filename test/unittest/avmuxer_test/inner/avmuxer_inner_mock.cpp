@@ -95,5 +95,14 @@ int32_t AVMuxerInnerMock::SetRotation(int32_t rotation)
     }
     return AV_ERR_UNKNOWN;
 }
+
+int AVMuxerInnerMock::SetFormat(std::shared_ptr<FormatMock> &format)
+{
+    if (muxer_ != nullptr) {
+        auto formatMock = std::static_pointer_cast<AVFormatInnerMock>(format);
+        return muxer_->SetParameter(formatMock->GetFormat().GetMeta());
+    }
+    return AV_ERR_UNKNOWN;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
