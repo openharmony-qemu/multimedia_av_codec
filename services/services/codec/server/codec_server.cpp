@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -742,7 +742,6 @@ int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecCallback> &call
 
 int32_t CodecServer::SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback)
 {
-    AVCODEC_LOGI("CodecServer::SetCodecCallback");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     avBufCallback_ = codecCallback;
     return codecBase_->SetCallback(codecCallback);
@@ -772,14 +771,12 @@ int32_t CodecServer::GetInputFormat(Format &format)
 
 int32_t CodecServer::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta)
 {
-    AVCODEC_LOGI("ChangePlugin in");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     return codecBase_->ChangePlugin(mime, isEncoder, meta);
 }
 
 void CodecServer::SetDumpInfo(bool isDump, uint64_t instanceId)
 {
-    AVCODEC_LOGI("SetDumpInfo in");
     CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "Codecbase is nullptr");
     return codecBase_->SetDumpInfo(isDump, instanceId);
 }

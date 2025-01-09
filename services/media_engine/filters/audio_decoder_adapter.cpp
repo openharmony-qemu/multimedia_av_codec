@@ -14,19 +14,10 @@
  */
 #define AUDIO_DECODER_ADAPTER_CPP
 
-#include <malloc.h>
-#include <map>
-#include <unistd.h>
 #include "avcodec_errors.h"
-#include "avcodec_trace.h"
 #include "common/log.h"
-#include "media_description.h"
-#include "buffer/avbuffer_queue_consumer.h"
-#include "meta/meta_key.h"
 #include "meta/meta.h"
 #include "audio_decoder_adapter.h"
-#include "media_core.h"
-#include "avcodec_sysevent.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioDecoderAdapter"};
@@ -39,7 +30,6 @@ using namespace MediaAVCodec;
 
 AudioDecoderAdapter::AudioDecoderAdapter()
 {
-    MEDIA_LOG_I("AudioDecoderAdapter instances create.");
 }
 
 AudioDecoderAdapter::~AudioDecoderAdapter()
@@ -51,7 +41,7 @@ AudioDecoderAdapter::~AudioDecoderAdapter()
 
 Status AudioDecoderAdapter::Init(bool isMimeType, const std::string &name)
 {
-    MEDIA_LOG_I("isMimeType is %{public}i, name is %{public}s", isMimeType, name.c_str());
+    MEDIA_LOG_D("isMimeType is %{public}i, name is %{public}s", isMimeType, name.c_str());
     if (isMimeType) {
         audiocodec_ = MediaAVCodec::AudioCodecFactory::CreateByMime(name, false);
     } else {
@@ -189,10 +179,7 @@ void AudioDecoderAdapter::SetDumpInfo(bool isDump, uint64_t instanceId)
 void AudioDecoderAdapter::OnDumpInfo(int32_t fd)
 {
     MEDIA_LOG_D("OnDumpInfo called.");
-    if (fd < 0) {
-        MEDIA_LOG_E("OnDumpInfo fd is invalid.");
-        return;
-    }
+    FALSE_RETURN_MSG(fd >= 0, "OnDumpInfo fd is invalid.");
     std::string dumpString;
     FALSE_RETURN_MSG(inputBufferQueueProducer_ != nullptr, "inputBufferQueueProducer_ is nullptr");
     FALSE_RETURN_MSG(outputBufferQueueProducer_ != nullptr, "outputBufferQueueProducer_ is nullptr");
@@ -201,10 +188,7 @@ void AudioDecoderAdapter::OnDumpInfo(int32_t fd)
     dumpString += "AudioDecoderAdapter outputBufferQueueProducer_ size is:" +
                   std::to_string(outputBufferQueueProducer_->GetQueueSize()) + "\n";
     int ret = write(fd, dumpString.c_str(), dumpString.size());
-    if (ret < 0) {
-        MEDIA_LOG_E("AudioDecoderAdapter::OnDumpInfo write failed.");
-        return;
-    }
+    FALSE_RETURN_MSG(ret >= 0, "AudioDecoderAdapter::OnDumpInfo write failed.");
 }
 
 int32_t AudioDecoderAdapter::NotifyEos()

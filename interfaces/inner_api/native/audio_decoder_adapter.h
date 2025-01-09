@@ -78,8 +78,6 @@ private:
     sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_;
 
     std::atomic<bool> isRunning_{false};
-
-    Mutex stateMutex_;
 };
 } // namespace Media
 } // namespace OHOS

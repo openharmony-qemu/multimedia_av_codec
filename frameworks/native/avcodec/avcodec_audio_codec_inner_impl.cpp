@@ -197,7 +197,7 @@ int32_t AVCodecAudioCodecInnerImpl::GetOutputFormat(std::shared_ptr<Media::Meta>
 int32_t AVCodecAudioCodecInnerImpl::ChangePlugin(
     const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl ChangePlugin");
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl ChangePlugin");
     CHECK_AND_RETURN_RET_LOG(
         codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
     return codecService_->ChangePlugin(mime, isEncoder, meta);
@@ -205,7 +205,7 @@ int32_t AVCodecAudioCodecInnerImpl::ChangePlugin(
 
 int32_t AVCodecAudioCodecInnerImpl::SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback)
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetCodecCallback");
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl SetCodecCallback");
     CHECK_AND_RETURN_RET_LOG(
         codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
     return codecService_->SetCodecCallback(codecCallback);
@@ -214,7 +214,7 @@ int32_t AVCodecAudioCodecInnerImpl::SetCodecCallback(const std::shared_ptr<Media
 int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(
     const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetAudioDecryptionConfig");
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl SetAudioDecryptionConfig");
     CHECK_AND_RETURN_RET_LOG(
         codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
     return codecService_->SetAudioDecryptionConfig(keySession, svpFlag);
@@ -222,7 +222,7 @@ int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(
 
 void AVCodecAudioCodecInnerImpl::SetDumpInfo(bool isDump, uint64_t instanceId)
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetDumpInfo");
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl SetDumpInfo");
     CHECK_AND_RETURN_LOG(codecService_ != nullptr, "service died");
     return codecService_->SetDumpInfo(isDump, instanceId);
 }

@@ -152,6 +152,7 @@ Status AudioDecoderFilter::DoPrepare()
 Status AudioDecoderFilter::DoStart()
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::Start.");
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     auto ret = decoder_->Start();
     if (ret != Status::OK) {
         std::string mime;
@@ -184,6 +185,7 @@ Status AudioDecoderFilter::DoResume()
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::Resume.");
     refreshTotalPauseTime_ = true;
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     return decoder_->Start();
 }
 
@@ -199,12 +201,14 @@ Status AudioDecoderFilter::DoStop()
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     return decoder_->Stop();
 }
 
 Status AudioDecoderFilter::DoFlush()
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::Flush.");
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     return decoder_->Flush();
 }
 
@@ -217,18 +221,20 @@ Status AudioDecoderFilter::DoRelease()
         return Status::OK;
     }
     isReleased_.store(true);
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     return decoder_->Release();
 }
 
 void AudioDecoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::SetParameter.");
+    FALSE_RETURN_MSG(decoder_ != nullptr, "decoder_ is nullptr");
     decoder_->SetParameter(parameter);
 }
 
 void AudioDecoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_E("AudioDecoderFilter::GetParameter");
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     decoder_->GetOutputFormat(parameter);
 }
 
@@ -264,6 +270,7 @@ Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     return decoder_->ChangePlugin(mime, false, meta);
 }
 
@@ -276,6 +283,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
     MEDIA_LOG_I_SHORT("AudioDecoderFilter::OnLinked.");
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     onLinkedResultCallback_ = callback;
     std::string mime;
     bool mimeGetRes = meta->GetData(Tag::MIME_TYPE, mime);
@@ -360,6 +368,7 @@ Status AudioDecoderFilter::OnUnLinked(StreamType inType, const std::shared_ptr<F
 sptr<AVBufferQueueProducer> AudioDecoderFilter::GetInputBufferQueue()
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::GetInputBufferQueue.");
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, nullptr, "decoder_ is nullptr");
     inputBufferQueueProducer_ = decoder_->GetInputBufferQueue();
     sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
     FALSE_RETURN_V(inputBufferQueueProducer_ != nullptr, sptr<AVBufferQueueProducer>());
@@ -394,7 +403,7 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::OnLinkedResult.");
-    FALSE_RETURN(decoder_ != nullptr);
+    FALSE_RETURN_MSG(decoder_ != nullptr, "decoder_ is nullptr");
     decoder_->SetOutputBufferQueue(outputBufferQueue);
     decoder_->Prepare();
     inputBufferQueueProducer_ = decoder_->GetInputBufferQueue();
