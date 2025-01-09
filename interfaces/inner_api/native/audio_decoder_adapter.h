@@ -71,11 +71,11 @@ public:
 
 private:
 
-    std::shared_ptr<MediaAVCodec::AVCodecAudioCodec> audiocodec_;
+    std::shared_ptr<MediaAVCodec::AVCodecAudioCodec> audiocodec_{nullptr};
     
-    sptr<Media::AVBufferQueueProducer> outputBufferQueueProducer_;
+    sptr<Media::AVBufferQueueProducer> outputBufferQueueProducer_{nullptr};
 
-    sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_;
+    sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_{nullptr};
 
     std::atomic<bool> isRunning_{false};
 };
