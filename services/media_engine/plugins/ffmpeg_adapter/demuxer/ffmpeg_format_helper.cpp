@@ -515,7 +515,7 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, 
         }
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         ParseAVTrackInfo(avStream, format);
-        ParseAudioTrackInfo(avStream, format);
+        ParseAudioTrackInfo(avStream, format, avFormatContext);
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_TIMEDMETA) {
         ParseAVTrackInfo(avStream, format);
         ParseTimedMetaTrackInfo(avStream, format);
@@ -730,7 +730,8 @@ void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &for
     }
 }
 
-void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &format)
+void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &format,
+                                             const AVFormatContext& avFormatContext)
 {
     int sampelRate = avStream.codecpar->sample_rate;
     int channels = avStream.codecpar->channels;
@@ -780,6 +781,10 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
             ParseAv3aInfo(avStream, format);
         }
         ConvertAv3aSampleFormat(avStream, format);
+    }
+
+    if (GetFileTypeByName(avFormatContext) == FileType::APE) {
+        format.Set<Tag::AUDIO_MAX_INPUT_SIZE>(avStream.codecpar->max_frame_size);
     }
 }
 

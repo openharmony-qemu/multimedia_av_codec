@@ -75,7 +75,7 @@ private:
     static void ParseBaseTrackInfo(const AVStream& avStream, Meta &format, const AVFormatContext& avFormatContext);
     static void ParseAVTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseVideoTrackInfo(const AVStream& avStream, Meta &format, const AVFormatContext& avFormatContext);
-    static void ParseAudioTrackInfo(const AVStream& avStream, Meta &format);
+    static void ParseAudioTrackInfo(const AVStream& avStream, Meta &format, const AVFormatContext& avFormatContext);
     static void ParseImageTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseHvccBoxInfo(const AVStream& avStream, Meta &format);
