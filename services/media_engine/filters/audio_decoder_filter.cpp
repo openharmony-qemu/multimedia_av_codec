@@ -234,7 +234,7 @@ void AudioDecoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 
 void AudioDecoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
-    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
+    FALSE_RETURN_MSG(decoder_ != nullptr, "decoder_ is nullptr");
     decoder_->GetOutputFormat(parameter);
 }
 
