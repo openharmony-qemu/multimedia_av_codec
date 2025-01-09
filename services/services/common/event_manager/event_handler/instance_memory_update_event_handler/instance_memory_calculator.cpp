@@ -15,7 +15,7 @@
 
 #include "instance_memory_update_event_handler.h"
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include "meta/meta_key.h"
 #include "avcodec_info.h"
 #include "avcodec_log.h"
@@ -51,15 +51,29 @@ struct CalculatorParameter {
     BitDepth bitDepth = BitDepth::BIT_8;
     bool isHardware = true;
     bool enablePostProcessing = false;
+};
 
-    bool operator < (const CalculatorParameter& other) const
+struct CalculatorParamterHash {
+    std::size_t operator()(const CalculatorParameter &param) const
     {
-        return (codecType < other.codecType) &&
-               (mimeType < other.mimeType) &&
-               (pixelFormat < other.pixelFormat) &&
-               (bitDepth < other.bitDepth) &&
-               (isHardware < other.isHardware) &&
-               (enablePostProcessing < other.enablePostProcessing);
+        return (std::hash<int32_t>()(static_cast<int32_t>(param.codecType))         << 0) ^ // 0: Hash offset
+               (std::hash<std::string>()(param.mimeType)                            << 1) ^ // 1: Hash offset
+               (std::hash<int32_t>()(static_cast<int32_t>(param.pixelFormat))       << 2) ^ // 2: Hash offset
+               (std::hash<int32_t>()(static_cast<int32_t>(param.bitDepth))          << 3) ^ // 3: Hash offset
+               (std::hash<bool>()(static_cast<int32_t>(param.isHardware))           << 4) ^ // 4: Hash offset
+               (std::hash<bool>()(static_cast<int32_t>(param.enablePostProcessing)) << 5);  // 5: Hash offset
+    }
+};
+
+struct CalculatorParamterEqual {
+    bool operator()(const CalculatorParameter &lhs, const CalculatorParameter &rhs) const
+    {
+        return (lhs.codecType            == rhs.codecType           ) &&
+               (lhs.mimeType             == rhs.mimeType            ) &&
+               (lhs.pixelFormat          == rhs.pixelFormat         ) &&
+               (lhs.bitDepth             == rhs.bitDepth            ) &&
+               (lhs.isHardware           == rhs.isHardware          ) &&
+               (lhs.enablePostProcessing == rhs.enablePostProcessing);
     }
 };
 
@@ -320,7 +334,8 @@ uint32_t SoftwareDecoderHevcYUV420(uint32_t blockSize)
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
-const std::map<CalculatorParameter, uint32_t (*)(uint32_t)> CALCULATOR_MAP = {
+const std::unordered_map<CalculatorParameter, uint32_t (*)(uint32_t),
+                         CalculatorParamterHash, CalculatorParamterEqual> CALCULATOR_MAP = {
     {HARDWARE_DECODER_HEVC_10BIT_YUV420_PARAMETER, HardwareDecoderHevc10BitYUV420},
     {HARDWARE_DECODER_HEVC_10BIT_YUV420_POSTPROCESSING_PARAMETER, HardwareDecoderHevc10BitYUV420PostProcessing},
     {HARDWARE_DECODER_VVC_10BIT_YUV420_PARAMETER, HardwareDecoderVvc10BitYUV420},

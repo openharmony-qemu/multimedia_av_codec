@@ -108,12 +108,12 @@ InstanceMemoryUpdateEventHandler::InstanceMemoryUpdateEventHandler()
 uint32_t InstanceMemoryUpdateEventHandler::GetBlockCount(const Media::Meta &meta)
 {
     int32_t width = 0;
-    int32_t length = 0;
+    int32_t height = 0;
     meta.GetData(Media::Tag::VIDEO_WIDTH, width);
-    meta.GetData(Media::Tag::VIDEO_WIDTH, length);
+    meta.GetData(Media::Tag::VIDEO_HEIGHT, height);
     constexpr int32_t blockWidth = 16;
-    constexpr int32_t blockLength = 16;
-    return std::ceil(width / blockWidth) * std::ceil(length / blockLength);
+    constexpr int32_t blockHeight = 16;
+    return std::ceil(width / blockWidth) * std::ceil(height / blockHeight);
 }
 
 std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemory(int32_t instanceId, uint32_t memory)
