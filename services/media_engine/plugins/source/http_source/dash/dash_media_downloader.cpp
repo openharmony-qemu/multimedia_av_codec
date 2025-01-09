@@ -174,7 +174,6 @@ void DashMediaDownloader::UpdateDownloadFinished(int streamId)
 
 void DashMediaDownloader::PostBufferingEvent(int streamId, BufferingInfoType type)
 {
-    std::lock_guard<std::mutex> bufferingLock(bufferingMutex_);
     if (callback_ == nullptr || mpdDownloader_ == nullptr) {
         MEDIA_LOG_I("PostBufferingEvent streamId: " PUBLIC_LOG_D32 " type: " PUBLIC_LOG_D32, streamId, type);
         return;
@@ -203,6 +202,9 @@ void DashMediaDownloader::PostBufferingEvent(int streamId, BufferingInfoType typ
         return;
     }
 
+    // ensure the order of the buffering_start and buffering_end, must use lock, this lock can not use in other scene
+    // OnEvent can not block and lock other resource
+    std::lock_guard<std::mutex> bufferingLock(bufferingMutex_);
     // audio or video buffering start will post event, audio and video buffering end will post event
     uint32_t flag =
         streamDesc->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID ? VIDEO_BUFFERING_FLAG : AUDIO_BUFFERING_FLAG;
