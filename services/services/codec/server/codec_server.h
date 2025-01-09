@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -77,6 +77,9 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
+    int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta) override;
+    int32_t SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback) override;
+    void SetDumpInfo(bool isDump, uint64_t instanceId) override;
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag) override;

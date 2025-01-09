@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 #include "meta/format.h"
 #include "meta/meta.h"
 #include "buffer/avbuffer_queue_producer.h"
+#include "drm_i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -51,7 +52,16 @@ public:
 
     virtual int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter);
 
+    virtual int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta);
+
+    virtual int32_t SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback);
+
+    virtual int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag);
+
     virtual void ProcessInputBuffer();
+
+    virtual void SetDumpInfo(bool isDump, uint64_t instanceId);
 };
 
 class __attribute__((visibility("default"))) AudioCodecFactory {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include "avcodec_trace.h"
 #include "avcodec_codec_name.h"
 #include "codec_server.h"
+#include "drm_i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -191,6 +192,39 @@ int32_t AVCodecAudioCodecInnerImpl::GetOutputFormat(std::shared_ptr<Media::Meta>
                              "service died");
     int32_t ret = codecService_->GetOutputFormat(parameter);
     return ret;
+}
+
+int32_t AVCodecAudioCodecInnerImpl::ChangePlugin(
+    const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
+{
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl ChangePlugin");
+    CHECK_AND_RETURN_RET_LOG(
+        codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
+    return codecService_->ChangePlugin(mime, isEncoder, meta);
+}
+
+int32_t AVCodecAudioCodecInnerImpl::SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback)
+{
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl SetCodecCallback");
+    CHECK_AND_RETURN_RET_LOG(
+        codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
+    return codecService_->SetCodecCallback(codecCallback);
+}
+
+int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(
+    const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
+{
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl SetAudioDecryptionConfig");
+    CHECK_AND_RETURN_RET_LOG(
+        codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
+    return codecService_->SetAudioDecryptionConfig(keySession, svpFlag);
+}
+
+void AVCodecAudioCodecInnerImpl::SetDumpInfo(bool isDump, uint64_t instanceId)
+{
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl SetDumpInfo");
+    CHECK_AND_RETURN_LOG(codecService_ != nullptr, "service died");
+    return codecService_->SetDumpInfo(isDump, instanceId);
 }
 
 void AVCodecAudioCodecInnerImpl::ProcessInputBuffer()

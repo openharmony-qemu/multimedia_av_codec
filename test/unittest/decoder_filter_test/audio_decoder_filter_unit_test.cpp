@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -67,9 +67,9 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_001, TestSize.Level1)
 
     std::shared_ptr<Pipeline::AudioDecoderCallback> audioDecoderCallback =
         std::make_shared<Pipeline::AudioDecoderCallback>(audioDecoder);
-    audioDecoderCallback->OnOutputBufferDone(nullptr);
-    audioDecoderCallback->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED, 111);
-    audioDecoderCallback->OnError(CodecErrorType::CODEC_ERROR_EXTEND_START, 111);
+    audioDecoderCallback->OnOutputBufferAvailable(1, nullptr);
+    audioDecoderCallback->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_DECRYTION_FAILED, 111);
+    audioDecoderCallback->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_EXTEND_START, 111);
 
     EXPECT_EQ(audioDecoder->UpdateNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
     EXPECT_EQ(audioDecoder->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
@@ -132,7 +132,7 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_005, TestSize.Level1)
 {
     std::shared_ptr<Pipeline::AudioDecoderCallback> audioDecoderCallback =
         std::make_shared<Pipeline::AudioDecoderCallback>(nullptr);
-    audioDecoderCallback->OnError(CodecErrorType::CODEC_ERROR_EXTEND_START, 111);
+    audioDecoderCallback->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_EXTEND_START, 111);
 
     std::shared_ptr<Pipeline::AudioDecoderFilter> audioDecoder =
         std::make_shared<Pipeline::AudioDecoderFilter>("AudioDecoderFilter", Pipeline::FilterType::FILTERTYPE_SOURCE);
@@ -157,7 +157,8 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_006, TestSize.Level1)
     audioDecoder1->Init(nullptr, filterCallback);
 
     audioDecoder->meta_ = std::make_shared<Meta>();
-    EXPECT_EQ(audioDecoder->LinkNext(audioDecoder1, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
+    EXPECT_EQ(audioDecoder->LinkNext(audioDecoder1, Pipeline::StreamType::STREAMTYPE_PACKED),
+        Status::ERROR_INVALID_PARAMETER);
 }
 
 }
