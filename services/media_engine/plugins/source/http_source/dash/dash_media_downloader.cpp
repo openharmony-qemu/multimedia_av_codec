@@ -188,10 +188,12 @@ void DashMediaDownloader::PostBufferingEvent(int streamId, BufferingInfoType typ
     if (type == BufferingInfoType::BUFFERING_PERCENT) {
         uint32_t percent = 0;
         for (auto &downloader : segmentDownloaders_) {
-            if (downloader != nullptr) {
-                uint32_t segPercent = downloader->GetCachedPercent();
-                percent = (percent == 0 || segPercent < percent) ? segPercent : percent;
+            if (downloader == nullptr || downloader->GetStreamType() == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
+                continue;
             }
+
+            uint32_t segPercent = downloader->GetCachedPercent();
+            percent = (percent == 0 || segPercent < percent) ? segPercent : percent;
         }
         if (percent > 0 && percent < BUFFERING_PERCENT_FULL && lastBufferingPercent_ != percent) {
             MEDIA_LOG_I("PostBufferingEvent buffering percent " PUBLIC_LOG_U32, percent);
