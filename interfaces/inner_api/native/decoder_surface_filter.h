@@ -104,6 +104,7 @@ public:
     void RegisterVideoFrameReadyCallback(std::shared_ptr<VideoFrameReadyCallback> &callback);
     void DeregisterVideoFrameReadyCallback();
     int32_t GetDecRateUpperLimit();
+    bool GetIsSupportSeekWithoutFlush();
     void ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs = 0L);
 
 protected:
