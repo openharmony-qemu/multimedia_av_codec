@@ -114,6 +114,7 @@ public:
     bool CanAutoSelectBitRate() override;
     void OnDumpInfo(int32_t fd);
 
+    bool IsRefParserSupported();
     Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);

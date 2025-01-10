@@ -438,6 +438,13 @@ Status DemuxerFilter::Reset()
     return demuxer_->Reset();
 }
 
+bool DemuxerFilter::IsRefParserSupported()
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::IsRefParserSupported");
+    MEDIA_LOG_D("IsRefParserSupported entered");
+    return demuxer_->IsRefParserSupported();
+}
+
 Status DemuxerFilter::StartReferenceParser(int64_t startTimeMs, bool isForward)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::StartReferenceParser");

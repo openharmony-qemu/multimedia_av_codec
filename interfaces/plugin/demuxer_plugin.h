@@ -146,6 +146,7 @@ struct DemuxerPlugin : public PluginBase {
 
     virtual void ResetEosStatus() = 0;
 
+    virtual bool IsRefParserSupported() { return false; };
     virtual Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) = 0;
     virtual Status ParserRefInfo() = 0;
     virtual Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) = 0;
