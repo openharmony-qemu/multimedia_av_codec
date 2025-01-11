@@ -31,7 +31,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceStub"};
-
+constexpr int64_t MEMORY_RECYCLE_TIMEOUT_THRESHOLD_MILLISECONDS = 200;
 const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_LISTENER_OBJ),
      "CodecServiceStub SetListenerObject"},
@@ -396,30 +396,30 @@ int32_t CodecServiceStub::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySess
 }
 #endif
 
-void CodecServiceStub::NotifyBackGround(bool recycleMemory)
+void CodecServiceStub::NotifyMemoryRecycle()
 {
-    std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_LOG(codecServer_ != nullptr, "Codec server is nullptr");
-    std::static_pointer_cast<CodecServer>(codecServer_)->NotifyBackGround(recycleMemory);
+    std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
+    std::static_pointer_cast<CodecServer>(codecServer_)->NotifyBackGround();
     std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
     int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-    if (duration > TIMEOUT_THRESHOLD_MILLISECONDS) {
-        AVCODEC_LOGW("NotifyBackGround duration: %{public}" PRId64 " ms", duration);
+    if (duration > MEMORY_RECYCLE_TIMEOUT_THRESHOLD_MILLISECONDS) {
+        AVCODEC_LOGW("NotifyMemoryRecycle duration: %{public}" PRId64 " ms", duration);
     }
     return;
 }
 
-void CodecServiceStub::NotifyForeGround()
+void CodecServiceStub::NotifyMemoryWriteBack()
 {
-    std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_LOG(codecServer_ != nullptr, "Codec server is nullptr");
+    std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
     std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
     std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
     int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-    if (duration > TIMEOUT_THRESHOLD_MILLISECONDS) {
-        AVCODEC_LOGW("NotifyForeGround duration: %{public}" PRId64 " ms", duration);
+    if (duration > MEMORY_RECYCLE_TIMEOUT_THRESHOLD_MILLISECONDS) {
+        AVCODEC_LOGW("NotifyMemoryWriteBack duration: %{public}" PRId64 " ms", duration);
     }
     return;
 }

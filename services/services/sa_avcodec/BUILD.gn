@@ -33,11 +33,13 @@ ohos_source_set("sa_manager") {
     "../codec/ipc/",
     "../codeclist/ipc/",
     "../../include/",
+    "../common/event_manager/event_handler/background_event_handler/",
   ]
 
   defines = av_codec_defines
 
   sources = [
+    "../common/event_manager/event_handler/background_event_handler/background_event_handler.cpp",
     "ipc/avcodec_listener_proxy.cpp",
     "ipc/avcodec_parcel.cpp",
     "ipc/avcodec_service_stub.cpp",
@@ -47,12 +49,16 @@ ohos_source_set("sa_manager") {
 
   external_deps = [
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
-    "init:libbegetutil",
   ]
+
+  if (av_codec_support_efficiency_manager) {
+    external_deps += [ "efficiency_manager:suspend_manager_client" ]
+  }
 
   subsystem_name = "multimedia"
   part_name = "av_codec"

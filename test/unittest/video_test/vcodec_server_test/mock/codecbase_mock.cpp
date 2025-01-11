@@ -410,22 +410,22 @@ int32_t CodecBase::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySes
     return mock->SetAudioDecryptionConfig(keySession, svpFlag);
 }
 
-int32_t CodecBase::NotifyBackGround(bool recycleMemory)
+int32_t CodecBase::NotifyMemoryRecycle()
 {
     std::lock_guard<std::mutex> lock(g_mutex);
     UNITTEST_INFO_LOG("");
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
-    return mock->NotifyBackGround(recycleMemory);
+    return mock->NotifyMemoryRecycle();
 }
 
-int32_t CodecBase::NotifyForeGround()
+int32_t CodecBase::NotifyMemoryWriteBack()
 {
     std::lock_guard<std::mutex> lock(g_mutex);
     UNITTEST_INFO_LOG("");
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
-    return mock->NotifyForeGround();
+    return mock->NotifyMemoryWriteBack();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

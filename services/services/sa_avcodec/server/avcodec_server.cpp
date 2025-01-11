@@ -21,6 +21,7 @@
 #include "avcodec_trace.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
+#include "background_event_handler.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServer"};
@@ -61,6 +62,7 @@ void AVCodecServer::OnStart()
     IPCSkeleton::SetMaxWorkThreadNum(SERVER_MAX_IPC_THREAD_NUM);
     AddSystemAbilityListener(MEMORY_MANAGER_SA_ID);
     ServiceStartEventWrite(useTime, "AV_CODEC service");
+    BackGroundEventHandler::GetInstance().RegisterSuspendObserver();
 }
 
 int32_t AVCodecServer::OnIdle([[maybe_unused]] const SystemAbilityOnDemandReason &idleReason)
@@ -78,6 +80,7 @@ void AVCodecServer::OnStop()
 {
     std::lock_guard<std::mutex> stateLock(stateMutex_);
     AVCODEC_LOGI("In");
+    BackGroundEventHandler::GetInstance().UnregisterSuspendObserver();
     AVCodecServerManager::GetInstance().NotifyProcessStatus(0);
 }
 

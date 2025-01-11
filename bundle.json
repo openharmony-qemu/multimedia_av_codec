@@ -77,7 +77,8 @@
           "curl",
           "openssl",
           "hiview",
-          "cJSON"
+          "cJSON",
+          "efficiency_manager"
         ],
         "third_party": []
       },

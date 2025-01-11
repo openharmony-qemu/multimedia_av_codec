@@ -214,8 +214,8 @@ public:
     MOCK_METHOD(int32_t, SetAudioDecryptionConfig,
                 (const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag));
     MOCK_METHOD(int32_t, SetCustomBuffer, (std::shared_ptr<AVBuffer> buffer));
-    MOCK_METHOD(int32_t, NotifyBackGround, (bool recycleMemory));
-    MOCK_METHOD(int32_t, NotifyForeGround, ());
+    MOCK_METHOD(int32_t, NotifyMemoryRecycle, ());
+    MOCK_METHOD(int32_t, NotifyMemoryWriteBack, ());
     std::weak_ptr<AVCodecCallback> codecCb_;
     std::weak_ptr<MediaCodecCallback> videoCb_;
 };
@@ -251,8 +251,8 @@ public:
     virtual std::string GetHidumperInfo();
     virtual int32_t Init(Media::Meta &meta);
     virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer);
-    virtual int32_t NotifyBackGround(bool recycleMemory);
-    virtual int32_t NotifyForeGround();
+    virtual int32_t NotifyMemoryRecycle();
+    virtual int32_t NotifyMemoryWriteBack();
 
     /* API11 audio codec interface */
     virtual int32_t CreateCodecByName(const std::string &name);

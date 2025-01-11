@@ -157,8 +157,6 @@ ohos_shared_library("av_codec_service") {
       "$av_codec_root_dir/services/engine/codeclist:av_codec_engine_codeclist",
     ]
   }
-  
-  defines = [ "AVCODEC_SUPPORT_EVENT_MANAGER" ]
 
   defines = [ "AVCODEC_SUPPORT_EVENT_MANAGER" ]
 
@@ -169,11 +167,11 @@ ohos_shared_library("av_codec_service") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
-    "init:libbegetutil",
   ]
 
   public_external_deps = [ "json:nlohmann_json_static" ]

@@ -1168,7 +1168,6 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_001, TestSize.Level1)
     CreateHCodecByMime();
     server_->isModeConfirmed_ = true;
     server_->isSurfaceMode_ = true;
-    bool recycleMemory = true;
 
     std::vector<CodecServer::CodecStatus> testList = {
         CodecServer::CodecStatus::RUNNING,
@@ -1179,8 +1178,56 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_001, TestSize.Level1)
     for (auto &val : testList) {
         server_->status_ = val;
         server_->isFreezedFlag_ = false;
-        server_->NotifyBackGround(recycleMemory);
+        server_->NotifyBackGround();
         EXPECT_TRUE(server_->isFreezedFlag_);
+    }
+}
+
+/**
+ * @tc.name: NotifyBackGround_Valid_Test_002
+ * @tc.desc: NotifyBackGround valid progress - buffer mode
+ */
+HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_002, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isModeConfirmed_ = true;
+    server_->isSurfaceMode_ = false;
+
+    std::vector<CodecServer::CodecStatus> testList = {
+        CodecServer::CodecStatus::RUNNING,
+        CodecServer::CodecStatus::END_OF_STREAM,
+        CodecServer::CodecStatus::FLUSHED,
+    };
+
+    for (auto &val : testList) {
+        server_->status_ = val;
+        server_->isFreezedFlag_ = false;
+        server_->NotifyBackGround();
+        EXPECT_TRUE(server_->isFreezedFlag_);
+    }
+}
+
+/**
+ * @tc.name: NotifyBackGround_Invalid_Test_001
+ * @tc.desc: NotifyBackGround invalid progress - wrong status of codec
+ */
+HWTEST_F(CodecServerUnitTest, NotifyBackGround_Invalid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isModeConfirmed_ = true;
+    server_->isSurfaceMode_ = true;
+
+    std::vector<CodecServer::CodecStatus> testList = {
+        CodecServer::CodecStatus::INITIALIZED,
+        CodecServer::CodecStatus::UNINITIALIZED,
+        CodecServer::CodecStatus::ERROR,
+    };
+
+    for (auto &val : testList) {
+        server_->status_ = val;
+        server_->isFreezedFlag_ = false;
+        server_->NotifyBackGround();
+        EXPECT_FALSE(server_->isFreezedFlag_);
     }
 }
 
@@ -1193,6 +1240,20 @@ HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_001, TestSize.Level1)
     CreateHCodecByMime();
     server_->isModeConfirmed_ = true;
     server_->isSurfaceMode_ = true;
+    server_->isFreezedFlag_ = true;
+    server_->NotifyForeGround();
+    EXPECT_FALSE(server_->isFreezedFlag_);
+}
+
+/**
+ * @tc.name: NotifyForeGround_Valid_Test_002
+ * @tc.desc: NotifyForeGround valid progress - buffer mode
+ */
+HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_002, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isModeConfirmed_ = true;
+    server_->isSurfaceMode_ = false;
     server_->isFreezedFlag_ = true;
     server_->NotifyForeGround();
     EXPECT_FALSE(server_->isFreezedFlag_);

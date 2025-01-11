@@ -105,16 +105,15 @@ int32_t CodecBase::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
     return AVCS_ERR_OK;
 }
 
-int32_t CodecBase::NotifyBackGround(bool recycleMemory)
+int32_t CodecBase::NotifyMemoryRecycle()
 {
-    (void)recycleMemory;
-    AVCODEC_LOGW("Notify recycle mem is not supported");
+    AVCODEC_LOGW("Notify memory recycle is not supported");
     return AVCS_ERR_OK;
 }
 
-int32_t CodecBase::NotifyForeGround()
+int32_t CodecBase::NotifyMemoryWriteBack()
 {
-    AVCODEC_LOGW("Notify restore mem is not supported");
+    AVCODEC_LOGW("Notify memory write back is not supported");
     return AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec

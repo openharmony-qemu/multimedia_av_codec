@@ -14,11 +14,9 @@
  */
 
 #include "codeclist_service_stub.h"
-#include "codeclist_service_stub.h"
 #include <unistd.h>
 #include <string>
 #include <map>
-#include "codeclist_server.h"
 #include "codeclist_server.h"
 #include "avsharedmemory_ipc.h"
 #include "avcodec_errors.h"

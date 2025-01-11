@@ -36,6 +36,11 @@ declare_args() {
   av_codec_support_hevc_decoder = true
   av_codec_enable_start_stop_on_demand = false
   av_codec_hcodec_enable_qos_the_whole_time = false
+  av_codec_support_efficiency_manager = false
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_efficiency_manager)) {
+    av_codec_support_efficiency_manager = true
+  }
 }
 av_codec_sanitize = {
   boundary_sanitize = true
