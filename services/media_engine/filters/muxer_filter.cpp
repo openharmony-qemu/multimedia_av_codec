@@ -41,6 +41,7 @@ namespace Pipeline {
 using namespace OHOS::MediaAVCodec;
 constexpr int64_t WAIT_TIME_OUT_NS = 3000000000;
 constexpr int64_t US_TO_MS = 1000;
+constexpr int64_t S_TO_MS = 1000;
 constexpr uint32_t BUFFER_IS_EOS = 1;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
     [](const std::string& name, const FilterType type) {
@@ -299,6 +300,12 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnBufferFilled");
     if (!isTransCoderMode) {
         int64_t currentBufferPts = inputBuffer->pts_;
+        if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS) {
+            MEDIA_LOG_I("MuxerFilter::OnBufferFilled currentBufferPts > maxDuration_ start to stop");
+            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
+            inputBufferQueue->ReturnBuffer(inputBuffer, false);
+            return;
+        }
         int64_t anotherBufferPts = 0;
         for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
             if (mapInterator->first != trackIndex) {
@@ -388,6 +395,13 @@ void MuxerFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     appPid_ = appPid;
     bundleName_ = bundleName;
     instanceId_ = instanceId;
+}
+
+void MuxerFilter::SetMaxDuration(int32_t maxDuration)
+{
+    MEDIA_LOG_I("MuxerFilter SetMaxDuration = %{public}d", maxDuration);
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::SetMaxDuration");
+    maxDuration_ = maxDuration;
 }
 } // namespace Pipeline
 } // namespace MEDIA
