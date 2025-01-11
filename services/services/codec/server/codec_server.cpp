@@ -463,6 +463,7 @@ int32_t CodecServer::Release()
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
     }
+    OnInstanceMemoryResetEvent();
     return ret;
 }
 

@@ -440,6 +440,7 @@ int32_t HEncoder::UpdateOutPortFormat()
     }
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, def.format.video.nFrameWidth);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, def.format.video.nFrameHeight);
+    outputFormat_->PutIntValue("IS_VENDOR", 1);
     return AVCS_ERR_OK;
 }
 

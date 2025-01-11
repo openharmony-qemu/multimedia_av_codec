@@ -86,11 +86,11 @@ static const CalculatorParameter HARDWARE_DECODER_HEVC_10BIT_YUV420_PARAMETER = 
     false
 };
 
-static const CalculatorParameter HARDWARE_DECODER_HEVC_10BIT_YUV420_POSTPROCESSING_PARAMETER = {
+static const CalculatorParameter HARDWARE_DECODER_HEVC_YUV420_POSTPROCESSING_PARAMETER = {
     AVCODEC_TYPE_VIDEO_DECODER,
     CodecMimeType::VIDEO_HEVC.data(),
     CalculatorParameterPixelFormat::YUV420,
-    BitDepth::BIT_10,
+    BitDepth::BIT_8,
     true,
     true
 };
@@ -229,7 +229,7 @@ uint32_t HardwareDecoderHevc10BitYUV420(uint32_t blockSize)
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
-uint32_t HardwareDecoderHevc10BitYUV420PostProcessing(uint32_t blockSize)
+uint32_t HardwareDecoderHevcYUV420PostProcessing(uint32_t blockSize)
 {
     auto linearSlope = 0.0;
     auto linearIntercept = 0U;
@@ -337,7 +337,7 @@ uint32_t SoftwareDecoderHevcYUV420(uint32_t blockSize)
 const std::unordered_map<CalculatorParameter, uint32_t (*)(uint32_t),
                          CalculatorParamterHash, CalculatorParamterEqual> CALCULATOR_MAP = {
     {HARDWARE_DECODER_HEVC_10BIT_YUV420_PARAMETER, HardwareDecoderHevc10BitYUV420},
-    {HARDWARE_DECODER_HEVC_10BIT_YUV420_POSTPROCESSING_PARAMETER, HardwareDecoderHevc10BitYUV420PostProcessing},
+    {HARDWARE_DECODER_HEVC_YUV420_POSTPROCESSING_PARAMETER, HardwareDecoderHevcYUV420PostProcessing},
     {HARDWARE_DECODER_VVC_10BIT_YUV420_PARAMETER, HardwareDecoderVvc10BitYUV420},
     {HARDWARE_DECODER_VVC_YUV420_PARAMETER, HardwareDecoderVvcYUV420},
     {HARDWARE_DECODER_AVC_YUV420_PARAMETER, HardwareDecoderYUV420},
