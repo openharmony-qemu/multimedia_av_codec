@@ -358,7 +358,7 @@ std::optional<CalculatorType> InstanceMemoryUpdateEventHandler::GetCalculator(co
     CalculatorParameter calculatorParameter;
     std::string pixelFormatStr;
     int32_t profile = 0;
-    meta.GetData(Media::Tag::VIDEO_PIXEL_FORMAT, pixelFormat);
+    GetMetaData(meta, Media::Tag::VIDEO_PIXEL_FORMAT, *reinterpret_cast<int32_t *>(&pixelFormat));
     meta.GetData(Media::Tag::MIME_TYPE, calculatorParameter.mimeType);
     meta.GetData(EventInfoExtentedKey::CODEC_TYPE.data(), calculatorParameter.codecType);
     meta.GetData(EventInfoExtentedKey::IS_HARDWARE.data(), calculatorParameter.isHardware);
