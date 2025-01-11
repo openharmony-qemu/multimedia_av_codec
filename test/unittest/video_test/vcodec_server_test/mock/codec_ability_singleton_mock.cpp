@@ -45,9 +45,9 @@ std::optional<CapabilityData> CodecAbilitySingleton::GetCapabilityByName(const s
     return CodecAbilitySingletonImpl::GetCapabilityByName(name);
 }
 
-std::optional<CapabilityData> CodecAbilitySingleton::GetMimeByCodecName(const std::string &name)
+std::string CodecAbilitySingleton::GetMimeByCodecName(const std::string &name)
 {
-    return CodecAbilitySingletonImpl::GetMimeByCodecName(name);
+    return std::string();
 }
 
 std::unordered_map<std::string, CodecType> CodecAbilitySingleton::GetNameCodecTypeMap()
