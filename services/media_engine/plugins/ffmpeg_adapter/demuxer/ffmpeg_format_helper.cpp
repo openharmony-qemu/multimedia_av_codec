@@ -784,7 +784,14 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     }
 
     if (GetFileTypeByName(avFormatContext) == FileType::APE) {
-        format.Set<Tag::AUDIO_MAX_INPUT_SIZE>(avStream.codecpar->max_frame_size);
+        const AVDictionaryEntry *meta = av_dict_get(avFormatContext.metadata, "max_frame_size", NULL, 0);
+        if (meta != nullptr) {
+            format.Set<Tag::AUDIO_MAX_INPUT_SIZE>(std::stoi(meta->value));
+        }
+        meta = av_dict_get(avFormatContext.metadata, "sample_per_frame", NULL, 0);
+        if (meta != nullptr) {
+            format.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(std::stoi(meta->value));
+        }
     }
 }
 
