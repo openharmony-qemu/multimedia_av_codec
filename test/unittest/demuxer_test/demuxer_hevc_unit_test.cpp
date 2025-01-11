@@ -1199,8 +1199,10 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1401, TestSize.Level1)
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            ASSERT_TRUE(CheckKeyFrameIndex(
-                keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
+            if (idx == 0) {
+                ASSERT_TRUE(CheckKeyFrameIndex(
+                    keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
+            }
             CountFrames(idx);
         }
     }
@@ -1234,8 +1236,10 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1402, TestSize.Level1)
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            ASSERT_TRUE(CheckKeyFrameIndex(
-                keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
+            if (idx == 0) {
+                ASSERT_TRUE(CheckKeyFrameIndex(
+                    keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
+            }
             CountFrames(idx);
         }
     }
