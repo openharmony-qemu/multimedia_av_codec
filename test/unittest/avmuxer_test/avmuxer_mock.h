@@ -36,6 +36,7 @@ public:
     virtual int32_t WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer *sample)  = 0;
     virtual int32_t SetRotation(int32_t rotation) = 0;
     virtual int32_t SetTimedMetadata() = 0;
+    virtual int32_t SetFormat(std::shared_ptr<FormatMock> &format) = 0;
 };
 
 class __attribute__((visibility("default"))) AVMuxerMockFactory {

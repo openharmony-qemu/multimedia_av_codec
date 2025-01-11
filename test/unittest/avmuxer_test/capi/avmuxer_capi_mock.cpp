@@ -80,5 +80,14 @@ int32_t AVMuxerCapiMock::SetRotation(int32_t rotation)
 {
     return OH_AVMuxer_SetRotation(muxer_, rotation);
 }
+
+int32_t AVMuxerCapiMock::SetFormat(std::shared_ptr<FormatMock> &format)
+{
+    if (muxer_ != nullptr) {
+        auto formatMock = std::static_pointer_cast<AVFormatCapiMock>(format);
+        return OH_AVMuxer_SetFormat(muxer_, formatMock->GetFormat());
+    }
+    return AV_ERR_UNKNOWN;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

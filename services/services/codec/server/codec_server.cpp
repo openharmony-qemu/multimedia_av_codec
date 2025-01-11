@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -700,7 +700,6 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
 int32_t CodecServer::ReleaseOutputBufferOfCodec(uint32_t index, bool render)
 {
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-
     int32_t ret;
     if (render) {
         ret = codecBase_->RenderOutputBuffer(index);
@@ -793,6 +792,13 @@ int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecCallback> &call
     return AVCS_ERR_OK;
 }
 
+int32_t CodecServer::SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback)
+{
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    avBufCallback_ = codecCallback;
+    return codecBase_->SetCallback(codecCallback);
+}
+
 int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)
 {
     (void)callback;
@@ -813,6 +819,18 @@ int32_t CodecServer::GetInputFormat(Format &format)
         AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     return codecBase_->GetInputFormat(format);
+}
+
+int32_t CodecServer::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta)
+{
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    return codecBase_->ChangePlugin(mime, isEncoder, meta);
+}
+
+void CodecServer::SetDumpInfo(bool isDump, uint64_t instanceId)
+{
+    CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "Codecbase is nullptr");
+    return codecBase_->SetDumpInfo(isDump, instanceId);
 }
 
 int32_t CodecServer::DumpInfo(int32_t fd)

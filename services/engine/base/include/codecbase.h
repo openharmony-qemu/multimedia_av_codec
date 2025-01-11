@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -54,6 +54,19 @@ public:
     virtual int32_t SignalRequestIDRFrame();
     virtual int32_t GetInputFormat(Format& format);
     virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer);
+    virtual int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
+    {
+        (void)mime;
+        (void)isEncoder;
+        (void)meta;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
+    virtual void SetDumpInfo(bool isDump, uint64_t instanceId)
+    {
+        (void)isDump;
+        (void)instanceId;
+    }
 
     virtual std::string GetHidumperInfo()
     {

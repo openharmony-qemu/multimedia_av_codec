@@ -96,5 +96,13 @@ int32_t AVMuxerSample::SetRotation(int32_t rotation)
     }
     return muxer_->SetRotation(rotation);
 }
+
+int32_t AVMuxerSample::SetFormat(std::shared_ptr<FormatMock> &format)
+{
+    if (muxer_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    return muxer_->SetFormat(format);
+}
 }  // namespace MediaAVCodec
 }  // namespace OHOS

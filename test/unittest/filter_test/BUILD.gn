@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Copyright (c) 2024-2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -81,6 +81,7 @@ ohos_unittest("filter_unit_test") {
     sources = [
       "$av_codec_root_dir/services/media_engine/filters/audio_capture_filter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/audio_data_source_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/audio_decoder_adapter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/audio_sink_filter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/codec_capability_adapter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/decoder_surface_filter.cpp",
@@ -96,6 +97,7 @@ ohos_unittest("filter_unit_test") {
       "$av_codec_root_dir/services/media_engine/modules/sink/subtitle_sink.cpp",
       "./audio_capture_filter_unit_test.cpp",
       "./audio_data_source_filter_unit_test.cpp",
+      "./audio_decoder_adapter_unit_test.cpp",
       "./audio_sink_filter_unit_test.cpp",
       "./codec_capability_adapter_unit_test.cpp",
       "./decoder_surface_filter_unit_test.cpp",

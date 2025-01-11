@@ -142,6 +142,7 @@ public:
     void DumpInfo(OH_AVCodecBufferAttr attr, OH_AVBuffer *buffer);
     void readMultiFilesFunc();
     int32_t InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuffer, OH_NativeBuffer *&nativeBuffer, uint8_t *&dst);
+    void InputEnableRepeatSleep();
     VEncAPI11Signal *signal_;
     uint32_t errCount = 0;
     bool enableForceIDR = false;
@@ -180,6 +181,12 @@ public:
     bool configMain10 = false;
     bool setFormat8Bit = false;
     bool setFormat10Bit = false;
+    bool enableRepeat = false;
+    bool enableSeekEos = false;
+    bool setMaxCount = false;
+    int32_t DEFAULT_FRAME_AFTER = 1;
+    int32_t DEFAULT_MAX_COUNT = 1;
+    uint32_t inCount = 0;
 private:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::ifstream> inFile_;
