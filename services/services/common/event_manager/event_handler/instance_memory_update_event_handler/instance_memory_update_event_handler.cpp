@@ -26,7 +26,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceMemoryUpdateEventHandler"};
-constexpr int32_t MEMORY_LEAK_UPLOAD_TIMEOUT = 180; // seconds
+constexpr int32_t MEMORY_LEAK_UPLOAD_TIMEOUT = 10; // seconds
 constexpr uint32_t THRESHOLD_CONFIG_FILE_SIZE_MAX = 1024'576; // 1024576, 1M
 } // namespace
 
@@ -134,7 +134,8 @@ std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemo
 
 void InstanceMemoryUpdateEventHandler::UpdateAppMemoryThreshold()
 {
-    appMemoryThreshold_ = ThresholdParser::GetThreshold();
+    appMemoryThreshold_ = 5000;
+    // appMemoryThreshold_ = ThresholdParser::GetThreshold();
 }
 
 uint32_t InstanceMemoryUpdateEventHandler::SumAppMemory(pid_t callerPid, pid_t actualCallerPid)
@@ -179,6 +180,9 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
                                                                                  pid_t forwardCallerPid)
 {
     auto actualCallerPid = forwardCallerPid == INVALID_PID ? callerPid : forwardCallerPid;
+    if (actualCallerPid == INVALID_PID) {
+        return;
+    }
     auto memory = SumAppMemory(callerPid, actualCallerPid);
     auto appMemoryExceedThreshold = memory > appMemoryThreshold_;
     auto appExistTimer = false;
@@ -197,8 +201,8 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
             [=](void *) -> void { ReportAppMemory(callerPid, actualCallerPid); });
         std::lock_guard<std::shared_mutex> timerLock(timerMutex_);
         timerMap_.emplace(actualCallerPid, timer);
-        AVCODEC_LOGI("Determined pid %{public}d memory exceed threshold(%{public}u KB), event timer added",
-            actualCallerPid, memory);
+        AVCODEC_LOGI("Determined pid %{public}d memory(%{public}u KB) exceed threshold(%{public}u KB), "
+            "event timer added", actualCallerPid, memory, appMemoryThreshold_);
     } else if (!appMemoryExceedThreshold && appExistTimer && !appInExceedThresholdList) {
         InstanceMemoryUpdateEventHandler::GetInstance().RemoveTimer(actualCallerPid);
     } else if (appMemoryExceedThreshold && !appExistTimer && appInExceedThresholdList) {
