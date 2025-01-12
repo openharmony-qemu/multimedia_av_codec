@@ -15,41 +15,138 @@
 
 #include "avcodec_xcollie.h"
 #include <unistd.h>
-#include "avcodec_errors.h"
-#include "param_wrapper.h"
-#include "avcodec_dump_utils.h"
-#include "avcodec_log.h"
-#include "avcodec_sysevent.h"
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 #ifdef HICOLLIE_ENABLE
 #include "xcollie/xcollie.h"
 #include "xcollie/xcollie_define.h"
 #endif
 
+#include "avcodec_errors.h"
+#include "avcodec_dump_utils.h"
+#include "avcodec_log.h"
+#include "avcodec_sysevent.h"
+
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecXCollie"};
-    constexpr uint32_t DUMP_XCOLLIE_INDEX = 0x01000000;
+    constexpr uint32_t DUMP_XCOLLIE_INDEX = 0x01'00'00'00;
     constexpr uint8_t DUMP_OFFSET_16 = 16;
+    constexpr uint8_t DUMP_OFFSET_8 = 8;
     constexpr uint64_t COLLIE_INVALID_INDEX = 0;
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
+static std::string GetTimeString(std::time_t time)
+{
+    std::stringstream ss;
+    struct tm timeTm;
+    ss << std::put_time(localtime_r(&time, &timeTm), "%F %T");
+    return ss.str();
+}
+
 AVCodecXCollie &AVCodecXCollie::GetInstance()
 {
     static AVCodecXCollie instance;
     return instance;
 }
 
-void AVCodecXCollie::ServiceTimerCallback(void *data)
+int32_t AVCodecXCollie::SetTimer(const std::string &name, bool recovery, uint32_t timeout,
+                                 std::function<void(void *)> callback)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+
+    unsigned int flag = HiviewDFX::XCOLLIE_FLAG_LOG | HiviewDFX::XCOLLIE_FLAG_NOOP;
+    flag |= (recovery ? HiviewDFX::XCOLLIE_FLAG_RECOVERY : 0);
+
+    TimerInfo timerInfo = {
+        .name = name.data(),
+        .startTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()),
+        .timeout = timeout
+    };
+    int32_t id = HiviewDFX::XCollie::GetInstance().SetTimer(
+        name.data(), timeout, callback, reinterpret_cast<void *>(&timerInfo), flag);
+    if (id != HiviewDFX::INVALID_ID) {
+        dfxDumper_.emplace(id, timerInfo);
+    }
+    return id;
+}
+
+int32_t AVCodecXCollie::SetInterfaceTimer(const std::string &name, bool isService, bool recovery, uint32_t timeout)
+{
+#ifdef HICOLLIE_ENABLE
+    std::function<void (void *)> func = isService ?
+        [](void *data) { AVCodecXCollie::ServiceInterfaceTimerCallback(data); } :
+        [](void *data) { AVCodecXCollie::ClientInterfaceTimerCallback(data); };
+
+    return SetTimer(name, recovery, timeout, func);
+#else
+    return COLLIE_INVALID_INDEX;
+#endif
+}
+
+void AVCodecXCollie::CancelTimer([[maybe_unused]]int32_t timerId)
+{
+#ifdef HICOLLIE_ENABLE
+    if (timerId == COLLIE_INVALID_INDEX) {
+        return;
+    }
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    HiviewDFX::XCollie::GetInstance().CancelTimer(timerId);
+
+    auto it = dfxDumper_.find(timerId);
+    if (it == dfxDumper_.end()) {
+        return;
+    }
+    dfxDumper_.erase(it);
+#endif
+}
+
+int32_t AVCodecXCollie::Dump(int32_t fd)
+{
+    using namespace std::string_literals;
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    if (dfxDumper_.empty()) {
+        return AVCS_ERR_OK;
+    }
+
+    std::string dumpString = "[AVCodec_XCollie]\n";
+    AVCodecDumpControler dumpControler;
+    uint32_t dumperIndex = 1;
+    for (const auto &iter : dfxDumper_) {
+        uint32_t timeInfoIndex = 1;
+        auto titleIndex = DUMP_XCOLLIE_INDEX + (dumperIndex << DUMP_OFFSET_16);
+        dumpControler.AddInfo(titleIndex, "Timer_"s + std::to_string(dumperIndex));
+        dumpControler.AddInfo(titleIndex + (timeInfoIndex++ << DUMP_OFFSET_8), "TimerName", iter.second.name);
+        dumpControler.AddInfo(titleIndex + (timeInfoIndex++ << DUMP_OFFSET_8),
+            "StartTime", GetTimeString(iter.second.startTime).c_str());
+        dumpControler.AddInfo(titleIndex + (timeInfoIndex++ << DUMP_OFFSET_8),
+            "TimeLeft",
+            std::to_string(iter.second.timeout + iter.second.startTime -
+                std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())));
+        dumperIndex++;
+    }
+
+    dumpControler.GetDumpString(dumpString);
+    dumpString += "\n";
+    if (fd != -1) {
+        write(fd, dumpString.c_str(), dumpString.size());
+        dumpString.clear();
+    }
+    return AVCS_ERR_OK;
+}
+
+void AVCodecXCollie::ServiceInterfaceTimerCallback(void *data)
+{
+    static uint32_t threadDeadlockCount_ = 0;
     threadDeadlockCount_++;
-    std::string name = data != nullptr ? (char *)data : "";
+    std::string name = data != nullptr ? reinterpret_cast<TimerInfo *>(data)->name.c_str() : "";
 
     AVCODEC_LOGE("Service task %{public}s timeout", name.c_str());
     FaultEventWrite(FaultType::FAULT_TYPE_FREEZE, std::string("Service task ") +
         name + std::string(" timeout"), "Service");
-        
+
     static constexpr uint32_t threshold = 1; // >= 1 Restart service
     if (threadDeadlockCount_ >= threshold) {
         FaultEventWrite(FaultType::FAULT_TYPE_FREEZE,
@@ -59,91 +156,12 @@ void AVCodecXCollie::ServiceTimerCallback(void *data)
     }
 }
 
-void AVCodecXCollie::ClientTimerCallback(void *data)
+void AVCodecXCollie::ClientInterfaceTimerCallback(void *data)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    std::string name = data != nullptr ? (char *)data : "";
+    std::string name = data != nullptr ? reinterpret_cast<TimerInfo *>(data)->name.c_str() : "";
     AVCODEC_LOGE("Client task %{public}s timeout", name.c_str());
     FaultEventWrite(FaultType::FAULT_TYPE_FREEZE, std::string("Client task ") +
         name + std::string(" timeout"), "Client");
-}
-
-int32_t AVCodecXCollie::Dump(int32_t fd)
-{
-    if (dfxDumper_.empty()) {
-        return AVCS_ERR_OK;
-    }
-    
-    std::lock_guard<std::mutex> lock(mutex_);
-    std::string dumpString = "[AVCodec_XCollie]\n";
-    AVCodecDumpControler dumpControler;
-    uint32_t dumperIndex = 1;
-    for (const auto &iter : dfxDumper_) {
-        dumpControler.AddInfo(DUMP_XCOLLIE_INDEX + (dumperIndex << DUMP_OFFSET_16), "Timer_Name", iter.second.second);
-        dumperIndex++;
-    }
-    dumpControler.GetDumpString(dumpString);
-    if (fd != -1) {
-        write(fd, dumpString.c_str(), dumpString.size());
-        dumpString.clear();
-    }
-    return AVCS_ERR_OK;
-}
-
-
-uint64_t AVCodecXCollie::SetTimer(const std::string &name, bool isService, bool recovery, uint32_t timeout)
-{
-#ifdef HICOLLIE_ENABLE
-    std::lock_guard<std::mutex> lock(mutex_);
-    
-    std::function<void (void *)> func;
-    if (isService) {
-        func = [this](void *data) { this->ServiceTimerCallback(data); };
-    } else {
-        func = [this](void *data) { this->ClientTimerCallback(data); };
-    }
-    
-    unsigned int flag = HiviewDFX::XCOLLIE_FLAG_LOG | HiviewDFX::XCOLLIE_FLAG_NOOP;
-    if (recovery) {
-        flag |= HiviewDFX::XCOLLIE_FLAG_RECOVERY;
-    }
-    uint64_t tempIndex = dumperIndex_++;
-    dfxDumper_.emplace(tempIndex, std::pair<int32_t, std::string>(HiviewDFX::INVALID_ID, name));
-    int32_t id = HiviewDFX::XCollie::GetInstance().SetTimer(name,
-        timeout, func, (void *)dfxDumper_[tempIndex].second.c_str(), flag);
-    if (id == HiviewDFX::INVALID_ID) {
-        auto it = dfxDumper_.find(tempIndex);
-        if (it != dfxDumper_.end()) {
-            dfxDumper_.erase(it);
-            return COLLIE_INVALID_INDEX;
-        }
-    }
-    dfxDumper_[tempIndex].first = id;
-    return tempIndex;
-#else
-    (void)dumperIndex_;
-    return COLLIE_INVALID_INDEX;
-#endif
-}
-
-void AVCodecXCollie::CancelTimer(uint64_t index)
-{
-#ifdef HICOLLIE_ENABLE
-    if (index == COLLIE_INVALID_INDEX) {
-        return;
-    }
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto it = dfxDumper_.find(index);
-    if (it == dfxDumper_.end()) {
-        return;
-    }
-    int32_t id = it->second.first;
-    dfxDumper_.erase(it);
-    return HiviewDFX::XCollie::GetInstance().CancelTimer(id);
-#else
-    (void)index;
-    return;
-#endif
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

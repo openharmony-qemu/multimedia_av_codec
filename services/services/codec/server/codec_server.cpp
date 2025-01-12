@@ -34,6 +34,9 @@
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
+#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
+#include "event_manager.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
@@ -144,11 +147,11 @@ void PostProcessingCallbackOnOutputFormatChanged(const OHOS::Media::Format& form
 namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
-std::shared_ptr<ICodecService> CodecServer::Create()
+std::shared_ptr<ICodecService> CodecServer::Create(int32_t instanceId)
 {
     std::shared_ptr<CodecServer> server = std::make_shared<CodecServer>();
 
-    int32_t ret = server->InitServer();
+    int32_t ret = server->InitServer(instanceId);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Server init failed, ret: %{public}d!", ret);
     return server;
 }
@@ -165,11 +168,20 @@ CodecServer::~CodecServer()
     avBufCallback_ = nullptr;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
+#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
+    Media::Meta meta;
+    meta.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    meta.SetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
+    meta.SetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, meta);
+#endif
+
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
-int32_t CodecServer::InitServer()
+int32_t CodecServer::InitServer(int32_t instanceId)
 {
+    instanceId_ = instanceId;
     return AVCS_ERR_OK;
 }
 
@@ -181,11 +193,16 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
     codecType_ = type;
     codecName_ = name;
+    codecMime_ = isMimeType ? name : CodecAbilitySingleton::GetInstance().GetMimeByCodecName(name);
     int32_t ret = isMimeType ? InitByMime(callerInfo, apiVersion) : InitByName(callerInfo, apiVersion);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret,
                              "Init failed. isMimeType:(%{public}d), name:(%{public}s), error:(%{public}d)", isMimeType,
                              name.c_str(), ret);
     SetCallerInfo(callerInfo);
+#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
+    callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
+#endif
 
     shareBufCallback_ = std::make_shared<CodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(shareBufCallback_);
@@ -330,6 +347,7 @@ int32_t CodecServer::Start()
         GetCodecDfxInfo(codecDfxInfo);
         CodecStartEventWrite(codecDfxInfo);
     }
+    OnInstanceMemoryUpdateEvent();
     return ret;
 }
 
@@ -351,6 +369,7 @@ int32_t CodecServer::Stop()
         return (retCodec == AVCS_ERR_OK) ? retPostProcessing : retCodec;
     }
     StatusChanged(CONFIGURED);
+    OnInstanceMemoryResetEvent();
     return AVCS_ERR_OK;
 }
 
@@ -416,6 +435,7 @@ int32_t CodecServer::Reset()
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
     }
+    OnInstanceMemoryResetEvent();
     return ret;
 }
 
@@ -443,6 +463,7 @@ int32_t CodecServer::Release()
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
     }
+    OnInstanceMemoryResetEvent();
     return ret;
 }
 
@@ -689,6 +710,38 @@ int32_t CodecServer::ReleaseOutputBufferOfCodec(uint32_t index, bool render)
     return ret;
 }
 
+void CodecServer::OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta)
+{
+#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
+    if (meta == nullptr) {
+        Format format;
+        (void)(codecType_ == AVCODEC_TYPE_VIDEO_DECODER ?
+            codecBase_->GetOutputFormat(format) : codecBase_->GetInputFormat(format));
+        meta = format.GetMeta();
+    }
+    if (meta == nullptr) {
+        return;
+    }
+
+    meta->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), codecType_);
+    meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    meta->SetData(EventInfoExtentedKey::ENABLE_POST_PROCESSING.data(), postProcessing_ != nullptr);
+    meta->SetData(Media::Tag::MIME_TYPE, codecMime_);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_MEMORY_UPDATE, *meta);
+#endif
+}
+
+void CodecServer::OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta)
+{
+#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
+    if (meta == nullptr) {
+        meta = std::make_shared<Media::Meta>();
+    }
+    meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_MEMORY_RESET, *meta);
+#endif
+}
+
 int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
 {
     (void)renderTimestampNs;
@@ -886,6 +939,8 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
     if (codecCb_ != nullptr) {
         codecCb_->OnOutputFormatChanged(format);
     }
+    auto formatTemp = format;
+    OnInstanceMemoryUpdateEvent(formatTemp.GetMeta());
 }
 
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)

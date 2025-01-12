@@ -121,6 +121,17 @@ std::optional<CapabilityData> CodecAbilitySingleton::GetCapabilityByName(const s
     return it == capabilityDataArray_.end() ? std::nullopt : std::make_optional<CapabilityData>(*it);
 }
 
+std::string CodecAbilitySingleton::GetMimeByCodecName(const std::string & name)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (const auto &cap : capabilityDataArray_) {
+        if (cap.codecName == name) {
+            return cap.mimeType;
+        }
+    }
+    return "";
+}
+
 std::unordered_map<std::string, CodecType> CodecAbilitySingleton::GetNameCodecTypeMap()
 {
     std::lock_guard<std::mutex> lock(mutex_);

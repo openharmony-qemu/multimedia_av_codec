@@ -75,11 +75,11 @@
           "libxml2",
           "video_processing_engine",
           "curl",
-          "openssl"
+          "openssl",
+          "hiview",
+          "cJSON"
         ],
-        "third_party": [
-          "bounds_checking_function"
-        ]
+        "third_party": []
       },
       "build": {
         "group_type": {

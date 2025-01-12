@@ -157,6 +157,7 @@ bool HDecoder::UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt)
         HLOGI("GraphicPixelFormat need update: configured(%s) -> portdefinition(%s)",
             configuredFmt_.strFmt.c_str(), fmt->strFmt.c_str());
         configuredFmt_ = fmt.value();
+        outputFormat_->PutStringValue("pixel_format_string", configuredFmt_.strFmt.c_str());
     }
     return true;
 }
@@ -207,6 +208,7 @@ int32_t HDecoder::UpdateOutPortFormat()
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, damage.h);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
+    outputFormat_->PutIntValue("IS_VENDOR", 1);
     HLOGI("output format: %s", outputFormat_->Stringify().c_str());
     return AVCS_ERR_OK;
 }
