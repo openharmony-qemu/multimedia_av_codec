@@ -26,7 +26,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceMemoryUpdateEventHandler"};
-constexpr int32_t MEMORY_LEAK_UPLOAD_TIMEOUT = 10; // seconds
+constexpr int32_t MEMORY_LEAK_UPLOAD_TIMEOUT = 180; // seconds
 constexpr uint32_t THRESHOLD_CONFIG_FILE_SIZE_MAX = 1024'576; // 1024576, 1M
 } // namespace
 
@@ -134,8 +134,7 @@ std::optional<InstanceInfo> InstanceMemoryUpdateEventHandler::UpdateInstanceMemo
 
 void InstanceMemoryUpdateEventHandler::UpdateAppMemoryThreshold()
 {
-    appMemoryThreshold_ = 5000;
-    // appMemoryThreshold_ = ThresholdParser::GetThreshold();
+    appMemoryThreshold_ = ThresholdParser::GetThreshold();
 }
 
 uint32_t InstanceMemoryUpdateEventHandler::SumAppMemory(pid_t callerPid, pid_t actualCallerPid)
