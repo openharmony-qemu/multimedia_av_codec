@@ -303,8 +303,6 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
         if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS) {
             MEDIA_LOG_I("MuxerFilter::OnBufferFilled currentBufferPts > maxDuration_ start to stop");
             eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
-            inputBufferQueue->ReturnBuffer(inputBuffer, false);
-            return;
         }
         int64_t anotherBufferPts = 0;
         for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
