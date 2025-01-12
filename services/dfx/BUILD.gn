@@ -59,7 +59,6 @@ ohos_shared_library("av_codec_service_dfx") {
     "-FS",
     "-O2",
     "-D_FORTIFY_SOURCE=2",
-    "-fvisibility=hidden",
     "-Wformat=2",
     "-Wfloat-equal",
     "-Wdate-time",
