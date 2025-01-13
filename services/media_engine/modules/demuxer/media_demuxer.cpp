@@ -47,6 +47,7 @@ const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
 static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
+static constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 std::map<OHOS::Media::TrackType, OHOS::Media::StreamType> TRACK_TO_STREAM_MAP = {
     {OHOS::Media::TrackType::TRACK_VIDEO, OHOS::Media::StreamType::VIDEO},
     {OHOS::Media::TrackType::TRACK_AUDIO, OHOS::Media::StreamType::AUDIO},
@@ -961,6 +962,8 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
     Status ret = Status::OK;
     if (static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+        FALSE_RETURN_V_MSG_E(streamID != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
+            "Invalid streamId");
         TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
         MEDIA_LOG_D("TrackType " PUBLIC_LOG_D32, static_cast<int32_t>(trackType));
         FALSE_RETURN_V_MSG_E(trackType != TRACK_INVALID, Status::ERROR_INVALID_PARAMETER, "TrackType is invalid");
