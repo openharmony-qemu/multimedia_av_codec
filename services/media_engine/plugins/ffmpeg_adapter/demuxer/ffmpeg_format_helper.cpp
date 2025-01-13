@@ -784,6 +784,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     }
 
     if (GetFileTypeByName(avFormatContext) == FileType::APE) {
+        // Ffmpeg ensures that the value is definitely Int type
         const AVDictionaryEntry *meta = av_dict_get(avFormatContext.metadata, "max_frame_size", NULL, 0);
         if (meta != nullptr) {
             format.Set<Tag::AUDIO_MAX_INPUT_SIZE>(std::stoi(meta->value));
