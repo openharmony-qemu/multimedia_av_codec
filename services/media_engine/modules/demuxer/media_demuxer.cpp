@@ -2008,11 +2008,13 @@ void MediaDemuxer::HandleEvent(const Plugins::PluginEvent &event)
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
             MEDIA_LOG_E("HandleEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
+            FALSE_RETURN(demuxerPluginManager_ != nullptr);
             demuxerPluginManager_->NotifyInitialBufferingEnd(false);
             break;
         }
         case PluginEventType::INITIAL_BUFFER_SUCCESS: {
             MEDIA_LOG_I("HandleEvent initial buffer success");
+            FALSE_RETURN(demuxerPluginManager_ != nullptr);
             demuxerPluginManager_->NotifyInitialBufferingEnd(true);
             break;
         }
