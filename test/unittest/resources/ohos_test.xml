@@ -179,6 +179,10 @@
             <option name="push" value="audio_res/voice_opus.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_ape.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/g711mu_8kHz.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/aac_2c_44100hz_199k_lc.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/aac_2c_44100hz_199k_he.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/aac_2c_44100hz_199k_hev2.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/FLAC_192k_2c_xxkb.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

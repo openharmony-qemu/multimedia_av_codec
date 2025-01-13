@@ -54,6 +54,8 @@ public:
     void OnError(Media::CodecErrorType errorType, int32_t errorCode) override;
 
     void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
+
+    void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) override;
 };
 
 void AudioCodecCallback::OnError(Media::CodecErrorType errorType, int32_t errorCode)
@@ -65,6 +67,11 @@ void AudioCodecCallback::OnError(Media::CodecErrorType errorType, int32_t errorC
 void AudioCodecCallback::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer)
 {
     (void)outputBuffer;
+}
+
+void AudioCodecCallback::OnOutputFormatChanged(const std::shared_ptr<Meta> &format)
+{
+    (void)format;
 }
 
 class TestCodecCallback : public Media::CodecCallback {
