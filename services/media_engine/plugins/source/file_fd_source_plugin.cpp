@@ -45,7 +45,6 @@ constexpr int32_t FDPOS                         = 2;
 constexpr int32_t READ_TIME                     = 3;
 constexpr size_t CACHE_SIZE                     = 40 * 1024 * 1024;
 constexpr size_t PER_CACHE_SIZE                 = 48 * 10 * 1024;;
-constexpr size_t WATER_LINE_BELOW_DEFAULT      = 5 * 1024;
 constexpr int32_t TEN_MILLISECOUNDS             = 10 * 1000;
 constexpr int32_t ONE_SECONDS                   = 1 * 1000 * 1000;
 constexpr int32_t CACHE_TIME_DEFAULT            = 5;
@@ -216,8 +215,8 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
 
     // ringbuffer 0 after seek in 20ms, don't notify buffering
     curReadTime_ = steadyClock2_.ElapsedMilliseconds();
-    if (isReadFrame_ && !HasCacheData(expectedLen, offset) && ringBuffer_->GetSize() < WATER_LINE_BELOW_DEFAULT &&
-         (GetLastSize(position_) > static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT))) {
+    if (isReadFrame_ &&  ringBuffer_->GetSize() < expectedLen && !HasCacheData(expectedLen, offset) &&
+         (GetLastSize(position_) > static_cast<int64_t>(expectedLen))) {
         MEDIA_LOG_I("ringBuffer.size() " PUBLIC_LOG_ZU " curReadTime_ " PUBLIC_LOG_D64
             " lastReadTime_ " PUBLIC_LOG_D64, ringBuffer_->GetSize(), curReadTime_, lastReadTime_);
         CheckReadTime();
@@ -410,8 +409,12 @@ bool FileFdSourcePlugin::HasCacheData(size_t bufferSize, uint64_t offset)
     ioctlData.offset = static_cast<int64_t>(offset);
     ioctlData.readSize = static_cast<int64_t>(bufferSize);
     int32_t ioResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData); // 0在 -1不在
+ 
+    ioctlData.offset = static_cast<int64_t>(cachePosition_);
+    ioctlData.readSize = static_cast<int64_t>(PER_CACHE_SIZE);
+    int32_t ioCacheResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData);
     // ioctl has cache
-    if (ioResult == 0) {
+    if (ioResult == 0 && ioCacheResult == 0) {
         return true;
     } else {
         MEDIA_LOG_I("ioctl has no cache with errno " PUBLIC_LOG_D32, errno);
