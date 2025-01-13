@@ -2002,9 +2002,32 @@ void MediaDemuxer::HandleSourceDrmInfoEvent(const std::multimap<std::string, std
     MEDIA_LOG_D("Demuxer filter received source drminfos but not update");
 }
 
+void MediaDemuxer::HandleEvent(const Plugins::PluginEvent &event)
+{
+    switch (event.type) {
+        case PluginEventType::CLIENT_ERROR:
+        case PluginEventType::SERVER_ERROR: {
+            MEDIA_LOG_E("HandleEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
+            FALSE_RETURN(demuxerPluginManager_ != nullptr);
+            demuxerPluginManager_->NotifyInitialBufferingEnd(false);
+            break;
+        }
+        case PluginEventType::INITIAL_BUFFER_SUCCESS: {
+            MEDIA_LOG_I("HandleEvent initial buffer success");
+            FALSE_RETURN(demuxerPluginManager_ != nullptr);
+            demuxerPluginManager_->NotifyInitialBufferingEnd(true);
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("In");
+
+    HandleEvent(event);
     if (eventReceiver_ == nullptr && event.type != PluginEventType::SOURCE_DRM_INFO_UPDATE) {
         MEDIA_LOG_D("EventReceiver is nullptr");
         return;
@@ -2018,13 +2041,7 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
             MEDIA_LOG_E("OnEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
-            demuxerPluginManager_->NotifyInitialBufferingEnd(false);
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
-            break;
-        }
-        case PluginEventType::INITIAL_BUFFER_SUCCESS: {
-            MEDIA_LOG_I("OnEvent initial buffer success");
-            demuxerPluginManager_->NotifyInitialBufferingEnd(true);
             break;
         }
         case PluginEventType::CACHED_DURATION: {

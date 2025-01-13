@@ -87,6 +87,7 @@ public:
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
+    void HandleEvent(const Plugins::PluginEvent &event);
     void OnEvent(const Plugins::PluginEvent &event) override;
     void OnEventBuffer(const Plugins::PluginEvent &event);
     void OnSeekReadyEvent(const Plugins::PluginEvent &event);
