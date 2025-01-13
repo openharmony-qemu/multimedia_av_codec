@@ -1047,6 +1047,8 @@ void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
     if (codec_ != nullptr) {
         codec_->OnOutputFormatChanged(format);
+    } else {
+        AVCODEC_LOGI("CodecBaseCallback receive output format changed but codec is nullptr");
     }
 }
 
@@ -1087,6 +1089,8 @@ void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
     if (codec_ != nullptr) {
         codec_->OnOutputFormatChanged(format);
+    } else {
+        AVCODEC_LOGE("receive output format changed, but codec is nullptr");
     }
 }
 

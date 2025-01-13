@@ -96,6 +96,8 @@ ohos_unittest("decoder_filter_unit_test") {
   ]
 
   external_deps = [
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
@@ -104,6 +106,7 @@ ohos_unittest("decoder_filter_unit_test") {
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
 
   if (av_codec_support_drm) {
