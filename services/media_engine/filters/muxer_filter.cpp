@@ -399,6 +399,10 @@ void MuxerFilter::SetMaxDuration(int32_t maxDuration)
 {
     MEDIA_LOG_I("MuxerFilter SetMaxDuration = %{public}d", maxDuration);
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::SetMaxDuration");
+    if (maxDuration < 1) {
+        maxDuration = INT32_MAX;
+        MEDIA_LOG_I("MuxerFilter MaxDuration set to INT32_MAX");
+    }
     maxDuration_ = maxDuration;
 }
 } // namespace Pipeline
