@@ -14,6 +14,7 @@
  */
 
 #include <sys/timeb.h>
+#include <thread>
 #include <unordered_map>
 #include "muxer_filter.h"
 #include "common/log.h"
@@ -148,6 +149,7 @@ Status MuxerFilter::DoStart()
         SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
     } else {
         isStarted = true;
+        isReachMaxDuration_ = false;
     }
     return ret;
 }
@@ -301,9 +303,11 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnBufferFilled");
     if (!isTransCoderMode) {
         int64_t currentBufferPts = inputBuffer->pts_;
-        if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS) {
+        if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS && isReachMaxDuration_ == false) {
             MEDIA_LOG_I("MuxerFilter::OnBufferFilled currentBufferPts > maxDuration_ start to stop");
-            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
+            isReachMaxDuration_ = true;
+            std::thread asyncThread(std::bind(&MuxerFilter::EventCompleteStopAsync, this));
+            asyncThread.detach();
         }
         int64_t anotherBufferPts = 0;
         for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
@@ -320,6 +324,12 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
         return;
     }
     OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+}
+
+void MuxerFilter::EventCompleteStopAsync()
+{
+    MEDIA_LOG_I("MuxerFilter EventCompleteStopAsync");
+    eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
 }
 
 void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t trackIndex,

@@ -64,6 +64,7 @@ public:
     const std::string &GetContainerFormat(Plugins::OutputFormat format);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
     void SetMaxDuration(int32_t maxDuration);
+    void EventCompleteStopAsync();
 
 private:
     std::string name_;
@@ -99,6 +100,7 @@ private:
     bool isStarted{false};
 
     int32_t maxDuration_ {INT32_MAX};
+    bool isReachMaxDuration_{false};
 };
 } // namespace Pipeline
 } // namespace MEDIA
