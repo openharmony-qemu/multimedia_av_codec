@@ -1731,3 +1731,246 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2400, TestSize.Level2)
 
     close(fd);
 }
+
+/**
+ * @tc.number    : DEMUXER_SRT_GBK_0010
+ * @tc.name      : create str demuxer with GBK file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_SRT_GBK_0010, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
+    const char *file = "/data/test/media/gbk.srt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    string mimeTypeString = mimeType;
+    string srtString = OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
+    cout << "------mimeType-------" << mimeTypeString << endl;
+    ASSERT_EQ(mimeTypeString, srtString);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        cout << "subtitle" << "----------------" << data << "-----------------" << endl;
+    }
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_SRT_GBK_0020
+ * @tc.name      : create str demuxer with GB2312 file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_SRT_GBK_0020, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
+    const char *file = "/data/test/media/gb2312.srt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    string mimeTypeString = mimeType;
+    string srtString = OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
+    cout << "------mimeType-------" << mimeTypeString << endl;
+    ASSERT_EQ(mimeTypeString, srtString);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        cout << "subtitle" << "----------------" << data << "-----------------" << endl;
+    }
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_SRT_GBK_0030
+ * @tc.name      : create str demuxer with GB18030 file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_SRT_GBK_0030, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
+    const char *file = "/data/test/media/gb18030.srt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    string mimeTypeString = mimeType;
+    string srtString = OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
+    cout << "------mimeType-------" << mimeTypeString << endl;
+    ASSERT_EQ(mimeTypeString, srtString);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        cout << "subtitle" << "----------------" << data << "-----------------" << endl;
+    }
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_VTT_GBK_0010
+ * @tc.name      : create vtt demuxer with GBK file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_VTT_GBK_0010, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
+    const char *file = "/data/test/media/gbk.vtt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    int tarckType = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+    ASSERT_EQ(tarckType, MEDIA_TYPE_SUBTITLE);
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   vtt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        cout << "subtitle"<< "----------------" << data << "-----------------" << endl;
+    }
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_VTT_GBK_0020
+ * @tc.name      : create vtt demuxer with GB2312 file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_VTT_GBK_0020, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
+    const char *file = "/data/test/media/gb2312.vtt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    int tarckType = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+    ASSERT_EQ(tarckType, MEDIA_TYPE_SUBTITLE);
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   vtt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        cout << "subtitle"<< "----------------" << data << "-----------------" << endl;
+    }
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_VTT_GBK_0030
+ * @tc.name      : create vtt demuxer with GB18030 file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_VTT_GBK_0030, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
+    const char *file = "/data/test/media/gb18030.vtt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    int tarckType = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+    ASSERT_EQ(tarckType, MEDIA_TYPE_SUBTITLE);
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   vtt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        cout << "subtitle"<< "----------------" << data << "-----------------" << endl;
+    }
+    close(fd);
+}
