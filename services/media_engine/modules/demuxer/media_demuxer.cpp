@@ -2039,13 +2039,7 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
             MEDIA_LOG_E("OnEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
-            demuxerPluginManager_->NotifyInitialBufferingEnd(false);
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
-            break;
-        }
-        case PluginEventType::INITIAL_BUFFER_SUCCESS: {
-            MEDIA_LOG_I("OnEvent initial buffer success");
-            demuxerPluginManager_->NotifyInitialBufferingEnd(true);
             break;
         }
         case PluginEventType::CACHED_DURATION: {
