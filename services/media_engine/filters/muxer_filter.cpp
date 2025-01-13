@@ -43,6 +43,7 @@ constexpr int64_t WAIT_TIME_OUT_NS = 3000000000;
 constexpr int64_t US_TO_MS = 1000;
 constexpr int64_t S_TO_MS = 1000;
 constexpr uint32_t BUFFER_IS_EOS = 1;
+constexpr int32_t VALID_MIN_DURATION = 1;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
     [](const std::string& name, const FilterType type) {
         return std::make_shared<MuxerFilter>(name, FilterType::FILTERTYPE_MUXER);
@@ -399,6 +400,10 @@ void MuxerFilter::SetMaxDuration(int32_t maxDuration)
 {
     MEDIA_LOG_I("MuxerFilter SetMaxDuration = %{public}d", maxDuration);
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::SetMaxDuration");
+    if (maxDuration < VALID_MIN_DURATION) {
+        maxDuration = INT32_MAX;
+        MEDIA_LOG_I("MuxerFilter MaxDuration set to INT32_MAX");
+    }
     maxDuration_ = maxDuration;
 }
 } // namespace Pipeline
