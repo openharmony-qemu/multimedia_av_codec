@@ -254,6 +254,7 @@ HWTEST_F(SurfaceDecoderUnitTest, SurfaceDecoderAdapter_ReleaseBuffer_0100, TestS
 {
     surfaceDecoderAdapter_->isThreadExit_ = true;
     surfaceDecoderAdapter_->ReleaseBuffer();
+    EXPECT_EQ(surfaceDecoderAdapter_->Release(), Status::OK);
 }
 }  // namespace Pipeline
 }  // namespace Media
