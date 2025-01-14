@@ -560,6 +560,7 @@ void VideoResizeFilter::OnVPEError(int32_t errorCode)
     ifVPEReportError_ = true;
     eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
 }
+#endif
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS
