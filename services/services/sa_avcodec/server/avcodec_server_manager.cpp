@@ -285,7 +285,10 @@ std::vector<CodecInstance> AVCodecServerManager::GetInstanceInfoListByActualPid(
     std::shared_lock<std::shared_mutex> lock(mutex_);
     std::vector<CodecInstance> instanceInfoList;
     for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
-        if (iter->second.second.caller.pid == pid || iter->second.second.forwardCaller.pid == pid) {
+        auto forwardCallerPid = iter->second.second.forwardCaller.pid;
+        auto callerPid = iter->second.second.caller.pid;
+        auto actualPid = forwardCallerPid == INVALID_PID ? callerPid : forwardCallerPid;
+        if (pid == actualPid) {
             instanceInfoList.emplace_back(iter->second);
         }
     }
