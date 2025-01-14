@@ -85,3 +85,4 @@ private:
 };
 }  // namespace Media
 }  // namespace OHOS
+#endif // SEI_PARSER_H
