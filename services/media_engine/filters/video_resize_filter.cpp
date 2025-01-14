@@ -150,7 +150,6 @@ void VideoResizeFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
         }
         return;
     }
-
 #else
     MEDIA_LOG_E("Init videoEnhancer fail, no VPE module");
     if (eventReceiver_) {
