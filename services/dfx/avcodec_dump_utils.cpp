@@ -87,7 +87,7 @@ int32_t AVCodecDumpControler::AddInfoFromFormat(const uint32_t dumpIdx, const Fo
         case FORMAT_TYPE_ADDR:
             break;
         default:
-            AVCODEC_LOGE("Add info from format failed. Key: %{public}s", key.data());
+            AVCODEC_LOGD("Add info from format failed. Key: %{public}s", key.data());
     }
     if (ret != true) {
         return AVCS_ERR_INVALID_VAL;

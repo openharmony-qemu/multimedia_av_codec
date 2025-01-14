@@ -47,9 +47,10 @@ enum DumpIndex : uint32_t {
     DUMP_INDEX_CALLER_PID                  = 0x01'01'04'00,
     DUMP_INDEX_CALLER_UID                  = 0x01'01'05'00,
     DUMP_INDEX_CALLER_PROCESS_NAME         = 0x01'01'06'00,
-    DUMP_INDEX_STATUS                      = 0x01'01'07'00,
-    DUMP_INDEX_LAST_ERROR                  = 0x01'01'08'00,
-    DUMP_INDEX_CODEC_INFO_START            = 0x01'02'00'00,
+    DUMP_INDEX_INSTANCE_ID                 = 0x01'01'07'00,
+    DUMP_INDEX_STATUS                      = 0x01'01'08'00,
+    DUMP_INDEX_LAST_ERROR                  = 0x01'01'09'00,
+    DUMP_INDEX_CODEC_INFO_START            = 0x01'02'0A'00,
 };
 constexpr uint32_t DUMP_OFFSET_8 = 8;
 
@@ -851,6 +852,7 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     }
     dumpControler.AddInfo(DUMP_INDEX_CALLER_PID, "CallerPid", std::to_string(caller_.pid));
     dumpControler.AddInfo(DUMP_INDEX_CALLER_PROCESS_NAME, "CallerProcessName", caller_.processName);
+    dumpControler.AddInfo(DUMP_INDEX_INSTANCE_ID, "InstanceId", std::to_string(instanceId_));
     dumpControler.AddInfo(DUMP_INDEX_STATUS, "Status", statusIt != CODEC_STATE_MAP.end() ? statusIt->second : "");
     dumpControler.AddInfo(DUMP_INDEX_LAST_ERROR, "LastError", lastErrMsg_.size() ? lastErrMsg_ : "Null");
 
@@ -870,7 +872,6 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     std::string dumpString;
     dumpControler.GetDumpString(dumpString);
     dumpString += codecBase_->GetHidumperInfo();
-    dumpString += "\n";
     write(fd, dumpString.c_str(), dumpString.size());
     return AVCS_ERR_OK;
 }
