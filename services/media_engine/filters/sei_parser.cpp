@@ -29,6 +29,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 constexpr uint16_t ANNEX_B_PREFIX_LEN = 4;
 constexpr uint8_t SEI_UUID_LEN = 16;
 constexpr int32_t SEI_PAYLOAD_SIZE_MAX = 1024 * 1024 - SEI_UUID_LEN;
+constexpr int32_t PAYLOAD_HEADER_SIZE = 5;
  
 const std::string TYPE_AVC = "video/avc";
 const std::string TYPE_HEVC = "video/hevc";
@@ -124,7 +125,7 @@ Status SeiParser::ParseSeiRbsp(uint8_t *&bodyPtr, uint8_t *maxPtr, const std::sh
         }
  
         AVBufferConfig config;
-        config.size = payloadSize + 5;
+        config.size = payloadSize + PAYLOAD_HEADER_SIZE;
         config.memoryType = MemoryType::SHARED_MEMORY;
         auto avBuffer = AVBuffer::CreateAVBuffer(config);
         bool validMem = avBuffer != nullptr && avBuffer->memory_ != nullptr && avBuffer->memory_->GetAddr() != nullptr;
