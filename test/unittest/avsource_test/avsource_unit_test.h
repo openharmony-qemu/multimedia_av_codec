@@ -106,6 +106,10 @@ protected:
         int32_t colorRange = 0;
         int32_t chromaLoc = 0;
         int32_t isHdrVivid = 0;
+        // ape format
+        int32_t audioMaxInputSize = 0;
+
+        int32_t samplePerFrame = 0;
     };
     FormatValue formatVal_;
 };

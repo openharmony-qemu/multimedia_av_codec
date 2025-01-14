@@ -1495,6 +1495,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1309, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_MAX_INPUT_SIZE, formatVal_.audioMaxInputSize));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_SAMPLE_PER_FRAME, formatVal_.samplePerFrame));
+    ASSERT_EQ(formatVal_.audioMaxInputSize, 82856);
+    ASSERT_EQ(formatVal_.samplePerFrame, 73728);
     ASSERT_EQ(formatVal_.fileType, 208);
     ASSERT_EQ(formatVal_.hasVideo, 0);
     ASSERT_EQ(formatVal_.hasAudio, 1);
@@ -1539,6 +1543,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1310, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_MAX_INPUT_SIZE, formatVal_.audioMaxInputSize));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_SAMPLE_PER_FRAME, formatVal_.samplePerFrame));
+    ASSERT_EQ(formatVal_.audioMaxInputSize, 82856);
+    ASSERT_EQ(formatVal_.samplePerFrame, 73728);
     ASSERT_EQ(formatVal_.fileType, 208);
     ASSERT_EQ(formatVal_.hasVideo, 0);
     ASSERT_EQ(formatVal_.hasAudio, 1);
