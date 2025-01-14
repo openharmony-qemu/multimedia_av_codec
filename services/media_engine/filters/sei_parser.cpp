@@ -110,7 +110,6 @@ Status SeiParser::ParseSeiRbsp(uint8_t *&bodyPtr, uint8_t *maxPtr, const std::sh
  
     // one sei nalu may has several sei message parts
     while (bodyPtr + SEI_UUID_LEN < maxPtr) {
-        // [H.264-202408 7.3.2.3.1] while next Byte is FF, continue. same with H.265
         int32_t payloadType = GetSeiTypeOrSize(bodyPtr, maxPtr);
         int32_t payloadSize = GetSeiTypeOrSize(bodyPtr, maxPtr);
         FALSE_RETURN_V_NOLOG(
