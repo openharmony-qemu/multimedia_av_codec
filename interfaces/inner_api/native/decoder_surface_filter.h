@@ -35,6 +35,7 @@
 #include "common/seek_callback.h"
 #include "drm_i_keysession_service.h"
 #include "interrupt_listener.h"
+#include "sei_parser.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
@@ -106,6 +107,7 @@ public:
     int32_t GetDecRateUpperLimit();
     bool GetIsSupportSeekWithoutFlush();
     void ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs = 0L);
+    int32_t SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -131,6 +133,8 @@ private:
     void ReportEosEvent();
     void RenderAtTimeDfx(int64_t renderTimeNs, int64_t currentTimeNs, int64_t lastRenderTimeNs);
     int64_t GetSystimeTimeNs();
+    void SetSeiMessageListener();
+    void RemoveSeiMessageListener();
 
     std::string name_;
     FilterType filterType_;
@@ -144,6 +148,7 @@ private:
     std::shared_ptr<Meta> meta_;
 
     std::shared_ptr<Filter> nextFilter_;
+
     Format configFormat_;
 
     std::atomic<uint64_t> renderFrameCnt_{0};
@@ -203,6 +208,10 @@ private:
     bool enableRenderAtTimeDfx_ {false};
     std::list<int64_t> renderTimeQueue_;
     std::string logMessage;
+    bool seiMessageCbStatus_ {false};
+    std::vector<int32_t> payloadTypes_ {};
+    sptr<SeiParserListener> producerListener_ {};
+    sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_ {};
 };
 } // namespace Pipeline
 } // namespace Media
