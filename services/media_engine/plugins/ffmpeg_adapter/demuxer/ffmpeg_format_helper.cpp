@@ -783,6 +783,12 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
         ConvertAv3aSampleFormat(avStream, format);
     }
 
+    ParseAudioApeTrackInfo(avStream, format, avFormatContext);
+}
+
+void FFmpegFormatHelper::ParseAudioApeTrackInfo(const AVStream& avStream, Meta &format,
+                                                const AVFormatContext& avFormatContext)
+{
     if (GetFileTypeByName(avFormatContext) == FileType::APE) {
         // Ffmpeg ensures that the value is definitely Int type
         const AVDictionaryEntry *meta = av_dict_get(avFormatContext.metadata, "max_frame_size", NULL, 0);
