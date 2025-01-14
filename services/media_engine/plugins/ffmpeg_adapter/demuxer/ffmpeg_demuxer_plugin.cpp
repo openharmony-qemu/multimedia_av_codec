@@ -1058,6 +1058,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     if (ioContext_.retry && !HasCodecParameters()) {
         ioContext_.retry = false;
         formatContext_ = nullptr;
+        mediaInfo_ = MediaInfo();
         MEDIA_LOG_E("SetDataSource failed cause not enough data");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
