@@ -370,7 +370,6 @@ void FFmpegDemuxerPlugin::ResetParam()
     avbsfContext_.reset();
     trackMtx_.clear();
     trackDfxInfoMap_.clear();
-    return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::Reset()
