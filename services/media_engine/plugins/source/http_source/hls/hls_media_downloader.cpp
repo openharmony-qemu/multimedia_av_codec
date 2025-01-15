@@ -1847,9 +1847,10 @@ bool HlsMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
         return false;
     }
     MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32, size);
-    if (bufferingTime_ > 0) {
-        bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+    if (!isBuffering_.load()) {
+        isBuffering_.store(true);
     }
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     expectOffset_.store(offset);
     initCacheSize_.store(size);
     return true;

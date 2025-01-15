@@ -1477,10 +1477,14 @@ bool HttpMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
         MEDIA_LOG_I("HTTP SetInitialBufferSize initCacheSize ok.");
         return false;
     }
-    MEDIA_LOG_I("HTTP SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32, size);
-    if (bufferingTime_ > 0) {
-        bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+    if (downloadRequest_->IsChunkedVod()) {
+        return false;
     }
+    MEDIA_LOG_I("HTTP SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32, size);
+    if (!isBuffering_.load()) {
+        isBuffering_.store(true);
+    }
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     expectOffset_.store(offset);
     initCacheSize_.store(size);
     return true;
