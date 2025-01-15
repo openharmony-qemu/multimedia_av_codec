@@ -595,6 +595,9 @@ bool CacheMediaChunkBufferImpl::CheckThresholdFragmentCacheBuffer(FragmentIterat
         if (!ret) {
             return false;
         }
+        if (fragmentIterator == fragmentCacheBuffer_.end()) {
+            return false;
+        }
     }
     freeChunks_.splice(freeChunks_.end(), fragmentIterator->chunks);
     EraseFragmentCache(fragmentIterator);
