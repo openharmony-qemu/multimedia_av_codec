@@ -218,6 +218,7 @@ Status DemuxerFilter::DoPrepare()
 Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount)
 {
     Status ret = Status::OK;
+    bool hasVideoFilter = false;
     for (size_t index = 0; index < trackInfos.size(); index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
         FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_INVALID_PARAMETER, "meta is invalid, index: %zu", index);
@@ -246,6 +247,12 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
         if (callback_ == nullptr) {
             MEDIA_LOG_W_SHORT("callback is nullptr");
             continue;
+        }
+        if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO && hasVideoFilter) {
+            continue;
+        } else if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO &&
+            isEnableReselectVideoTrack_ && demuxer_->IsHasMultiVideoTrack()) {
+            hasVideoFilter = true;
         }
         ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
         if (ret != Status::OK) {
@@ -585,6 +592,11 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
         return Status::ERROR_INVALID_PARAMETER;
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
+    if (outType == StreamType::STREAMTYPE_ENCODED_VIDEO && isEnableReselectVideoTrack_
+        && demuxer_->IsHasMultiVideoTrack()) {
+        trackId = static_cast<int32_t>(demuxer_->GetTargetVideoTrackId(trackInfos));
+    }
+    MEDIA_LOG_I_SHORT("LinkNext track id: %{public}d", trackId);
     std::shared_ptr<Meta> meta = trackInfos[trackId];
     for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
         MEDIA_LOG_D_SHORT("Link " PUBLIC_LOG_S, iter->first.c_str());
@@ -853,6 +865,12 @@ int32_t DemuxerFilter::GetCurrentVideoTrackId()
 void DemuxerFilter::SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart)
 {
     isNotPrepareBeforeStart_ = isNotPrepareBeforeStart;
+}
+
+void DemuxerFilter::SetIsEnableReselectVideoTrack(bool isEnable)
+{
+    isEnableReselectVideoTrack_ = isEnable;
+    demuxer_->SetIsEnableReselectVideoTrack(isEnable);
 }
 } // namespace Pipeline
 } // namespace Media
