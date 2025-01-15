@@ -43,11 +43,9 @@ SeiParserFilter::AVBufferAvailableListener::AVBufferAvailableListener(std::share
 
 void SeiParserFilter::AVBufferAvailableListener::OnBufferAvailable()
 {
-    if (auto seiParserFilter = seiParserFilter_.lock()) {
-        seiParserFilter->ProcessInputBuffer();
-    } else {
-        MEDIA_LOG_I("invalid seiParserFilter");
-    }
+    auto seiParserFilter = seiParserFilter_.lock();
+    FALSE_RETURN_MSG(seiParserFilter != nullptr, "invalid seiParserFilter");
+    seiParserFilter->ProcessInputBuffer();
 }
 
 SeiParserFilter::SeiParserFilter(const std::string &name, FilterType filterType)
@@ -162,10 +160,9 @@ Status SeiParserFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 Status SeiParserFilter::OnLinked(
     StreamType inType, const std::shared_ptr<Meta> &meta, const std::shared_ptr<FilterLinkCallback> &callback)
 {
-    MEDIA_LOG_I("SeiParserFilter OnLinked enter.");
+    FALSE_RETURN_V_MSG(meta != nullptr && meta->GetData(Tag::MIME_TYPE, codecMimeType_),
+        Status::ERROR_INVALID_PARAMETER, "get mime failed.");
     trackMeta_ = meta;
-    FALSE_RETURN_V_MSG(
-        meta->GetData(Tag::MIME_TYPE, codecMimeType_), Status::ERROR_INVALID_PARAMETER, "get mime failed.");
     onLinkedResultCallback_ = callback;
     return Filter::OnLinked(inType, meta, callback);
 }
@@ -190,39 +187,45 @@ void SeiParserFilter::DrainOutputBuffer(bool flushed)
 
 int32_t SeiParserFilter::SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes)
 {
-    MEDIA_LOG_I(" SeiParserFilter seiMessageCbStatus_  = " PUBLIC_LOG_D32, seiMessageCbStatus_);
-    payloadTypes_ = payloadTypes;
-    if (status) {
-        SetSeiMessageListener();
-    } else if (!status && seiMessageCbStatus_) {
-        RemoveSeiMessageListener();
-    }
+    MEDIA_LOG_I("seiMessageCbStatus_  = " PUBLIC_LOG_D32, seiMessageCbStatus_);
     seiMessageCbStatus_ = status;
+    if (status) {
+        payloadTypes_ = payloadTypes;
+        SetSeiMessageListener();
+        return 0;
+    }
+    if (payloadTypes_.empty()) {
+        payloadTypes_ = {};
+        RemoveSeiMessageListener();
+        return 0;
+    }
+    payloadTypes_.erase(
+        std::remove_if(payloadTypes_.begin(), payloadTypes_.end(), [&payloadTypes](int value) {
+            return std::find(payloadTypes.begin(), payloadTypes.end(), value) != payloadTypes.end();
+        }), payloadTypes_.end());
+    RemoveSeiMessageListener();
     return 0;
 }
 
 void SeiParserFilter::SetSeiMessageListener()
 {
-    sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueueProducer_;
-    FALSE_RETURN_MSG(inputBufferQueueProducer != nullptr, "get producer failed");
+    FALSE_RETURN_MSG(inputBufferQueueProducer_ != nullptr, "get producer failed");
     if (producerListener_ == nullptr) {
         producerListener_ =
-            new SeiParserListener(codecMimeType_, inputBufferQueueProducer, eventReceiver_);
+            new SeiParserListener(codecMimeType_, inputBufferQueueProducer_, eventReceiver_);
         FALSE_RETURN_MSG(producerListener_ != nullptr, "sei listener create failed");
     }
     producerListener_->SetPayloadTypeVec(payloadTypes_);
-    FALSE_RETURN_MSG(seiMessageCbStatus_, "Has set listener before, need not set again");
     sptr<IBrokerListener> tmpListener = producerListener_;
-    inputBufferQueueProducer->SetBufferFilledListener(tmpListener);
+    inputBufferQueueProducer_->RemoveBufferFilledListener(tmpListener);
+    inputBufferQueueProducer_->SetBufferFilledListener(tmpListener);
 }
 
 void SeiParserFilter::RemoveSeiMessageListener()
 {
-    sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueueProducer_;
-    FALSE_RETURN_MSG(inputBufferQueueProducer != nullptr, "get producer failed");
+    FALSE_RETURN_MSG(inputBufferQueueProducer_ != nullptr, "get producer failed");
     FALSE_RETURN_MSG(producerListener_ != nullptr, "no sei parser listener now");
-    sptr<IBrokerListener> tmpListener = producerListener_;
-    inputBufferQueueProducer->RemoveBufferFilledListener(tmpListener);
+    producerListener_->SetPayloadTypeVec(payloadTypes_);
 }
 }  // namespace Pipeline
 }  // namespace Media

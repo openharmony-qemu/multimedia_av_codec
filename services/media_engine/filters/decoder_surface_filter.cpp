@@ -1088,39 +1088,45 @@ void DecoderSurfaceFilter::RenderAtTimeDfx(int64_t renderTime, int64_t currentTi
 
 int32_t DecoderSurfaceFilter::SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes)
 {
-    MEDIA_LOG_I(" SeiParserFilter seiMessageCbStatus_  = " PUBLIC_LOG_D32, seiMessageCbStatus_);
-    payloadTypes_ = payloadTypes;
-    if (status) {
-        SetSeiMessageListener();
-    } else if (!status && seiMessageCbStatus_) {
-        RemoveSeiMessageListener();
-    }
+    MEDIA_LOG_I("seiMessageCbStatus_  = " PUBLIC_LOG_D32, seiMessageCbStatus_);
     seiMessageCbStatus_ = status;
+    if (status) {
+        payloadTypes_ = payloadTypes;
+        SetSeiMessageListener();
+        return 0;
+    }
+    if (payloadTypes_.empty()) {
+        payloadTypes_ = {};
+        RemoveSeiMessageListener();
+        return 0;
+    }
+    payloadTypes_.erase(
+        std::remove_if(payloadTypes_.begin(), payloadTypes_.end(), [&payloadTypes](int value) {
+            return std::find(payloadTypes.begin(), payloadTypes.end(), value) != payloadTypes.end();
+        }), payloadTypes_.end());
+    RemoveSeiMessageListener();
     return 0;
 }
 
 void DecoderSurfaceFilter::SetSeiMessageListener()
 {
-    sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueueProducer_;
-    FALSE_RETURN_MSG(inputBufferQueueProducer != nullptr, "get producer failed");
+    FALSE_RETURN_MSG(inputBufferQueueProducer_ != nullptr, "get producer failed");
     if (producerListener_ == nullptr) {
         producerListener_ =
-            new SeiParserListener(codecMimeType_, inputBufferQueueProducer, eventReceiver_);
+            new SeiParserListener(codecMimeType_, inputBufferQueueProducer_, eventReceiver_);
         FALSE_RETURN_MSG(producerListener_ != nullptr, "sei listener create failed");
     }
     producerListener_->SetPayloadTypeVec(payloadTypes_);
-    FALSE_RETURN_MSG(seiMessageCbStatus_, "Has set listener before, need not set again");
     sptr<IBrokerListener> tmpListener = producerListener_;
-    inputBufferQueueProducer->SetBufferFilledListener(tmpListener);
+    inputBufferQueueProducer_->RemoveBufferFilledListener(tmpListener);
+    inputBufferQueueProducer_->SetBufferFilledListener(tmpListener);
 }
 
 void DecoderSurfaceFilter::RemoveSeiMessageListener()
 {
-    sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueueProducer_;
-    FALSE_RETURN_MSG(inputBufferQueueProducer != nullptr, "get producer failed");
+    FALSE_RETURN_MSG(inputBufferQueueProducer_ != nullptr, "get producer failed");
     FALSE_RETURN_MSG(producerListener_ != nullptr, "no sei parser listener now");
-    sptr<IBrokerListener> tmpListener = producerListener_;
-    inputBufferQueueProducer->RemoveBufferFilledListener(tmpListener);
+    producerListener_->SetPayloadTypeVec(payloadTypes_);
 }
 } // namespace Pipeline
 } // namespace MEDIA
