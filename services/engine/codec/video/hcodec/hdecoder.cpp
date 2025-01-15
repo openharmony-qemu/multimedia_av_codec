@@ -1174,12 +1174,17 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     const MsgInfo &msg, BufferOperationMode mode)
 {
     SCOPED_TRACE();
+    BufferRequestConfig cfg = requestCfg_;
+    cfg.usage |= newSurface->GetDefaultUsage();
     uint64_t newId = newSurface->GetUniqueId();
     for (size_t i = 0; i < outputBufferPool_.size(); i++) {
         BufferInfo& info = outputBufferPool_[i];
         if (info.surfaceBuffer == nullptr) {
             continue;
         }
+        // since bufferqueue use BufferRequestConfig to decide to do reuse/alloc,
+        // we need to update consumer usage of new surface to surfacebuffer to avoid alloc
+        info.surfaceBuffer->SetBufferRequestConfig(cfg);
         GSError err = newSurface->AttachBufferToQueue(info.surfaceBuffer);
         if (err != GSERROR_OK) {
             HLOGE("surface(%" PRIu64 "), AttachBufferToQueue(seq=%u) failed, GSError=%d",
@@ -1207,6 +1212,7 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
 
     SurfaceItem oldSurface = currSurface_;
     currSurface_ = SurfaceItem(newSurface);
+    CombineConsumerUsage();
     // if owned by old surface, we need to transfer them to new surface
     for (auto [flushTime, i] : ownedBySurfaceFlushTime2BufferIndex) {
         ChangeOwner(outputBufferPool_[i], BufferOwner::OWNED_BY_US);
