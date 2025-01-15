@@ -135,7 +135,7 @@ public:
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     void WaitForBufferingEnd();
     int32_t GetCurrentVideoTrackId();
-    int32_t GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos);
+    uint32_t GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos);
     void SetIsEnableReselectVideoTrack(bool isEnable);
     bool IsHasMultiVideoTrack();
 private:
