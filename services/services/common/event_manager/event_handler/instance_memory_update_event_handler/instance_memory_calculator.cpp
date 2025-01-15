@@ -60,8 +60,8 @@ struct CalculatorParamterHash {
                 (std::hash<std::string>()(param.mimeType)                            << 1) ^ // 1: Hash offset
                 (std::hash<int32_t>()(static_cast<int32_t>(param.pixelFormat))       << 2) ^ // 2: Hash offset
                 (std::hash<int32_t>()(static_cast<int32_t>(param.bitDepth))          << 3) ^ // 3: Hash offset
-                (std::hash<bool>()(param.isHardware)           << 4) ^ // 4: Hash offset
-                (std::hash<bool>()(param.enablePostProcessing) << 5);  // 5: Hash offset
+                (std::hash<bool>()(param.isHardware)           << 4)                       ^ // 4: Hash offset
+                (std::hash<bool>()(param.enablePostProcessing) << 5);                        // 5: Hash offset
     }
 };
 
