@@ -552,8 +552,8 @@ void VideoResizeFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
 void VideoResizeFilter::OnVPEError(int32_t errorCode)
 {
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "no eventReceiver_");
-    FALSE_RETURN_NOLOG(ifVPEReportError_ == false);
-    ifVPEReportError_ = true;
+    FALSE_RETURN_NOLOG(isVPEReportError_ == false);
+    isVPEReportError_ = true;
     eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
 }
 #endif

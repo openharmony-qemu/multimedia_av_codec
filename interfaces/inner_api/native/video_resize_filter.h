@@ -84,7 +84,7 @@ private:
 
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     std::shared_ptr<VideoProcessingEngine::DetailEnhancerVideo> videoEnhancer_;
-    bool ifVPEReportError_ {false};
+    bool isVPEReportError_ {false};
 #endif
 
     std::string codecMimeType_;
