@@ -270,19 +270,23 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_DoInitAfterLink_0100
     decoderSurfaceFilter_->videoDecoder_ = videoDecoderMock;
     auto res = decoderSurfaceFilter_->DoInitAfterLink();
     std::cout << "DoInitAfterLink " << static_cast<int32_t>(res) << std::endl;
+    EXPECT_NE(res, Status::OK);
 
     decoderSurfaceFilter_->isDrmProtected_ = true;
     decoderSurfaceFilter_->svpFlag_ = true;
     res = decoderSurfaceFilter_->DoInitAfterLink();
     std::cout << "DoInitAfterLink " << static_cast<int32_t>(res) << std::endl;
+    EXPECT_NE(res, Status::OK);
 
     videoDecoderMock->configureRes_ = Status::ERROR_WRONG_STATE;
     res = decoderSurfaceFilter_->DoInitAfterLink();
     std::cout << "DoInitAfterLink " << static_cast<int32_t>(res) << std::endl;
+    EXPECT_NE(res, Status::OK);
 
     videoDecoderMock->initRes_ = Status::ERROR_WRONG_STATE;
     res = decoderSurfaceFilter_->DoInitAfterLink();
     std::cout << "DoInitAfterLink " << static_cast<int32_t>(res) << std::endl;
+    EXPECT_NE(res, Status::OK);
 }
 
 HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_DoStart_0100, TestSize.Level1)
