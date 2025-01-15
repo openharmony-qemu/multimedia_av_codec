@@ -1068,7 +1068,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
             MEDIA_LOG_E("SetDataSource failed cause not enough data");
             return Status::ERROR_NOT_ENOUGH_DATA;
         }
-        ioContext_.retry = false;
     }
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
 
