@@ -17,6 +17,7 @@
 #define HCODEC_HDECODER_H
 
 #include "hcodec.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 #include "video_refreshrate_prediction.h"
 #endif
@@ -71,6 +72,7 @@ private:
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
 
     // output buffer circulation
+    void BeforeCbOutToUser(BufferInfo &info) override;
     void OnReleaseOutputBuffer(const BufferInfo &info) override;
     void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
@@ -141,6 +143,7 @@ private:
     std::optional<ScalingMode> scaleMode_;
     double lastFlushRate_ = 0.0;
     double codecRate_ = 0.0;
+    OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion crop_{0};
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HDECODER_H

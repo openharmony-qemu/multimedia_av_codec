@@ -628,6 +628,44 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, sliceHeight);
 }
 
+static bool IsNotSame(const OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion& crop1,
+                      const OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion& crop2)
+{
+    return crop1.left != crop2.left ||
+           crop1.top != crop2.top ||
+           crop1.width != crop2.width ||
+           crop1.height != crop2.height;
+}
+
+void HDecoder::BeforeCbOutToUser(BufferInfo &info)
+{
+    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    std::vector<uint8_t> vec;
+    GSError err = info.surfaceBuffer->GetMetadata(ATTRKEY_CROP_REGION, vec);
+    if (err != GSERROR_OK || vec.size() != sizeof(BufferHandleMetaRegion)) {
+        return;
+    }
+    auto* newCrop = reinterpret_cast<BufferHandleMetaRegion*>(vec.data());
+    if (IsNotSame(crop_, *newCrop)) {
+        HLOGI("crop update: left/top/width/height, %u/%u/%u/%u -> %u/%u/%u/%u",
+            crop_.left, crop_.top, crop_.width, crop_.height,
+            newCrop->left, newCrop->top, newCrop->width, newCrop->height);
+        crop_ = *newCrop;
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, newCrop->width);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, newCrop->height);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, newCrop->width);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, newCrop->height);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, newCrop->left);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, newCrop->top);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT,
+            static_cast<int32_t>(newCrop->left + newCrop->width) - 1);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM,
+            static_cast<int32_t>(newCrop->top + newCrop->height) - 1);
+        HLOGI("output format changed: %s", outputFormat_->Stringify().c_str());
+        callback_->OnOutputFormatChanged(*(outputFormat_.get()));
+    }
+}
+
 int32_t HDecoder::SubmitAllBuffersOwnedByUs()
 {
     HLOGD(">>");
@@ -1056,6 +1094,7 @@ void HDecoder::OnEnterUninitializedState()
 {
     freeList_.clear();
     currSurface_.Release();
+    crop_ = {0};
 }
 
 HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface)

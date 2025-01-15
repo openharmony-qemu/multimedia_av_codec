@@ -108,8 +108,7 @@ private:
                                   const std::shared_ptr<Media::Meta> &meta);
     void WrapIsSkipFrameIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                       const std::shared_ptr<Media::Meta> &meta);
-    void ExtractPerFrameParamFromOmxBuffer(const std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
-                                           std::shared_ptr<Media::Meta> &meta) override;
+    void BeforeCbOutToUser(BufferInfo &info) override;
     void ExtractPerFrameLTRParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
     void ExtractPerFrameMadParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
     void ExtractPerFrameRealBitrateParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
