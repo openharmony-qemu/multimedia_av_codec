@@ -1080,7 +1080,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
 
 bool FFmpegDemuxerPlugin::HasCodecParameters()
 {
-    uint32_t param;
+    int32_t param;
     for (int i = 0; i < formatContext_->nb_streams; i++) {
         auto avStream = formatContext_->streams[i];
         Meta &format = mediaInfo_.tracks[i];
