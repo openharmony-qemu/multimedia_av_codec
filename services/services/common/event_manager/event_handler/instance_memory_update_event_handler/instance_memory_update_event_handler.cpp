@@ -109,8 +109,8 @@ uint32_t InstanceMemoryUpdateEventHandler::GetBlockCount(const Media::Meta &meta
 {
     int32_t width = 0;
     int32_t height = 0;
-    meta.GetData(Media::Tag::VIDEO_WIDTH, width);
-    meta.GetData(Media::Tag::VIDEO_HEIGHT, height);
+    meta.GetData(Media::Tag::VIDEO_PIC_WIDTH, width);
+    meta.GetData(Media::Tag::VIDEO_PIC_HEIGHT, height);
     constexpr int32_t blockWidth = 16;
     constexpr int32_t blockHeight = 16;
     return std::ceil(width / blockWidth) * std::ceil(height / blockHeight);
