@@ -278,7 +278,7 @@ private:
         return StreamDemuxer::CallbackReadAt(streamID, offset, buffer, expectedLen);
     }
     size_t failCount_ = 0;
-    int num = 0
+    int num = 0;
 };
 }
 }
