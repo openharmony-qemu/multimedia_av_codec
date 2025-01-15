@@ -214,6 +214,13 @@ void DemuxerUnitTest::CountFrames(uint32_t index)
     }
 }
 
+bool DemuxerUnitTest::CheckKeyFrameIndex(
+    std::vector<uint32_t> keyFrameIndexList, const uint32_t frameIndex, const bool isKeyFrame)
+{
+    bool contaionIndex = (std::count(keyFrameIndexList.begin(), keyFrameIndexList.end(), frameIndex) > 0);
+    return isKeyFrame ? contaionIndex : !contaionIndex;
+}
+
 void DemuxerUnitTest::ReadData()
 {
     SetInitValue();
@@ -1685,9 +1692,14 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1400, TestSize.Level1)
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
+    std::vector<uint32_t> keyFrameIndex = {0};
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            if (idx == 0) {
+                ASSERT_TRUE(CheckKeyFrameIndex(
+                    keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
+            }
             CountFrames(idx);
         }
     }
