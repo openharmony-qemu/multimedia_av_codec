@@ -573,8 +573,8 @@ Status MediaDemuxer::InnerPrepare()
         InitDefaultTrack(mediaInfo, videoTrackId_, audioTrackId_, subtitleTrackId_, videoMime_);
         InitMediaStartPts();
         if (videoTrackId_ != TRACK_ID_DUMMY) {
-            if (isSelectVideoTrackId_ && IsHasMultiVideoTrack()) {
-                videoTrackId_ = static_cast<uint32_t>(GetTargetTrackId(mediaMetaData_.trackMetas));
+            if (isEnableReselectVideoTrack_ && IsHasMultiVideoTrack()) {
+                videoTrackId_ = GetTargetVideoTrackId(mediaMetaData_.trackMetas);
             }
             AddDemuxerCopyTask(videoTrackId_, TaskType::VIDEO);
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, videoTrackId_, -1);
@@ -612,10 +612,10 @@ Status MediaDemuxer::InnerPrepare()
     return ret;
 }
 
-int32_t MediaDemuxer::GetTargetTrackId(std::vector<std::shared_ptr<Meta>> trackInfos)
+uint32_t MediaDemuxer::GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos)
 {
-    MEDIA_LOG_I_SHORT("GetTargetTrackId enter");
-    int32_t targetVideoTrackId = -1;
+    FALSE_RETURN_V(targetVideoTrackId_ == TRACK_ID_DUMMY, targetVideoTrackId_);
+    MEDIA_LOG_I_SHORT("GetTargetVideoTrackId enter");
     int64_t videoRes = 0;
     int32_t videoWidth = 0;
     int32_t videoHeight = 0;
@@ -640,12 +640,13 @@ int32_t MediaDemuxer::GetTargetTrackId(std::vector<std::shared_ptr<Meta>> trackI
         }
         MEDIA_LOG_I_SHORT("SelectVideoTrack trackId: %{public}d width: %{public}d height: %{public}d",
             static_cast<int32_t>(index), videoWidth, videoHeight);
-        if (static_cast<int64_t>(videoWidth) * static_cast<int64_t>(videoHeight) > videoRes) {
-            videoRes = static_cast<int64_t>(videoWidth) * static_cast<int64_t>(videoHeight);
-            targetVideoTrackId = static_cast<int32_t>(index);
+        int64_t resolution = static_cast<int64_t>(videoWidth) * static_cast<int64_t>(videoHeight);
+        if (resolution > videoRes) {
+            videoRes = resolution;
+            targetVideoTrackId_ = static_cast<uint32_t>(index);
         }
     }
-    return targetVideoTrackId;
+    return targetVideoTrackId_;
 }
 
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
@@ -2418,7 +2419,7 @@ int32_t MediaDemuxer::GetCurrentVideoTrackId()
 
 void MediaDemuxer::SetIsEnableReselectVideoTrack(bool isEnable)
 {
-    isSelectVideoTrackId_  = isEnable;
+    isEnableReselectVideoTrack_  = isEnable;
 }
 
 bool MediaDemuxer::IsHasMultiVideoTrack()

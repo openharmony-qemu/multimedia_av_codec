@@ -594,7 +594,7 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     if (outType == StreamType::STREAMTYPE_ENCODED_VIDEO && isEnableReselectVideoTrack_
         && demuxer_->IsHasMultiVideoTrack()) {
-        trackId = demuxer_->GetTargetTrackId(trackInfos);
+        trackId = static_cast<int32_t>(demuxer_->GetTargetVideoTrackId(trackInfos));
     }
     MEDIA_LOG_I_SHORT("LinkNext track id: %{public}d", trackId);
     std::shared_ptr<Meta> meta = trackInfos[trackId];
