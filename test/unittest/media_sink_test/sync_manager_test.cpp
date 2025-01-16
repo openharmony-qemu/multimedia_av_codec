@@ -248,6 +248,7 @@ HWTEST_F(TestSyncManager, AddSynchronizer_ShouldDoNothing_WhenSyncerIsNull, Test
     IMediaSynchronizer* syncer = nullptr;
     syncManager_->AddSynchronizer(syncer);
     // No exception should be thrown and no action should be performed.
+    EXPECT_EQ(syncManager_->syncers_.size(), 0);
 }
 
 // Scenario2: Test when syncer is not nullptr and not already in syncers_ then AddSynchronizer adds the syncer.
@@ -274,8 +275,11 @@ HWTEST_F(TestSyncManager, AddSynchronizer_ShouldDoNothing_WhenSyncerIsNotNullAnd
 HWTEST_F(TestSyncManager, RemoveSynchronizer_ShouldDoNothing_WhenSyncerIsNull, TestSize.Level0)
 {
     IMediaSynchronizer* syncer = nullptr;
+    int32_t size = syncManager_->syncers_.size();
     syncManager_->RemoveSynchronizer(syncer);
     // No exception should be thrown and nothing should change in syncManager
+    int32_t finalSize = syncManager_->syncers_.size();
+    EXPECT_EQ(size, finalSize);
 }
 
 // Scenario2: Test when syncer is not nullptr then RemoveSynchronizer removes the syncer from syncManager.
@@ -678,6 +682,7 @@ HWTEST_F(TestSyncManager, ReportPrerolled_001, TestSize.Level0)
 {
     syncManager_->ReportPrerolled(nullptr);
     // No further action is expected, as the function should return immediately.
+    EXPECT_EQ(syncManager_->prerolledSyncers_.size(), 0);
 }
 
 // Scenario3: Test when supplier is already in prerolledSyncers_ then ReportPrerolled returns immediately.
@@ -687,6 +692,7 @@ HWTEST_F(TestSyncManager, ReportPrerolled_003, TestSize.Level0)
     syncManager_->prerolledSyncers_.emplace_back(supplier);
     syncManager_->ReportPrerolled(supplier);
     // No further action is expected, as the function should return immediately.
+    EXPECT_EQ(syncManager_->prerolledSyncers_.size(), 1);
     delete supplier;
 }
 
