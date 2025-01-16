@@ -186,6 +186,7 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
         "The track mime is unsupported: %{public}s.", mimeType.c_str());
     FALSE_RETURN_V_MSG_E(CheckKeys(mimeType, trackDesc), Status::ERROR_INVALID_DATA,
         "The track format keys not contained.");
+    MEDIA_LOG_I("The track is %{public}s.", mimeType.c_str());
 
     int32_t trackId = -1;
     Status ret = muxer_->AddTrack(trackId, trackDesc);
@@ -299,6 +300,7 @@ Status MediaMuxer::Stop()
         track->consumer_->SetBufferAvailableListener(listener);
     }
     StopThread();
+    PrintWriteCount();
     Status ret = muxer_->Stop();
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "Stop failed!");
     MEDIA_LOG_I("Stopped successfully.");
@@ -368,6 +370,7 @@ void MediaMuxer::ThreadProcessor()
         if (buffer1 != nullptr) {
             muxer_->WriteSample(tracks_[trackIdx]->trackId_, tracks_[trackIdx]->curBuffer_);
             tracks_[trackIdx]->ReleaseBuffer();
+            tracks_[trackIdx]->writeCount_++;
         }
         MEDIA_LOG_D("Track " PUBLIC_LOG_S " 2 bufferAvailableCount_ :" PUBLIC_LOG_D32,
             threadName_.c_str(), bufferAvailableCount_.load());
@@ -488,6 +491,14 @@ std::string MediaMuxer::StateConvert(State state)
 void MediaMuxer::OnEvent(const PluginEvent &event)
 {
     MEDIA_LOG_D("OnEvent");
+}
+
+void MediaMuxer::PrintWriteCount()
+{
+    for (auto& track : tracks_) { // print track write count
+        MEDIA_LOG_I("The track is %{public}s, the count of writes is %{public}" PRIu64,
+            track->mimeType_.c_str(), track->writeCount_);
+    }
 }
 } // Media
 } // OHOS

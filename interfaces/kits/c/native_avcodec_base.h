@@ -872,6 +872,11 @@ typedef enum OH_AVOutputFormat {
      * @since 12
      */
     AV_OUTPUT_FORMAT_WAV = 10,
+    /**
+     * The muxer output aac file format.
+     * @since 16
+     */
+    AV_OUTPUT_FORMAT_AAC = 11,
 } OH_AVOutputFormat;
 
 /**

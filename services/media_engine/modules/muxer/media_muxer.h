@@ -60,6 +60,7 @@ private:
     bool CanAddTrack(const std::string &mimeType);
     bool CheckKeys(const std::string &mimeType, const std::shared_ptr<Meta> &trackDesc);
     std::string StateConvert(State state);
+    void PrintWriteCount();
 
     class Track : public IConsumerListener {
     public:
@@ -78,6 +79,7 @@ private:
         sptr<AVBufferQueueConsumer> consumer_ = nullptr;
         std::shared_ptr<AVBufferQueue> bufferQ_ = nullptr;
         std::shared_ptr<AVBuffer> curBuffer_ = nullptr;
+        uint64_t writeCount_ = 0;
 
     private:
         std::atomic<int32_t> bufferAvailableCount_ = 0;
