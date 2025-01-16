@@ -20,10 +20,6 @@
 #include "avcodec_info.h"
 #include "avcodec_log.h"
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceMemoryCalculator"};
-}
-
 namespace OHOS {
 namespace MediaAVCodec {
 enum class CalculatorParameterPixelFormat {
