@@ -172,6 +172,7 @@ public:
     uint32_t GetBufferSize() const;
     bool GetBufferringStatus() const;
     uint32_t GetCachedPercent();
+    bool IsAllSegmentFinished() const;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);

@@ -1127,6 +1127,11 @@ bool DashSegmentDownloader::GetBufferringStatus() const
 {
     return isBuffering_.load();
 }
+
+bool DashSegmentDownloader::IsAllSegmentFinished() const
+{
+    return isAllSegmentFinished_.load();
+}
 }
 }
 }
