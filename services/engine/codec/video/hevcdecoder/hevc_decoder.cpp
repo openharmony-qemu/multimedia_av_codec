@@ -849,7 +849,7 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
             } else {
                 sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
             }
-            format_.PutIntValue("av_codec_event_info_bit_depth", 1); // format update keu of bit depth
+            format_.PutIntValue("av_codec_event_info_bit_depth", 1); // format update key of bit depth
         }
         sLock.unlock();
         formatChanged = true;
