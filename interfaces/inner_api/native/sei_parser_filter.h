@@ -24,7 +24,7 @@
 #include "buffer/avbuffer_queue_define.h"
 #include "sink/media_synchronous_sink.h"
 #include "meta/format.h"
-#include "sei_parser.h"
+#include "sei_parser_helper.h"
 
 namespace OHOS {
 namespace Media {

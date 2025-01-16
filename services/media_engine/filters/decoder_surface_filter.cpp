@@ -253,9 +253,10 @@ Status DecoderSurfaceFilter::DoPrepare()
         sptr<Media::AVBufferQueueConsumer> inputBufferQueueConsumer = videoDecoder_->GetBufferQueueConsumer();
         inputBufferQueueConsumer->SetBufferAvailableListener(listener);
         onLinkedResultCallback_->OnLinkedResult(videoDecoder_->GetBufferQueueProducer(), meta_);
-        inputBufferQueueProducer_ = videoDecoder_->GetBufferQueueProducer();
-        FALSE_RETURN_V_MSG(seiMessageCbStatus_, Status::OK, "disenable parse sei info");
-        SetSeiMessageListener();
+        if (seiMessageCbStatus_) {
+            inputBufferQueueProducer_ = videoDecoder_->GetBufferQueueProducer();
+            SetSeiMessageListener();
+        }
     }
     isRenderStarted_ = false;
     return Status::OK;

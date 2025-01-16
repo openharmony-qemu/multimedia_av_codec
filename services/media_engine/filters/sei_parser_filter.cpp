@@ -24,6 +24,8 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "SeiParserFilter" };
+constexpr float VIDEO_CAPACITY_RATE = 1.5F;
+constexpr int32_t DEFAULT_BUFFER_CAPACITY = 1024 * 1024;
 }
 
 namespace OHOS {
@@ -108,11 +110,14 @@ Status SeiParserFilter::PrepareInputBufferQueue()
         MEDIA_LOG_I("InputBufferQueue already create");
         return Status::ERROR_INVALID_OPERATION;
     }
-    int32_t inputBufferNum = 1;
-    int32_t capacity = 1024 * 1024;
+    int32_t videoHeight = 0;
+    int32_t videoWidth = 0;
+    auto metaRes = trackMeta_->Get<Tag::VIDEO_HEIGHT>(videoHeight) && trackMeta_->Get<Tag::VIDEO_WIDTH>(videoWidth);
+    int32_t capacity = metaRes ? videoWidth * videoHeight * VIDEO_CAPACITY_RATE : DEFAULT_BUFFER_CAPACITY;
     MemoryType memoryType = MemoryType::VIRTUAL_MEMORY;
 
     MEDIA_LOG_I("PrepareInputBufferQueue");
+    int32_t inputBufferNum = 1;
     if (inputBufferQueue_ == nullptr) {
         inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
     }

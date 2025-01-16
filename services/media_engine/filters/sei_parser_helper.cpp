@@ -232,7 +232,7 @@ void SeiParserListener::OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer)
     FALSE_RETURN_NOLOG(seiParserHelper_ != nullptr);
     FALSE_RETURN_NOLOG(eventReceiver_ != nullptr);
     std::shared_ptr<SeiPayloadInfoGroup> group = std::make_shared<SeiPayloadInfoGroup>();
-    aauto res = seiParserHelper_->ParseSeiPayload(avBuffer, group);
+    auto res = seiParserHelper_->ParseSeiPayload(avBuffer, group);
     FALSE_RETURN_NOLOG(res == Status::OK);
  
     Format seiInfoFormat;

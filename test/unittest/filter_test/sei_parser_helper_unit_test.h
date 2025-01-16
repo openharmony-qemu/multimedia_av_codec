@@ -16,7 +16,7 @@
 #define SEI_PARSER_HELPER_UNIT_TEST_H
 
 #include "gtest/gtest.h"
-#include "sei_parser.h"
+#include "sei_parser_helper.h"
 
 namespace OHOS {
 namespace Media {
