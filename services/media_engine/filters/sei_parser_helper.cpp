@@ -17,7 +17,7 @@
  
 #include <unordered_set>
 
-#include "avcodec_trace.h" 
+#include "avcodec_trace.h"
 #include "common/event.h"
 #include "common/log.h"
 #include "scope_guard.h"
