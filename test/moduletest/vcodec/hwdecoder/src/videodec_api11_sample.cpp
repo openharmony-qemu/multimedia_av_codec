@@ -883,10 +883,10 @@ void VDecAPI11Sample::OutputFuncTest()
             flag = false;
             break;
         }
-        ProcessOutputData(buffer, index);
         if (outFile != nullptr) {
             fwrite(OH_AVBuffer_GetAddr(buffer), 1, attr.size, outFile);
         }
+        ProcessOutputData(buffer, index);
         lock.unlock();
         if (errCount > 0) {
             flag = false;

@@ -65,6 +65,9 @@ constexpr int32_t DEFAULT_HEIGHT = 1080;
 constexpr int32_t MAX_NALU_LEN = 12000;
 constexpr int32_t UHD_RESOLUTION[2] = {3840, 2160};
 constexpr int32_t HD_RESOLUTION[2] = {1104, 622};
+constexpr uint32_t CHANGE_AVC_FRAME = 1500;
+constexpr uint32_t CHANGE_HEVC_FRAME = 3006;
+constexpr uint32_t CHANGE_HEVC_TEN_FRAME = 1800;
 } // namespace
 
 void HwdecFuncNdkTest::SetUpTestCase()
@@ -458,7 +461,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1600, TestSize.Level2)
 HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1700, TestSize.Level2)
 {
     if (g_codecName.find("hisi") != string::npos) {
-        auto vDecSample = make_shared<VDecNdkSample>();
+        auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/resolutionChange.h264";
         vDecSample->DEFAULT_WIDTH = 1104;
         vDecSample->DEFAULT_HEIGHT = 622;
@@ -470,6 +473,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1700, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_AVC_FRAME, vDecSample->outFrameCount);
     } else {
         cout << "hardware encoder is rk,skip." << endl;
     }
@@ -1287,6 +1291,56 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VRR_0002, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     if (!access("/system/lib64/media/", 0)) {
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_FUNCTION_1800
+ * @tc.name      : resolution change
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1800, TestSize.Level2)
+{
+    if (g_codecNameHEVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/change_8bit_h265.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_HEVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_FUNCTION_1900
+ * @tc.name      : resolution change
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1900, TestSize.Level2)
+{
+    if (g_codecNameHEVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/change_10bit_h265.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_HEVC_TEN_FRAME, vDecSample->outFrameCount);
     }
 }
 } // namespace
