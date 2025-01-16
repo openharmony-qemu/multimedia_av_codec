@@ -139,6 +139,7 @@ private:
     Status GetSeiInfo();
     bool HasCodecParameters();
     Status GetMediaInfo();
+    void ResetParam();
 
     void ParserFirstDts();
     Status InitIoContext();

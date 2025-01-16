@@ -270,13 +270,15 @@ private:
     Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
         size_t expectedLen) override
     {
-        if (offset > FailOffset && failCount_ < MaxFailCount) {
+        num += expectedLen;
+        if (num > FailOffset && failCount_ < MaxFailCount) {
             failCount_++;
             return Status::ERROR_AGAIN;
         }
         return StreamDemuxer::CallbackReadAt(streamID, offset, buffer, expectedLen);
     }
     size_t failCount_ = 0;
+    int num = 0;
 };
 }
 }
