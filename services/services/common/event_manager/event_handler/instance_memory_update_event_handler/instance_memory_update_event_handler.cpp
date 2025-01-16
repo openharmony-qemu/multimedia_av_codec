@@ -147,7 +147,7 @@ void InstanceMemoryUpdateEventHandler::UpdateAppMemoryThreshold()
 
 uint32_t InstanceMemoryUpdateEventHandler::SumAppMemory(pid_t callerPid, pid_t actualCallerPid)
 {
-    auto instanceInfoList = AVCodecServerManager::GetInstance().GetInstanceInfoListByActualPid(callerPid);
+    auto instanceInfoList = AVCodecServerManager::GetInstance().GetInstanceInfoListByActualPid(actualCallerPid);
     uint32_t appMemoryUsage = 0;
     for (const auto &info : instanceInfoList) {
         if (actualCallerPid != callerPid && actualCallerPid != info.second.forwardCaller.pid) {

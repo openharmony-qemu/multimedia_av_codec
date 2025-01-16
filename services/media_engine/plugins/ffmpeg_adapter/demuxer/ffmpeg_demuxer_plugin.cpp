@@ -352,14 +352,15 @@ bool FFmpegDemuxerPlugin::GetProbeSize(int32_t &offset, int32_t &size)
     return true;
 }
 
-Status FFmpegDemuxerPlugin::Reset()
+void FFmpegDemuxerPlugin::ResetParam()
 {
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    MEDIA_LOG_D("In");
     readatIndex_ = 0;
     avpacketIndex_ = 0;
     ioContext_.offset = 0;
+    ioContext_.retry = false;
     ioContext_.eos = false;
+    ioContext_.initDownloadDataSize = 0;
+    mediaInfo_ = MediaInfo();
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
     }
@@ -369,6 +370,13 @@ Status FFmpegDemuxerPlugin::Reset()
     avbsfContext_.reset();
     trackMtx_.clear();
     trackDfxInfoMap_.clear();
+}
+
+Status FFmpegDemuxerPlugin::Reset()
+{
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    MEDIA_LOG_D("In");
+    ResetParam();
     return Status::OK;
 }
 
@@ -1047,20 +1055,23 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     }
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT, "No match inputformat");
     formatContext_ = InitAVFormatContext(&ioContext_);
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
+
     InitParser();
-    NotifyInitializationCompleted();
 
     // parse media info
     GetMediaInfo();
 
     // check param
-    if (ioContext_.retry && !HasCodecParameters()) {
-        ioContext_.retry = false;
-        formatContext_ = nullptr;
-        MEDIA_LOG_E("SetDataSource failed cause not enough data");
-        return Status::ERROR_NOT_ENOUGH_DATA;
+    if (ioContext_.retry) {
+        if ((formatContext_ && !HasCodecParameters()) || formatContext_ == nullptr) {
+            ResetParam();
+            MEDIA_LOG_E("SetDataSource failed cause not enough data");
+            return Status::ERROR_NOT_ENOUGH_DATA;
+        }
     }
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
+
+    NotifyInitializationCompleted();
     MEDIA_LOG_I("Out");
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
     return Status::OK;
@@ -1068,7 +1079,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
 
 bool FFmpegDemuxerPlugin::HasCodecParameters()
 {
-    uint32_t param;
+    int32_t param;
     for (int i = 0; i < formatContext_->nb_streams; i++) {
         auto avStream = formatContext_->streams[i];
         Meta &format = mediaInfo_.tracks[i];

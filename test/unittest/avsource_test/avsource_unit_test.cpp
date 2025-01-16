@@ -1517,6 +1517,12 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1309, TestSize.Level1)
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.codecMime, "audio/x-ape");
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_MAX_INPUT_SIZE, formatVal_.audioMaxInputSize));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_SAMPLE_PER_FRAME, formatVal_.samplePerFrame));
+    ASSERT_EQ(formatVal_.audioMaxInputSize, 82856);
+    ASSERT_EQ(formatVal_.samplePerFrame, 73728);
+#endif
 }
 
 /**
@@ -1560,6 +1566,12 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1310, TestSize.Level1)
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.codecMime, "audio/x-ape");
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_MAX_INPUT_SIZE, formatVal_.audioMaxInputSize));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_SAMPLE_PER_FRAME, formatVal_.samplePerFrame));
+    ASSERT_EQ(formatVal_.audioMaxInputSize, 82856);
+    ASSERT_EQ(formatVal_.samplePerFrame, 73728);
+#endif
 }
 
 /**

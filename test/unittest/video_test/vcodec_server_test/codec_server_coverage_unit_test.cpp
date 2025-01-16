@@ -969,6 +969,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_001, Te
     uint32_t index = 1;
     int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
     std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
@@ -988,6 +989,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_002, Te
     uint32_t index = 1;
     int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
     std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(1);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
@@ -1007,6 +1009,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_003, Te
     uint32_t index = 1;
     int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
     std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
@@ -1026,6 +1029,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_004, Te
     uint32_t index = 1;
     int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
     std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(1);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
@@ -1038,12 +1042,14 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_004, Te
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_005, TestSize.Level1)
 {
     CreateHCodecByMime();
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
     server_->videoCb_ = nullptr;
     server_->isCreateSurface_ = true;
     server_->isSetParameterCb_ = false;
     uint32_t index = 1;
     int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
     std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
@@ -1056,12 +1062,14 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_005, Te
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_006, TestSize.Level1)
 {
     CreateHCodecByMime();
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
     server_->videoCb_ = nullptr;
     server_->isCreateSurface_ = true;
     server_->isSetParameterCb_ = true;
     uint32_t index = 1;
     int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
     std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
@@ -1073,12 +1081,14 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_006, Te
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_007, TestSize.Level1)
 {
     CreateHCodecByMime();
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
     server_->videoCb_ = nullptr;
     server_->isCreateSurface_ = false;
     server_->isSetParameterCb_ = true;
     uint32_t index = 1;
     int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
     std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
@@ -1091,12 +1101,14 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_007, Te
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_008, TestSize.Level1)
 {
     CreateHCodecByMime();
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
     server_->videoCb_ = nullptr;
     server_->isCreateSurface_ = false;
     server_->isSetParameterCb_ = false;
     uint32_t index = 1;
     int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
     std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
 }
 

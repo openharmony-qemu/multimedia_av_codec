@@ -85,7 +85,6 @@ std::string HCodec::OnGetHidumperInfo()
         return pool.front().avBuffer->memory_->GetCapacity();
     };
 
-    s << endl;
     s << "        " << compUniqueStr_ << "[" << currState_->GetName() << "]" << endl;
     s << "        " << "------------INPUT-----------" << endl;
     s << "        " << "eos:" << inputPortEos_ << ", etb:" << inTotalCnt_
@@ -104,7 +103,7 @@ std::string HCodec::OnGetHidumperInfo()
         s << "        " << "outBufId = " << info.bufferId << ", owner = " << ToString(info.owner)
           << ", holdMs = " << holdMs << endl;
     }
-    s << "        " << "----------------------------" << endl;
+    s << "        " << "----------------------------" << endl << endl;
     return s.str();
 }
 

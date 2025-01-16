@@ -40,6 +40,7 @@ public:
     void RemoveValue();
     void SetEosValue();
     void CountFrames(uint32_t index);
+    bool CheckKeyFrameIndex(std::vector<uint32_t> keyFrameIndexList, const uint32_t frameIndex, const bool isKeyFrame);
 
     void InitResource(const std::string &path, bool local);
     void ReadSample(const std::string &path, bool local, bool checkBufferInfo = false);
