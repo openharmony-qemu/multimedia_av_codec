@@ -203,6 +203,15 @@ static const CalculatorParameter SOFTWARE_DECODER_HEVC_YUV420_PARAMETER = {
     false
 };
 
+static const CalculatorParameter SOFTWARE_DECODER_HEVC_10BIT_YUV420_PARAMETER = {
+    AVCODEC_TYPE_VIDEO_DECODER,
+    CodecMimeType::VIDEO_HEVC.data(),
+    CalculatorParameterPixelFormat::YUV420,
+    BitDepth::BIT_10,
+    false,
+    false
+};
+
 constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1 = 3762;
 constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1 = 8036;
 constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_5_1 = 36686;
@@ -328,6 +337,13 @@ uint32_t SoftwareDecoderHevcYUV420(uint32_t blockSize)
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
+uint32_t SoftwareDecoderHevc10BitYUV420(uint32_t blockSize)
+{
+    auto linearSlope = 9.6653;       // 9.6653:  SoftwareDecoderHevc10BitYUV420 slope
+    auto linearIntercept = 15608;  // 15608: SoftwareDecoderHevc10BitYUV420 intercept
+    return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
+}
+
 const std::unordered_map<CalculatorParameter, uint32_t (*)(uint32_t),
                          CalculatorParamterHash, CalculatorParamterEqual> CALCULATOR_MAP = {
     {HARDWARE_DECODER_HEVC_10BIT_YUV420_PARAMETER, HardwareDecoderHevc10BitYUV420},
@@ -344,6 +360,7 @@ const std::unordered_map<CalculatorParameter, uint32_t (*)(uint32_t),
     {SOFTWARE_DECODER_AVC_RGBA_PARAMETER, SoftwareDecoderAvcRGBA},
     {SOFTWARE_DECODER_AVC_YUV420_PARAMETER, SoftwareDecoderAvcYUV420},
     {SOFTWARE_DECODER_HEVC_YUV420_PARAMETER, SoftwareDecoderHevcYUV420}
+    {SOFTWARE_DECODER_HEVC_10BIT_YUV420_PARAMETER, SoftwareDecoderHevc10BitYUV420}
 };
 
 std::optional<CalculatorType> InstanceMemoryUpdateEventHandler::GetCalculator(const Media::Meta &meta)
@@ -360,6 +377,8 @@ std::optional<CalculatorType> InstanceMemoryUpdateEventHandler::GetCalculator(co
     meta.GetData(EventInfoExtentedKey::ENABLE_POST_PROCESSING.data(), calculatorParameter.enablePostProcessing);
     meta.GetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), pixelFormatStr);
     meta.GetData(Media::Tag::MEDIA_PROFILE, profile);
+    GetMetaData(meta, EventInfoExtentedKey::BIT_DEPTH.data(),
+        *reinterpret_cast<int32_t *>(&calculatorParameter.bitDepth));
     calculatorParameter.pixelFormat = VideoPixelFormat2CalculatorParameterPixelFormat(pixelFormat);
     calculatorParameter.isHardware = isHardware == 0 ? false : true;
 
