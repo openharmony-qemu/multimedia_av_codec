@@ -95,6 +95,7 @@ static std::unordered_map<TagType, std::string> g_formatToIndex = {
     {Tag::VIDEO_ROTATION,                 "rotate"},
     {Tag::VIDEO_SAR,                      "sar"},
     {Tag::VIDEO_WIDTH,                    "w"},
+    {Tag::AUDIO_MAX_INPUT_SIZE,           "maxFrame"}
 };
 
 std::string DemuxerLogCompressor::FormatTagSerialize(Format& format)
