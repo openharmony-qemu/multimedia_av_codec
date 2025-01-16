@@ -79,6 +79,15 @@ constexpr int MIN_BIT_RATE_VIVID_DECODER = 16000;
 constexpr int MAX_BIT_RATE_VIVID_DECODER = 3075000;
 constexpr int MAX_CHANNEL_COUNT_VIVID = 16;
 #endif
+#ifdef SUPPORT_CODEC_COOK
+constexpr int MAX_BIT_RATE_COOK = 510000;
+const std::vector<int32_t> AUDIO_COOK_SAMPLE_RATE = {8000, 11025, 22050, 44100};
+#endif
+#ifdef SUPPORT_CODEC_AC3
+constexpr int MIN_BIT_RATE_AC3 = 32000;
+constexpr int MAX_BIT_RATE_AC3 = 640000;
+const std::vector<int32_t> AUDIO_AC3_SAMPLE_RATE = {32000,44100, 48000};
+#endif
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
 
@@ -403,6 +412,37 @@ CapabilityData AudioCodeclistInfo::GetG711muEncoderCapability()
     return audioG711muEncoderCapability;
 }
 
+#ifdef SUPPORT_CODEC_COOK
+CapabilityData  AudioCodeclistInfo::GetCookDecoderCapability()
+{
+    CapabilityData audioCookCapability;
+    audioCookCapability.codecName = AVCodecCodecName::AUDIO_DECODER_COOK_NAME;
+    audioCookCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioCookCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_COOK;
+    audioCookCapability.isVendor = false;
+    audioCookCapability.bitrate = Range(1, MAX_BIT_RATE_COOK);
+    audioCookCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    audioCookCapability.sampleRate = AUDIO_COOK_SAMPLE_RATE;
+    audioCookCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioCookCapability;
+}
+#endif
+#ifdef SUPPORT_CODEC_AC3
+CapabilityData AudioCodeclistInfo::GetAc3DecoderCapability()
+{
+    CapabilityData audioAc3Capability;
+    audioAc3Capability.codecName = AVCodecCodecName::AUDIO_DECODER_AC3_NAME;
+    audioAc3Capability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioAc3Capability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AC3;
+    audioAc3Capability.isVendor = false;
+    audioAc3Capability.bitrate = Range(MIN_BIT_RATE_AC3, MAX_BIT_RATE_AC3);
+    audioAc3Capability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    audioAc3Capability.sampleRate = AUDIO_AC3_SAMPLE_RATE;
+    audioAc3Capability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioAc3Capability;
+}
+#endif
+
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {
@@ -417,6 +457,12 @@ AudioCodeclistInfo::AudioCodeclistInfo()
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(),  GetLbvcEncoderCapability(),
+#endif
+#ifdef SUPPORT_CODEC_COOK
+                          GetCookDecoderCapability(),
+#endif
+#ifdef SUPPORT_CODEC_AC3
+                          GetAc3DecoderCapability(),
 #endif
     };
 }

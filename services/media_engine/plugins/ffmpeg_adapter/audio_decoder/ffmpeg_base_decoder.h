@@ -56,6 +56,8 @@ public:
 
     Status InitContext(const std::shared_ptr<Meta> &format);
 
+    Status SetBlockAlignContext(const int block_align);
+
     Status OpenContext();
 
     std::shared_ptr<Meta> GetFormat() const noexcept;

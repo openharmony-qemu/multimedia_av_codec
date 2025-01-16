@@ -41,6 +41,7 @@ ohos_static_library("av_codec_engine_codeclist") {
     av_codec_path = "\"/system/lib\""
   }
   defines += [ "AV_CODEC_PATH=${av_codec_path}" ]
+  defines += av_codec_defines
 
   sources = [
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/hdi_codec.cpp",

@@ -337,6 +337,12 @@ Status FfmpegBaseDecoder::OpenContext()
     return Status::OK;
 }
 
+Status FfmpegBaseDecoder::SetBlockAlignContext(const int block_align)
+{
+    avCodecContext_->block_align = block_align;
+    return Status::OK;
+}
+
 Status FfmpegBaseDecoder::InitResample()
 {
     AVCODEC_LOGI("channels :%{public}" PRId32, avCodecContext_->channels);

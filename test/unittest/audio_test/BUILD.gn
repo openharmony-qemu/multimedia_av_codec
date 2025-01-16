@@ -390,7 +390,7 @@ ohos_unittest("av_audio_decoder_avbuffer_capi_unit_test") {
     av_codec_path = "\"/system/lib\""
   }
   defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
-
+  defines += av_codec_defines
   if (av_codec_support_drm) {
     external_deps += [
       "drm_framework:drm_framework",
