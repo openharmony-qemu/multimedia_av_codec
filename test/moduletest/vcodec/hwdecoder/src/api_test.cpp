@@ -350,6 +350,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1200, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1300, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
+    ASSERT_NE(NULL, vdec_);
 }
 
 /**
