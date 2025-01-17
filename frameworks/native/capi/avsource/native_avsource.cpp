@@ -156,3 +156,23 @@ OH_AVFormat *OH_AVSource_GetTrackFormat(OH_AVSource *source, uint32_t trackIndex
     
     return avFormat;
 }
+
+OH_AVFormat *OH_AVSource_GetMetaDataFormat(OH_AVSource *source)
+{
+    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "Input source is nullptr");
+    CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, nullptr, "Magic error");
+
+    struct AVSourceObject *sourceObj = reinterpret_cast<AVSourceObject *>(source);
+    CHECK_AND_RETURN_RET_LOG(sourceObj != nullptr, nullptr, "Get sourceObject failed");
+    CHECK_AND_RETURN_RET_LOG(sourceObj->source_ != nullptr, nullptr, "Get sourceObject failed");
+
+    Format format;
+    int32_t ret = sourceObj->source_->GetUserMeta(format);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Source GetMetaData failed");
+
+    OH_AVFormat *avFormat = OH_AVFormat_Create();
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Format is nullptr");
+    avFormat->format_ = format;
+    
+    return avFormat;
+}
