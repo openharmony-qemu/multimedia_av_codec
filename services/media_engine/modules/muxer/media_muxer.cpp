@@ -191,10 +191,8 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
         "The track mime is unsupported: %{public}s.", mimeType.c_str());
     FALSE_RETURN_V_MSG_E(CheckKeys(mimeType, trackDesc), Status::ERROR_INVALID_DATA,
         "The track format keys not contained.");
-    if (format_ == Plugins::OutputFormat::AAC) {
-        FALSE_RETURN_V_MSG_E(CheckKeysExt(mimeType, trackDesc, format_), Status::ERROR_INVALID_DATA,
-            "The track format keys not contained.");
-    }
+    FALSE_RETURN_V_MSG_E(CheckKeysExt(mimeType, trackDesc, format_), Status::ERROR_INVALID_DATA,
+        "The track format keys not contained.");
     MEDIA_LOG_I("The track is %{public}s.", mimeType.c_str());
 
     int32_t trackId = -1;
