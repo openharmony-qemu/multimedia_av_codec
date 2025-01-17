@@ -2074,7 +2074,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_7800, TestSize.Level0)
     trackFormat = OH_AVSource_GetTrackFormat(source, 1);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &stringVal));
-    ASSERT_EQ(0, strcmp(stringVal, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4));
+    ASSERT_EQ(0, strcmp(stringVal, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2));
     close(fd);
 }
 
