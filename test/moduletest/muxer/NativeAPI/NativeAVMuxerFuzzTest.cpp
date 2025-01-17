@@ -69,6 +69,7 @@ HWTEST_F(NativeAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_001, TestSize.Le
         fd = rand();
         format = OH_AVOutputFormat(rand() % 3);
         handle = muxerDemo->NativeCreate(fd, format);
+        ASSERT_NE(nullptr, handle);
         if (handle != nullptr) {
             muxerDemo->NativeDestroy(handle);
         }
@@ -290,7 +291,7 @@ HWTEST_F(NativeAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_005, TestSize.Le
         info.flags = getIntRand();
 
         ret = muxerDemo->NativeWriteSampleBuffer(handle, trackId, avMemBuffer, info);
-
+        ASSERT_EQ(ret, AV_ERR_OK);
         ret = muxerDemo->NativeStop(handle);
 
         ret = muxerDemo->NativeDestroy(handle);
