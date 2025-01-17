@@ -38,6 +38,7 @@ constexpr uint32_t VIVID_MIN_CHANNEL_COUNT = 0;
 constexpr uint32_t VIVID_MAX_CHANNEL_COUNT = 17;
 constexpr uint32_t MAX_CHANNEL_COUNT = 2;
 constexpr uint32_t DEFAULT_SAMPLE_RATE = 48000;
+constexpr uint32_t TEST_SAMPLE_RATE = 32000;
 constexpr uint32_t VIVID_MAX_INPUT_SIZE = 99999999;
 constexpr string_view INPUT_VIVID_FILE_PATH = "/data/test/media/vivid_2c_44100hz_320k.dat";
 constexpr string_view OUTPUT_VIVID_PCM_FILE_PATH = "/data/test/media/vivid_2c_44100hz_320k.pcm";
@@ -45,6 +46,11 @@ constexpr string_view OUTPUT_VIVID_PCM_FILE_PATH = "/data/test/media/vivid_2c_44
 
 namespace OHOS {
 namespace MediaAVCodec {
+
+static uint32_t g_outputFormatChangedTimes = 0;
+static int32_t g_outputSampleRate = 0;
+static int32_t g_outputChannels = 0;
+
 class ADecBufferSignal {
 public:
     std::mutex inMutex_;
@@ -70,9 +76,11 @@ static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 static void OnOutputFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     (void)codec;
-    (void)format;
     (void)userData;
-    cout << "OnOutputFormatChanged received" << endl;
+    g_outputFormatChangedTimes++;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, &g_outputChannels);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, &g_outputSampleRate);
+    cout << "OnOutputFormatChanged received, rate:" << g_outputSampleRate << ", channel:" << g_outputChannels << endl;
 }
 
 static void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
@@ -121,6 +129,7 @@ protected:
     OH_AVCodec *audioDec_ = nullptr;
     OH_AVFormat *format_ = nullptr;
     bool isFirstFrame_ = true;
+    bool isTestingFormat_ = false;
     std::ifstream inputFile_;
     std::ofstream pcmOutputFile_;
 };
@@ -137,11 +146,19 @@ void AudioVividCodeCapiDecoderUnitTest::TearDownTestCase(void)
 
 void AudioVividCodeCapiDecoderUnitTest::SetUp(void)
 {
+    g_outputFormatChangedTimes = 0;
+    g_outputSampleRate = 0;
+    g_outputChannels = 0;
     cout << "[SetUp]: SetUp!!!" << endl;
 }
 
 void AudioVividCodeCapiDecoderUnitTest::TearDown(void)
 {
+    if (isTestingFormat_) {
+        EXPECT_EQ(g_outputFormatChangedTimes, 1);
+    } else {
+        EXPECT_EQ(g_outputFormatChangedTimes, 0);
+    }
     cout << "[TearDown]: over!!!" << endl;
 
     if (signal_) {
@@ -357,8 +374,12 @@ int32_t AudioVividCodeCapiDecoderUnitTest::Configure()
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
 
-    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), MAX_CHANNEL_COUNT);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    if (isTestingFormat_) {
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), TEST_SAMPLE_RATE);
+    } else {
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    }
 
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                             OH_BitsPerSample::SAMPLE_S16LE);
@@ -822,5 +843,21 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_ReleaseOutputBuff
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
     Release();
 }
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_formatChanged, TestSize.Level1)
+{
+    isTestingFormat_ = true;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS

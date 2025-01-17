@@ -495,6 +495,8 @@ void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputFormatChanged(const Fo
 {
     if (impl_->callback_) {
         impl_->callback_->OnOutputFormatChanged(format);
+    } else {
+        AVCODEC_LOGE("receive format changed, but impl callback is nullptr");
     }
 }
 

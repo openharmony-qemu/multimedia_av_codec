@@ -78,7 +78,8 @@
           "curl",
           "openssl",
           "hiview",
-          "cJSON"
+          "cJSON",
+          "bundle_framework"
         ],
         "third_party": []
       },

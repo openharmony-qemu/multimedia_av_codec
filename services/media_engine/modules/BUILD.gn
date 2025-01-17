@@ -95,6 +95,8 @@ ohos_shared_library("av_codec_media_engine_modules") {
 
   external_deps = [
     "audio_framework:audio_capturer",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
@@ -105,6 +107,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
 
   if (av_codec_support_drm) {
