@@ -64,7 +64,7 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_001, TestSize.Lev
         std::cout << "current run time is: " << i << std::endl;
         fd = rand();
 
-        int32_t ret = muxerDemo->InnerCreate(fd, format);
+        ret = muxerDemo->InnerCreate(fd, format);
         ASSERT_EQ(ret, AV_ERR_OK);
         muxerDemo->InnerDestroy();
     }
