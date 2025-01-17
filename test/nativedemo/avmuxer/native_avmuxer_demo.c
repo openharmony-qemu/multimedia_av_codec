@@ -111,6 +111,7 @@ int AddTrackAudio(OH_AVMuxer *muxer, const AudioTrackParam *param, int fdInput)
     OH_AVFormat_SetIntValue(formatAudio, "audio_samples_per_frame", param->frameSize);
     if (param == &g_audioAacPar) {
         OH_AVFormat_SetIntValue(formatAudio, OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+        OH_AVFormat_SetIntValue(formatAudio, OH_MD_KEY_AAC_IS_ADTS, 0);
     } else if (param == &g_audioG711MUPar) {
         OH_AVFormat_SetIntValue(formatAudio, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_U8);
         OH_AVFormat_SetLongValue(formatAudio, OH_MD_KEY_BITRATE, 705600); // 705600 g711mu bit rate

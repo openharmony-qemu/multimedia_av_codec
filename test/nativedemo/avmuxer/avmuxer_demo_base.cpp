@@ -24,6 +24,8 @@ namespace {
     constexpr int MODE_TWO = 2;
     constexpr int MODE_THREE = 3;
     constexpr int MODE_FOUR = 4;
+    constexpr int MODE_FIVE = 5;
+    constexpr int MODE_SIX = 6;
     constexpr int CONFIG_BUFFER_SZIE = 0x1FFF;
 }
 
@@ -77,6 +79,14 @@ void AVMuxerDemoBase::SelectFormatMode()
             format_ = "mp3";
             outputFormat_ = Plugins::OutputFormat::MP3;
             break;
+        case MODE_FOUR:
+            format_ = "wav";
+            outputFormat_ = Plugins::OutputFormat::WAV;
+            break;
+        case MODE_FIVE:
+            format_ = "aac";
+            outputFormat_ = Plugins::OutputFormat::AAC;
+            break;
         default:
             format_ = "mp4";
             outputFormat_ = Plugins::OutputFormat::MPEG_4;
@@ -109,6 +119,14 @@ void AVMuxerDemoBase::SelectAudioMode()
         case MODE_FOUR:
             audioType_ = "amr";
             audioParams_ = &g_audioAmrWbPar;
+            break;
+        case MODE_FIVE:
+            audioType_ = "wav";
+            audioParams_ = &g_audioG711MUPar;
+            break;
+        case MODE_SIX:
+            audioType_ = "wav";
+            audioParams_ = &g_audioRawPar;
             break;
         default:
             audioType_ = "noAudio";
@@ -583,6 +601,12 @@ int AVMuxerDemoBase::AddAudioTrack(const AudioTrackParam *param)
     audioParams->Set<Tag::AUDIO_SAMPLE_PER_FRAME>(param->frameSize);
     if (param == &g_audioAacPar) {
         audioParams->Set<Tag::MEDIA_PROFILE>(Plugins::AACProfile::AAC_PROFILE_LC);
+    } else if (param == &g_audioG711MUPar) {
+        audioParams->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_U8);
+        audioParams->Set<Tag::MEDIA_BITRATE>(705600); // 705600 g711mu bit rate
+    } else if (param == &g_audioRawPar) {
+        audioParams->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
+        audioParams->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Plugins::AudioChannelLayout::STEREO);
     }
 
     int extSize = 0;
