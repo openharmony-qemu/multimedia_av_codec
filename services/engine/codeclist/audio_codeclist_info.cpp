@@ -86,7 +86,7 @@ const std::vector<int32_t> AUDIO_COOK_SAMPLE_RATE = {8000, 11025, 22050, 44100};
 #ifdef SUPPORT_CODEC_AC3
 constexpr int MIN_BIT_RATE_AC3 = 32000;
 constexpr int MAX_BIT_RATE_AC3 = 640000;
-const std::vector<int32_t> AUDIO_AC3_SAMPLE_RATE = {32000,44100, 48000};
+const std::vector<int32_t> AUDIO_AC3_SAMPLE_RATE = {32000, 44100, 48000};
 #endif
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
@@ -427,6 +427,7 @@ CapabilityData  AudioCodeclistInfo::GetCookDecoderCapability()
     return audioCookCapability;
 }
 #endif
+
 #ifdef SUPPORT_CODEC_AC3
 CapabilityData AudioCodeclistInfo::GetAc3DecoderCapability()
 {
@@ -459,10 +460,10 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetLbvcDecoderCapability(),  GetLbvcEncoderCapability(),
 #endif
 #ifdef SUPPORT_CODEC_COOK
-                          GetCookDecoderCapability(),
+    GetCookDecoderCapability(),
 #endif
 #ifdef SUPPORT_CODEC_AC3
-                          GetAc3DecoderCapability(),
+    GetAc3DecoderCapability(),
 #endif
     };
 }

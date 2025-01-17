@@ -243,9 +243,13 @@ int32_t FCodec::ConfigureContext(const Format &format)
 #ifdef SUPPORT_CODEC_RV
 int32_t FCodec::SetCodecExtradata(const Format &format)
 {
-    size_t extraSize;
-    uint8_t *extraData;
+    size_t extraSize = 0;
+    uint8_t *extraData = nullptr;
     if (format.GetBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, &extraData, extraSize)) {
+        if (extraData == nullptr || extraSize == 0) {
+            AVCODEC_LOGE("extradata getBufer failed!");
+            return AVCS_ERR_INVALID_VAL;
+        }
         avCodecContext_->extradata = static_cast<uint8_t *>(av_mallocz(extraSize + AV_INPUT_BUFFER_PADDING_SIZE));
         if (avCodecContext_->extradata == nullptr) {
             AVCODEC_LOGE("extradata malloc failed!");
