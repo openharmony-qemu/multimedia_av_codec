@@ -241,7 +241,7 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
 
 /**
  * @brief brief Enumerates the Mime type of video mpeg4 part2 codec.
- * 
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 16
  */
