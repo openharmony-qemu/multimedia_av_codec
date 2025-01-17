@@ -53,6 +53,7 @@ const std::unordered_map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = 
     {OutputFormat::AMR, {MimeType::AUDIO_AMR_NB, MimeType::AUDIO_AMR_WB}},
     {OutputFormat::MP3, {MimeType::AUDIO_MPEG, MimeType::IMAGE_JPG}},
     {OutputFormat::WAV, {MimeType::AUDIO_RAW, MimeType::AUDIO_G711MU}},
+    {OutputFormat::AAC, {MimeType::AUDIO_AAC}},
 };
 
 const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
@@ -67,6 +68,10 @@ const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
     {MimeType::IMAGE_PNG, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
     {MimeType::IMAGE_BMP, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
     {MimeType::TIMED_METADATA, {Tag::TIMED_METADATA_KEY, Tag::TIMED_METADATA_SRC_TRACK}},
+};
+
+const std::map<std::string, std::set<std::string>> MUX_MIME_INFO_EXT = {
+    {MimeType::AUDIO_AAC, {Tag::AUDIO_AAC_IS_ADTS, Tag::MEDIA_PROFILE}},
 };
 }
 
@@ -186,6 +191,10 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
         "The track mime is unsupported: %{public}s.", mimeType.c_str());
     FALSE_RETURN_V_MSG_E(CheckKeys(mimeType, trackDesc), Status::ERROR_INVALID_DATA,
         "The track format keys not contained.");
+    if (format_ == Plugins::OutputFormat::AAC) {
+        FALSE_RETURN_V_MSG_E(CheckKeysExt(mimeType, trackDesc, format_), Status::ERROR_INVALID_DATA,
+            "The track format keys not contained.");
+    }
     MEDIA_LOG_I("The track is %{public}s.", mimeType.c_str());
 
     int32_t trackId = -1;
@@ -436,6 +445,7 @@ std::shared_ptr<Plugins::MuxerPlugin> MediaMuxer::CreatePlugin(Plugins::OutputFo
         {Plugins::OutputFormat::AMR, MimeType::MEDIA_AMR},
         {Plugins::OutputFormat::MP3, MimeType::MEDIA_MP3},
         {Plugins::OutputFormat::WAV, MimeType::MEDIA_WAV},
+        {Plugins::OutputFormat::AAC, MimeType::MEDIA_AAC},
     };
     FALSE_RETURN_V_MSG_E(table.find(format) != table.end(), nullptr,
         "The output format %{public}d is not supported!", format);
@@ -468,6 +478,26 @@ bool MediaMuxer::CheckKeys(const std::string &mimeType, const std::shared_ptr<Me
         if (trackDesc->Find(key.c_str()) == trackDesc->end()) {
             ret = false;
             MEDIA_LOG_E("The format key %{public}s not contained.", key.data());
+        }
+    }
+    return ret;
+}
+
+bool MediaMuxer::CheckKeysExt(const std::string &mimeType, const std::shared_ptr<Meta> &trackDesc,
+    Plugins::OutputFormat format)
+{
+    bool ret = true;
+    if (format == Plugins::OutputFormat::AAC) { // AAC Muxer need
+        auto it = MUX_MIME_INFO_EXT.find(mimeType);
+        if (it == MUX_MIME_INFO_EXT.end()) {
+            return ret; // 不做检查
+        }
+
+        for (auto &key : it->second) {
+            if (trackDesc->Find(key.c_str()) == trackDesc->end()) {
+                ret = false;
+                MEDIA_LOG_E("The format key %{public}s not contained.", key.data());
+            }
         }
     }
     return ret;

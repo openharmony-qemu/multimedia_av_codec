@@ -35,7 +35,7 @@ using namespace Ffmpeg;
 
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
-std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav"};
+std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav", "adts"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
@@ -102,6 +102,10 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         return true;
     } else if (fmtName == "wav") {
         auto cap = Capability(MimeType::MEDIA_WAV);
+        pluginDef.AddOutCaps(cap);
+        return true;
+    } else if (fmtName == "adts") {
+        auto cap = Capability(MimeType::MEDIA_AAC);
         pluginDef.AddOutCaps(cap);
         return true;
     }
@@ -400,23 +404,22 @@ Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
     return Status::NO_ERROR;
 }
 
-Status FFmpegMuxerPlugin::SetCodecParameterOfTrack(AVStream *stream, const std::shared_ptr<Meta> &trackDesc)
+Status FFmpegMuxerPlugin::SetCodecParameterOfAudioTrack(AVStream *stream, const std::shared_ptr<Meta> &trackDesc)
 {
     AVCodecParameters *par = stream->codecpar;
     if (trackDesc->Find(Tag::MEDIA_BITRATE) != trackDesc->end()) {
         trackDesc->Get<Tag::MEDIA_BITRATE>(par->bit_rate); // bit rate
     }
 
-    VideoSampleInfo sampleInfo;
-    videoTracksInfo_[stream->index] = sampleInfo;
+    int32_t isAacAdts = 0;
+    if (pluginName_ == "ffmpegMux_adts" && trackDesc->Get<Tag::AUDIO_AAC_IS_ADTS>(isAacAdts) && isAacAdts == 1) {
+        MEDIA_LOG_I("aac is adts");
+        return Status::NO_ERROR;
+    }
+
     std::vector<uint8_t> codecConfig;
     if (trackDesc->Find(Tag::MEDIA_CODEC_CONFIG) != trackDesc->end()) {
         trackDesc->Get<Tag::MEDIA_CODEC_CONFIG>(codecConfig); // codec config
-        if (par->codec_id == AV_CODEC_ID_H264 || par->codec_id == AV_CODEC_ID_HEVC) {
-            videoTracksInfo_[stream->index].extraData_.reserve(codecConfig.size());
-            videoTracksInfo_[stream->index].extraData_.assign(codecConfig.begin(), codecConfig.end());
-            return SetNalSizeLen(stream, codecConfig);
-        }
         return SetCodecParameterExtra(stream, codecConfig.data(), codecConfig.size());
     } else if (par->codec_id == AV_CODEC_ID_AAC) {
         if (trackDesc->Find(Tag::MEDIA_PROFILE) != trackDesc->end()) {
@@ -435,6 +438,28 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfTrack(AVStream *stream, const std::
             return SetCodecParameterExtra(stream, codecConfig.data(), codecConfig.size());
         }
         MEDIA_LOG_W("missing codec config of aac!");
+    }
+    return Status::NO_ERROR;
+}
+
+Status FFmpegMuxerPlugin::SetCodecParameterOfVideoTrack(AVStream *stream, const std::shared_ptr<Meta> &trackDesc)
+{
+    AVCodecParameters *par = stream->codecpar;
+    if (trackDesc->Find(Tag::MEDIA_BITRATE) != trackDesc->end()) {
+        trackDesc->Get<Tag::MEDIA_BITRATE>(par->bit_rate); // bit rate
+    }
+
+    VideoSampleInfo sampleInfo;
+    videoTracksInfo_[stream->index] = sampleInfo;
+    std::vector<uint8_t> codecConfig;
+    if (trackDesc->Find(Tag::MEDIA_CODEC_CONFIG) != trackDesc->end()) {
+        trackDesc->Get<Tag::MEDIA_CODEC_CONFIG>(codecConfig); // codec config
+        if (par->codec_id == AV_CODEC_ID_H264 || par->codec_id == AV_CODEC_ID_HEVC) {
+            videoTracksInfo_[stream->index].extraData_.reserve(codecConfig.size());
+            videoTracksInfo_[stream->index].extraData_.assign(codecConfig.begin(), codecConfig.end());
+            return SetNalSizeLen(stream, codecConfig);
+        }
+        return SetCodecParameterExtra(stream, codecConfig.data(), codecConfig.size());
     } else if (par->codec_id == AV_CODEC_ID_MPEG4) {
         MEDIA_LOG_W("missing codec config of mpeg4!");
     }
@@ -648,7 +673,7 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
         st->codecpar->channel_layout = ffChannelLayout;
     }
     trackIndex = st->index;
-    return SetCodecParameterOfTrack(st, trackDesc);
+    return SetCodecParameterOfAudioTrack(st, trackDesc);
 }
 
 Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc,
@@ -700,7 +725,7 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_p
     FALSE_RETURN_V_MSG_E(retColor == Status::NO_ERROR, retColor, "set color failed!");
     auto retCuva = SetCodecParameterCuva(st, trackDesc);
     FALSE_RETURN_V_MSG_E(retCuva == Status::NO_ERROR, retCuva, "set cuva failed!");
-    return SetCodecParameterOfTrack(st, trackDesc);
+    return SetCodecParameterOfVideoTrack(st, trackDesc);
 }
 
 Status FFmpegMuxerPlugin::AddTimedMetaTrack(

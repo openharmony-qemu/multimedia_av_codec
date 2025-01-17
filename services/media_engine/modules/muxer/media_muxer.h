@@ -59,6 +59,8 @@ private:
     void ReleaseBuffer();
     bool CanAddTrack(const std::string &mimeType);
     bool CheckKeys(const std::string &mimeType, const std::shared_ptr<Meta> &trackDesc);
+    bool CheckKeysExt(const std::string &mimeType, const std::shared_ptr<Meta> &trackDesc,
+        Plugins::OutputFormat format);
     std::string StateConvert(State state);
     void PrintWriteCount();
 
