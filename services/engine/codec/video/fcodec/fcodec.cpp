@@ -1639,8 +1639,6 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
             capaArray.emplace_back(capsData);
             GetMpeg4esCapProf(capaArray);
         } else {
-            capsData.width.maxVal = VIDEO_MAX_WIDTH_SIZE;
-            capsData.height.maxVal = VIDEO_MAX_HEIGHT_SIZE;
             capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
             capaArray.emplace_back(capsData);
             GetAvcCapProf(capaArray);
