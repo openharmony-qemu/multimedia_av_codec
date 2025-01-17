@@ -89,6 +89,9 @@ public:
 
     void OnError(VPEAlgoErrCode errorCode) override
     {
+        auto videoResizeFilter = videoResizeFilter_.lock();
+        FALSE_RETURN_MSG(videoResizeFilter != nullptr, "invalid videoResizeFilter");
+        videoResizeFilter->OnVPEError(static_cast<int32_t>(errorCode));
     }
 
     void OnState(VPEAlgoState state) override
@@ -201,9 +204,6 @@ sptr<Surface> VideoResizeFilter::GetInputSurface()
         return nullptr;
     }
     sptr<Surface> inputSurface = videoEnhancer_->GetInputSurface();
-    if (inputSurface != nullptr) {
-        inputSurface->SetDefaultUsage(BUFFER_USAGE_CPU_READ);
-    }
     return inputSurface;
 #else
     MEDIA_LOG_E("no VPE module");
@@ -547,6 +547,16 @@ void VideoResizeFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     bundleName_ = bundleName;
     instanceId_ = instanceId;
 }
+
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+void VideoResizeFilter::OnVPEError(int32_t errorCode)
+{
+    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "no eventReceiver_");
+    FALSE_RETURN_NOLOG(isVPEReportError_ == false);
+    isVPEReportError_ = true;
+    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+}
+#endif
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS
