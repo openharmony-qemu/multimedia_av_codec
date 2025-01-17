@@ -299,6 +299,14 @@ extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
 extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT;
 
 /**
+ * @brief Enumerates the MIME type of audio raw stream.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 16
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW;
+
+/**
  * @brief The extra data's key of surface Buffer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
