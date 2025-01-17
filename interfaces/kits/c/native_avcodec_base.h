@@ -236,7 +236,7 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
  * @deprecated since 11
  * @since 10
  */
-extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2;
 
 /**
  * @brief Enumerates the types of audio and video muxer

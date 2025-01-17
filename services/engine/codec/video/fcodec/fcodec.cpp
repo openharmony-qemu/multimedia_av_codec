@@ -1611,8 +1611,8 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
         capsData.width.minVal = VIDEO_MIN_SIZE;
         capsData.height.minVal = VIDEO_MIN_SIZE;
-        capsData.width.maxVal = DEFAULT_VIDEO_WIDTH;
-        capsData.height.maxVal = DEFAULT_VIDEO_WIDTH;
+        capsData.width.maxVal = VIDEO_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = VIDEO_MAX_HEIGHT_SIZE;
         capsData.frameRate.minVal = 0;
         capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
         capsData.bitrate.minVal = 1;
