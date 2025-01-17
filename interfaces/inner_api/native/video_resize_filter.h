@@ -61,9 +61,6 @@ public:
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
-#ifdef USE_VIDEO_PROCESSING_ENGINE
-    void OnVPEError(int32_t errorCode);
-#endif
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -84,7 +81,6 @@ private:
 
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     std::shared_ptr<VideoProcessingEngine::DetailEnhancerVideo> videoEnhancer_;
-    bool isVPEReportError_ {false};
 #endif
 
     std::string codecMimeType_;
