@@ -365,7 +365,7 @@ int GetInputNum(int defaultNum)
 
 void NativeSelectMuxerType(void)
 {
-    printf("\nplese select muxer type : 0.mp4 1.m4a 2.amr 3.mp3 4.wav\n");
+    printf("\nplese select muxer type : 0.mp4 1.m4a 2.amr 3.mp3 4.wav 5.aac\n");
     int num = GetInputNum(0);
     switch (num) {
         case MODE_ZERO:
@@ -387,6 +387,10 @@ void NativeSelectMuxerType(void)
         case MODE_FOUR:
             g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_WAV;
             (void)snprintf_s(g_muxerParam.outputFormatType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "wav");
+            break;
+        case MODE_FIVE:
+            g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_AAC;
+            (void)snprintf_s(g_muxerParam.outputFormatType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "aac");
             break;
         default:
             g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
