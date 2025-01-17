@@ -206,7 +206,7 @@ typedef struct OH_AVDataSource {
 
 /**
  * @brief Enumerates the MIME types of video mpeg2 codec.
- * 
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 16
  */
