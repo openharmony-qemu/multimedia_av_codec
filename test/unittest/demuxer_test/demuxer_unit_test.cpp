@@ -334,6 +334,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1030, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1040, TestSize.Level1)
 {
     InitResource(g_mp4Path4, LOCAL);
+    ASSERT_TRUE(initStatus_);
 }
 
 /**
