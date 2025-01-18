@@ -23,6 +23,7 @@
 #include "scope_guard.h"
 #include "media_core.h"
 #include "meta/format.h"
+#include "plugin/plugin_time.h"
  
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "SeiParserHelper" };
@@ -78,7 +79,7 @@ Status SeiParserHelper::ParseSeiPayload(
         auto naluParseRes = ParseSeiRbsp(naluStartPtr, maxPointer, group);
         bufferParseRes = (bufferParseRes == Status::OK ? bufferParseRes : naluParseRes);
     }
-    group->playbackPosition = buffer->pts_;
+    group->playbackPosition = Plugins::Us2Ms(buffer->pts_);
     return bufferParseRes;
 }
 
@@ -212,9 +213,10 @@ std::shared_ptr<SeiParserHelper> SeiParserHelperFactory::CreateHelper(const std:
 }
 
 SeiParserListener::SeiParserListener(const std::string &mimeType, sptr<AVBufferQueueProducer> producer,
-    std::shared_ptr<Pipeline::EventReceiver> eventReceiver)
+    std::shared_ptr<Pipeline::EventReceiver> eventReceiver, bool isFlowLimited)
     : producer_(producer),
-      eventReceiver_(eventReceiver)
+      eventReceiver_(eventReceiver),
+      isFlowLimited_(isFlowLimited)
 {
     seiParserHelper_ = SeiParserHelperFactory::CreateHelper(mimeType);
     FALSE_RETURN_MSG(seiParserHelper_ != nullptr, "Create SeiParserHelper failed for %{public}s", mimeType.c_str());
@@ -228,9 +230,10 @@ void SeiParserListener::OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer)
     {
         producer_->ReturnBuffer(avBuffer, true);
     };
- 
     FALSE_RETURN_NOLOG(seiParserHelper_ != nullptr);
     FALSE_RETURN_NOLOG(eventReceiver_ != nullptr);
+
+    FlowLimit(avBuffer);
     std::shared_ptr<SeiPayloadInfoGroup> group = std::make_shared<SeiPayloadInfoGroup>();
     auto res = seiParserHelper_->ParseSeiPayload(avBuffer, group);
     FALSE_RETURN_NOLOG(res == Status::OK);
@@ -256,10 +259,36 @@ void SeiParserListener::OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer)
     eventReceiver_->OnEvent({ "SeiParserHelper", EventType::EVENT_SEI_INFO, seiInfoFormat });
 }
 
+void SeiParserListener::FlowLimit(const std::shared_ptr<AVBuffer> &avBuffer)
+{
+    FALSE_RETURN(isFlowLimited_ && syncCenter_ != nullptr);
+    MediaAVCodec::AVCodecTrace trace("ParseSeiPayload FlowLimit");
+
+    if (startPts_ == 0) {
+        startPts_ = avBuffer->pts_;
+    }
+
+    auto mediaTimeUs = syncCenter_->GetMediaTimeNow();
+    auto diff = avBuffer->pts_ - startPts_ - mediaTimeUs;
+    FALSE_RETURN_NOLOG(diff > 0);
+
+    std::unique_lock<std::mutex> lock(mutex_);
+    cond_.wait_for(lock, std::chrono::microseconds(diff), [this] () { return isInterruptNeeded_.load(); });
+}
+
 void SeiParserListener::SetPayloadTypeVec(const std::vector<int32_t> &vector)
 {
     FALSE_RETURN_MSG(seiParserHelper_ != nullptr, "seiParserHelper is nullptr");
     seiParserHelper_->SetPayloadTypeVec(vector);
+}
+
+void SeiParserListener::OnInterrupted(bool isInterruptNeeded)
+{
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        isInterruptNeeded_ = isInterruptNeeded;
+    }
+    cond_.notify_all();
 }
 }  // namespace Media
 }  // namespace OHOS
