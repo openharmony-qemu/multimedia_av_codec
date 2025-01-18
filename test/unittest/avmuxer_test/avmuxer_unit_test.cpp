@@ -614,6 +614,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_009, TestSize.Level0)
     avParam->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     avParam->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 16000); // 16000: 16khz sample rate
     avParam->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 1); // 1: 1 audio channel, mono
+    avParam->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    avParam->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
 
     int32_t ret = avmuxer_->AddTrack(trackId, avParam);
     ASSERT_EQ(ret, 0);
@@ -1793,6 +1795,119 @@ HWTEST_F(AVMuxerUnitTest, Muxer_WAV_004, TestSize.Level0)
     ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
 }
 
+/**
+ * @tc.name: Muxer_AAC_001
+ * @tc.desc: Muxer mux the aac with adts header
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AAC_001, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AAC_44100_2.aac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_AAC;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_U8);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 705600); // 705600 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 2048); // 2048 frame size
+    audioParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    audioParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
+    int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    inputFile_ = std::make_shared<std::ifstream>("/data/test/media/aac_2c_44100hz_199k.dat", std::ios::binary);
+
+    int32_t extSize = 0;
+    inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+    if (extSize > 0) {
+        std::vector<uint8_t> buffer(extSize);
+        inputFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+    }
+
+    bool eosFlag = false;
+    uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
+    ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+    while (!eosFlag && (ret == 0)) {
+        ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+    }
+    ASSERT_EQ(ret, 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_AAC_002
+ * @tc.desc: Muxer mux aac, test OH_MD_KEY_AUDIO_SAMPLE_FORMAT
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AAC_002, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AAC_44100_2_XXX.aac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_WAV;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_U8P);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 705600); // 705600 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    audioParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_STEREO);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S24P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S32P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+}
+
+/**
+ * @tc.name: Muxer_AAC_003
+ * @tc.desc: Muxer mux aac, test OH_MD_KEY_CHANNEL_LAYOUT
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AAC_003, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AAC_44100_2_XXX.aac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_WAV;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 1411200); // 1411200 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_2POINT0POINT2);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_AMB_ORDER1_ACN_N3D);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_AMB_ORDER1_FUMA);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+}
 #ifdef AVMUXER_UNITTEST_CAPI
 /**
  * @tc.name: Muxer_Destroy_001
