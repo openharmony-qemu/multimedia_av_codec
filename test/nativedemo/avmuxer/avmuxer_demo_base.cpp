@@ -97,7 +97,7 @@ void AVMuxerDemoBase::SelectFormatMode()
 void AVMuxerDemoBase::SelectAudioMode()
 {
     int num;
-    std::cout<<"\nplease select audio file: 0.noAudio 1.aac 2.mpeg 3.amrnb 4.amrwb"<<std::endl;
+    std::cout<<"\nplease select audio file: 0.noAudio 1.aac 2.mpeg 3.amrnb 4.amrwb 5.g711mu 6.raw"<<std::endl;
     std::cin>>num;
     switch (num) {
         case MODE_ZERO:
@@ -601,6 +601,7 @@ int AVMuxerDemoBase::AddAudioTrack(const AudioTrackParam *param)
     audioParams->Set<Tag::AUDIO_SAMPLE_PER_FRAME>(param->frameSize);
     if (param == &g_audioAacPar) {
         audioParams->Set<Tag::MEDIA_PROFILE>(Plugins::AACProfile::AAC_PROFILE_LC);
+        audioParams->Set<Tag::AUDIO_AAC_IS_ADTS>(0);
     } else if (param == &g_audioG711MUPar) {
         audioParams->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_U8);
         audioParams->Set<Tag::MEDIA_BITRATE>(705600); // 705600 g711mu bit rate
