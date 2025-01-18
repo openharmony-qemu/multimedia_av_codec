@@ -67,15 +67,6 @@ public:
     }
 };
 /**
- * @tc.name: Source_SetCallback_0100
- * @tc.desc: Set callback
- * @tc.type: FUNC
- */
-HWTEST_F(SourceUnitTest, Source_SetCallback_0100, TestSize.Level1)
-{
-    source_->SetCallback(nullptr);
-}
-/**
  * @tc.name: Source_SetBundleName_0100
  * @tc.desc: Set callback
  * @tc.type: FUNC
@@ -119,6 +110,8 @@ HWTEST_F(SourceUnitTest, Source_SetBundleName_0200, TestSize.Level1)
 HWTEST_F(SourceUnitTest, Source_SetBundleName_0300, TestSize.Level1)
 {
     source_->SetBundleName("testSource");
+    source_->SetCallback(nullptr);
+    EXPECT_EQ(Status::OK, source_->Prepare());
 }
 /**
  * @tc.name: Source_Prepare_0100

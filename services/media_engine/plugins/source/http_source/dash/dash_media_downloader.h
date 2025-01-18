@@ -74,6 +74,7 @@ public:
 private:
     void ReceiveMpdStreamInitEvent();
     void ReceiveMpdParseOkEvent();
+    void PostBufferingEvent(int streamId, BufferingInfoType type);
     void VideoSegmentDownloadFinished(int streamId);
     void GetSegmentToDownload(int downloadStreamId, bool streamSwitchFlag);
     void CleanVideoSegmentBuffer(bool &bufferCleanFlag, int64_t &remainLastNumberSeq);
@@ -119,6 +120,9 @@ private:
     std::mutex switchMutex_;
     std::mutex parseSidxMutex_;
     uint64_t expectDuration_{0};
+    std::mutex bufferingMutex_;
+    uint32_t bufferingFlag_{0};
+    uint32_t lastBufferingPercent_{0};
 };
 }
 }

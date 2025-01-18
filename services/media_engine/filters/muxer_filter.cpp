@@ -14,6 +14,7 @@
  */
 
 #include <sys/timeb.h>
+#include <thread>
 #include <unordered_map>
 #include "muxer_filter.h"
 #include "common/log.h"
@@ -43,6 +44,7 @@ constexpr int64_t WAIT_TIME_OUT_NS = 3000000000;
 constexpr int64_t US_TO_MS = 1000;
 constexpr int64_t S_TO_MS = 1000;
 constexpr uint32_t BUFFER_IS_EOS = 1;
+constexpr int32_t VALID_MIN_DURATION = 1;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
     [](const std::string& name, const FilterType type) {
         return std::make_shared<MuxerFilter>(name, FilterType::FILTERTYPE_MUXER);
@@ -147,6 +149,7 @@ Status MuxerFilter::DoStart()
         SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
     } else {
         isStarted = true;
+        isReachMaxDuration_ = false;
     }
     return ret;
 }
@@ -300,9 +303,11 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnBufferFilled");
     if (!isTransCoderMode) {
         int64_t currentBufferPts = inputBuffer->pts_;
-        if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS) {
+        if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS && isReachMaxDuration_ == false) {
             MEDIA_LOG_I("MuxerFilter::OnBufferFilled currentBufferPts > maxDuration_ start to stop");
-            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
+            isReachMaxDuration_ = true;
+            std::thread asyncThread(std::bind(&MuxerFilter::EventCompleteStopAsync, this));
+            asyncThread.detach();
         }
         int64_t anotherBufferPts = 0;
         for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
@@ -319,6 +324,12 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
         return;
     }
     OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+}
+
+void MuxerFilter::EventCompleteStopAsync()
+{
+    MEDIA_LOG_I("MuxerFilter EventCompleteStopAsync");
+    eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
 }
 
 void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t trackIndex,
@@ -399,6 +410,10 @@ void MuxerFilter::SetMaxDuration(int32_t maxDuration)
 {
     MEDIA_LOG_I("MuxerFilter SetMaxDuration = %{public}d", maxDuration);
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::SetMaxDuration");
+    if (maxDuration < VALID_MIN_DURATION) {
+        maxDuration = INT32_MAX;
+        MEDIA_LOG_I("MuxerFilter MaxDuration set to INT32_MAX");
+    }
     maxDuration_ = maxDuration;
 }
 } // namespace Pipeline

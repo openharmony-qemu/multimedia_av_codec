@@ -68,6 +68,7 @@ constexpr int32_t HALF_DIVIDE = 2;
 constexpr uint64_t READ_BACK_SAVE_SIZE = 1 * 1024 * 1024;
 constexpr int32_t SAVE_DATA_LOG_FREQUENCY = 10;
 constexpr uint32_t KILO = 1024;
+constexpr int32_t ONE_HUNDRED_MILLIONSECOND = 100;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -1660,7 +1661,8 @@ bool HlsMediaDownloader::CheckBufferingOneSeconds()
     MEDIA_LOG_I("HLS CheckBufferingOneSeconds in");
     int32_t sleepTime = 0;
     // return error again 1 time 1s, avoid ffmpeg error
-    while (sleepTime < ONE_SECONDS && !isInterruptNeeded_.load()) {
+    while (sleepTime < (isFirstFrameArrived_ ? ONE_SECONDS : ONE_HUNDRED_MILLIONSECOND) &&
+           !isInterruptNeeded_.load()) {
         if (!isBuffering_) {
             break;
         }
@@ -1845,6 +1847,10 @@ bool HlsMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
         return false;
     }
     MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32, size);
+    if (!isBuffering_.load()) {
+        isBuffering_.store(true);
+    }
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     expectOffset_.store(offset);
     initCacheSize_.store(size);
     return true;

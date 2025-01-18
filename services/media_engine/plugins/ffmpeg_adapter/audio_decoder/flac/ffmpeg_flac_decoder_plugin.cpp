@@ -174,6 +174,9 @@ Status FFmpegFlacDecoderPlugin::Release()
 int32_t FFmpegFlacDecoderPlugin::GetInputBufferSize()
 {
     int32_t inputBufferSize = SAMPLES * channels * MAX_BITS_PER_SAMPLE;
+    if (sampleFormat_ == AudioSampleFormat::SAMPLE_S32LE || sampleFormat_ == AudioSampleFormat::SAMPLE_F32LE) {
+        inputBufferSize *= EXPAND_SIZE; // max inputBufferSize needs to be expanded at 32bit
+    }
     int32_t maxSize = basePlugin->GetMaxInputSize();
     if (maxSize < 0 || maxSize > inputBufferSize) {
         maxSize = inputBufferSize;
@@ -185,7 +188,7 @@ int32_t FFmpegFlacDecoderPlugin::GetOutputBufferSize()
 {
     int32_t outputBufferSize = SAMPLES * channels * MAX_BITS_PER_SAMPLE;
     if (sampleFormat_ == AudioSampleFormat::SAMPLE_S32LE || sampleFormat_ == AudioSampleFormat::SAMPLE_F32LE) {
-        outputBufferSize *= EXPAND_SIZE; // max outputBufferSize needs to be expanded at S32
+        outputBufferSize *= EXPAND_SIZE; // max outputBufferSize needs to be expanded at 32bit
     }
     return outputBufferSize;
 }

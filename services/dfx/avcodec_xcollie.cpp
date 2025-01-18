@@ -129,7 +129,6 @@ int32_t AVCodecXCollie::Dump(int32_t fd)
     }
 
     dumpControler.GetDumpString(dumpString);
-    dumpString += "\n";
     if (fd != -1) {
         write(fd, dumpString.c_str(), dumpString.size());
         dumpString.clear();

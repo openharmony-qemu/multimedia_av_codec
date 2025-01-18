@@ -523,6 +523,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
         defaultVariant_ = variants_.front();
     }
     tags.clear();
+    ChooseStreamByResolution();
 }
 
 void M3U8MasterPlaylist::ChooseStreamByResolution()

@@ -153,6 +153,7 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
             cachedFrame_->pts = nextPts_;
         }
         status = ReceiveFrameSucc(outBuffer);
+        CheckFormatChange();
         dataCallback_->OnOutputBufferDone(outBuffer);
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGI("eos received");
@@ -181,12 +182,35 @@ Status FfmpegBaseDecoder::ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffe
     return Status::OK;
 }
 
+void FfmpegBaseDecoder::CheckFormatChange()
+{
+    int32_t preSampleRate = 0;
+    int32_t preChannels = 0;
+    AudioSampleFormat preFormat = INVALID_WIDTH;
+    AudioSampleFormat currentFormat = FFMpegConverter::ConvertFFMpegToOHAudioFormat(destFmt_);
+    format_->GetData(Tag::AUDIO_SAMPLE_RATE, preSampleRate);
+    format_->GetData(Tag::AUDIO_CHANNEL_COUNT, preChannels);
+    format_->GetData(Tag::AUDIO_SAMPLE_FORMAT, preFormat);
+    if (preSampleRate != avCodecContext_->sample_rate || preChannels != avCodecContext_->channels ||
+        preFormat != currentFormat) {
+        AVCODEC_LOGI("decode format changed, sample rate:%{public}d->%{public}d, channel:%{public}d->%{public}d, "
+            "sample format:%{public}d->%{public}d", preSampleRate, avCodecContext_->sample_rate,
+            preChannels, avCodecContext_->channels, preFormat, currentFormat);
+        format_->SetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
+        format_->SetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->channels);
+        format_->SetData(Tag::AUDIO_SAMPLE_FORMAT, currentFormat);
+        std::shared_ptr<Plugins::PluginEvent> changeEvent = std::make_shared<Plugins::PluginEvent>();
+        changeEvent->type = PluginEventType::AUDIO_OUTPUT_FORMAT_CHANGED;
+        changeEvent->param = *(format_.get());
+        changeEvent->description = "audio_output_format_changed";
+        dataCallback_->OnEvent(changeEvent);
+    }
+}
+
 Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
 {
     if (isFirst) {
         isFirst = false;
-        format_->SetData(Tag::AUDIO_SAMPLE_FORMAT,
-                         FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt));
         auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(avCodecContext_->channel_layout,
                                                                          avCodecContext_->channels);
         if (avCodecContext_->channel_layout == 0) {

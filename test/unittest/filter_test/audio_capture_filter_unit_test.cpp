@@ -406,6 +406,7 @@ HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_OnLinkedResult_001, Test
 {
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     audioCaptureFilter_->OnUnlinkedResult(meta);
+    EXPECT_NE(audioCaptureFilter_, nullptr);
     SUCCEED();
 }
 
@@ -418,6 +419,7 @@ HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_OnLinkedResult_001, Test
 {
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     audioCaptureFilter_->OnUpdatedResult(meta);
+    EXPECT_NE(audioCaptureFilter_, nullptr);
     SUCCEED();
 }
 

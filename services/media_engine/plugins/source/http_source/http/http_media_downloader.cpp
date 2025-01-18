@@ -43,7 +43,7 @@ constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 48 * 10 * 1024;
 constexpr int FIVE_MICROSECOND = 5;
-constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
+constexpr int32_t ONE_HUNDRED_MILLIONSECOND = 100;
 constexpr int32_t SAVE_DATA_LOG_FREQUENCE = 50;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
@@ -1282,7 +1282,8 @@ bool HttpMediaDownloader::CheckBufferingOneSeconds()
     MEDIA_LOG_I("HTTP CheckBufferingOneSeconds in");
     int32_t sleepTime = 0;
     // return error again 1 time 1s, avoid ffmpeg error
-    while (sleepTime < TWO_SECONDS && !isInterruptNeeded_.load()) {
+    while (sleepTime < (isFirstFrameArrived_ ? TWO_SECONDS : ONE_HUNDRED_MILLIONSECOND) &&
+           !isInterruptNeeded_.load()) {
         if (!isBuffering_) {
             break;
         }
@@ -1476,7 +1477,14 @@ bool HttpMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
         MEDIA_LOG_I("HTTP SetInitialBufferSize initCacheSize ok.");
         return false;
     }
+    if (downloadRequest_->IsChunkedVod()) {
+        return false;
+    }
     MEDIA_LOG_I("HTTP SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32, size);
+    if (!isBuffering_.load()) {
+        isBuffering_.store(true);
+    }
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     expectOffset_.store(offset);
     initCacheSize_.store(size);
     return true;

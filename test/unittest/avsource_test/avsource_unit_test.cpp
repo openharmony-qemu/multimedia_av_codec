@@ -68,6 +68,7 @@ string g_audioVividPath2 = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.ts");
 string g_flvPath = TEST_FILE_PATH + string("h264.flv");
 string g_filePath;
 string g_mp4InfoPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
+string g_mp4PreRecordPath = TEST_FILE_PATH + string("pre_record_parser.mp4");
 string g_apePath = TEST_FILE_PATH + string("ape_test.ape");
 string g_apeUri = TEST_URI_PATH + string("ape_test.ape");
 string g_fmp4AvcPath = TEST_FILE_PATH + string("h264_fmp4.mp4");
@@ -1517,6 +1518,12 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1309, TestSize.Level1)
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.codecMime, "audio/x-ape");
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_MAX_INPUT_SIZE, formatVal_.audioMaxInputSize));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_SAMPLE_PER_FRAME, formatVal_.samplePerFrame));
+    ASSERT_EQ(formatVal_.audioMaxInputSize, 82856);
+    ASSERT_EQ(formatVal_.samplePerFrame, 73728);
+#endif
 }
 
 /**
@@ -1560,6 +1567,12 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1310, TestSize.Level1)
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.codecMime, "audio/x-ape");
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_MAX_INPUT_SIZE, formatVal_.audioMaxInputSize));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::AUDIO_SAMPLE_PER_FRAME, formatVal_.samplePerFrame));
+    ASSERT_EQ(formatVal_.audioMaxInputSize, 82856);
+    ASSERT_EQ(formatVal_.samplePerFrame, 73728);
+#endif
 }
 
 /**
@@ -1786,7 +1799,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1401, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1501, TestSize.Level1)
 {
-#ifdef AVSOURCE_INNER_UNIT_TEST
     fd_ = OpenFile(g_mp4InfoPath);
     size_ = GetFileSize(g_mp4InfoPath);
     printf("---- %s ------\n", g_mp4InfoPath.c_str());
@@ -1808,20 +1820,40 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1501, TestSize.Level1)
     ASSERT_TRUE(format_->GetStringValue(Media::Tag::MEDIA_GENRE, genre));
     ASSERT_EQ(genre, "{marketing-name:\"HW P60\"}");
 
-    std::shared_ptr<FormatMock> format = source_->GetUserData();
-    ASSERT_NE(format, nullptr);
-    printf("[User Meta]: %s\n", format->DumpInfo());
+    format_ = source_->GetUserData();
+    ASSERT_NE(format_, nullptr);
+    printf("[User Meta]: %s\n", format_->DumpInfo());
 
     float fps = 0;
-    ASSERT_TRUE(format->GetFloatValue("com.os.capture.fps", fps));
+    ASSERT_TRUE(format_->GetFloatValue("com.os.capture.fps", fps));
     ASSERT_EQ(fps, float(30.0)); // test user float data fps
     int32_t version = 0;
-    ASSERT_TRUE(format->GetIntValue("com.os.version", version));
+    ASSERT_TRUE(format_->GetIntValue("com.os.version", version));
     ASSERT_EQ(version, int(5)); // test user int data version
     std::string manufacturer;
-    ASSERT_TRUE(format->GetStringValue("com.os.manufacturer", manufacturer));
+    ASSERT_TRUE(format_->GetStringValue("com.os.manufacturer", manufacturer));
     ASSERT_EQ(manufacturer, "HW"); // test user string data manufacturer
-#endif
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1502
+ * @tc.desc: Pre record info
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1502, TestSize.Level1)
+{
+    fd_ = OpenFile(g_mp4PreRecordPath);
+    size_ = GetFileSize(g_mp4PreRecordPath);
+    printf("---- %s ------\n", g_mp4PreRecordPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetUserData();
+    ASSERT_NE(format_, nullptr);
+    printf("[User Meta]: %s\n", format_->DumpInfo());
+
+    std::string preRecordPts;
+    ASSERT_TRUE(format_->GetStringValue("com.openharmony.custom.pts", preRecordPts));
+    ASSERT_EQ(preRecordPts, "1737169487_1737169506_1737169516"); // test user string data preRecordPts
 }
 
 /**

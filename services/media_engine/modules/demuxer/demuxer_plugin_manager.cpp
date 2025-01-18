@@ -136,6 +136,7 @@ size_t DemuxerPluginManager::GetStreamCount() const
 void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
 {
     if (curAudioStreamID_ == -1) {    // 获取第一个音频流
+        FALSE_RETURN_MSG(info.streamId >= 0, "Invalid streamId, id = " PUBLIC_LOG_D32, info.streamId);
         curAudioStreamID_ = info.streamId;
         streamInfoMap_[info.streamId].activated = true;
         MEDIA_LOG_I("InitAudioTrack AUDIO");
@@ -154,6 +155,7 @@ void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
 void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
 {
     if (curVideoStreamID_ == -1) {
+        FALSE_RETURN_MSG(info.streamId >= 0, "Invalid streamId, id = " PUBLIC_LOG_D32, info.streamId);
         curVideoStreamID_ = info.streamId; // 获取第一个视频流
         streamInfoMap_[info.streamId].activated = true;
         MEDIA_LOG_I("InitVideoTrack VIDEO");
@@ -174,6 +176,7 @@ void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
 void DemuxerPluginManager::InitSubtitleTrack(const StreamInfo& info)
 {
     if (curSubTitleStreamID_ == -1) {   // 获取第一个字幕流
+        FALSE_RETURN_MSG(info.streamId >= 0, "Invalid streamId, id = " PUBLIC_LOG_D32, info.streamId);
         curSubTitleStreamID_ = info.streamId;
         streamInfoMap_[info.streamId].activated = true;
         MEDIA_LOG_I("InitSubtitleTrack SUBTITLE");
@@ -191,6 +194,8 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
 {
     MEDIA_LOG_D("InitDefaultPlay begin");
     for (const auto& iter : streams) {
+        FALSE_RETURN_V_MSG_E(iter.streamId >= 0, Status::ERROR_INVALID_PARAMETER,
+            "Invalid streamId, id = " PUBLIC_LOG_D32, iter.streamId);
         int32_t streamIndex = iter.streamId;
         streamInfoMap_[streamIndex].streamID = streamIndex;
         streamInfoMap_[streamIndex].bitRate = iter.bitRate;

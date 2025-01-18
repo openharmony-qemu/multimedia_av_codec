@@ -128,6 +128,17 @@ OH_AVFormat *OH_AVSource_GetSourceFormat(OH_AVSource *source);
 */
 OH_AVFormat *OH_AVSource_GetTrackFormat(OH_AVSource *source, uint32_t trackIndex);
 
+/**
+ * @brief Get the format info of metadata.
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @param source Pointer to an OH_AVSource instance.
+ * @return Returns the metadata's format info if the execution is successful, otherwise returns nullptr.
+ * Possible failure causes:
+ * 1. source is invalid.
+ * @since 16
+ */
+OH_AVFormat *OH_AVSource_GetMetaDataFormat(OH_AVSource *source);
+
 #ifdef __cplusplus
 }
 #endif

@@ -239,9 +239,7 @@ protected:
     void OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     virtual void OnReleaseOutputBuffer(const BufferInfo &info) {}
     virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
-    virtual void ExtractPerFrameParamFromOmxBuffer(
-        const std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
-        std::shared_ptr<Media::Meta> &meta) {}
+    virtual void BeforeCbOutToUser(BufferInfo &info) {}
 
     // stop/release
     void ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner, bool erase = false);

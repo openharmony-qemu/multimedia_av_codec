@@ -1083,7 +1083,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
         info.avBuffer->memory_->SetSize(static_cast<int32_t>(omxBuffer->filledLen));
         info.avBuffer->memory_->SetOffset(static_cast<int32_t>(omxBuffer->offset));
     }
-    ExtractPerFrameParamFromOmxBuffer(omxBuffer, info.avBuffer->meta_);
+    BeforeCbOutToUser(info);
     callback_->OnOutputBufferAvailable(info.bufferId, info.avBuffer);
     ChangeOwner(info, BufferOwner::OWNED_BY_USER);
 }
@@ -1268,10 +1268,11 @@ void HCodec::DeferMessage(const MsgInfo &info)
 
 void HCodec::ProcessDeferredMessages()
 {
-    for (const MsgInfo &info : deferredQueue_) {
+    std::list<MsgInfo> queue = std::exchange(deferredQueue_, {});
+    for (const MsgInfo &info : queue) {
         StateMachine::OnMsgReceived(info);
     }
-    deferredQueue_.clear();
+    queue.clear();
 }
 
 void HCodec::ReplyToSyncMsgLater(const MsgInfo& msg)

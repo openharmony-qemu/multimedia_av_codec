@@ -221,7 +221,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_002, TestSize.
     source->GetStreamInfo(streams);
     demuxerPluginManager->InitDefaultPlay(streams);
 
-    std::shared_ptr<BaseStreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerPullDataFailMock<100, 1>>();
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerPullDataFailMock<100, 4>>();
     streamDemuxer->SetInterruptState(false);
     streamDemuxer->SetSource(source);
     streamDemuxer->Init("");
@@ -252,7 +252,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_003, TestSize.
     source->GetStreamInfo(streams);
     demuxerPluginManager->InitDefaultPlay(streams);
 
-    std::shared_ptr<BaseStreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerPullDataFailMock<100, 5>>();
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerPullDataFailMock<100, 100>>();
     streamDemuxer->SetInterruptState(false);
     streamDemuxer->SetSource(source);
     streamDemuxer->Init("");
