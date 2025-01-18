@@ -61,6 +61,90 @@ OH_AVErrCode OH_AVMuxer_SetRotation(OH_AVMuxer *muxer, int32_t rotation)
     return AV_ERR_OK;
 }
 
+void CopyMetaData(const TagType &tag, std::shared_ptr<Meta> &fromMeta, std::shared_ptr<Meta> &toMeta)
+{
+    AnyValueType type = fromMeta->GetValueType(tag);
+    if (type == AnyValueType::INVALID_TYPE || type == AnyValueType::STRING) {
+        std::string value;
+        fromMeta->GetData(tag, value);
+        toMeta->SetData(tag, value);
+    } else if (type == AnyValueType::BOOL) {
+        bool value = false;
+        fromMeta->GetData(tag, value);
+        toMeta->SetData(tag, value);
+    } else if (type == AnyValueType::INT8_T) {
+        int8_t value = 0;
+        fromMeta->GetData(tag, value);
+        toMeta->SetData(tag, value);
+    } else if (type == AnyValueType::UINT8_T) {
+        uint8_t value = 0;
+        fromMeta->GetData(tag, value);
+        toMeta->SetData(tag, value);
+    } else if (type == AnyValueType::INT32_T) {
+        int32_t value = 0;
+        fromMeta->GetData(tag, value);
+        toMeta->SetData(tag, value);
+    } else if (type == AnyValueType::UINT32_T) {
+        uint32_t value = 0;
+        fromMeta->GetData(tag, value);
+        toMeta->SetData(tag, value);
+    } else if (type == AnyValueType::INT64_T) {
+        int64_t value = 0;
+        fromMeta->GetData(tag, value);
+        toMeta->SetData(tag, value);
+    } else if (type == AnyValueType::UINT64_T) {
+        uint64_t value = 0;
+        fromMeta->GetData(tag, value);
+        toMeta->SetData(tag, value);
+    } else if (type == AnyValueType::FLOAT) {
+        float value = 0.0f;
+        fromMeta->GetData(tag, value);
+        toMeta->SetData(tag, value);
+    } else if (type == AnyValueType::DOUBLE) {
+        double value = 0.0;
+        fromMeta->GetData(tag, value);
+        toMeta->SetData(tag, value);
+    }
+}
+
+void SeparateMeta(std::shared_ptr<Meta> meta, std::shared_ptr<Meta> &definedMeta, std::shared_ptr<Meta> &userMeta)
+{
+    for (auto iter = meta->begin(); iter != meta->end(); ++iter) {
+        TagType tag = iter->first;
+        if (meta->IsDefinedKey(tag)) {
+            CopyMetaData(tag, meta, definedMeta);
+        } else {
+            CopyMetaData(tag, meta, userMeta);
+        }
+    }
+}
+
+OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMuxerObject *object)
+{
+    std::shared_ptr<Meta> param = std::make_shared<Meta>();
+    if (definedMeta->Find(Tag::MEDIA_CREATION_TIME) != definedMeta->end()) {
+        AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_CREATION_TIME);
+        std::string value;
+        definedMeta->Get<Tag::MEDIA_CREATION_TIME>(value);
+        std::regex pattern(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(.\d{1,6})?((\+|-\d{4})?)Z?)");
+        std::smatch match;
+        CHECK_AND_RETURN_RET_LOG(std::regex_match(value, match, pattern), AV_ERR_INVALID_VAL,
+            "format defined key %{public}s, value invalid", Tag::MEDIA_CREATION_TIME);
+        param->Set<Tag::MEDIA_CREATION_TIME>(value);
+    } else {
+        AVCODEC_LOGW("input format does not have a valid key!");
+        return AV_ERR_OK;
+    }
+    int32_t ret = object->muxer_->SetParameter(param);
+    return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
+}
+
+OH_AVErrCode SetUserMetaParam(std::shared_ptr<Meta> userMeta, AVMuxerObject *object)
+{
+    int32_t ret = object->muxer_->SetUserMeta(userMeta);
+    return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
+}
+
 OH_AVErrCode OH_AVMuxer_SetFormat(OH_AVMuxer *muxer, OH_AVFormat *format)
 {
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
@@ -72,26 +156,20 @@ OH_AVErrCode OH_AVMuxer_SetFormat(OH_AVMuxer *muxer, OH_AVFormat *format)
     struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
     CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
 
-    std::shared_ptr<Meta> param = std::make_shared<Meta>();
     std::shared_ptr<Meta> meta = format->format_.GetMeta();
+    std::shared_ptr<Meta> definedMeta = std::make_shared<Meta>();
+    std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
+    
     CHECK_AND_RETURN_RET_LOG(meta != nullptr, AV_ERR_INVALID_VAL, "input format is nullptr!");
-    if (meta->Find(Tag::MEDIA_CREATION_TIME) != meta->end()) {
-        AVCODEC_LOGI("set format key %{public}s", Tag::MEDIA_CREATION_TIME);
-        std::string value;
-        meta->Get<Tag::MEDIA_CREATION_TIME>(value);
-        std::regex pattern(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(.\d{1,6})?((\+|-\d{4})?)Z?)");
-        std::smatch match;
-        CHECK_AND_RETURN_RET_LOG(std::regex_match(value, match, pattern), AV_ERR_INVALID_VAL,
-            "format key %{public}s, value invalid", Tag::MEDIA_CREATION_TIME);
-        param->Set<Tag::MEDIA_CREATION_TIME>(value);
-    } else {
-        AVCODEC_LOGW("input format does not have a valid key!");
-        return AV_ERR_OK;
-    }
-    int32_t ret = object->muxer_->SetParameter(param);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-        "muxer_ SetFormat failed!");
+    SeparateMeta(meta, definedMeta, userMeta);
 
+    OH_AVErrCode ret = SetDefinedMetaParam(definedMeta, object);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "muxer_ SetFormat SetDefinedMetaParam failed!");
+
+    if (userMeta != nullptr && !userMeta->Empty()) {
+        ret = SetUserMetaParam(userMeta, object);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "muxer_ SetFormat SetUserMetaParam failed!");
+    }
     return AV_ERR_OK;
 }
 
