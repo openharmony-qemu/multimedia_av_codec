@@ -1268,10 +1268,11 @@ void HCodec::DeferMessage(const MsgInfo &info)
 
 void HCodec::ProcessDeferredMessages()
 {
-    for (const MsgInfo &info : deferredQueue_) {
+    std::list<MsgInfo> queue = std::exchange(deferredQueue_, {});
+    for (const MsgInfo &info : queue) {
         StateMachine::OnMsgReceived(info);
     }
-    deferredQueue_.clear();
+    queue.clear();
 }
 
 void HCodec::ReplyToSyncMsgLater(const MsgInfo& msg)
