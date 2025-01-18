@@ -91,7 +91,7 @@ public:
             cout << "output surface is nullptr" << endl;
         } else {
             if (g_yuvSurface && outFile_ != nullptr) {
-                int32_t frameSize = g_strideSurface * g_sliceSurface * THREE >> 1;
+                int32_t frameSize = (g_strideSurface * g_sliceSurface * THREE) >> 1;
                 outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), frameSize);
             }
         }
