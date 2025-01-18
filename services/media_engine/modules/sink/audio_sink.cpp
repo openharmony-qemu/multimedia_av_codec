@@ -85,10 +85,19 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     bool mimeGetRes = meta->Get<Tag::MIME_TYPE>(mime);
     if (mimeGetRes && mime == "audio/x-ape") {
         isApe_ = true;
-        MEDIA_LOG_I("Init is ape");
+        MEDIA_LOG_I("AudioSink::Init is ape");
+    }
+    if (mimeGetRes && mime == "audio/flac") {
+        isFlac_ = true;
+        MEDIA_LOG_I("AudioSink::Init is flac");
     }
 
     return Status::OK;
+}
+
+bool AudioSink::NeedImmediateRender()
+{
+    return isApe_ || isFlac_;
 }
 
 sptr<AVBufferQueueProducer> AudioSink::GetBufferQueueProducer()
