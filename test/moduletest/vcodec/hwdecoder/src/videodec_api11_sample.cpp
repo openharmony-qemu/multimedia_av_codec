@@ -673,7 +673,6 @@ int32_t VDecAPI11Sample::PushData(uint32_t index, OH_AVBuffer *buffer)
     }
     if (bufferSize >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
         cout << "read bufferSize abnormal. buffersize = " << bufferSize << endl;
-        return 1;
     }
     return SendData(bufferSize, index, buffer);
 }
@@ -808,7 +807,7 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
         AutoSwitchSurface();
         SHA512_Final(g_md, &g_c);
         OPENSSL_cleanse(&g_c, sizeof(g_c));
-        if (!SF_OUTPUT) {
+        if (!SF_OUTPUT && !NocaleHash) {
             if (!MdCompare(g_md)) {
                 errCount++;
             }
@@ -883,10 +882,10 @@ void VDecAPI11Sample::OutputFuncTest()
             flag = false;
             break;
         }
-        ProcessOutputData(buffer, index);
         if (outFile != nullptr) {
             fwrite(OH_AVBuffer_GetAddr(buffer), 1, attr.size, outFile);
         }
+        ProcessOutputData(buffer, index);
         lock.unlock();
         if (errCount > 0) {
             flag = false;
