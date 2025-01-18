@@ -217,7 +217,7 @@ void SeiParserFilter::SetSeiMessageListener()
     FALSE_RETURN_MSG(inputBufferQueueProducer_ != nullptr, "get producer failed");
     if (producerListener_ == nullptr) {
         producerListener_ =
-            new SeiParserListener(codecMimeType_, inputBufferQueueProducer_, eventReceiver_);
+            new SeiParserListener(codecMimeType_, inputBufferQueueProducer_, eventReceiver_, true);
         FALSE_RETURN_MSG(producerListener_ != nullptr, "sei listener create failed");
     }
     producerListener_->SetPayloadTypeVec(payloadTypes_);
@@ -231,6 +231,12 @@ void SeiParserFilter::RemoveSeiMessageListener()
     FALSE_RETURN_MSG(inputBufferQueueProducer_ != nullptr, "get producer failed");
     FALSE_RETURN_MSG(producerListener_ != nullptr, "no sei parser listener now");
     producerListener_->SetPayloadTypeVec(payloadTypes_);
+}
+
+void SeiParserFilter::OnInterrupted(bool isInterruptNeeded)
+{
+    FALSE_RETURN_MSG(producerListener_ != nullptr, "no sei parser listener now");
+    producerListener_->OnInterrupted(isInterruptNeeded);
 }
 }  // namespace Pipeline
 }  // namespace Media

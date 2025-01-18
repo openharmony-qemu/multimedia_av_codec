@@ -89,7 +89,7 @@ struct SeiPayloadInfoGroup {
 class SeiParserListener : public IBrokerListener {
 public:
     explicit SeiParserListener(const std::string &mimeType, sptr<AVBufferQueueProducer> producer,
-        std::shared_ptr<Pipeline::EventReceiver> eventReceiver);
+        std::shared_ptr<Pipeline::EventReceiver> eventReceiver, bool isFlowLimited);
 
     sptr<IRemoteObject> AsObject() override
     {
@@ -100,10 +100,20 @@ public:
 
     void SetPayloadTypeVec(const std::vector<int32_t> &vector);
 
+    void OnInterrupted(bool isInterruptNeeded);
+
 private:
+    void FlowLimit(const std::shared_ptr<AVBuffer> &avBuffer);
+
     sptr<AVBufferQueueProducer> producer_{};
     std::shared_ptr<SeiParserHelper> seiParserHelper_{};
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_{};
+    bool isFlowLimited_ { false };
+    std::atomic<bool> isInterruptNeeded_ { false };
+    int64_t lastBufferPts_ { 0 };
+    int64_t lastParserTime_ { 0 };
+    std::mutex mutex_ {};
+    std::condition_variable cond_ {};
 };
 }  // namespace Media
 }  // namespace OHOS

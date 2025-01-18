@@ -29,7 +29,7 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-class SeiParserFilter : public Filter, public std::enable_shared_from_this<SeiParserFilter> {
+class SeiParserFilter : public Filter, public InterruptListener, public std::enable_shared_from_this<SeiParserFilter> {
 public:
     explicit SeiParserFilter(const std::string &name, FilterType filterType = FilterType::FILTERTYPE_SEI);
     ~SeiParserFilter() override;
@@ -43,6 +43,8 @@ public:
     Status DoInitAfterLink() override;
 
     Status DoPrepare() override;
+
+    void OnInterrupted(bool isInterruptNeeded) override;
 
     Status PrepareState();
 
