@@ -137,6 +137,9 @@ public:
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     void WaitForBufferingEnd();
     int32_t GetCurrentVideoTrackId();
+    uint32_t GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos);
+    void SetIsEnableReselectVideoTrack(bool isEnable);
+    bool IsHasMultiVideoTrack();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -294,6 +297,9 @@ private:
     std::atomic<bool> isInterruptNeeded_ {false};
     bool isAutoMaintainPts_ = false;
     std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
+    bool isEnableReselectVideoTrack_ {false};
+    int32_t videoTrackCount_ = 0;
+    uint32_t targetVideoTrackId_ {TRACK_ID_DUMMY};
 };
 } // namespace Media
 } // namespace OHOS
