@@ -706,6 +706,11 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_p
 Status FFmpegMuxerPlugin::AddTimedMetaTrack(
     int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID)
 {
+    int32_t srcTrackID = -1;
+    bool ret = trackDesc->Get<Tag::TIMED_METADATA_SRC_TRACK>(srcTrackID); // source track id
+    FALSE_RETURN_V_MSG_E(ret && srcTrackID >= 0 && srcTrackID < formatContext_->nb_streams,
+        Status::ERROR_MISMATCHED_TYPE, "timed_metadata_track_id %{public}d is invalid", srcTrackID);
+
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
     ResetCodecParameter(st->codecpar);
