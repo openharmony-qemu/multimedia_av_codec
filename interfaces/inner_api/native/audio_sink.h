@@ -79,6 +79,7 @@ public:
         return state_ == Pipeline::FilterState::INITIALIZED;
     }
     Status SetSeekTime(int64_t seekTime);
+    bool NeedImmediateRender();
     bool GetSyncCenterClockTime(int64_t &clockTime);
 
 protected:
@@ -184,6 +185,7 @@ private:
     float speed_ {1.0f};
     int32_t effectMode_ {-1};
     bool isApe_ {false};
+    bool isFlac_ {false};
     int64_t playRangeStartTime_ = -1;
     int64_t playRangeEndTime_ = -1;
     // vars for audio progress optimization
