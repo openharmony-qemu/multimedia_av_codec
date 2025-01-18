@@ -159,6 +159,7 @@ public:
     bool outputCallbackStop = false;
     bool useHDRSource = false;
     bool isAPI = false;
+    bool outputYuvSurface = false;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
 private:
