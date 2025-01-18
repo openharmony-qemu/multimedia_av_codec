@@ -49,9 +49,9 @@ constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
-int32_t stride_surface = 0;
-int32_t sliceHeight_surface = 0;
-bool YuvSurface = false;
+int32_t g_strideSurface = 0;
+int32_t g_sliceSurface = 0;
+bool g_yuvSurface = false;
 SHA512_CTX g_c;
 uint8_t g_md[SHA512_DIGEST_LENGTH];
 VDecAPI11Sample *dec_sample = nullptr;
@@ -71,11 +71,13 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
 
 class ConsumerListenerBuffer : public IBufferConsumerListener {
 public:
-    ConsumerListenerBuffer(sptr<Surface> cs, std::string_view name) : cs(cs) {
+    ConsumerListenerBuffer(sptr<Surface> cs, std::string_view name) : cs(cs)
+    {
         outFile_ = std::make_unique<std::ofstream>();
         outFile_->open(name.data(), std::ios::out | std::ios::binary);
     };
-    ~ConsumerListenerBuffer() {
+    ~ConsumerListenerBuffer()
+    {
         if (outFile_ != nullptr) {
             outFile_->close();
         }
@@ -88,9 +90,9 @@ public:
         if (buffer == nullptr) {
             cout << "output surface is nullptr" << endl;
         } else {
-            if (YuvSurface && outFile_ != nullptr) {
-                surface_num_all++;
-                outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), stride_surface * sliceHeight_surface * 3 / 2);
+            if (g_yuvSurface && outFile_ != nullptr) {
+                outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()),
+                 g_strideSurface * g_sliceSurface * THREE >> 1);
             }
         }
         cs->ReleaseBuffer(buffer, -1);
@@ -101,7 +103,6 @@ private:
     Rect damage = {};
     sptr<Surface> cs {nullptr};
     std::unique_ptr<std::ofstream> outFile_;
-    int32_t surface_num_all = 0;
 };
 
 VDecAPI11Sample::~VDecAPI11Sample()
@@ -152,8 +153,8 @@ void VdecAPI11FormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userDa
     dec_sample->sliceHeight_ = sliceHeight;
     dec_sample->picWidth_ = picWidth;
     dec_sample->picHeight_ = picHeight;
-    stride_surface = stride;
-    sliceHeight_surface = sliceHeight;
+    g_strideSurface = stride;
+    g_sliceSurface = sliceHeight;
     if (dec_sample->isResChangeStream) {
         static int32_t resCount = 0;
         int32_t cropBottom = 0;
@@ -627,6 +628,9 @@ void VDecAPI11Sample::InFuncTest()
 
 void VDecAPI11Sample::InputFuncTest()
 {
+    if (outputYuvSurface) {
+        g_yuvSurface = true;
+    }
     bool flag = true;
     while (flag) {
         if (!isRunning_.load()) {
@@ -881,9 +885,6 @@ void VDecAPI11Sample::OutputFuncTest()
     FILE *outFile = nullptr;
     if (outputYuvFlag) {
         outFile = fopen(OUT_DIR, "wb");
-    }
-    if (outputYuvSurface) {
-        YuvSurface = true;
     }
     SHA512_Init(&g_c);
     bool flag = true;
