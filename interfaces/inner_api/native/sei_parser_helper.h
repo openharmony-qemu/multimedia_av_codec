@@ -22,6 +22,7 @@
 #include "surface_type.h"
 #include "filter/filter.h"
 #include "buffer/avbuffer_queue.h"
+#include "media_sync_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -102,6 +103,11 @@ public:
 
     void OnInterrupted(bool isInterruptNeeded);
 
+    void SetSyncCenter(std::shared_ptr<Pipeline::IMediaSyncCenter> syncCenter)
+    {
+        syncCenter_ = syncCenter;
+    }
+
 private:
     void FlowLimit(const std::shared_ptr<AVBuffer> &avBuffer);
 
@@ -110,10 +116,10 @@ private:
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_{};
     bool isFlowLimited_ { false };
     std::atomic<bool> isInterruptNeeded_ { false };
-    int64_t lastBufferPts_ { 0 };
-    int64_t lastParserTime_ { 0 };
     std::mutex mutex_ {};
     std::condition_variable cond_ {};
+    std::shared_ptr<Pipeline::IMediaSyncCenter> syncCenter_;
+    int64_t startPts_ = 0;
 };
 }  // namespace Media
 }  // namespace OHOS

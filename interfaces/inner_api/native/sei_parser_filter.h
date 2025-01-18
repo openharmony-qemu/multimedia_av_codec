@@ -25,6 +25,7 @@
 #include "sink/media_synchronous_sink.h"
 #include "meta/format.h"
 #include "sei_parser_helper.h"
+#include "media_sync_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -57,6 +58,8 @@ public:
     void DrainOutputBuffer(bool flushed);
 
     void SetParseSeiEnabled(bool needParseSeiInfo);
+
+    void SetSyncCenter(std::shared_ptr<IMediaSyncCenter> syncCenter);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -95,6 +98,7 @@ private:
     bool seiMessageCbStatus_{ false };
     std::vector<int32_t> payloadTypes_{};
     sptr<SeiParserListener> producerListener_ {};
+    std::shared_ptr<IMediaSyncCenter> syncCenter_;
 };
 }  // namespace Pipeline
 }  // namespace Media

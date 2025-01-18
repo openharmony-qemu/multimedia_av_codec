@@ -261,15 +261,15 @@ void SeiParserListener::OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer)
 
 void SeiParserListener::FlowLimit(const std::shared_ptr<AVBuffer> &avBuffer)
 {
-    FALSE_RETURN_NOLOG(isFlowLimited_);
-    if (lastBufferPts_ == 0) {
-        lastBufferPts_ = avBuffer->pts_;
-        return;
+    FALSE_RETURN(isFlowLimited_ && syncCenter_ != nullptr);
+    MediaAVCodec::AVCodecTrace trace("ParseSeiPayload FlowLimit");
+
+    if (startPts_ == 0) {
+        startPts_ = avBuffer->pts_;
     }
-    auto currentSysTime = Plugins::GetCurrentMicrosecond();
-    auto diff = avBuffer->pts_ - lastBufferPts_ - currentSysTime + lastParserTime_;
-    lastBufferPts_ = avBuffer->pts_;
-    lastParserTime_ = currentSysTime;
+
+    auto mediaTimeUs = syncCenter_->GetMediaTimeNow();
+    auto diff = avBuffer->pts_ - startPts_ - mediaTimeUs;
     FALSE_RETURN_NOLOG(diff > 0);
 
     std::unique_lock<std::mutex> lock(mutex_);

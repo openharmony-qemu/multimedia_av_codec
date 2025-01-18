@@ -212,6 +212,13 @@ int32_t SeiParserFilter::SetSeiMessageCbStatus(bool status, const std::vector<in
     return 0;
 }
 
+void SeiParserFilter::SetSyncCenter(std::shared_ptr<IMediaSyncCenter> syncCenter)
+{
+    syncCenter_ = syncCenter;
+    FALSE_RETURN(producerListener_ != nullptr);
+    producerListener_->SetSyncCenter(syncCenter);
+}
+
 void SeiParserFilter::SetSeiMessageListener()
 {
     FALSE_RETURN_MSG(inputBufferQueueProducer_ != nullptr, "get producer failed");
@@ -219,6 +226,11 @@ void SeiParserFilter::SetSeiMessageListener()
         producerListener_ =
             new SeiParserListener(codecMimeType_, inputBufferQueueProducer_, eventReceiver_, true);
         FALSE_RETURN_MSG(producerListener_ != nullptr, "sei listener create failed");
+        if (syncCenter_ != nullptr) {
+            producerListener_->SetSyncCenter(syncCenter_);
+        } else {
+            MEDIA_LOG_W("syncCenter_ is nullptr");
+        }
     }
     producerListener_->SetPayloadTypeVec(payloadTypes_);
     sptr<IBrokerListener> tmpListener = producerListener_;
