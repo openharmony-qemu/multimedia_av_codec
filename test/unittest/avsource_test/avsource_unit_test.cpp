@@ -68,7 +68,7 @@ string g_audioVividPath2 = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.ts");
 string g_flvPath = TEST_FILE_PATH + string("h264.flv");
 string g_filePath;
 string g_mp4InfoPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
-string g_mp4PrerecordPath = TEST_FILE_PATH + string("pre_record_parser.mp4");
+string g_mp4PreRecordPath = TEST_FILE_PATH + string("pre_record_parser.mp4");
 string g_apePath = TEST_FILE_PATH + string("ape_test.ape");
 string g_apeUri = TEST_URI_PATH + string("ape_test.ape");
 string g_fmp4AvcPath = TEST_FILE_PATH + string("h264_fmp4.mp4");
@@ -1842,9 +1842,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1501, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1502, TestSize.Level1)
 {
-    fd_ = OpenFile(g_mp4PrerecordPath);
-    size_ = GetFileSize(g_mp4PrerecordPath);
-    printf("---- %s ------\n", g_mp4PrerecordPath.c_str());
+    fd_ = OpenFile(g_mp4PreRecordPath);
+    size_ = GetFileSize(g_mp4PreRecordPath);
+    printf("---- %s ------\n", g_mp4PreRecordPath.c_str());
     source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetUserData();
