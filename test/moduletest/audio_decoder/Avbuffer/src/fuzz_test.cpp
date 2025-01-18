@@ -59,6 +59,7 @@ HWTEST_F(FuzzTest, FUZZ_TEST_001, TestSize.Level2)
         codec = aDecBufferDemo->CreateByMime(commonTool->GetRandString().c_str());
         result0 = aDecBufferDemo->Destroy(codec);
         cout << "cur run times is " << i << ", result is " << result0 << endl;
+        ASSERT_EQ(result0, AV_ERR_OK);
     }
     delete commonTool;
     delete aDecBufferDemo;
@@ -79,6 +80,7 @@ HWTEST_F(FuzzTest, FUZZ_TEST_002, TestSize.Level2)
         codec = aDecBufferDemo->CreateByName(commonTool->GetRandString().c_str());
         result0 = aDecBufferDemo->Destroy(codec);
         cout << "cur run times is " << i << ", result is " << result0 << endl;
+        ASSERT_EQ(result0, AV_ERR_OK);
     }
     delete commonTool;
     delete aDecBufferDemo;

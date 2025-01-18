@@ -20,6 +20,7 @@
 #include "avcodec_trace.h"
 #include "avcodec_codec_name.h"
 #include "codec_server.h"
+#include "qos.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AVCodecAudioCodecImpl"};
@@ -113,6 +114,7 @@ int32_t AVCodecAudioCodecImpl::Prepare()
 int32_t AVCodecAudioCodecImpl::Start()
 {
     AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Start", FAKE_POINTER(this));
     CHECK_AND_RETURN_RET_LOG(Prepare() == AVCS_ERR_OK, AVCS_ERR_INVALID_STATE, "Prepare failed");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     int32_t ret = codecService_->Start();
@@ -152,6 +154,7 @@ int32_t AVCodecAudioCodecImpl::Stop()
 int32_t AVCodecAudioCodecImpl::Flush()
 {
     AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Flush", FAKE_POINTER(this));
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     PauseTaskAsync();
     int32_t ret = codecService_->Flush();
@@ -318,6 +321,10 @@ int32_t AVCodecAudioCodecImpl::GetInputBufferSize()
 void AVCodecAudioCodecImpl::ProduceInputBuffer()
 {
     AVCODEC_SYNC_TRACE;
+    if (indexInput_ == 0) {
+        auto ret = SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+        AVCODEC_LOGI("set OS_ACodecIn thread qos, ret = %{public}d", ret);
+    }
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "produceInputBuffer enter");
     if (!isRunning_) {
         usleep(DEFAULT_TRY_DECODE_TIME);
@@ -354,6 +361,10 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
 void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
 {
     AVCODEC_SYNC_TRACE;
+    if (indexOutput_ == 0) {
+        auto ret = SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+        AVCODEC_LOGI("set OS_ACodecOut thread qos, ret = %{public}d", ret);
+    }
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ConsumerOutputBuffer enter");
     if (!isRunning_) {
         usleep(DEFAULT_TRY_DECODE_TIME);
@@ -495,6 +506,8 @@ void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputFormatChanged(const Fo
 {
     if (impl_->callback_) {
         impl_->callback_->OnOutputFormatChanged(format);
+    } else {
+        AVCODEC_LOGE("receive format changed, but impl callback is nullptr");
     }
 }
 

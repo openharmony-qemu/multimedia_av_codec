@@ -21,6 +21,9 @@
 #include "avcodec_trace.h"
 #include "plugin/plugin_manager_v2.h"
 #include "avcodec_log.h"
+#include "bundle_mgr_interface.h"
+#include "iservice_registry.h"
+#include "system_ability_definition.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
@@ -30,6 +33,9 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "Med
 const std::string INPUT_BUFFER_QUEUE_NAME = "MediaCodecInputBufferQueue";
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
 constexpr int32_t TIME_OUT_MS = 50;
+constexpr uint32_t API_SUPPORT_AUDIO_FORMAT_CHANGED = 15;
+constexpr uint32_t INVALID_API_VERSION = 0;
+constexpr uint32_t API_VERSION_MOD = 1000;
 const std::string DUMP_PARAM = "a";
 const std::string DUMP_FILE_NAME = "player_audio_decoder_output.pcm";
 } // namespace
@@ -192,6 +198,9 @@ int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<AudioBaseCodecCallbac
     FALSE_RETURN_V_MSG_E(codecCallback != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER,
                          "codecCallback is nullptr");
     mediaCodecCallback_ = codecCallback;
+    uint32_t apiVersion = GetApiVersion();
+    isSupportAudioFormatChanged_ =
+        ((apiVersion == INVALID_API_VERSION) || (apiVersion >= API_SUPPORT_AUDIO_FORMAT_CHANGED));
     return (int32_t)Status::OK;
 }
 
@@ -794,7 +803,25 @@ void MediaCodec::ClearInputBuffer()
     }
 }
 
-void MediaCodec::OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) {}
+void MediaCodec::OnEvent(const std::shared_ptr<Plugins::PluginEvent> event)
+{
+    if (event->type != Plugins::PluginEventType::AUDIO_OUTPUT_FORMAT_CHANGED) {
+        return;
+    }
+
+    if (!isSupportAudioFormatChanged_) {
+        MEDIA_LOG_W("receive audio format changed but api version is low");
+        return;
+    }
+
+    auto realPtr = mediaCodecCallback_.lock();
+    if (realPtr != nullptr) {
+        std::shared_ptr<Meta> format = std::make_shared<Meta>(AnyCast<Meta>(event->param));
+        realPtr->OnOutputFormatChanged(format);
+    } else {
+        MEDIA_LOG_E("receive AUDIO_OUTPUT_FORMAT_CHANGED, but lock callback fail");
+    }
+}
 
 std::string MediaCodec::StateToString(CodecState state)
 {
@@ -829,5 +856,28 @@ void MediaCodec::OnDumpInfo(int32_t fd)
         return;
     }
 }
+
+uint32_t MediaCodec::GetApiVersion()
+{
+    uint32_t apiVersion = INVALID_API_VERSION;
+    OHOS::sptr<OHOS::ISystemAbilityManager> systemAbilityManager =
+        OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    OHOS::sptr<OHOS::IRemoteObject> remoteObject =
+        systemAbilityManager->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+    sptr<AppExecFwk::IBundleMgr> iBundleMgr = OHOS::iface_cast<AppExecFwk::IBundleMgr>(remoteObject);
+    if (iBundleMgr == nullptr) {
+        MEDIA_LOG_E("GetApiVersion IBundleMgr is nullptr");
+        return apiVersion;
+    }
+    AppExecFwk::BundleInfo bundleInfo;
+    if (iBundleMgr->GetBundleInfoForSelf(0, bundleInfo) == ERR_OK) {
+        apiVersion = bundleInfo.targetVersion % API_VERSION_MOD;
+        MEDIA_LOG_I("GetApiVersion targetVersion: %{public}u", bundleInfo.targetVersion);
+    } else {
+        MEDIA_LOG_E("GetApiVersion failed");
+    }
+    return apiVersion;
+}
+
 } // namespace Media
 } // namespace OHOS

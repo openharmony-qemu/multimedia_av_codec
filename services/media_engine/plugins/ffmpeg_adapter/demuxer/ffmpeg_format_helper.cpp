@@ -521,7 +521,7 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, 
         }
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         ParseAVTrackInfo(avStream, format);
-        ParseAudioTrackInfo(avStream, format);
+        ParseAudioTrackInfo(avStream, format, avFormatContext);
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_TIMEDMETA) {
         ParseAVTrackInfo(avStream, format);
         ParseTimedMetaTrackInfo(avStream, format);
@@ -736,7 +736,8 @@ void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &for
     }
 }
 
-void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &format)
+void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &format,
+                                             const AVFormatContext& avFormatContext)
 {
     int sampelRate = avStream.codecpar->sample_rate;
     int channels = avStream.codecpar->channels;
@@ -786,6 +787,24 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
             ParseAv3aInfo(avStream, format);
         }
         ConvertAv3aSampleFormat(avStream, format);
+    }
+
+    ParseAudioApeTrackInfo(avStream, format, avFormatContext);
+}
+
+void FFmpegFormatHelper::ParseAudioApeTrackInfo(const AVStream& avStream, Meta &format,
+                                                const AVFormatContext& avFormatContext)
+{
+    if (GetFileTypeByName(avFormatContext) == FileType::APE) {
+        // Ffmpeg ensures that the value is definitely Int type
+        const AVDictionaryEntry *meta = av_dict_get(avFormatContext.metadata, "max_frame_size", NULL, 0);
+        if (meta != nullptr) {
+            format.Set<Tag::AUDIO_MAX_INPUT_SIZE>(std::stoi(meta->value));
+        }
+        meta = av_dict_get(avFormatContext.metadata, "sample_per_frame", NULL, 0);
+        if (meta != nullptr) {
+            format.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(std::stoi(meta->value));
+        }
     }
 }
 

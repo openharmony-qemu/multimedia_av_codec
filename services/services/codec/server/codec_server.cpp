@@ -50,7 +50,7 @@ enum DumpIndex : uint32_t {
     DUMP_INDEX_INSTANCE_ID                 = 0x01'01'07'00,
     DUMP_INDEX_STATUS                      = 0x01'01'08'00,
     DUMP_INDEX_LAST_ERROR                  = 0x01'01'09'00,
-    DUMP_INDEX_CODEC_INFO_START            = 0x01'02'0A'00,
+    DUMP_INDEX_CODEC_INFO_START            = 0x01'02'00'00,
 };
 constexpr uint32_t DUMP_OFFSET_8 = 8;
 
@@ -1048,6 +1048,8 @@ void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
     if (codec_ != nullptr) {
         codec_->OnOutputFormatChanged(format);
+    } else {
+        AVCODEC_LOGI("CodecBaseCallback receive output format changed but codec is nullptr");
     }
 }
 
@@ -1088,6 +1090,8 @@ void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
     if (codec_ != nullptr) {
         codec_->OnOutputFormatChanged(format);
+    } else {
+        AVCODEC_LOGE("receive output format changed, but codec is nullptr");
     }
 }
 

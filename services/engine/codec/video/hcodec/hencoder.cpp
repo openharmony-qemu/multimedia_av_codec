@@ -999,11 +999,11 @@ void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)
     }
 }
 
-void HEncoder::ExtractPerFrameParamFromOmxBuffer(
-    const shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer, shared_ptr<Media::Meta> &meta)
+void HEncoder::BeforeCbOutToUser(BufferInfo &info)
 {
+    std::shared_ptr<Media::Meta> meta = info.avBuffer->meta_;
     meta->Clear();
-    BinaryReader reader(static_cast<uint8_t*>(omxBuffer->alongParam.data()), omxBuffer->alongParam.size());
+    BinaryReader reader(static_cast<uint8_t*>(info.omxBuffer->alongParam.data()), info.omxBuffer->alongParam.size());
     int* index = nullptr;
     while ((index = reader.Read<int>()) != nullptr) {
         switch (*index) {
@@ -1041,7 +1041,7 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
                 break;
         }
     }
-    omxBuffer->alongParam.clear();
+    info.omxBuffer->alongParam.clear();
     if (debugMode_) {
         auto metaStr = StringifyMeta(meta);
         HLOGI("%s", metaStr.c_str());
