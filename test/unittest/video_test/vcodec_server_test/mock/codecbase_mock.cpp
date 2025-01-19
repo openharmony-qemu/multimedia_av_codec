@@ -18,6 +18,7 @@
 #include "fcodec_loader.h"
 #include "hevc_decoder_loader.h"
 #include "hcodec_loader.h"
+#include "avc_encoder_loader.h"
 #define PRINT_HILOG
 #include "unittest_log.h"
 namespace {
@@ -55,6 +56,15 @@ std::shared_ptr<CodecBase> HevcDecoderLoader::CreateByName(const std::string &na
     return mock->CreateHevcDecoderByName(name);
 }
 
+std::shared_ptr<CodecBase> AvcEncoderLoader::CreateByName(const std::string &name)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("name: %s", name.c_str());
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, nullptr, "mock object is nullptr");
+    return mock->CreateAvcEncoderByName(name);
+}
+
 int32_t HCodecLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
@@ -87,6 +97,18 @@ int32_t HevcDecoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
     caps = item.second;
     return item.first;
 }
+
+int32_t AvcEncoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("AvcEncoder");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    auto item = mock->GetAvcEncoderCapabilityList();
+    caps = item.second;
+    return item.first;
+}
+
 
 void CodecBase::RegisterMock(std::shared_ptr<CodecBaseMock> &mock)
 {

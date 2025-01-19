@@ -17,6 +17,7 @@
 #ifndef CLIENT_SUPPORT_CODEC
 #include "fcodec_loader.h"
 #include "hevc_decoder_loader.h"
+#include "avc_encoder_loader.h"
 #endif
 #include "avcodec_errors.h"
 #include "audio_codeclist_info.h"
@@ -42,6 +43,15 @@ int32_t VideoHevcDecoderList::GetCapabilityList(std::vector<CapabilityData> &cap
     auto ret = HevcDecoderLoader::GetCapabilityList(caps);
     if (ret == AVCS_ERR_OK) {
         AVCODEC_LOGI("Get capability from hevc decoder successful");
+    }
+    return ret;
+}
+
+int32_t VideoAvcEncoderList::GetCapabilityList(std::vector<CapabilityData> &caps)
+{
+    auto ret = AvcEncoderLoader::GetCapabilityList(caps);
+    if (ret == AVCS_ERR_OK) {
+        AVCODEC_LOGI("Get capability from avc encoder successful");
     }
     return ret;
 }
