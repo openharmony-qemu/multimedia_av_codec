@@ -2447,7 +2447,7 @@ bool MediaDemuxer::IsOpenGopBufferDroppable(std::shared_ptr<AVBuffer> sample, ui
     if (syncFrameInfo_.skipOpenGopUnrefFrameCnt <= 0 || sample->pts_ >= syncFrameInfo_.pts) {
         return false;
     }
-    MEDIA_LOG_I("drop opengop-buffer after dragging, pts: " PUBLIC_LOG_D64 ", i frame pts: "
+    MEDIA_LOG_D("drop opengop-buffer after dragging, pts: " PUBLIC_LOG_D64 ", i frame pts: "
         PUBLIC_LOG_D64, sample->pts_, syncFrameInfo_.pts);
     return true;
 }
