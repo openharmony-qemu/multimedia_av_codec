@@ -205,9 +205,10 @@ typedef struct OH_AVDataSource {
 } OH_AVDataSource;
 
 /**
- * @brief Enumerates the MIME types of video codecs
+ * @brief Enumerates the MIME types of video mpeg2 codec.
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG2;
 
@@ -237,6 +238,14 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
  * @since 10
  */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
+
+/**
+ * @brief brief Enumerates the Mime type of video mpeg4 part2 codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 16
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2;
 
 /**
  * @brief Enumerates the types of audio and video muxer
@@ -770,14 +779,20 @@ typedef enum OH_AVCProfile {
  * @brief MPEG2 Profile
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 typedef enum OH_MPEG2Profile {
+    /** Simple profile */
     MPEG2_PROFILE_SIMPLE  = 0,
+    /** Main profile */
     MPEG2_PROFILE_MAIN    = 1,
+    /** SNR scalable profile */
     MPEG2_PROFILE_SNR     = 2,
+    /** Spatially scalable profile */
     MPEG2_PROFILE_SPATIAL = 3,
+    /** High profile */
     MPEG2_PROFILE_HIGH    = 4,
+    /** 4:2:2 profile */
     MPEG2_PROFILE_422     = 5,
 } OH_MPEG2Profile;
 
@@ -785,23 +800,38 @@ typedef enum OH_MPEG2Profile {
  * @brief MPEG4 Profile
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 typedef enum OH_MPEG4Profile {
+    /** Simple profile */
     MPEG4_PROFILE_SIMPLE             = 0,
+    /** Simple scalable profile */
     MPEG4_PROFILE_SIMPLE_SCALABLE    = 1,
+    /** Core profile */
     MPEG4_PROFILE_CORE               = 2,
+    /** Main profile */
     MPEG4_PROFILE_MAIN               = 3,
+    /** N-Bit profile */
     MPEG4_PROFILE_NBIT               = 4,
+    /** Hybrid profile */
     MPEG4_PROFILE_HYBRID             = 5,
+    /** Basic animated texture profile */
     MPEG4_PROFILE_BASIC_ANIMATED_TEXTURE = 6,
+    /** Scalable texture profile */
     MPEG4_PROFILE_SCALABLE_TEXTURE   = 7,
+    /** Simple FA profile */
     MPEG4_PROFILE_SIMPLE_FA          = 8,
+    /** Advanced real time simple profile */
     MPEG4_PROFILE_ADVANCED_REAL_TIME_SIMPLE  = 9,
+    /** Core scalable profile */
     MPEG4_PROFILE_CORE_SCALABLE      = 10,
+    /** Advanced coding efficiency profile */
     MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY = 11,
+    /** Advanced core profile */
     MPEG4_PROFILE_ADVANCED_CORE      = 12,
+    /** Advanced scalable texture profile */
     MPEG4_PROFILE_ADVANCED_SCALABLE_TEXTURE  = 13,
+    /** Advanced simple profile */
     MPEG4_PROFILE_ADVANCED_SIMPLE    = 17,
 } OH_MPEG4Profile;
 
@@ -995,12 +1025,16 @@ typedef enum OH_MatrixCoefficient {
  * @brief MPEG2 Level.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 typedef enum OH_MPEG2Level {
+    /** Low level */
     MPEG2_LEVEL_LL  = 0,
+    /** Main level */
     MPEG2_LEVEL_ML  = 1,
+    /** High 1440 level */
     MPEG2_LEVEL_H14 = 2,
+    /** High level */
     MPEG2_LEVEL_HL  = 3,
 }OH_MPEG2Level;
 
@@ -1008,18 +1042,28 @@ typedef enum OH_MPEG2Level {
  * @brief MPEG4 Level.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 typedef enum OH_MPEG4Level {
+    /** 0 level */
     MPEG4_LEVEL_0  = 0,
+    /** 0B level */
     MPEG4_LEVEL_0B = 1,
+    /** 1 level */
     MPEG4_LEVEL_1  = 2,
+    /** 2 level */
     MPEG4_LEVEL_2  = 3,
+    /** 3 level */
     MPEG4_LEVEL_3  = 4,
+     /** 3B level */
     MPEG4_LEVEL_3B = 5,
+    /** 4 level */
     MPEG4_LEVEL_4  = 6,
+    /** 4A level */
     MPEG4_LEVEL_4A = 7,
+    /** 5 level */
     MPEG4_LEVEL_5  = 8,
+    /** 6 level */
     MPEG4_LEVEL_6  = 9,
 }OH_MPEG4Level;
 
