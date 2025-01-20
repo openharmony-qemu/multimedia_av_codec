@@ -199,6 +199,12 @@ void TEST_SUIT::CreateByNameWithParam(int32_t param)
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
             break;
+#ifdef SUPPORT_CODEC_RV
+        case VCodecTestCode::SW_RV40:
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_RV40.data(), false,
+                                                                        AVCodecCategory::AVCODEC_SOFTWARE);
+            break;
+#endif
         default:
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
                                                                         AVCodecCategory::AVCODEC_SOFTWARE);
@@ -234,7 +240,11 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 }
 
-INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, SW_AVC));
+INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, SW_AVC
+#ifdef SUPPORT_CODEC_RV
+, SW_RV40
+#endif
+));
 
 /**
  * @tc.name: VideoDecoder_Multithread_Create_001

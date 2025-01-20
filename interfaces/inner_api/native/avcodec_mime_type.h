@@ -37,10 +37,14 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_G711MU = "audio/g711mu";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_APE = "audio/x-ape";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_COOK = "audio/cook";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_AC3 = "audio/ac3";
 
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_AVC = "video/avc";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MPEG4 = "video/mp4v-es";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_HEVC = "video/hevc";
+    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_RV30 = "video/rv30";
+    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_RV40 = "video/rv40";
 
     static constexpr std::string_view MEDIA_MIMETYPE_IMAGE_JPG = "image/jpeg";
     static constexpr std::string_view MEDIA_MIMETYPE_IMAGE_PNG = "image/png";

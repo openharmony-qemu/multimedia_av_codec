@@ -56,6 +56,8 @@ public:
 
     Status InitContext(const std::shared_ptr<Meta> &format);
 
+    Status SetBlockAlignContext(const int block_align);
+
     Status OpenContext();
 
     void SetMaxInputSize(int32_t setSize);

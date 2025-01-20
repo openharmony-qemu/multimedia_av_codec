@@ -33,6 +33,8 @@ public:
     static constexpr std::string_view AUDIO_DECODER_G711MU_NAME = "OH.Media.Codec.Decoder.Audio.G711mu";
     static constexpr std::string_view AUDIO_DECODER_APE_NAME = "OH.Media.Codec.Decoder.Audio.Ape";
     static constexpr std::string_view AUDIO_DECODER_LBVC_NAME = "OH.Media.Codec.Decoder.Audio.LBVC";
+    static constexpr std::string_view AUDIO_DECODER_COOK_NAME = "OH.Media.Codec.Decoder.Audio.COOK";
+    static constexpr std::string_view AUDIO_DECODER_AC3_NAME = "OH.Media.Codec.Decoder.Audio.AC3";
 
     static constexpr std::string_view AUDIO_ENCODER_FLAC_NAME = "OH.Media.Codec.Encoder.Audio.Flac";
     static constexpr std::string_view AUDIO_ENCODER_OPUS_NAME = "OH.Media.Codec.Encoder.Audio.Opus";
@@ -51,6 +53,8 @@ public:
     static constexpr std::string_view VIDEO_DECODER_MPEG2_NAME = "OH.Media.Codec.Decoder.Video.MPEG2";
     static constexpr std::string_view VIDEO_DECODER_MPEG4_NAME = "OH.Media.Codec.Decoder.Video.MPEG4";
     static constexpr std::string_view VIDEO_DECODER_VVC_NAME = "OH.Media.Codec.Decoder.Video.VVC";
+    static constexpr std::string_view VIDEO_DECODER_RV30_NAME = "OH.Media.Codec.Decoder.Video.Rv30";
+    static constexpr std::string_view VIDEO_DECODER_RV40_NAME = "OH.Media.Codec.Decoder.Video.Rv40";
 
 private:
     AVCodecCodecName() = delete;
