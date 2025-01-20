@@ -2087,4 +2087,27 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HasEosTrack_001, TestSize.Level1)
     demuxer->eosMap_[1] = true;
     EXPECT_TRUE(demuxer->HasEosTrack());
 }
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsOpenGopBufferDroppable_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    uint8_t* data = new uint8_t[100];
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, 100, 100);
+    demuxer->videoTrackId_ = 1;
+    buffer->flag_ |= static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME);
+    buffer->pts_ = 100;
+    demuxer->UpdateSyncFrameInfo(buffer, 1);
+    EXPECT_FALSE(demuxer->IsOpenGopBufferDroppable(buffer, 1));
+    demuxer->syncFrameInfo_.skipOpenGopUnrefFrameCnt = 1;
+    EXPECT_FALSE(demuxer->IsOpenGopBufferDroppable(buffer, 1));
+    buffer->flag_ ^= static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME);
+    demuxer->UpdateSyncFrameInfo(buffer, 1);
+    EXPECT_FALSE(demuxer->IsOpenGopBufferDroppable(buffer, 1));
+    demuxer->syncFrameInfo_.skipOpenGopUnrefFrameCnt = 1;
+    buffer->pts_ = 99;
+    EXPECT_TRUE(demuxer->IsOpenGopBufferDroppable(buffer, 1));
+    demuxer->EnterDraggingOpenGopCnt();
+    demuxer->ResetDraggingOpenGopCnt();
+    EXPECT_FALSE(demuxer->IsOpenGopBufferDroppable(buffer, 1));
+}
 }
