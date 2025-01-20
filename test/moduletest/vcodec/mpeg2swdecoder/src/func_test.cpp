@@ -745,31 +745,31 @@ HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_MPEG2VIDEO_PARA_0300, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_MPEG2VIDEO_PARA_0400
- * @tc.name      : width is 1921 ,height is 1280
+ * @tc.name      : width is 1920 ,height is 1080
  * @tc.desc      : FUNCTION test
  */
 HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_MPEG2VIDEO_PARA_0400, TestSize.Level2)
 {
     auto vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_2;
-    vDecSample->DEFAULT_WIDTH = 1921;
-    vDecSample->DEFAULT_HEIGHT = 1280;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg2));
-    ASSERT_NE(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(0, vDecSample->errCount);
 }
 
 /**
  * @tc.number    : VIDEO_MPEG2VIDEO_PARA_0500
- * @tc.name      : width is 1921 ,height is 1280
+ * @tc.name      : width is 4097 ,height is 4097
  * @tc.desc      : FUNCTION test
  */
 HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_MPEG2VIDEO_PARA_0500, TestSize.Level2)
 {
     auto vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_2;
-    vDecSample->DEFAULT_WIDTH = 1921;
-    vDecSample->DEFAULT_HEIGHT = 1280;
+    vDecSample->DEFAULT_WIDTH = 4097;
+    vDecSample->DEFAULT_HEIGHT = 4097;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg2));
     ASSERT_NE(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(0, vDecSample->errCount);

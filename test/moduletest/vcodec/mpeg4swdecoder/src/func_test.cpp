@@ -833,15 +833,15 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0300, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_MPEG4SWDEC_PARA_0400
- * @tc.name      : width set 1921 height set 1081
+ * @tc.name      : width set 4097 height set 4097
  * @tc.desc      : function test
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0400, TestSize.Level2)
 {
     auto vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1921;
-    vDecSample->DEFAULT_HEIGHT = 1081;
+    vDecSample->DEFAULT_WIDTH = 4097;
+    vDecSample->DEFAULT_HEIGHT = 4097;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
     vDecSample->checkOutPut = true;
