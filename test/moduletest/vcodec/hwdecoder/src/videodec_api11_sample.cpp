@@ -88,7 +88,7 @@ public:
         int32_t flushFence;
         cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
         if (buffer == nullptr) {
-            cout << "output surface is nullptr" << endl;
+            cout << "surface is nullptr" << endl;
             return;
         } else {
             if (g_yuvSurface && outFile_ != nullptr) {
