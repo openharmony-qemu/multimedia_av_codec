@@ -31,6 +31,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+constexpr uint32_t BUFFERING_PERCENT_FULL = 100;
 
 enum DashReadRet {
     DASH_READ_FAILED = 0,
@@ -132,6 +133,7 @@ struct DashBufferSegment {
 };
 
 using SegmentDownloadDoneCbFunc = std::function<void(int streamId)>;
+using SegmentBufferingCbFunc = std::function<void(int, BufferingInfoType)>;
 
 class DashSegmentDownloader {
 public:
@@ -146,6 +148,7 @@ public:
     DashReadRet Read(uint8_t *buff, ReadDataInfo &readDataInfo, const std::atomic<bool> &isInterruptNeeded);
     void SetStatusCallback(StatusCallbackFunc statusCallbackFunc);
     void SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc);
+    void SetSegmentBufferingCallback(SegmentBufferingCbFunc bufferingCbFunc);
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
     bool CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd);
     bool SeekToTime(const std::shared_ptr<DashSegment>& segment, int32_t& streamId);
@@ -168,6 +171,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded);
     uint32_t GetBufferSize() const;
     bool GetBufferringStatus() const;
+    uint32_t GetCachedPercent();
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -198,6 +202,7 @@ private:
     void CalculateBitRate(size_t fragmentSize, double duration);
     void UpdateCachedPercent(BufferingInfoType infoType);
     void UpdateBufferSegment(const std::shared_ptr<DashBufferSegment> &mediaSegment, uint32_t len);
+    void DoBufferingEndEvent();
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
@@ -212,6 +217,7 @@ private:
     DataSaveFunc dataSave_;
     StatusCallbackFunc statusCallback_;
     SegmentDownloadDoneCbFunc downloadDoneCbFunc_;
+    SegmentBufferingCbFunc bufferingCbFunc_;
     bool startedPlayStatus_{false};
     int streamId_{0};
     MediaAVCodec::MediaType streamType_;

@@ -32,6 +32,8 @@ constexpr double BUFFER_LOW_LIMIT  = 0.3;
 constexpr double BYTE_TO_BIT = 8.0;
 constexpr size_t RETRY_TIMES = 15000;
 constexpr unsigned int SLEEP_TIME = 1;
+constexpr uint32_t AUDIO_BUFFERING_FLAG = 1;
+constexpr uint32_t VIDEO_BUFFERING_FLAG = 2;
 
 DashMediaDownloader::DashMediaDownloader() noexcept
 {
@@ -105,9 +107,6 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     if (ret == DASH_READ_END) {
         MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", readDataInfo.streamId_);
         readDataInfo.isEos_ = true;
-        if (callback_ != nullptr) {
-            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
-        }
         return Status::END_OF_STREAM;
     } else if (ret == DASH_READ_AGAIN) {
         return Status::ERROR_AGAIN;
@@ -169,6 +168,64 @@ void DashMediaDownloader::UpdateDownloadFinished(int streamId)
         segmentDownloader->Open(seg);
     } else if (getRet == DASH_MPD_GET_FINISH) {
         segmentDownloader->SetAllSegmentFinished();
+    }
+}
+
+void DashMediaDownloader::PostBufferingEvent(int streamId, BufferingInfoType type)
+{
+    if (callback_ == nullptr || mpdDownloader_ == nullptr) {
+        MEDIA_LOG_I("PostBufferingEvent streamId: " PUBLIC_LOG_D32 " type: " PUBLIC_LOG_D32, streamId, type);
+        return;
+    }
+
+    std::shared_ptr<DashStreamDescription> streamDesc = mpdDownloader_->GetStreamByStreamId(streamId);
+    if (streamDesc == nullptr || streamDesc->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
+        return;
+    }
+
+    if (type == BufferingInfoType::BUFFERING_PERCENT) {
+        uint32_t percent = 0;
+        for (auto &downloader : segmentDownloaders_) {
+            if (downloader == nullptr || downloader->GetStreamType() == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
+                continue;
+            }
+
+            uint32_t segPercent = downloader->GetCachedPercent();
+            percent = (percent == 0 || segPercent < percent) ? segPercent : percent;
+        }
+        if (percent > 0 && percent < BUFFERING_PERCENT_FULL && lastBufferingPercent_ != percent) {
+            MEDIA_LOG_I("PostBufferingEvent buffering percent " PUBLIC_LOG_U32, percent);
+            callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {percent}, "buffer percent"});
+            lastBufferingPercent_ = percent;
+        }
+        return;
+    }
+
+    // ensure the order of the buffering_start and buffering_end, must use lock, this lock can not use in other scene
+    // OnEvent can not block and lock other resource
+    std::lock_guard<std::mutex> bufferingLock(bufferingMutex_);
+    // audio or video buffering start will post event, audio and video buffering end will post event
+    uint32_t flag =
+        streamDesc->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID ? VIDEO_BUFFERING_FLAG : AUDIO_BUFFERING_FLAG;
+    if (type == BufferingInfoType::BUFFERING_START) {
+        if (bufferingFlag_ == 0) {
+            MEDIA_LOG_I("PostBufferingEvent buffering start");
+            callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+            callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {0}, "buffer percent"});
+        }
+        bufferingFlag_ |= flag;
+        return;
+    } else if (type == BufferingInfoType::BUFFERING_END) {
+        uint32_t lastBufferingFlag = bufferingFlag_;
+        if ((bufferingFlag_ & flag) > 0) {
+            bufferingFlag_ ^= flag;
+        }
+        if (lastBufferingFlag > 0 && bufferingFlag_ == 0) {
+            MEDIA_LOG_I("PostBufferingEvent buffering end");
+            callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {BUFFERING_PERCENT_FULL}, "buffer percent"});
+            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        }
+        return;
     }
 }
 
@@ -404,6 +461,10 @@ void DashMediaDownloader::OpenInitSegment(
         UpdateDownloadFinished(streamId);
     };
     downloader->SetDownloadDoneCallback(doneCallback);
+    auto bufferingCallback = [this] (int streamId, BufferingInfoType type) {
+        PostBufferingEvent(streamId, type);
+    };
+    downloader->SetSegmentBufferingCallback(bufferingCallback);
     segmentDownloaders_.push_back(downloader);
     std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
         streamDesc->streamId_);

@@ -44,8 +44,7 @@ constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int64_t SECOND_TO_MILLIONSECOND = 1000;
 constexpr uint32_t BUFFERING_SLEEP_TIME_MS = 10;
 constexpr uint32_t BUFFERING_TIME_OUT_MS = 1000;
-constexpr uint32_t UPDATE_CACHE_STEP = 5 * 1024;
-constexpr uint32_t BUFFERING_PERCENT_FULL = 100;
+constexpr uint32_t UPDATE_CACHE_STEP = 10;
 constexpr double ZERO_THRESHOLD = 1e-9;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
@@ -241,6 +240,7 @@ bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, DashRead
                 MEDIA_LOG_I("Read: streamId:" PUBLIC_LOG_D32 " segment "
                     PUBLIC_LOG_D64 " read Eos", mediaSegment_->streamId_, mediaSegment_->numberSeq_);
             }
+            DoBufferingEndEvent();
             return true;
         }
     }
@@ -292,7 +292,7 @@ bool DashSegmentDownloader::HandleBuffering(const std::atomic<bool> &isInterrupt
         }
 
         if (isAllSegmentFinished_.load()) {
-            isBuffering_.store(false);
+            DoBufferingEndEvent();
             break;
         }
         OSAL::SleepFor(BUFFERING_SLEEP_TIME_MS);
@@ -301,7 +301,7 @@ bool DashSegmentDownloader::HandleBuffering(const std::atomic<bool> &isInterrupt
             break;
         }
     }
-    MEDIA_LOG_I("HandleBuffering end streamId: " PUBLIC_LOG_D32 "isBuffering: "
+    MEDIA_LOG_I("HandleBuffering end streamId: " PUBLIC_LOG_D32 " isBuffering: "
         PUBLIC_LOG_D32, streamId_, isBuffering_.load());
     return isBuffering_.load();
 }
@@ -313,27 +313,25 @@ void DashSegmentDownloader::SaveDataHandleBuffering()
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
     if (buffer_->GetSize() >= waterLineAbove_ || isAllSegmentFinished_.load()) {
-        isBuffering_.store(false);
+        DoBufferingEndEvent();
     }
+}
 
-    if (!isBuffering_.load() && callback_ != nullptr) {
-        MEDIA_LOG_I("SaveDataHandleBuffering OnEvent streamId: " PUBLIC_LOG_D32 " cacheData buffering end", streamId_);
+void DashSegmentDownloader::DoBufferingEndEvent()
+{
+    if (isBuffering_.exchange(false)) {
+        MEDIA_LOG_I("DoBufferingEndEvent OnEvent streamId: " PUBLIC_LOG_D32 " cacheData buffering end", streamId_);
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
-        callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
     }
 }
 
 bool DashSegmentDownloader::HandleCache()
 {
     waterLineAbove_ = static_cast<size_t>(GetWaterLineAbove());
-    if (!isBuffering_.load()) {
-        if (callback_ != nullptr) {
-            MEDIA_LOG_I("HandleCache OnEvent streamId: " PUBLIC_LOG_D32 " start buffering, waterLineAbove:"
-                PUBLIC_LOG_U32, streamId_, waterLineAbove_);
-            UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
-            callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
-        }
-        isBuffering_.store(true);
+    if (!isBuffering_.exchange(true)) {
+        MEDIA_LOG_I("HandleCache OnEvent streamId: " PUBLIC_LOG_D32 " start buffering, waterLineAbove:"
+            PUBLIC_LOG_U32, streamId_, waterLineAbove_);
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
         return true;
     }
     return false;
@@ -399,20 +397,27 @@ void DashSegmentDownloader::HandleCachedDuration()
     }
 }
 
+uint32_t DashSegmentDownloader::GetCachedPercent()
+{
+    if (waterLineAbove_ == 0) {
+        return 0;
+    }
+
+    uint32_t bufferSize = static_cast<uint32_t>(buffer_->GetSize());
+    return (bufferSize >= waterLineAbove_) ? BUFFERING_PERCENT_FULL : bufferSize * BUFFERING_PERCENT_FULL /
+        waterLineAbove_;
+}
+
 void DashSegmentDownloader::UpdateCachedPercent(BufferingInfoType infoType)
 {
-    if (waterLineAbove_ == 0 || callback_ == nullptr) {
-        MEDIA_LOG_I("OnEvent streamId: " PUBLIC_LOG_D32 " UpdateCachedPercent error", streamId_);
+    if (waterLineAbove_ == 0 || bufferingCbFunc_ == nullptr) {
+        MEDIA_LOG_W("OnEvent streamId: " PUBLIC_LOG_D32 " UpdateCachedPercent error", streamId_);
         return;
     }
-    if (infoType == BufferingInfoType::BUFFERING_START) {
-        callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {0}, "buffer percent"});
+
+    if (infoType == BufferingInfoType::BUFFERING_START || infoType == BufferingInfoType::BUFFERING_END) {
         lastCachedSize_ = 0;
-        return;
-    }
-    if (infoType == BufferingInfoType::BUFFERING_END) {
-        callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {BUFFERING_PERCENT_FULL}, "buffer percent"});
-        lastCachedSize_ = 0;
+        bufferingCbFunc_(streamId_, infoType);
         return;
     }
     if (infoType != BufferingInfoType::BUFFERING_PERCENT) {
@@ -424,10 +429,8 @@ void DashSegmentDownloader::UpdateCachedPercent(BufferingInfoType infoType)
         return;
     }
     uint32_t deltaSize = bufferSize - lastCachedSize_;
-    if (deltaSize >= UPDATE_CACHE_STEP) {
-        uint32_t percent = (bufferSize >= waterLineAbove_) ? BUFFERING_PERCENT_FULL : bufferSize *
-            BUFFERING_PERCENT_FULL / waterLineAbove_;
-        callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {percent}, "buffer percent"});
+    if ((deltaSize * BUFFERING_PERCENT_FULL / waterLineAbove_) >= UPDATE_CACHE_STEP) {
+        bufferingCbFunc_(streamId_, infoType);
         lastCachedSize_ = bufferSize;
     }
 }
@@ -524,6 +527,11 @@ void DashSegmentDownloader::SetStatusCallback(StatusCallbackFunc statusCallbackF
 void DashSegmentDownloader::SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc)
 {
     downloadDoneCbFunc_ = doneCbFunc;
+}
+
+void DashSegmentDownloader::SetSegmentBufferingCallback(SegmentBufferingCbFunc bufferingCbFunc)
+{
+    bufferingCbFunc_ = bufferingCbFunc;
 }
 
 size_t DashSegmentDownloader::GetRingBufferInitSize(MediaAVCodec::MediaType streamType) const
