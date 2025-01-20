@@ -488,7 +488,7 @@ bool MediaMuxer::CheckKeysExt(const std::string &mimeType, const std::shared_ptr
     if (format == Plugins::OutputFormat::AAC) { // AAC Muxer need
         auto it = MUX_MIME_INFO_EXT.find(mimeType);
         if (it == MUX_MIME_INFO_EXT.end()) {
-            return ret; // 不做检查
+            return ret; // find mimeType failed, skip check
         }
 
         for (auto &key : it->second) {
