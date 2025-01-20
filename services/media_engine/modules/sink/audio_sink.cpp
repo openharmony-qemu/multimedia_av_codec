@@ -78,7 +78,7 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
     meta->GetData(Tag::AUDIO_CHANNEL_COUNT, audioChannelCount_);
     if (samplePerFrame_ > 0 && sampleRate_ > 0) {
-        playingBufferDurationUs_ = samplePerFrame_ * 1000000 / sampleRate_; // 1000000 usec per sec
+        playingBufferDurationUs_ = static_cast<int64_t>(samplePerFrame_) * 1000000 / sampleRate_; // 1000000 usec per sec
     }
     MEDIA_LOG_I("Audiosink playingBufferDurationUs_ = " PUBLIC_LOG_D64, playingBufferDurationUs_);
     std::string mime;
