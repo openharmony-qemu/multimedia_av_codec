@@ -58,6 +58,14 @@ void DownloaderUnitTest::TearDown(void)
     downloader.reset();
 }
 
+HWTEST_F(DownloaderUnitTest, ClearMiddleReadFragment, TestSize.Level1)
+{
+    CacheMediaChunkBuffer cachedMediaBuffer;
+    ASSERT_EQ(true, cachedMediaBuffer.Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE));
+    EXPECT_FALSE(cachedMediaBuffer.ClearMiddleReadFragment(10, 1000));
+    cachedMediaBuffer.IsReadSplit(100);
+}
+
 HWTEST_F(DownloaderUnitTest, Downloader_Construct_nullptr, TestSize.Level1)
 {
     EXPECT_NE(downloader->client_, nullptr);
