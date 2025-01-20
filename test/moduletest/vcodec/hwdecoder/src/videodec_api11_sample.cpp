@@ -89,6 +89,7 @@ public:
         cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
         if (buffer == nullptr) {
             cout << "output surface is nullptr" << endl;
+            return;
         } else {
             if (g_yuvSurface && outFile_ != nullptr) {
                 int32_t frameSize = (g_strideSurface * g_sliceSurface * THREE) >> 1;
@@ -357,6 +358,7 @@ void VDecAPI11Sample::CreateSurface()
     cs[0] = Surface::CreateSurfaceAsConsumer();
     if (cs[0] == nullptr) {
         cout << "Create the surface consummer fail" << endl;
+        return;
     }
     GSError err = cs[0]->SetDefaultUsage(BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER | BUFFER_USAGE_CPU_READ);
     if (err == GSERROR_OK) {
