@@ -788,7 +788,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_0900, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthAlignment(capability, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -815,7 +816,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1100, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     int32_t alignment = 0;
     ret = OH_AVCapability_GetVideoWidthAlignment(capability, &alignment);
@@ -832,7 +834,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1200, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightAlignment(capability, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -859,7 +862,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1400, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     int32_t alignment = 0;
     ret = OH_AVCapability_GetVideoHeightAlignment(capability, &alignment);
@@ -878,7 +882,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1600, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRangeForHeight(nullptr, DEFAULT_HEIGHT, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -892,7 +897,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1600, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -908,7 +914,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1800, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 0, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -924,7 +931,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_1900, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, &range);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
@@ -956,7 +964,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2000, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRangeForWidth(nullptr, DEFAULT_WIDTH, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -970,7 +979,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2000, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -986,7 +996,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2200, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 0, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1002,7 +1013,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2300, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -1045,7 +1057,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2400, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRange(capability, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1061,7 +1074,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2600, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRange(capability, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -1091,7 +1105,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2700, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRange(capability, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1109,7 +1124,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2900, TestSize.Level2)
     OH_AVRange heightRange;
     memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     memset_s(&heightRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -1140,7 +1156,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_2900, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3000, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, 0, DEFAULT_HEIGHT));
 }
@@ -1152,7 +1169,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3000, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3100, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, DEFAULT_WIDTH, 0));
 }
@@ -1172,7 +1190,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3300, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, 7680, 4320));
 }
@@ -1183,7 +1202,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3400, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(true, OH_AVCapability_IsVideoSizeSupported(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT));
 }
@@ -1209,7 +1229,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3500, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRange(capability, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1225,7 +1246,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3700, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRange(capability, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -1254,7 +1276,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3800, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_3900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1270,7 +1293,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4000, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 0, DEFAULT_HEIGHT, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1286,7 +1310,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4100, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, DEFAULT_WIDTH, 0, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1302,7 +1327,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4200, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 1280, 720, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -1329,7 +1355,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4300, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, 0, DEFAULT_HEIGHT, 30));
 }
@@ -1341,7 +1368,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4400, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, DEFAULT_WIDTH, 0, 30));
 }
@@ -1353,7 +1381,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4500, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, 0));
 }
@@ -1375,7 +1404,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4700, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(true, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, 30));
 }
@@ -1403,7 +1433,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_4900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t pixelFormatNum = 0;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, nullptr, &pixelFormatNum);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1418,7 +1449,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1434,7 +1466,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5100, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
     uint32_t pixelFormatNum = 0;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, &pixelFormatNum);
     ASSERT_NE(nullptr, pixelFormat);
@@ -1473,7 +1506,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5200, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *profiles = nullptr;
     uint32_t profileNum = 0;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -1496,7 +1530,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5300, TestSize.Level2)
     uint32_t levelNum = 0;
     const int32_t *profiles = nullptr;
     uint32_t profileNum = 0;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -1521,7 +1556,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5400, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_NE(true, OH_AVCapability_AreProfileAndLevelSupported(capability,
      MPEG4_PROFILE_SIMPLE, ERROR_LEVEL));
@@ -1562,7 +1598,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5500, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability,
      MPEG4_PROFILE_SIMPLE, MPEG4_LEVEL_6));
@@ -1603,7 +1640,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5500, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5600, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_TEMPORAL_SCALABILITY));
 }
@@ -1615,7 +1653,8 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5700, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2,
+     false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     OH_AVFormat *format = OH_AVCapability_GetFeatureProperties(capability, VIDEO_ENCODER_LONG_TERM_REFERENCE);
     ASSERT_EQ(nullptr, format);
