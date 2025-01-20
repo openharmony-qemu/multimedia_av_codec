@@ -168,6 +168,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded);
     uint32_t GetBufferSize() const;
     bool GetBufferringStatus() const;
+    bool IsAllSegmentFinished() const;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);

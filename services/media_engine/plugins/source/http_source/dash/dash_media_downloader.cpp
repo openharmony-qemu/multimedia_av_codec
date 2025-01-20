@@ -468,7 +468,10 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             if (callback_ != nullptr) {
                 switchFlag = callback_->CanAutoSelectBitRate();
             }
-            if (switchFlag && isAutoSelectBitrate_) {
+            std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
+                MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+            if (segmentDownloader != nullptr && !segmentDownloader->IsAllSegmentFinished() &&
+                switchFlag && isAutoSelectBitrate_) {
                 bool flag = CheckAutoSelectBitrate(streamId);
                 if (callback_ != nullptr) {
                     callback_->SetSelectBitRateFlag(flag, bitrateParam_.bitrate_);
