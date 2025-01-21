@@ -866,7 +866,7 @@ uint32_t MediaCodec::GetApiVersion()
         systemAbilityManager->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
     sptr<AppExecFwk::IBundleMgr> iBundleMgr = OHOS::iface_cast<AppExecFwk::IBundleMgr>(remoteObject);
     if (iBundleMgr == nullptr) {
-        MEDIA_LOG_E("GetApiVersion IBundleMgr is nullptr");
+        MEDIA_LOG_W("GetApiVersion IBundleMgr is nullptr");
         return apiVersion;
     }
     AppExecFwk::BundleInfo bundleInfo;
@@ -874,7 +874,7 @@ uint32_t MediaCodec::GetApiVersion()
         apiVersion = bundleInfo.targetVersion % API_VERSION_MOD;
         MEDIA_LOG_I("GetApiVersion targetVersion: %{public}u", bundleInfo.targetVersion);
     } else {
-        MEDIA_LOG_E("GetApiVersion failed");
+        MEDIA_LOG_W("GetApiVersion failed, call by SA or test maybe");
     }
     return apiVersion;
 }
