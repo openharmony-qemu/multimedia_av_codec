@@ -49,15 +49,15 @@ group("vcodec_framework_test") {
       ":video_buffer_converter_unit_test",
       ":videodec_capi_unit_test",
       ":videodec_h263_capi_unit_test",
+      ":videodec_h263_inner_unit_test",
+      ":videodec_h263_stable_unit_test",
       ":videodec_hdrvivid2sdr_capi_unit_test",
       ":videodec_hdrvivid2sdr_inner_unit_test",
       ":videodec_hevcdec_unit_test",
       ":videodec_inner_unit_test",
-      ":videodec_h263_inner_unit_test",
       ":videodec_mpeg_func_unit_test",
       ":videodec_mpeg_stable_unit_test",
       ":videodec_stable_unit_test",
-      ":videodec_h263_stable_unit_test",
     ]
     if (av_codec_support_hcodec) {
       deps += [
@@ -135,7 +135,6 @@ ohos_unittest("videodec_capi_unit_test") {
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
-
 
 #################################################################################################################videodec
 ohos_unittest("videodec_h263_capi_unit_test") {
@@ -249,7 +248,6 @@ ohos_unittest("videodec_inner_unit_test") {
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
-
 
 #################################################################################################################videodec
 ohos_unittest("videodec_h263_inner_unit_test") {
@@ -687,7 +685,6 @@ ohos_unittest("videodec_h263_stable_unit_test") {
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
-
 
 #################################################################################################################videodec
 ohos_unittest("videodec_mpeg_stable_unit_test") {

@@ -85,66 +85,6 @@ std::string getH263InputPath(H263VideoPaths path)
 }
 
 /**
- * @tc.name: VideoDecoderH263_Checkprofileandlevel
- * @tc.desc: 1. check supported levels and profiles;
- */
-/*HWMTEST_F(VideoDecStableTestH263, VideoDecoderH263_Checkprofileandlevel, TestSize.Level1, VideoDecSample::threadNum_)
-{
-    const int32_t *profiles = nullptr;
-    uint32_t profilesNum = -1;
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
-    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
-    EXPECT_EQ(profilesNum, static_cast<uint32_t>(H263VideoPaths::H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY) + 1);
-    for (int32_t i = 0; i < profilesNum; i++) {
-        int32_t profile = profiles[i];
-        EXPECT_GE(profile, static_cast<uint32_t>(H263VideoPaths::H263_PROFILE_BASELINE));
-        EXPECT_LE(profile, static_cast<uint32_t>(H263VideoPaths::H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY) + 3);
-        const int32_t *levels = nullptr;
-        uint32_t levelsNum = -1;
-        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
-        EXPECT_GT(levelsNum, H263_LEVEL_10);
-        EXPECT_LE(levelsNum, H263_LEVEL_70 + 1);
-        for (int32_t j = 0; j < levelsNum; j++) {
-            int32_t level = levels[j];
-            EXPECT_GE(level, H263_LEVEL_10);
-            EXPECT_LE(level, H263_LEVEL_70);
-        }
-    }
-}*/
-
-/**
- * @tc.name: VideoDecoderH263_Multithread_Release
- * @tc.desc: 1. push/free buffer in callback;
- *           2. release not in callback;
- */
-/*HWMTEST_F(VideoDecStableTestH263, VideoDecoderH263_Multithread_Release, TestSize.Level1, VideoDecSample::threadNum_)
-{
-    for (int i = 0; i < static_cast<int>(H263VideoPaths::H263_PROFILE_BASELINE) + 1; ++i) {
-        H263VideoPaths path = static_cast<H263VideoPaths>(i);
-        std::string inputPath = getH263InputPath(path);
-        auto vdec = make_shared<VideoDecSample>();
-        auto signal = make_shared<VCodecSignal>(vdec);
-        vdec->frameCount_ = 100;
-        vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_H263;
-        vdec->inPath_ = inputPath;
-        vdec->outPath_ = GetTestName();
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataHandle;
-        cb.onNeedOutputData = OutDataHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
-}*/
-
-
-/**
  * @tc.name: VideoDecoder_Multithread_Release_AVBuffer
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
@@ -237,7 +177,8 @@ HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_Release_AVBuffer_001,
  * @tc.name: VideoDecoder_Multithread_Start_Four_Times
  * @tc.desc: 1. start 4 times
  */
-HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_Start_Four_Times, TestSize.Level1, VideoDecSample::threadNum_)
+HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_Start_Four_Times
+        , TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
@@ -268,7 +209,8 @@ HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_Start_Four_Times, Tes
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_CreateByMime_001, TestSize.Level1, VideoDecSample::threadNum_)
+HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_CreateByMime_001
+        , TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
@@ -971,7 +913,8 @@ AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_With_Queue_005,
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_001, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_001
+              , TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
@@ -1001,7 +944,8 @@ AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_001, T
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_002, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_002
+              , TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
@@ -1030,7 +974,8 @@ AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_002, T
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_003, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_003
+              , TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
@@ -1060,7 +1005,8 @@ AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_003, T
  *           2. operate not in callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_004, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_004
+              , TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
@@ -1092,7 +1038,8 @@ AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_004, T
  *           2. operate in input callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_005, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_005
+             , TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
