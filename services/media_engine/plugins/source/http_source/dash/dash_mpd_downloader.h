@@ -112,7 +112,7 @@ struct DashMpdCallback {
 class DashMpdDownloader {
 public:
     DashMpdDownloader();
-    virtual ~DashMpdDownloader();
+    virtual ~DashMpdDownloader() noexcept;
 
     void Open(const std::string &url);
     void Close(bool isAsync);
