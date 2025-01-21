@@ -28,6 +28,10 @@ int32_t GetHevcDecoderCapabilityList(std::vector<CapabilityData> &caps)
 void CreateHevcDecoderByName(const std::string &name, std::shared_ptr<CodecBase> &codec)
 {
     sptr<HevcDecoder> hevcDecoder = new (std::nothrow) HevcDecoder(name);
+    if (hevcDecoder == nullptr) {
+        codec = nullptr;
+        return;
+    }
     hevcDecoder->IncStrongRef(hevcDecoder.GetRefPtr());
     codec = std::shared_ptr<HevcDecoder>(hevcDecoder.GetRefPtr(), [](HevcDecoder *ptr) { (void)ptr; });
 }
