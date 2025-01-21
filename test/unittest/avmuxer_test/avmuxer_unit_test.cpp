@@ -2450,6 +2450,43 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetUserMeta_001, TestSize.Level0)
 }
 
 /**
+ * @tc.name: Muxer_AddTrack_TimeMeta
+ * @tc.desc: Muxer AddTrack for timed metadata track
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_TimeMeta, TestSize.Level0)
+{
+    int32_t vidTrackId = -1;
+    int32_t metaTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack_TimeMeta.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+
+    ASSERT_EQ(avmuxer_->AddTrack(vidTrackId, videoParams), 0);
+    ASSERT_GE(vidTrackId, 0);
+
+    std::shared_ptr<FormatMock> metadataParams = FormatMockFactory::CreateTimedMetadataFormat(
+        TIMED_METADATA_TRACK_MIMETYPE.c_str(), TIMED_METADATA_KEY, 1);
+    ASSERT_NE(metadataParams, nullptr);
+
+    ASSERT_NE(avmuxer_->AddTrack(metaTrackId, metadataParams), 0);
+
+    ASSERT_NE(avmuxer_->AddTrack(metaTrackId, metadataParams), 0);
+
+    std::shared_ptr<FormatMock> metadataParams2 = FormatMockFactory::CreateTimedMetadataFormat(
+        TIMED_METADATA_TRACK_MIMETYPE.c_str(), TIMED_METADATA_KEY, -1);
+    ASSERT_NE(metadataParams, nullptr);
+
+    ASSERT_NE(avmuxer_->AddTrack(metaTrackId, metadataParams2), 0);
+}
+
+/**
  * @tc.name: Muxer_SetFlag_004
  * @tc.desc: Muxer Write Sample for timed metadata track
  * @tc.type: FUNC
