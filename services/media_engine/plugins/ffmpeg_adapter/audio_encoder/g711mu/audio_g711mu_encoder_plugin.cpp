@@ -173,6 +173,7 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
         std::lock_guard<std::mutex> lock(avMutex_);
         int32_t sampleNum = memory->GetSize() / sizeof(int16_t);
         int16_t* pcmToEncode = reinterpret_cast<int16_t*>(memory->GetAddr());
+        CHECK_AND_RETURN_RET_LOG(pcmToEncode != nullptr, Status::ERROR_UNKNOWN, "pcmToEncode is empty");
         encodeResult_.clear();
         for (int32_t i = 0; i < sampleNum; ++i) {
             encodeResult_.push_back(G711MuLawEncode(pcmToEncode[i]));
