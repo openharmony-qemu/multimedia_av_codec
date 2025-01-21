@@ -83,6 +83,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_M3U8_pause_resume, TestSize.Level1)
     httpSourcePlugin->SelectStream(0);
     httpSourcePlugin->Pause();
     httpSourcePlugin->Resume();
+    EXPECT_TRUE(httpSourcePlugin);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_MP4_SetPlayStrategy, TestSize.Level1)
@@ -100,6 +101,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_MP4_SetPlayStrategy, TestSize.Level1)
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
     OSAL::SleepFor(1 * 1000);
+    EXPECT_TRUE(httpSourcePlugin);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_M3U8_SetPlayStrategy, TestSize.Level1)
@@ -117,6 +119,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_M3U8_SetPlayStrategy, TestSize.Level1)
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
     OSAL::SleepFor(1 * 1000);
+    EXPECT_TRUE(httpSourcePlugin);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_MPD_SetPlayStrategy, TestSize.Level1)
@@ -134,6 +137,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_MPD_SetPlayStrategy, TestSize.Level1)
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
     OSAL::SleepFor(1 * 1000);
+    EXPECT_TRUE(httpSourcePlugin);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level1)
@@ -147,6 +151,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     httpSourcePlugin->SeekTo(10);
     httpSourcePlugin->SeekTo(100000);
+    EXPECT_TRUE(httpSourcePlugin);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4_DumuxState, TestSize.Level1)
@@ -161,6 +166,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4_DumuxState, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     httpSourcePlugin->SeekTo(10);
     httpSourcePlugin->SeekTo(100000);
+    EXPECT_TRUE(httpSourcePlugin);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_FUNC, TestSize.Level1)
@@ -186,6 +192,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_FUNC, TestSize.Level1)
     httpSourcePlugin->GetBitRates(bitRates);
     httpSourcePlugin->SetDemuxerState(0);
     httpSourcePlugin->SetCurrentBitRate(10, 0);
+    EXPECT_TRUE(httpSourcePlugin);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_INFO, TestSize.Level1)
@@ -209,6 +216,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_INFO, TestSize.Level1)
     httpSourcePlugin->GetDownloadInfo(downloadInfo);
     httpSourcePlugin->GetPlaybackInfo(playbackInfo);
     httpSourcePlugin->SetDownloadErrorState();
+    EXPECT_TRUE(httpSourcePlugin);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MPD, TestSize.Level1)
@@ -222,6 +230,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MPD, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     httpSourcePlugin->SeekTo(10);
     httpSourcePlugin->SeekTo(100000);
+    EXPECT_TRUE(httpSourcePlugin);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8, TestSize.Level1)
@@ -235,6 +244,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     httpSourcePlugin->SeekToTime(1, SeekMode::SEEK_NEXT_SYNC);
     httpSourcePlugin->SeekToTime(100000, SeekMode::SEEK_NEXT_SYNC);
+    EXPECT_TRUE(httpSourcePlugin);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8_SetDemuxerState, TestSize.Level1)
@@ -249,6 +259,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8_SetDemuxerState, TestSize.Leve
     OSAL::SleepFor(1 * 1000);
     httpSourcePlugin->SeekToTime(1, SeekMode::SEEK_NEXT_SYNC);
     httpSourcePlugin->SeekToTime(100000, SeekMode::SEEK_NEXT_SYNC);
+    EXPECT_TRUE(httpSourcePlugin);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, Prepare_IsTrue, TestSize.Level1)
