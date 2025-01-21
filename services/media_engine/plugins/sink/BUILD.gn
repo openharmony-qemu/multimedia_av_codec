@@ -62,6 +62,7 @@ ohos_shared_library("media_plugin_AudioServerSink") {
   ]
 
   external_deps = [
+    "audio_framework:audio_client",
     "audio_framework:audio_renderer",
     "c_utils:utils",
     "graphic_surface:surface",

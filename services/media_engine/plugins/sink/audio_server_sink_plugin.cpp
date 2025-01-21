@@ -199,7 +199,7 @@ void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnStateChange(
 }
 
 void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnOutputDeviceChange(
-    const AudioStandard::DeviceInfo &deviceInfo, const AudioStandard::AudioStreamDeviceChangeReason reason)
+    const AudioStandard::AudioDeviceDescriptor &deviceInfo, const AudioStandard::AudioStreamDeviceChangeReason reason)
 {
     MEDIA_LOG_D_T("DeviceChange reason is " PUBLIC_LOG_D32, static_cast<int32_t>(reason));
     auto param = std::make_pair(deviceInfo, reason);
