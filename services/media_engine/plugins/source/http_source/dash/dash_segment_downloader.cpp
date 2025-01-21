@@ -687,7 +687,7 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
         remainLastNumberSeq = -1;
         uint32_t remainDuration = 0;
         for (const auto &it: segmentList_) {
-            if (it == nullptr || buffer_->GetHead() > it->bufferPosTail_) {
+            if (it == nullptr || (buffer_->GetHead() > it->bufferPosTail_ && it->bufferPosTail_ > 0)) {
                 continue;
             }
 

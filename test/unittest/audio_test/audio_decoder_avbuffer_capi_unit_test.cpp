@@ -3177,10 +3177,10 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_VorbisFormatChanged, TestS
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_OpusFormatChanged, TestSize.Level1)
 {
-    isTestingFormat_ = true;
     if (!CheckSoFunc()) {
         return;
     }
+    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(INPUT_OPUS_FILE_PATH, OUTPUT_OPUS_PCM_FILE_PATH));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_OPUS));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_OPUS));
