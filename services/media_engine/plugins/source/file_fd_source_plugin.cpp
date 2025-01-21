@@ -216,7 +216,7 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     // ringbuffer 0 after seek in 20ms, don't notify buffering
     curReadTime_ = steadyClock2_.ElapsedMilliseconds();
     if (isReadFrame_ &&  ringBuffer_->GetSize() < expectedLen && !HasCacheData(expectedLen, offset) &&
-         (GetLastSize(position_) > static_cast<int64_t>(expectedLen))) {
+        static_cast<size_t>(GetLastSize(position_)) > expectedLen) {
         MEDIA_LOG_I("ringBuffer.size() " PUBLIC_LOG_ZU " curReadTime_ " PUBLIC_LOG_D64
             " lastReadTime_ " PUBLIC_LOG_D64, ringBuffer_->GetSize(), curReadTime_, lastReadTime_);
         CheckReadTime();
