@@ -42,6 +42,10 @@ constexpr int32_t VIDEO_MIN_SIZE = 2;
 constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
 constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 4096;
 constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 4096;
+constexpr int32_t VIDEO_MAX_WIDTH_H263_SIZE = 2048;
+constexpr int32_t VIDEO_MAX_HEIGHT_H263_SIZE = 1152;
+constexpr int32_t VIDEO_MIN_WIDTH_H263_SIZE = 4;
+constexpr int32_t VIDEO_MIN_HEIGHT_H263_SIZE = 4;
 constexpr int32_t DEFAULT_VIDEO_WIDTH = 1920;
 constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
@@ -65,6 +69,7 @@ constexpr struct {
     const bool isEncoder;
 } SUPPORT_VCODEC[] = {
     {AVCodecCodecName::VIDEO_DECODER_AVC_NAME, CodecMimeType::VIDEO_AVC, "h264", false},
+    {AVCodecCodecName::VIDEO_DECODER_H263_NAME, CodecMimeType::VIDEO_H263, "h263", false},
     {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video", false},
     {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4", false},
 #ifdef SUPPORT_CODEC_RV
@@ -1622,6 +1627,22 @@ void FCodec::GetMpeg4esCapProf(std::vector<CapabilityData>& capaArray)
     }
 }
 
+void FCodec::GetH263CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.profiles = {static_cast<int32_t>(H263_PROFILE_BASELINE),
+                             static_cast<int32_t>(H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY)};
+        std::vector<int32_t> levels;
+        for (int32_t j = 0; j <= static_cast<int32_t>(H263Level::H263_LEVEL_70); ++j) {
+            levels.emplace_back(j);
+        }
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(H263_PROFILE_BASELINE), levels));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY), levels));
+    }
+    return;
+}
+
 void FCodec::GetAvcCapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
@@ -1678,6 +1699,13 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         } else if (capsData.mimeType == "video/mp4v-es") {
             capaArray.emplace_back(capsData);
             GetMpeg4esCapProf(capaArray);
+        } else if (capsData.mimeType == "video/3gpp") {
+            capsData.width.maxVal = VIDEO_MAX_WIDTH_H263_SIZE;
+            capsData.height.maxVal = VIDEO_MAX_HEIGHT_H263_SIZE;
+            capsData.width.minVal = VIDEO_MIN_WIDTH_H263_SIZE;
+            capsData.height.minVal = VIDEO_MIN_HEIGHT_H263_SIZE;
+            capaArray.emplace_back(capsData);
+            GetH263CapProf(capaArray);        
         } else {
             capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
             capaArray.emplace_back(capsData);

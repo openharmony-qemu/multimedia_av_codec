@@ -246,6 +246,12 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
  * @since 16
  */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2;
+/**
+ * @brief Enumerates the MIME types of video codecs
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_H263;
 
 /**
  * @brief Enumerates the types of audio and video muxer
@@ -837,6 +843,17 @@ typedef enum OH_MPEG4Profile {
 } OH_MPEG4Profile;
 
 /**
+ * @brief H263 Profile
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_H263Profile {
+    H263_PROFILE_BASELINE = 0,
+    H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY = 2,
+} OH_H263Profile;
+
+/**
  * @brief HEVC Profile
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -1072,6 +1089,23 @@ typedef enum OH_MPEG4Level {
     /** 6 level */
     MPEG4_LEVEL_6  = 9,
 }OH_MPEG4Level;
+
+/**
+ * @brief H263 Level.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 14
+ */
+typedef enum OH_H263Level {
+    H263_LEVEL_10 = 0,
+    H263_LEVEL_20 = 1,
+    H263_LEVEL_30 = 2,
+    H263_LEVEL_40 = 3,
+    H263_LEVEL_45 = 4,
+    H263_LEVEL_50 = 5,
+    H263_LEVEL_60 = 6,
+    H263_LEVEL_70 = 7
+}OH_H263Level;
 
 /**
  * @brief AVC Level.

@@ -68,6 +68,7 @@ public:
     static void SetMpeg4LevelsProfileGroup1(CapabilityData& capsData);
     static void SetMpeg4LevelsProfileGroup2(CapabilityData& capsData);
     static void SetMpeg4Profiles(CapabilityData& capsData);
+    static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
     static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
     struct FBuffer {
     public:
