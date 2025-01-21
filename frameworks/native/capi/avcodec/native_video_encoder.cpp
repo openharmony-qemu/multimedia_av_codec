@@ -317,6 +317,7 @@ private:
                 return reinterpret_cast<OH_AVFormat *>(iter->second.GetRefPtr());
             }
         }
+        CHECK_AND_RETURN_RET_LOG(object->format_ != nullptr, nullptr, "object format is nullptr");
         OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat();
         object->format_ = std::move(*parameter);
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVFormat");
