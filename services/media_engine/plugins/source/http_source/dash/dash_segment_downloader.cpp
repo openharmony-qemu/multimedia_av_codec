@@ -657,7 +657,7 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
         std::lock_guard<std::mutex> lock(segmentMutex_);
         isAllSegmentFinished_.store(false);
         for (const auto &it: segmentList_) {
-            if (it == nullptr || buffer_->GetHead() > it->bufferPosTail_) {
+            if (it == nullptr || (buffer_->GetHead() > it->bufferPosTail_ && it->bufferPosTail_ > 0)) {
                 continue;
             }
 
