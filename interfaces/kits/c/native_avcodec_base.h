@@ -266,6 +266,7 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU;
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;
 
 /**
  * @brief Enumerates the MIME type of audio low bitrate voice codec.
@@ -910,6 +911,11 @@ typedef enum OH_AVOutputFormat {
      * @since 12
      */
     AV_OUTPUT_FORMAT_WAV = 10,
+    /**
+     * The muxer output aac file format.
+     * @since 16
+     */
+    AV_OUTPUT_FORMAT_AAC = 11,
 } OH_AVOutputFormat;
 
 /**
