@@ -268,8 +268,8 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h, OHOS::Rect& damage)
             static_cast<int32_t>(rect.nLeft + rect.nWidth) - 1);
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM,
             static_cast<int32_t>(rect.nTop + rect.nHeight) - 1);
-        crop_.left = rect.nLeft;
-        crop_.top = rect.nTop;
+        crop_.left = static_cast<uint32_t>(rect.nLeft);
+        crop_.top = static_cast<uint32_t>(rect.nTop);
         crop_.width = rect.nWidth;
         crop_.height = rect.nHeight;
     }
