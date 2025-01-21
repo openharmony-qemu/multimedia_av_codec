@@ -49,7 +49,9 @@ constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
-
+int32_t g_strideSurface = 0;
+int32_t g_sliceSurface = 0;
+bool g_yuvSurface = false;
 SHA512_CTX g_c;
 uint8_t g_md[SHA512_DIGEST_LENGTH];
 VDecAPI11Sample *dec_sample = nullptr;
@@ -69,13 +71,31 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
 
 class ConsumerListenerBuffer : public IBufferConsumerListener {
 public:
-    ConsumerListenerBuffer(sptr<Surface> cs, std::string_view name) : cs(cs) {};
-    ~ConsumerListenerBuffer() {}
+    ConsumerListenerBuffer(sptr<Surface> cs, std::string_view name) : cs(cs)
+    {
+        outFile_ = std::make_unique<std::ofstream>();
+        outFile_->open(name.data(), std::ios::out | std::ios::binary);
+    };
+    ~ConsumerListenerBuffer()
+    {
+        if (outFile_ != nullptr) {
+            outFile_->close();
+        }
+    }
     void OnBufferAvailable() override
     {
         sptr<SurfaceBuffer> buffer;
         int32_t flushFence;
         cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
+        if (buffer == nullptr) {
+            cout << "surface is nullptr" << endl;
+            return;
+        } else {
+            if (g_yuvSurface && outFile_ != nullptr) {
+                int32_t frameSize = (g_strideSurface * g_sliceSurface * THREE) >> 1;
+                outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), frameSize);
+            }
+        }
         cs->ReleaseBuffer(buffer, -1);
     }
 
@@ -83,6 +103,7 @@ private:
     int64_t timestamp = 0;
     Rect damage = {};
     sptr<Surface> cs {nullptr};
+    std::unique_ptr<std::ofstream> outFile_;
 };
 
 VDecAPI11Sample::~VDecAPI11Sample()
@@ -133,6 +154,8 @@ void VdecAPI11FormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userDa
     dec_sample->sliceHeight_ = sliceHeight;
     dec_sample->picWidth_ = picWidth;
     dec_sample->picHeight_ = picHeight;
+    g_strideSurface = stride;
+    g_sliceSurface = sliceHeight;
     if (dec_sample->isResChangeStream) {
         static int32_t resCount = 0;
         int32_t cropBottom = 0;
@@ -333,6 +356,16 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
 void VDecAPI11Sample::CreateSurface()
 {
     cs[0] = Surface::CreateSurfaceAsConsumer();
+    if (cs[0] == nullptr) {
+        cout << "Create the surface consummer fail" << endl;
+        return;
+    }
+    GSError err = cs[0]->SetDefaultUsage(BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER | BUFFER_USAGE_CPU_READ);
+    if (err == GSERROR_OK) {
+        cout << "set consumer usage succ" << endl;
+    } else {
+        cout << "set consumer usage failed" << endl;
+    }
     sptr<IBufferConsumerListener> listener = new ConsumerListenerBuffer(cs[0], OUT_DIR);
     cs[0]->RegisterConsumerListener(listener);
     auto p = cs[0]->GetProducer();
@@ -597,6 +630,9 @@ void VDecAPI11Sample::InFuncTest()
 
 void VDecAPI11Sample::InputFuncTest()
 {
+    if (outputYuvSurface) {
+        g_yuvSurface = true;
+    }
     bool flag = true;
     while (flag) {
         if (!isRunning_.load()) {
