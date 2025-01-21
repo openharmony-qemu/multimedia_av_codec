@@ -40,26 +40,13 @@
 #include <stdint.h>
 #include "native_averrors.h"
 #include "native_avformat.h"
+#include "native_avcodec_base.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct OH_AVCapability OH_AVCapability;
-
-/**
- * @brief The bitrate mode of encoder.
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 10
- */
-typedef enum OH_BitrateMode {
-    /* Constant Bit rate mode. */
-    BITRATE_MODE_CBR = 0,
-    /* Variable Bit rate mode. */
-    BITRATE_MODE_VBR = 1,
-    /* Constant Quality mode. */
-    BITRATE_MODE_CQ = 2
-} OH_BitrateMode;
 
 /**
  * @brief Range contain min and max value

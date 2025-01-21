@@ -48,6 +48,9 @@ extern "C" {
 /**
  * @brief Configure frame parameters. This interface can be used to set the encode parameters
  * of the frame corresponding to the index, take effect only in Surface mode.
+ * It is nedd to call {@link OH_VideoEncoder_RegisterParametercallbacks} interface to register bedfore use.
+ * In Buffer mode, OH_AVBuffer can directly carry the encoding parameters of frames.
+ * Currently, frame level QPMin/QPMax parameters are supported, and specify LTR to set the reference frame.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec OH_AVCodec instance
  * @param index The index corresponding to the encode frame
@@ -196,7 +199,10 @@ OH_AVErrCode OH_VideoEncoder_Prepare(OH_AVCodec *codec);
 
 /**
  * @brief Start the encoder, this interface must be called after the Prepare is successful. After being
- * successfully started, the encoder will start reporting NeedInputData events.
+ * successfully started, the encoder will start reporting NeedInputData events. In Surface mode, OnNewOutputBuffer
+ * will be triggered for each completed frame encoding after a correct input is received on the surface.
+ * In Buffer mode, the encoder trigger an input callback immediately. Each time the caller completes an input,
+ * the encoder performs encoding, OnNewOutputBuffer will be triggered for each completed frame encoding.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
@@ -232,7 +238,7 @@ OH_AVErrCode OH_VideoEncoder_Stop(OH_AVCodec *codec);
  * @brief Clear the input and output data buffered and parameters in the encoder,
  * for example, PPS/SPS in H264 format. After this interface is called,
  * all the buffer indexes previously reported through the asynchronous callback will be invalidated,
- * make sure not to access the buffers corresponding to these indexes.
+ * make sure not to access the buffers corresponding to these indexes. This interface cannot be called continuously.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
@@ -305,7 +311,6 @@ OH_AVErrCode OH_VideoEncoder_SetParameter(OH_AVCodec *codec, OH_AVFormat *format
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
  * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non encoder instance or NULL.
- * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * @since 9
  * @version 1.0
@@ -378,7 +383,9 @@ OH_AVErrCode OH_VideoEncoder_PushInputData(OH_AVCodec *codec, uint32_t index, OH
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
  * {@link AV_ERR_NO_MEMORY}, internal errors in the input encode instance, such as an abnormal NULL.
- * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non encoder instance or NULL.
+ * {@link AV_ERR_INVALID_VAL}
+ * 1. the input codec pointer is non encoder instance or NULL;
+ * 2. unsupported input format parameters.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
@@ -441,8 +448,7 @@ OH_AVErrCode OH_VideoEncoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index)
 OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec);
 
 /**
- * @brief Check whether the current codec instance is valid. It can be used fault recovery or app
- * switchback from the background
+ * @brief Check whether the current codec instance is valid.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param isValid Output Parameter. A pointer to a boolean instance, it is true if the codec instance is valid,
@@ -459,6 +465,7 @@ OH_AVErrCode OH_VideoEncoder_IsValid(OH_AVCodec *codec, bool *isValid);
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @since 9
  * @version 1.0
+ * @useinstead OH_BitrateMode
  */
 typedef enum OH_VideoEncodeBitrateMode {
     /* constant bit rate mode. */
