@@ -49,6 +49,7 @@ const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
 static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
 static constexpr int32_t INVALID_TRACK_ID = -1;
+constexpr uint32_t THREAD_PRIORITY_41 = 7;
 std::map<OHOS::Media::TrackType, OHOS::Media::StreamType> TRACK_TO_STREAM_MAP = {
     {OHOS::Media::TrackType::TRACK_VIDEO, OHOS::Media::StreamType::VIDEO},
     {OHOS::Media::TrackType::TRACK_AUDIO, OHOS::Media::StreamType::AUDIO},
@@ -561,11 +562,20 @@ Status MediaDemuxer::AddDemuxerCopyTask(uint32_t trackId, TaskType type)
     }
 
     std::unique_ptr<Task> task = std::make_unique<Task>(taskName, playerId_, type);
+<<<<<<< HEAD
     if (task == nullptr) {
         MEDIA_LOG_W("Create task failed, track:" PUBLIC_LOG_U32 ", type:" PUBLIC_LOG_D32,
             trackId, type);
         return Status::OK;
     }
+=======
+    FALSE_RETURN_V_MSG_W(task != nullptr, Status::OK,
+        "Create task failed, track:" PUBLIC_LOG_U32 ", type:" PUBLIC_LOG_D32,
+        trackId, type);
+#ifdef SUPPORT_START_STOP_ON_DEMAND
+    task->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
+#endif
+>>>>>>> 1ce3ac4ca (update thread priority)
     taskMap_[trackId] = std::move(task);
     taskMap_[trackId]->RegisterJob([this, trackId] { return ReadLoop(trackId); });
 
