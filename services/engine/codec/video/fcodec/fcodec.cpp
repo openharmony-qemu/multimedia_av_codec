@@ -1638,7 +1638,8 @@ void FCodec::GetH263CapProf(std::vector<CapabilityData> &capaArray)
             levels.emplace_back(j);
         }
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(H263_PROFILE_BASELINE), levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY), levels));
+        capsData.profileLevelsMap.insert(
+            std::make_pair(static_cast<int32_t>(H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY), levels));
     }
     return;
 }
@@ -1705,7 +1706,7 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
             capsData.width.minVal = VIDEO_MIN_WIDTH_H263_SIZE;
             capsData.height.minVal = VIDEO_MIN_HEIGHT_H263_SIZE;
             capaArray.emplace_back(capsData);
-            GetH263CapProf(capaArray);        
+            GetH263CapProf(capaArray);
         } else {
             capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
             capaArray.emplace_back(capsData);

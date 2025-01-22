@@ -114,13 +114,13 @@ private:
 };
 
 
-struct H263ReaderInfo 
+struct H263ReaderInfo
 {
     std::string inPath;
 };
 
 
-class H263Reader : public DataProducerBase 
+class H263Reader : public DataProducerBase
 {
 public:
     int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
@@ -130,7 +130,7 @@ public:
     std::mutex mutex_;
     int32_t frameInputCount_ = 0;
 private:
-    class H263UnitReader 
+    class H263UnitReader
     {
     public:
         explicit H263UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
@@ -147,7 +147,7 @@ private:
         std::shared_ptr<std::ifstream> inputFile_ = nullptr;
     };
 
-    class H263MetaUnitReader : public H263UnitReader 
+    class H263MetaUnitReader : public H263UnitReader
     {
     public:
         explicit H263MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
@@ -158,15 +158,13 @@ private:
 
     private:
         bool IsEOF() override;
-        uint8_t* getDelimiterPos(uint8_t* addrstart,uint8_t* addrend);
+        uint8_t* getDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
         std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
         uint32_t prereadBufferSize_ = 0;
         uint32_t pPrereadBuffer_ = 0;
     };
-
     
-    class H263Detector
-    {
+    class H263Detector{
     public:
         uint8_t* getDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
         const uint8_t *GetH263TypeAddr(const uint8_t *bufferAddr);

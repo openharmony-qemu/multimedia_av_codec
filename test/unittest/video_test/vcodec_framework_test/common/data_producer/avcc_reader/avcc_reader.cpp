@@ -44,6 +44,10 @@ constexpr uint8_t H263_HEAD_1[] = {0x00, 0x00, 0x81};
 constexpr uint8_t H263_HEAD_2[] = {0x00, 0x00, 0x82};
 constexpr uint8_t H263_HEAD_3[] = {0x00, 0x00, 0x83};
 constexpr uint8_t H263_HEAD_LEN = sizeof(H263_HEAD_0);
+constexpr uint8_t H263_HEAD_MASK_4_1=0x1c;
+constexpr uint8_t H263_HEAD_MASK_4_2=0x02;
+constexpr uint8_t H263_HEAD_MASK_5_1=0x80;
+constexpr uint8_t H263_HEAD_MASK_5_2=0x70;
 
 static inline int64_t GetTimeUs()
 {
@@ -458,7 +462,8 @@ uint8_t MpegReader::Mpeg4Detector::GetMpegType(const uint8_t *bufferAddr)
 int32_t H263Reader::Init(const std::shared_ptr<H263ReaderInfo> &info)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.c_str(),std::ios::binary | std::ios::in);
+    std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.c_str()
+                                                                              , std::ios::binary | std::ios::in);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile != nullptr && inputFile->is_open(),
                                       AV_ERR_INVALID_VAL, "Open input file failed");
     h263UnitReader_= std::static_pointer_cast<H263UnitReader>(std::make_shared<H263MetaUnitReader>(inputFile));
@@ -513,7 +518,7 @@ int32_t H263Reader::H263MetaUnitReader::ReadH263Unit(uint8_t *bufferAddr, int32_
     UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Got a invalid buffer addr");
     UNITTEST_CHECK_AND_RETURN_RET_LOG(h263Unit_, AV_ERR_INVALID_VAL, "h263 unit buffer is nullptr");
     bufferSize = h263Unit_->size();
-    memcpy(bufferAddr, h263Unit_->data(), bufferSize);
+    memcpy_s(bufferAddr, bufferSize, h263Unit_->data(), bufferSize);
 
     if (!IsEOF()) {
         isEosFrame = false;
@@ -545,16 +550,16 @@ bool H263Reader::H263MetaUnitReader::IsEOF()
     return (pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->peek() == EOF);
 }
 
-uint8_t* H263Reader::H263MetaUnitReader::getDelimiterPos(uint8_t* addrstart,uint8_t* addrend)
+uint8_t* H263Reader::H263MetaUnitReader::getDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
 {
-    uint8_t* pos_min = std::search(addrstart,addrend, std::begin(H263_HEAD_0), std::end(H263_HEAD_0));
-    auto pos1 = std::search(addrstart,addrend, std::begin(H263_HEAD_1), std::end(H263_HEAD_1));
+    uint8_t* pos_min = std::search(addrstart, addrend, std::begin(H263_HEAD_0), std::end(H263_HEAD_0));
+    auto pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_1), std::end(H263_HEAD_1));
     if (pos1<pos_min)
         pos_min=pos1;
-    pos1 = std::search(addrstart,addrend, std::begin(H263_HEAD_2), std::end(H263_HEAD_2));
+    pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_2), std::end(H263_HEAD_2));
     if (pos1<pos_min)
         pos_min=pos1;
-    pos1 = std::search(addrstart,addrend, std::begin(H263_HEAD_3), std::end(H263_HEAD_3));
+    pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_3), std::end(H263_HEAD_3));
     if (pos1<pos_min)
         pos_min=pos1;
     return pos_min;
@@ -567,17 +572,17 @@ void H263Reader::H263MetaUnitReader::PrereadH263Unit()
     auto pBuffer = h263Unit_->data();
     uint32_t bufferSize = 0;
     h263Unit_->resize(MAX_NALU_SIZE);
-    do 
+    do
     {
-        uint8_t* pos1 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_,prereadBuffer_.get() + prereadBufferSize_);
+        uint8_t* pos1 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_
+                                       , prereadBuffer_.get() + prereadBufferSize_);
         uint32_t size1 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos1);
-        //printf("%p -> pos1=%p last=%p size1=%u\n",prereadBuffer_.get(),pos1,prereadBuffer_.get() + prereadBufferSize_,size1);
-        auto pos2 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_, prereadBuffer_.get()+ pPrereadBuffer_ + size1);
+        auto pos2 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_
+                                  , prereadBuffer_.get()+ pPrereadBuffer_ + size1);
         uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos2);
-        //printf("%p -> pos2=%p last=%p size=%u\n",prereadBuffer_.get(),pos1,prereadBuffer_.get() + prereadBufferSize_,size);
-        if (size == 0) 
-        {
-            auto pos3 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_ + size1 + H263_HEAD_LEN, prereadBuffer_.get() + prereadBufferSize_);
+        if (size == 0) {
+            auto pos3 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_ + size1 + H263_HEAD_LEN
+                                      , prereadBuffer_.get() + prereadBufferSize_);
             uint32_t size2 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos3);
             auto ret = memcpy_s(pBuffer, size2, prereadBuffer_.get() + pPrereadBuffer_, size2);
             CHECK_AND_RETURN_LOG(ret == EOK, "First Copy buffer failed");
@@ -585,19 +590,17 @@ void H263Reader::H263MetaUnitReader::PrereadH263Unit()
             bufferSize += size2;
             pBuffer += size2;
             UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
-         } 
-         else 
-            if (size1 > size) 
-            {
+        }
+        else {
+            if (size1 > size) {
                 auto ret = memcpy_s(pBuffer, size, prereadBuffer_.get() + pPrereadBuffer_, size);
                 CHECK_AND_RETURN_LOG(ret == EOK, "Last Copy buffer failed");
                 pPrereadBuffer_ += size;
                 bufferSize += size;
                 pBuffer += size;
                 UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
-            } 
-            else 
-            {
+            }
+            else {
                 auto ret = memcpy_s(pBuffer, size1, prereadBuffer_.get() + pPrereadBuffer_, size1);
                 CHECK_AND_RETURN_LOG(ret == EOK, "Comom Copy buffer failed");
                 pPrereadBuffer_ += size1;
@@ -605,9 +608,9 @@ void H263Reader::H263MetaUnitReader::PrereadH263Unit()
                 pBuffer += size1;
                 UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
             }
+        }
         PrereadFile();
-        auto ret = memcpy_s(prereadBuffer_.get(), H263_HEAD_LEN, pBuffer - H263_HEAD_LEN,
-            H263_HEAD_LEN);
+        auto ret = memcpy_s(prereadBuffer_.get(), H263_HEAD_LEN, pBuffer - H263_HEAD_LEN, H263_HEAD_LEN);
         CHECK_AND_RETURN_LOG(ret == EOK, "Buffer End Copy buffer failed");
         bufferSize -= H263_HEAD_LEN;
         pBuffer -= H263_HEAD_LEN;
@@ -619,26 +622,27 @@ void H263Reader::H263MetaUnitReader::PrereadH263Unit()
 
 uint8_t* H263Reader::H263Detector::getDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
 {
-    uint8_t* pos_min = std::search(addrstart,addrend, std::begin(H263_HEAD_0), std::end(H263_HEAD_0));
-    auto pos1 = std::search(addrstart,addrend, std::begin(H263_HEAD_1), std::end(H263_HEAD_1));
+    uint8_t* pos_min = std::search(addrstart, addrend, std::begin(H263_HEAD_0), std::end(H263_HEAD_0));
+    auto pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_1), std::end(H263_HEAD_1));
     if (pos1<pos_min)
         pos_min=pos1;
-    pos1 = std::search(addrstart,addrend, std::begin(H263_HEAD_2), std::end(H263_HEAD_2));
+    pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_2), std::end(H263_HEAD_2));
     if (pos1<pos_min)
         pos_min=pos1;
-    pos1 = std::search(addrstart,addrend, std::begin(H263_HEAD_3), std::end(H263_HEAD_3));
+    pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_3), std::end(H263_HEAD_3));
     if (pos1<pos_min)
         pos_min=pos1;
     return pos_min;
 }
 const uint8_t* H263Reader::H263Detector::GetH263TypeAddr(const uint8_t *bufferAddr)
 {
-    auto pos1 = getDelimiterPos((uint8_t*)bufferAddr, (uint8_t*)bufferAddr + H263_HEAD_LEN + 1 /*prereadBufferSize_*/);
-    auto size = std::distance((uint8_t*)bufferAddr, pos1);
+    auto pos1 = getDelimiterPos(reinterpret_cast<uint8_t*>(bufferAddr)
+                              , reinterpret_cast<uint8_t*>(bufferAddr) + H263_HEAD_LEN + 1 /*prereadBufferSize_*/);
+    auto size = std::distance(reinterpret_cast<uint8_t*>(bufferAddr), pos1);
     if (size == 0) {
         return nullptr;
     }
-    auto pos = getDelimiterPos((uint8_t*)bufferAddr, (uint8_t*)bufferAddr + size);
+    auto pos = getDelimiterPos(reinterpret_cast<uint8_t*>(bufferAddr), reinterpret_cast<uint8_t*>(bufferAddr) + size);
     return pos;
 }
 
@@ -652,14 +656,13 @@ uint8_t H263Reader::H263Detector::GetH263Type(const uint8_t *bufferAddr)
     if (bufferAddr == nullptr) {
         return 1;
     }
-
-    if((bufferAddr[4] & 0x1c) != 0x1c)
-        return (bufferAddr[4] & 0x02) == 0 ? 1 : 0;
-
-    if((bufferAddr[5] & 0x80) == 0)
-        return (bufferAddr[5] & 0x70) == 0 ? 1 : 0;
-
-    return (bufferAddr[7] & 0x1c) == 0 ? 1 : 0;
+    if ((bufferAddr[4] & H263_HEAD_MASK_4_1) != H263_HEAD_MASK_4_1) {
+        return (bufferAddr[4] & H263_HEAD_MASK_4_2) == 0 ? 1 : 0;
+    }
+    if ((bufferAddr[5] & H263_HEAD_MASK_5_1) == 0) {
+        return (bufferAddr[5] & H263_HEAD_MASK_5_2) == 0 ? 1 : 0;
+    }
+    return (bufferAddr[7] & H263_HEAD_MASK_4_1) == 0 ? 1 : 0;
 }
 
 void H263Reader::H263MetaUnitReader::PrereadFile()
@@ -667,7 +670,7 @@ void H263Reader::H263MetaUnitReader::PrereadFile()
     CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nallptr");
     inputFile_->read(reinterpret_cast<char *>(prereadBuffer_.get()),
         PREREAD_BUFFER_SIZE);
-    prereadBufferSize_ = inputFile_->gcount()/* + MPEG4_FRAME_HEAD_LEN*/;
+    prereadBufferSize_ = inputFile_->gcount(); //+ MPEG4_FRAME_HEAD_LEN
     pPrereadBuffer_ = 0; //MPEG2_FRAME_HEAD_LEN;
 }
 

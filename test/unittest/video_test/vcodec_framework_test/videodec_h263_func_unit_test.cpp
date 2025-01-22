@@ -27,8 +27,8 @@
 #endif
 #include "videodec_func_test_suit.h"
 
-const int DEFAULT_WIDTH_H263=1920;
-const int DEFAULT_HEIGHT_H263=1080;
+const int DEFAULT_WIDTH_H263 = 1920;
+const int DEFAULT_HEIGHT_H263 = 1080;
 
 using namespace std;
 using namespace OHOS;
@@ -52,7 +52,7 @@ void TEST_SUIT::SetUpTestCase(void)
 void TEST_SUIT::CreateByNameWithParam(int32_t param)
 {
     std::string codecName = "";
-    switch (param) {        
+    switch (param) {
         case VCodecTestCode::SW_H263:
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_H263.data(), false,
                                                                         AVCodecCategory::AVCODEC_SOFTWARE);

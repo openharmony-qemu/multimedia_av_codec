@@ -253,8 +253,7 @@ bool VideoDecSample::InitInputFile()
         if (inPath_.find("h263") != std::string::npos) {
             int32_t ret = CreateH263Reader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateH263Reader failed");
-        }
-        else if (inPath_.find("h264") != std::string::npos || inPath_.find("h265") != std::string::npos) {
+        } else if (inPath_.find("h264") != std::string::npos || inPath_.find("h265") != std::string::npos) {
             int32_t ret = CreateAvccReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateAvccReader failed");
         } else {

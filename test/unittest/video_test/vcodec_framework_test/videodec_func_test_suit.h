@@ -47,7 +47,7 @@ struct OH_AVCodecAsyncCallback GetVoidAsyncCallback()
     cb.onNeedInputData = [](OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData) {
         (void)codec;
         (void)index;
-        (void)data;using namespace OHOS::MediaAVCodec;
+        (void)data;
         (void)userData;
     };
     cb.onNeedOutputData = [](OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
