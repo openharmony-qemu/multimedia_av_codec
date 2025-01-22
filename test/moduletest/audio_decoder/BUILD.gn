@@ -93,6 +93,7 @@ ohos_unittest("audio_decoder_module_test") {
   ]
 
   external_deps = [
+    "audio_framework:audio_client",
     "audio_framework:audio_renderer",
     "bounds_checking_function:libsec_static",
     "c_utils:utils",
