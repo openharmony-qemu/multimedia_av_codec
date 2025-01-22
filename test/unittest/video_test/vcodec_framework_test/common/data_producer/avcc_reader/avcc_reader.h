@@ -114,8 +114,7 @@ private:
 };
 
 
-struct H263ReaderInfo
-{
+struct H263ReaderInfo {
     std::string inPath;
 };
 

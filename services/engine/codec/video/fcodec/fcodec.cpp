@@ -1694,9 +1694,7 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.pixFormat = {
             static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
-        if (capsData.mimeType == "video/mpeg2") {
-            capaArray.emplace_back(capsData);
-            GetMpeg2CapProf(capaArray);
+        if (capsData.mimeType == "video/mpeg2") { capaArray.emplace_back(capsData); GetMpeg2CapProf(capaArray);
         } else if (capsData.mimeType == "video/mp4v-es") {
             capaArray.emplace_back(capsData);
             GetMpeg4esCapProf(capaArray);
@@ -1707,9 +1705,7 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
             capsData.height.minVal = VIDEO_MIN_HEIGHT_H263_SIZE;
             capaArray.emplace_back(capsData);
             GetH263CapProf(capaArray);
-        } else {
-            capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
-            capaArray.emplace_back(capsData);
+        } else { capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE; capaArray.emplace_back(capsData);
             GetAvcCapProf(capaArray);
         }
     }
