@@ -576,15 +576,15 @@ void H263Reader::H263MetaUnitReader::PrereadH263Unit()
     uint32_t bufferSize = 0;
     h263Unit_->resize(MAX_NALU_SIZE);
     do {
-        uint8_t* pos1 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_
-                                       , prereadBuffer_.get() + prereadBufferSize_);
+        uint8_t* pos1 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_,
+                                        prereadBuffer_.get() + prereadBufferSize_);
         uint32_t size1 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos1);
         auto pos2 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_,
                                     prereadBuffer_.get()+ pPrereadBuffer_ + size1);
         uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos2);
         if (size == 0) {
             auto pos3 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_ + size1 + H263_HEAD_LEN,
-                                         prereadBuffer_.get() + prereadBufferSize_);
+                                        prereadBuffer_.get() + prereadBufferSize_);
             uint32_t size2 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos3);
             auto ret = memcpy_s(pBuffer, size2, prereadBuffer_.get() + pPrereadBuffer_, size2);
             CHECK_AND_RETURN_LOG(ret == EOK, "First Copy buffer failed");
@@ -637,7 +637,7 @@ uint8_t* H263Reader::H263Detector::getDelimiterPos(uint8_t* addrstart, uint8_t* 
 const uint8_t* H263Reader::H263Detector::GetH263TypeAddr(const uint8_t *bufferAddr)
 {
     auto pos1 = getDelimiterPos(reinterpret_cast<uint8_t*>(bufferAddr),
-                                 reinterpret_cast<uint8_t*>(bufferAddr) + H263_HEAD_LEN + 1 /*prereadBufferSize_*/);
+                                reinterpret_cast<uint8_t*>(bufferAddr) + H263_HEAD_LEN + 1 /*prereadBufferSize_*/);
     auto size = std::distance(reinterpret_cast<uint8_t*>(bufferAddr), pos1);
     if (size == 0) {
         return nullptr;

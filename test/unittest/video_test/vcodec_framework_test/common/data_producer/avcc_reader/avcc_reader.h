@@ -130,8 +130,7 @@ public:
     std::mutex mutex_;
     int32_t frameInputCount_ = 0;
 private:
-    class H263UnitReader
-    {
+    class H263UnitReader {
     public:
         explicit H263UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
         virtual ~H263UnitReader() {};
