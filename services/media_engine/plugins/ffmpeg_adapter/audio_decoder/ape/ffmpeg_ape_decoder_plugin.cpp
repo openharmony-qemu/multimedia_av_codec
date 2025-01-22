@@ -30,6 +30,8 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCo
 
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 2;
+constexpr int32_t INPUT_BUFFER_SIZE_MIN = 300000;
+constexpr int32_t OUTPUT_BUFFER_SIZE_MIN = 50000;
 constexpr int32_t DEFAULT_FRAME_BLOCK = 73728;
 constexpr int32_t FRAME_BLOCK_NUM = 4;
 constexpr int32_t EXTRA_DATA_SIZE = 6;
@@ -154,8 +156,8 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
         codecCtx->bits_per_coded_sample = SetBitsDepth(sampleFmt);
     }
     CalcBufferSize(parameter, codecCtx->extradata);
-    format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, sampleSizePerFrame);
-    format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, sampleSizePerOutBuffer);
+    format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
+    format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
     ret = basePlugin->OpenContext();
     return ret;
 }
@@ -226,12 +228,17 @@ bool FFmpegAPEDecoderPlugin::CheckChannelCount(const std::shared_ptr<Meta> &form
 
 int32_t FFmpegAPEDecoderPlugin::GetInputBufferSize()
 {
-    basePlugin->SetMaxInputSize(sampleSizePerFrame);
+    if (INPUT_BUFFER_SIZE_MIN > sampleSizePerFrame) {
+        sampleSizePerFrame = INPUT_BUFFER_SIZE_MIN;
+    }
     return sampleSizePerFrame;
 }
 
 int32_t FFmpegAPEDecoderPlugin::GetOutputBufferSize()
 {
+    if (OUTPUT_BUFFER_SIZE_MIN > sampleSizePerOutBuffer) {
+        sampleSizePerOutBuffer = OUTPUT_BUFFER_SIZE_MIN;
+    }
     return sampleSizePerOutBuffer;
 }
 
@@ -252,6 +259,7 @@ void FFmpegAPEDecoderPlugin::CalcBufferSize(const std::shared_ptr<Meta> &paramet
     if (samplePreFrame != 0) {
         sampleSizePerFrame = channels_ * samplePreFrame * depth;
         sampleSizePerOutBuffer = sampleSizePerFrame / REDUNDANCY_SET;
+        AVCODEC_LOGI("APE sampleSize %{public}d %{public}d", sampleSizePerFrame, sampleSizePerOutBuffer);
         return;
     }
     
