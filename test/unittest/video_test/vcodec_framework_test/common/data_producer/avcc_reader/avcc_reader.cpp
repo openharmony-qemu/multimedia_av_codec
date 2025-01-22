@@ -636,13 +636,13 @@ uint8_t* H263Reader::H263Detector::getDelimiterPos(uint8_t* addrstart, uint8_t* 
 }
 const uint8_t* H263Reader::H263Detector::GetH263TypeAddr(const uint8_t *bufferAddr)
 {
-    auto pos1 = getDelimiterPos(reinterpret_cast<uint8_t*>(bufferAddr),
-                                reinterpret_cast<uint8_t*>(bufferAddr) + H263_HEAD_LEN + 1 /*prereadBufferSize_*/);
-    auto size = std::distance(reinterpret_cast<uint8_t*>(bufferAddr), pos1);
+    auto pos1 = getDelimiterPos(const_cast<uint8_t*>(bufferAddr),
+                                const_cast<uint8_t*>(bufferAddr) + H263_HEAD_LEN + 1 /*prereadBufferSize_*/);
+    auto size = std::distance(const_cast<uint8_t*>(bufferAddr), pos1);
     if (size == 0) {
         return nullptr;
     }
-    auto pos = getDelimiterPos(reinterpret_cast<uint8_t*>(bufferAddr), reinterpret_cast<uint8_t*>(bufferAddr) + size);
+    auto pos = getDelimiterPos(const_cast<uint8_t*>(bufferAddr), const_cast<uint8_t*>(bufferAddr) + size);
     return pos;
 }
 
@@ -668,7 +668,7 @@ uint8_t H263Reader::H263Detector::GetH263Type(const uint8_t *bufferAddr)
 void H263Reader::H263MetaUnitReader::PrereadFile()
 {
     CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nallptr");
-    inputFile_->read(reinterpret_cast<char *>(prereadBuffer_.get()),
+    inputFile_->read(const_cast<char *>(prereadBuffer_.get()),
         PREREAD_BUFFER_SIZE);
     prereadBufferSize_ = inputFile_->gcount(); //+ MPEG4_FRAME_HEAD_LEN
     pPrereadBuffer_ = 0; //MPEG2_FRAME_HEAD_LEN;

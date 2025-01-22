@@ -1671,10 +1671,10 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.maxInstance = VIDEO_INSTANCE_SIZE;
         capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
         capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
-        capsData.width.minVal = VIDEO_MIN_SIZE;
-        capsData.height.minVal = VIDEO_MIN_SIZE;
-        capsData.width.maxVal = VIDEO_MAX_WIDTH_SIZE;
-        capsData.height.maxVal = VIDEO_MAX_HEIGHT_SIZE;
+        capsData.width.minVal = capsData.mimeType == "video/3gpp" ? VIDEO_MIN_WIDTH_H263_SIZE : VIDEO_MIN_SIZE;
+        capsData.height.minVal = capsData.mimeType == "video/3gpp" ? VIDEO_MIN_HEIGHT_H263_SIZE : VIDEO_MIN_SIZE;
+        capsData.width.maxVal = capsData.mimeType == "video/3gpp" ? VIDEO_MAX_WIDTH_H263_SIZE : VIDEO_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = capsData.mimeType == "video/3gpp" ? VIDEO_MAX_HEIGHT_H263_SIZE : VIDEO_MAX_HEIGHT_SIZE;
         capsData.frameRate.minVal = 0;
         capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
         capsData.bitrate.minVal = 1;
@@ -1694,18 +1694,18 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.pixFormat = {
             static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
-        if (capsData.mimeType == "video/mpeg2") { capaArray.emplace_back(capsData); GetMpeg2CapProf(capaArray);
+        if (capsData.mimeType == "video/mpeg2") { 
+            capaArray.emplace_back(capsData); 
+            GetMpeg2CapProf(capaArray);
         } else if (capsData.mimeType == "video/mp4v-es") {
             capaArray.emplace_back(capsData);
             GetMpeg4esCapProf(capaArray);
         } else if (capsData.mimeType == "video/3gpp") {
-            capsData.width.maxVal = VIDEO_MAX_WIDTH_H263_SIZE;
-            capsData.height.maxVal = VIDEO_MAX_HEIGHT_H263_SIZE;
-            capsData.width.minVal = VIDEO_MIN_WIDTH_H263_SIZE;
-            capsData.height.minVal = VIDEO_MIN_HEIGHT_H263_SIZE;
             capaArray.emplace_back(capsData);
             GetH263CapProf(capaArray);
-        } else { capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE; capaArray.emplace_back(capsData);
+        } else {
+            capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
+            capaArray.emplace_back(capsData);
             GetAvcCapProf(capaArray);
         }
     }

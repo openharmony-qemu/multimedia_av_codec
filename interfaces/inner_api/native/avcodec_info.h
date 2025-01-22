@@ -714,7 +714,8 @@ enum H263Profile : int32_t {
     H263_PROFILE_CONVERSATIONAL_HIGH_COMPRESSION = 5, // ffmpeg not support
     H263_PROFILE_CONVERSATIONAL_INTERNET = 6, // ffmpeg not support
     H263_PROFILE_CONVERSATIONAL_PLUS_INTERLACE = 7, // ffmpeg not support
-    H263_PROFILE_HIGH_LATENCY = 8 // ffmpeg not support
+    H263_PROFILE_HIGH_LATENCY = 8, // ffmpeg not support
+    H263_PROFILE_BACKWARD_COMPATIBLE //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 };
 
 /**
