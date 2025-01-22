@@ -37,7 +37,7 @@ using namespace testing::ext;
 using namespace testing::mt;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 
-namespace {
+namespace VFTSUIT {
 std::atomic<int32_t> g_vdecCount = 0;
 std::string g_vdecName = "";
 

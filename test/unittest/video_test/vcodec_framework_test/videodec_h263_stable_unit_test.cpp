@@ -1038,8 +1038,8 @@ AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_004
  *           2. operate in input callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_005
-             , TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_005, 
+                TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);

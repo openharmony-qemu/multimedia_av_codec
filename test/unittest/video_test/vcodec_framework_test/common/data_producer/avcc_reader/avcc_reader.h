@@ -120,8 +120,7 @@ struct H263ReaderInfo
 };
 
 
-class H263Reader : public DataProducerBase
-{
+class H263Reader : public DataProducerBase {
 public:
     int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
     void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t mpegType, bool isEosFrame);

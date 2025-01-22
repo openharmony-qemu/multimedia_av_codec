@@ -1,7 +1,7 @@
 #ifndef VIDEODEC_FUNC_TEST_SUIT_H
 #define VIDEODEC_FUNC_TEST_SUIT_H
 
-namespace {
+namespace VFTSUIT {
 
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 struct OH_AVCodecCallback GetVoidCallback()
