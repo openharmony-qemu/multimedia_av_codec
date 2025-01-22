@@ -318,8 +318,8 @@ private:
             }
         }
         OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat();
-        object->format_ = std::move(*parameter);
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVFormat");
+        object->format_ = std::move(*parameter);
 
         std::lock_guard<std::shared_mutex> lock(videoEncObj->objListMutex_);
         auto iterAndRet = videoEncObj->inputFormatMap_.emplace(index, object);
