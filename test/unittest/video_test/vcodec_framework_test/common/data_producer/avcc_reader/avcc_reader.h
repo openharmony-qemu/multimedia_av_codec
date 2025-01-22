@@ -147,8 +147,7 @@ private:
         std::shared_ptr<std::ifstream> inputFile_ = nullptr;
     };
 
-    class H263MetaUnitReader : public H263UnitReader
-    {
+    class H263MetaUnitReader : public H263UnitReader {
     public:
         explicit H263MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
         int32_t ReadH263Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
@@ -164,7 +163,7 @@ private:
         uint32_t pPrereadBuffer_ = 0;
     };
     
-    class H263Detector{
+    class H263Detector {
     public:
         uint8_t* getDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
         const uint8_t *GetH263TypeAddr(const uint8_t *bufferAddr);

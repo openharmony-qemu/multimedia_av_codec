@@ -44,10 +44,13 @@ constexpr uint8_t H263_HEAD_1[] = {0x00, 0x00, 0x81};
 constexpr uint8_t H263_HEAD_2[] = {0x00, 0x00, 0x82};
 constexpr uint8_t H263_HEAD_3[] = {0x00, 0x00, 0x83};
 constexpr uint8_t H263_HEAD_LEN = sizeof(H263_HEAD_0);
-constexpr uint8_t H263_HEAD_MASK_4_1=0x1c;
-constexpr uint8_t H263_HEAD_MASK_4_2=0x02;
-constexpr uint8_t H263_HEAD_MASK_5_1=0x80;
-constexpr uint8_t H263_HEAD_MASK_5_2=0x70;
+constexpr uint8_t H263_HEAD_MASK_4_1 = 0x1c;
+constexpr uint8_t H263_HEAD_MASK_4_2 = 0x02;
+constexpr uint8_t H263_HEAD_MASK_5_1 = 0x80;
+constexpr uint8_t H263_HEAD_MASK_5_2 = 0x70;
+constexpr uint8_t H263_OFFSET_4 = 4;
+constexpr uint8_t H263_OFFSET_5 = 5;
+constexpr uint8_t H263_OFFSET_7 = 7;
 
 static inline int64_t GetTimeUs()
 {
@@ -462,8 +465,8 @@ uint8_t MpegReader::Mpeg4Detector::GetMpegType(const uint8_t *bufferAddr)
 int32_t H263Reader::Init(const std::shared_ptr<H263ReaderInfo> &info)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.c_str()
-                                                                              , std::ios::binary | std::ios::in);
+    std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.c_str(),
+                                                std::ios::binary | std::ios::in);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile != nullptr && inputFile->is_open(),
                                       AV_ERR_INVALID_VAL, "Open input file failed");
     h263UnitReader_= std::static_pointer_cast<H263UnitReader>(std::make_shared<H263MetaUnitReader>(inputFile));
@@ -572,17 +575,16 @@ void H263Reader::H263MetaUnitReader::PrereadH263Unit()
     auto pBuffer = h263Unit_->data();
     uint32_t bufferSize = 0;
     h263Unit_->resize(MAX_NALU_SIZE);
-    do
-    {
+    do {
         uint8_t* pos1 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_
                                        , prereadBuffer_.get() + prereadBufferSize_);
         uint32_t size1 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos1);
-        auto pos2 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_
-                                  , prereadBuffer_.get()+ pPrereadBuffer_ + size1);
+        auto pos2 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_,
+                                    prereadBuffer_.get()+ pPrereadBuffer_ + size1);
         uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos2);
         if (size == 0) {
-            auto pos3 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_ + size1 + H263_HEAD_LEN
-                                      , prereadBuffer_.get() + prereadBufferSize_);
+            auto pos3 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_ + size1 + H263_HEAD_LEN,
+                                         prereadBuffer_.get() + prereadBufferSize_);
             uint32_t size2 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos3);
             auto ret = memcpy_s(pBuffer, size2, prereadBuffer_.get() + pPrereadBuffer_, size2);
             CHECK_AND_RETURN_LOG(ret == EOK, "First Copy buffer failed");
@@ -590,8 +592,7 @@ void H263Reader::H263MetaUnitReader::PrereadH263Unit()
             bufferSize += size2;
             pBuffer += size2;
             UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
-        }
-        else {
+        } else {
             if (size1 > size) {
                 auto ret = memcpy_s(pBuffer, size, prereadBuffer_.get() + pPrereadBuffer_, size);
                 CHECK_AND_RETURN_LOG(ret == EOK, "Last Copy buffer failed");
@@ -599,8 +600,7 @@ void H263Reader::H263MetaUnitReader::PrereadH263Unit()
                 bufferSize += size;
                 pBuffer += size;
                 UNITTEST_CHECK_AND_BREAK_LOG((pPrereadBuffer_ == prereadBufferSize_) && !inputFile_->eof(), "");
-            }
-            else {
+            } else {
                 auto ret = memcpy_s(pBuffer, size1, prereadBuffer_.get() + pPrereadBuffer_, size1);
                 CHECK_AND_RETURN_LOG(ret == EOK, "Comom Copy buffer failed");
                 pPrereadBuffer_ += size1;
@@ -615,7 +615,7 @@ void H263Reader::H263MetaUnitReader::PrereadH263Unit()
         bufferSize -= H263_HEAD_LEN;
         pBuffer -= H263_HEAD_LEN;
         pPrereadBuffer_ = 0;
-    } 
+    }
     while (pPrereadBuffer_ != prereadBufferSize_);
     h263Unit_->resize(bufferSize);
 }
@@ -636,8 +636,8 @@ uint8_t* H263Reader::H263Detector::getDelimiterPos(uint8_t* addrstart, uint8_t* 
 }
 const uint8_t* H263Reader::H263Detector::GetH263TypeAddr(const uint8_t *bufferAddr)
 {
-    auto pos1 = getDelimiterPos(reinterpret_cast<uint8_t*>(bufferAddr)
-                              , reinterpret_cast<uint8_t*>(bufferAddr) + H263_HEAD_LEN + 1 /*prereadBufferSize_*/);
+    auto pos1 = getDelimiterPos(reinterpret_cast<uint8_t*>(bufferAddr),
+                                 reinterpret_cast<uint8_t*>(bufferAddr) + H263_HEAD_LEN + 1 /*prereadBufferSize_*/);
     auto size = std::distance(reinterpret_cast<uint8_t*>(bufferAddr), pos1);
     if (size == 0) {
         return nullptr;
@@ -656,13 +656,13 @@ uint8_t H263Reader::H263Detector::GetH263Type(const uint8_t *bufferAddr)
     if (bufferAddr == nullptr) {
         return 1;
     }
-    if ((bufferAddr[4] & H263_HEAD_MASK_4_1) != H263_HEAD_MASK_4_1) {
-        return (bufferAddr[4] & H263_HEAD_MASK_4_2) == 0 ? 1 : 0;
+    if ((bufferAddr[H263_OFFSET_4] & H263_HEAD_MASK_4_1) != H263_HEAD_MASK_4_1) {
+        return (bufferAddr[H263_OFFSET_4] & H263_HEAD_MASK_4_2) == 0 ? 1 : 0;
     }
-    if ((bufferAddr[5] & H263_HEAD_MASK_5_1) == 0) {
-        return (bufferAddr[5] & H263_HEAD_MASK_5_2) == 0 ? 1 : 0;
+    if ((bufferAddr[H263_OFFSET_5] & H263_HEAD_MASK_5_1) == 0) {
+        return (bufferAddr[H263_OFFSET_5] & H263_HEAD_MASK_5_2) == 0 ? 1 : 0;
     }
-    return (bufferAddr[7] & H263_HEAD_MASK_4_1) == 0 ? 1 : 0;
+    return (bufferAddr[H263_OFFSET_7] & H263_HEAD_MASK_4_1) == 0 ? 1 : 0;
 }
 
 void H263Reader::H263MetaUnitReader::PrereadFile()

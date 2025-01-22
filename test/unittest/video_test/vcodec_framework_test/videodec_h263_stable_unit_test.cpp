@@ -177,8 +177,8 @@ HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_Release_AVBuffer_001,
  * @tc.name: VideoDecoder_Multithread_Start_Four_Times
  * @tc.desc: 1. start 4 times
  */
-HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_Start_Four_Times
-        , TestSize.Level1, VideoDecSample::threadNum_)
+HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_Start_Four_Times,
+            TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
@@ -913,8 +913,8 @@ AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_With_Queue_005,
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_001
-                , TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTestH263, VideoDecoder_Multithread_AVBuffer_001,
+                TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
