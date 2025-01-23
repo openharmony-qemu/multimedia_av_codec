@@ -85,6 +85,8 @@ public:
     uint32_t errCount = 0;
     bool isSurfMode = false;
     bool setParameters = false;
+    bool isRenderAttime = false;
+    int64_t renderTimestampNs = 0;
     OH_AVCodec *vdec_;
     OHNativeWindow *nativeWindow = nullptr;
     sptr<Surface> cs = nullptr;
