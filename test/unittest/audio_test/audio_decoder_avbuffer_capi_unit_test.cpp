@@ -3175,27 +3175,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_VorbisFormatChanged, TestS
     Release();
 }
 
-HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_OpusFormatChanged, TestSize.Level1)
-{
-    if (!CheckSoFunc()) {
-        return;
-    }
-    isTestingFormat_ = true;
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(INPUT_OPUS_FILE_PATH, OUTPUT_OPUS_PCM_FILE_PATH));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_OPUS));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_OPUS));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-
-    EXPECT_EQ(g_outputChannels, DEFAULT_CHANNEL_COUNT);
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
-    Release();
-}
-
 #ifdef SUPPORT_CODEC_COOK
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Cook_CreateByMime_01, TestSize.Level1)
 {

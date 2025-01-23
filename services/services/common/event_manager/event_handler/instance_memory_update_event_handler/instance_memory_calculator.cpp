@@ -307,8 +307,8 @@ uint32_t HardwareEncoder8BitRGBA(uint32_t blockSize)
 
 uint32_t HardwareEncoderYUV420(uint32_t blockSize)
 {
-    auto linearSlope = 4.541;       // 4.541: HardwareEncoderYUV420 slope
-    auto linearIntercept = 7989;    // 7989:  HardwareEncoderYUV420 intercept
+    auto linearSlope = 5.899;       // 5.899: HardwareEncoderYUV420 slope
+    auto linearIntercept = 7242;    // 7242:  HardwareEncoderYUV420 intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
