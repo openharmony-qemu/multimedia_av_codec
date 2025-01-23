@@ -37,6 +37,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 
 namespace {
+constexpr uint32_t DEFAULT_TIME_INTERVAL = 4166;
 constexpr uint32_t MAX_OUTPUT_FRMAENUM = 1000;
 
 static inline int64_t GetTimeUs()
