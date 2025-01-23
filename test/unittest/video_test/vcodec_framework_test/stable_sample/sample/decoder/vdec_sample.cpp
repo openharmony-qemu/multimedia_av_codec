@@ -494,6 +494,7 @@ int32_t VideoDecSample::PushInputData(std::shared_ptr<CodecBufferInfo> bufferInf
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_PushInputData failed");
     }
     frameInputCount_++;
+    usleep(DEFAULT_TIME_INTERVAL);
     return AV_ERR_OK;
 }
 

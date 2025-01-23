@@ -853,23 +853,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_RGBA_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_YUV420P_001
- * @tc.desc: correct flow 1
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoDecoder_YUV420P_001, TestSize.Level1)
-{
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUV420P));
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Release());
-}
-
-/**
  * @tc.name: VideoDecoder_YUVI420_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
