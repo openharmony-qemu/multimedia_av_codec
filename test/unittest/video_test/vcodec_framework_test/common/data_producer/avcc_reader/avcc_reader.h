@@ -154,7 +154,7 @@ private:
 
     private:
         bool IsEOF() override;
-        uint8_t* getDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
         std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
         uint32_t prereadBufferSize_ = 0;
         uint32_t pPrereadBuffer_ = 0;
