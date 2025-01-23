@@ -259,7 +259,8 @@ void FFmpegAPEDecoderPlugin::CalcBufferSize(const std::shared_ptr<Meta> &paramet
     if (samplePreFrame != 0) {
         sampleSizePerFrame = channels_ * samplePreFrame * depth;
         sampleSizePerOutBuffer = sampleSizePerFrame / REDUNDANCY_SET;
-        AVCODEC_LOGI("APE sampleSize %{public}d %{public}d", sampleSizePerFrame, sampleSizePerOutBuffer);
+        AVCODEC_LOGI("APE sampleSize inbuffer: %{public}d outbuffer: %{public}d",
+                     sampleSizePerFrame, sampleSizePerOutBuffer);
         return;
     }
     
