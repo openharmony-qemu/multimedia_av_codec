@@ -162,7 +162,7 @@ private:
     
     class H263Detector {
     public:
-        uint8_t* getDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
         const uint8_t *GetH263TypeAddr(const uint8_t *bufferAddr);
         uint8_t GetH263Type(const uint8_t *bufferAddr);
         bool IsI(uint8_t h263Type);

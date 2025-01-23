@@ -553,19 +553,19 @@ bool H263Reader::H263MetaUnitReader::IsEOF()
     return (pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->peek() == EOF);
 }
 
-uint8_t* H263Reader::H263MetaUnitReader::getDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
+uint8_t* H263Reader::H263MetaUnitReader::GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
 {
-    uint8_t* pos_min = std::search(addrstart, addrend, std::begin(H263_HEAD_0), std::end(H263_HEAD_0));
+    uint8_t* posMin = std::search(addrstart, addrend, std::begin(H263_HEAD_0), std::end(H263_HEAD_0));
     auto pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_1), std::end(H263_HEAD_1));
-    if (pos1<pos_min)
-        pos_min=pos1;
+    if (pos1<posMin)
+        posMin=pos1;
     pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_2), std::end(H263_HEAD_2));
-    if (pos1<pos_min)
-        pos_min=pos1;
+    if (pos1<posMin)
+        posMin=pos1;
     pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_3), std::end(H263_HEAD_3));
-    if (pos1<pos_min)
-        pos_min=pos1;
-    return pos_min;
+    if (pos1<posMin)
+        posMin=pos1;
+    return posMin;
 }
 
 void H263Reader::H263MetaUnitReader::PrereadH263Unit()
@@ -576,14 +576,14 @@ void H263Reader::H263MetaUnitReader::PrereadH263Unit()
     uint32_t bufferSize = 0;
     h263Unit_->resize(MAX_NALU_SIZE);
     do {
-        uint8_t* pos1 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_,
+        uint8_t* pos1 = GetDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_,
                                         prereadBuffer_.get() + prereadBufferSize_);
         uint32_t size1 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos1);
-        auto pos2 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_,
+        auto pos2 = GetDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_,
                                     prereadBuffer_.get()+ pPrereadBuffer_ + size1);
         uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos2);
         if (size == 0) {
-            auto pos3 = getDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_ + size1 + H263_HEAD_LEN,
+            auto pos3 = GetDelimiterPos(prereadBuffer_.get() + pPrereadBuffer_ + size1 + H263_HEAD_LEN,
                                         prereadBuffer_.get() + prereadBufferSize_);
             uint32_t size2 = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos3);
             auto ret = memcpy_s(pBuffer, size2, prereadBuffer_.get() + pPrereadBuffer_, size2);
@@ -620,29 +620,30 @@ void H263Reader::H263MetaUnitReader::PrereadH263Unit()
     h263Unit_->resize(bufferSize);
 }
 
-uint8_t* H263Reader::H263Detector::getDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
+uint8_t* H263Reader::H263Detector::GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
 {
-    uint8_t* pos_min = std::search(addrstart, addrend, std::begin(H263_HEAD_0), std::end(H263_HEAD_0));
+    uint8_t* posMin = std::search(addrstart, addrend, std::begin(H263_HEAD_0), std::end(H263_HEAD_0));
     auto pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_1), std::end(H263_HEAD_1));
-    if (pos1<pos_min)
-        pos_min=pos1;
+    if (pos1<posMin)
+        posMin=pos1;
     pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_2), std::end(H263_HEAD_2));
-    if (pos1<pos_min)
-        pos_min=pos1;
+    if (pos1<posMin)
+        posMin=pos1;
     pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_3), std::end(H263_HEAD_3));
-    if (pos1<pos_min)
-        pos_min=pos1;
-    return pos_min;
+    if (pos1<posMin)
+        posMin=pos1;
+    return posMin;
 }
+
 const uint8_t* H263Reader::H263Detector::GetH263TypeAddr(const uint8_t *bufferAddr)
 {
-    auto pos1 = getDelimiterPos(const_cast<uint8_t*>(bufferAddr),
+    auto pos1 = GetDelimiterPos(const_cast<uint8_t*>(bufferAddr),
                                 const_cast<uint8_t*>(bufferAddr) + H263_HEAD_LEN + 1 /*prereadBufferSize_*/);
     auto size = std::distance(const_cast<uint8_t*>(bufferAddr), pos1);
     if (size == 0) {
         return nullptr;
     }
-    auto pos = getDelimiterPos(const_cast<uint8_t*>(bufferAddr), const_cast<uint8_t*>(bufferAddr) + size);
+    auto pos = GetDelimiterPos(const_cast<uint8_t*>(bufferAddr), const_cast<uint8_t*>(bufferAddr) + size);
     return pos;
 }
 
