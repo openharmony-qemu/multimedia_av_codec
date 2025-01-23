@@ -668,8 +668,7 @@ uint8_t H263Reader::H263Detector::GetH263Type(const uint8_t *bufferAddr)
 void H263Reader::H263MetaUnitReader::PrereadFile()
 {
     CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nallptr");
-    inputFile_->read((char *)prereadBuffer_.get()),
-        PREREAD_BUFFER_SIZE);
+    inputFile_->read((char *)prereadBuffer_.get(), PREREAD_BUFFER_SIZE);
     prereadBufferSize_ = inputFile_->gcount(); //+ MPEG4_FRAME_HEAD_LEN
     pPrereadBuffer_ = 0; //MPEG2_FRAME_HEAD_LEN;
 }
