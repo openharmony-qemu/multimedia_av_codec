@@ -146,6 +146,7 @@ bool HevcSeiParserHelper::IsSeiNalu(uint8_t *&headerPtr)
 Status SeiParserHelper::ParseSeiRbsp(
     uint8_t *&bodyPtr, const uint8_t *const maxPtr, const std::shared_ptr<SeiPayloadInfoGroup> &group)
 {
+    FALSE_RETURN_V(group != nullptr, Status::ERROR_NO_MEMORY);
     Status unSupRetCode = Status::ERROR_UNSUPPORTED_FORMAT;
  
     // one sei nalu may has several sei message parts
