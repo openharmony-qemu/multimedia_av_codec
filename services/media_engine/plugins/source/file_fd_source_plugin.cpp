@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+* Copyright (c) 2023-2025 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -34,6 +34,21 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "FileFdSourcePlugin" };
+bool StrToLong(const std::string_view& str, T& value)
+{
+    FALSE_RETURN_V_MSG_E(!str.empty() && (isdigit(str.front()) || (str.front() == '-')),
+        false, "no valid string.");
+    // CHECK_AND_RETURN_RET(!str.empty() && (isdigit(str.front()) || (str.front() == '-')), false);
+    std::string valStr(str);
+    char* end = nullptr;
+    errno = 0;
+    const char* addr = valStr.c_str();
+    long long result = strtoll(addr, &end, 10); /* 10 means decimal */
+    FALSE_RETURN_V_MSG_E(end != addr && end[0] == '\0' && errno != ERANGE, false,
+        "call StrToLong func false,  input str is: %{public}s!", valStr.c_str());
+    value = result;
+    return true;
+}
 }
 
 namespace OHOS {
@@ -329,7 +344,9 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
         Status::ERROR_INVALID_PARAMETER, "Invalid fd: " PUBLIC_LOG_D32, fd_);
     fileSize_ = GetFileSize(fd_);
     if (fdUriMatch.size() == 4) { // 4：4 sub match
-        offset_ = std::stoll(fdUriMatch[2].str()); // 2: sub match offset subscript
+        std::string offsetStr = fdUriMatch[2].str();
+        FALSE_RETURN_V_MSG_E(StrToLong(offsetStr, offset_), Status::ERROR_INVALID_PARAMETER,
+            "Failed to read offset.");
         if (static_cast<uint64_t>(offset_) > fileSize_) {
             offset_ = fileSize_;
         }
