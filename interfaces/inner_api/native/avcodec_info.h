@@ -836,18 +836,26 @@ enum MPEG4Level : int32_t {
 };
 
 /**
- * @brief H263 Level
+ * @brief H263 Level.
  *
- * @since 5.1
+ * @since 16
  */
 enum H263Level : int32_t {
+    /** 10 level */
     H263_LEVEL_10 = 0,
+    /** 20 level */
     H263_LEVEL_20 = 1,
+    /** 30 level */
     H263_LEVEL_30 = 2,
+    /** 40 level */
     H263_LEVEL_40 = 3,
+    /** 45 level */
     H263_LEVEL_45 = 4,
+    /** 50 level */
     H263_LEVEL_50 = 5,
+    /** 60 level */
     H263_LEVEL_60 = 6,
+    /** 70 level */
     H263_LEVEL_70 = 7
 };
 

@@ -1094,16 +1094,24 @@ typedef enum OH_MPEG4Level {
  * @brief H263 Level.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 typedef enum OH_H263Level {
+    /** 10 level */
     H263_LEVEL_10 = 0,
+    /** 20 level */
     H263_LEVEL_20 = 1,
+    /** 30 level */
     H263_LEVEL_30 = 2,
+    /** 40 level */
     H263_LEVEL_40 = 3,
+    /** 45 level */
     H263_LEVEL_45 = 4,
+    /** 50 level */
     H263_LEVEL_50 = 5,
+    /** 60 level */
     H263_LEVEL_60 = 6,
+    /** 70 level */
     H263_LEVEL_70 = 7
 }OH_H263Level;
 
