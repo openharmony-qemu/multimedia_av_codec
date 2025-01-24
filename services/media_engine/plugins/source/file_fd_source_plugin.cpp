@@ -38,7 +38,6 @@ bool StrToLong(const std::string_view& str, T& value)
 {
     FALSE_RETURN_V_MSG_E(!str.empty() && (isdigit(str.front()) || (str.front() == '-')),
         false, "no valid string.");
-    // CHECK_AND_RETURN_RET(!str.empty() && (isdigit(str.front()) || (str.front() == '-')), false);
     std::string valStr(str);
     char* end = nullptr;
     errno = 0;
