@@ -270,25 +270,35 @@ HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_CreateByMime_AVBuffer
 HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_Min_Resolution_001, TestSize.Level1,
           VideoDecSample::threadNum_)
 {
+    printf("AAA=0\n");
     auto vdec = make_shared<VideoDecSample>();
+    printf("AAA=0.1\n");
     auto signal = make_shared<VCodecSignal>(vdec);
+    printf("AAA=0.2\n");
     vdec->frameCount_ = 100;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_H263;
     vdec->inPath_ = "profile2_04x04.h263";
     vdec->outPath_ = GetTestName();
+    printf("AAA=1\n");
     EXPECT_EQ(vdec->CreateByMime(), true);
+    printf("AAA=2\n");
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
     cb.onNeedInputBuffer = InBufferHandle;
     cb.onNewOutputBuffer = OutBufferHandle;
     signal->isRunning_ = true;
+    printf("AAA=3\n");
     EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    printf("AAA=4\n");
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    printf("AAA=5\n");
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-
+    printf("AAA=6\n");
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    printf("AAA=7\n");
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+    printf("AAA=8\n");
 }
 
 
