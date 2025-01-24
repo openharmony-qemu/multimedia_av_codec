@@ -896,6 +896,17 @@ int32_t DecoderSurfaceFilter::GetDecRateUpperLimit()
     return rateUpperLimit_;
 }
 
+bool DecoderSurfaceFilter::GetIsSupportSeekWithoutFlush()
+{
+    std::shared_ptr<MediaAVCodec::AVCodecList> codecList = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
+    FALSE_RETURN_V_MSG_E(codecList != nullptr, false, "create avcodeclist failed");
+    MediaAVCodec::CapabilityData *capabilityData = codecList->GetCapability(codecMimeType_, false,
+        MediaAVCodec::AVCodecCategory::AVCODEC_NONE);
+    std::shared_ptr<MediaAVCodec::AVCodecInfo> videoCap = std::make_shared<MediaAVCodec::AVCodecInfo>(capabilityData);
+    FALSE_RETURN_V_MSG_E(videoCap != nullptr, false, "failed to get videoCap instance");
+    return videoCap->IsFeatureSupported(MediaAVCodec::AVCapabilityFeature::VIDEO_DECODER_SEEK_WITHOUT_FLUSH);
+}
+
 void DecoderSurfaceFilter::SetBitrateStart()
 {
     bitrateChange_++;

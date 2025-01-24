@@ -283,5 +283,8 @@ void HCodecList::GetSupportedFeatureParam(const CodecVideoPortCap& hdiVideoCap,
     if (hdiVideoCap.isSupportWaterMark) {
         userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK)] = Format();
     }
+    if (hdiVideoCap.isSupportSeekWithoutFlush) {
+        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_DECODER_SEEK_WITHOUT_FLUSH)] = Format();
+    }
 }
 } // namespace OHOS::MediaAVCodec
