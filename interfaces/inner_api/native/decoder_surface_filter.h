@@ -133,8 +133,6 @@ private:
     void ReportEosEvent();
     void RenderAtTimeDfx(int64_t renderTimeNs, int64_t currentTimeNs, int64_t lastRenderTimeNs);
     int64_t GetSystimeTimeNs();
-    void SetSeiMessageListener();
-    void RemoveSeiMessageListener();
 
     std::string name_;
     FilterType filterType_;

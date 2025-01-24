@@ -79,8 +79,6 @@ protected:
 
 private:
     Status PrepareInputBufferQueue();
-    void SetSeiMessageListener();
-    void RemoveSeiMessageListener();
 
     const std::string INPUT_BUFFER_QUEUE_NAME = "SeiParserFilterInputBufferQueue";
     std::string name_;

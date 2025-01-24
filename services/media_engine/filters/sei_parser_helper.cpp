@@ -63,7 +63,7 @@ const std::map<std::string, HelperConstructFunc> SeiParserHelperFactory::HELPER_
 };
 
 Status SeiParserHelper::ParseSeiPayload(
-    std::shared_ptr<AVBuffer> buffer, const std::shared_ptr<SeiPayloadInfoGroup> &group)
+    std::shared_ptr<AVBuffer> buffer, std::shared_ptr<SeiPayloadInfoGroup> &group)
 {
     FALSE_RETURN_V_MSG(!payloadTypeVec_.empty(), Status::ERROR_INVALID_DATA, "no listener type");
     FALSE_RETURN_V_MSG(buffer != nullptr, Status::ERROR_INVALID_DATA, "buffer is nullptr");
@@ -75,23 +75,31 @@ Status SeiParserHelper::ParseSeiPayload(
     uint8_t seiNaluPrefixLen = ANNEX_B_PREFIX_LEN + 1 + 1 + SEI_UUID_LEN;
     uint8_t *naluStartPtr = buffer->memory_->GetAddr();
     uint8_t *maxPointer = naluStartPtr + buffer->memory_->GetSize();
-    while (FindNextSeiNaluPos(naluStartPtr, maxPointer - seiNaluPrefixLen - 1)) {
+    uint8_t *maxSeiPointer = maxPointer - seiNaluPrefixLen - 1;
+    while (FindNextSeiNaluPos(naluStartPtr, maxSeiPointer)) {
+        if (!group) {
+            group = std::make_shared<SeiPayloadInfoGroup>();
+        }
         auto naluParseRes = ParseSeiRbsp(naluStartPtr, maxPointer, group);
         bufferParseRes = (bufferParseRes == Status::OK ? bufferParseRes : naluParseRes);
     }
-    group->playbackPosition = Plugins::Us2Ms(buffer->pts_);
+    if (group != nullptr && bufferParseRes == Status::OK) {
+        group->playbackPosition = Plugins::Us2Ms(buffer->pts_);
+    }
     return bufferParseRes;
 }
 
 void SeiParserHelper::SetPayloadTypeVec(const std::vector<int32_t> &vector)
 {
+    while (spinLock_.test_and_set(std::memory_order_acquire));
     payloadTypeVec_ = vector;
+    spinLock_.clear(std::memory_order_release);
 }
  
-bool SeiParserHelper::FindNextSeiNaluPos(uint8_t *&startPtr, const uint8_t *maxPtr)
+bool SeiParserHelper::FindNextSeiNaluPos(uint8_t *&startPtr, const uint8_t *const maxPtr)
 {
     while (startPtr < maxPtr) {
-        if (*startPtr != 0 && *startPtr != 1) {
+        if (*startPtr & 0x00FE) {
             startPtr += 0x04;
             continue;
         }
@@ -136,7 +144,7 @@ bool HevcSeiParserHelper::IsSeiNalu(uint8_t *&headerPtr)
 }
  
 Status SeiParserHelper::ParseSeiRbsp(
-    uint8_t *&bodyPtr, const uint8_t *maxPtr, const std::shared_ptr<SeiPayloadInfoGroup> &group)
+    uint8_t *&bodyPtr, const uint8_t *const maxPtr, const std::shared_ptr<SeiPayloadInfoGroup> &group)
 {
     Status unSupRetCode = Status::ERROR_UNSUPPORTED_FORMAT;
  
@@ -148,7 +156,10 @@ Status SeiParserHelper::ParseSeiRbsp(
             payloadSize > 0 && payloadSize <= SEI_PAYLOAD_SIZE_MAX && bodyPtr + payloadSize < maxPtr, unSupRetCode);
  
         // if sei payload type is not 5, don't report, jump to next sei message
-        if (std::find(payloadTypeVec_.begin(), payloadTypeVec_.end(), payloadType) == payloadTypeVec_.end()) {
+        while (spinLock_.test_and_set(std::memory_order_acquire));
+        std::vector<int32_t> payloadTypeVec = payloadTypeVec_;
+        spinLock_.clear(std::memory_order_release);
+        if (std::find(payloadTypeVec.begin(), payloadTypeVec.end(), payloadType) == payloadTypeVec.end()) {
             auto res = FillTargetBuffer(nullptr, bodyPtr, maxPtr, payloadSize);
             FALSE_RETURN_V_NOLOG(res == Status::OK, res);
             continue;
@@ -169,7 +180,7 @@ Status SeiParserHelper::ParseSeiRbsp(
     return unSupRetCode;
 }
  
-int32_t SeiParserHelper::GetSeiTypeOrSize(uint8_t *&bodyPtr, const uint8_t *maxPtr)
+int32_t SeiParserHelper::GetSeiTypeOrSize(uint8_t *&bodyPtr, const uint8_t *const maxPtr)
 {
     int32_t res = 0;
     while (*bodyPtr == 0xFF && bodyPtr + SEI_UUID_LEN < maxPtr) {
@@ -180,8 +191,8 @@ int32_t SeiParserHelper::GetSeiTypeOrSize(uint8_t *&bodyPtr, const uint8_t *maxP
     return res;
 }
  
-Status SeiParserHelper::FillTargetBuffer(
-    const std::shared_ptr<AVBuffer> buffer, uint8_t *&payloadPtr, const uint8_t *maxPtr, const int32_t payloadSize)
+Status SeiParserHelper::FillTargetBuffer(const std::shared_ptr<AVBuffer> buffer,
+    uint8_t *&payloadPtr, const uint8_t *const maxPtr, const int32_t payloadSize)
 {
     int32_t writtenSize = 0;
     uint8_t *targetPtr = (buffer == nullptr ? nullptr : buffer->memory_->GetAddr());
@@ -220,6 +231,10 @@ SeiParserListener::SeiParserListener(const std::string &mimeType, sptr<AVBufferQ
 {
     seiParserHelper_ = SeiParserHelperFactory::CreateHelper(mimeType);
     FALSE_RETURN_MSG(seiParserHelper_ != nullptr, "Create SeiParserHelper failed for %{public}s", mimeType.c_str());
+
+    sptr<IBrokerListener> tmpListener = this;
+    producer_->RemoveBufferFilledListener(tmpListener);
+    producer_->SetBufferFilledListener(tmpListener);
 }
  
 void SeiParserListener::OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer)
@@ -234,7 +249,7 @@ void SeiParserListener::OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer)
     FALSE_RETURN_NOLOG(eventReceiver_ != nullptr);
 
     FlowLimit(avBuffer);
-    std::shared_ptr<SeiPayloadInfoGroup> group = std::make_shared<SeiPayloadInfoGroup>();
+    std::shared_ptr<SeiPayloadInfoGroup> group = nullptr;
     auto res = seiParserHelper_->ParseSeiPayload(avBuffer, group);
     FALSE_RETURN_NOLOG(res == Status::OK);
  
@@ -244,7 +259,7 @@ void SeiParserListener::OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer)
     FALSE_RETURN_MSG(fmtRes, "sei fill format failed");
  
     std::vector<Format> vec;
-    for (SeiPayloadInfo payloadInfo : group->vec) {
+    for (SeiPayloadInfo &payloadInfo : group->vec) {
         FALSE_RETURN(payloadInfo.payload != nullptr && payloadInfo.payload->memory_ != nullptr);
  
         Format tmpFormat;
@@ -289,6 +304,27 @@ void SeiParserListener::OnInterrupted(bool isInterruptNeeded)
         isInterruptNeeded_ = isInterruptNeeded;
     }
     cond_.notify_all();
+}
+
+int32_t SeiParserListener::SetSeiMessageCbStatus(
+    bool status, const std::vector<int32_t> &payloadTypes)
+{
+    if (status) {
+        payloadTypes_ = payloadTypes;
+        SetPayloadTypeVec(payloadTypes_);
+        return 0;
+    }
+    if (payloadTypes_.empty()) {
+        payloadTypes_ = {};
+        SetPayloadTypeVec(payloadTypes_);
+        return 0;
+    }
+    payloadTypes_.erase(
+        std::remove_if(payloadTypes_.begin(), payloadTypes_.end(), [&payloadTypes](int value) {
+            return std::find(payloadTypes.begin(), payloadTypes.end(), value) != payloadTypes.end();
+        }), payloadTypes_.end());
+    SetPayloadTypeVec(payloadTypes_);
+    return 0;
 }
 }  // namespace Media
 }  // namespace OHOS
