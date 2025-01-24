@@ -534,28 +534,42 @@ int32_t VideoDecSample::IsValid(bool &isValid)
 
 int32_t VideoDecSample::HandleInputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo)
 {
+    printf("FFF=0\n");
     std::shared_lock<std::shared_mutex> lock(codecMutex_, std::try_to_lock);
+    printf("FFF=1\n");
     if (!lock.owns_lock()) {
         return AV_ERR_OK;
     }
+    printf("FFF=2\n");
     uint8_t *addr = bufferInfo->GetAddr();
     OH_AVCodecBufferAttr attr = {0, 0, 0, 0};
     HandleInputFrameInner(addr, attr);
+    printf("FFF=3\n");
     bufferInfo->SetAttr(attr);
     UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d", attr.size, (int32_t)(attr.flags));
-    return PushInputData(bufferInfo);
+    auto ret=PushInputData(bufferInfo);
+    printf("FFF=4\n");
+    return ret;
 }
 
 int32_t VideoDecSample::HandleOutputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo)
 {
+    printf("GGG=0\n");    
     std::shared_lock<std::shared_mutex> lock(codecMutex_, std::try_to_lock);
+    printf("GGG=1\n");    
     if (!lock.owns_lock()) {
+        printf("GGG=2\n");    
         return AV_ERR_OK;
     }
+    printf("GGG=3\n");    
     uint8_t *addr = bufferInfo->GetAddr();
+    printf("GGG=4\n");    
     OH_AVCodecBufferAttr attr = bufferInfo->GetAttr();
+    printf("GGG=5\n");    
     int32_t ret = HandleOutputFrameInner(addr, attr);
+    printf("GGG=5\n");    
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleOutputFrameInner failed, index: %d", index);
+    printf("GGG=6\n");    
     return ReleaseOutputData(bufferInfo);
 }
 

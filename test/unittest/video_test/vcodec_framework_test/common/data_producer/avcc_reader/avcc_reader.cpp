@@ -505,7 +505,7 @@ int32_t H263Reader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
     FillBufferAttr(attr, frameSize, h263Type, isEosFrame);
     printf("EEE=5\n");    
     frameInputCount_++;
-
+    printf("EEE=6 frameInputCount=%d frameSize=%d\n",frameInputCount_,frameSize);    
     return AV_ERR_OK;
 }
 
