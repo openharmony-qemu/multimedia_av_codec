@@ -171,6 +171,10 @@ int32_t AudioFFMpegVorbisDecoderPlugin::GenExtradata(const Format &format) const
     GetExtradataSize(idSize, setupSize);
     auto codecCtx = basePlugin->GetCodecContext();
     codecCtx->extradata = static_cast<uint8_t*>(av_mallocz(codecCtx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE));
+    if (codecCtx->extradata == nullptr) {
+        AVCODEC_LOGE("extradata malloc failed!");
+        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+    }
 
     int offset = 0;
     codecCtx->extradata[0] = EXTRADATA_FIRST_CHAR;
