@@ -1086,18 +1086,20 @@ void DecoderSurfaceFilter::RenderAtTimeDfx(int64_t renderTime, int64_t currentTi
     }
 }
 
-int32_t DecoderSurfaceFilter::SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes)
+Status DecoderSurfaceFilter::SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes)
 {
     seiMessageCbStatus_ = status;
     MEDIA_LOG_I("seiMessageCbStatus_  = " PUBLIC_LOG_D32, seiMessageCbStatus_);
-    FALSE_RETURN_V_MSG(inputBufferQueueProducer_ != nullptr, 0, "get producer failed");
+    FALSE_RETURN_V_MSG(
+        inputBufferQueueProducer_ != nullptr, Status::ERROR_NO_MEMORY, "get producer failed");
     if (producerListener_ == nullptr) {
         producerListener_ =
             new SeiParserListener(codecMimeType_, inputBufferQueueProducer_, eventReceiver_, false);
-        FALSE_RETURN_V_MSG(producerListener_ != nullptr, 0, "sei listener create failed");
+        FALSE_RETURN_V_MSG(
+            producerListener_ != nullptr, Status::ERROR_NO_MEMORY, "sei listener create failed");
     }
     producerListener_->SetSeiMessageCbStatus(status, payloadTypes);
-    return 0;
+    return Status::OK;
 }
 } // namespace Pipeline
 } // namespace MEDIA

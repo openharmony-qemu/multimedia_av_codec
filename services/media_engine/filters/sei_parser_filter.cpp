@@ -189,15 +189,17 @@ void SeiParserFilter::DrainOutputBuffer(bool flushed)
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
 }
 
-int32_t SeiParserFilter::SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes)
+Status SeiParserFilter::SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes)
 {
     MEDIA_LOG_I("seiMessageCbStatus_  = " PUBLIC_LOG_D32, seiMessageCbStatus_);
     seiMessageCbStatus_ = status;
-    FALSE_RETURN_V_MSG(inputBufferQueueProducer_ != nullptr, 0, "get producer failed");
+    FALSE_RETURN_V_MSG(
+        inputBufferQueueProducer_ != nullptr, Status::ERROR_NO_MEMORY, "get producer failed");
     if (producerListener_ == nullptr) {
         producerListener_ =
             new SeiParserListener(codecMimeType_, inputBufferQueueProducer_, eventReceiver_, true);
-        FALSE_RETURN_V_MSG(producerListener_ != nullptr, 0, "sei listener create failed");
+        FALSE_RETURN_V_MSG(
+            producerListener_ != nullptr, Status::ERROR_NO_MEMORY, "sei listener create failed");
         if (syncCenter_ != nullptr) {
             producerListener_->SetSyncCenter(syncCenter_);
         } else {
@@ -205,7 +207,7 @@ int32_t SeiParserFilter::SetSeiMessageCbStatus(bool status, const std::vector<in
         }
     }
     producerListener_->SetSeiMessageCbStatus(status, payloadTypes);
-    return 0;
+    return Status::OK;
 }
 
 void SeiParserFilter::SetSyncCenter(std::shared_ptr<IMediaSyncCenter> syncCenter)

@@ -45,8 +45,17 @@ constexpr uint16_t AVC_SEI_TYPE = 0x06;                     // 4th bit to 8th bi
 constexpr uint16_t AVC_NAL_UNIT_TYPE_FLAG = (0x80 | 0x1F);  // 0x80 for forbidden bit, 0x1F for nalu type 1001 1111
 constexpr uint16_t AVC_SEI_HEAD_LEN = 1;
 
-constexpr uint8_t EMULATION_GUIDE_0_LEN = 2;
 constexpr uint8_t EMULATION_PREVENTION_CODE = 0X03;
+constexpr uint8_t SEI_ASSEMBLE_BYTE = 0xFF;
+constexpr uint8_t SEI_BYTE_MASK_HIGH_7BITS = 0xFE;
+constexpr uint8_t SEI_BYTE_MASK_HIGH_6BITS = 0xFC;
+constexpr uint8_t SEI_SHIFT_FORWARD_BYTES = 0x04;
+constexpr uint8_t SEI_SHIFT_BACKWARD_BYTES = 0x03;
+
+constexpr uint32_t NALU_START_BIG_ENDIAN = 0x00000001;
+constexpr uint32_t NALU_START_LITTLE_ENDIAN = 0x01000000;
+constexpr uint32_t SEI_UINT32_MASK_HIGH_6BITS = 0xFCFFFFFF;
+constexpr uint32_t SEI_CONTEND_BYTE_SEQUENCE = 0x00030000; // 0x00 0x00 0x03 0x00
 }  // namespace
  
 namespace OHOS {
@@ -63,7 +72,7 @@ const std::map<std::string, HelperConstructFunc> SeiParserHelperFactory::HELPER_
 };
 
 Status SeiParserHelper::ParseSeiPayload(
-    std::shared_ptr<AVBuffer> buffer, std::shared_ptr<SeiPayloadInfoGroup> &group)
+    const std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<SeiPayloadInfoGroup> &group)
 {
     FALSE_RETURN_V_MSG(!payloadTypeVec_.empty(), Status::ERROR_INVALID_DATA, "no listener type");
     FALSE_RETURN_V_MSG(buffer != nullptr, Status::ERROR_INVALID_DATA, "buffer is nullptr");
@@ -91,16 +100,16 @@ Status SeiParserHelper::ParseSeiPayload(
 
 void SeiParserHelper::SetPayloadTypeVec(const std::vector<int32_t> &vector)
 {
-    while (spinLock_.test_and_set(std::memory_order_acquire));
+    AutoSpinLock lock(spinLock_);
     payloadTypeVec_ = vector;
-    spinLock_.clear(std::memory_order_release);
 }
  
 bool SeiParserHelper::FindNextSeiNaluPos(uint8_t *&startPtr, const uint8_t *const maxPtr)
 {
     while (startPtr < maxPtr) {
-        if (*startPtr & 0x00FE) {
-            startPtr += 0x04;
+        // *startPtr != 0 && *startPtr != 1
+        if (*startPtr & SEI_BYTE_MASK_HIGH_7BITS) {
+            startPtr += SEI_SHIFT_FORWARD_BYTES ;
             continue;
         }
 
@@ -111,14 +120,22 @@ bool SeiParserHelper::FindNextSeiNaluPos(uint8_t *&startPtr, const uint8_t *cons
         }
 
         // check if '1' after '000'
-        if (*(reinterpret_cast<uint32_t *>(startPtr - 0x03)) != 0x01000000) {
-            startPtr += 0x04;
+        static const uint32_t NALU_START_SEQ = GetNaluStartSeq();
+        if (*(reinterpret_cast<uint32_t *>(startPtr - SEI_SHIFT_BACKWARD_BYTES)) != NALU_START_SEQ) {
+            startPtr += SEI_SHIFT_FORWARD_BYTES;
             continue;
         }
         FALSE_CONTINUE_NOLOG(IsSeiNalu(++startPtr));
         return true;
     }
     return false;
+}
+
+uint32_t SeiParserHelper::GetNaluStartSeq()
+{
+    // Big Endian: high byte at low address; Little Endian: low byte at low address
+    uint32_t temp = 0x00000001;
+    return *reinterpret_cast<uint8_t *>(&temp) == 0 ? NALU_START_BIG_ENDIAN : NALU_START_LITTLE_ENDIAN;
 }
 
 bool AvcSeiParserHelper::IsSeiNalu(uint8_t *&headerPtr)
@@ -148,6 +165,8 @@ Status SeiParserHelper::ParseSeiRbsp(
 {
     FALSE_RETURN_V(group != nullptr, Status::ERROR_NO_MEMORY);
     Status unSupRetCode = Status::ERROR_UNSUPPORTED_FORMAT;
+    AutoSpinLock lock(spinLock_);
+    std::vector<int32_t> payloadTypeVec = payloadTypeVec_;
  
     // one sei nalu may has several sei message parts
     while (bodyPtr + SEI_UUID_LEN < maxPtr) {
@@ -157,9 +176,6 @@ Status SeiParserHelper::ParseSeiRbsp(
             payloadSize > 0 && payloadSize <= SEI_PAYLOAD_SIZE_MAX && bodyPtr + payloadSize < maxPtr, unSupRetCode);
  
         // if sei payload type is not 5, don't report, jump to next sei message
-        while (spinLock_.test_and_set(std::memory_order_acquire));
-        std::vector<int32_t> payloadTypeVec = payloadTypeVec_;
-        spinLock_.clear(std::memory_order_release);
         if (std::find(payloadTypeVec.begin(), payloadTypeVec.end(), payloadType) == payloadTypeVec.end()) {
             auto res = FillTargetBuffer(nullptr, bodyPtr, maxPtr, payloadSize);
             FALSE_RETURN_V_NOLOG(res == Status::OK, res);
@@ -184,35 +200,72 @@ Status SeiParserHelper::ParseSeiRbsp(
 int32_t SeiParserHelper::GetSeiTypeOrSize(uint8_t *&bodyPtr, const uint8_t *const maxPtr)
 {
     int32_t res = 0;
-    while (*bodyPtr == 0xFF && bodyPtr + SEI_UUID_LEN < maxPtr) {
-        res += 0xFF;
+    const uint8_t *const upperPtr = maxPtr - SEI_UUID_LEN;
+    while (*bodyPtr == SEI_ASSEMBLE_BYTE && bodyPtr < upperPtr) {
+        res += SEI_ASSEMBLE_BYTE;
         bodyPtr++;
     }
     res += *bodyPtr++;
     return res;
 }
- 
+
 Status SeiParserHelper::FillTargetBuffer(const std::shared_ptr<AVBuffer> buffer,
-    uint8_t *&payloadPtr, const uint8_t *const maxPtr, const int32_t payloadSize)
+    uint8_t *&startPtr, const uint8_t *const maxPtr, const int32_t payloadSize)
 {
     int32_t writtenSize = 0;
-    uint8_t *targetPtr = (buffer == nullptr ? nullptr : buffer->memory_->GetAddr());
-    for (int32_t zeroNum = 0; writtenSize < payloadSize && payloadPtr < maxPtr; payloadPtr++) {
-        // in H.264 and H.265, 0x000000, 0x000001, 0x000002, 0x000003 will be replaced while encoding
-        if (*payloadPtr == EMULATION_PREVENTION_CODE && zeroNum == EMULATION_GUIDE_0_LEN) {
-            zeroNum = 0;
-            continue;
+    uint8_t *curPtr = startPtr;
+    while (startPtr < maxPtr && writtenSize < payloadSize) {
+        bool isFound = false;
+
+        // in H.264 and H.265, bytes sequence 0x00 0x00 0x00|0x01|0x02|0x03 will be replaced by
+        // bytes sequence 0x00 0x00 0x03 0x00|0x01|0x02|0x03
+        while (startPtr < maxPtr) {
+            if (*startPtr & SEI_BYTE_MASK_HIGH_6BITS) {
+                startPtr += SEI_SHIFT_FORWARD_BYTES;
+                continue;
+            }
+
+            // check whether CONTENTION BYTES SEQUENCE occur, i.e. 0x00|0x01|0x02|0x03 after 0x00 0x00 0x03
+            if (((*(reinterpret_cast<uint32_t *>(startPtr - EMULATION_PREVENTION_CODE))) & SEI_UINT32_MASK_HIGH_6BITS)
+                != SEI_CONTEND_BYTE_SEQUENCE) {
+                startPtr++;
+                continue;
+            }
+            isFound = true;
+            break;
         }
-        zeroNum = *payloadPtr == 0 ? zeroNum + 1 : 0;
-        if (targetPtr != nullptr) {
-            targetPtr[writtenSize] = *payloadPtr;
+
+        if (isFound) {
+            int32_t length = startPtr - curPtr - 1;
+            if (writtenSize + length > payloadSize) {
+                length = payloadSize - writtenSize;
+            }
+
+            if (buffer != nullptr && buffer->memory_ != nullptr) {
+                int32_t writeBytes = buffer->memory_->Write(curPtr, length);
+                FALSE_RETURN_V_MSG(length == writeBytes, Status::ERROR_NO_MEMORY,
+                    "copy sei payload failed, writeBytes:%{public}d, length:%{public}d", writeBytes, length);
+            }
+
+            curPtr = startPtr++;
+            writtenSize += length;
         }
-        writtenSize++;
     }
-    FALSE_RETURN_V_MSG(
-        writtenSize == payloadSize, Status::ERROR_UNSUPPORTED_FORMAT, "avalid data less than payloadSize");
-    FALSE_RETURN_V_NOLOG(buffer != nullptr, Status::OK);
-    buffer->memory_->SetSize(writtenSize);
+
+    int32_t length = startPtr - curPtr;
+    if (writtenSize + length > payloadSize) {
+        length = payloadSize - writtenSize;
+    }
+
+    if (buffer != nullptr && buffer->memory_ != nullptr) {
+        int32_t writeBytes = buffer->memory_->Write(curPtr, length);
+        FALSE_RETURN_V_MSG(length == writeBytes, Status::ERROR_NO_MEMORY,
+            "copy sei payload failed, writeBytes:%{public}d, length:%{public}d", writeBytes, length);
+    }
+    writtenSize += length;
+    FALSE_RETURN_V_MSG(writtenSize == payloadSize, Status::ERROR_UNSUPPORTED_FORMAT,
+        "parse sei payload failed, writtenSize:%{public}d, payloadSize:%{public}d", writtenSize, payloadSize);
+
     return Status::OK;
 }
 
@@ -295,6 +348,7 @@ void SeiParserListener::FlowLimit(const std::shared_ptr<AVBuffer> &avBuffer)
 void SeiParserListener::SetPayloadTypeVec(const std::vector<int32_t> &vector)
 {
     FALSE_RETURN_MSG(seiParserHelper_ != nullptr, "seiParserHelper is nullptr");
+    MEDIA_LOG_I("SeiParserListener::SetPayloadTypeVec");
     seiParserHelper_->SetPayloadTypeVec(vector);
 }
 
@@ -307,25 +361,26 @@ void SeiParserListener::OnInterrupted(bool isInterruptNeeded)
     cond_.notify_all();
 }
 
-int32_t SeiParserListener::SetSeiMessageCbStatus(
+Status SeiParserListener::SetSeiMessageCbStatus(
     bool status, const std::vector<int32_t> &payloadTypes)
 {
+    MEDIA_LOG_I("seiMessageCbStatus_  = " PUBLIC_LOG_D32, status);
     if (status) {
         payloadTypes_ = payloadTypes;
         SetPayloadTypeVec(payloadTypes_);
-        return 0;
+        return Status::OK;
     }
-    if (payloadTypes_.empty()) {
+    if (payloadTypes.empty()) {
         payloadTypes_ = {};
         SetPayloadTypeVec(payloadTypes_);
-        return 0;
+        return Status::OK;
     }
     payloadTypes_.erase(
         std::remove_if(payloadTypes_.begin(), payloadTypes_.end(), [&payloadTypes](int value) {
             return std::find(payloadTypes.begin(), payloadTypes.end(), value) != payloadTypes.end();
         }), payloadTypes_.end());
     SetPayloadTypeVec(payloadTypes_);
-    return 0;
+    return Status::OK;
 }
 }  // namespace Media
 }  // namespace OHOS
