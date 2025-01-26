@@ -89,6 +89,8 @@ public:
         int32_t height_ = 0;
     };
 private:
+    static int32_t CheckAvcEncLibStatus();
+    static void GetCapabilityData(CapabilityData &capsData, uint32_t index);
     int32_t Initialize();
     int32_t ConfigureContext(const Format &format);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey,

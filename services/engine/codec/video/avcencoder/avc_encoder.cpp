@@ -904,7 +904,7 @@ int32_t AvcEncoder::Stop()
     state_ = State::STOPPING;
     AVCODEC_LOGI("step into STOPPING status");
 
-    if (inputSurface_) {
+    if (inputSurface_ != nullptr) {
         ClearDirtyList();
         inputSurface_->UnregisterConsumerListener();
     }
@@ -991,6 +991,11 @@ void AvcEncoder::ReleaseResource()
     StopThread();
     ReleaseBuffers();
     format_ = Format();
+
+    if (inputSurface_ != nullptr) {
+        ClearDirtyList();
+        inputSurface_->UnregisterConsumerListener();
+    }
 
     std::unique_lock<std::mutex> runLock(encRunMutex_);
     if (avcEncoder_ != nullptr && avcEncoderDeleteFunc_ != nullptr) {
@@ -1291,7 +1296,7 @@ int32_t AvcEncoder::Yuv420ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS
     };
 
     int32_t ret = ConvertVideoFrame(&scale_,
-        srcData, srcLineSize, ConvertPixelFormatToFFmpeg(VideoPixelFormat::YUV420P),
+        srcData, srcLineSize, ConvertPixelFormatToFFmpeg(VideoPixelFormat::YUVI420),
         inFrame.width, inFrame.height,
         scaleData_, scaleLineSize_, ConvertPixelFormatToFFmpeg(VideoPixelFormat::NV21));
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
@@ -1320,7 +1325,7 @@ int32_t AvcEncoder::RgbaToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
     }
 
     uint8_t *dstData = convertBuffer_->memory_->GetAddr();
-    uint32_t dstSize = convertBuffer_->memory_->GetCapacity();
+    int32_t dstSize = convertBuffer_->memory_->GetCapacity();
 
     RgbImageData rgbData = {
         .data = inFrame.buffer,
@@ -1430,7 +1435,7 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
         AVCODEC_LOGE("Cannot send frame to encodec: %{public}d", ret);
     }
 
-    if (outArgs.isLast) {
+    if (isSendEos_) {
         outputAVBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
     }
 
@@ -1505,52 +1510,91 @@ void AvcEncoder::SendFrame()
     }
 }
 
+int32_t AvcEncoder::CheckAvcEncLibStatus()
+{
+    void* handle = dlopen(AVC_ENC_LIB_PATH, RTLD_LAZY);
+    if (handle != nullptr) {
+        auto avcEncoderCreateFunc = reinterpret_cast<CreateAvcEncoderFuncType>(
+            dlsym(handle, AVC_ENC_CREATE_FUNC_NAME));
+        auto avcEncoderFrameFunc = reinterpret_cast<EncodeFuncType>(
+            dlsym(handle, AVC_ENC_ENCODE_FRAME_FUNC_NAME));
+        auto avcEncoderDeleteFunc = reinterpret_cast<DeleteFuncType>(
+            dlsym(handle, AVC_ENC_DELETE_FUNC_NAME));
+        if (avcEncoderCreateFunc == nullptr || avcEncoderFrameFunc == nullptr ||
+            avcEncoderDeleteFunc == nullptr) {
+            AVCODEC_LOGE("AvcEncoder avcFuncMatch_ failed!");
+            avcEncoderCreateFunc = nullptr;
+            avcEncoderFrameFunc = nullptr;
+            avcEncoderDeleteFunc = nullptr;
+            dlclose(handle);
+            handle = nullptr;
+        }
+    }
+
+    if (handle == nullptr) {
+        return AVCS_ERR_UNSUPPORT;
+    }
+    dlclose(handle);
+    handle = nullptr;
+
+    return AVCS_ERR_OK;
+}
+
+void AvcEncoder::GetCapabilityData(CapabilityData &capsData, uint32_t index)
+{
+    capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[index].codecName);
+    capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[index].mimeType);
+    capsData.codecType = SUPPORT_VCODEC[index].isEncoder ? AVCODEC_TYPE_VIDEO_ENCODER : AVCODEC_TYPE_VIDEO_DECODER;
+    capsData.isVendor = false;
+    capsData.maxInstance = VIDEO_INSTANCE_SIZE;
+    capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
+    capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
+    capsData.width.minVal = VIDEO_MIN_SIZE;
+    capsData.width.maxVal = VIDEO_MAX_WIDTH_SIZE;
+    capsData.height.minVal = VIDEO_MIN_SIZE;
+    capsData.height.maxVal = VIDEO_MAX_HEIGHT_SIZE;
+    capsData.frameRate.minVal = VIDEO_FRAMERATE_MIN_SIZE;
+    capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
+    capsData.bitrate.minVal = VIDEO_BITRATE_MIN_SIZE;
+    capsData.bitrate.maxVal = VIDEO_BITRATE_MAX_SIZE;
+    capsData.blockPerFrame.minVal = 1;
+    capsData.blockPerFrame.maxVal = VIDEO_BLOCKPERFRAME_SIZE;
+    capsData.blockPerSecond.minVal = 1;
+    capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
+    capsData.blockSize.width = VIDEO_ALIGN_SIZE;
+    capsData.blockSize.height = VIDEO_ALIGN_SIZE;
+    if (SUPPORT_VCODEC[index].isEncoder) {
+        capsData.complexity.minVal = 1;
+        capsData.complexity.maxVal = 1;
+        capsData.encodeQuality.minVal = VIDEO_QUALITY_MIN;
+        capsData.encodeQuality.maxVal = VIDEO_QUALITY_MAX;
+    }
+    capsData.pixFormat = {
+        static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
+        static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)
+    };
+    capsData.bitrateMode = {
+        static_cast<int32_t>(VideoEncodeBitrateMode::CBR), static_cast<int32_t>(VideoEncodeBitrateMode::VBR),
+        static_cast<int32_t>(VideoEncodeBitrateMode::CQ)
+    };
+    capsData.profiles = {static_cast<int32_t>(AVC_PROFILE_BASELINE), static_cast<int32_t>(AVC_PROFILE_MAIN)};
+    std::vector<int32_t> levels;
+    for (int32_t j = 0; j <= static_cast<int32_t>(AVCLevel::AVC_LEVEL_51); ++j) {
+        levels.emplace_back(j);
+    }
+    capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_MAIN), levels));
+    capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_BASELINE), levels));
+    return;
+}
+
 int32_t AvcEncoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
+    CHECK_AND_RETURN_RET_LOG(CheckAvcEncLibStatus() == AVCS_ERR_OK,
+        AVCS_ERR_UNSUPPORT, "avc encoder libs not available");
+
     for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
         CapabilityData capsData;
-        capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[i].codecName);
-        capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[i].mimeType);
-        capsData.codecType = SUPPORT_VCODEC[i].isEncoder ? AVCODEC_TYPE_VIDEO_ENCODER : AVCODEC_TYPE_VIDEO_DECODER;
-        capsData.isVendor = false;
-        capsData.maxInstance = VIDEO_INSTANCE_SIZE;
-        capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
-        capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
-        capsData.width.minVal = VIDEO_MIN_SIZE;
-        capsData.width.maxVal = VIDEO_MAX_WIDTH_SIZE;
-        capsData.height.minVal = VIDEO_MIN_SIZE;
-        capsData.height.maxVal = VIDEO_MAX_HEIGHT_SIZE;
-        capsData.frameRate.minVal = VIDEO_FRAMERATE_MIN_SIZE;
-        capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
-        capsData.bitrate.minVal = VIDEO_BITRATE_MIN_SIZE;
-        capsData.bitrate.maxVal = VIDEO_BITRATE_MAX_SIZE;
-        capsData.blockPerFrame.minVal = 1;
-        capsData.blockPerFrame.maxVal = VIDEO_BLOCKPERFRAME_SIZE;
-        capsData.blockPerSecond.minVal = 1;
-        capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
-        capsData.blockSize.width = VIDEO_ALIGN_SIZE;
-        capsData.blockSize.height = VIDEO_ALIGN_SIZE;
-        if (SUPPORT_VCODEC[i].isEncoder) {
-            capsData.complexity.minVal = 1;
-            capsData.complexity.maxVal = 1;
-            capsData.encodeQuality.minVal = VIDEO_QUALITY_MIN;
-            capsData.encodeQuality.maxVal = VIDEO_QUALITY_MAX;
-        }
-        capsData.pixFormat = {
-            static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
-            static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)
-        };
-        capsData.bitrateMode = {
-            static_cast<int32_t>(VideoEncodeBitrateMode::CBR), static_cast<int32_t>(VideoEncodeBitrateMode::VBR),
-            static_cast<int32_t>(VideoEncodeBitrateMode::CQ)
-        };
-        capsData.profiles = {static_cast<int32_t>(AVC_PROFILE_BASELINE), static_cast<int32_t>(AVC_PROFILE_MAIN)};
-        std::vector<int32_t> levels;
-        for (int32_t j = 0; j <= static_cast<int32_t>(AVCLevel::AVC_LEVEL_51); ++j) {
-            levels.emplace_back(j);
-        }
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_MAIN), levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_BASELINE), levels));
+        GetCapabilityData(capsData, i);
         capaArray.emplace_back(capsData);
     }
     return AVCS_ERR_OK;

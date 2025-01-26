@@ -29,6 +29,7 @@
 #include "fcodec_loader.h"
 #include "hevc_decoder_loader.h"
 #include "hcodec_loader.h"
+#include "avc_encoder_loader.h"
 #endif
 
 namespace {
@@ -72,6 +73,8 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
         case CodecType::AVCODEC_VIDEO_HEVC_DECODER:
             codec = HevcDecoderLoader::CreateByName(name);
             break;
+        case CodecType::AVCODEC_VIDEO_AVC_ENCODER:
+            codec = AvcEncoderLoader::CreateByName(name);
 #else
         case CodecType::AVCODEC_AUDIO_CODEC:
             if (apiVersion == API_VERSION::API_VERSION_10) {
