@@ -168,6 +168,10 @@ Status HdiCodec::InitBuffersByPort(PortIndex portIndex, uint32_t bufferSize)
 {
     auto avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(avAllocator, bufferSize);
+    if (avBuffer == nullptr) {
+        AVCODEC_LOGE("Create avBuffer failed!");
+        return Status::ERROR_NO_MEMORY;
+    }
     std::shared_ptr<OmxCodecBuffer> omxBuffer = std::make_shared<OmxCodecBuffer>();
     omxBuffer->size = sizeof(OmxCodecBuffer);
     omxBuffer->version.version.majorVersion = 1;

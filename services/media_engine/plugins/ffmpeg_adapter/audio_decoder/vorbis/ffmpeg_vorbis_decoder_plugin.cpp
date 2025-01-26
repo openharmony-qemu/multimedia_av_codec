@@ -245,6 +245,10 @@ Status FFmpegVorbisDecoderPlugin::GenExtradata(const std::shared_ptr<Meta> &form
     GetExtradataSize(idHeader.size(), setupHeader.size());
     auto codecCtx = basePlugin->GetCodecContext();
     codecCtx->extradata = static_cast<uint8_t *>(av_mallocz(codecCtx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE));
+    if (codecCtx->extradata == nullptr) {
+        AVCODEC_LOGE("extradata malloc failed!");
+        return Status::ERROR_INVALID_DATA;
+    }
 
     int offset = 0;
     codecCtx->extradata[0] = EXTRADATA_FIRST_CHAR;

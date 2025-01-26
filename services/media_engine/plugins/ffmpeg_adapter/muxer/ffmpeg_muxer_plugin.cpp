@@ -979,6 +979,10 @@ uint8_t *FFmpegMuxerPlugin::FindNalStartCode(const uint8_t *buf, const uint8_t *
 
 bool FFmpegMuxerPlugin::IsAvccSample(const uint8_t* sample, int32_t size, int32_t nalSizeLen)
 {
+    if (sample == nullptr) {
+        MEDIA_LOG_E("sample is null");
+        return false;
+    }
     if (size < nalSizeLen) {
         return false;
     }
