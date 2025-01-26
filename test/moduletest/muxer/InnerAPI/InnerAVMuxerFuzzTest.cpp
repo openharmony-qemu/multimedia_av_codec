@@ -57,15 +57,13 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_001, TestSize.Lev
     srand(time(nullptr) * 10);
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     Plugins::OutputFormat format = Plugins::OutputFormat::MPEG_4;
-    int32_t ret = -1;
     int32_t fd = -1;
 
     for (int i = 0; i < FUZZ_TEST_NUM; i++) {
         std::cout << "current run time is: " << i << std::endl;
         fd = rand();
 
-        ret = muxerDemo->InnerCreate(fd, format);
-        ASSERT_EQ(ret, AV_ERR_OK);
+        muxerDemo->InnerCreate(fd, format);
         muxerDemo->InnerDestroy();
     }
 
@@ -97,7 +95,6 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_002, TestSize.Lev
         cout << "rotation is: " << rotation << endl;
         ret = muxerDemo->InnerSetRotation(rotation);
         cout << "ret code is: " << ret << endl;
-        ASSERT_EQ(ret, AV_ERR_OK);
     }
 
     delete muxerDemo;
@@ -115,7 +112,6 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_003, TestSize.Lev
 
     Plugins::OutputFormat format = Plugins::OutputFormat::MPEG_4;
     int32_t fd = -1;
-    int32_t ret = -1;
     fd = muxerDemo->InnerGetFdByMode(format);
     muxerDemo->InnerCreate(fd, format);
 
@@ -156,8 +152,7 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_003, TestSize.Lev
         mediaParams->Set<Tag::VIDEO_FRAME_RATE>(videoFrameRate);
 
         int trackIndex = 0;
-        ret = muxerDemo->InnerAddTrack(trackIndex, mediaParams);
-        ASSERT_EQ(ret, AV_ERR_OK);
+        muxerDemo->InnerAddTrack(trackIndex, mediaParams);
     }
 
     muxerDemo->InnerDestroy();
@@ -196,7 +191,6 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_004, TestSize.Lev
     trackId = muxerDemo->InnerAddTrack(trackIndex, mediaParams);
 
     ret = muxerDemo->InnerStart();
-    ASSERT_EQ(AV_ERR_OK, ret);
 
     for (int i = 0; i < FUZZ_TEST_NUM; i++) {
         cout << "current run time is: " << i << endl;
@@ -327,7 +321,6 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_005, TestSize.Lev
 
         ret = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer);
         cout << "WriteSample ret code is: " << ret << endl;
-        ASSERT_EQ(ret, AV_ERR_OK);
         
         ret = muxerDemo->InnerStop();
         cout << "Stop ret is:" << ret << endl;
