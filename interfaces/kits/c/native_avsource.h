@@ -106,6 +106,8 @@ OH_AVErrCode OH_AVSource_Destroy(OH_AVSource *source);
 
 /**
  * @brief Get the format info of source.
+ * It should be noted that the life cycle of the OH_AVFormat instance pointed to by the return value * needs
+ * to be manually released by the caller.
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @param source Pointer to an OH_AVSource instance.
  * @return Returns the source's format info if the execution is successful, otherwise returns nullptr.
@@ -117,6 +119,8 @@ OH_AVFormat *OH_AVSource_GetSourceFormat(OH_AVSource *source);
 
 /**
  * @brief Get the format info of track.
+ * It should be noted that the life cycle of the OH_AVFormat instance pointed to by the return value * needs
+ * to be manually released by the caller.
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @param source Pointer to an OH_AVSource instance.
  * @param trackIndex The track index to get format.
