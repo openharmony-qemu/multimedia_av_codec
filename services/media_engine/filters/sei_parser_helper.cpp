@@ -214,12 +214,15 @@ Status SeiParserHelper::FillTargetBuffer(const std::shared_ptr<AVBuffer> buffer,
 {
     int32_t writtenSize = 0;
     uint8_t *curPtr = startPtr;
-    while (startPtr < maxPtr && writtenSize < payloadSize) {
+    uint8_t *initPtr = startPtr;
+    int32_t contentionByteCnt = 0;
+    while (startPtr < maxPtr && ((startPtr - initPtr - contentionByteCnt) <= payloadSize)) {
         bool isFound = false;
 
         // in H.264 and H.265, bytes sequence 0x00 0x00 0x00|0x01|0x02|0x03 will be replaced by
         // bytes sequence 0x00 0x00 0x03 0x00|0x01|0x02|0x03
-        while (startPtr < maxPtr) {
+        int32_t upperLimit = payloadSize + contentionByteCnt;
+        while (startPtr < maxPtr && ((startPtr - initPtr) <= upperLimit)) {
             if (*startPtr & SEI_BYTE_MASK_HIGH_6BITS) {
                 startPtr += SEI_SHIFT_FORWARD_BYTES;
                 continue;
@@ -232,6 +235,7 @@ Status SeiParserHelper::FillTargetBuffer(const std::shared_ptr<AVBuffer> buffer,
                 continue;
             }
             isFound = true;
+            contentionByteCnt++;
             break;
         }
 
