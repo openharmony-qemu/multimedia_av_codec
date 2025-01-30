@@ -37,7 +37,6 @@ using namespace OHOS;
 using namespace OHOS::Media;
 
 namespace {
-constexpr uint32_t DEFAULT_TIME_INTERVAL = 4166;
 constexpr uint32_t MAX_OUTPUT_FRMAENUM = 1000;
 
 static inline int64_t GetTimeUs()
@@ -198,14 +197,10 @@ uint64_t VideoDecSample::threadNum_ = 1;
 
 VideoDecSample::VideoDecSample()
 {
-    printf("CCC=0 VideoDecSample()\n");
     static atomic<int32_t> sampleId = 0;
-    printf("CCC=1 VideoDecSample()\n");
     sampleId_ = ++sampleId;
-    printf("CCC=2 VideoDecSample()\n");
     TITLE_LOG;
     dyFormat_ = std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), [](OH_AVFormat *ptr) { OH_AVFormat_Destroy(ptr); });
-    printf("CCC=3 VideoDecSample()\n");
 }
 
 VideoDecSample::~VideoDecSample()
@@ -246,11 +241,8 @@ bool VideoDecSample::CreateByMime()
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
-    printf("BBB=1 mine=<%s>\n",mime_.c_str());
     codec_ = OH_VideoDecoder_CreateByMime(mime_.c_str());
-    printf("BBB=2\n");
     UNITTEST_CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, false, "OH_VideoDecoder_CreateByMime failed");
-    printf("BBB=3\n");
     return true;
 }
 
@@ -501,7 +493,6 @@ int32_t VideoDecSample::PushInputData(std::shared_ptr<CodecBufferInfo> bufferInf
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_PushInputData failed");
     }
     frameInputCount_++;
-    usleep(DEFAULT_TIME_INTERVAL);
     return AV_ERR_OK;
 }
 

@@ -464,9 +464,7 @@ uint8_t MpegReader::Mpeg4Detector::GetMpegType(const uint8_t *bufferAddr)
 
 int32_t H263Reader::Init(const std::shared_ptr<H263ReaderInfo> &info)
 {
-    printf("EEE=0 H263Reader::Init() lock wait\n");
     std::lock_guard<std::mutex> lock(mutex_);
-    printf("EEE=1 H263Reader::Init() lock ok\n");
     std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.c_str(),
                                                 std::ios::binary | std::ios::in);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile != nullptr && inputFile->is_open(),
@@ -492,20 +490,15 @@ void H263Reader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, u
 
 int32_t H263Reader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
 {
-    printf("EEE=2 H263Reader::FillBuffer() lock wait\n");
     std::lock_guard<std::mutex> lock(mutex_);
-    printf("EEE=3 H263Reader::FillBuffer() lock ok\n");
     int32_t frameSize = 0;
     bool isEosFrame = false;
     auto ret = h263UnitReader_->ReadH263Unit(bufferAddr, frameSize, isEosFrame);
-    printf("EEE=4\n");
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ReadH263Unit failed");
     uint8_t h263Type = h263Detector_->GetH263Type(h263Detector_->GetH263TypeAddr(bufferAddr));
     bufferAddr += frameSize;
     FillBufferAttr(attr, frameSize, h263Type, isEosFrame);
-    printf("EEE=5\n");    
     frameInputCount_++;
-    printf("EEE=6 frameInputCount=%d frameSize=%d\n",frameInputCount_,frameSize);    
     return AV_ERR_OK;
 }
 
