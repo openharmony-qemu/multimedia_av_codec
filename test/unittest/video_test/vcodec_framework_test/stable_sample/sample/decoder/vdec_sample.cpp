@@ -534,8 +534,7 @@ int32_t VideoDecSample::HandleInputFrame(std::shared_ptr<CodecBufferInfo> buffer
     HandleInputFrameInner(addr, attr);
     bufferInfo->SetAttr(attr);
     UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d", attr.size, (int32_t)(attr.flags));
-    auto ret=PushInputData(bufferInfo);
-    return ret;
+    return PushInputData(bufferInfo);
 }
 
 int32_t VideoDecSample::HandleOutputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo)
