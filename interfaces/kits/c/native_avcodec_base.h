@@ -849,7 +849,9 @@ typedef enum OH_MPEG4Profile {
  * @since 14
  */
 typedef enum OH_H263Profile {
+    /** Baseline profile */
     H263_PROFILE_BASELINE = 0,
+    /** Version 1 backward compatibility profile */
     H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY = 2,
 } OH_H263Profile;
 
