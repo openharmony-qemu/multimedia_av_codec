@@ -67,13 +67,6 @@ void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_
         if (needCheckSHA && g_shaBufferCount < BUFFER_COUNT) {
             SHA512_Update(&g_ctxTest, addr + i, DEFAULT_WIDTH);
         }
-        if (VideoDecSample::needDump_) {
-            if (!outFile->is_open()) {
-                cout << "output data fail" << endl;
-                continue;
-            }
-            //(void)outFile->write(addr + i, DEFAULT_WIDTH);
-        }
     }
     if ((addr!=nullptr)&&(outFile!=nullptr)&&(outFile->is_open())&&(size>0))
         (void)outFile->write(addr, size);
