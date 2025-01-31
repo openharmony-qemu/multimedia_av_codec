@@ -330,7 +330,7 @@ HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_Dynamic_Resolution_00
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
-    vdec->frameCount_ = 125;
+    vdec->frameCount_ = 125000;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_H263;
     vdec->inPath_ = "profile2_480p_720p_1080p.h263";
     vdec->outPath_ = GetTestName();
