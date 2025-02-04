@@ -84,7 +84,7 @@
             <option name="push" value="video_res/profile0_176x144.h263 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/profile0_352x288.h263 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/profile0_704x576.h263 -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/profile2_04x04.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_20x20.h263 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/profile2_1280x720.h263 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/profile2_1920x1080.h263 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/profile2_2048x1152.h263 -> /data/test/media" src="res"/>
