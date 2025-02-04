@@ -274,7 +274,7 @@ HWMTEST_F(VideoDecStableTestH263, VideoDecoder_Multithread_Min_Resolution_001, T
     auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 100;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_H263;
-    vdec->inPath_ = "profile2_04x04.h263";
+    vdec->inPath_ = "profile2_20x20.h263";
     vdec->outPath_ = GetTestName();
     EXPECT_EQ(vdec->CreateByMime(), true);
     struct OH_AVCodecCallback cb;
