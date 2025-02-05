@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 #include "common/status.h"
 #include "meta/video_types.h"
 #include "filter/filter.h"
+#include "performance_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -42,6 +43,8 @@ public:
     Status SetParameter(const std::shared_ptr<Meta>& meta);
     void UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t renderDelay = 0);
     Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
+    Status SetPerfRecEnabled(bool isPerfRecEnabled);
+
 private:
     int64_t CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer,
         int64_t bufferAnchoredClockTime, int64_t currentClockTime, float playbackRate);
@@ -49,6 +52,7 @@ private:
     int64_t SmoothDeltaTime(int64_t accumulatedDeltaTime, int64_t currentDeltaTime);
     void UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
         const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+    void PerfRecord(int64_t waitTime);
 
     class VideoLagDetector : public LagDetector {
     public:
@@ -69,15 +73,12 @@ private:
     std::atomic<bool> needUpdateTimeAnchor_ {true};
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};
-    uint32_t frameRate_ {0};
     int64_t firstFramePts_ {0};
     int64_t firstFrameClockTime_ {0};
     int64_t lastBufferRelativePts_ {HST_TIME_NONE};
     int64_t lastBufferAnchoredClockTime_ {HST_TIME_NONE};
     int64_t deltaTimeAccu_ {0};
-    VideoScaleType videoScaleType_ {VideoScaleType::VIDEO_SCALE_TYPE_FIT};
 
-    void CalcFrameRate();
     std::shared_ptr<OHOS::Media::Task> frameRateTask_ {nullptr};
     std::atomic<uint64_t> renderFrameCnt_ {0};
     std::atomic<uint64_t> discardFrameCnt_ {0};
@@ -85,11 +86,13 @@ private:
     int64_t firstPts_ {HST_TIME_NONE};
     int64_t fixDelay_ {0};
     bool seekFlag_{false};
+    bool isPerfRecEnabled_ { false };
     std::atomic<int32_t> dropFrameContinuouslyCnt_ {0};
     int64_t lastPts_ = -1;
     int64_t lastClockTime_ = -1;
     std::atomic<bool> isRenderStarted_{false};
     VideoLagDetector lagDetector_ {};
+    PerfRecorder perfRecorder_ {};
 };
 } // namespace Pipeline
 } // namespace Media

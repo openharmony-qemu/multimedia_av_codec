@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,6 +37,7 @@
 #include "plugin/plugin_time.h"
 #include "plugin/demuxer_plugin.h"
 #include "interrupt_listener.h"
+#include "performance_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -91,6 +92,10 @@ public:
     void OnEvent(const Plugins::PluginEvent &event) override;
     void OnEventBuffer(const Plugins::PluginEvent &event);
     void OnSeekReadyEvent(const Plugins::PluginEvent &event);
+    void OnDfxEvent(const Plugins::PluginDfxEvent &event) override;
+
+    Status SetPerfRecEnabled(bool isPerfRecEnabled);
+
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
     bool IsRenderNextVideoFrameSupported();
@@ -235,6 +240,8 @@ private:
     void UpdateSyncFrameInfo(std::shared_ptr<AVBuffer> sample, uint32_t trackId, bool isDiscardable = false);
     void EnterDraggingOpenGopCnt();
     void ResetDraggingOpenGopCnt();
+    Status ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp,
+        const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample);
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -315,6 +322,8 @@ private:
     uint32_t targetVideoTrackId_ {TRACK_ID_DUMMY};
     SyncFrameInfo syncFrameInfo_ {};
     std::mutex syncFrameInfoMutex_ {};
+    bool perfRecEnabled_ { false };
+    PerfRecorder perfRecorder_ {};
 };
 } // namespace Media
 } // namespace OHOS

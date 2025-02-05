@@ -67,6 +67,7 @@ public:
     Status DoSetPlayRange(int64_t start, int64_t end) override;
     Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
     Status DoProcessOutputBuffer(int recvArg, bool dropFrame, bool byIdx, uint32_t idx, int64_t renderTime) override;
+    Status DoSetPerfRecEnabled(bool isPerfRecEnabled) override;
 
     void SetParameter(const std::shared_ptr<Meta>& parameter) override;
     void GetParameter(std::shared_ptr<Meta>& parameter) override;

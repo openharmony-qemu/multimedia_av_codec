@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -161,6 +161,14 @@ Status DemuxerFilter::SetSubtitleSource(const std::shared_ptr<MediaSource> sourc
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->SetSubtitleSource(source);
+}
+
+Status DemuxerFilter::DoSetPerfRecEnabled(bool isPerfRecEnabled)
+{
+    isPerfRecEnabled_ = isPerfRecEnabled;
+    FALSE_RETURN_V(demuxer_ != nullptr, Status::OK);
+    demuxer_->SetPerfRecEnabled(isPerfRecEnabled);
+    return Status::OK;
 }
 
 void DemuxerFilter::SetBundleName(const std::string& bundleName)

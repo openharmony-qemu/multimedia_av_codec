@@ -61,6 +61,8 @@ public:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;
 
+    Status DoSetPerfRecEnabled(bool isPerfRecEnabled) override;
+
     Status SetVolume(float volume);
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
