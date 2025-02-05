@@ -496,10 +496,10 @@ Status AudioSink::SetPerfRecEnabled(bool isPerfRecEnabled)
 void AudioSink::PerfRecord(int64_t audioWriteMs)
 {
     FALSE_RETURN_NOLOG(isPerfRecEnabled_);
-    FALSE_RETURN_NOLOG(perfRecorder_.Record(audioWriteMs) == PerfRecorder::FULL);
     FALSE_RETURN_MSG(playerEventReceiver_ != nullptr, "Report perf failed, event receiver is nullptr");
+    FALSE_RETURN_NOLOG(perfRecorder_.Record(audioWriteMs) == PerfRecorder::FULL);
     playerEventReceiver_->OnDfxEvent(
-        { "audioSink", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
+        { "ASINK", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
     perfRecorder_.Reset();
 }
 

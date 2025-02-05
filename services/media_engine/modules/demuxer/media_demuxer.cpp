@@ -71,6 +71,9 @@ constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
 constexpr int32_t US_TO_S = 1000000;
 constexpr int32_t DEFAULT_MULTI_VIDEO_TRACK_NUM = 5;
+const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
+    { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
+};
 
 enum SceneCode : int32_t {
     /**
@@ -1989,8 +1992,9 @@ Status MediaDemuxer::ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::Dem
     FALSE_RETURN_V(perfRecEnabled_, pluginTemp->ReadSample(innerTrackID, sample));
     Status ret = Status::OK;
     int64_t demuxDuration = CALC_EXPR_TIME_MS(ret = pluginTemp->ReadSample(innerTrackID, sample));
+    FALSE_RETURN_V_MSG(eventReceiver_ != nullptr, Status::OK, "Report perf failed, callback is nullptr");
     FALSE_RETURN_V_NOLOG(perfRecorder_.Record(demuxDuration) == PerfRecorder::FULL, ret);
-    eventReceiver_->OnDfxEvent({ "demuxer", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
+    eventReceiver_->OnDfxEvent({ "DEMUX", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
     perfRecorder_.Reset();
     return ret;
 }
@@ -2195,7 +2199,9 @@ void MediaDemuxer::OnSeekReadyEvent(const Plugins::PluginEvent &event)
 void MediaDemuxer::OnDfxEvent(const Plugins::PluginDfxEvent &event)
 {
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "Dfx event report error, receiver is nullptr");
-    eventReceiver_->OnDfxEvent({ "source", DfxEventType::DFX_INFO_PERF_REPORT, event.param });
+    auto it = DFX_EVENT_MAP.find(event.type);
+    FALSE_RETURN_MSG(it != DFX_EVENT_MAP.end(), "No mapped dfx event type, src type %{public}d", event.type);
+    eventReceiver_->OnDfxEvent({ it->second.first, it->second.second, event.param });
 }
 
 Status MediaDemuxer::OptimizeDecodeSlow(bool isDecodeOptimizationEnabled)

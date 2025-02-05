@@ -363,10 +363,10 @@ Status VideoDecoderAdapter::SetPerfRecEnabled(bool isPerfRecEnabled)
 int32_t VideoDecoderAdapter::ReleaseOutputBufferWithPerfRecord(uint32_t index, bool render)
 {
     int64_t renderTime = CALC_EXPR_TIME_MS(mediaCodec_->ReleaseOutputBuffer(index, render));
-    FALSE_RETURN_V_NOLOG(perfRecorder_.Record(renderTime) == PerfRecorder::FULL, 0);
     FALSE_RETURN_V_MSG(eventReceiver_ != nullptr, 0, "Report perf failed, callback is nullptr");
+    FALSE_RETURN_V_NOLOG(perfRecorder_.Record(renderTime) == PerfRecorder::FULL, 0);
     eventReceiver_->
-        OnDfxEvent({ "videoRenderer", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
+        OnDfxEvent({ "VRNDR", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
     perfRecorder_.Reset();
     return 0;
 }

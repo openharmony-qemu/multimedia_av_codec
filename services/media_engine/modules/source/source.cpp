@@ -401,7 +401,7 @@ Status Source::ReadWithPerfRecord(
     FALSE_RETURN_V_NOLOG(perfRecorder_.Record(readSpeed) == PerfRecorder::FULL, readRes);
     FALSE_RETURN_V_MSG(mediaDemuxerCallback_ != nullptr, readRes, "Report perf failed, callback is nullptr");
     mediaDemuxerCallback_->OnDfxEvent(
-        { .type = Plugins::PluginDfxEventType::SOURCE, .param = perfRecorder_.GetMainPerfData() });
+        { .type = Plugins::PluginDfxEventType::PERF_SOURCE, .param = perfRecorder_.GetMainPerfData() });
     perfRecorder_.Reset();
     return readRes;
 }

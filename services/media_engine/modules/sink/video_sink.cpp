@@ -141,9 +141,9 @@ Status VideoSink::SetPerfRecEnabled(bool isPerfRecEnabled)
 void VideoSink::PerfRecord(int64_t waitTime)
 {
     FALSE_RETURN_NOLOG(isPerfRecEnabled_);
-    FALSE_RETURN_NOLOG(perfRecorder_.Record(Plugins::Us2Ms(waitTime)) == PerfRecorder::FULL);
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "Report perf failed, callback is nullptr");
-    eventReceiver_->OnDfxEvent({ "videoSink", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
+    FALSE_RETURN_NOLOG(perfRecorder_.Record(Plugins::Us2Ms(waitTime)) == PerfRecorder::FULL);
+    eventReceiver_->OnDfxEvent({ "VSINK", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
     perfRecorder_.Reset();
 }
 
