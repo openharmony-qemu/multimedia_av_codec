@@ -189,6 +189,7 @@ private:
     bool SelectTrackChangeStream(uint32_t trackId);
     bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
+    void UpdateThreadPriority(uint32_t trackId);
 
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
