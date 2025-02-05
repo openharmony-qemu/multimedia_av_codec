@@ -249,7 +249,6 @@ SeiParserListener::SeiParserListener(const std::string &mimeType, sptr<AVBufferQ
     FALSE_RETURN_MSG(seiParserHelper_ != nullptr, "Create SeiParserHelper failed for %{public}s", mimeType.c_str());
 
     sptr<IBrokerListener> tmpListener = this;
-    producer_->RemoveBufferFilledListener(tmpListener);
     producer_->SetBufferFilledListener(tmpListener);
 }
  
