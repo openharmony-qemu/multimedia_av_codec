@@ -258,6 +258,16 @@
           },
           {
             "type": "so",
+            "name": "//foundation/multimedia/av_codec/services/media_engine/plugins/ffmpeg_adapter:media_plugin_FFmpegDemuxer",
+            "header": {
+              "header_files": [
+                "reference_parser.h"
+              ],
+              "header_base": "//foundation/multimedia/av_codec/services/media_engine/plugins/ffmpeg_adapter/common"
+            }
+          },
+          {
+            "type": "so",
             "name": "//foundation/multimedia/av_codec/services/engine/codec/video/hevcdecoder:hevc_decoder",
             "header": {
               "header_files": [
