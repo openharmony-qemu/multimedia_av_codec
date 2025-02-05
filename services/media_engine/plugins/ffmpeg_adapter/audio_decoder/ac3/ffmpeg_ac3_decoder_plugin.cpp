@@ -28,7 +28,7 @@ using namespace Ffmpeg;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FFmpegAC3DecoderPlugin"};
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
-constexpr int32_t MAX_BITS_PER_SAMPLE = 4;
+constexpr int32_t MAX_BYTES_PER_SAMPLE = 4;
 constexpr int32_t SAMPLES = 1536;
 
 static const int32_t AC3_DECODER_SAMPLE_RATE_TABLE[] = {32000, 44100, 48000};
@@ -197,7 +197,7 @@ Status FFmpegAC3DecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 
 int32_t FFmpegAC3DecoderPlugin::GetInputBufferSize()
 {
-    int32_t inputBufferSize = SAMPLES * channels * MAX_BITS_PER_SAMPLE;
+    int32_t inputBufferSize = SAMPLES * channels * MAX_BYTES_PER_SAMPLE;
     int32_t maxSize = basePlugin->GetMaxInputSize();
     if (maxSize < 0 || maxSize > inputBufferSize) {
         maxSize = inputBufferSize;
@@ -207,7 +207,7 @@ int32_t FFmpegAC3DecoderPlugin::GetInputBufferSize()
 
 int32_t FFmpegAC3DecoderPlugin::GetOutputBufferSize()
 {
-    int32_t outputBufferSize = SAMPLES * channels * MAX_BITS_PER_SAMPLE;
+    int32_t outputBufferSize = SAMPLES * channels * MAX_BYTES_PER_SAMPLE;
     return outputBufferSize;
 }
 } // namespace Ffmpeg

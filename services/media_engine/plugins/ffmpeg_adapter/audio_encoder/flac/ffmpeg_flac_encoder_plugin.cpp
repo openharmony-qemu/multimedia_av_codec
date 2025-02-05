@@ -33,7 +33,7 @@ constexpr int32_t FLAC_MIN_BIT_RATE = 32000;
 constexpr int32_t FLAC_MAX_BIT_RATE = 1536000;
 constexpr int32_t MIN_COMPLIANCE_LEVEL = -2;
 constexpr int32_t MAX_COMPLIANCE_LEVEL = 2;
-constexpr int32_t MAX_BITS_PER_SAMPLE = 4;
+constexpr int32_t MAX_BYTES_PER_SAMPLE = 4;
 constexpr int32_t SAMPLES = 9216;
 static const int32_t FLAC_ENCODER_SAMPLE_RATE_TABLE[] = {
     8000, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000,
@@ -255,7 +255,7 @@ Status FFmpegFlacEncoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVB
 
 int32_t FFmpegFlacEncoderPlugin::GetInputBufferSize()
 {
-    int32_t inputBufferSize = SAMPLES * channels_ * MAX_BITS_PER_SAMPLE;
+    int32_t inputBufferSize = SAMPLES * channels_ * MAX_BYTES_PER_SAMPLE;
     int32_t maxSize = basePlugin->GetMaxInputSize();
     if (maxSize < 0 || maxSize > inputBufferSize) {
         maxSize = inputBufferSize;
@@ -265,7 +265,7 @@ int32_t FFmpegFlacEncoderPlugin::GetInputBufferSize()
 
 int32_t FFmpegFlacEncoderPlugin::GetOutputBufferSize()
 {
-    int32_t outputBufferSize = SAMPLES * channels_ * MAX_BITS_PER_SAMPLE;
+    int32_t outputBufferSize = SAMPLES * channels_ * MAX_BYTES_PER_SAMPLE;
     return outputBufferSize;
 }
 } // namespace Ffmpeg

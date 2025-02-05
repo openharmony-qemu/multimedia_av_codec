@@ -25,11 +25,10 @@ using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FFmpegFlacDecoderPlugin"};
-constexpr int32_t MAX_BITS_PER_SAMPLE = 4;
-constexpr int32_t SAMPLES = 9216;
+constexpr int32_t MAX_BYTES_PER_SAMPLE = 4;
+constexpr int32_t SAMPLES = 18432;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
-constexpr int32_t EXPAND_SIZE = 2;
 static const int32_t FLAC_DECODER_SAMPLE_RATE_TABLE[] = {
     8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000, 192000,
 };
@@ -40,7 +39,7 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 FFmpegFlacDecoderPlugin::FFmpegFlacDecoderPlugin(const std::string& name)
-    : CodecPlugin(name), channels(0), sampleFormat_(INVALID_WIDTH), basePlugin(std::make_unique<FfmpegBaseDecoder>())
+    : CodecPlugin(name), channels(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
 {
 }
 
@@ -78,7 +77,6 @@ Status FFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
         "init failed, because CheckSampleFormat failed.");
 
     channels = channelCount;
-    format->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat_);
     return Status::OK;
 }
 
@@ -173,10 +171,7 @@ Status FFmpegFlacDecoderPlugin::Release()
 
 int32_t FFmpegFlacDecoderPlugin::GetInputBufferSize()
 {
-    int32_t inputBufferSize = SAMPLES * channels * MAX_BITS_PER_SAMPLE;
-    if (sampleFormat_ == AudioSampleFormat::SAMPLE_S32LE || sampleFormat_ == AudioSampleFormat::SAMPLE_F32LE) {
-        inputBufferSize *= EXPAND_SIZE; // max inputBufferSize needs to be expanded at 32bit
-    }
+    int32_t inputBufferSize = SAMPLES * channels * MAX_BYTES_PER_SAMPLE;
     int32_t maxSize = basePlugin->GetMaxInputSize();
     if (maxSize < 0 || maxSize > inputBufferSize) {
         maxSize = inputBufferSize;
@@ -186,10 +181,7 @@ int32_t FFmpegFlacDecoderPlugin::GetInputBufferSize()
 
 int32_t FFmpegFlacDecoderPlugin::GetOutputBufferSize()
 {
-    int32_t outputBufferSize = SAMPLES * channels * MAX_BITS_PER_SAMPLE;
-    if (sampleFormat_ == AudioSampleFormat::SAMPLE_S32LE || sampleFormat_ == AudioSampleFormat::SAMPLE_F32LE) {
-        outputBufferSize *= EXPAND_SIZE; // max outputBufferSize needs to be expanded at 32bit
-    }
+    int32_t outputBufferSize = SAMPLES * channels * MAX_BYTES_PER_SAMPLE;
     return outputBufferSize;
 }
 } // namespace Ffmpeg
