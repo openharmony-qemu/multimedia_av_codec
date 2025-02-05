@@ -231,6 +231,7 @@ private:
     void HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
     void InitPtsInfo();
     void InitMediaStartPts();
+    void UpdateBufferQueueListener(int32_t trackId);
     bool IsOpenGopBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     void UpdateSyncFrameInfo(std::shared_ptr<AVBuffer> sample, uint32_t trackId, bool isDiscardable = false);
     void EnterDraggingOpenGopCnt();
