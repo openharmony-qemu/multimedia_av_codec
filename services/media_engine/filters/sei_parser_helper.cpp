@@ -45,17 +45,15 @@ constexpr uint16_t AVC_SEI_TYPE = 0x06;                     // 4th bit to 8th bi
 constexpr uint16_t AVC_NAL_UNIT_TYPE_FLAG = (0x80 | 0x1F);  // 0x80 for forbidden bit, 0x1F for nalu type 1001 1111
 constexpr uint16_t AVC_SEI_HEAD_LEN = 1;
 
+constexpr uint8_t EMULATION_GUIDE_0_LEN = 2;
 constexpr uint8_t EMULATION_PREVENTION_CODE = 0X03;
 constexpr uint8_t SEI_ASSEMBLE_BYTE = 0xFF;
 constexpr uint8_t SEI_BYTE_MASK_HIGH_7BITS = 0xFE;
-constexpr uint8_t SEI_BYTE_MASK_HIGH_6BITS = 0xFC;
 constexpr uint8_t SEI_SHIFT_FORWARD_BYTES = 0x04;
 constexpr uint8_t SEI_SHIFT_BACKWARD_BYTES = 0x03;
 
 constexpr uint32_t NALU_START_BIG_ENDIAN = 0x00000001;
 constexpr uint32_t NALU_START_LITTLE_ENDIAN = 0x01000000;
-constexpr uint32_t SEI_UINT32_MASK_HIGH_6BITS = 0xFCFFFFFF;
-constexpr uint32_t SEI_CONTEND_BYTE_SEQUENCE = 0x00030000; // 0x00 0x00 0x03 0x00
 }  // namespace
  
 namespace OHOS {
@@ -209,67 +207,27 @@ int32_t SeiParserHelper::GetSeiTypeOrSize(uint8_t *&bodyPtr, const uint8_t *cons
     return res;
 }
 
-Status SeiParserHelper::FillTargetBuffer(const std::shared_ptr<AVBuffer> buffer,
-    uint8_t *&startPtr, const uint8_t *const maxPtr, const int32_t payloadSize)
+Status SeiParserHelper::FillTargetBuffer(
+    const std::shared_ptr<AVBuffer> buffer, uint8_t *&payloadPtr, const uint8_t *maxPtr, const int32_t payloadSize)
 {
     int32_t writtenSize = 0;
-    uint8_t *curPtr = startPtr;
-    uint8_t *initPtr = startPtr;
-    int32_t contentionByteCnt = 0;
-    while (startPtr < maxPtr && ((startPtr - initPtr - contentionByteCnt) <= payloadSize)) {
-        bool isFound = false;
-
-        // in H.264 and H.265, bytes sequence 0x00 0x00 0x00|0x01|0x02|0x03 will be replaced by
-        // bytes sequence 0x00 0x00 0x03 0x00|0x01|0x02|0x03
-        int32_t upperLimit = payloadSize + contentionByteCnt;
-        while (startPtr < maxPtr && ((startPtr - initPtr) <= upperLimit)) {
-            if (*startPtr & SEI_BYTE_MASK_HIGH_6BITS) {
-                startPtr += SEI_SHIFT_FORWARD_BYTES;
-                continue;
-            }
-
-            // check whether CONTENTION BYTES SEQUENCE occur, i.e. 0x00|0x01|0x02|0x03 after 0x00 0x00 0x03
-            if (((*(reinterpret_cast<uint32_t *>(startPtr - EMULATION_PREVENTION_CODE))) & SEI_UINT32_MASK_HIGH_6BITS)
-                != SEI_CONTEND_BYTE_SEQUENCE) {
-                startPtr++;
-                continue;
-            }
-            isFound = true;
-            contentionByteCnt++;
-            break;
+    uint8_t *targetPtr = (buffer == nullptr ? nullptr : buffer->memory_->GetAddr());
+    for (int32_t zeroNum = 0; writtenSize < payloadSize && payloadPtr < maxPtr; payloadPtr++) {
+        // in H.264 and H.265, 0x000000, 0x000001, 0x000002, 0x000003 will be replaced while encoding
+        if (*payloadPtr == EMULATION_PREVENTION_CODE && zeroNum == EMULATION_GUIDE_0_LEN) {
+            zeroNum = 0;
+            continue;
         }
-
-        if (isFound) {
-            int32_t length = startPtr - curPtr - 1;
-            if (writtenSize + length > payloadSize) {
-                length = payloadSize - writtenSize;
-            }
-
-            if (buffer != nullptr && buffer->memory_ != nullptr) {
-                int32_t writeBytes = buffer->memory_->Write(curPtr, length);
-                FALSE_RETURN_V_MSG(length == writeBytes, Status::ERROR_NO_MEMORY,
-                    "copy sei payload failed, writeBytes:%{public}d, length:%{public}d", writeBytes, length);
-            }
-
-            curPtr = startPtr++;
-            writtenSize += length;
+        zeroNum = *payloadPtr == 0 ? zeroNum + 1 : 0;
+        if (targetPtr != nullptr) {
+            targetPtr[writtenSize] = *payloadPtr;
         }
+        writtenSize++;
     }
-
-    int32_t length = startPtr - curPtr;
-    if (writtenSize + length > payloadSize) {
-        length = payloadSize - writtenSize;
-    }
-
-    if (buffer != nullptr && buffer->memory_ != nullptr) {
-        int32_t writeBytes = buffer->memory_->Write(curPtr, length);
-        FALSE_RETURN_V_MSG(length == writeBytes, Status::ERROR_NO_MEMORY,
-            "copy sei payload failed, writeBytes:%{public}d, length:%{public}d", writeBytes, length);
-    }
-    writtenSize += length;
-    FALSE_RETURN_V_MSG(writtenSize == payloadSize, Status::ERROR_UNSUPPORTED_FORMAT,
-        "parse sei payload failed, writtenSize:%{public}d, payloadSize:%{public}d", writtenSize, payloadSize);
-
+    FALSE_RETURN_V_MSG(
+        writtenSize == payloadSize, Status::ERROR_UNSUPPORTED_FORMAT, "avalid data less than payloadSize");
+    FALSE_RETURN_V_NOLOG(buffer != nullptr, Status::OK);
+    buffer->memory_->SetSize(writtenSize);
     return Status::OK;
 }
 
