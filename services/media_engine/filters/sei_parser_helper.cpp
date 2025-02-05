@@ -207,8 +207,8 @@ int32_t SeiParserHelper::GetSeiTypeOrSize(uint8_t *&bodyPtr, const uint8_t *cons
     return res;
 }
 
-Status SeiParserHelper::FillTargetBuffer(
-    const std::shared_ptr<AVBuffer> buffer, uint8_t *&payloadPtr, const uint8_t *maxPtr, const int32_t payloadSize)
+Status SeiParserHelper::FillTargetBuffer(const std::shared_ptr<AVBuffer> buffer,
+    uint8_t *&payloadPtr, const uint8_t *const maxPtr, const int32_t payloadSize)
 {
     int32_t writtenSize = 0;
     uint8_t *targetPtr = (buffer == nullptr ? nullptr : buffer->memory_->GetAddr());
@@ -310,7 +310,6 @@ void SeiParserListener::FlowLimit(const std::shared_ptr<AVBuffer> &avBuffer)
 void SeiParserListener::SetPayloadTypeVec(const std::vector<int32_t> &vector)
 {
     FALSE_RETURN_MSG(seiParserHelper_ != nullptr, "seiParserHelper is nullptr");
-    MEDIA_LOG_I("SeiParserListener::SetPayloadTypeVec");
     seiParserHelper_->SetPayloadTypeVec(vector);
 }
 
