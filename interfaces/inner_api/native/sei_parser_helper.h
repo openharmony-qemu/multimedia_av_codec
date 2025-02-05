@@ -23,6 +23,7 @@
 #include "filter/filter.h"
 #include "buffer/avbuffer_queue.h"
 #include "media_sync_manager.h"
+#include "osal/task/autospinlock.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,21 +37,26 @@ class SeiParserHelper {
 public:
     virtual ~SeiParserHelper() = default;
 
-    Status ParseSeiPayload(std::shared_ptr<AVBuffer> buffer, const std::shared_ptr<SeiPayloadInfoGroup> &group);
+    Status ParseSeiPayload(const std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<SeiPayloadInfoGroup> &group);
     void SetPayloadTypeVec(const std::vector<int32_t> &vector);
 
 protected:
     SeiParserHelper() = default;
 
-    static int32_t GetSeiTypeOrSize(uint8_t *&bodyPtr, const uint8_t *maxPtr);
-    static Status FillTargetBuffer(
-        const std::shared_ptr<AVBuffer> buffer, uint8_t *&payloadPtr, const uint8_t *maxPtr, const int32_t payloadSize);
+private:
+
+    static int32_t GetSeiTypeOrSize(uint8_t *&bodyPtr, const uint8_t *const maxPtr);
+    static Status FillTargetBuffer(const std::shared_ptr<AVBuffer> buffer,
+        uint8_t *&payloadPtr, const uint8_t *const maxPtr, const int32_t payloadSize);
 
     virtual bool IsSeiNalu(uint8_t *&headerPtr) = 0;
-    bool FindNextSeiNaluPos(uint8_t *&startPtr, const uint8_t *maxPtr);
-    Status ParseSeiRbsp(uint8_t *&bodyPtr, const uint8_t *maxPtr, const std::shared_ptr<SeiPayloadInfoGroup> &group);
+    bool FindNextSeiNaluPos(uint8_t *&startPtr, const uint8_t *const maxPtr);
+    Status ParseSeiRbsp(
+        uint8_t *&bodyPtr, const uint8_t *const maxPtr, const std::shared_ptr<SeiPayloadInfoGroup> &group);
+    static uint32_t GetNaluStartSeq();
 
     std::vector<int32_t> payloadTypeVec_{};
+    SpinLock spinLock_;
 };
 
 class AvcSeiParserHelper : public SeiParserHelper {
@@ -83,7 +89,7 @@ struct SeiPayloadInfo {
 };
 
 struct SeiPayloadInfoGroup {
-    int64_t playbackPosition;
+    int64_t playbackPosition = 0;
     std::vector<SeiPayloadInfo> vec;
 };
 
@@ -108,6 +114,8 @@ public:
         syncCenter_ = syncCenter;
     }
 
+    Status SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes);
+
 private:
     void FlowLimit(const std::shared_ptr<AVBuffer> &avBuffer);
 
@@ -120,6 +128,7 @@ private:
     std::condition_variable cond_ {};
     std::shared_ptr<Pipeline::IMediaSyncCenter> syncCenter_;
     int64_t startPts_ = 0;
+    std::vector<int32_t> payloadTypes_{};
 };
 }  // namespace Media
 }  // namespace OHOS
