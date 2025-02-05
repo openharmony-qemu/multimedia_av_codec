@@ -880,6 +880,12 @@ void DemuxerFilter::SetIsEnableReselectVideoTrack(bool isEnable)
     isEnableReselectVideoTrack_ = isEnable;
     demuxer_->SetIsEnableReselectVideoTrack(isEnable);
 }
+
+void DemuxerFilter::SetApiVersion(int32_t apiVersion)
+{
+    apiVersion_ = apiVersion;
+    demuxer_->SetApiVersion(apiVersion);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

@@ -2515,5 +2515,11 @@ void MediaDemuxer::ResetDraggingOpenGopCnt()
     std::lock_guard<std::mutex> lock(syncFrameInfoMutex_);
     syncFrameInfo_.skipOpenGopUnrefFrameCnt = 0;
 }
+
+void MediaDemuxer::SetApiVersion(int32_t apiVersion)
+{
+    apiVersion_ = apiVersion;
+    demuxerPluginManager_->SetApiVersion(apiVersion);
+}
 } // namespace Media
 } // namespace OHOS
