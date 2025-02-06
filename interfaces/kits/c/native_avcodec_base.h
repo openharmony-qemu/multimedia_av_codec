@@ -249,7 +249,7 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2;
 /**
  * @brief Enumerates the MIME types of video codecs
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_H263;
 
@@ -846,7 +846,7 @@ typedef enum OH_MPEG4Profile {
  * @brief H263 Profile
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 16
  */
 typedef enum OH_H263Profile {
     /** Baseline profile */
