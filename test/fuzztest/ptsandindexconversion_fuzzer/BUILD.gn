@@ -33,9 +33,6 @@ ohos_fuzztest("PtsAndIndexConversionFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "$MEDIA_ROOT_DIR/services/media_engine/modules/demuxer/pts_and_index_conversion.cpp",
-    "$MEDIA_ROOT_DIR/services/media_engine/modules/demuxer/type_finder.cpp",
-    "$MEDIA_ROOT_DIR/services/media_engine/modules/source/source.cpp",
     "ptsandindexconversion_fuzzer.cpp",
     "ptsandindexconversion_sample.cpp",
   ]
@@ -48,7 +45,7 @@ ohos_fuzztest("PtsAndIndexConversionFuzzTest") {
   ]
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
-    "$MEDIA_ROOT_DIR/services/dfx:av_codec_service_dfx",
+    "$MEDIA_ROOT_DIR/services/media_engine/modules:av_codec_media_engine_modules",
   ]
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
