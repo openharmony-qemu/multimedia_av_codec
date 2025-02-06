@@ -23,7 +23,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFFMpegFlacDecoderPlugin"};
 constexpr int32_t MAX_BYTES_PER_SAMPLE = 4;
-constexpr int32_t SAMPLES = 18432;
+constexpr int32_t SAMPLES = 9216;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
 static const int32_t FLAC_DECODER_SAMPLE_RATE_TABLE[] = {
