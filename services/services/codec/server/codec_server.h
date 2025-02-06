@@ -20,6 +20,7 @@
 #include <shared_mutex>
 #include <unordered_map>
 #include "avcodec_sysevent.h"
+#include "avcodec_log_tag.h"
 #include "codecbase.h"
 #include "i_codec_service.h"
 #include "nocopyable.h"
@@ -33,7 +34,9 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class CodecServer : public std::enable_shared_from_this<CodecServer>, public ICodecService, public NoCopyable {
+class CodecServer : public std::enable_shared_from_this<CodecServer>,
+                    public ICodecService,
+                    public NoCopyable {
 public:
     static std::shared_ptr<ICodecService> Create(int32_t instanceId = INVALID_INSTANCE_ID);
     CodecServer();

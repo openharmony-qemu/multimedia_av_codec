@@ -15,6 +15,7 @@
 
 #include "codec_listener_proxy.h"
 #include <shared_mutex>
+#include "avcodec_dfx_component.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_parcel.h"
@@ -28,7 +29,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 
 namespace OHOS {
 namespace MediaAVCodec {
-class CodecListenerProxy::CodecBufferCache : public NoCopyable {
+class CodecListenerProxy::CodecBufferCache : public AVCodecDfxComponent, public NoCopyable {
 public:
     CodecBufferCache() = default;
     ~CodecBufferCache() = default;
@@ -38,7 +39,7 @@ public:
         std::lock_guard<std::shared_mutex> lock(mutex_);
         CacheFlag flag = CacheFlag::UPDATE_CACHE;
         if (buffer == nullptr) {
-            AVCODEC_LOGD("Invalid buffer for index: %{public}u", index);
+            AVCODEC_LOGD_WITH_TAG("Invalid buffer for index: %{public}u", index);
             flag = CacheFlag::INVALIDATE_CACHE;
             parcel.WriteUint8(static_cast<uint8_t>(flag));
             auto iter = caches_.find(index);
@@ -57,10 +58,10 @@ public:
         }
 
         if (iter == caches_.end()) {
-            AVCODEC_LOGD("Add cache codec buffer, index: %{public}u", index);
+            AVCODEC_LOGD_WITH_TAG("Add cache codec buffer, index: %{public}u", index);
             caches_.emplace(index, buffer);
         } else {
-            AVCODEC_LOGD("Update cache codec buffer, index: %{public}u", index);
+            AVCODEC_LOGD_WITH_TAG("Update cache codec buffer, index: %{public}u", index);
             iter->second = buffer;
         }
 
@@ -120,19 +121,26 @@ CodecListenerProxy::~CodecListenerProxy()
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
+void CodecListenerProxy::Init()
+{
+    inputBufferCache_->UpdateLogTagWithThreadLoacal();
+    outputBufferCache_->UpdateLogTagWithThreadLoacal();
+    this->UpdateLogTagWithThreadLoacal();
+}
+
 void CodecListenerProxy::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
     MessageParcel data;
     MessageParcel reply;
     MessageOption option(MessageOption::TF_ASYNC);
     bool token = data.WriteInterfaceToken(CodecListenerProxy::GetDescriptor());
-    CHECK_AND_RETURN_LOG(token, "Write descriptor failed!");
+    CHECK_AND_RETURN_LOG_WITH_TAG(token, "Write descriptor failed!");
 
     data.WriteUint64(GetGeneration());
     data.WriteInt32(static_cast<int32_t>(errorType));
     data.WriteInt32(errorCode);
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_ERROR), data, reply, option);
-    CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
+    CHECK_AND_RETURN_LOG_WITH_TAG(error == AVCS_ERR_OK, "Send request failed");
 }
 
 void CodecListenerProxy::OnOutputFormatChanged(const Format &format)
@@ -141,25 +149,25 @@ void CodecListenerProxy::OnOutputFormatChanged(const Format &format)
     MessageParcel reply;
     MessageOption option(MessageOption::TF_ASYNC);
     bool token = data.WriteInterfaceToken(CodecListenerProxy::GetDescriptor());
-    CHECK_AND_RETURN_LOG(token, "Write descriptor failed!");
+    CHECK_AND_RETURN_LOG_WITH_TAG(token, "Write descriptor failed!");
 
     data.WriteUint64(GetGeneration());
     (void)AVCodecParcel::Marshalling(data, format);
-    CHECK_AND_RETURN_LOG(outputBufferCache_ != nullptr, "Output buffer cache is nullptr");
+    CHECK_AND_RETURN_LOG_WITH_TAG(outputBufferCache_ != nullptr, "Output buffer cache is nullptr");
     outputBufferCache_->ClearCaches();
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_FORMAT_CHANGED), data,
                                       reply, option);
-    CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
+    CHECK_AND_RETURN_LOG_WITH_TAG(error == AVCS_ERR_OK, "Send request failed");
 }
 
 void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    CHECK_AND_RETURN_LOG(inputBufferCache_ != nullptr, "Input buffer cache is nullptr");
+    CHECK_AND_RETURN_LOG_WITH_TAG(inputBufferCache_ != nullptr, "Input buffer cache is nullptr");
     MessageParcel data;
     MessageParcel reply;
     MessageOption option(MessageOption::TF_ASYNC);
     bool token = data.WriteInterfaceToken(CodecListenerProxy::GetDescriptor());
-    CHECK_AND_RETURN_LOG(token, "Write descriptor failed!");
+    CHECK_AND_RETURN_LOG_WITH_TAG(token, "Write descriptor failed!");
 
     uint64_t currentGeneration = GetGeneration();
     if (inputBufferGeneration_ != currentGeneration) {
@@ -173,20 +181,20 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
         buffer->meta_->Clear();
     }
     bool ret = inputBufferCache_->WriteToParcel(index, buffer, data);
-    CHECK_AND_RETURN_LOG(ret, "InputBufferCache write parcel failed");
+    CHECK_AND_RETURN_LOG_WITH_TAG(ret, "InputBufferCache write parcel failed");
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE),
                                       data, reply, option);
-    CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
+    CHECK_AND_RETURN_LOG_WITH_TAG(error == AVCS_ERR_OK, "Send request failed");
 }
 
 void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    CHECK_AND_RETURN_LOG(outputBufferCache_ != nullptr, "Output buffer cache is nullptr");
+    CHECK_AND_RETURN_LOG_WITH_TAG(outputBufferCache_ != nullptr, "Output buffer cache is nullptr");
     MessageParcel data;
     MessageParcel reply;
     MessageOption option(MessageOption::TF_ASYNC);
     bool token = data.WriteInterfaceToken(CodecListenerProxy::GetDescriptor());
-    CHECK_AND_RETURN_LOG(token, "Write descriptor failed!");
+    CHECK_AND_RETURN_LOG_WITH_TAG(token, "Write descriptor failed!");
 
     uint64_t currentGeneration = GetGeneration();
     if (outputBufferGeneration_ != currentGeneration) {
@@ -197,18 +205,18 @@ void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, std::shared_ptr
     data.WriteUint64(outputBufferGeneration_);
     data.WriteUint32(index);
     bool ret = outputBufferCache_->WriteToParcel(index, buffer, data);
-    CHECK_AND_RETURN_LOG(ret, "OutputBufferCache write parcel failed");
+    CHECK_AND_RETURN_LOG_WITH_TAG(ret, "OutputBufferCache write parcel failed");
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE),
                                       data, reply, option);
-    CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
+    CHECK_AND_RETURN_LOG_WITH_TAG(error == AVCS_ERR_OK, "Send request failed");
 }
 
 bool CodecListenerProxy::InputBufferInfoFromParcel(uint32_t index, AVCodecBufferInfo &info, AVCodecBufferFlag &flag,
                                                    MessageParcel &data)
 {
     std::shared_ptr<AVBuffer> buffer = inputBufferCache_->FindBufferFromIndex(index);
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Input buffer in cache is nullptr");
-    CHECK_AND_RETURN_RET_LOG(buffer->meta_ != nullptr, false, "buffer meta is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, false, "Input buffer in cache is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer->meta_ != nullptr, false, "buffer meta is nullptr");
     if (buffer->memory_ == nullptr) {
         return buffer->meta_->FromParcel(data);
     }
@@ -226,7 +234,7 @@ bool CodecListenerProxy::InputBufferInfoFromParcel(uint32_t index, AVCodecBuffer
 bool CodecListenerProxy::SetOutputBufferRenderTimestamp(uint32_t index, int64_t renderTimestampNs)
 {
     std::shared_ptr<AVBuffer> buffer = outputBufferCache_->FindBufferFromIndex(index);
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Input buffer in cache is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, false, "Input buffer in cache is nullptr");
     buffer->meta_->SetData(Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP, renderTimestampNs);
     return true;
 }

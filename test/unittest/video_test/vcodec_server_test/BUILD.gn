@@ -61,6 +61,7 @@ codec_server_coverage_include_dirs = [
   "$av_codec_root_dir/services/services/common",
   "$av_codec_root_dir/services/services/common/event_manager/",
   "$av_codec_root_dir/services/services/codec/server/post_processing",
+  "$av_codec_root_dir/services/services/common",
   "$av_codec_root_dir/services/utils/include",
 
   # av_codec_engine_codeclist_mock
@@ -85,6 +86,7 @@ ohos_unittest("codec_server_coverage_unit_test") {
 
   sources = [
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
+    "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",
     "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
     "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
     "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",

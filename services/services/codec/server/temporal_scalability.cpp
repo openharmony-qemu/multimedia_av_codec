@@ -73,18 +73,18 @@ void TemporalScalability::ValidateTemporalGopParam(Format &format)
     }
 
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_)) {
-        AVCODEC_LOGI("Set temporal gop size successfully, value is %{public}d.", temporalGopSize_);
+        AVCODEC_LOGI_WITH_TAG("Set temporal gop size successfully, value is %{public}d", temporalGopSize_);
     } else {
         temporalGopSize_ = gopSize_ <= DEFAULT_TEMPORAL_GOPSIZE ? MIN_TEMPORAL_GOPSIZE : DEFAULT_TEMPORAL_GOPSIZE;
         format.PutIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_);
-        AVCODEC_LOGI("Get temporal gop size failed, use default value %{public}d.", temporalGopSize_);
+        AVCODEC_LOGI_WITH_TAG("Get temporal gop size failed, use default value %{public}d", temporalGopSize_);
     }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_)) {
-        AVCODEC_LOGI("Set temporal reference mode successfully.");
+        AVCODEC_LOGI_WITH_TAG("Set temporal reference mode successfully");
     } else {
         tRefMode_ = static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE);
         format.PutIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_);
-        AVCODEC_LOGI("Get temporal reference mode failed, use default value ADJACENT_REFERENCE.");
+        AVCODEC_LOGI_WITH_TAG("Get temporal reference mode failed, use default value ADJACENT_REFERENCE");
     }
     svcLTR_ = IsLTRSolution();
     if (svcLTR_) {
@@ -93,7 +93,7 @@ void TemporalScalability::ValidateTemporalGopParam(Format &format)
         format.PutIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum);
         format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, ENABLE_PARAMETER_CALLBACK);
     }
-    AVCODEC_LOGI("Set temporal gop parameter successfully.");
+    AVCODEC_LOGI_WITH_TAG("Set temporal gop parameter successfully");
 }
 
 void TemporalScalability::StoreAVBuffer(uint32_t index, shared_ptr<AVBuffer> buffer)
@@ -228,7 +228,7 @@ void TemporalScalability::ConfigureLTR(uint32_t index)
             bool syncIDR;
             if (inputBufferMap_[index]->meta_->GetData(Tag::VIDEO_REQUEST_I_FRAME, syncIDR) && syncIDR) {
                 frameNum_ = 0;
-                AVCODEC_LOGI("Request IDR frame.");
+                AVCODEC_LOGI_WITH_TAG("Request IDR frame");
             }
             LTRDecision();
             inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, isMarkLTR_);
@@ -239,12 +239,12 @@ void TemporalScalability::ConfigureLTR(uint32_t index)
             }
             inputBufferMap_.erase(index);
             inputIndexQueue_->Pop();
-            AVCODEC_LOGD(
+            AVCODEC_LOGD_WITH_TAG(
                 "frame: %{public}d set ltrParam, isMarkLTR: %{public}d, isUseLTR: %{public}d, ltrPoc: %{public}d",
                 frameNum_, isMarkLTR_, isUseLTR_, ltrPoc_);
             frameNum_++;
         } else {
-            AVCODEC_LOGE("Find matched buffer failed, buffer ID is %{public}u.", index);
+            AVCODEC_LOGE_WITH_TAG("Find matched buffer failed, buffer ID is %{public}u", index);
         }
     }
     if (isFinded) {

@@ -19,10 +19,12 @@
 #include <string>
 #include "avcodec_errors.h"
 #include "avcodec_parcel.h"
+#include "avcodec_trace.h"
 #include "avsharedmemory_ipc.h"
 #include "buffer/avsharedmemorybase.h"
 #include "meta/meta.h"
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListenerStub"};
 constexpr uint8_t LOG_FREQ = 10;
 } // namespace
 
@@ -49,7 +51,7 @@ typedef enum : uint8_t {
     ELEM_GET_ATRRIBUTE,
 } UpdateFilter;
 
-class CodecListenerStub::CodecBufferCache : public NoCopyable {
+class CodecListenerStub::CodecBufferCache : public AVCodecDfxComponent, public NoCopyable {
 public:
     explicit CodecBufferCache(bool isOutput) : isOutput_(isOutput) {}
     ~CodecBufferCache() = default;
@@ -61,7 +63,7 @@ public:
         auto iter = caches_.find(index);
         flag_ = static_cast<CacheFlag>(parcel.ReadUint8());
         if (flag_ == CacheFlag::HIT_CACHE && iter == caches_.end()) {
-            AVCODEC_LOGW("Mark hit cache, but can find the index's cache, index: %{public}u", index);
+            AVCODEC_LOGW_WITH_TAG("Mark hit cache, but can find the index's cache, index: %{public}u", index);
             flag_ = CacheFlag::UPDATE_CACHE;
         }
         if (flag_ == CacheFlag::HIT_CACHE) {
@@ -74,11 +76,9 @@ public:
             elem.owner = OWNED_BY_USER;
             isOutput_ ? UpdateOutputCache(elem, parcel, filter) : UpdateInputCache(elem, parcel, filter);
             if (iter == caches_.end()) {
-                PrintLogOnUpdateBuffer(index);
                 caches_.emplace(index, elem);
             } else {
                 iter->second = elem;
-                PrintLogOnUpdateBuffer(index);
             }
             return CheckReadFromParcelResult(elem, filter);
         }
@@ -86,32 +86,38 @@ public:
         if (iter != caches_.end()) {
             caches_.erase(iter);
         }
-        AVCODEC_LOGE("Invalidate cache for index: %{public}u, flag: %{public}hhu", index, flag_);
+        AVCODEC_LOGE_WITH_TAG("Invalidate cache for index: %{public}u, flag: %{public}hhu", index, flag_);
         return false;
     }
 
     void ReturnBufferToServer(uint32_t index, BufferElem &elem)
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
+        if (isFirstSend_) {
+            AVCODEC_LOGI_WITH_TAG("first send %{public}s buffer to service", isOutput_ ? "out" : "in");
+            isFirstSend_ = false;
+        }
         auto iter = caches_.find(index);
         if (iter == caches_.end()) {
-            AVCODEC_LOGE("Get cache failed, index: %{public}u", index);
+            AVCODEC_LOGE_WITH_TAG("Get cache failed, index: %{public}u", index);
             return;
         }
         elem = iter->second;
         if (elem.owner == OWNED_BY_USER) {
             elem.owner = OWNED_BY_SERVER;
         } else {
-            AVCODEC_LOGW("Did not receive new callback of this index(%{public}u)", index);
+            AVCODEC_LOGW_WITH_TAG("Did not receive new callback of this index(%{public}u)", index);
         }
-        EXPECT_AND_LOGD(elem.buffer != nullptr, "index=%{public}d, flag=%{public}u, pts=%{public}" PRId64, index,
-                        elem.buffer->flag_, elem.buffer->pts_);
+        EXPECT_AND_LOGD_WITH_TAG(elem.buffer != nullptr, "index=%{public}d, flag=%{public}u, pts=%{public}" PRId64,
+                                 index, elem.buffer->flag_, elem.buffer->pts_);
     }
 
     void ClearCaches()
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
         PrintCachesInfo();
+        isFirstReceive_ = true;
+        isFirstSend_ = true;
         caches_.clear();
     }
 
@@ -119,6 +125,8 @@ public:
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
         PrintCachesInfo();
+        isFirstReceive_ = true;
+        isFirstSend_ = true;
         for (auto &val : caches_) {
             val.second.owner = OWNED_BY_SERVER;
         }
@@ -127,15 +135,6 @@ public:
     void SetConverter(std::shared_ptr<BufferConverter> &converter)
     {
         converter_ = converter;
-    }
-
-    inline void PrintLogOnUpdateBuffer(const uint32_t &index)
-    {
-        if (caches_.size() <= 1) {
-            AVCODEC_LOGI("add caches. index: %{public}u", index);
-        } else {
-            AVCODEC_LOGD("add caches. index: %{public}u", index);
-        }
     }
 
     void PrintCachesInfo()
@@ -158,17 +157,8 @@ public:
         }
         serverCaches << ")";
         userCaches << ")";
-        AVCODEC_LOGI("%{public}s caches: %{public}s, %{public}s", (isOutput_ ? "out" : "in"), userCaches.str().c_str(),
-                     serverCaches.str().c_str());
-    }
-
-    void InitLabel(const uint64_t uid)
-    {
-        std::lock_guard<std::shared_mutex> lock(mutex_);
-        tag_ = isOutput_ ? "OutCache[" : "InCache[";
-        tag_ += std::to_string(uid) + "]";
-        auto &label = const_cast<OHOS::HiviewDFX::HiLogLabel &>(LABEL);
-        label.tag = tag_.c_str();
+        AVCODEC_LOGI_WITH_TAG("%{public}s caches: %{public}s, %{public}s", (isOutput_ ? "out" : "in"),
+                              userCaches.str().c_str(), serverCaches.str().c_str());
     }
 
 private:
@@ -190,7 +180,7 @@ private:
         } else {
             std::string name = std::string("SharedMem_") + std::to_string(buffer->GetUniqueId());
             memory = AVSharedMemoryBase::CreateFromLocal(capacity, Flags::FLAGS_READ_WRITE, name);
-            CHECK_AND_RETURN_LOG(memory != nullptr, "Create shared memory from local failed.");
+            CHECK_AND_RETURN_LOG_WITH_TAG(memory != nullptr, "Create shared memory from local failed");
         }
     }
 
@@ -200,7 +190,7 @@ private:
             return;
         }
         bool isReadSuc = elem.buffer->ReadFromMessageParcel(parcel);
-        CHECK_AND_RETURN_LOG(isReadSuc, "Read input buffer from parcel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Read input buffer from parcel failed");
         elem.buffer->flag_ = 0;
         if (elem.buffer->memory_ != nullptr) {
             elem.buffer->memory_->SetOffset(0);
@@ -219,7 +209,7 @@ private:
     void HitOutputCache(BufferElem &elem, MessageParcel &parcel, const UpdateFilter &filter)
     {
         bool isReadSuc = elem.buffer->ReadFromMessageParcel(parcel);
-        CHECK_AND_RETURN_LOG(isReadSuc, "Read output buffer from parcel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Read output buffer from parcel failed");
         if (filter == ELEM_GET_AVMEMORY && converter_ != nullptr) {
             converter_->ReadFromBuffer(elem.buffer, elem.memory);
         }
@@ -229,7 +219,7 @@ private:
     {
         elem.buffer = AVBuffer::CreateAVBuffer();
         bool isReadSuc = (elem.buffer != nullptr) && elem.buffer->ReadFromMessageParcel(parcel);
-        CHECK_AND_RETURN_LOG(isReadSuc, "Create input buffer from parcel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Create input buffer from parcel failed");
         if (filter == ELEM_GET_PARAMETER) {
             elem.parameter = std::make_shared<Format>();
             elem.parameter->SetMeta(std::move(elem.buffer->meta_));
@@ -253,7 +243,7 @@ private:
     {
         elem.buffer = AVBuffer::CreateAVBuffer();
         bool isReadSuc = (elem.buffer != nullptr) && elem.buffer->ReadFromMessageParcel(parcel);
-        CHECK_AND_RETURN_LOG(isReadSuc, "Create output buffer from parcel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Create output buffer from parcel failed");
         if (filter == ELEM_GET_AVMEMORY) {
             AVBufferToAVSharedMemory(elem.buffer, elem.memory);
             if (converter_ != nullptr) {
@@ -265,6 +255,10 @@ private:
 
     bool CheckReadFromParcelResult(const BufferElem &elem, const UpdateFilter filter)
     {
+        if (isFirstReceive_) {
+            AVCODEC_LOGI_WITH_TAG("first receive %{public}s buffer from service", isOutput_ ? "out" : "in");
+            isFirstReceive_ = false;
+        }
         switch (filter) {
             case ELEM_GET_AVBUFFER:
                 return true;
@@ -275,7 +269,7 @@ private:
             case ELEM_GET_ATRRIBUTE:
                 return elem.buffer != nullptr && elem.parameter != nullptr && elem.attribute != nullptr;
             default:
-                AVCODEC_LOGE("unknown filter:%{public}d", static_cast<int32_t>(filter));
+                AVCODEC_LOGE_WITH_TAG("unknown filter:%{public}d", static_cast<int32_t>(filter));
                 break;
         }
         return false;
@@ -287,23 +281,22 @@ private:
         INVALIDATE_CACHE,
     };
     bool isOutput_ = false;
+    bool isFirstReceive_ = true;
+    bool isFirstSend_ = true;
     CacheFlag flag_ = CacheFlag::INVALIDATE_CACHE;
     std::shared_mutex mutex_;
     std::unordered_map<uint32_t, BufferElem> caches_;
     std::shared_ptr<BufferConverter> converter_ = nullptr;
-
-    const OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "ClientCaches"};
-    std::string tag_ = "";
 };
 
 CodecListenerStub::CodecListenerStub()
 {
     if (inputBufferCache_ == nullptr) {
-        inputBufferCache_ = std::make_unique<CodecBufferCache>(false);
+        inputBufferCache_ = std::make_shared<CodecBufferCache>(false);
     }
 
     if (outputBufferCache_ == nullptr) {
-        outputBufferCache_ = std::make_unique<CodecBufferCache>(true);
+        outputBufferCache_ = std::make_shared<CodecBufferCache>(true);
     }
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
@@ -315,15 +308,24 @@ CodecListenerStub::~CodecListenerStub()
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
+void CodecListenerStub::Init()
+{
+    this->UpdateLogTagWithThreadLoacal();
+    inputBufferCache_->UpdateLogTagWithThreadLoacal();
+    outputBufferCache_->UpdateLogTagWithThreadLoacal();
+}
+
 int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
     auto remoteDescriptor = data.ReadInterfaceToken();
-    CHECK_AND_RETURN_RET_LOG(CodecListenerStub::GetDescriptor() == remoteDescriptor, AVCS_ERR_INVALID_OPERATION,
-                             "Invalid descriptor");
-    CHECK_AND_RETURN_RET_LOG(inputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "inputBufferCache is nullptr");
-    CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "outputBufferCache is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(CodecListenerStub::GetDescriptor() == remoteDescriptor,
+                                      AVCS_ERR_INVALID_OPERATION, "Invalid descriptor");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(inputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+                                      "inputBufferCache is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+                                      "outputBufferCache is nullptr");
 
-    CHECK_AND_RETURN_RET_LOG(syncMutex_ != nullptr, AVCS_ERR_INVALID_OPERATION, "sync mutex is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(syncMutex_ != nullptr, AVCS_ERR_INVALID_OPERATION, "sync mutex is nullptr");
     std::lock_guard<std::recursive_mutex> lock(*syncMutex_);
     if (!needListen_ || !CheckGeneration(data.ReadUint64())) {
         AVCODEC_LOGW_LIMIT(LOG_FREQ, "abandon message");
@@ -354,7 +356,7 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
             return AVCS_ERR_OK;
         }
         default: {
-            AVCODEC_LOGE("Default case, please check codec listener stub");
+            AVCODEC_LOGE_WITH_TAG("Default case, please check codec listener stub");
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
         }
     }
@@ -406,7 +408,7 @@ void CodecListenerStub::OnInputBufferAvailable(uint32_t index, MessageParcel &da
     std::shared_ptr<MediaCodecParameterCallback> paramCb = paramCallback_.lock();
     if (paramCb != nullptr) {
         bool ret = inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_PARAMETER);
-        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(ret, "read from parel failed");
         paramCb->OnInputParameterAvailable(index, elem.parameter);
         elem.buffer->meta_ = elem.parameter->GetMeta();
         return;
@@ -414,7 +416,7 @@ void CodecListenerStub::OnInputBufferAvailable(uint32_t index, MessageParcel &da
     std::shared_ptr<MediaCodecParameterWithAttrCallback> attrCb = paramWithAttrCallback_.lock();
     if (attrCb != nullptr) {
         bool ret = inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_ATRRIBUTE);
-        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(ret, "read from parel failed");
         attrCb->OnInputParameterWithAttrAvailable(index, elem.attribute, elem.parameter);
         elem.buffer->meta_ = elem.parameter->GetMeta();
         return;
@@ -422,14 +424,14 @@ void CodecListenerStub::OnInputBufferAvailable(uint32_t index, MessageParcel &da
     std::shared_ptr<MediaCodecCallback> mediaCb = videoCallback_.lock();
     if (mediaCb != nullptr) {
         bool ret = inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVBUFFER);
-        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(ret, "read from parel failed");
         mediaCb->OnInputBufferAvailable(index, elem.buffer);
         return;
     }
     std::shared_ptr<AVCodecCallback> cb = callback_.lock();
     if (cb != nullptr) {
         bool ret = inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVMEMORY);
-        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(ret, "read from parel failed");
         cb->OnInputBufferAvailable(index, elem.memory);
         return;
     }
@@ -441,14 +443,14 @@ void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, MessageParcel &d
     std::shared_ptr<MediaCodecCallback> mediaCb = videoCallback_.lock();
     if (mediaCb != nullptr) {
         bool ret = outputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVBUFFER);
-        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(ret, "read from parel failed");
         mediaCb->OnOutputBufferAvailable(index, elem.buffer);
         return;
     }
     std::shared_ptr<AVCodecCallback> cb = callback_.lock();
     if (cb != nullptr) {
         bool ret = outputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVMEMORY);
-        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(ret, "read from parel failed");
         std::shared_ptr<AVBuffer> &buffer = elem.buffer;
         AVCodecBufferInfo info;
         info.presentationTimeUs = buffer->pts_;
@@ -501,9 +503,9 @@ bool CodecListenerStub::WriteInputMemoryToParcel(uint32_t index, AVCodecBufferIn
     inputBufferCache_->ReturnBufferToServer(index, elem);
     std::shared_ptr<AVBuffer> &buffer = elem.buffer;
     std::shared_ptr<AVSharedMemory> &memory = elem.memory;
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Get buffer is nullptr");
-    CHECK_AND_RETURN_RET_LOG(memory != nullptr, false, "Get memory is nullptr");
-    CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, false, "Get buffer memory is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, false, "Get buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(memory != nullptr, false, "Get memory is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer->memory_ != nullptr, false, "Get buffer memory is nullptr");
 
     if (converter_ != nullptr) {
         buffer->memory_->SetSize(info.size);
@@ -519,9 +521,9 @@ bool CodecListenerStub::WriteInputBufferToParcel(uint32_t index, MessageParcel &
     BufferElem elem;
     inputBufferCache_->ReturnBufferToServer(index, elem);
     std::shared_ptr<AVBuffer> &buffer = elem.buffer;
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Get buffer is nullptr");
-    CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, false, "Get buffer memory is nullptr");
-    CHECK_AND_RETURN_RET_LOG(buffer->meta_ != nullptr, false, "Get buffer meta is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, false, "Get buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer->memory_ != nullptr, false, "Get buffer memory is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer->meta_ != nullptr, false, "Get buffer meta is nullptr");
 
     return data.WriteInt64(buffer->pts_) && data.WriteInt32(buffer->memory_->GetOffset()) &&
            data.WriteInt32(buffer->memory_->GetSize()) && data.WriteUint32(buffer->flag_) &&
@@ -533,10 +535,11 @@ bool CodecListenerStub::WriteInputParameterToParcel(uint32_t index, MessageParce
     BufferElem elem;
     inputBufferCache_->ReturnBufferToServer(index, elem);
     auto &param = elem.parameter;
-    CHECK_AND_RETURN_RET_LOG(elem.buffer != nullptr, false, "Get buffer is nullptr");
-    CHECK_AND_RETURN_RET_LOG(param != nullptr, false, "Get format is nullptr");
-    EXPECT_AND_LOGD(!(param->GetMeta()->Empty()), "index:%{public}u,pts:%{public}" PRId64 ",paramter:%{public}s", index,
-                    elem.buffer->pts_, param->Stringify().c_str());
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(elem.buffer != nullptr, false, "Get buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(param != nullptr, false, "Get format is nullptr");
+    EXPECT_AND_LOGD_WITH_TAG(!(param->GetMeta()->Empty()),
+                             "index:%{public}u,pts:%{public}" PRId64 ",paramter:%{public}s", index, elem.buffer->pts_,
+                             param->Stringify().c_str());
 
     return param->GetMeta()->ToParcel(data);
 }
@@ -569,16 +572,6 @@ void CodecListenerStub::SetConverter(std::shared_ptr<BufferConverter> &converter
 void CodecListenerStub::SetNeedListen(const bool needListen)
 {
     needListen_ = needListen;
-}
-
-void CodecListenerStub::InitLabel(const uint64_t uid)
-{
-    tag_ = "ListenerStub[";
-    tag_ += std::to_string(uid) + "]";
-    auto &label = const_cast<OHOS::HiviewDFX::HiLogLabel &>(LABEL);
-    label.tag = tag_.c_str();
-    inputBufferCache_->InitLabel(uid);
-    outputBufferCache_->InitLabel(uid);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
