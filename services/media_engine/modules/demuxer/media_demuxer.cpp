@@ -865,14 +865,24 @@ Status MediaDemuxer::StartTask(int32_t trackId)
             AddDemuxerCopyTask(trackId, TaskType::SUBTITLE);
         }
         if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
+            UpdateBufferQueueListener(trackId);
             taskMap_[trackId]->Start();
         }
     } else {
         if (taskMap_[trackId] != nullptr && !taskMap_[trackId]->IsTaskRunning()) {
+            UpdateBufferQueueListener(trackId);
             taskMap_[trackId]->Start();
         }
     }
     return Status::OK;
+}
+
+void MediaDemuxer::UpdateBufferQueueListener(int32_t trackId)
+{
+    FALSE_RETURN(bufferQueueMap_.find(trackId) != bufferQueueMap_.end() && trackMap_.find(trackId) != trackMap_.end());
+    auto producer = bufferQueueMap_[trackId];
+    auto listener = trackMap_[trackId]->GetProducerListener();
+    producer->SetBufferAvailableListener(listener);
 }
 
 Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
