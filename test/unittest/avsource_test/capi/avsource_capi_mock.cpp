@@ -56,7 +56,7 @@ std::shared_ptr<FormatMock> AVSourceCapiMock::GetTrackFormat(uint32_t trackIndex
 std::shared_ptr<FormatMock> AVSourceCapiMock::GetUserData()
 {
     if (source_ != nullptr) {
-        OH_AVFormat *format = OH_AVSource_GetMetaDataFormat(source_);
+        OH_AVFormat *format = OH_AVSource_GetCustomMetaDataFormat(source_);
         if (format != nullptr) {
             return std::make_shared<AVFormatCapiMock>(format);
         }
