@@ -233,11 +233,9 @@ uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
         configJson += line;
     }
     auto json = cJSON_Parse(configJson.c_str());
-    CHECK_AND_RETURN_RET_LOG(json != nullptr, UINT32_MAX, "Failed to parse JSON");
+    CHECK_AND_RETURN_RET_LOG(json != nullptr, UINT32_MAX, "Can not parse threshold config json");
 
     auto root = std::shared_ptr<cJSON>(json, cJSON_Delete);
-    CHECK_AND_RETURN_RET_LOG(root != nullptr, UINT32_MAX, "Can not parse threshold config json");
-
     auto deviceType = system::GetDeviceType();
     CHECK_AND_RETURN_RET_LOG(deviceType != "" && deviceType != "unknown", UINT32_MAX, "Can not get device type");
 
