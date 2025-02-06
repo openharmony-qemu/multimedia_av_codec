@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -2514,6 +2514,12 @@ void MediaDemuxer::ResetDraggingOpenGopCnt()
 {
     std::lock_guard<std::mutex> lock(syncFrameInfoMutex_);
     syncFrameInfo_.skipOpenGopUnrefFrameCnt = 0;
+}
+
+void MediaDemuxer::SetApiVersion(int32_t apiVersion)
+{
+    apiVersion_ = apiVersion;
+    demuxerPluginManager_->SetApiVersion(apiVersion);
 }
 } // namespace Media
 } // namespace OHOS

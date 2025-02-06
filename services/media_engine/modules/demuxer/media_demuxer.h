@@ -143,6 +143,7 @@ public:
     uint32_t GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos);
     void SetIsEnableReselectVideoTrack(bool isEnable);
     bool IsHasMultiVideoTrack();
+    void SetApiVersion(int32_t apiVersion);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -324,6 +325,7 @@ private:
     std::mutex syncFrameInfoMutex_ {};
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
+    int32_t apiVersion_ {0};
 };
 } // namespace Media
 } // namespace OHOS
