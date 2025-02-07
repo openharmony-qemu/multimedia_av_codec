@@ -145,7 +145,7 @@ int32_t FFmpegAPEDecoderPlugin::SetBitsDepth(AudioSampleFormat sampleFmt)
     } else if (sampleFmt == SAMPLE_S32LE || sampleFmt == SAMPLE_S32P) {
         ret = 24; // sample bit = 24 bit
     }
-    AVCODEC_LOGI("samplefmt be set %{publib}d.", ret);
+    AVCODEC_LOGI("samplefmt be set %{public}d.", ret);
     return ret;
 }
 
