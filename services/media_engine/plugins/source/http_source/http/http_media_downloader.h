@@ -81,6 +81,8 @@ public:
         return isRingBuffer_ && request->GetFileContentLengthNoWait() == 0;
     }
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
+    void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
+    void NotifyInitSuccess() override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -117,6 +119,7 @@ private:
     void CheckDownloadPos(unsigned int wantReadLength);
     void HandleWaterline();
     bool CacheBufferFullLoop();
+    bool IsNeedBufferForPlaying();
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -198,6 +201,9 @@ private:
     std::atomic<int32_t> expectOffset_ {-1};
     std::atomic<int32_t> initCacheSize_ {-1};
     Mutex initCacheMutex_ {};
+    double bufferDurationForPlaying_ {0};
+    uint64_t waterlineForPlaying_ {0};
+    std::atomic<bool> isDemuxerInitSuccess_ {false};
 };
 }
 }

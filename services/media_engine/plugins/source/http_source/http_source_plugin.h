@@ -64,6 +64,7 @@ public:
     bool SetSourceInitialBufferSize(int32_t offset, int32_t size) override;
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
+    void NotifyInitSuccess() override;
 
 private:
     void CloseUri(bool isAsync = false);

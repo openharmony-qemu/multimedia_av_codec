@@ -109,6 +109,7 @@ public:
     void SetIsReportedErrorCode() override;
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
+    void NotifyInitSuccess() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -162,6 +163,7 @@ private:
     bool IsCachedInitSizeReady(int32_t wantInitSize);
     void HandleWaterLine();
     bool CacheBufferFullLoop();
+    bool IsNeedBufferForPlaying();
 
 private:
     size_t totalBufferSize_ {0};
@@ -294,6 +296,9 @@ private:
     std::atomic<int32_t> expectOffset_ {-1};
     std::atomic<int32_t> initCacheSize_ {-1};
     Mutex initCacheMutex_ {};
+    double bufferDurationForPlaying_ {0};
+    uint64_t waterlineForPlaying_ {0};
+    std::atomic<bool> isDemuxerInitSuccess_ {false};
 };
 }
 }

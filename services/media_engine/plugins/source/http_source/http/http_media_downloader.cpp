@@ -272,6 +272,9 @@ bool HttpMediaDownloader::HandleBuffering()
         isBuffering_ = false;
         return false;
     }
+    if (IsNeedBufferForPlaying()) {
+        return false;
+    }
     if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
         bufferingTime_ = 0;
         return false;
@@ -786,6 +789,9 @@ bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
 bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
 {
     readOffset_ = static_cast<size_t>(offset);
+    if (cacheMediaBuffer_->GetBufferSize(offset) == 0 && offset < 500) { // 500
+        NotifyInitSuccess();
+    }
     cacheMediaBuffer_->Seek(offset); // Notify the cacheBuffer where to read.
     UpdateMinAndMaxReadOffset();
 
@@ -1488,6 +1494,59 @@ bool HttpMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
     expectOffset_.store(offset);
     initCacheSize_.store(size);
     return true;
+}
+
+void HttpMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy)
+{
+    if (playStrategy == nullptr) {
+        MEDIA_LOG_E("HTTP SetPlayStrategy error.");
+        return;
+    }
+    if (playStrategy->bufferDurationForPlaying > 0) {
+        bufferDurationForPlaying_ = playStrategy->bufferDurationForPlaying;
+        waterlineForPlaying_ = static_cast<uint64_t>(CURRENT_BIT_RATE / static_cast<uint64_t>(BYTES_TO_BIT) *
+                           bufferDurationForPlaying_);
+        MEDIA_LOG_I("HTTP buffer duration for playing : " PUBLIC_LOG ".3f", bufferDurationForPlaying_);
+    }
+}
+
+bool HttpMediaDownloader::IsNeedBufferForPlaying()
+{
+    if (bufferDurationForPlaying_ <= 0 || !isDemuxerInitSuccess_.load() || !isBuffering_.load()) {
+        return false;
+    }
+    if (GetBufferingTimeOut()) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+                            "buffer for playing"});
+        isBuffering_.store(false);
+        isDemuxerInitSuccess_.store(false);
+        bufferingTime_ = 0;
+        return false;
+    }
+    if (GetCurrentBufferSize() >= waterlineForPlaying_ || HandleBreak()) {
+        MEDIA_LOG_I("HTTP buffer duration for playing is enough, buffersize: " PUBLIC_LOG_ZU " waterLineAbove: "
+                    PUBLIC_LOG_U64, GetCurrentBufferSize(), waterlineForPlaying_);
+        isBuffering_.store(false);
+        isDemuxerInitSuccess_.store(false);
+        bufferingTime_ = 0;
+        return false;
+    }
+    return true;
+}
+
+void HttpMediaDownloader::NotifyInitSuccess()
+{
+    MEDIA_LOG_I("HTTP NotifyInitSuccess in");
+    isDemuxerInitSuccess_.store(true);
+    if (bufferDurationForPlaying_ <= 0 || currentBitRate_ <= 0) {
+        return;
+    }
+    if (currentBitRate_ > 0) {
+        waterlineForPlaying_ = static_cast<uint64_t>(currentBitRate_ / static_cast<uint64_t>(BYTES_TO_BIT) *
+                        bufferDurationForPlaying_);
+    }
+    isBuffering_.store(true);
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
 }
 }
 }

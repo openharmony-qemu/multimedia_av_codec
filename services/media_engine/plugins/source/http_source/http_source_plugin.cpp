@@ -209,9 +209,6 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
 
     if (uri_.find(".mpd") != std::string::npos) {
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<DashMediaDownloader>());
-        if (playStrategy != nullptr) {
-            downloader_->SetPlayStrategy(playStrategy);
-        }
         delayReady = false;
     } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         if (playStrategy != nullptr && playStrategy->duration > 0) {
@@ -221,9 +218,6 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         } else {
             downloader_ = std::make_shared<DownloadMonitor>(
                             std::make_shared<HlsMediaDownloader>(httpHeader_));
-        }
-        if (playStrategy != nullptr) {
-            downloader_->SetPlayStrategy(playStrategy);
         }
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
@@ -235,6 +229,9 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
                                                             (source->GetSourceUri()));
         }
+    }
+    if (downloader_ != nullptr && playStrategy != nullptr) {
+        downloader_->SetPlayStrategy(playStrategy);
     }
     if (mimeType_== AVMimeTypes::APPLICATION_M3U8) {
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
@@ -486,6 +483,12 @@ bool HttpSourcePlugin::CheckIsM3U8Uri()
         return true;
     }
     return false;
+}
+
+void HttpSourcePlugin::NotifyInitSuccess()
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "NotifyInitSuccess downloader is nullptr");
+    downloader_->NotifyInitSuccess();
 }
 }
 }

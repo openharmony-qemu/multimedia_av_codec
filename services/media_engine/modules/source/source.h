@@ -120,6 +120,7 @@ public:
     void WaitForBufferingEnd();
     bool SetInitialBufferSize(int32_t offset, int32_t size);
     Status SetPerfRecEnabled(bool perfRecEnabled);
+    void NotifyInitSuccess();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

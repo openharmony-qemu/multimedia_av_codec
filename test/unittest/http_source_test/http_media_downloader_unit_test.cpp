@@ -550,4 +550,105 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GET_PLAYBACK_INFO_002, TestSize.Level1)
     EXPECT_EQ(playbackInfo.bufferDuration, 0);
 }
 
+HWTEST_F(HttpMediaDownloaderUnitTest, HANDLE_WATER_LINE_001, TestSize.Level1)
+{
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
+        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    httpMediaDownloader->callback_ = sourceCallback;
+    httpMediaDownloader->canWrite_ = false;
+    httpMediaDownloader->waterLineAbove_ = 0;
+    httpMediaDownloader->readOffset_ = 0;
+    httpMediaDownloader->initCacheSize_ = 5000;
+    httpMediaDownloader->HandleWaterline();
+    EXPECT_EQ(httpMediaDownloader->initCacheSize_, -1);
+    EXPECT_EQ(httpMediaDownloader->isBuffering_, false);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
+{
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
+        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    httpMediaDownloader->callback_ = sourceCallback;
+    httpMediaDownloader->isHitSeeking_ = true;
+    httpMediaDownloader->initCacheSize_ = 1;
+    EXPECT_EQ(httpMediaDownloader->CacheBufferFullLoop(), true);
+    httpMediaDownloader->isHitSeeking_ = false;
+    EXPECT_EQ(httpMediaDownloader->CacheBufferFullLoop(), false);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, SET_INITIAL_BUFFER_SIZE_001, TestSize.Level1)
+{
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
+        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5);
+    std::map<std::string, std::string> httpHeader;
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader->SetStatusCallback(statusCallback);
+    httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    httpMediaDownloader->callback_ = sourceCallback;
+    httpMediaDownloader->isBuffering_ = false;
+    EXPECT_EQ(httpMediaDownloader->SetInitialBufferSize(0, 0), false);
+    EXPECT_EQ(httpMediaDownloader->SetInitialBufferSize(0, 20000000), true);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, SET_PLAY_STRATEGY_001, TestSize.Level1)
+{
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
+        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5);
+    std::map<std::string, std::string> httpHeader;
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader->SetStatusCallback(statusCallback);
+    httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    httpMediaDownloader->callback_ = sourceCallback;
+    httpMediaDownloader->SetPlayStrategy(nullptr);
+    EXPECT_EQ(httpMediaDownloader->waterlineForPlaying_, 0);
+    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
+    playStrategy->bufferDurationForPlaying = 5;
+    httpMediaDownloader->SetPlayStrategy(playStrategy);
+    EXPECT_NE(httpMediaDownloader->waterlineForPlaying_, 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_001, TestSize.Level1)
+{
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
+        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    httpMediaDownloader->callback_ = sourceCallback;
+    EXPECT_EQ(httpMediaDownloader->IsNeedBufferForPlaying(), false);
+    httpMediaDownloader->bufferDurationForPlaying_ = 5;
+    httpMediaDownloader->isDemuxerInitSuccess_ = true;
+    httpMediaDownloader->isBuffering_ = true;
+    httpMediaDownloader->bufferingTime_ = static_cast<size_t>(httpMediaDownloader->
+                        steadyClock_.ElapsedMilliseconds()) - 100 * 1000;
+    EXPECT_EQ(httpMediaDownloader->IsNeedBufferForPlaying(), false);
+    httpMediaDownloader->bufferingTime_ = 0;
+    httpMediaDownloader->waterlineForPlaying_ = 0;
+    EXPECT_EQ(httpMediaDownloader->IsNeedBufferForPlaying(), false);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
+{
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
+        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    httpMediaDownloader->callback_ = sourceCallback;
+    httpMediaDownloader->isBuffering_ = false;
+    httpMediaDownloader->NotifyInitSuccess();
+    EXPECT_EQ(httpMediaDownloader->isBuffering_, false);
+    httpMediaDownloader->bufferDurationForPlaying_ = 5;
+    httpMediaDownloader->currentBitRate_ = 1000000;
+    httpMediaDownloader->NotifyInitSuccess();
+    EXPECT_EQ(httpMediaDownloader->isBuffering_, true);
+}
 }

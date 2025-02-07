@@ -685,7 +685,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     streamDemuxer_->Init(uri_);
 
     ret = InnerPrepare();
-
+    source_->NotifyInitSuccess();
     ProcessDrmInfos();
     MEDIA_LOG_I("Out");
     return ret;
