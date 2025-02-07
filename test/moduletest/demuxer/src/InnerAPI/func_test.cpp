@@ -46,6 +46,7 @@ string g_singleHevcPath = TEST_FILE_PATH + string("single_60.mp4");
 string g_singleRkPath = TEST_FILE_PATH + string("single_rk.mp4");
 string g_xmPath = TEST_FILE_PATH + string("xm.mp4");
 string g_doubleVividPath = TEST_FILE_PATH + string("double_vivid.mp4");
+static int32_t g_apeVersion = 73728;
 } // namespace
 
 namespace {
@@ -880,4 +881,16 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0360, TestSize.Le
     ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
 }
+
+/**
+ * @tc.number    : DEMUXER_APE_INNER_FUNC_0050
+ * @tc.name      : APE version >= 3.98 && <= 3.99
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_APE_INNER_FUNC_0050, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->CheckApeSourceData("/data/test/media/audio/ape.ape", g_apeVersion), true);
+}
+
 } // namespace

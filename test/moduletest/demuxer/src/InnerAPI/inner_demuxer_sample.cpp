@@ -443,5 +443,85 @@ size_t InnerDemuxerSample::GetFileSize(const std::string& filePath)
     }
     return fileSize;
 }
+
+bool InnerDemuxerSample::CheckDemuxer(int32_t &readMax)
+{
+    for (int32_t i = 0; i < trackCount; i++) {
+        int32_t ret = this->demuxer_->SelectTrackByID(i);
+        if (ret != 0) {
+            printf("SelectTrackByID is failed\n");
+            return false;
+        }
+        ret = this->demuxer_->ReadSampleBuffer(i, avBuffer);
+        if (ret != 0) {
+            cout << "ReadSampleBuffer fail ret:" << ret << endl;
+            isAudioEosFlagForSave = true;
+            return false;
+        }
+        if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+            printf("ReadSampleBuffer EOS\n");
+            isAudioEosFlagForSave = true;
+            continue;
+        }
+        if (avBuffer->memory_->GetSize() > readMax) {
+            readMax = avBuffer->memory_->GetSize();
+        }
+    }
+    return true;
+}
+
+bool InnerDemuxerSample::CheckApeSourceData(const std::string &path, int32_t version)
+{
+    fd = open(path.c_str(), O_RDONLY);
+    int64_t size = GetFileSize(path);
+    this->avsource_ = AVSourceFactory::CreateWithFD(fd, 0, size);
+    if (!avsource_) {
+        printf("Source is null Source = %s ,size = %ld\n", path.c_str(), size);
+        return false;
+    }
+    this->demuxer_ = AVDemuxerFactory::CreateWithSource(avsource_);
+    if (!demuxer_) {
+        printf("AVDemuxerFactory::CreateWithSource is failed\n");
+        return false;
+    }
+    int32_t ret = this->avsource_->GetSourceFormat(source_format_);
+    if (ret != 0) {
+        printf("GetSourceFormat is failed\n");
+        return false;
+    }
+    source_format_.GetIntValue(OH_MD_KEY_TRACK_COUNT, trackCount);
+    uint32_t buffersize = 2048 * 2048;
+    std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    avBuffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
+    int32_t trackType = 0;
+    int32_t readSize = 0;
+    int32_t frame = 0;
+    int32_t sizeMax = 0;
+    ret = this->avsource_->GetTrackFormat(track_format_, 0);
+    if (ret != 0) {
+        printf("GetTrackFormat is failed\n");
+        return false;
+    }
+    track_format_.GetIntValue(Media::Tag::AUDIO_SAMPLE_PER_FRAME, frame);
+    track_format_.GetIntValue(Media::Tag::AUDIO_MAX_INPUT_SIZE, sizeMax);
+    track_format_.GetIntValue(OH_MD_KEY_TRACK_TYPE, trackType);
+    if (trackType != MEDIA_TYPE_AUD) {
+        return false;
+    }
+    while (!isAudioEosFlagForSave) {
+        if (!CheckDemuxer(readSize)) {
+            return false;
+        }
+    }
+    if (frame != version) {
+        printf("frame not as expected\n");
+        return false;
+    }
+    if (sizeMax != readSize) {
+        printf("sizeMax = %d not as expected\n", sizeMax);
+        return false;
+    }
+    return true;
+}
 }
 }
