@@ -169,6 +169,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/audiomuxerjpg_fuzzer:AudioMuxerJpgFuzzTest",
       "fuzztest/audiomuxermp3_fuzzer:AudioMuxerMp3FuzzTest",
       "fuzztest/avcencinfo_fuzzer:AvCencInfoFuzzTest",
+      "fuzztest/avsourcefunc_fuzzer:AvSourceFuncFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/demuxeraac_fuzzer:DemuxerAacFuzzTest",
       "fuzztest/demuxeraacapi11_fuzzer:DemuxerAacAPI11FuzzTest",

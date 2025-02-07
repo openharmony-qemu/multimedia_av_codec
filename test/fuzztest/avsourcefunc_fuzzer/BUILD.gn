@@ -1,0 +1,56 @@
+# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+group("av_codec_demo_test") {
+  testonly = true
+  deps = []
+  if (av_codec_support_test && !use_libfuzzer) {
+    deps += [ "nativedemo:av_codec_demo" ]
+    deps += [ "unittest/video_test/video_test:video_codec_demo" ]
+  }
+}
+
+group("av_codec_unit_test") {
+  testonly = true
+  deps = []
+  if (!use_libfuzzer) {
+    if (av_codec_support_test) {
+      deps += []
+      if (av_codec_support_hcodec) {
+        deps += [ "unittest/hcodec_test:hcodec_unit_test" ]
+      }
+      if (av_codec_enable_special_codec) {
+        deps += []
+      }
+    }
+  }
+}
+
+group("av_codec_module_test") {
+  testonly = true
+  deps = []
+  if (av_codec_support_test && !use_libfuzzer) {
+    deps += []
+  }
+}
+
+group("av_codec_fuzz_test") {
+  testonly = true
+  deps = []
+  if (av_codec_support_test) {
+    deps += [ "fuzztest/avsourcefunc_fuzzer:AvSourceFuncFuzzTest" ]
+  }
+}
