@@ -486,7 +486,6 @@ bool InnerDemuxerSample::CheckApeSourceData(const std::string &path, int32_t ver
     }
     int32_t ret = this->avsource_->GetSourceFormat(source_format_);
     if (ret != 0) {
-        printf("GetSourceFormat is failed\n");
         return false;
     }
     source_format_.GetIntValue(OH_MD_KEY_TRACK_COUNT, trackCount);
@@ -499,7 +498,6 @@ bool InnerDemuxerSample::CheckApeSourceData(const std::string &path, int32_t ver
     int32_t sizeMax = 0;
     ret = this->avsource_->GetTrackFormat(track_format_, 0);
     if (ret != 0) {
-        printf("GetTrackFormat is failed\n");
         return false;
     }
     track_format_.GetIntValue(Media::Tag::AUDIO_SAMPLE_PER_FRAME, frame);
