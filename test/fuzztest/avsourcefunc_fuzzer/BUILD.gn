@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Copyright (c) 2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,46 +11,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
-import("//foundation/multimedia/av_codec/config.gni")
+#####################hydra-fuzz###################
+import("//build/config/features.gni")
+import("//build/test.gni")
+module_output_path = "av_codec/av_codec"
+MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
-group("av_codec_demo_test") {
-  testonly = true
-  deps = []
-  if (av_codec_support_test && !use_libfuzzer) {
-    deps += [ "nativedemo:av_codec_demo" ]
-    deps += [ "unittest/video_test/video_test:video_codec_demo" ]
-  }
+##############################fuzztest##########################################
+ohos_fuzztest("AvSourceFuncFuzzTest") {
+  module_out_path = module_output_path
+  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/avsourcefunc_fuzzer"
+  include_dirs = [ 
+    "$MEDIA_ROOT_DIR/interfaces/kits/c",
+    "$MEDIA_ROOT_DIR/test/fuzztest/avsourcefunc_fuzzer",
+  ]
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
+  sources = [ "avsource_fuzzer.cpp" ]
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "media_foundation:native_media_core",
+    "window_manager:libwm",
+  ]
+  deps = [
+    "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
+  ]
+  resource_config_file =
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
 
-group("av_codec_unit_test") {
+###############################################################################
+group("fuzztest") {
   testonly = true
   deps = []
-  if (!use_libfuzzer) {
-    if (av_codec_support_test) {
-      deps += []
-      if (av_codec_support_hcodec) {
-        deps += [ "unittest/hcodec_test:hcodec_unit_test" ]
-      }
-      if (av_codec_enable_special_codec) {
-        deps += []
-      }
-    }
-  }
+  deps += [
+    # deps file
+    ":AvSourceFuncFuzzTest",
+  ]
 }
-
-group("av_codec_module_test") {
-  testonly = true
-  deps = []
-  if (av_codec_support_test && !use_libfuzzer) {
-    deps += []
-  }
-}
-
-group("av_codec_fuzz_test") {
-  testonly = true
-  deps = []
-  if (av_codec_support_test) {
-    deps += [ "fuzztest/avsourcefunc_fuzzer:AvSourceFuncFuzzTest" ]
-  }
-}
+###############################################################################
