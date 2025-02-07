@@ -111,11 +111,9 @@ int32_t CodecServiceStub::DestroyStub()
 
     auto callerInfo = std::static_pointer_cast<CodecServer>(codecServer_)->GetCallerInfo();
     (void)InnerRelease();
-    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_MEMORY_RESET, *callerInfo);
     codecServer_ = nullptr;
-    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, *callerInfo);
-
     AVCodecServerManager::GetInstance().DestroyStubObject(AVCodecServerManager::CODEC, AsObject());
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, *callerInfo);
     return AVCS_ERR_OK;
 }
 
