@@ -169,14 +169,6 @@ CodecServer::~CodecServer()
     avBufCallback_ = nullptr;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
-#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
-    Media::Meta meta;
-    meta.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
-    meta.SetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
-    meta.SetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
-    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, meta);
-#endif
-
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -464,7 +456,6 @@ int32_t CodecServer::Release()
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
     }
-    OnInstanceMemoryResetEvent();
     return ret;
 }
 
@@ -894,6 +885,15 @@ void CodecServer::SetCallerInfo(const Meta &callerInfo)
         "Forward caller pid: %{public}d, process name: %{public}s",
         forwardCaller_.pid, forwardCaller_.processName.c_str());
     AVCODEC_LOGI("Caller pid: %{public}d, process name: %{public}s", caller_.pid, caller_.processName.c_str());
+}
+
+std::shared_ptr<Media::Meta> CodecServer::GetCallerInfo()
+{
+    auto meta = std::make_shared<Media::Meta>();
+    meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    meta->SetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
+    meta->SetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
+    return meta;
 }
 
 inline const std::string &CodecServer::GetStatusDescription(CodecStatus status)
