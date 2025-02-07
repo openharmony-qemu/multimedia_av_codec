@@ -799,11 +799,16 @@ void FFmpegFormatHelper::ParseAudioApeTrackInfo(const AVStream& avStream, Meta &
         // Ffmpeg ensures that the value is definitely Int type
         const AVDictionaryEntry *meta = av_dict_get(avFormatContext.metadata, "max_frame_size", NULL, 0);
         if (meta != nullptr) {
-            format.Set<Tag::AUDIO_MAX_INPUT_SIZE>(std::stoi(meta->value));
+            int64_t maxFrameSize = std::stoll(meta->value);
+            FALSE_RETURN_MSG(maxFrameSize >= INT32_MIN && maxFrameSize <= INT32_MAX, "Parse max frame size failed");
+            format.Set<Tag::AUDIO_MAX_INPUT_SIZE>(static_cast<int32_t>(maxFrameSize));
         }
         meta = av_dict_get(avFormatContext.metadata, "sample_per_frame", NULL, 0);
         if (meta != nullptr) {
-            format.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(std::stoi(meta->value));
+            int64_t samplePerFrame = std::stoll(meta->value);
+            FALSE_RETURN_MSG(samplePerFrame >= INT32_MIN && samplePerFrame <= INT32_MAX,
+                "Parse sample per frame failed");
+            format.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(static_cast<int32_t>(samplePerFrame));
         }
     }
 }
