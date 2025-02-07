@@ -476,7 +476,7 @@ bool InnerDemuxerSample::CheckApeSourceData(const std::string &path, int32_t ver
     int64_t size = GetFileSize(path);
     this->avsource_ = AVSourceFactory::CreateWithFD(fd, 0, size);
     if (!avsource_) {
-        printf("Source is null Source = %s ,size = %ld\n", path.c_str(), size);
+        printf("Source is null Source = %s ,size = %lld\n", path.c_str(), size);
         return false;
     }
     this->demuxer_ = AVDemuxerFactory::CreateWithSource(avsource_);
