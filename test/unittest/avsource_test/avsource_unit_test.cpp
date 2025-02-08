@@ -84,6 +84,7 @@ string g_mp4FLIPV = TEST_FILE_PATH + string("FLIP_V.mp4");
 string g_mp4FLIPV90 = TEST_FILE_PATH + string("FLIP_V_90.mp4");
 string g_rmvbPath = TEST_FILE_PATH + string("rv40_cook.rmvb");
 string g_ac3Path = TEST_FILE_PATH + string("audio/ac3_test.ac3");
+string g_webmPath = TEST_FILE_PATH + string("vp8_vorbis.webm");
 string g_mtsPath = TEST_FILE_PATH + string("h264_ac3.mts");
 string g_vobPath = TEST_FILE_PATH + string("mpeg2_ac3.vob");
 string g_m2tsPath = TEST_FILE_PATH + string("mpeg2_ac3.m2ts");
