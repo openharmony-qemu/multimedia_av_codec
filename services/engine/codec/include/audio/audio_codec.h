@@ -37,9 +37,12 @@ public:
 
     void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
 
+    void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) override;
+
 private:
     std::shared_ptr<AudioCodec> codec_;
 };
+
 class AudioCodec : public std::enable_shared_from_this<AudioCodec>, public CodecBase {
 public:
     explicit AudioCodec()
@@ -174,6 +177,16 @@ public:
         }
     }
 
+    void OnOutputFormatChanged(const std::shared_ptr<Meta> &format)
+    {
+        auto realPtr = callback_.lock();
+        if (realPtr != nullptr) {
+            Media::Format outputFormat;
+            outputFormat.SetMeta(format);
+            realPtr->OnOutputFormatChanged(outputFormat);
+        }
+    }
+
 #ifdef SUPPORT_DRM
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
                                      const bool svpFlag) override
@@ -204,6 +217,14 @@ void AudioCodecCallback::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &out
         codec_->OnOutputBufferDone(outputBuffer);
     }
 }
+
+void AudioCodecCallback::OnOutputFormatChanged(const std::shared_ptr<Meta> &format)
+{
+    if (codec_) {
+        codec_->OnOutputFormatChanged(format);
+    }
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif

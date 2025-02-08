@@ -79,6 +79,7 @@ public:
 private:
     bool isFirst;
     bool hasExtra_;
+    bool currentFrameFormatChanged_;
     int32_t maxInputSize_;
     int64_t nextPts_;
     float durationTime_;
@@ -108,6 +109,7 @@ private:
     Status ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffer);
     void EnableResample(AVSampleFormat destFmt);
     Status SetCodecExtradata(const std::shared_ptr<Meta> &format);
+    void CheckFormatChange();
 };
 } // namespace Ffmpeg
 } // namespace Plugins

@@ -109,6 +109,7 @@ private:
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
 
     std::shared_ptr<MediaCodec> mediaCodec_;
+    std::shared_ptr<AudioBaseCodecCallback> mediaCodecCallback_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
 
     bool isDrmProtected_ = false;
@@ -131,6 +132,8 @@ public:
     void OnError(CodecErrorType errorType, int32_t errorCode) override;
 
     void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
+
+    void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) override;
 
 private:
     std::weak_ptr<AudioDecoderFilter> audioDecoderFilter_;

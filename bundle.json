@@ -71,7 +71,8 @@
           "libxml2",
           "video_processing_engine",
           "curl",
-          "openssl"
+          "openssl",
+          "bundle_framework"
         ],
         "third_party": [
           "bounds_checking_function"

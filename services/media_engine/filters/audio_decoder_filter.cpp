@@ -106,6 +106,7 @@ AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filte
 
 AudioDecoderFilter::~AudioDecoderFilter()
 {
+    mediaCodecCallback_ = nullptr;
     mediaCodec_->Release();
     MEDIA_LOG_I("audio decoder filter destroy");
 }
@@ -201,6 +202,7 @@ Status AudioDecoderFilter::DoFlush()
 Status AudioDecoderFilter::DoRelease()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Release.");
+    mediaCodecCallback_ = nullptr;
     return (Status)mediaCodec_->Release();
 }
 
@@ -272,9 +274,8 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     SetParameter(meta);
     mediaCodec_->Init(mime, false);
 
-    std::shared_ptr<AudioDecoderCallback> mediaCodecCallback
-        = std::make_shared<AudioDecoderCallback>(shared_from_this());
-    mediaCodec_->SetCodecCallback(mediaCodecCallback);
+    mediaCodecCallback_ = std::make_shared<AudioDecoderCallback>(shared_from_this());
+    mediaCodec_->SetCodecCallback(mediaCodecCallback_);
 
     auto ret = mediaCodec_->Configure(meta);
     if (ret != (int32_t)Status::OK && ret != (int32_t)Status::ERROR_INVALID_STATE) {
@@ -464,6 +465,12 @@ void AudioDecoderCallback::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &o
 {
     (void)outputBuffer;
 }
+
+void AudioDecoderCallback::OnOutputFormatChanged(const std::shared_ptr<Meta> &format)
+{
+    (void)format;
+}
+
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

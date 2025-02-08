@@ -89,6 +89,8 @@ ohos_unittest("audio_encoder_filter_unitest") {
   external_deps = [
     "audio_framework:audio_capturer",
     "audio_framework:audio_client",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
@@ -100,6 +102,7 @@ ohos_unittest("audio_encoder_filter_unitest") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
 
   resource_config_file =
