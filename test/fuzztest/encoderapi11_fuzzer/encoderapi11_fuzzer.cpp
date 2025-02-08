@@ -72,6 +72,16 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     vEncSample->surfInput = data2;
     vEncSample->enableRepeat = fdp.ConsumeBool();
     vEncSample->setMaxCount = fdp.ConsumeBool();
+    vEncSample->DEFAULT_RANGE_FLAG = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->DEFAULT_COLOR_PRIMARIES = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->DEFAULT_TRANSFER_CHARACTERISTICS = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->DEFAULT_MATRIX_COEFFICIENTS = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->DEFAULT_KEY_FRAME_INTERVAL = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->DEFAULT_BITRATE_MODE = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->DEFAULT_BITRATE = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->DEFAULT_QUALITY = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->DEFAULT_FRAME_AFTER = fdp.ConsumeIntegral<int32_t>();
+    vEncSample->DEFAULT_MAX_COUNT = fdp.ConsumeIntegral<int32_t>();
     int32_t ret = vEncSample->CreateVideoEncoder();
     if (ret != 0) {
         delete vEncSample;
