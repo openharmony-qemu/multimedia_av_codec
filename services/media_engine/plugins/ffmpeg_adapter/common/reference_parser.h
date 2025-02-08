@@ -59,7 +59,7 @@ struct PicRefInfo {
 class __attribute__((visibility("default"))) RefParser {
 public:
     virtual ~RefParser() = default;
-    virtual Status RefParserInit() = 0;
+    virtual Status RefParserInit(std::vector<uint32_t> &IFramePos) = 0;
     virtual Status ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId, int64_t dts) = 0;
     virtual Status ParserExtraData(uint8_t *extraData, int32_t extraDataSize) = 0;
     virtual Status ParserSdtpData(uint8_t *sdtpData, int32_t sdtpDataSize) = 0;
