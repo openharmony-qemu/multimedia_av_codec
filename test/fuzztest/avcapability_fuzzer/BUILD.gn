@@ -31,9 +31,7 @@ ohos_fuzztest("AvcapabilityFuzzTest") {
     "-Wno-unused-variable",
     "-fno-omit-frame-pointer",
   ]
-  sources = [
-    "avcapability_fuzzer.cpp",
-  ]
+  sources = [ "avcapability_fuzzer.cpp" ]
 
   external_deps = [
     "c_utils:utils",
@@ -41,9 +39,7 @@ ohos_fuzztest("AvcapabilityFuzzTest") {
     "ipc:ipc_single",
     "media_foundation:native_media_core",
   ]
-  deps = [
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
-  ]
+  deps = [ "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase" ]
 }
 
 group("fuzztest") {
