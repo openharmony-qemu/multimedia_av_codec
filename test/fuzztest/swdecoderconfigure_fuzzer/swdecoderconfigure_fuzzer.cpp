@@ -18,6 +18,7 @@
 #include "native_averrors.h"
 #include "native_avcodec_base.h"
 #include "videodec_sample.h"
+#include <fuzzer/FuzzedDataProvider.h>
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -35,6 +36,7 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     bool result = false;
+    FuzzedDataProvider fdp(data, size);
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
     vDecSample->inpDir = "/data/test/media/1280_720_30_10Mb.h264";
     vDecSample->defaultWidth = data[size - WIDTH_SIZE];
@@ -42,6 +44,9 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     vDecSample->defaultFrameRate = data[size - FRAME_RATE_SIZE];
     vDecSample->defaultRotation = data[size - ROTATION_SIZE];
     vDecSample->defaultPixelFormat = data[size - PIXELFORMAT_SIZE];
+    size_t maxSize = std::numeric_limits<size_t>::max();
+    vDecSample->randomName = fdp.ConsumeRandomLengthString(maxSize);
+    vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxSize);
     vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();

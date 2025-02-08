@@ -97,6 +97,8 @@ public:
     uint32_t frameCount = 0;
     bool sleepOnFPS = false;
     bool surfInput = false;
+    bool enableRepeat = false;
+    bool setMaxCount = false;
 private:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::thread> inputLoop_;

@@ -70,6 +70,8 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     vEncSample->fuzzData = data;
     vEncSample->fuzzSize = size;
     vEncSample->surfInput = data2;
+    vEncSample->enableRepeat = fdp.ConsumeBool();
+    vEncSample->setMaxCount = fdp.ConsumeBool();
     int32_t ret = vEncSample->CreateVideoEncoder();
     if (ret != 0) {
         delete vEncSample;

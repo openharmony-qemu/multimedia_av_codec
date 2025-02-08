@@ -111,6 +111,12 @@ int32_t VEncAPI11FuzzSample::ConfigureVideoEncoderFuzz(int32_t data)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, data);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, data);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, data);
+    if (enableRepeat) {
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, data);
+        if (setMaxCount) {
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, data);
+        }
+    }
 
     int ret = OH_VideoEncoder_Configure(venc_, format);
     OH_AVFormat_Destroy(format);
