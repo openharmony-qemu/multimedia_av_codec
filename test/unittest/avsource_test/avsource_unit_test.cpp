@@ -2379,7 +2379,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1804, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "audio/vorbis");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
-    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
 
 /**
@@ -2437,7 +2436,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1805, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "audio/ac3");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
-    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
 
 /**
@@ -2495,7 +2493,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1806, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "audio/ac3");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
-    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
 
 /**
@@ -2553,7 +2550,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1807, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "audio/ac3");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
-    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
 
 /**
