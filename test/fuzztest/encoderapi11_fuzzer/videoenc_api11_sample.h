@@ -101,7 +101,6 @@ public:
     uint32_t DEFAULT_COLOR_PRIMARIES = COLOR_PRIMARY_BT709;
     uint32_t DEFAULT_TRANSFER_CHARACTERISTICS = TRANSFER_CHARACTERISTIC_BT709;
     uint32_t DEFAULT_MATRIX_COEFFICIENTS = MATRIX_COEFFICIENT_BT709;
-    uint32_t defaultKeyFrameInterval = 1000;
     uint32_t DEFAULT_BITRATE_MODE = CBR;
     bool enableRepeat = false;
     bool setMaxCount = false;

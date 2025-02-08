@@ -109,7 +109,7 @@ int32_t VEncAPI11FuzzSample::ConfigureVideoEncoderFuzz(int32_t data)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS, DEFAULT_MATRIX_COEFFICIENTS);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, defaultKeyFrameInterval);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
-    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, defaultBitrate);
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, defaultBitRate);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, defaultQuality);
     if (enableRepeat) {
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, defaultFrameAfter);

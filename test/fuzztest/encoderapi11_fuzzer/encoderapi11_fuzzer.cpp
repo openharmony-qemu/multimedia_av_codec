@@ -78,7 +78,7 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     vEncSample->DEFAULT_MATRIX_COEFFICIENTS = fdp.ConsumeIntegral<uint32_t>();
     vEncSample->defaultKeyFrameInterval = fdp.ConsumeIntegral<uint32_t>();
     vEncSample->DEFAULT_BITRATE_MODE = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->defaultBitrate = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->defaultBitRate = fdp.ConsumeIntegral<uint32_t>();
     vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
     vEncSample->defaultFrameAfter = fdp.ConsumeIntegral<int32_t>();
     vEncSample->defaultMaxCount = fdp.ConsumeIntegral<int32_t>();
