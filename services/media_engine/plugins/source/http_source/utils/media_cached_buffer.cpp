@@ -298,6 +298,7 @@ bool CacheMediaChunkBufferImpl::WriteMergerPre(uint64_t offset, size_t writeSize
             uint64_t moveLen = (chunkInfo->offset + dataLength) > newOffset ?
                 (chunkInfo->offset + dataLength) - newOffset : 0;
             auto mergeDataLen = chunkInfo->dataLength > moveLen ? chunkInfo->dataLength - moveLen : 0;
+            if (moveLen > dataLength) MEDIA_LOG_D("moveLen: " PUBLIC_LOG_D64, moveLen);
             errno_t res = memmove_s(chunkInfo->data, moveLen, chunkInfo->data + mergeDataLen, moveLen);
             FALSE_RETURN_V_MSG_E(res == EOK, false, "memmove_s data err");
             chunkInfo->offset = newOffset;
@@ -518,7 +519,7 @@ size_t CacheMediaChunkBufferImpl::WriteChunk(FragmentCacheBuffer& fragmentCacheB
         writedTmp += WriteOneChunkData(*chunkInfo, src, offset, writeSize);
         fragmentCacheBuffer.dataLength += static_cast<int64_t>(writedTmp);
     }
-    while (writedTmp < writeSize) {
+    while (writedTmp < writeSize && writedTmp > 0) {
         auto chunkOffset = offset + static_cast<uint64_t>(writedTmp);
         auto freeChunk = GetFreeCacheChunk(chunkOffset);
         if (freeChunk == nullptr) {
