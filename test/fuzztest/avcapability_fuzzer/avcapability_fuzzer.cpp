@@ -17,11 +17,9 @@
 #include "native_avcapability.h"
 #include <fuzzer/FuzzedDataProvider.h>
 using namespace std;
-using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "avcapability_fuzzer"
 
-namespace OHOS {
 bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdp(data, size);
@@ -33,12 +31,11 @@ bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
     OH_AVCodec_GetCapabilityByCategory(mimeStr.c_str(), isEncoder, category);
     return true;
 }
-} // namespace OHOS
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::AvcapabilityFuzzTest(data, size);
+    AvcapabilityFuzzTest(data, size);
     return 0;
 }
