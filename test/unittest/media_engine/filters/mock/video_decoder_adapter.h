@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -54,6 +54,7 @@ public:
     MOCK_METHOD(
         void, SetCallingInfo, (int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId), ());
     MOCK_METHOD(void, ResetRenderTime, (), ());
+    MOCK_METHOD(Status, SetPerfRecEnabled, (bool perfRecEnabled), ());
 };
 }  // namespace Media
 }  // namespace OHOS

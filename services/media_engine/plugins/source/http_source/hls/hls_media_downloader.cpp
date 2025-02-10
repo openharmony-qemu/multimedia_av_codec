@@ -1249,8 +1249,8 @@ void HlsMediaDownloader::ReportVideoSizeChange()
         return;
     }
     FALSE_RETURN(playlistDownloader_ != nullptr);
-    int32_t videoWidth = playlistDownloader_->GetVedioWidth();
-    int32_t videoHeight = playlistDownloader_->GetVedioHeight();
+    int32_t videoWidth = playlistDownloader_->GetVideoWidth();
+    int32_t videoHeight = playlistDownloader_->GetVideoHeight();
     MEDIA_LOG_I("HLS ReportVideoSizeChange videoWidth : " PUBLIC_LOG_D32 "videoHeight: "
         PUBLIC_LOG_D32, videoWidth, videoHeight);
     changeBitRateCount_++;
@@ -1327,7 +1327,7 @@ bool HlsMediaDownloader::CheckRiseBufferSize()
     std::shared_ptr<RecordData> search = recordData_;
     uint64_t playingBitrate = playlistDownloader_->GetCurrentBitRate();
     if (playingBitrate == 0) {
-        playingBitrate = TransferSizeToBitRate(playlistDownloader_->GetVedioWidth());
+        playingBitrate = TransferSizeToBitRate(playlistDownloader_->GetVideoWidth());
     }
     if (search->downloadRate > playingBitrate) {
         MEDIA_LOG_I("HLS downloadRate: " PUBLIC_LOG_D64 "current bit rate: "
@@ -1344,7 +1344,7 @@ bool HlsMediaDownloader::CheckPulldownBufferSize()
     bool isPullDown = false;
     uint64_t playingBitrate = playlistDownloader_ -> GetCurrentBitRate();
     if (playingBitrate == 0) {
-        playingBitrate = TransferSizeToBitRate(playlistDownloader_->GetVedioWidth());
+        playingBitrate = TransferSizeToBitRate(playlistDownloader_->GetVideoWidth());
     }
     std::shared_ptr<RecordData> search = recordData_;
     if (search->downloadRate < playingBitrate) {

@@ -92,6 +92,8 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
   ]
   defines += av_codec_defines
 
+  public_configs = [ ":ffmpeg_adapter_config" ]
+
   if (build_variant != "user") {
     defines += [ "BUILD_ENG_VERSION" ]
   }

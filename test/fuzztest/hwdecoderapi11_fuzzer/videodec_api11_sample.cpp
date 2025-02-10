@@ -105,7 +105,11 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer,
 {
     int32_t ret = 0;
     if (g_decSample->isSurfMode) {
-        ret = OH_VideoDecoder_RenderOutputBuffer(codec, index);
+        if (g_decSample->isRenderAttime) {
+            ret = OH_VideoDecoder_RenderOutputBufferAtTime(codec, index, g_decSample->renderTimestampNs);
+        } else {
+            ret = OH_VideoDecoder_RenderOutputBuffer(codec, index);
+        }
     } else {
         ret = OH_VideoDecoder_FreeOutputBuffer(codec, index);
     }

@@ -83,6 +83,7 @@ public:
 private:
     bool isFirst;
     bool hasExtra_;
+    bool currentFrameFormatChanged_;
     int32_t maxInputSize_;
     int64_t nextPts_;
     float durationTime_;

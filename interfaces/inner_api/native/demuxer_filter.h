@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -49,6 +49,7 @@ public:
     Status DoFlush() override;
     Status DoPreroll() override;
     Status DoWaitPrerollDone(bool render) override;
+    Status DoSetPerfRecEnabled(bool isPerfRecEnabled) override;
     Status Reset();
     Status PauseForSeek();
     Status ResumeForSeek();
@@ -114,6 +115,7 @@ public:
     int32_t GetCurrentVideoTrackId();
     void SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart);
     void SetIsEnableReselectVideoTrack(bool isEnable);
+    void SetApiVersion(int32_t apiVersion);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -152,6 +154,7 @@ private:
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
     bool isNotPrepareBeforeStart_ {true};
     bool isEnableReselectVideoTrack_ {false};
+    int32_t apiVersion_ {0};
 };
 } // namespace Pipeline
 } // namespace Media

@@ -97,6 +97,15 @@ public:
     uint32_t frameCount = 0;
     bool sleepOnFPS = false;
     bool surfInput = false;
+    uint32_t defaultRangeFlag = 0;
+    uint32_t DEFAULT_COLOR_PRIMARIES = COLOR_PRIMARY_BT709;
+    uint32_t DEFAULT_TRANSFER_CHARACTERISTICS = TRANSFER_CHARACTERISTIC_BT709;
+    uint32_t DEFAULT_MATRIX_COEFFICIENTS = MATRIX_COEFFICIENT_BT709;
+    uint32_t DEFAULT_BITRATE_MODE = CBR;
+    bool enableRepeat = false;
+    bool setMaxCount = false;
+    int32_t defaultFrameAfter = 1;
+    int32_t defaultMaxCount = 1;
 private:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::thread> inputLoop_;

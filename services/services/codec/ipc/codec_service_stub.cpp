@@ -28,6 +28,7 @@
 #include "key_session_service_proxy.h"
 #endif
 #include "ipc_skeleton.h"
+#include "event_manager.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceStub"};
@@ -107,10 +108,15 @@ int32_t CodecServiceStub::InitStub(int32_t instanceId)
 int32_t CodecServiceStub::DestroyStub()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (codecServer_ == nullptr) {
+        return AVCS_ERR_OK;
+    }
+
+    auto callerInfo = std::static_pointer_cast<CodecServer>(codecServer_)->GetCallerInfo();
     (void)InnerRelease();
     codecServer_ = nullptr;
-
     AVCodecServerManager::GetInstance().DestroyStubObject(AVCodecServerManager::CODEC, AsObject());
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, *callerInfo);
     return AVCS_ERR_OK;
 }
 

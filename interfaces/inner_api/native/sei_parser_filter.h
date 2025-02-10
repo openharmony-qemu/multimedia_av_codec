@@ -53,7 +53,7 @@ public:
 
     Status ParseSei(std::shared_ptr<AVBuffer> buffer);
 
-    int32_t SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes);
+    Status SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes);
 
     void DrainOutputBuffer(bool flushed);
 
@@ -79,8 +79,6 @@ protected:
 
 private:
     Status PrepareInputBufferQueue();
-    void SetSeiMessageListener();
-    void RemoveSeiMessageListener();
 
     const std::string INPUT_BUFFER_QUEUE_NAME = "SeiParserFilterInputBufferQueue";
     std::string name_;

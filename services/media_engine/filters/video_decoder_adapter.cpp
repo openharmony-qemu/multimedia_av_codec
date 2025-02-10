@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -348,7 +348,26 @@ int32_t VideoDecoderAdapter::GetOutputFormat(Format &format)
 
 int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
 {
+    AVCodecTrace trace("VideoDecoderAdapter::ReleaseOutputBuffer");
+    FALSE_RETURN_V_NOLOG(!isPerfRecEnabled_, ReleaseOutputBufferWithPerfRecord(index, render));
     mediaCodec_->ReleaseOutputBuffer(index, render);
+    return 0;
+}
+
+Status VideoDecoderAdapter::SetPerfRecEnabled(bool isPerfRecEnabled)
+{
+    isPerfRecEnabled_ = isPerfRecEnabled;
+    return Status::OK;
+}
+
+int32_t VideoDecoderAdapter::ReleaseOutputBufferWithPerfRecord(uint32_t index, bool render)
+{
+    int64_t renderTime = CALC_EXPR_TIME_MS(mediaCodec_->ReleaseOutputBuffer(index, render));
+    FALSE_RETURN_V_MSG(eventReceiver_ != nullptr, 0, "Report perf failed, callback is nullptr");
+    FALSE_RETURN_V_NOLOG(perfRecorder_.Record(renderTime) == PerfRecorder::FULL, 0);
+    eventReceiver_->
+        OnDfxEvent({ "VRNDR", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
+    perfRecorder_.Reset();
     return 0;
 }
 
