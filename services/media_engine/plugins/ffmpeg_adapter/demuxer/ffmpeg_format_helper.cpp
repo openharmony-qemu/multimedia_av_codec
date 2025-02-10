@@ -993,16 +993,15 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Met
         } else if (g_formatToString.count(tempKey) <= 0) {
             MEDIA_LOG_D("UnsupportMeta:" PUBLIC_LOG_S, valPtr->key);
             continue;
-        } else {
-            MEDIA_LOG_D("SupportMeta:" PUBLIC_LOG_S, valPtr->key);
-            format.SetData(g_formatToString[tempKey], std::string(valPtr->value));
-            if (!IsUTF8(valPtr->value) && IsGBK(valPtr->value)) {
-                std::string resultStr = ConvertGBKToUTF8(std::string(valPtr->value));
-                if (resultStr.length() > 0) {
-                    format.SetData(g_formatToString[tempKey], resultStr);
-                } else {
-                    MEDIA_LOG_D("Convert utf8 failed");
-                }
+        }
+        MEDIA_LOG_D("SupportMeta:" PUBLIC_LOG_S, valPtr->key);
+        format.SetData(g_formatToString[tempKey], std::string(valPtr->value));
+        if (!IsUTF8(valPtr->value) && IsGBK(valPtr->value)) {
+            std::string resultStr = ConvertGBKToUTF8(std::string(valPtr->value));
+            if (resultStr.length() > 0) {
+                format.SetData(g_formatToString[tempKey], resultStr);
+            } else {
+                MEDIA_LOG_D("Convert utf8 failed");
             }
         }
     }
