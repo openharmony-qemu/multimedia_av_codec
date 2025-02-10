@@ -17,14 +17,13 @@
 #include "native_avcapability.h"
 #include <fuzzer/FuzzedDataProvider.h>
 using namespace std;
-using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "avcapability_fuzzer"
 
 bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdp(data, size);
     size_t maxSize = std::numeric_limits<size_t>::max();
-    string mimeStr = fdp.ConsumRandomLengthString(maxSize);
+    string mimeStr = fdp.ConsumeRandomLengthString(maxSize);
     bool isEncoder = data[0] >> sizeof(uint8_t);
     OH_AVCodecCategory category = static_cast<OH_AVCodecCategory>(data[0] >> sizeof(uint8_t));
     OH_AVCodec_GetCapability(mimeStr.c_str(), isEncoder);
