@@ -30,12 +30,12 @@ namespace MediaAVCodec {
 using namespace Media;
 CodecServiceProxy::CodecServiceProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IStandardCodecService>(impl)
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 CodecServiceProxy::~CodecServiceProxy()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 int32_t CodecServiceProxy::SetListenerObject(const sptr<IRemoteObject> &object)
@@ -45,13 +45,13 @@ int32_t CodecServiceProxy::SetListenerObject(const sptr<IRemoteObject> &object)
     MessageOption option;
 
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
-    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
     bool parcelRet = data.WriteRemoteObject(object);
-    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
     int32_t ret =
         Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_LISTENER_OBJ), data, reply, option);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
     return reply.ReadInt32();
 }
@@ -68,18 +68,18 @@ int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::st
     MessageOption option;
 
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
-    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
     bool parcelRet = callerInfo.ToParcel(data);
     parcelRet = parcelRet && data.WriteInt32(static_cast<int32_t>(type));
     parcelRet = parcelRet && data.WriteBool(isMimeType);
     parcelRet = parcelRet && data.WriteString(name);
-    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Write parcel failed");
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::INIT), data, reply, option);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
     ret = reply.ReadInt32();
     parcelRet = callerInfo.FromParcel(reply);
-    CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Read parcel failed");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Read parcel failed");
     this->SetThreadLocalTag(CreateVideoLogTag(callerInfo));
     this->UpdateTagWithThreadLocal(); // execute after CodecServiceProxy set thread_local
     return ret;

@@ -82,7 +82,7 @@ int32_t AVCodecVideoEncoderImpl::Init(AVCodecType type, bool isMimeType, const s
     AVCODEC_SYNC_TRACE_WITH_TAG;
 
     int32_t ret = AVCodecServiceFactory::GetInstance().CreateCodecService(codecClient_);
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, ret, "Codec client create failed");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, ret, "Codec client create failed");
     ret = codecClient_->Init(type, isMimeType, name, *format.GetMeta());
     this->UpdateTagWithThreadLocal(); // execute after CodecServiceProxy set thread_local
     this->ResetThreadLocalTag();
@@ -91,7 +91,7 @@ int32_t AVCodecVideoEncoderImpl::Init(AVCodecType type, bool isMimeType, const s
 
 AVCodecVideoEncoderImpl::AVCodecVideoEncoderImpl()
 {
-    AVCODEC_LOGD("AVCodecVideoEncoderImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("AVCodecVideoEncoderImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 AVCodecVideoEncoderImpl::~AVCodecVideoEncoderImpl()

@@ -45,7 +45,7 @@ CodecClient::CodecClient(const sptr<IStandardCodecService> &ipcProxy)
       converter_(std::make_shared<BufferConverter>()),
       syncMutex_(std::make_shared<std::recursive_mutex>())
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 CodecClient::~CodecClient()
@@ -55,7 +55,7 @@ CodecClient::~CodecClient()
         (void)codecProxy_->DestroyStub();
         SetNeedListen(false);
     }
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 void CodecClient::AVCodecServerDied()
@@ -71,15 +71,16 @@ void CodecClient::AVCodecServerDied()
 int32_t CodecClient::CreateListenerObject()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     listenerStub_ = new (std::nothrow) CodecListenerStub();
-    CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener stub create failed");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY,
+                                      "Codec listener stub create failed");
     listenerStub_->SetMutex(syncMutex_);
     listenerStub_->SetConverter(converter_);
 
     sptr<IRemoteObject> object = listenerStub_->AsObject();
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_NO_MEMORY, "Listener object is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(object != nullptr, AVCS_ERR_NO_MEMORY, "Listener object is nullptr");
 
     int32_t ret = codecProxy_->SetListenerObject(object);
     if (ret == AVCS_ERR_OK) {
@@ -87,7 +88,7 @@ int32_t CodecClient::CreateListenerObject()
     }
     auto codecProxy = static_cast<CodecServiceProxy *>(codecProxy_.GetRefPtr());
     codecProxy->SetListener(listenerStub_);
-    AVCODEC_LOGI("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+    AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;
 }
 
@@ -101,7 +102,7 @@ int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &
     callerInfo.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, std::string(program_invocation_name));
 
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
     int32_t ret = codecProxy_->Init(type, isMimeType, name, callerInfo);
     converter_->Init(type);
     listenerStub_->Init();

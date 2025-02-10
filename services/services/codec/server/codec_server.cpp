@@ -159,7 +159,7 @@ std::shared_ptr<ICodecService> CodecServer::Create(int32_t instanceId)
 
 CodecServer::CodecServer()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 CodecServer::~CodecServer()
