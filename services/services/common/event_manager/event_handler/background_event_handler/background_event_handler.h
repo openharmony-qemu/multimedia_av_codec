@@ -17,9 +17,24 @@
 #define BACKGROUND_EVENT_HANDLER_H
 
 #include "iremote_object.h"
+#ifdef USE_EFFICIENCY_MANAGER
+#include "syspara/parameters.h"
+#include "suspend_manager_client.h"
+#include "suspend_state_observer_stub.h"
+#endif //USE_EFFICIENCY_MANAGER
 
 namespace OHOS {
 namespace MediaAVCodec {
+#ifdef USE_EFFICIENCY_MANAGER
+class SuspendStateObserverStubObj : public SuspendManager::SuspendStateObserverStub {
+public:
+    void OnActive(const std::vector<int32_t> &pidList, const int32_t uid) override;
+    void OnDoze(const int32_t uid) override;
+    void OnFrozen(const std::vector<int32_t> &pidList, const int32_t uid) override;
+    void OnFrozenUid(const int32_t uid, const uint32_t reasonId) override;
+};
+#endif //USE_EFFICIENCY_MANAGER
+
 class BackGroundEventHandler {
 public:
     static BackGroundEventHandler& GetInstance();
@@ -29,11 +44,7 @@ public:
     void UnregisterSuspendObserver();
 
 private:
-    std::vector<sptr<IRemoteObject>> GetFreezeInfoList(pid_t pid);
-    void NotifyFrozen(const std::vector<int32_t> &pidList);
-    void NotifyActive(const std::vector<int32_t> &pidList);
 #ifdef USE_EFFICIENCY_MANAGER
-    class SuspendStateObserverStubObj;
     sptr<SuspendStateObserverStubObj> suspendObservers_ = nullptr;
 #endif //USE_EFFICIENCY_MANAGER
 };
