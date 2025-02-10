@@ -29,8 +29,8 @@ bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
     string mimeStr = fdp.ConsumRandomLengthString(maxSize);
     bool isEncoder = data[0] >> sizeof(uint8_t);
     OH_AVCodecCategory category = static_cast<OH_AVCodecCategory>(data[0] >> sizeof(uint8_t));
-    OH_AVCodec_GetCapability(mime.c_str(), isEncoder);
-    OH_AVCodec_GetCapabilityByCategory(mime.c_str(), isEncoder, category);
+    OH_AVCodec_GetCapability(mimeStr.c_str(), isEncoder);
+    OH_AVCodec_GetCapabilityByCategory(mimeStr.c_str(), isEncoder, category);
     return true;
 }
 } // namespace OHOS
