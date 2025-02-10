@@ -75,6 +75,7 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
             break;
         case CodecType::AVCODEC_VIDEO_AVC_ENCODER:
             codec = AvcEncoderLoader::CreateByName(name);
+            break;
 #else
         case CodecType::AVCODEC_AUDIO_CODEC:
             if (apiVersion == API_VERSION::API_VERSION_10) {
