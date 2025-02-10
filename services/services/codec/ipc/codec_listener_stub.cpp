@@ -310,9 +310,9 @@ CodecListenerStub::~CodecListenerStub()
 
 void CodecListenerStub::Init()
 {
-    this->UpdateLogTagWithThreadLoacal();
-    inputBufferCache_->UpdateLogTagWithThreadLoacal();
-    outputBufferCache_->UpdateLogTagWithThreadLoacal();
+    this->UpdateTagWithThreadLocal();
+    inputBufferCache_->UpdateTagWithThreadLocal();
+    outputBufferCache_->UpdateTagWithThreadLocal();
 }
 
 int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)

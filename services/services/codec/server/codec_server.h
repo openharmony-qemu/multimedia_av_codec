@@ -20,7 +20,6 @@
 #include <shared_mutex>
 #include <unordered_map>
 #include "avcodec_sysevent.h"
-#include "avcodec_log_tag.h"
 #include "codecbase.h"
 #include "i_codec_service.h"
 #include "nocopyable.h"

@@ -123,9 +123,9 @@ CodecListenerProxy::~CodecListenerProxy()
 
 void CodecListenerProxy::Init()
 {
-    inputBufferCache_->UpdateLogTagWithThreadLoacal();
-    outputBufferCache_->UpdateLogTagWithThreadLoacal();
-    this->UpdateLogTagWithThreadLoacal();
+    inputBufferCache_->UpdateTagWithThreadLocal();
+    outputBufferCache_->UpdateTagWithThreadLocal();
+    this->UpdateTagWithThreadLocal();
 }
 
 void CodecListenerProxy::OnError(AVCodecErrorType errorType, int32_t errorCode)

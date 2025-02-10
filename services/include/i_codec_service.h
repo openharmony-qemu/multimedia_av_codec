@@ -20,7 +20,6 @@
 #include "avcodec_dfx_component.h"
 #include "avcodec_common.h"
 #include "avcodec_info.h"
-#include "avcodec_log_tag.h"
 #include "buffer/avsharedmemory.h"
 #include "refbase.h"
 #include "surface.h"

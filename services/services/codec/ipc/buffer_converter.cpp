@@ -175,7 +175,7 @@ bool BufferConverter::Init(AVCodecType type)
     } else {
         return false;
     }
-    this->UpdateLogTagWithThreadLoacal();
+    this->UpdateTagWithThreadLocal();
     return true;
 }
 

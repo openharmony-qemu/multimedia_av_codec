@@ -196,7 +196,8 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     callerInfo.SetData(Tag::MEDIA_CODEC_NAME, codecName_);
     callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
-    this->UpdateLogTagWithThreadLoacal(CreateVideoLogTag(callerInfo));
+    this->SetThreadLocalTag(CreateVideoLogTag(callerInfo));
+    this->UpdateTagWithThreadLocal();
 #endif
     shareBufCallback_ = std::make_shared<CodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(shareBufCallback_);
@@ -299,7 +300,7 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
             if (!temporalScalability_->svcLTR_) {
                 temporalScalability_ = nullptr;
             } else {
-                temporalScalability_->UpdateLogTagWithThreadLoacal();
+                temporalScalability_->UpdateTagWithThreadLocal();
             }
             break;
         default:

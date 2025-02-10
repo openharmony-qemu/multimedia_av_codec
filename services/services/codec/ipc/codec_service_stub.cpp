@@ -437,7 +437,8 @@ int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
     ret = ret && callerInfo.ToParcel(reply);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->Init();
-    this->UpdateLogTagWithThreadLoacal();
+    this->UpdateTagWithThreadLocal();
+    this->ResetThreadLocalTag();
     return AVCS_ERR_OK;
 }
 

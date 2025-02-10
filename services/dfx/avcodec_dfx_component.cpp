@@ -16,23 +16,75 @@
 #include "avcodec_dfx_component.h"
 #include <algorithm>
 #include "avcodec_log.h"
+#include "instance_info.h"
 #include "meta/meta.h"
 
+using namespace OHOS::Media;
 namespace OHOS {
 namespace MediaAVCodec {
-AVCodecDfxComponent::AVCodecDfxComponent() {}
-AVCodecDfxComponent::~AVCodecDfxComponent()
+std::string CreateVideoLogTag(const Meta &callerInfo)
 {
-
+    int32_t instanceId = 0;
+    std::string codecName = "";
+    std::string type = "";
+    bool ret = callerInfo.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId) &&
+               callerInfo.GetData(Tag::MEDIA_CODEC_NAME, codecName);
+    if (ret || instanceId == 0) {
+        return "";
+    }
+    std::transform(codecName.begin(), codecName.end(), codecName.begin(), ::tolower);
+    type = codecName.find("omx") != std::string::npos ? "hw." : "sw.";
+    if (codecName.find("decode") != std::string::npos) {
+        type += "vdec";
+    } else if (codecName.find("encode") != std::string::npos) {
+        type += "venc";
+    } else {
+        return "";
+    }
+    return std::string("[") + std::to_string(instanceId) + "][" + type + "]";
 }
 
-void AVCodecDfxComponent::UpdateLogTagWithThreadLoacal(const std::string &tag)
+AVCodecDfxComponent::AVCodecDfxComponent()
+{
+    TAG.store("");
+}
+
+AVCodecDfxComponent::~AVCodecDfxComponent() {}
+
+void AVCodecDfxComponent::SetThreadLocalTag(const std::string &str)
+{
+    SetThreadLocalTagInner(LogTagFlag::SET_THREAD_LOCAL, str);
+    return;
+}
+
+void AVCodecDfxComponent::ResetThreadLocalTag()
+{
+    SetThreadLocalTagInner(LogTagFlag::SET_THREAD_LOCAL, "");
+    return;
+}
+
+void AVCodecDfxComponent::UpdateTagWithThreadLocal()
+{
+    SetThreadLocalTagInner(LogTagFlag::UPDATE_TAG);
+    return;
+}
+
+void AVCodecDfxComponent::SetThreadLocalTagInner(LogTagFlag flag, const std::string &str)
 {
     thread_local std::string threadLocalTag = "";
-    if (tag != "") {
-        threadLocalTag = tag;
+    switch (flag) {
+        case LogTagFlag::SET_THREAD_LOCAL: {
+            threadLocalTag = str;
+            return;
+        }
+        case LogTagFlag::UPDATE_TAG: {
+            tag_ = threadLocalTag;
+            TAG.store(tag_.c_str());
+            return;
+        }
+        default:
+            return;
     }
-    TAG.SetLogTag(threadLocalTag);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

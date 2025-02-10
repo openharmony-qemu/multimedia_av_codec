@@ -17,7 +17,6 @@
 
 #include <hilog/log.h>
 #include <cinttypes>
-#include "avcodec_log_tag.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -146,7 +145,12 @@ namespace MediaAVCodec {
         }                                                                   \
     } else void (0)
 
-#define AVCODEC_LOG_WITH_TAG(level, fmt, ...) AVCODEC_LOG(level, "%{public}s" fmt, TAG.GetLogTag(), ##__VA_ARGS__)
+#define AVCODEC_LOG_WITH_TAG(level, fmt, args...)                                                                      \
+    do {                                                                                                               \
+        (void)HILOG_IMPL(LABEL.type, level, LABEL.domain, LABEL.tag,                                                   \
+                         "%{public}s{%{public}s():" STRINGFY(__LINE__) "} " fmt, TAG.load(), __FUNCTION__,     \
+                         ##args);                                                                                      \
+    } while (0)
 #define AVCODEC_LOGF_WITH_TAG(fmt, ...) AVCODEC_LOG_WITH_TAG(LOG_FATAL, fmt, ##__VA_ARGS__)
 #define AVCODEC_LOGE_WITH_TAG(fmt, ...) AVCODEC_LOG_WITH_TAG(LOG_ERROR, fmt, ##__VA_ARGS__)
 #define AVCODEC_LOGW_WITH_TAG(fmt, ...) AVCODEC_LOG_WITH_TAG(LOG_WARN, fmt, ##__VA_ARGS__)

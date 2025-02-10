@@ -16,22 +16,36 @@
 #ifndef AVCODEC_DFX_COMPONENT_H
 #define AVCODEC_DFX_COMPONENT_H
 
+#include <atomic>
 #include <cinttypes>
 #include <memory>
 #include <mutex>
 #include <set>
 #include <string>
-#include "avcodec_log_tag.h"
 
 namespace OHOS {
+namespace Media {
+class Meta;
+}
 namespace MediaAVCodec {
 class AVCodecDfxComponent {
 public:
     AVCodecDfxComponent();
     ~AVCodecDfxComponent();
-    void UpdateLogTagWithThreadLoacal(const std::string &tag = "");
-    AVCodecLogTag TAG;
+    void SetThreadLocalTag(const std::string &str);
+    void ResetThreadLocalTag();
+    void UpdateTagWithThreadLocal();
+    std::atomic<const char *> TAG;
+
+private:
+    std::string tag_ = "";
+    enum class LogTagFlag {
+        SET_THREAD_LOCAL = 1,
+        UPDATE_TAG,
+    };
+    void SetThreadLocalTagInner(LogTagFlag flag, const std::string &str = "");
 };
+__attribute__((visibility("default"))) std::string CreateVideoLogTag(const OHOS::Media::Meta &meta);
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_DFX_COMPONENT_H
