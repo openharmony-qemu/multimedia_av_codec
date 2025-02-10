@@ -212,6 +212,7 @@ public:
     MOCK_METHOD(int32_t, SetOutputBufferQueue, (const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer));
     MOCK_METHOD(int32_t, Prepare, ());
     MOCK_METHOD(sptr<Media::AVBufferQueueProducer>, GetInputBufferQueue, ());
+    MOCK_METHOD(sptr<Media::AVBufferQueueConsumer>, GetInputBufferQueueConsumer, ());
     MOCK_METHOD(void, ProcessInputBuffer, ());
     MOCK_METHOD(int32_t, SetAudioDecryptionConfig,
                 (const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag));
@@ -278,6 +279,11 @@ public:
     /* API12 audio codec interface for drm*/
     virtual int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
                                              const bool svpFlag);
+
+    virtual sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer()
+    {
+        return nullptr;
+    }
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

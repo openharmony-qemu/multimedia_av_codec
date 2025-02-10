@@ -15,6 +15,7 @@
 #define MEDIA_PIPELINE
 
 #include "audio_decoder_filter.h"
+#include "parameters.h"
 #include "filter/filter_factory.h"
 #include "common/log.h"
 #include "common/media_core.h"
@@ -41,6 +42,8 @@ static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("buil
         return std::make_shared<AudioDecoderFilter>(name, FilterType::FILTERTYPE_ADEC);
     });
 
+static const bool IS_FILTER_ASYNC = system::GetParameter("persist.media_service.async_filter", "1") == "1";
+
 class AudioDecoderFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit AudioDecoderFilterLinkCallback(std::shared_ptr<AudioDecoderFilter> codecFilter)
@@ -53,7 +56,7 @@ public:
         if (auto codecFilter = codecFilter_.lock()) {
             codecFilter->OnLinkedResult(queue, meta);
         } else {
-            MEDIA_LOG_I_SHORT("invalid codecFilter");
+            MEDIA_LOG_I("invalid codecFilter");
         }
     }
 
@@ -62,7 +65,7 @@ public:
         if (auto codecFilter = codecFilter_.lock()) {
             codecFilter->OnUnlinkedResult(meta);
         } else {
-            MEDIA_LOG_I_SHORT("invalid codecFilter");
+            MEDIA_LOG_I("invalid codecFilter");
         }
     }
 
@@ -71,37 +74,35 @@ public:
         if (auto codecFilter = codecFilter_.lock()) {
             codecFilter->OnUpdatedResult(meta);
         } else {
-            MEDIA_LOG_I_SHORT("invalid codecFilter");
+            MEDIA_LOG_I("invalid codecFilter");
         }
     }
 private:
     std::weak_ptr<AudioDecoderFilter> codecFilter_;
 };
 
-class CodecBrokerListener : public IBrokerListener {
+class AudioDecInputPortConsumerListener : public OHOS::Media::IConsumerListener {
 public:
-    explicit CodecBrokerListener(std::shared_ptr<AudioDecoderFilter> codecFilter)
-        : codecFilter_(codecFilter) {}
-
-    sptr<IRemoteObject> AsObject() override
+    explicit AudioDecInputPortConsumerListener(std::shared_ptr<AudioDecoderFilter> audioDecoderFilter)
     {
-        return nullptr;
+        audioDecoderFilter_ = audioDecoderFilter;
     }
+    ~AudioDecInputPortConsumerListener() = default;
 
-    void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override
+    void OnBufferAvailable() override
     {
-        if (auto codecFilter = codecFilter_.lock()) {
-            codecFilter->OnBufferFilled(avBuffer);
+        if (auto audioDecoderFilter = audioDecoderFilter_.lock()) {
+            audioDecoderFilter->HandleInputBuffer();
         } else {
-            MEDIA_LOG_I_SHORT("invalid codecFilter");
+            MEDIA_LOG_I("invalid audioDecoderFilter");
         }
     }
 
 private:
-    std::weak_ptr<AudioDecoderFilter> codecFilter_;
+    std::weak_ptr<AudioDecoderFilter> audioDecoderFilter_;
 };
 
-AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type)
+AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type, IS_FILTER_ASYNC)
 {
     filterType_ = type;
     MEDIA_LOG_I_SHORT("audio decoder filter create");
@@ -124,7 +125,7 @@ AudioDecoderFilter::~AudioDecoderFilter()
 void AudioDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
-    MEDIA_LOG_I_SHORT("AudioDecoderFilter::Init.");
+    MEDIA_LOG_I("AudioDecoderFilter::Init.");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
     decoder_ = std::make_shared<AudioDecoderAdapter>();
@@ -132,26 +133,27 @@ void AudioDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 
 Status AudioDecoderFilter::DoPrepare()
 {
-    MEDIA_LOG_I_SHORT("AudioDecoderFilter::Prepare.");
+    MEDIA_LOG_I("AudioDecoderFilter::Prepare.");
+    Status ret = Status::OK;
     switch (filterType_) {
         case FilterType::FILTERTYPE_AENC:
-            MEDIA_LOG_I_SHORT("AudioDecoderFilter::FILTERTYPE_AENC.");
-            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+            MEDIA_LOG_I("AudioDecoderFilter::FILTERTYPE_AENC.");
+            ret = filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                 StreamType::STREAMTYPE_ENCODED_AUDIO);
             break;
         case FilterType::FILTERTYPE_ADEC:
-            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+            ret = filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                 StreamType::STREAMTYPE_RAW_AUDIO);
             break;
         default:
             break;
     }
-    return Status::OK;
+    return ret;
 }
 
 Status AudioDecoderFilter::DoStart()
 {
-    MEDIA_LOG_E_SHORT("AudioDecoderFilter::Start.");
+    MEDIA_LOG_E("AudioDecoderFilter::Start.");
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     auto ret = decoder_->Start();
     if (ret != Status::OK) {
@@ -171,7 +173,7 @@ Status AudioDecoderFilter::DoStart()
 
 Status AudioDecoderFilter::DoPause()
 {
-    MEDIA_LOG_E_SHORT("AudioDecoderFilter::Pause.");
+    MEDIA_LOG_E("AudioDecoderFilter::Pause.");
     latestPausedTime_ = latestBufferTime_;
     return Status::OK;
 }
@@ -183,7 +185,7 @@ Status AudioDecoderFilter::DoPauseAudioAlign()
 
 Status AudioDecoderFilter::DoResume()
 {
-    MEDIA_LOG_E_SHORT("AudioDecoderFilter::Resume.");
+    MEDIA_LOG_E("AudioDecoderFilter::Resume.");
     refreshTotalPauseTime_ = true;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     return decoder_->Start();
@@ -196,7 +198,7 @@ Status AudioDecoderFilter::DoResumeAudioAlign()
 
 Status AudioDecoderFilter::DoStop()
 {
-    MEDIA_LOG_E_SHORT("AudioDecoderFilter::Stop.");
+    MEDIA_LOG_E("AudioDecoderFilter::Stop.");
     latestBufferTime_ = HST_TIME_NONE;
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
@@ -207,7 +209,7 @@ Status AudioDecoderFilter::DoStop()
 
 Status AudioDecoderFilter::DoFlush()
 {
-    MEDIA_LOG_E_SHORT("AudioDecoderFilter::Flush.");
+    MEDIA_LOG_E("AudioDecoderFilter::Flush.");
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     return decoder_->Flush();
 }
@@ -227,7 +229,7 @@ Status AudioDecoderFilter::DoRelease()
 
 void AudioDecoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_E_SHORT("AudioDecoderFilter::SetParameter.");
+    MEDIA_LOG_I("AudioDecoderFilter::SetParameter");
     FALSE_RETURN_MSG(decoder_ != nullptr, "decoder_ is nullptr");
     decoder_->SetParameter(parameter);
 }
@@ -240,7 +242,7 @@ void AudioDecoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 
 Status AudioDecoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
-    MEDIA_LOG_E_SHORT("AudioDecoderFilter::LinkNext.");
+    MEDIA_LOG_E("AudioDecoderFilter::LinkNext.");
     nextFilter_ = nextFilter;
     nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
@@ -260,18 +262,21 @@ Status AudioDecoderFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter,
 
 Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
 {
-    MEDIA_LOG_I_SHORT("AudioDecoderFilter::ChangePlugin.");
+    MEDIA_LOG_I("AudioDecoderFilter::ChangePlugin.");
     std::string mime;
     meta_ = meta;
     bool mimeGetRes = meta_->GetData(Tag::MIME_TYPE, mime);
     if (!mimeGetRes && eventReceiver_ != nullptr) {
-        MEDIA_LOG_I_SHORT("AudioDecoderFilter cannot get mime");
+        MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
         eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
-    return decoder_->ChangePlugin(mime, false, meta);
+    Status ret = decoder_->ChangePlugin(mime, false, meta);
+    FALSE_RETURN_V_MSG(ret == Status::OK, ret, "decoder_ ChangePlugin failed");
+
+    return SetInputBufferQueueConsumerListener();
 }
 
 FilterType AudioDecoderFilter::GetFilterType()
@@ -282,13 +287,13 @@ FilterType AudioDecoderFilter::GetFilterType()
 Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
-    MEDIA_LOG_I_SHORT("AudioDecoderFilter::OnLinked.");
+    MEDIA_LOG_I("AudioDecoderFilter::OnLinked.");
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     onLinkedResultCallback_ = callback;
     std::string mime;
     bool mimeGetRes = meta->GetData(Tag::MIME_TYPE, mime);
     if (!mimeGetRes && eventReceiver_ != nullptr) {
-        MEDIA_LOG_I_SHORT("AudioDecoderFilter cannot get mime");
+        MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
         eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
@@ -312,7 +317,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     }
     decoder_->SetDumpInfo(isDump_, instanceId_);
     if (isDrmProtected_) {
-        MEDIA_LOG_D_SHORT("AudioDecoderFilter::isDrmProtected_ true.");
+        MEDIA_LOG_D("AudioDecoderFilter::isDrmProtected_ true.");
 #ifdef SUPPORT_DRM
         decoder_->SetAudioDecryptionConfig(keySessionServiceProxy_, svpFlag_);
 #endif
@@ -365,23 +370,12 @@ Status AudioDecoderFilter::OnUnLinked(StreamType inType, const std::shared_ptr<F
     return Status::OK;
 }
 
-sptr<AVBufferQueueProducer> AudioDecoderFilter::GetInputBufferQueue()
-{
-    MEDIA_LOG_E_SHORT("AudioDecoderFilter::GetInputBufferQueue.");
-    FALSE_RETURN_V_MSG(decoder_ != nullptr, nullptr, "decoder_ is nullptr");
-    inputBufferQueueProducer_ = decoder_->GetInputBufferQueue();
-    sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
-    FALSE_RETURN_V(inputBufferQueueProducer_ != nullptr, sptr<AVBufferQueueProducer>());
-    inputBufferQueueProducer_->SetBufferFilledListener(listener);
-    return inputBufferQueueProducer_;
-}
-
 Status AudioDecoderFilter::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
     bool svp)
 {
-    MEDIA_LOG_I_SHORT("AudioDecoderFilter SetDecryptionConfig enter.");
+    MEDIA_LOG_I("AudioDecoderFilter SetDecryptionConfig enter.");
     if (keySessionProxy == nullptr) {
-        MEDIA_LOG_E_SHORT("SetDecryptionConfig keySessionProxy is nullptr.");
+        MEDIA_LOG_E("SetDecryptionConfig keySessionProxy is nullptr.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     isDrmProtected_ = true;
@@ -402,16 +396,16 @@ void AudioDecoderFilter::SetDumpFlag(bool isDump)
 void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
     std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_E_SHORT("AudioDecoderFilter::OnLinkedResult.");
+    MEDIA_LOG_I_SHORT("AudioDecoderFilter::OnLinkedResult");
     FALSE_RETURN_MSG(decoder_ != nullptr, "decoder_ is nullptr");
     decoder_->SetOutputBufferQueue(outputBufferQueue);
     decoder_->Prepare();
-    inputBufferQueueProducer_ = decoder_->GetInputBufferQueue();
-    FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
-    sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
-    inputBufferQueueProducer_->SetBufferFilledListener(listener);
-    FALSE_RETURN(onLinkedResultCallback_ != nullptr);
-    onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta_);
+
+    FALSE_RETURN_MSG(SetInputBufferQueueConsumerListener() == Status::OK, "SetInputBufferQueueConsumerListener failed");
+
+    sptr<AVBufferQueueProducer> inputProducer = decoder_->GetInputBufferQueue();
+    FALSE_RETURN(inputProducer != nullptr && onLinkedResultCallback_ != nullptr);
+    onLinkedResultCallback_->OnLinkedResult(inputProducer, meta_);
 }
 
 void AudioDecoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
@@ -424,18 +418,30 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
     meta_ = meta;
 }
 
-void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
+Status AudioDecoderFilter::HandleInputBuffer()
 {
-    MEDIA_LOG_D_SHORT("AudioDecoderFilter::OnBufferFilled. pts: %{public}" PRId64,
-            (inputBuffer == nullptr ? -1 : inputBuffer->pts_));
-    FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
-    FALSE_RETURN(inputBuffer != nullptr);
-    inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
+    ProcessInputBuffer();
+    return Status::OK;
+}
+
+Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
+{
+    decoder_->ProcessInputBuffer();
+    return Status::OK;
+}
+
+Status AudioDecoderFilter::SetInputBufferQueueConsumerListener()
+{
+    sptr<IConsumerListener> consumerListener = new (std::nothrow) AudioDecInputPortConsumerListener(shared_from_this());
+    FALSE_RETURN_V_MSG(consumerListener != nullptr, Status::ERROR_NULL_POINTER, "listener is nullptr");
+    sptr<Media::AVBufferQueueConsumer> inputConsumer = decoder_->GetInputBufferQueueConsumer();
+    FALSE_RETURN_V_MSG(inputConsumer != nullptr, Status::ERROR_NULL_POINTER, "inputConsumer is nullptr");
+    return inputConsumer->SetBufferAvailableListener(consumerListener);
 }
 
 void AudioDecoderFilter::OnDumpInfo(int32_t fd)
 {
-    MEDIA_LOG_D_SHORT("AudioDecoderFilter::OnDumpInfo called.");
+    MEDIA_LOG_D("AudioDecoderFilter::OnDumpInfo called.");
     if (decoder_ != nullptr) {
         decoder_->OnDumpInfo(fd);
     }
@@ -462,11 +468,6 @@ void AudioDecoderFilter::OnError(CodecErrorType errorType, int32_t errorCode)
         default:
             break;
     }
-}
-
-void AudioDecoderFilter::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer)
-{
-    (void)outputBuffer;
 }
 
 AudioDecoderCallback::AudioDecoderCallback(std::shared_ptr<AudioDecoderFilter> audioDecoderFilter)

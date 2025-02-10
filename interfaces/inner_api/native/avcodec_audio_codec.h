@@ -62,6 +62,11 @@ public:
     virtual void ProcessInputBuffer();
 
     virtual void SetDumpInfo(bool isDump, uint64_t instanceId);
+
+    virtual sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer()
+    {
+        return nullptr;
+    }
 };
 
 class __attribute__((visibility("default"))) AudioCodecFactory {

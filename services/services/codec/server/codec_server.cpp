@@ -1195,6 +1195,13 @@ sptr<Media::AVBufferQueueProducer> CodecServer::GetInputBufferQueue()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     return codecBase_->GetInputBufferQueue();
 }
+
+sptr<Media::AVBufferQueueConsumer> CodecServer::GetInputBufferQueueConsumer()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    return codecBase_ != nullptr ? codecBase_->GetInputBufferQueueConsumer() : nullptr;
+}
+
 void CodecServer::ProcessInputBuffer()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);

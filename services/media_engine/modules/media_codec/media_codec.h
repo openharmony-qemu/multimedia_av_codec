@@ -102,6 +102,8 @@ public:
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
 
+    sptr<AVBufferQueueConsumer> GetInputBufferQueueConsumer();
+
     sptr<Surface> GetInputSurface();
 
     int32_t Start();
