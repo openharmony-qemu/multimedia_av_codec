@@ -180,6 +180,7 @@ Status FFmpegAPEDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     parameter->SetData(Tag::MIME_TYPE, MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE);
     parameter = basePlugin->GetFormat();
+    parameter->SetData(Tag::REQUIRED_IN_BUFFER_SIZE, GetInputBufferSize());
     return Status::OK;
 }
 
