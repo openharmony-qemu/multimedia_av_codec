@@ -54,6 +54,8 @@ private:
     void GetIndexFromPtsForAudio(int32_t trackIndex, uint64_t relativePresentationTimeUs, int64_t pair,
         int division, int value);
     int32_t CheckIndex(uint32_t index);
+    bool CheckApeSourceData(const std::string &path, int32_t version);
+    bool CheckDemuxer(int32_t &readMax);
     std::list<int64_t> videoIndexPtsList;
     std::list<int64_t> audioIndexPtsList;
     std::shared_ptr<AVSource> avsource_ = nullptr;
