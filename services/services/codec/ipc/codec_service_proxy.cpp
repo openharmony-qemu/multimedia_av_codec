@@ -81,7 +81,7 @@ int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::st
     parcelRet = callerInfo.FromParcel(reply);
     CHECK_AND_RETURN_RET_LOG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Read parcel failed");
     this->SetThreadLocalTag(CreateVideoLogTag(callerInfo));
-    this->UpdateTagWithThreadLocal();
+    this->UpdateTagWithThreadLocal(); // execute after CodecServiceProxy set thread_local
     return ret;
 }
 

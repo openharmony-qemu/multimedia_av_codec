@@ -310,6 +310,7 @@ CodecListenerStub::~CodecListenerStub()
 
 void CodecListenerStub::Init()
 {
+    // execute after CodecServiceProxy set thread_local
     this->UpdateTagWithThreadLocal();
     inputBufferCache_->UpdateTagWithThreadLocal();
     outputBufferCache_->UpdateTagWithThreadLocal();

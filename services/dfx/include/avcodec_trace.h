@@ -22,7 +22,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 #define AVCODEC_SYNC_TRACE AVCodecTrace trace(std::string(__FUNCTION__))
-#define AVCODEC_SYNC_TRACE_WITH_TAG AVCodecTrace trace(std::string(TAG.load()) + std::string(__FUNCTION__))
 
 class __attribute__((visibility("default"))) AVCodecTrace : public NoCopyable {
 public:

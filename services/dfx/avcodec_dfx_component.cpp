@@ -15,7 +15,6 @@
 
 #include "avcodec_dfx_component.h"
 #include <algorithm>
-#include "avcodec_log.h"
 #include "instance_info.h"
 #include "meta/meta.h"
 
@@ -46,7 +45,7 @@ std::string CreateVideoLogTag(const Meta &callerInfo)
 
 AVCodecDfxComponent::AVCodecDfxComponent()
 {
-    TAG.store("");
+    tag_.store("");
 }
 
 AVCodecDfxComponent::~AVCodecDfxComponent() {}
@@ -78,8 +77,8 @@ void AVCodecDfxComponent::SetThreadLocalTagInner(LogTagFlag flag, const std::str
             return;
         }
         case LogTagFlag::UPDATE_TAG: {
-            tag_ = threadLocalTag;
-            TAG.store(tag_.c_str());
+            tagContent_ = threadLocalTag;
+            tag_.store(tagContent_.c_str());
             return;
         }
         default:

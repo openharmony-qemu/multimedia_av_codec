@@ -22,6 +22,8 @@
 #include <mutex>
 #include <set>
 #include <string>
+#include "avcodec_log.h"
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -35,17 +37,100 @@ public:
     void SetThreadLocalTag(const std::string &str);
     void ResetThreadLocalTag();
     void UpdateTagWithThreadLocal();
-    std::atomic<const char *> TAG;
+    std::atomic<const char *> tag_;
 
 private:
-    std::string tag_ = "";
+    std::string tagContent_ = "";
     enum class LogTagFlag {
         SET_THREAD_LOCAL = 1,
         UPDATE_TAG,
     };
     void SetThreadLocalTagInner(LogTagFlag flag, const std::string &str = "");
 };
-__attribute__((visibility("default"))) std::string CreateVideoLogTag(const OHOS::Media::Meta &meta);
+
+std::string CreateVideoLogTag(const OHOS::Media::Meta &meta);
+
+#define AVCODEC_SYNC_TRACE_WITH_TAG AVCodecTrace trace(std::string(tag_) + std::string(__FUNCTION__))
+#define AVCODEC_LOG_WITH_TAG(level, fmt, args...)                                                                      \
+    do {                                                                                                               \
+        (void)HILOG_IMPL(LABEL.type, level, LABEL.domain, LABEL.tag,                                                   \
+                         "%{public}s{%{public}s():" STRINGFY(__LINE__) "} " fmt, tag_.load(), __FUNCTION__, ##args);   \
+    } while (0)
+#define AVCODEC_LOGF_WITH_TAG(fmt, ...) AVCODEC_LOG_WITH_TAG(LOG_FATAL, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGE_WITH_TAG(fmt, ...) AVCODEC_LOG_WITH_TAG(LOG_ERROR, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGW_WITH_TAG(fmt, ...) AVCODEC_LOG_WITH_TAG(LOG_WARN, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGI_WITH_TAG(fmt, ...) AVCODEC_LOG_WITH_TAG(LOG_INFO, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGD_WITH_TAG(fmt, ...) AVCODEC_LOG_WITH_TAG(LOG_DEBUG, fmt, ##__VA_ARGS__)
+
+#define CHECK_AND_RETURN_RET_LOG_WITH_TAG(cond, ret, fmt, ...)                                                         \
+    do {                                                                                                               \
+        if (!(cond)) {                                                                                                 \
+            AVCODEC_LOGE_WITH_TAG(fmt, ##__VA_ARGS__);                                                                 \
+            return ret;                                                                                                \
+        }                                                                                                              \
+    } while (0)
+
+#define CHECK_AND_RETURN_RET_LOGW_WITH_TAG(cond, ret, fmt, ...)                                                        \
+    do {                                                                                                               \
+        if (!(cond)) {                                                                                                 \
+            AVCODEC_LOGW_WITH_TAG(fmt, ##__VA_ARGS__);                                                                 \
+            return ret;                                                                                                \
+        }                                                                                                              \
+    } while (0)
+
+#define EXPECT_AND_LOGW_WITH_TAG(cond, fmt, ...)                                                                       \
+    do {                                                                                                               \
+        if ((cond)) {                                                                                                  \
+            AVCODEC_LOGW_WITH_TAG(fmt, ##__VA_ARGS__);                                                                 \
+        }                                                                                                              \
+    } while (0)
+
+#define EXPECT_AND_LOGI_WITH_TAG(cond, fmt, ...)                                                                       \
+    do {                                                                                                               \
+        if ((cond)) {                                                                                                  \
+            AVCODEC_LOGI_WITH_TAG(fmt, ##__VA_ARGS__);                                                                 \
+        }                                                                                                              \
+    } while (0)
+
+#define EXPECT_AND_LOGD_WITH_TAG(cond, fmt, ...)                                                                       \
+    do {                                                                                                               \
+        if ((cond)) {                                                                                                  \
+            AVCODEC_LOGD_WITH_TAG(fmt, ##__VA_ARGS__);                                                                 \
+        }                                                                                                              \
+    } while (0)
+
+#define EXPECT_AND_LOGE_WITH_TAG(cond, fmt, ...)                                                                       \
+    do {                                                                                                               \
+        if ((cond)) {                                                                                                  \
+            AVCODEC_LOGE_WITH_TAG(fmt, ##__VA_ARGS__);                                                                 \
+        }                                                                                                              \
+    } while (0)
+
+#define CHECK_AND_RETURN_LOG_WITH_TAG(cond, fmt, ...)                                                                  \
+    do {                                                                                                               \
+        if (!(cond)) {                                                                                                 \
+            AVCODEC_LOGE_WITH_TAG(fmt, ##__VA_ARGS__);                                                                 \
+            return;                                                                                                    \
+        }                                                                                                              \
+    } while (0)
+
+#define CHECK_AND_BREAK_LOG_WITH_TAG(cond, fmt, ...)                                                                   \
+    if (1) {                                                                                                           \
+        if (!(cond)) {                                                                                                 \
+            AVCODEC_LOGW_WITH_TAG(fmt, ##__VA_ARGS__);                                                                 \
+            break;                                                                                                     \
+        }                                                                                                              \
+    } else                                                                                                             \
+        void(0)
+
+#define CHECK_AND_CONTINUE_LOG_WITH_TAG(cond, fmt, ...)                                                                \
+    if (1) {                                                                                                           \
+        if (!(cond)) {                                                                                                 \
+            AVCODEC_LOGW_WITH_TAG(fmt, ##__VA_ARGS__);                                                                 \
+            continue;                                                                                                  \
+        }                                                                                                              \
+    } else                                                                                                             \
+        void(0)
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_DFX_COMPONENT_H

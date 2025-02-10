@@ -197,7 +197,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
     this->SetThreadLocalTag(CreateVideoLogTag(callerInfo));
-    this->UpdateTagWithThreadLocal();
+    this->UpdateTagWithThreadLocal(); // execute after CodecServer set thread_local
 #endif
     shareBufCallback_ = std::make_shared<CodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(shareBufCallback_);

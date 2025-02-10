@@ -123,6 +123,7 @@ CodecListenerProxy::~CodecListenerProxy()
 
 void CodecListenerProxy::Init()
 {
+    // execute after CodecServer set thread_local
     inputBufferCache_->UpdateTagWithThreadLocal();
     outputBufferCache_->UpdateTagWithThreadLocal();
     this->UpdateTagWithThreadLocal();
