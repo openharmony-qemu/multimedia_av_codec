@@ -170,6 +170,7 @@ std::string ToLower(const std::string& str)
             res += std::tolower(c);
         }
     }
+    MEDIA_LOG_D("[" PUBLIC_LOG_S "] -> [" PUBLIC_LOG_S "]", str.c_str(), res.c_str());
     return res;
 }
 
@@ -982,6 +983,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Met
     while ((valPtr = av_dict_get(metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)))  {
         std::string tempKey = ToLower(std::string(valPtr->key));
         if (tempKey.find("moov_level_meta_key_") == 0) {
+            MEDIA_LOG_D("UserMeta:" PUBLIC_LOG_S, valPtr->key);
             if (g_formatToString.count(tempKey.c_str() + KEY_PREFIX_LEN) > 0 &&
                 strlen(valPtr->value) > VALUE_PREFIX_LEN) {
                     format.SetData(g_formatToString[tempKey.c_str() + KEY_PREFIX_LEN],
@@ -989,8 +991,10 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Met
                 }
             continue;
         } else if (g_formatToString.count(tempKey) <= 0) {
+            MEDIA_LOG_D("UnsupportMeta:" PUBLIC_LOG_S, valPtr->key);
             continue;
         } else {
+            MEDIA_LOG_D("SupportMeta:" PUBLIC_LOG_S, valPtr->key);
             format.SetData(g_formatToString[tempKey], std::string(valPtr->value));
             if (!IsUTF8(valPtr->value) && IsGBK(valPtr->value)) {
                 std::string resultStr = ConvertGBKToUTF8(std::string(valPtr->value));
