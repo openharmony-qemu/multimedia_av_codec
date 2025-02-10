@@ -88,7 +88,6 @@ Status SeiParserFilter::DoPrepare()
     }
 
     FALSE_RETURN_V_MSG(seiMessageCbStatus_, Status::OK, "disenable parse sei info");
-    SetSeiMessageListener();
     return Status::OK;
 }
 
@@ -190,47 +189,38 @@ void SeiParserFilter::DrainOutputBuffer(bool flushed)
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
 }
 
-int32_t SeiParserFilter::SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes)
+Status SeiParserFilter::SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes)
 {
     MEDIA_LOG_I("seiMessageCbStatus_  = " PUBLIC_LOG_D32, seiMessageCbStatus_);
     seiMessageCbStatus_ = status;
-    if (status) {
-        payloadTypes_ = payloadTypes;
-        SetSeiMessageListener();
-        return 0;
-    }
-    if (payloadTypes_.empty()) {
-        payloadTypes_ = {};
-        RemoveSeiMessageListener();
-        return 0;
-    }
-    payloadTypes_.erase(
-        std::remove_if(payloadTypes_.begin(), payloadTypes_.end(), [&payloadTypes](int value) {
-            return std::find(payloadTypes.begin(), payloadTypes.end(), value) != payloadTypes.end();
-        }), payloadTypes_.end());
-    RemoveSeiMessageListener();
-    return 0;
-}
-
-void SeiParserFilter::SetSeiMessageListener()
-{
-    FALSE_RETURN_MSG(inputBufferQueueProducer_ != nullptr, "get producer failed");
+    FALSE_RETURN_V_MSG(
+        inputBufferQueueProducer_ != nullptr, Status::ERROR_NO_MEMORY, "get producer failed");
     if (producerListener_ == nullptr) {
         producerListener_ =
-            new SeiParserListener(codecMimeType_, inputBufferQueueProducer_, eventReceiver_);
-        FALSE_RETURN_MSG(producerListener_ != nullptr, "sei listener create failed");
+            new SeiParserListener(codecMimeType_, inputBufferQueueProducer_, eventReceiver_, true);
+        FALSE_RETURN_V_MSG(
+            producerListener_ != nullptr, Status::ERROR_NO_MEMORY, "sei listener create failed");
+        if (syncCenter_ != nullptr) {
+            producerListener_->SetSyncCenter(syncCenter_);
+        } else {
+            MEDIA_LOG_W("syncCenter_ is nullptr");
+        }
     }
-    producerListener_->SetPayloadTypeVec(payloadTypes_);
-    sptr<IBrokerListener> tmpListener = producerListener_;
-    inputBufferQueueProducer_->RemoveBufferFilledListener(tmpListener);
-    inputBufferQueueProducer_->SetBufferFilledListener(tmpListener);
+    producerListener_->SetSeiMessageCbStatus(status, payloadTypes);
+    return Status::OK;
 }
 
-void SeiParserFilter::RemoveSeiMessageListener()
+void SeiParserFilter::SetSyncCenter(std::shared_ptr<IMediaSyncCenter> syncCenter)
 {
-    FALSE_RETURN_MSG(inputBufferQueueProducer_ != nullptr, "get producer failed");
+    syncCenter_ = syncCenter;
+    FALSE_RETURN(producerListener_ != nullptr);
+    producerListener_->SetSyncCenter(syncCenter);
+}
+
+void SeiParserFilter::OnInterrupted(bool isInterruptNeeded)
+{
     FALSE_RETURN_MSG(producerListener_ != nullptr, "no sei parser listener now");
-    producerListener_->SetPayloadTypeVec(payloadTypes_);
+    producerListener_->OnInterrupted(isInterruptNeeded);
 }
 }  // namespace Pipeline
 }  // namespace Media

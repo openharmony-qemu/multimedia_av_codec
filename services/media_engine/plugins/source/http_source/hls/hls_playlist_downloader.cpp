@@ -311,7 +311,7 @@ uint64_t HlsPlayListDownloader::GetCurrentBitRate()
     return currentVariant_->bandWidth_;
 }
 
-int HlsPlayListDownloader::GetVedioWidth()
+int HlsPlayListDownloader::GetVideoWidth()
 {
     if (currentVariant_ == nullptr) {
         return 0;
@@ -320,7 +320,7 @@ int HlsPlayListDownloader::GetVedioWidth()
     return currentVariant_->width_;
 }
 
-int HlsPlayListDownloader::GetVedioHeight()
+int HlsPlayListDownloader::GetVideoHeight()
 {
     if (currentVariant_ == nullptr) {
         return 0;

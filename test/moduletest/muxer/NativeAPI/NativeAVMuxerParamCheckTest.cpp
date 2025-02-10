@@ -349,7 +349,7 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_007
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(0, trackId);
 
-    OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
+    OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2);
     ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(1, trackId);

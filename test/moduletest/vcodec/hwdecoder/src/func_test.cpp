@@ -49,6 +49,9 @@ protected:
     const char *inpDirVivid = "/data/test/media/hlg_vivid_4k.h265";
     const char *INP_DIR_VVC_1080 = "/data/test/media/1920_1080_10bit.vvc";
     const char *inpDirVvcResolution = "/data/test/media/resolution.vvc";
+    const char *inpDirVvcResolution8Bit = "/data/test/media/resolution_8bit.vvc";
+    const char *inpDirVvcResolution10Bit = "/data/test/media/resolution_10bit.vvc";
+    const char *inpDirVvcResolutionHdr10Bit = "/data/test/media/resolution_hdr_10bit.vvc";
 };
 } // namespace Media
 } // namespace OHOS
@@ -65,6 +68,10 @@ constexpr int32_t DEFAULT_HEIGHT = 1080;
 constexpr int32_t MAX_NALU_LEN = 12000;
 constexpr int32_t UHD_RESOLUTION[2] = {3840, 2160};
 constexpr int32_t HD_RESOLUTION[2] = {1104, 622};
+constexpr uint32_t CHANGE_AVC_FRAME = 1500;
+constexpr uint32_t CHANGE_HEVC_FRAME = 3006;
+constexpr uint32_t CHANGE_HEVC_TEN_FRAME = 1800;
+constexpr uint32_t CHANGE_VVC_FRAME = 1524;
 } // namespace
 
 void HwdecFuncNdkTest::SetUpTestCase()
@@ -458,18 +465,20 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1600, TestSize.Level2)
 HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1700, TestSize.Level2)
 {
     if (g_codecName.find("hisi") != string::npos) {
-        auto vDecSample = make_shared<VDecNdkSample>();
+        auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/resolutionChange.h264";
         vDecSample->DEFAULT_WIDTH = 1104;
         vDecSample->DEFAULT_HEIGHT = 622;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SF_OUTPUT = false;
+        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_AVC_FRAME, vDecSample->outFrameCount);
     } else {
         cout << "hardware encoder is rk,skip." << endl;
     }
@@ -1287,6 +1296,364 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VRR_0002, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     if (!access("/system/lib64/media/", 0)) {
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_FUNCTION_1800
+ * @tc.name      : resolution change
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1800, TestSize.Level2)
+{
+    if (g_codecNameHEVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/change_8bit_h265.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_HEVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_FUNCTION_1900
+ * @tc.name      : resolution change
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1900, TestSize.Level2)
+{
+    if (g_codecNameHEVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/change_10bit_h265.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_HEVC_TEN_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0010
+ * @tc.name      : h266变分辨率,8bit解码，buffer, nv12
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0010, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolution8Bit;
+        vDecSample->DEFAULT_WIDTH = 3840;
+        vDecSample->DEFAULT_HEIGHT = 2160;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0020
+ * @tc.name      : h266变分辨率,8bit解码，buffer, nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0020, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolution8Bit;
+        vDecSample->DEFAULT_WIDTH = 3840;
+        vDecSample->DEFAULT_HEIGHT = 2160;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0030
+ * @tc.name      : h266变分辨率,10bit解码，buffer, nv12
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0030, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolution10Bit;
+        vDecSample->DEFAULT_WIDTH = 128;
+        vDecSample->DEFAULT_HEIGHT = 128;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0040
+ * @tc.name      : h266变分辨率,10bit解码，buffer, nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0040, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolution10Bit;
+        vDecSample->DEFAULT_WIDTH = 128;
+        vDecSample->DEFAULT_HEIGHT = 128;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0050
+ * @tc.name      : h266变分辨率,hdr解码，buffer, nv12
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0050, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolutionHdr10Bit;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0060
+ * @tc.name      : h266变分辨率,hdr解码，buffer, nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0060, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolutionHdr10Bit;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0070
+ * @tc.name      : h266变分辨率,8bit解码，surface, nv12
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0070, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolution8Bit;
+        vDecSample->DEFAULT_WIDTH = 3840;
+        vDecSample->DEFAULT_HEIGHT = 2160;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->outputYuvSurface = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameVVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0080
+ * @tc.name      : h266变分辨率,8bit解码，surface, nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0080, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolution8Bit;
+        vDecSample->DEFAULT_WIDTH = 3840;
+        vDecSample->DEFAULT_HEIGHT = 2160;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->outputYuvSurface = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameVVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0090
+ * @tc.name      : h266变分辨率,10bit解码，surface, nv12
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0090, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolution10Bit;
+        vDecSample->DEFAULT_WIDTH = 128;
+        vDecSample->DEFAULT_HEIGHT = 128;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->outputYuvSurface = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameVVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0100
+ * @tc.name      : h266变分辨率,10bit解码，surface, nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0100, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolution10Bit;
+        vDecSample->DEFAULT_WIDTH = 128;
+        vDecSample->DEFAULT_HEIGHT = 128;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->outputYuvSurface = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameVVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0110
+ * @tc.name      : h266变分辨率,10bit解码，surface, nv12
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0110, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolutionHdr10Bit;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->outputYuvSurface = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameVVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_VVC_RESOLUTION_0100
+ * @tc.name      : h266变分辨率,10bit解码，surface, nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0120, TestSize.Level0)
+{
+    if (g_codecNameVVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = inpDirVvcResolutionHdr10Bit;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->outputYuvSurface = true;
+        vDecSample->NocaleHash = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameVVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
     }
 }
 } // namespace

@@ -257,6 +257,16 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Create_005, TestSize.Level0)
     ASSERT_TRUE(isCreated);
 
     avmuxer_->Destroy();
+    outputFormat = AV_OUTPUT_FORMAT_WAV;
+    isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    avmuxer_->Destroy();
+    outputFormat = AV_OUTPUT_FORMAT_AAC;
+    isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    avmuxer_->Destroy();
     isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(INVALID_FORMAT));
     ASSERT_FALSE(isCreated);
 }
@@ -582,6 +592,30 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_008, TestSize.Level0)
     avParam->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB);
     avParam->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 16000); // 16000: 16khz sample rate
     avParam->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 1); // 1: 1 audio channel, mono
+
+    int32_t ret = avmuxer_->AddTrack(trackId, avParam);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_AddTrack_009
+ * @tc.desc: Create AAC Muxer AddTrack
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_009, TestSize.Level0)
+{
+    int32_t trackId = -2; // -2: Initialize to an invalid ID
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack.aac");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(AV_OUTPUT_FORMAT_AAC));
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> avParam = FormatMockFactory::CreateFormat();
+    avParam->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    avParam->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 16000); // 16000: 16khz sample rate
+    avParam->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 1); // 1: 1 audio channel, mono
+    avParam->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    avParam->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
 
     int32_t ret = avmuxer_->AddTrack(trackId, avParam);
     ASSERT_EQ(ret, 0);
@@ -1761,6 +1795,119 @@ HWTEST_F(AVMuxerUnitTest, Muxer_WAV_004, TestSize.Level0)
     ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
 }
 
+/**
+ * @tc.name: Muxer_AAC_001
+ * @tc.desc: Muxer mux the aac with adts header
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AAC_001, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AAC_44100_2.aac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_AAC;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_U8);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 705600); // 705600 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 2048); // 2048 frame size
+    audioParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    audioParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
+    int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    inputFile_ = std::make_shared<std::ifstream>("/data/test/media/aac_2c_44100hz_199k.dat", std::ios::binary);
+
+    int32_t extSize = 0;
+    inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+    if (extSize > 0) {
+        std::vector<uint8_t> buffer(extSize);
+        inputFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+    }
+
+    bool eosFlag = false;
+    uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
+    ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+    while (!eosFlag && (ret == 0)) {
+        ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+    }
+    ASSERT_EQ(ret, 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_AAC_002
+ * @tc.desc: Muxer mux aac, test OH_MD_KEY_AUDIO_SAMPLE_FORMAT
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AAC_002, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AAC_44100_2_XXX.aac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_WAV;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_U8P);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 705600); // 705600 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    audioParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_STEREO);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S24P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S32P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+}
+
+/**
+ * @tc.name: Muxer_AAC_003
+ * @tc.desc: Muxer mux aac, test OH_MD_KEY_CHANNEL_LAYOUT
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AAC_003, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AAC_44100_2_XXX.aac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_WAV;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 1411200); // 1411200 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_2POINT0POINT2);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_AMB_ORDER1_ACN_N3D);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_AMB_ORDER1_FUMA);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+}
 #ifdef AVMUXER_UNITTEST_CAPI
 /**
  * @tc.name: Muxer_Destroy_001
@@ -1889,6 +2036,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_CreationTime_003, TestSize.Level0)
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_EQ(ret, 3);
 }
+
 /**
  * @tc.name: Muxer_SetFormat_CreationTime_004
  * @tc.desc: Muxer set format without valid key in Meta
@@ -1908,6 +2056,202 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_CreationTime_004, TestSize.Level0)
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_EQ(ret, 0);
 }
+
+/**
+ * @tc.name: Muxer_SetFormat_DefinedKey_001
+ * @tc.desc: Muxer set format with defined key(include MEDIA_CREATION_TIME)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_DefinedKey_001, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutIntValue(Tag::AUDIO_CHANNEL_COUNT, 2);
+    audioParams->PutIntValue(Tag::AUDIO_SAMPLE_RATE, 48000);
+    audioParams->PutStringValue(Tag::MEDIA_CREATION_TIME, "2023-12-19T03:16:00.000000Z");
+    audioParams->PutLongValue(Tag::MEDIA_BITRATE, 128000);
+    audioParams->PutFloatValue(Tag::MEDIA_LATITUDE, 22.67f);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_DefinedKey_002
+ * @tc.desc: Muxer set format with defined key(no include MEDIA_CREATION_TIME)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_DefinedKey_002, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutIntValue(Tag::AUDIO_CHANNEL_COUNT, 2);
+    audioParams->PutIntValue(Tag::AUDIO_SAMPLE_RATE, 48000);
+    audioParams->PutLongValue(Tag::MEDIA_BITRATE, 128000);
+    audioParams->PutFloatValue(Tag::MEDIA_LATITUDE, 22.67f);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_UserKey_001
+ * @tc.desc: Muxer set format with user key(true keys)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_001, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutIntValue("com.openharmony.version", 5);
+    audioParams->PutStringValue("com.openharmony.model", "LNA-AL00");
+    audioParams->PutFloatValue("com.openharmony.capture.fps", 30.00f);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_UserKey_002
+ * @tc.desc: Muxer set format with user key(include wrong keys)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_002, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutIntValue("com.openharmony.version", 5);
+    audioParams->PutStringValue("com.openharmony.model", "LNA-AL00");
+    audioParams->PutIntValue("com.openopen.version", 1);
+    audioParams->PutFloatValue("com.openharmony.capture.fps", 30.00f);
+    audioParams->PutFloatValue("capture.fps", 30.00f);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_UserKey_003
+ * @tc.desc: Muxer set format with user key(include wrong keys and 2 times)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_003, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutIntValue("com.openharmony.version", 5);
+    audioParams->PutStringValue("com.openharmony.model", "LNA-AL00");
+    audioParams->PutIntValue("com.openopen.version", 1);
+    audioParams->PutFloatValue("com.openharmony.capture.fps", 30.00f);
+    audioParams->PutFloatValue("capture.fps", 30.00f);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+
+    audioParams->PutIntValue("com.openharmony.version", 5);
+    audioParams->PutStringValue("com.openharmony.model", "LNA-AL00");
+    audioParams->PutFloatValue("com.openharmony.capture.fps", 30.00f);
+    ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_DefinedKey_And_UserKey_001
+ * @tc.desc: Muxer set format with user key(true keys)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_DefinedKey_And_UserKey_001, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutIntValue("com.openharmony.version", 5);
+    audioParams->PutLongValue(Tag::MEDIA_BITRATE, 128000);
+    audioParams->PutStringValue("com.openharmony.model", "LNA-AL00");
+    audioParams->PutStringValue(Tag::MEDIA_CREATION_TIME, "2023-12-19T03:16:00.000000Z");
+    audioParams->PutFloatValue("com.openharmony.capture.fps", 30.00f);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_DefinedKey_And_UserKey_002
+ * @tc.desc: Muxer set format with user key(include wrong value)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_DefinedKey_And_UserKey_002, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutIntValue("com.openharmony.version", 5);
+    audioParams->PutLongValue(Tag::MEDIA_BITRATE, 128000);
+    audioParams->PutStringValue("com.openharmony.model", "LNA-AL00");
+    audioParams->PutStringValue(Tag::MEDIA_CREATION_TIME, "202a-12-19T03:16:0b.0000c0Z");
+    audioParams->PutFloatValue("com.openharmony.capture.fps", 30.00f);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_NE(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_DefinedKey_And_UserKey_003
+ * @tc.desc: Muxer set format with user key(include wrong keys)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_DefinedKey_And_UserKey_003, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutIntValue("com.openharny.version", 5);
+    audioParams->PutLongValue(Tag::MEDIA_BITRATE, 128000);
+    audioParams->PutStringValue("c.openharmony.model", "LNA-AL00");
+    audioParams->PutStringValue(Tag::MEDIA_CREATION_TIME, "2023-12-19T03:16:00.000000Z");
+    audioParams->PutFloatValue("com.openhar.capture.fps", 30.00f);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+}
+
 #endif // AVMUXER_UNITTEST_CAPI
 
 #ifdef AVMUXER_UNITTEST_INNER_API
@@ -2103,6 +2447,43 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetUserMeta_001, TestSize.Level0)
     EXPECT_EQ(ret, 0);
 
     close(fd);
+}
+
+/**
+ * @tc.name: Muxer_AddTrack_TimeMeta
+ * @tc.desc: Muxer AddTrack for timed metadata track
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_TimeMeta, TestSize.Level0)
+{
+    int32_t vidTrackId = -1;
+    int32_t metaTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack_TimeMeta.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+
+    ASSERT_EQ(avmuxer_->AddTrack(vidTrackId, videoParams), 0);
+    ASSERT_GE(vidTrackId, 0);
+
+    std::shared_ptr<FormatMock> metadataParams = FormatMockFactory::CreateTimedMetadataFormat(
+        TIMED_METADATA_TRACK_MIMETYPE.c_str(), TIMED_METADATA_KEY, 1);
+    ASSERT_NE(metadataParams, nullptr);
+
+    ASSERT_NE(avmuxer_->AddTrack(metaTrackId, metadataParams), 0);
+
+    ASSERT_NE(avmuxer_->AddTrack(metaTrackId, metadataParams), 0);
+
+    std::shared_ptr<FormatMock> metadataParams2 = FormatMockFactory::CreateTimedMetadataFormat(
+        TIMED_METADATA_TRACK_MIMETYPE.c_str(), TIMED_METADATA_KEY, -1);
+    ASSERT_NE(metadataParams, nullptr);
+
+    ASSERT_NE(avmuxer_->AddTrack(metaTrackId, metadataParams2), 0);
 }
 
 /**

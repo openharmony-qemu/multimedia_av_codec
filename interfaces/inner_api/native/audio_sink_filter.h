@@ -61,6 +61,8 @@ public:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;
 
+    Status DoSetPerfRecEnabled(bool isPerfRecEnabled) override;
+
     Status SetVolume(float volume);
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
@@ -84,6 +86,9 @@ public:
     Status SetSeekTime(int64_t seekTime);
 
     void SetIsCancelStart(bool isCancelStart);
+
+    bool NeedImmediateRender();
+
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;
@@ -119,6 +124,8 @@ private:
 
     bool forceUpdateTimeAnchorNextTime_ {false};
     bool isCancelStart_ {false};
+
+    bool needImmediateRender_ {false};
 };
 } // namespace Pipeline
 } // namespace Media

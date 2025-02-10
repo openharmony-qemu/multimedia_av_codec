@@ -69,6 +69,38 @@ std::shared_ptr<AVBuffer> ReadAVBufferFromLocalFile(const std::string &fileName)
     return avBuffer;
 }
 
+std::shared_ptr<AVBuffer> CreateInvalidSeiBuffer(bool isHevc, uint8_t naluType)
+{
+    vector<uint8_t> buffer;
+
+    if (isHevc) {
+        buffer.push_back(0x00);
+        buffer.push_back(0x00);
+        buffer.push_back(0x01);
+        buffer.push_back(0x65);
+        buffer.push_back(naluType);
+    } else {
+        buffer.push_back(0x00);
+        buffer.push_back(0x00);
+        buffer.push_back(0x01);
+        buffer.push_back(0x67);
+        buffer.push_back(naluType);
+    }
+
+    buffer.push_back(0xFF);
+
+    AVBufferConfig config;
+    config.size = buffer.size();
+    config.memoryType = MemoryType::VIRTUAL_MEMORY;
+    auto avBuffer = AVBuffer::CreateAVBuffer(config);
+    if (avBuffer == nullptr || avBuffer->memory_ == nullptr || avBuffer->memory_->GetAddr() == nullptr) {
+        return nullptr;
+    }
+    std::copy(buffer.begin(), buffer.end(), reinterpret_cast<uint8_t *>(avBuffer->memory_->GetAddr()));
+    avBuffer->memory_->SetSize(buffer.size());
+    return avBuffer;
+}
+
 void SeiParserHelperUnitTest::SetUp(void) {}
 
 void SeiParserHelperUnitTest::TearDown(void)
@@ -200,6 +232,72 @@ HWTEST_F(SeiParserHelperUnitTest, ParseSeiPayload_Avc_003, TestSize.Level1)
     auto res = seiParserHelper_->ParseSeiPayload(buffer, group);
 
     EXPECT_NE(res, Status::OK);
+}
+
+/**
+ * @tc.name: ParseInvalidSeiPayload_Hevc_001
+ * @tc.desc: ParseInvalidSeiPayload_Hevc_001
+ * @tc.type: FUNC
+ */
+HWTEST_F(SeiParserHelperUnitTest, ParseInvalidSeiPayload_Hevc_001, TestSize.Level1)
+{
+    seiParserHelper_ = SeiParserHelperFactory::CreateHelper(TYPE_HEVC);
+    EXPECT_NE(seiParserHelper_, nullptr);
+
+    // using invalid nalu type 0x01
+    auto buffer = CreateInvalidSeiBuffer(true, 0x01);
+    EXPECT_NE(buffer, nullptr);
+
+    // parse invalid sei data
+    seiParserHelper_->SetPayloadTypeVec({ 5 });
+    std::shared_ptr<SeiPayloadInfoGroup> group = std::make_shared<SeiPayloadInfoGroup>();
+    auto res = seiParserHelper_->ParseSeiPayload(buffer, group);
+
+    EXPECT_EQ(res, Status::ERROR_UNSUPPORTED_FORMAT);
+}
+
+/**
+ * @tc.name: ParseInvalidSeiPayload_Hevc_002
+ * @tc.desc: ParseInvalidSeiPayload_Hevc_002
+ * @tc.type: FUNC
+ */
+HWTEST_F(SeiParserHelperUnitTest, ParseInvalidSeiPayload_Hevc_002, TestSize.Level1)
+{
+    seiParserHelper_ = SeiParserHelperFactory::CreateHelper(TYPE_HEVC);
+    EXPECT_NE(seiParserHelper_, nullptr);
+
+    // invalid size
+    auto buffer = CreateInvalidSeiBuffer(true, 0x06);
+    buffer->memory_->SetSize(buffer->memory_->GetSize() + 10);
+
+    // parse invalid sei data
+    seiParserHelper_->SetPayloadTypeVec({ 5 });
+    std::shared_ptr<SeiPayloadInfoGroup> group = std::make_shared<SeiPayloadInfoGroup>();
+    auto res = seiParserHelper_->ParseSeiPayload(buffer, group);
+
+    EXPECT_EQ(res, Status::ERROR_UNSUPPORTED_FORMAT);
+}
+
+/**
+ * @tc.name: ParseInvalidSeiPayload_Avc_001
+ * @tc.desc: ParseInvalidSeiPayload_Avc_001
+ * @tc.type: FUNC
+ */
+HWTEST_F(SeiParserHelperUnitTest, ParseInvalidSeiPayload_Avc_001, TestSize.Level1)
+{
+    seiParserHelper_ = SeiParserHelperFactory::CreateHelper(TYPE_AVC);
+    EXPECT_NE(seiParserHelper_, nullptr);
+
+    // using invalid nalu type
+    auto buffer = CreateInvalidSeiBuffer(false, 0x01);
+    EXPECT_NE(buffer, nullptr);
+
+    // parse invalid sei data
+    seiParserHelper_->SetPayloadTypeVec({ 5 });
+    std::shared_ptr<SeiPayloadInfoGroup> group = std::make_shared<SeiPayloadInfoGroup>();
+    auto res = seiParserHelper_->ParseSeiPayload(buffer, group);
+
+    EXPECT_EQ(res, Status::ERROR_UNSUPPORTED_FORMAT);
 }
 }  // namespace Pipeline
 }  // namespace Media

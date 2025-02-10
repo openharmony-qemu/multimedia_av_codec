@@ -46,6 +46,12 @@ public:
     CapabilityData GetAmrnbEncoderCapability();
     CapabilityData GetAmrwbEncoderCapability();
 #endif
+#ifdef SUPPORT_CODEC_COOK
+    CapabilityData GetCookDecoderCapability();
+#endif
+#ifdef SUPPORT_CODEC_AC3
+    CapabilityData GetAc3DecoderCapability();
+#endif
 private:
     std::vector<CapabilityData> audioCapabilities_;
     AudioCodeclistInfo();

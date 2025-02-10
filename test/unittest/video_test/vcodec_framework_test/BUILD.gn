@@ -90,6 +90,7 @@ ohos_unittest("videodec_capi_unit_test") {
   ]
 
   defines = [ "VIDEODEC_CAPI_UNIT_TEST" ]
+  defines += av_codec_defines
 
   cflags = vcodec_unittest_cflags
 

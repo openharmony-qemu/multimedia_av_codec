@@ -88,6 +88,7 @@ public:
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t DumpInfo(int32_t fd);
     void SetCallerInfo(const Meta &callerInfo);
+    std::shared_ptr<Media::Meta> GetCallerInfo();
 
     void OnError(int32_t errorType, int32_t errorCode);
     void OnOutputFormatChanged(const Format &format);

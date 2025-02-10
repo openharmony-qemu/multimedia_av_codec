@@ -271,6 +271,23 @@ uint32_t HardwareDecoderVvc10BitYUV420(uint32_t blockSize)
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
+uint32_t HardwareDecoderVvcYUV420(uint32_t blockSize)
+{
+    auto linearSlope = 0.0;
+    auto linearIntercept = 0U;
+    if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1) {
+        linearSlope = 3.410;        // 3.410: HardwareDecoderVvcYUV420 level1-3.1 slope
+        linearIntercept = 12863;    // 12863: HardwareDecoderVvcYUV420 level1-3.1 intercept
+    } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1) {
+        linearSlope = 3.148;        // 3.148: HardwareDecoderVvcYUV420 level3.1-4.1 slope
+        linearIntercept = 20559;    // 20559: HardwareDecoderVvcYUV420 level3.1-4.1 intercept
+    } else {
+        linearSlope = 3.239;        // 3.239: HardwareDecoderVvcYUV420 level4.1+ slope
+        linearIntercept = 32412;    // 32412: HardwareDecoderVvcYUV420 level4.1+ intercept
+    }
+    return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
+}
+
 uint32_t HardwareDecoderYUV420(uint32_t blockSize)
 {
     auto linearSlope = 0.0;
@@ -298,17 +315,17 @@ uint32_t HardwareEncoderHevc10BitYUV420(uint32_t blockSize)
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
-uint32_t HardwareEncoder8BitRGBA(uint32_t blockSize)
+uint32_t HardwareEncoderRGBA(uint32_t blockSize)
 {
-    auto linearSlope = 7.518;       // 7.518: HardwareEncoder8BitRGBA slope
-    auto linearIntercept = 6475;    // 6475:  HardwareEncoder8BitRGBA intercept
+    auto linearSlope = 7.518;       // 7.518: HardwareEncoderRGBA slope
+    auto linearIntercept = 6475;    // 6475:  HardwareEncoderRGBA intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
 uint32_t HardwareEncoderYUV420(uint32_t blockSize)
 {
-    auto linearSlope = 4.541;       // 4.541: HardwareEncoderYUV420 slope
-    auto linearIntercept = 7989;    // 7989:  HardwareEncoderYUV420 intercept
+    auto linearSlope = 5.899;       // 5.899: HardwareEncoderYUV420 slope
+    auto linearIntercept = 7242;    // 7242:  HardwareEncoderYUV420 intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
@@ -345,12 +362,12 @@ const std::unordered_map<CalculatorParameter, uint32_t (*)(uint32_t),
     {HARDWARE_DECODER_HEVC_10BIT_YUV420_PARAMETER, HardwareDecoderHevc10BitYUV420},
     {HARDWARE_DECODER_HEVC_YUV420_POSTPROCESSING_PARAMETER, HardwareDecoderHevcYUV420PostProcessing},
     {HARDWARE_DECODER_VVC_10BIT_YUV420_PARAMETER, HardwareDecoderVvc10BitYUV420},
-    {HARDWARE_DECODER_VVC_YUV420_PARAMETER, HardwareDecoderYUV420},
+    {HARDWARE_DECODER_VVC_YUV420_PARAMETER, HardwareDecoderVvcYUV420},
     {HARDWARE_DECODER_AVC_YUV420_PARAMETER, HardwareDecoderYUV420},
     {HARDWARE_DECODER_HEVC_YUV420_PARAMETER, HardwareDecoderYUV420},
     {HARDWARE_ENCODER_HEVC_10BIT_YUV420_PARAMETER, HardwareEncoderHevc10BitYUV420},
-    {HARDWARE_ENCODER_AVC_RGBA_PARAMETER, HardwareEncoder8BitRGBA},
-    {HARDWARE_ENCODER_HEVC_RGBA_PARAMETER, HardwareEncoder8BitRGBA},
+    {HARDWARE_ENCODER_AVC_RGBA_PARAMETER, HardwareEncoderRGBA},
+    {HARDWARE_ENCODER_HEVC_RGBA_PARAMETER, HardwareEncoderRGBA},
     {HARDWARE_ENCODER_AVC_YUV420_PARAMETER, HardwareEncoderYUV420},
     {HARDWARE_ENCODER_HEVC_YUV420_PARAMETER, HardwareEncoderYUV420},
     {SOFTWARE_DECODER_AVC_RGBA_PARAMETER, SoftwareDecoderAvcRGBA},

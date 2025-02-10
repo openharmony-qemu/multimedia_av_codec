@@ -22,7 +22,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFFMpegFlacDecoderPlugin"};
-constexpr int32_t MAX_BITS_PER_SAMPLE = 4;
+constexpr int32_t MAX_BYTES_PER_SAMPLE = 4;
 constexpr int32_t SAMPLES = 9216;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
@@ -130,7 +130,7 @@ int32_t AudioFFMpegFlacDecoderPlugin::Flush()
 
 int32_t AudioFFMpegFlacDecoderPlugin::GetInputBufferSize() const
 {
-    int32_t inputBufferSize = SAMPLES * channels * MAX_BITS_PER_SAMPLE;
+    int32_t inputBufferSize = SAMPLES * channels * MAX_BYTES_PER_SAMPLE;
     int32_t maxSize = basePlugin->GetMaxInputSize();
     if (maxSize < 0 || maxSize > inputBufferSize) {
         maxSize = inputBufferSize;
@@ -140,7 +140,7 @@ int32_t AudioFFMpegFlacDecoderPlugin::GetInputBufferSize() const
 
 int32_t AudioFFMpegFlacDecoderPlugin::GetOutputBufferSize() const
 {
-    int32_t outputBufferSize = SAMPLES * channels * MAX_BITS_PER_SAMPLE;
+    int32_t outputBufferSize = SAMPLES * channels * MAX_BYTES_PER_SAMPLE;
     return outputBufferSize;
 }
 

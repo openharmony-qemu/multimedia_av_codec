@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -308,6 +308,29 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_ParseUriInfo_0200, TestSize.Level1)
     fileFdSourcePlugin_->SetSource(source);
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Reset());
 }
+
+/**
+ * @tc.name: FileFdSource_ParseUriInfo_0300
+ * @tc.desc: FileFdSource_ParseUriInfo_0300
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_ParseUriInfo_0300, TestSize.Level1)
+{
+    std::string uri = "fd://123123?offset=92233720368547758077&size=125126";
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->ParseUriInfo(uri));
+}
+
+/**
+ * @tc.name: FileFdSource_ParseUriInfo_0400
+ * @tc.desc: FileFdSource_ParseUriInfo_0400
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_ParseUriInfo_0400, TestSize.Level1)
+{
+    std::string uri = "fd://123123?offset=9223372036854775ac&size=125126";
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->ParseUriInfo(uri));
+}
+
 /**
  * @tc.name: FileFdSource_Reset_0100
  * @tc.desc: FileFdSource_Reset_0100

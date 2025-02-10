@@ -106,7 +106,7 @@ int32_t AddVideoTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle)
         read(g_inputFile, buffer, extraSize);
         OH_AVFormat_SetBuffer(videoFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
     }
-    OH_AVFormat_SetStringValue(videoFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
+    OH_AVFormat_SetStringValue(videoFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2);
     OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_WIDTH, WIDTH);
     OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_HEIGHT, HEIGHT);
     OH_AVFormat_SetLongValue(videoFormat, OH_MD_KEY_BITRATE, VIDEO_BITRATE);
@@ -328,7 +328,7 @@ int32_t AddVideoTrackByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t in
         OH_AVFormat_SetBuffer(videoFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
     }
 
-    OH_AVFormat_SetStringValue(videoFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
+    OH_AVFormat_SetStringValue(videoFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2);
     OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_WIDTH, WIDTH_720);
     OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_HEIGHT, HEIGHT_480);
     OH_AVFormat_SetLongValue(videoFormat, OH_MD_KEY_BITRATE, VIDEO_BITRATE);

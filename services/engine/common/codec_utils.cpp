@@ -45,6 +45,21 @@ int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame
     return (*scale)->Convert(frame->data, frame->linesize, dstData, dstLineSize);
 }
 
+int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale,
+                          uint8_t **srcData, int32_t *srcLineSize, AVPixelFormat srcPixFmt,
+                          int32_t srcWidth, int32_t srcHeight,
+                          uint8_t **dstData, int32_t *dstLineSize, AVPixelFormat dstPixFmt)
+{
+    if (*scale == nullptr) {
+        *scale = std::make_shared<Scale>();
+        ScalePara scalePara{srcWidth, srcHeight, srcPixFmt,
+                            srcWidth, srcHeight, dstPixFmt};
+        CHECK_AND_RETURN_RET_LOG((*scale)->Init(scalePara, dstData, dstLineSize) == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
+                                 "Scale init error");
+    }
+    return (*scale)->Convert(srcData, srcLineSize, dstData, dstLineSize);
+}
+
 int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, const int32_t *scaleLineSize,
                            int32_t stride, const Format &format)
 {

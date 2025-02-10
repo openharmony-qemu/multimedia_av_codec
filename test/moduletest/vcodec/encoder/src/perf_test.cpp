@@ -614,6 +614,7 @@ HWTEST_F(HwEncPerfNdkTest, VIDEO_ENCODE_PERF_0100, TestSize.Level1)
 {
     for (int i = 0; i < 2000; i++) {
         venc_ = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+        ASSERT_NE(nullptr, venc_);
         OH_VideoEncoder_Destroy(venc_);
         venc_ = nullptr;
     }
@@ -632,9 +633,9 @@ HWTEST_F(HwEncPerfNdkTest, VIDEO_ENCODE_PERF_FUNCTION_2200, TestSize.Level1)
         vEncSample->DEFAULT_WIDTH = 1920;
         vEncSample->DEFAULT_HEIGHT = 1080;
         vEncSample->DEFAULT_FRAME_RATE = 30;
-        vEncSample->CreateVideoEncoder(CODEC_NAME_AVC);
-        vEncSample->SetVideoEncoderCallback();
-        vEncSample->ConfigureVideoEncoder();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_AVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         vEncSample->testApi();
         delete vEncSample;
         cout << i << " ";

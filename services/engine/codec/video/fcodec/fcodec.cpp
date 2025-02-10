@@ -66,7 +66,11 @@ constexpr struct {
 } SUPPORT_VCODEC[] = {
     {AVCodecCodecName::VIDEO_DECODER_AVC_NAME, CodecMimeType::VIDEO_AVC, "h264", false},
     {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video", false},
-    {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4", false}
+    {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4", false},
+#ifdef SUPPORT_CODEC_RV
+    {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30", false},
+    {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40", false},
+#endif
 };
 constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
 } // namespace
@@ -229,8 +233,44 @@ int32_t FCodec::ConfigureContext(const Format &format)
     avCodecContext_->width = width_;
     avCodecContext_->height = height_;
     avCodecContext_->thread_count = DEFAULT_THREAD_COUNT;
+#ifdef SUPPORT_CODEC_RV
+    return SetCodecExtradata(format);
+#else
+    return AVCS_ERR_OK;
+#endif
+}
+
+#ifdef SUPPORT_CODEC_RV
+int32_t FCodec::SetCodecExtradata(const Format &format)
+{
+    size_t extraSize = 0;
+    uint8_t *extraData = nullptr;
+    if (format.GetBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, &extraData, extraSize)) {
+        if (extraData == nullptr || extraSize == 0) {
+            AVCODEC_LOGE("extradata getBufer failed!");
+            return AVCS_ERR_INVALID_VAL;
+        }
+        avCodecContext_->extradata = static_cast<uint8_t *>(av_mallocz(extraSize + AV_INPUT_BUFFER_PADDING_SIZE));
+        if (avCodecContext_->extradata == nullptr) {
+            AVCODEC_LOGE("extradata malloc failed!");
+            return AVCS_ERR_INVALID_VAL;
+        }
+        avCodecContext_->extradata_size = static_cast<int>(extraSize);
+        errno_t rc = memcpy_s(avCodecContext_->extradata, extraSize, extraData, extraSize);
+        if (rc != EOK) {
+            AVCODEC_LOGE("extradata memcpy_s failed.");
+            return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+        }
+        rc = memset_s(avCodecContext_->extradata + extraSize, AV_INPUT_BUFFER_PADDING_SIZE, 0,
+                      AV_INPUT_BUFFER_PADDING_SIZE);
+        if (rc != EOK) {
+            AVCODEC_LOGE("extradata memset_s failed.");
+            return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+        }
+    }
     return AVCS_ERR_OK;
 }
+#endif
 
 int32_t FCodec::Configure(const Format &format)
 {
@@ -1611,8 +1651,8 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
         capsData.width.minVal = VIDEO_MIN_SIZE;
         capsData.height.minVal = VIDEO_MIN_SIZE;
-        capsData.width.maxVal = DEFAULT_VIDEO_WIDTH;
-        capsData.height.maxVal = DEFAULT_VIDEO_WIDTH;
+        capsData.width.maxVal = VIDEO_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = VIDEO_MAX_HEIGHT_SIZE;
         capsData.frameRate.minVal = 0;
         capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
         capsData.bitrate.minVal = 1;
@@ -1639,8 +1679,6 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
             capaArray.emplace_back(capsData);
             GetMpeg4esCapProf(capaArray);
         } else {
-            capsData.width.maxVal = VIDEO_MAX_WIDTH_SIZE;
-            capsData.height.maxVal = VIDEO_MAX_HEIGHT_SIZE;
             capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
             capaArray.emplace_back(capsData);
             GetAvcCapProf(capaArray);

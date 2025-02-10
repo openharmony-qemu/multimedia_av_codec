@@ -122,6 +122,9 @@ private:
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
+#ifdef SUPPORT_CODEC_RV
+    int32_t SetCodecExtradata(const Format &format);
+#endif
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
     int32_t AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize);

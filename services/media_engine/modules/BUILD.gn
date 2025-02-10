@@ -24,6 +24,10 @@ config("av_codec_media_engine_modules_config") {
     "MEDIA_OHOS",
   ]
 
+  if (av_codec_enable_start_stop_on_demand) {
+    defines += [ "SUPPORT_START_STOP_ON_DEMAND" ]
+  }
+
   cflags = [
     "-fno-exceptions",
     "-Wall",

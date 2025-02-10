@@ -82,6 +82,7 @@ public:
     uint32_t repeat_time = 0;
     uint32_t outFrameCount = 0;
     bool outputYuvFlag = false;
+    bool NocaleHash = false;
     // 解码输出数据预期
     bool needCheckOutputDesc = false;
     bool isResChangeStream = false;
@@ -158,6 +159,7 @@ public:
     bool outputCallbackStop = false;
     bool useHDRSource = false;
     bool isAPI = false;
+    bool outputYuvSurface = false;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
 private:

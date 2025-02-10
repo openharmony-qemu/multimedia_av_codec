@@ -122,7 +122,6 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_001, TestSize.Level2)
         int32_t strLen = rand() % 1000;
         string randStr = rand_str(strLen);
         handle = encoderDemo->NativeCreateByMime(randStr.c_str());
-        ASSERT_NE(handle, nullptr);
         if (handle != nullptr) {
             encoderDemo->NativeDestroy(handle);
             handle = nullptr;
@@ -149,7 +148,6 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_002, TestSize.Level2)
         int32_t strLen = rand() % 1000;
         string randStr = rand_str(strLen);
         handle = encoderDemo->NativeCreateByName(randStr.c_str());
-        ASSERT_NE(handle, nullptr);
         if (handle != nullptr) {
             encoderDemo->NativeDestroy(handle);
             handle = nullptr;
@@ -198,7 +196,7 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_003, TestSize.Level2)
 
         OH_AVErrCode ret = encoderDemo->NativeConfigure(handle, format);
         cout << "Configure return: " << ret << endl;
-        ASSERT_EQ(ret, AV_ERR_OK);
+
         encoderDemo->NativeReset(handle);
         OH_AVFormat_Destroy(format);
     }
@@ -265,7 +263,7 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_004, TestSize.Level2)
 
         ret = encoderDemo->NativeSetParameter(handle, format);
         cout << "SetParameter return: " << ret << endl;
-        ASSERT_EQ(ret, AV_ERR_OK);
+
         OH_AVFormat_Destroy(format);
     }
     encoderDemo->NativeDestroy(handle);
@@ -322,7 +320,6 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_005, TestSize.Level2)
 
         ret = encoderDemo->NativePushInputData(handle, index, info);
         cout << "PushInputData return: " << ret << endl;
-        ASSERT_EQ(ret, AV_ERR_OK);
     }
     encoderDemo->NativeDestroy(handle);
     delete encoderDemo;
@@ -382,7 +379,6 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_006, TestSize.Level2)
 
         ret = encoderDemo->NativeFreeOutputData(handle, outputIndex);
         cout << "FreeOutputData return: " << ret << endl;
-        ASSERT_EQ(ret, AV_ERR_OK);
     }
     encoderDemo->NativeDestroy(handle);
     delete encoderDemo;

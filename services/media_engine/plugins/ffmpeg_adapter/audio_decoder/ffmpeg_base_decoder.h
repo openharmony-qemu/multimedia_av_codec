@@ -56,7 +56,11 @@ public:
 
     Status InitContext(const std::shared_ptr<Meta> &format);
 
+    Status SetBlockAlignContext(const int block_align);
+
     Status OpenContext();
+
+    void SetMaxInputSize(int32_t setSize);
 
     std::shared_ptr<Meta> GetFormat() const noexcept;
 
@@ -79,6 +83,7 @@ public:
 private:
     bool isFirst;
     bool hasExtra_;
+    bool currentFrameFormatChanged_;
     int32_t maxInputSize_;
     int64_t nextPts_;
     float durationTime_;

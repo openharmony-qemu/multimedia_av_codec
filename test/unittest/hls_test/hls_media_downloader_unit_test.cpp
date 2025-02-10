@@ -35,6 +35,7 @@ constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int BUFFER_SIZE = 10;
+constexpr int MAX_TEN = 10 * 1024;
 
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 
@@ -59,6 +60,35 @@ void HlsMediaDownloaderUnitTest ::TearDown(void)
 {
     delete hlsMediaDownloader;
     hlsMediaDownloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_1, TestSize.Level1)
+{
+    hlsMediaDownloader->isBuffering_ = true;
+    EXPECT_FALSE(hlsMediaDownloader->GetPlayable());
+    hlsMediaDownloader->isBuffering_ = false;
+    hlsMediaDownloader->isFirstFrameArrived_ = false;
+    EXPECT_FALSE(hlsMediaDownloader->GetPlayable());
+    hlsMediaDownloader->GetReadTimeOut();
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_2, TestSize.Level1)
+{
+    hlsMediaDownloader->isBuffering_ = false;
+    hlsMediaDownloader->isFirstFrameArrived_ = true;
+    hlsMediaDownloader->wantedReadLength_ = 0;
+    EXPECT_FALSE(hlsMediaDownloader->GetPlayable());
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_3, TestSize.Level1)
+{
+    hlsMediaDownloader->isBuffering_ = false;
+    hlsMediaDownloader->isFirstFrameArrived_ = true;
+    hlsMediaDownloader->wantedReadLength_ = BUFFER_SIZE;
+    EXPECT_FALSE(hlsMediaDownloader->GetPlayable());
+
+    hlsMediaDownloader->wantedReadLength_ = MAX_TEN;
+    EXPECT_FALSE(hlsMediaDownloader->GetPlayable());
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo1, TestSize.Level1)

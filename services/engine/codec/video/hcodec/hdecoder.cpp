@@ -268,8 +268,8 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h, OHOS::Rect& damage)
             static_cast<int32_t>(rect.nLeft + rect.nWidth) - 1);
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM,
             static_cast<int32_t>(rect.nTop + rect.nHeight) - 1);
-        crop_.left = rect.nLeft;
-        crop_.top = rect.nTop;
+        crop_.left = static_cast<uint32_t>(rect.nLeft);
+        crop_.top = static_cast<uint32_t>(rect.nTop);
         crop_.width = rect.nWidth;
         crop_.height = rect.nHeight;
     }
@@ -511,7 +511,6 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
     if (!isDynamic_) {
         return AVCS_ERR_OK;
     }
-    uint32_t outputBufferCnt = 0;
     OMX_PARAM_PORTDEFINITIONTYPE def;
     InitOMXParam(def);
     def.nPortIndex = OMX_DirOutput;
@@ -519,15 +518,12 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
         HLOGE("get input port definition failed");
         return AVCS_ERR_UNKNOWN;
     }
-    if (outPortHasChanged_) {
-        outputBufferCnt = def.nBufferCountMin;
-    } else {
-        outputBufferCnt = inTotalCnt_ > def.nBufferCountMin ? def.nBufferCountMin : inTotalCnt_;
-    }
+    uint32_t outputBufferCnt = outPortHasChanged_ ? def.nBufferCountMin :
+                                                    std::min<uint32_t>(def.nBufferCountMin, inTotalCnt_ + 1);
+    HLOGI("submit buffer count[%u], inTotalCnt_[%u]", outputBufferCnt, inTotalCnt_);
     for (uint32_t i = 0; i < outputBufferCnt; i++) {
         DynamicModeSubmitBuffer();
     }
-    HLOGI("submit buffer count[%u]", outputBufferCnt);
     DynamicModeSubmitIfEos();
     return AVCS_ERR_OK;
 }

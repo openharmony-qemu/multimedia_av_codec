@@ -114,7 +114,6 @@ int32_t AVCodecAudioCodecImpl::Prepare()
 int32_t AVCodecAudioCodecImpl::Start()
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Start", FAKE_POINTER(this));
     CHECK_AND_RETURN_RET_LOG(Prepare() == AVCS_ERR_OK, AVCS_ERR_INVALID_STATE, "Prepare failed");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     int32_t ret = codecService_->Start();
@@ -323,7 +322,7 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
     AVCODEC_SYNC_TRACE;
     if (indexInput_ == 0) {
         auto ret = SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
-        AVCODEC_LOGI("set OS_ACodecIn thread qos, ret = %{public}d", ret);
+        AVCODEC_LOGD("set OS_ACodecIn thread qos, ret = %{public}d", ret);
     }
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "produceInputBuffer enter");
     if (!isRunning_) {
@@ -363,7 +362,7 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
     AVCODEC_SYNC_TRACE;
     if (indexOutput_ == 0) {
         auto ret = SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
-        AVCODEC_LOGI("set OS_ACodecOut thread qos, ret = %{public}d", ret);
+        AVCODEC_LOGD("set OS_ACodecOut thread qos, ret = %{public}d", ret);
     }
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ConsumerOutputBuffer enter");
     if (!isRunning_) {

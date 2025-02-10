@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -139,6 +139,7 @@ public:
     int32_t AddExternalSubtitle();
     Status localSubtitleSeekTo(int64_t seekTime);
     void NotifyInitialBufferingEnd(bool isInitialBufferingSucc);
+    void SetApiVersion(int32_t apiVersion);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
@@ -169,6 +170,7 @@ private:
     std::atomic<bool> isInitialBufferingSucc_ = false;
     std::atomic<bool> isInitialBufferingNotified_ = false;
     ConditionVariable initialBufferingEndCond_;
+    int32_t apiVersion_ {0};
 };
 } // namespace Media
 } // namespace OHOS

@@ -33,9 +33,14 @@ declare_args() {
   av_codec_support_libcurl = true
   av_codec_support_software_codec = true
   av_codec_support_fcodec = true
+  av_codec_support_avc_encoder = true
   av_codec_support_hevc_decoder = true
   av_codec_enable_start_stop_on_demand = false
   av_codec_hcodec_enable_qos_the_whole_time = false
+  av_codec_enable_codec_rm = false
+  av_codec_enable_codec_rv = false
+  av_codec_enable_codec_cook = false
+  av_codec_enable_codec_ac3 = false
   av_codec_support_efficiency_manager = false
   if (defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_efficiency_manager)) {
@@ -131,5 +136,22 @@ if (av_codec_support_drm) {
 
 if (!av_codec_support_software_codec) {
   av_codec_support_fcodec = false
+  av_codec_support_avc_encoder = false
   av_codec_support_hevc_decoder = false
+}
+
+if (av_codec_enable_codec_rm) {
+  av_codec_defines += [ "SUPPORT_CODEC_RM" ]
+}
+
+if (av_codec_enable_codec_rv) {
+  av_codec_defines += [ "SUPPORT_CODEC_RV" ]
+}
+
+if (av_codec_enable_codec_cook) {
+  av_codec_defines += [ "SUPPORT_CODEC_COOK" ]
+}
+
+if (av_codec_enable_codec_ac3) {
+  av_codec_defines += [ "SUPPORT_CODEC_AC3" ]
 }

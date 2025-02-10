@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Copyright (C) 2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -109,6 +109,8 @@ group("av_codec_module_test") {
       "moduletest/vcodec/hdrcodec:hdrcodec_native_module_test",
       "moduletest/vcodec/hevcswdecoder:hevcswdecoder_native_module_test",
       "moduletest/vcodec/hwdecoder:hwdecoder_native_module_test",
+      "moduletest/vcodec/mpeg2swdecoder:mpeg2swdecoder_native_module_test",
+      "moduletest/vcodec/mpeg4swdecoder:mpeg4swdecoder_native_module_test",
       "moduletest/vcodec/swdecoder:swdecoder_native_module_test",
     ]
   }
@@ -167,6 +169,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/audiomuxerjpg_fuzzer:AudioMuxerJpgFuzzTest",
       "fuzztest/audiomuxermp3_fuzzer:AudioMuxerMp3FuzzTest",
       "fuzztest/avcencinfo_fuzzer:AvCencInfoFuzzTest",
+      "fuzztest/avsourcefunc_fuzzer:AvSourceFuncFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/demuxeraac_fuzzer:DemuxerAacFuzzTest",
       "fuzztest/demuxeraacapi11_fuzzer:DemuxerAacAPI11FuzzTest",
@@ -213,6 +216,14 @@ group("av_codec_fuzz_test") {
       "fuzztest/hevcswdecodersetparameter_fuzzer:HevcSwdecoderSetParameterFuzzTest",
       "fuzztest/hwdecoder_fuzzer:HwdecoderFuzzTest",
       "fuzztest/hwdecoderapi11_fuzzer:HwdecoderApi11FuzzTest",
+      "fuzztest/mpeg2swdecoderconfigure_fuzzer:Mpeg2SwdecoderConfigureFuzzTest",
+      "fuzztest/mpeg2swdecoderresource_fuzzer:Mpeg2SwdecoderResourceFuzzTest",
+      "fuzztest/mpeg2swdecoderserver_fuzzer:Mpeg2SwdecoderServerFuzzTest",
+      "fuzztest/mpeg2swdecodersetparameter_fuzzer:Mpeg2SwdecoderSetParameterFuzzTest",
+      "fuzztest/mpeg4swdecoderconfigure_fuzzer:Mpeg4SwdecoderConfigureFuzzTest",
+      "fuzztest/mpeg4swdecoderresource_fuzzer:Mpeg4SwdecoderResourceFuzzTest",
+      "fuzztest/mpeg4swdecoderserver_fuzzer:Mpeg4SwdecoderServerFuzzTest",
+      "fuzztest/mpeg4swdecodersetparameter_fuzzer:Mpeg4SwdecoderSetParameterFuzzTest",
       "fuzztest/ptsandindexconversion_fuzzer:PtsAndIndexConversionFuzzTest",
       "fuzztest/referenceparser_fuzzer:ReferenceparserFuzzTest",
       "fuzztest/swdecoderconfigure_fuzzer:SwdecoderConfigureFuzzTest",

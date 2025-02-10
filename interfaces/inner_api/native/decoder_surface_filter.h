@@ -67,6 +67,7 @@ public:
     Status DoSetPlayRange(int64_t start, int64_t end) override;
     Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
     Status DoProcessOutputBuffer(int recvArg, bool dropFrame, bool byIdx, uint32_t idx, int64_t renderTime) override;
+    Status DoSetPerfRecEnabled(bool isPerfRecEnabled) override;
 
     void SetParameter(const std::shared_ptr<Meta>& parameter) override;
     void GetParameter(std::shared_ptr<Meta>& parameter) override;
@@ -107,7 +108,7 @@ public:
     int32_t GetDecRateUpperLimit();
     bool GetIsSupportSeekWithoutFlush();
     void ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs = 0L);
-    int32_t SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes);
+    Status SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -133,8 +134,6 @@ private:
     void ReportEosEvent();
     void RenderAtTimeDfx(int64_t renderTimeNs, int64_t currentTimeNs, int64_t lastRenderTimeNs);
     int64_t GetSystimeTimeNs();
-    void SetSeiMessageListener();
-    void RemoveSeiMessageListener();
 
     std::string name_;
     FilterType filterType_;

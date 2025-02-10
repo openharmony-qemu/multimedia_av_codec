@@ -78,17 +78,26 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
     meta->GetData(Tag::AUDIO_CHANNEL_COUNT, audioChannelCount_);
     if (samplePerFrame_ > 0 && sampleRate_ > 0) {
-        playingBufferDurationUs_ = samplePerFrame_ * 1000000 / sampleRate_; // 1000000 usec per sec
+        playingBufferDurationUs_ = static_cast<int64_t>(samplePerFrame_) * SEC_TO_US / sampleRate_;
     }
     MEDIA_LOG_I("Audiosink playingBufferDurationUs_ = " PUBLIC_LOG_D64, playingBufferDurationUs_);
     std::string mime;
     bool mimeGetRes = meta->Get<Tag::MIME_TYPE>(mime);
     if (mimeGetRes && mime == "audio/x-ape") {
         isApe_ = true;
-        MEDIA_LOG_I("Init is ape");
+        MEDIA_LOG_I("AudioSink::Init is ape");
+    }
+    if (mimeGetRes && mime == "audio/flac") {
+        isFlac_ = true;
+        MEDIA_LOG_I("AudioSink::Init is flac");
     }
 
     return Status::OK;
+}
+
+bool AudioSink::NeedImmediateRender()
+{
+    return isApe_ || isFlac_;
 }
 
 sptr<AVBufferQueueProducer> AudioSink::GetBufferQueueProducer()
@@ -468,12 +477,30 @@ void AudioSink::DrainOutputBuffer()
     lastBufferWriteSuccess_ = (plugin_->Write(filledOutputBuffer) == Status::OK);
     int64_t nowClockTime = 0;
     GetSyncCenterClockTime(nowClockTime);
+    auto audioWriteMs = plugin_->GetWriteDurationMs();
     lagDetector_.UpdateDrainTimeGroup(
-        { lastAnchorClockTime_, bufferDurationSinceLastAnchor_, plugin_->GetWriteDurationMs(), nowClockTime });
+        { lastAnchorClockTime_, bufferDurationSinceLastAnchor_, audioWriteMs, nowClockTime });
+    PerfRecord(audioWriteMs);
     lagDetector_.CalcLag(filledOutputBuffer);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+}
+
+Status AudioSink::SetPerfRecEnabled(bool isPerfRecEnabled)
+{
+    isPerfRecEnabled_ = isPerfRecEnabled;
+    return Status::OK;
+}
+
+void AudioSink::PerfRecord(int64_t audioWriteMs)
+{
+    FALSE_RETURN_NOLOG(isPerfRecEnabled_);
+    FALSE_RETURN_MSG(playerEventReceiver_ != nullptr, "Report perf failed, event receiver is nullptr");
+    FALSE_RETURN_NOLOG(perfRecorder_.Record(audioWriteMs) == PerfRecorder::FULL);
+    playerEventReceiver_->OnDfxEvent(
+        { "ASINK", DfxEventType::DFX_INFO_PERF_REPORT, perfRecorder_.GetMainPerfData() });
+    perfRecorder_.Reset();
 }
 
 void AudioSink::ResetSyncInfo()

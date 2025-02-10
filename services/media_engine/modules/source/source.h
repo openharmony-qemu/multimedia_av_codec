@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,6 +29,7 @@
 #include "plugin/source_plugin.h"
 #include "meta/media_types.h"
 #include "demuxer/media_demuxer.h"
+#include "performance_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -41,6 +42,13 @@ public:
     {
         if (callbackWrap_) {
             callbackWrap_->OnEvent(event);
+        }
+    }
+    
+    void OnDfxEvent(const Plugins::PluginDfxEvent &event) override
+    {
+        if (callbackWrap_) {
+            callbackWrap_->OnDfxEvent(event);
         }
     }
 
@@ -111,6 +119,7 @@ public:
     bool GetHLSDiscontinuity();
     void WaitForBufferingEnd();
     bool SetInitialBufferSize(int32_t offset, int32_t size);
+    Status SetPerfRecEnabled(bool perfRecEnabled);
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
@@ -119,6 +128,7 @@ private:
     bool ParseProtocol(const std::shared_ptr<MediaSource>& source);
     Status FindPlugin(const std::shared_ptr<MediaSource>& source);
     void ClearData();
+    Status ReadWithPerfRecord(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
 
     std::string protocol_;
     bool seekToTimeFlag_{false};
@@ -134,6 +144,8 @@ private:
     std::shared_ptr<CallbackImpl> mediaDemuxerCallback_;
     std::atomic<bool> isInterruptNeeded_{false};
     bool isEnableFdCache_{ true };
+    bool perfRecEnabled_ { false };
+    PerfRecorder perfRecorder_ {};
 };
 } // namespace Media
 } // namespace OHOS
