@@ -165,6 +165,8 @@ void SurfaceEncoderAdapter::ConfigureGeneralFormat(MediaAVCodec::Format &format,
     if (meta->Find(Tag::VIDEO_FRAME_RATE) != meta->end()) {
         double videoFrameRate;
         meta->Get<Tag::VIDEO_FRAME_RATE>(videoFrameRate);
+        videoFrameRate_ = static_cast<int32_t>(videoFrameRate);
+        MEDIA_LOG_I("videoFrameRate_: %{public}d", videoFrameRate_);
         format.PutDoubleValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
     }
     if (meta->Find(Tag::MIME_TYPE) != meta->end()) {
@@ -236,6 +238,13 @@ Status SurfaceEncoderAdapter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkB
         MEDIA_LOG_E("SetCustomBuffer error");
         return Status::ERROR_UNKNOWN;
     }
+    return Status::OK;
+}
+
+Status SurfaceEncoderAdapter::SetStopTime()
+{
+    GetCurrentTime(stopTime_);
+    MEDIA_LOG_I("SetStopTime: " PUBLIC_LOG_D64, stopTime_);
     return Status::OK;
 }
 
@@ -331,7 +340,9 @@ Status SurfaceEncoderAdapter::Stop()
 {
     MEDIA_LOG_I("Stop");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Stop");
-    GetCurrentTime(stopTime_);
+    if (stopTime_ < 0) {
+        GetCurrentTime(stopTime_);
+    }
     isStopKeyFramePts_ = true;
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
@@ -574,7 +585,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         TransCoderOnOutputBufferAvailable(index, buffer);
         return;
     }
-    if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
+    if (stopTime_ != -1 && buffer->pts_ > stopTime_ - (SEC_TO_NS / videoFrameRate_)) {
         MEDIA_LOG_I("buffer->pts > stopTime, ready to stop");
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.notify_all();

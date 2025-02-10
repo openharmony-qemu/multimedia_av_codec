@@ -201,6 +201,16 @@ Status SurfaceEncoderFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBu
     return mediaCodec_->SetWatermark(waterMarkBuffer);
 }
 
+Status SurfaceEncoderFilter::SetStopTime()
+{
+    MEDIA_LOG_I("SetStopTime");
+    if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
+        return Status::ERROR_UNKNOWN;
+    }
+    return mediaCodec_->SetStopTime();
+}
+
 Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("SetInputSurface");

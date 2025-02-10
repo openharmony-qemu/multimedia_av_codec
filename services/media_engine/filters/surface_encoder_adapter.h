@@ -65,6 +65,7 @@ public:
     Status Init(const std::string &mime, bool isEncoder);
     Status Configure(const std::shared_ptr<Meta> &meta);
     Status SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer);
+    Status SetStopTime();
     Status SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
     Status SetEncoderAdapterCallback(const std::shared_ptr<EncoderAdapterCallback> &encoderAdapterCallback);
     Status SetEncoderAdapterKeyFramePtsCallback(
@@ -141,6 +142,7 @@ private:
     bool isStopKeyFramePts_ = false;
     int64_t currentKeyFramePts_{-1};
     int64_t preKeyFramePts_{-1};
+    int32_t videoFrameRate_{-1};
     std::deque<std::pair<int64_t, StateCode>> pauseResumePts_;
 };
 } // namespace MediaAVCodec
