@@ -243,7 +243,6 @@ Status SurfaceEncoderAdapter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkB
 
 Status SurfaceEncoderAdapter::SetStopTime()
 {
-    MEDIA_LOG_I("SetStopTime");
     GetCurrentTime(stopTime_);
     MEDIA_LOG_I("SetStopTime: " PUBLIC_LOG_D64, stopTime_);
     return Status::OK;
