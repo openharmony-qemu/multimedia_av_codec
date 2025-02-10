@@ -52,16 +52,8 @@ void TEST_SUIT::SetUpTestCase(void)
 void TEST_SUIT::CreateByNameWithParam(int32_t param)
 {
     std::string codecName = "";
-    switch (param) {
-        case VCodecTestCode::SW_H263:
-            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_H263.data(), false,
-                                                                        AVCodecCategory::AVCODEC_SOFTWARE);
-            break;
-        default:
-            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_H263.data(), false,
-                                                                        AVCodecCategory::AVCODEC_SOFTWARE);
-            break;
-    }
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_H263.data(), false,
+                                                                AVCodecCategory::AVCODEC_SOFTWARE);
     codecName = capability_->GetName();
     std::cout << "CodecName: " << codecName << "\n";
     ASSERT_TRUE(CreateVideoCodecByName(codecName));

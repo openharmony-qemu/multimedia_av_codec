@@ -622,14 +622,14 @@ uint8_t* H263Reader::H263Detector::GetDelimiterPos(uint8_t* addrstart, uint8_t* 
 {
     uint8_t* posMin = std::search(addrstart, addrend, std::begin(H263_HEAD_0), std::end(H263_HEAD_0));
     auto pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_1), std::end(H263_HEAD_1));
-    if (pos1<posMin)
-        posMin=pos1;
+    if (pos1 < posMin)
+        posMin = pos1;
     pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_2), std::end(H263_HEAD_2));
-    if (pos1<posMin)
-        posMin=pos1;
+    if (pos1 < posMin)
+        posMin = pos1;
     pos1 = std::search(addrstart, addrend, std::begin(H263_HEAD_3), std::end(H263_HEAD_3));
-    if (pos1<posMin)
-        posMin=pos1;
+    if (pos1 < posMin)
+        posMin = pos1;
     return posMin;
 }
 

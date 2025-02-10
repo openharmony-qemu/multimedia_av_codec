@@ -194,7 +194,7 @@ void TestConsumerListener::OnBufferAvailable()
 
     cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
-    if ((VideoDecSample::needDump_)&&(outFile_!=nullptr)&&(outFile_->is_open())) {
+    if ((VideoDecSample::needDump_) && (outFile_ != nullptr) && (outFile_->is_open())) {
         (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
     }
     cs_->ReleaseBuffer(buffer, -1);
@@ -887,7 +887,7 @@ int32_t VideoDecSample::InputLoopInnerExt()
     if (h263Reader_ != nullptr) {
         h263Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (avccReader_ != nullptr) {
-            avccReader_->FillBuffer(buffer->GetAddr(), attr);
+        avccReader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
     }

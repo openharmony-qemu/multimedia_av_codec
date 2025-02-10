@@ -570,7 +570,7 @@ private:
  */
 class CodecMimeType {
 public:
-    static constexpr std::string_view VIDEO_H263 = "video/3gpp";
+    static constexpr std::string_view VIDEO_H263 = "video/h263";
     static constexpr std::string_view VIDEO_AVC = "video/avc";
     static constexpr std::string_view VIDEO_MPEG2 = "video/mpeg2";
     static constexpr std::string_view VIDEO_HEVC = "video/hevc";
