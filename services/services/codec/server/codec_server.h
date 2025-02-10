@@ -106,6 +106,7 @@ public:
     int32_t SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer) override;
     int32_t Prepare() override;
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
+    sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer() override;
     void ProcessInputBuffer() override;
     bool CheckRunning() override;
 

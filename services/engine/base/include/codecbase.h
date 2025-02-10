@@ -132,6 +132,11 @@ public:
         (void)svpFlag;
         return 0;
     }
+
+    virtual sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer()
+    {
+        return nullptr;
+    }
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

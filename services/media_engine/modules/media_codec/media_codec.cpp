@@ -17,10 +17,9 @@
 #include "common/log.h"
 #include "osal/task/autolock.h"
 #include "plugin/plugin_manager_v2.h"
+#include "avcodec_log.h"
 #include "osal/utils/dump_buffer.h"
 #include "avcodec_trace.h"
-#include "plugin/plugin_manager_v2.h"
-#include "avcodec_log.h"
 #include "bundle_mgr_interface.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
@@ -244,6 +243,17 @@ sptr<AVBufferQueueProducer> MediaCodec::GetInputBufferQueue()
     CHECK_AND_RETURN_RET_LOG(!isSurfaceMode_, nullptr, "GetInputBufferQueue isSurfaceMode_");
     isBufferMode_ = true;
     return inputBufferQueueProducer_;
+}
+
+sptr<AVBufferQueueConsumer> MediaCodec::GetInputBufferQueueConsumer()
+{
+    AutoLock lock(stateMutex_);
+    // Case: to enable to set listener to input bufferqueue consumer. i.e. input bufferqueue updating by ChangePlugin.
+    FALSE_RETURN_V(state_ == CodecState::PREPARED || state_ == CodecState::RUNNING ||
+                   state_ == CodecState::FLUSHED || state_ == CodecState::END_OF_STREAM, sptr<AVBufferQueueConsumer>());
+    CHECK_AND_RETURN_RET_LOG(!isSurfaceMode_, nullptr, "GetInputBufferQueueConsumer isSurfaceMode_");
+    isBufferMode_ = true;
+    return inputBufferQueueConsumer_;
 }
 
 sptr<Surface> MediaCodec::GetInputSurface()

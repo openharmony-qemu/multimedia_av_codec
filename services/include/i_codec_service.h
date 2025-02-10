@@ -142,6 +142,11 @@ public:
         (void)svpFlag;
         return AVCODEC_ERROR_EXTEND_START;
     }
+
+    virtual sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer()
+    {
+        return nullptr;
+    }
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

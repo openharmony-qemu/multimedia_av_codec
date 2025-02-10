@@ -67,6 +67,10 @@ public:
 
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
 
+    Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
+
+    Status HandleInputBuffer();
+
     Status ChangePlugin(std::shared_ptr<Meta> meta);
 
     FilterType GetFilterType();
@@ -77,8 +81,6 @@ public:
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
 
-    void OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer);
-
     Status SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         bool svp);
 
@@ -87,8 +89,6 @@ public:
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
 
     void OnError(CodecErrorType errorType, int32_t errorCode);
-
-    void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -99,7 +99,7 @@ protected:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
 private:
-    sptr<AVBufferQueueProducer> GetInputBufferQueue();
+    Status SetInputBufferQueueConsumerListener();
     void UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta);
 
     std::string name_;
@@ -113,7 +113,6 @@ private:
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
 
     std::shared_ptr<AudioDecoderAdapter> decoder_;
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
 
     bool isDrmProtected_ = false;
 #ifdef SUPPORT_DRM

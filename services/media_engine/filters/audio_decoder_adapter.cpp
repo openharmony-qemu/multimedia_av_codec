@@ -155,6 +155,11 @@ sptr<Media::AVBufferQueueProducer> AudioDecoderAdapter::GetInputBufferQueue()
     return inputBufferQueueProducer_;
 }
 
+sptr<Media::AVBufferQueueConsumer> AudioDecoderAdapter::GetInputBufferQueueConsumer()
+{
+    return audiocodec_ != nullptr ? audiocodec_->GetInputBufferQueueConsumer() : nullptr;
+}
+
 int32_t AudioDecoderAdapter::GetOutputFormat(std::shared_ptr<Meta> &parameter)
 {
     FALSE_RETURN_V(parameter != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER);
@@ -209,6 +214,12 @@ int32_t AudioDecoderAdapter::SetAudioDecryptionConfig(
 {
     FALSE_RETURN_V_MSG(audiocodec_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     return audiocodec_->SetAudioDecryptionConfig(keySession, svpFlag);
+}
+
+void AudioDecoderAdapter::ProcessInputBuffer()
+{
+    FALSE_RETURN_MSG(audiocodec_ != nullptr, "ProcessInputBuffer audiocodec_ is nullptr");
+    audiocodec_->ProcessInputBuffer();
 }
 }  // namespace Media
 }  // namespace OHOS

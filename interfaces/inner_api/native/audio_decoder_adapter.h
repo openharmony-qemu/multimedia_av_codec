@@ -54,6 +54,10 @@ public:
 
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue();
 
+    sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer();
+
+    void ProcessInputBuffer();
+
     int32_t NotifyEos();
 
     Status Init(bool isMimeType, const std::string &name);

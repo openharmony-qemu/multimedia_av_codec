@@ -91,6 +91,18 @@ public:
         return mediaCodec_->GetInputBufferQueue();
     }
 
+    sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer() override
+    {
+        return mediaCodec_ != nullptr ? mediaCodec_->GetInputBufferQueueConsumer() : nullptr;
+    }
+
+    void ProcessInputBuffer() override
+    {
+        if (mediaCodec_ != nullptr) {
+            mediaCodec_->ProcessInputBuffer();
+        }
+    }
+
     int32_t Start() override
     {
         return StatusToAVCodecServiceErrCode(static_cast<Media::Status>(mediaCodec_->Start()));
@@ -199,7 +211,7 @@ public:
 
 #ifdef SUPPORT_DRM
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
-                                     const bool svpFlag) override
+        const bool svpFlag) override
     {
         return StatusToAVCodecServiceErrCode(
             static_cast<Media::Status>(mediaCodec_->SetAudioDecryptionConfig(keySession, svpFlag)));

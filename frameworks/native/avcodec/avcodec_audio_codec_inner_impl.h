@@ -37,6 +37,8 @@ public:
 
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
 
+    sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer() override;
+
     int32_t Start() override;
 
     int32_t Stop() override;
