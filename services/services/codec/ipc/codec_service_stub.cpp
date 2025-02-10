@@ -108,6 +108,9 @@ int32_t CodecServiceStub::InitStub(int32_t instanceId)
 int32_t CodecServiceStub::DestroyStub()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (codecServer_ == nullptr) {
+        return AVCS_ERR_OK;
+    }
 
     auto callerInfo = std::static_pointer_cast<CodecServer>(codecServer_)->GetCallerInfo();
     (void)InnerRelease();
