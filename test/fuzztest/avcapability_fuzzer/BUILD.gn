@@ -39,7 +39,10 @@ ohos_fuzztest("AvcapabilityFuzzTest") {
     "ipc:ipc_single",
     "media_foundation:native_media_core",
   ]
-  deps = [ "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase" ]
+  deps = [
+    "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
+  ]
 }
 
 group("fuzztest") {
