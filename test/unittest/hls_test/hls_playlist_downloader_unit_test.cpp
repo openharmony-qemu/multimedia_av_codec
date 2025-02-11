@@ -133,17 +133,17 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CUR_BITRATE_002, TestSize.Level1)
     EXPECT_EQ(0, bitRate);
 }
 
-HWTEST_F(HlsPlayListDownloaderUnitTest, GET_VEDIO_WIDTH, TestSize.Level1)
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_Video_WIDTH, TestSize.Level1)
 {
     HlsPlayListDownloader downloader;
-    int width = downloader.GetVedioWidth();
+    int width = downloader.GetVideoWidth();
     EXPECT_EQ(0, width);
 }
 
-HWTEST_F(HlsPlayListDownloaderUnitTest, GET_VEDIO_HEIGHT, TestSize.Level1)
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_Video_HEIGHT, TestSize.Level1)
 {
     HlsPlayListDownloader downloader;
-    int height = downloader.GetVedioHeight();
+    int height = downloader.GetVideoHeight();
     EXPECT_EQ(0, height);
 }
 
