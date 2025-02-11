@@ -119,7 +119,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     bufferAddr_ = static_cast<uint8_t*>(malloc(totalSize));
     if (bufferAddr_ == nullptr) {
         return false;
-    }    
+    }
     uint8_t* temp = bufferAddr_;
     for (auto i = 0; i < chunkNum; ++i) {
         auto chunkInfo = reinterpret_cast<CacheChunk*>(temp);
