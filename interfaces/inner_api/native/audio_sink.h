@@ -25,6 +25,7 @@
 #include "plugin/audio_sink_plugin.h"
 #include "filter/filter.h"
 #include "plugin/plugin_time.h"
+#include "performance_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -66,6 +67,8 @@ public:
 
     float GetMaxAmplitude();
     int32_t SetMaxAmplitudeCbStatus(bool status);
+    Status SetPerfRecEnabled(bool isPerfRecEnabled);
+
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
     static const int64_t kMaxAllowedAudioSinkDelayUs = 1500 * HST_MSECOND;
@@ -84,6 +87,7 @@ private:
     void CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer);
     void CheckUpdateState(char *frame, uint64_t replyBytes, int32_t format);
     int64_t CalcBufferDuration(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+    void PerfRecord(int64_t audioWriteMs);
 
     class UnderrunDetector {
     public:
@@ -185,6 +189,8 @@ private:
     UnderrunDetector underrunDetector_;
     AudioLagDetector lagDetector_;
     std::atomic<int64_t> seekTimeUs_ {HST_TIME_NONE};
+    PerfRecorder perfRecorder_ {};
+    bool isPerfRecEnabled_ { false };
 };
 }
 }
