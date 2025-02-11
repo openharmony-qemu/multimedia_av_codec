@@ -126,21 +126,21 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"webvtt", FileType::VTT},
 };
 
-static std::map<TagType, std::string> g_formatToString = {
-    {Tag::MEDIA_TITLE, "title"},
-    {Tag::MEDIA_ARTIST, "artist"},
-    {Tag::MEDIA_ALBUM, "album"},
-    {Tag::MEDIA_ALBUM_ARTIST, "album_artist"},
-    {Tag::MEDIA_DATE, "date"},
-    {Tag::MEDIA_COMMENT, "comment"},
-    {Tag::MEDIA_GENRE, "genre"},
-    {Tag::MEDIA_COPYRIGHT, "copyright"},
-    {Tag::MEDIA_LANGUAGE, "language"},
-    {Tag::MEDIA_DESCRIPTION, "description"},
-    {Tag::MEDIA_LYRICS, "lyrics"},
-    {Tag::MEDIA_AUTHOR, "author"},
-    {Tag::MEDIA_COMPOSER, "composer"},
-    {Tag::MEDIA_CREATION_TIME, "creation_time"}
+static std::map<std::string, TagType> g_formatToString = {
+    {"title",         Tag::MEDIA_TITLE},
+    {"artist",        Tag::MEDIA_ARTIST},
+    {"album",         Tag::MEDIA_ALBUM},
+    {"album_artist",  Tag::MEDIA_ALBUM_ARTIST},
+    {"date",          Tag::MEDIA_DATE},
+    {"comment",       Tag::MEDIA_COMMENT},
+    {"genre",         Tag::MEDIA_GENRE},
+    {"copyright",     Tag::MEDIA_COPYRIGHT},
+    {"language",      Tag::MEDIA_LANGUAGE},
+    {"description",   Tag::MEDIA_DESCRIPTION},
+    {"lyrics",        Tag::MEDIA_LYRICS},
+    {"author",        Tag::MEDIA_AUTHOR},
+    {"composer",      Tag::MEDIA_COMPOSER},
+    {"creation_time", Tag::MEDIA_CREATION_TIME}
 };
 
 std::vector<TagType> g_supportSourceFormat = {
@@ -160,17 +160,17 @@ std::vector<TagType> g_supportSourceFormat = {
     Tag::MEDIA_CREATION_TIME
 };
 
-std::string SwitchCase(const std::string& str)
+std::string ToLower(const std::string& str)
 {
     std::string res;
     for (char c : str) {
         if (c == '_') {
             res += c;
         } else {
-            res += std::toupper(c);
+            res += std::tolower(c);
         }
     }
-    MEDIA_LOG_D("Parse meta " PUBLIC_LOG_S " failed, try to parse " PUBLIC_LOG_S, str.c_str(), res.c_str());
+    MEDIA_LOG_D("[" PUBLIC_LOG_S "] -> [" PUBLIC_LOG_S "]", str.c_str(), res.c_str());
     return res;
 }
 
@@ -448,9 +448,7 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
         MEDIA_LOG_W("Parse container start time failed");
     }
     ParseLocationInfo(avFormatContext, format);
-    for (TagType key: g_supportSourceFormat) {
-        ParseInfoFromMetadata(avFormatContext.metadata, key, format);
-    }
+    ParseInfoFromMetadata(avFormatContext.metadata, format);
 }
 
 void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format)
@@ -979,37 +977,32 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
     }
 }
 
-void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, const TagType key, Meta &format)
+void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Meta &format)
 {
-    MEDIA_LOG_D("Parse " PUBLIC_LOG_S, key.c_str());
     AVDictionaryEntry *valPtr = nullptr;
-    bool parseFromMoov = false;
-    valPtr = av_dict_get(metadata, g_formatToString[key].c_str(), nullptr, AV_DICT_MATCH_CASE);
-    if (valPtr == nullptr) {
-        valPtr = av_dict_get(metadata, SwitchCase(std::string(key)).c_str(), nullptr, AV_DICT_MATCH_CASE);
-    }
-    if (valPtr == nullptr) {
-        valPtr = av_dict_get(metadata, ("moov_level_meta_key_" + std::string(key)).c_str(),
-            nullptr, AV_DICT_MATCH_CASE);
-        parseFromMoov = true;
-    }
-    if (valPtr == nullptr) {
-        MEDIA_LOG_D("Parse failed");
-        return;
-    }
-    if (parseFromMoov) {
-        if (strlen(valPtr->value) > VALUE_PREFIX_LEN) {
-            format.SetData(key, std::string(valPtr->value + VALUE_PREFIX_LEN));
+    while ((valPtr = av_dict_get(metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)))  {
+        std::string tempKey = ToLower(std::string(valPtr->key));
+        if (tempKey.find("moov_level_meta_key_") == 0) {
+            MEDIA_LOG_D("UserMeta:" PUBLIC_LOG_S, valPtr->key);
+            if (g_formatToString.count(tempKey.c_str() + KEY_PREFIX_LEN) > 0 &&
+                strlen(valPtr->value) > VALUE_PREFIX_LEN) {
+                    format.SetData(g_formatToString[tempKey.c_str() + KEY_PREFIX_LEN],
+                                   std::string(valPtr->value + VALUE_PREFIX_LEN));
+                }
+            continue;
+        } else if (g_formatToString.count(tempKey) <= 0) {
+            MEDIA_LOG_D("UnsupportMeta:" PUBLIC_LOG_S, valPtr->key);
+            continue;
         }
-        return;
-    }
-    format.SetData(key, std::string(valPtr->value));
-    if (!IsUTF8(valPtr->value) && IsGBK(valPtr->value)) {
-        std::string resultStr = ConvertGBKToUTF8(std::string(valPtr->value));
-        if (resultStr.length() > 0) {
-            format.SetData(key, resultStr);
-        } else {
-            MEDIA_LOG_D("Convert utf8 failed");
+        MEDIA_LOG_D("SupportMeta:" PUBLIC_LOG_S, valPtr->key);
+        format.SetData(g_formatToString[tempKey], std::string(valPtr->value));
+        if (!IsUTF8(valPtr->value) && IsGBK(valPtr->value)) {
+            std::string resultStr = ConvertGBKToUTF8(std::string(valPtr->value));
+            if (resultStr.length() > 0) {
+                format.SetData(g_formatToString[tempKey], resultStr);
+            } else {
+                MEDIA_LOG_D("Convert utf8 failed");
+            }
         }
     }
 }
