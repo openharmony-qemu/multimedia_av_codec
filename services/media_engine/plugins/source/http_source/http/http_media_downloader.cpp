@@ -67,6 +67,7 @@ constexpr uint32_t CLEAR_SAVE_DATA_SIZE = 1 * 1024 * 1024;
 constexpr size_t LARGE_OFFSET_SPAN_THRESHOLD = 10 * 1024 * 1024;
 constexpr int32_t STATE_CHANGE_THRESHOLD = 2;
 constexpr size_t LARGE_VIDEO_THRESHOLD = 18 * 1024 * 1024;
+constexpr size_t BUFFER_REDUNDANCY = 4 * 1024 * 1024;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -79,11 +80,6 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url)
     if (isRingBuffer_) {
         ringBuffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
         ringBuffer_->Init();
-    } else {
-        cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
-        cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
-        totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
-        MEDIA_LOG_I("HTTP setting buffer size: " PUBLIC_LOG_U64, MAX_CACHE_BUFFER_SIZE);
     }
     isBuffering_ = true;
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
@@ -352,7 +348,7 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
     if (GetCurrentBufferSize() >= cacheWaterLine) {
         return false;
     }
-    if (!canWrite_.load() && GetCurrentBufferSize() >= wantReadLength) {
+    if (GetCurrentBufferSize() >= wantReadLength) {
         return false;
     }
     return true;
@@ -864,6 +860,21 @@ bool HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len)
 
 bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 {
+    if (!isRingBuffer_ && cacheMediaBuffer_ == nullptr && downloadRequest_ != nullptr) {
+        cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
+
+        size_t fileContenLen = downloadRequest_->GetFileContentLength();
+        if (fileContenLen > 0) {
+            uint64_t bufferSize = static_cast<uint64_t>(fileContenLen + BUFFER_REDUNDANCY);
+            totalBufferSize_ = std::min(MAX_CACHE_BUFFER_SIZE, bufferSize);
+        } else {
+            totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
+        }
+        cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
+        MEDIA_LOG_I("HTTP setting buffer size: " PUBLIC_LOG_D32 " fileContenLen: " PUBLIC_LOG_ZU,
+            totalBufferSize_, fileContenLen);
+    }
+
     if (cacheMediaBuffer_ == nullptr && ringBuffer_ == nullptr) {
         return false;
     }
