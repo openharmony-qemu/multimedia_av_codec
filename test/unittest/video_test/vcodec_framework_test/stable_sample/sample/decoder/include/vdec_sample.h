@@ -64,6 +64,7 @@ public:
     bool WaitForEos();
 
     int32_t Operate() override;
+    uint32_t getFrameOutputCount() { return frameOutputCount_.load(); };
     uint32_t frameCount_ = 10;
     std::string operation_ = "NULL";
     std::string mime_ = "";
@@ -91,6 +92,7 @@ private:
     bool InitOutputFile();
     int32_t CreateAvccReader();
     int32_t CreateMpegReader();
+    int32_t CreateH263Reader();
 
     OH_AVCodec *codec_ = nullptr;
     std::shared_ptr<VCodecSignal> signal_ = nullptr;

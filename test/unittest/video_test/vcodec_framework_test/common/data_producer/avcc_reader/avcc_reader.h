@@ -20,6 +20,7 @@
 #include <iostream>
 #include <mutex>
 #include <queue>
+#include <string>
 #include "avcodec_common.h"
 #include "data_producer_base.h"
 #include "native_avbuffer_info.h"
@@ -111,6 +112,66 @@ private:
     std::shared_ptr<MpegUnitReader> mpegUnitReader_ = nullptr;
     std::shared_ptr<MpegDetector> mpegDetector_ = nullptr;
 };
+
+
+struct H263ReaderInfo {
+    std::string inPath;
+};
+
+
+class H263Reader : public DataProducerBase {
+public:
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t mpegType, bool isEosFrame);
+    bool IsEOS();
+    int32_t Init(const std::shared_ptr<H263ReaderInfo> &info);
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+private:
+    class H263UnitReader {
+    public:
+        explicit H263UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~H263UnitReader() {};
+        uint8_t const *GetNextH263UnitAddr();
+        virtual int32_t ReadH263Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) = 0;
+        virtual bool IsEOS() = 0;
+        virtual void PrereadFile() = 0;
+
+    protected:
+        H263UnitReader() {};
+        virtual bool IsEOF() = 0;
+        std::unique_ptr<std::vector<uint8_t>> h263Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class H263MetaUnitReader : public H263UnitReader {
+    public:
+        explicit H263MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        int32_t ReadH263Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadH263Unit();
+
+    private:
+        bool IsEOF() override;
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+    };
+    
+    class H263Detector {
+    public:
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        const uint8_t *GetH263TypeAddr(const uint8_t *bufferAddr);
+        uint8_t GetH263Type(const uint8_t *bufferAddr);
+        bool IsI(uint8_t h263Type);
+    };
+
+    std::shared_ptr<H263UnitReader> h263UnitReader_ = nullptr;
+    std::shared_ptr<H263Detector> h263Detector_ = nullptr;
+};
+
 
 struct AvccReaderInfo {
     std::string inPath;

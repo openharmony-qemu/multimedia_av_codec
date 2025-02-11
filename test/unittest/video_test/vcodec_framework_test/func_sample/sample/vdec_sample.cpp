@@ -45,6 +45,12 @@ constexpr uint8_t SHA_HEVC[SHA512_DIGEST_LENGTH] = {
     0xd1, 0xab, 0x3b, 0xa4, 0x1a, 0x33, 0xdd, 0x53, 0x3a, 0x0f, 0x16, 0x82, 0xea, 0xa6, 0x32, 0x6b,
     0xef, 0x2f, 0x67, 0xaa, 0x70, 0xd6, 0xae, 0xd9, 0xbe, 0x87, 0x1b, 0x4e, 0xb6, 0x4b, 0x66, 0x6e,
     0xaa, 0xbb, 0x15, 0x24, 0xc1, 0xb0, 0x17, 0xd2, 0x47, 0xf0, 0x19, 0x27, 0xbd, 0xfb, 0xfa, 0x9f};
+constexpr uint8_t SHA_H263[SHA512_DIGEST_LENGTH] = {
+    0x27, 0x7c, 0x59, 0x9a, 0x73, 0x6d, 0x4f, 0xff, 0x02, 0x76, 0xac, 0xe2, 0xb5, 0x2a, 0x50, 0x1e,
+    0x99, 0xd4, 0xdf, 0xd6, 0x8f, 0xa8, 0xa1, 0x22, 0x1c, 0x74, 0xf9, 0xd2, 0x8f, 0x97, 0x19, 0x8d,
+    0x66, 0x9c, 0x58, 0x41, 0x6f, 0xad, 0xdd, 0xa9, 0x68, 0x1e, 0x76, 0xf2, 0x6e, 0x8e, 0x5b, 0xe5,
+    0xe2, 0xc6, 0x5f, 0x5f, 0xab, 0xca, 0xc2, 0x5e, 0x8e, 0x77, 0xe6, 0xad, 0x59, 0x63, 0x40, 0x6b};
+
 
 uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 std::atomic<uint32_t> g_shaBufferCount = 0;
@@ -61,14 +67,9 @@ void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_
         if (needCheckSHA && g_shaBufferCount < BUFFER_COUNT) {
             SHA512_Update(&g_ctxTest, addr + i, DEFAULT_WIDTH);
         }
-        if (VideoDecSample::needDump_) {
-            if (!outFile->is_open()) {
-                cout << "output data fail" << endl;
-                continue;
-            }
-            (void)outFile->write(addr + i, DEFAULT_WIDTH);
-        }
     }
+    if ((addr!=nullptr)&&(outFile!=nullptr)&&(outFile->is_open())&&(size>0))
+        (void)outFile->write(addr, size);
 }
 } // namespace
 
@@ -193,7 +194,7 @@ void TestConsumerListener::OnBufferAvailable()
 
     cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
-    if (VideoDecSample::needDump_) {
+    if ((VideoDecSample::needDump_) && (outFile_ != nullptr) && (outFile_->is_open())) {
         (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
     }
     cs_->ReleaseBuffer(buffer, -1);
@@ -289,6 +290,22 @@ int32_t VideoDecSample::Start()
     if (signal_ == nullptr || videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
+
+    if (inPath_.find("h263") != std::string::npos) {
+        int32_t ret = CreateH263Reader();
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: CreateH263Reader fail");
+        PrepareInner();
+        ret = videoDec_->Start();
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
+        if (isAVBufferMode_) {
+            RunInnerExt();
+        } else {
+            RunInner();
+        }
+        WaitForEos();
+        return ret;
+    }
+
     isMpegStream_ = (inPath_.find("m2v") != std::string::npos) ||
         (inPath_.find("m4v") != std::string::npos);
     if (isMpegStream_) {
@@ -465,6 +482,16 @@ int32_t VideoDecSample::CreateMpegReader()
     return ret;
 }
 
+int32_t VideoDecSample::CreateH263Reader()
+{
+    std::shared_ptr<H263ReaderInfo> info = std::make_shared<H263ReaderInfo>();
+    info->inPath = inPath_;
+
+    h263Reader_ = std::make_shared<H263Reader>();
+    int32_t ret = h263Reader_->Init(info);
+    return ret;
+}
+
 void VideoDecSample::FlushInner()
 {
     if (signal_ == nullptr) {
@@ -637,6 +664,9 @@ void VideoDecSample::CheckSHA()
         case VCodecTestParam::HW_HEVC:
             sha = SHA_HEVC;
             break;
+        case VCodecTestParam::SW_H263:
+            sha = SHA_H263;
+            break;
         default:
             return;
     }
@@ -658,8 +688,10 @@ int32_t VideoDecSample::InputLoopInner()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
                                       AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    if (avccReader_ != nullptr) {
-        avccReader_->FillBuffer(buffer->GetAddr(), attr);
+    if (h263Reader_ != nullptr) {
+        h263Reader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (avccReader_ != nullptr) {
+            avccReader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
     }
@@ -791,7 +823,8 @@ int32_t VideoDecSample::OutputLoopInnerExt()
     if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
         int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
-            testParam_ == VCodecTestParam::SW_MPEG4) ? attr.size : buffer->GetNativeBuffer()->GetSize();
+            testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263) ?
+            attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
             "Fatal: GetOutputBuffer fail, exit, index: %d", index);
         UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
@@ -851,7 +884,9 @@ int32_t VideoDecSample::InputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
                                       AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    if (avccReader_ != nullptr) {
+    if (h263Reader_ != nullptr) {
+        h263Reader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (avccReader_ != nullptr) {
         avccReader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);

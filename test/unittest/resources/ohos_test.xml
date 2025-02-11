@@ -62,6 +62,43 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="videodec_h263_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/profile2_1920x1080.h263 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_h263_inner_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/profile2_1920x1080.h263 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_h263_stable_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/profile0_128x96.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile0_1408x1152.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile0_176x144.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile0_352x288.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile0_704x576.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_20x20.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_1280x720.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_1920x1080.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_2048x1152.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_480p_720p_1080p.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_480x720.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_720x480.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_720x480_par10_11.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_720x480_par16_11.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_720x480_par40_33.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_720x480_par31_23.h263 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile2_720x480_par23_31.h263 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="videodec_inner_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>

@@ -37,7 +37,6 @@ using namespace OHOS;
 using namespace OHOS::Media;
 
 namespace {
-constexpr uint32_t DEFAULT_TIME_INTERVAL = 4166;
 constexpr uint32_t MAX_OUTPUT_FRMAENUM = 1000;
 
 static inline int64_t GetTimeUs()
@@ -242,7 +241,6 @@ bool VideoDecSample::CreateByMime()
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
-
     codec_ = OH_VideoDecoder_CreateByMime(mime_.c_str());
     UNITTEST_CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, false, "OH_VideoDecoder_CreateByMime failed");
     return true;
@@ -251,7 +249,10 @@ bool VideoDecSample::CreateByMime()
 bool VideoDecSample::InitInputFile()
 {
     if (signal_->reader_ == nullptr) {
-        if (inPath_.find("h264") != std::string::npos || inPath_.find("h265") != std::string::npos) {
+        if (inPath_.find("h263") != std::string::npos) {
+            int32_t ret = CreateH263Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateH263Reader failed");
+        } else if (inPath_.find("h264") != std::string::npos || inPath_.find("h265") != std::string::npos) {
             int32_t ret = CreateAvccReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateAvccReader failed");
         } else {
@@ -291,6 +292,16 @@ int32_t VideoDecSample::CreateMpegReader()
 
     signal_->reader_ = std::make_shared<MpegReader>();
     int32_t ret = std::static_pointer_cast<MpegReader>(signal_->reader_)->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSample::CreateH263Reader()
+{
+    std::shared_ptr<H263ReaderInfo> info = std::make_shared<H263ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<H263Reader>();
+    int32_t ret = std::static_pointer_cast<H263Reader>(signal_->reader_)->Init(info);
     return ret;
 }
 
@@ -482,7 +493,6 @@ int32_t VideoDecSample::PushInputData(std::shared_ptr<CodecBufferInfo> bufferInf
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_PushInputData failed");
     }
     frameInputCount_++;
-    usleep(DEFAULT_TIME_INTERVAL);
     return AV_ERR_OK;
 }
 
