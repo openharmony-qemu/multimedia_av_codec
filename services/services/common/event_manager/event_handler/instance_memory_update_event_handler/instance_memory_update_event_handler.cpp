@@ -17,7 +17,7 @@
 #include <fstream>
 #include <cmath>
 #include "cJSON.h"
-#include "client/memory_collector_client.h"
+#include "client/memory_collector.h"
 #include "parameters.h"
 #include "avcodec_info.h"
 #include "avcodec_server_manager.h"
