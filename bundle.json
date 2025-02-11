@@ -72,6 +72,8 @@
           "video_processing_engine",
           "curl",
           "openssl",
+          "hiview",
+          "cJSON",
           "bundle_framework"
         ],
         "third_party": [

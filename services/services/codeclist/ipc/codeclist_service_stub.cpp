@@ -13,15 +13,16 @@
  * limitations under the License.
  */
 
+#include "codeclist_service_stub.h"
 #include <unistd.h>
 #include <string>
 #include <map>
+#include "codeclist_server.h"
 #include "avsharedmemory_ipc.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_server_manager.h"
 #include "avcodec_xcollie.h"
-#include "codeclist_service_stub.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListServiceStub"};
