@@ -31,6 +31,7 @@ struct OH_AVCodecCallback GetVoidCallback()
     };
     return cb;
 }
+
 struct OH_AVCodecAsyncCallback GetVoidAsyncCallback()
 {
     struct OH_AVCodecAsyncCallback cb;

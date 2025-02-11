@@ -1115,7 +1115,7 @@ typedef enum OH_H263Level {
     H263_LEVEL_60 = 6,
     /** 70 level */
     H263_LEVEL_70 = 7
-}OH_H263Level;
+} OH_H263Level;
 
 /**
  * @brief AVC Level.
