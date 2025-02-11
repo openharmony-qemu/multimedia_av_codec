@@ -89,7 +89,7 @@ std::string HCodec::OnGetHidumperInfo()
 {
     auto now = chrono::steady_clock::now();
     std::stringstream s;
-    s << endl;
+
     s << "        " << compUniqueStr_ << "[" << currState_->GetName() << "]" << endl;
     s << "        " << "------------INPUT-----------" << endl;
     s << "        " << "eos:" << inputPortEos_ << ", etb:" << inTotalCnt_ << endl;
@@ -106,7 +106,7 @@ std::string HCodec::OnGetHidumperInfo()
         s << "        " << "outBufId = " << info.bufferId << ", owner = " << ToString(info.owner)
           << ", holdMs = " << holdMs << endl;
     }
-    s << "        " << "----------------------------" << endl;
+    s << "        " << "----------------------------" << endl << endl;
     return s.str();
 }
 

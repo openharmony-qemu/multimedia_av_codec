@@ -423,6 +423,7 @@ int32_t HEncoder::UpdateInPortFormat()
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
+    inputFormat_->PutIntValue("IS_VENDOR", 1);
     return AVCS_ERR_OK;
 }
 
@@ -441,6 +442,7 @@ int32_t HEncoder::UpdateOutPortFormat()
     }
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, def.format.video.nFrameWidth);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, def.format.video.nFrameHeight);
+    outputFormat_->PutIntValue("IS_VENDOR", 1);
     return AVCS_ERR_OK;
 }
 
@@ -651,6 +653,7 @@ int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format, std::optional
 
     HEVCProfile profile;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, *reinterpret_cast<int *>(&profile))) {
+        inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, profile);
         optional<CodecHevcProfile> omxHevcProfile = TypeConverter::InnerHevcProfileToOmxProfile(profile);
         if (omxHevcProfile.has_value()) {
             hevcType.profile = omxHevcProfile.value();

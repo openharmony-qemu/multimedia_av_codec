@@ -53,7 +53,7 @@ class CodecServiceStub : public IRemoteStub<IStandardCodecService>, public NoCop
 public:
     static void RegisterMock(std::shared_ptr<CodecServiceStubMock> &mock);
 
-    static sptr<CodecServiceStub> Create();
+    static sptr<CodecServiceStub> Create(int32_t instanceId = -1);
     CodecServiceStub();
     ~CodecServiceStub();
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name) override;

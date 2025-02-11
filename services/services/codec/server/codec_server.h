@@ -29,12 +29,13 @@
 #include "codec_param_checker.h"
 #include "lock_free_queue.h"
 #include "post_processing.h"
+#include "instance_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 class CodecServer : public std::enable_shared_from_this<CodecServer>, public ICodecService, public NoCopyable {
 public:
-    static std::shared_ptr<ICodecService> Create();
+    static std::shared_ptr<ICodecService> Create(int32_t instanceId = INVALID_INSTANCE_ID);
     CodecServer();
     virtual ~CodecServer();
 
@@ -84,6 +85,7 @@ public:
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t DumpInfo(int32_t fd);
     void SetCallerInfo(const Meta &callerInfo);
+    std::shared_ptr<Media::Meta> GetCallerInfo();
 
     void OnError(int32_t errorType, int32_t errorCode);
     void OnOutputFormatChanged(const Format &format);
@@ -117,7 +119,7 @@ public:
 private:
     int32_t InitByName(Meta &callerInfo, API_VERSION apiVersion);
     int32_t InitByMime(Meta &callerInfo, API_VERSION apiVersion);
-    int32_t InitServer();
+    int32_t InitServer(int32_t instanceId = INVALID_INSTANCE_ID);
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
     void ExitProcessor();
@@ -129,7 +131,8 @@ private:
     void SetFreeStatus(bool isFree);
     int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
-    int32_t ParamCheck(Format &config);
+    void OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta = nullptr);
+    void OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta = nullptr);
 
     CodecStatus status_ = UNINITIALIZED;
 
@@ -139,13 +142,11 @@ private:
     std::shared_mutex mutex_;
     std::shared_mutex cbMutex_;
     std::string lastErrMsg_;
+    std::string codecMime_;
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
-    struct CallerInfo {
-        pid_t pid = -1;
-        uid_t uid = 0;
-        std::string processName;
-    } caller_, forwardCaller_;
+    int32_t instanceId_ = INVALID_INSTANCE_ID;
+    CallerInfo caller_, forwardCaller_;
     bool isSurfaceMode_ = false;
     bool isModeConfirmed_ = false;
     bool isCreateSurface_ = false;
