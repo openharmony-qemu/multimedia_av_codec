@@ -151,8 +151,8 @@ int32_t CodecClient::Start()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecMode_ != CODEC_SET_PARAMETER_CALLBACK, AVCS_ERR_INVALID_STATE, 
-                             "Not get input surface");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecMode_ != CODEC_SET_PARAMETER_CALLBACK, AVCS_ERR_INVALID_STATE,
+                                      "Not get input surface");
 
     SetNeedListen(true);
     int32_t ret = codecProxy_->Start();
@@ -267,11 +267,11 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ == MEMORY_CALLBACK, AVCS_ERR_INVALID_STATE, 
-                             "The callback of AVSharedMemory is invalid!");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ == MEMORY_CALLBACK, AVCS_ERR_INVALID_STATE,
+                                      "The callback of AVSharedMemory is invalid!");
     int32_t ret = codecProxy_->QueueInputBuffer(index, info, flag);
-    AVCODEC_LOGD("%{public}s. index:%{public}u",
-                 AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str(), index);
+    AVCODEC_LOGD("%{public}s. index:%{public}u", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str(),
+                 index);
     return ret;
 }
 
@@ -279,12 +279,12 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ == BUFFER_CALLBACK, AVCS_ERR_INVALID_STATE, 
-                             "The callback of AVBuffer is invalid!");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ == BUFFER_CALLBACK, AVCS_ERR_INVALID_STATE,
+                                      "The callback of AVBuffer is invalid!");
 
     int32_t ret = codecProxy_->QueueInputBuffer(index);
     AVCODEC_LOGD_WITH_TAG("%{public}s. index:%{public}u",
-                 AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str(), index);
+                          AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str(), index);
     return ret;
 }
 

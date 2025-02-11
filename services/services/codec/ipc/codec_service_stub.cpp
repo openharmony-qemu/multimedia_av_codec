@@ -15,20 +15,20 @@
 
 #include "codec_service_stub.h"
 #include <unistd.h>
-#include "codec_server.h"
-#include "avcodec_trace.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_parcel.h"
 #include "avcodec_server_manager.h"
+#include "avcodec_trace.h"
 #include "avcodec_xcollie.h"
 #include "avsharedmemory_ipc.h"
 #include "codec_listener_proxy.h"
+#include "codec_server.h"
 #ifdef SUPPORT_DRM
 #include "key_session_service_proxy.h"
 #endif
-#include "ipc_skeleton.h"
 #include "event_manager.h"
+#include "ipc_skeleton.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceStub"};
@@ -120,7 +120,7 @@ int32_t CodecServiceStub::DestroyStub()
     return AVCS_ERR_OK;
 }
 
-int32_t CodecServiceStub::Dump(int32_t fd, [[maybe_unused]] const std::vector<std::u16string>& args)
+int32_t CodecServiceStub::Dump(int32_t fd, [[maybe_unused]] const std::vector<std::u16string> &args)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
@@ -266,8 +266,8 @@ int32_t CodecServiceStub::Start()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecServer_->CheckRunning()), AVCS_ERR_INVALID_STATE, 
-                             "In invalid state, running");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecServer_->CheckRunning()), AVCS_ERR_INVALID_STATE,
+                                      "In invalid state, running");
     (void)listener_->UpdateGeneration();
     int32_t ret = codecServer_->Start();
     if (ret != AVCS_ERR_OK) {
@@ -396,7 +396,7 @@ int32_t CodecServiceStub::GetInputFormat(Format &format)
 
 #ifdef SUPPORT_DRM
 int32_t CodecServiceStub::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
-    const bool svpFlag)
+                                           const bool svpFlag)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
@@ -643,14 +643,14 @@ int32_t CodecServiceStub::SetDecryptConfig(MessageParcel &data, MessageParcel &r
 {
     AVCODEC_SYNC_TRACE_WITH_TAG;
     sptr<IRemoteObject> object = data.ReadRemoteObject();
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(object != nullptr, AVCS_ERR_INVALID_OPERATION, 
-                             "SetDecryptConfig read object is null");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(object != nullptr, AVCS_ERR_INVALID_OPERATION,
+                                      "SetDecryptConfig read object is null");
     bool svpFlag = data.ReadBool();
 
     sptr<DrmStandard::MediaKeySessionServiceProxy> keySessionServiceProxy =
         iface_cast<DrmStandard::MediaKeySessionServiceProxy>(object);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(keySessionServiceProxy != nullptr, AVCS_ERR_INVALID_OPERATION, 
-                             "SetDecryptConfig cast object to proxy failed");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(keySessionServiceProxy != nullptr, AVCS_ERR_INVALID_OPERATION,
+                                      "SetDecryptConfig cast object to proxy failed");
     bool ret = reply.WriteInt32(SetDecryptConfig(keySessionServiceProxy, svpFlag));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
