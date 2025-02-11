@@ -1472,7 +1472,7 @@ void HttpMediaDownloader::SetIsReportedErrorCode()
 bool HttpMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
 {
     AutoLock lock(initCacheMutex_);
-    bool isInitBufferSizeOk = GetCurrentBufferSize() >= size || HandleBreak();
+    bool isInitBufferSizeOk = GetCurrentBufferSize() >= static_cast<size_t>(size) || HandleBreak();
     if (isInitBufferSizeOk || !downloader_ || !downloadRequest_) {
         MEDIA_LOG_I("HTTP SetInitialBufferSize initCacheSize ok.");
         return false;
