@@ -100,7 +100,7 @@ void BackGroundEventHandler::RegisterSuspendObserver()
     bool recycleMemory = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
     AVCODEC_LOGI("recycleMemory is %{public}d", recycleMemory);
     if (recycleMemory) {
-        if (suspendObservers_ == nullptr){
+        if (suspendObservers_ != nullptr){
             suspendObservers_ = sptr<SuspendStateObserverStubObj>(new SuspendStateObserverStubObj());
             CHECK_AND_RETURN_LOG(suspendObservers_ != nullptr, "Create Suspend Observer failed");
         }
