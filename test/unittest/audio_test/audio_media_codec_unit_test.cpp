@@ -861,7 +861,6 @@ HWTEST_F(AudioMediaCodecUnitTest, APEVersion_01, TestSize.Level1)
     int32_t size;
     format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
     EXPECT_EQ(size, 300000); //Normal input size 300000
-    
 }
 
 HWTEST_F(AudioMediaCodecUnitTest, APEVersion_02, TestSize.Level1)
@@ -889,7 +888,6 @@ HWTEST_F(AudioMediaCodecUnitTest, APEVersion_02, TestSize.Level1)
     int32_t size;
     format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
     EXPECT_EQ(size, 1179648); //Medium input size 1179648
-    
 }
 
 HWTEST_F(AudioMediaCodecUnitTest, APEVersion_03, TestSize.Level1)
@@ -917,7 +915,6 @@ HWTEST_F(AudioMediaCodecUnitTest, APEVersion_03, TestSize.Level1)
     int32_t size;
     format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
     EXPECT_EQ(size, 4718592); //Insane input size 4718592
-    
 }
 
 HWTEST_F(AudioMediaCodecUnitTest, APEVersion_04, TestSize.Level1)
@@ -945,7 +942,6 @@ HWTEST_F(AudioMediaCodecUnitTest, APEVersion_04, TestSize.Level1)
     int32_t size;
     format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
     EXPECT_EQ(size, 300000); //min input size 300000
-    
 }
 
 HWTEST_F(AudioMediaCodecUnitTest, FlacDecoderPlugin_01, TestSize.Level1)
