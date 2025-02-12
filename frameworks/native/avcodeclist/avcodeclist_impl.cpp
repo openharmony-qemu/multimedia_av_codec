@@ -20,6 +20,33 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecListImpl"};
+const std::vector<std::string> VIDEO_MIME_VEC = {
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AVC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_HEVC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VVC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG2),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_H263),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG4),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV30),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV40),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP8),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP9)};
+const std::vector<std::string> AUDIO_MIME_VEC = {
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_NB),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_WB),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_MPEG),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AAC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_VORBIS),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_OPUS),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_FLAC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_RAW),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711MU),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_COOK),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AC3),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AVS3DA),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_LBVC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_APE),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_VIVID)};
 }
 namespace OHOS {
 namespace MediaAVCodec {
@@ -95,44 +122,61 @@ std::string AVCodecListImpl::FindEncoder(const Format &format)
     return codecListService_->FindEncoder(format);
 }
 
+bool AVCodecListImpl::IsStrMatch(const std::string &str, const std::vector<std::string>& strVec)
+{
+    for (const auto& s : strVec) {
+        if (s.compare(str) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 CapabilityData *AVCodecListImpl::GetCapability(const std::string &mime, const bool isEncoder,
                                                const AVCodecCategory &category)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    bool isVendor = (category == AVCodecCategory::AVCODEC_SOFTWARE) ? false : true;
+    CHECK_AND_RETURN_RET_LOG(category >= AVCodecCategory::AVCODEC_NONE &&
+        category <= AVCodecCategory::AVCODEC_SOFTWARE, nullptr,
+        "Unsupported category %{public}d", category);
+    bool isHardward = (category == AVCodecCategory::AVCODEC_SOFTWARE) ? false : true;
     AVCodecType codecType = AVCODEC_TYPE_NONE;
-    bool isVideo = mime.find("video") != std::string::npos;
-    if (isVideo) {
+    if (IsStrMatch(mime, VIDEO_MIME_VEC)) {
         codecType = isEncoder ? AVCODEC_TYPE_VIDEO_ENCODER : AVCODEC_TYPE_VIDEO_DECODER;
-    } else {
+    } else if (IsStrMatch(mime, AUDIO_MIME_VEC)) {
         codecType = isEncoder ? AVCODEC_TYPE_AUDIO_ENCODER : AVCODEC_TYPE_AUDIO_DECODER;
-    }
-    if (mimeCapsMap_.find(mime) != mimeCapsMap_.end()) {
-        for (uint32_t i = 0; i < mimeCapsMap_[mime].size(); i++) {
-            if (mimeCapsMap_[mime][i]->codecType == codecType && mimeCapsMap_[mime][i]->isVendor == isVendor) {
-                return mimeCapsMap_[mime][i];
-            }
-        }
     } else {
+        AVCODEC_LOGE("GetCapability failed, mime is %{public}s", mime.c_str());
+        return nullptr;
+    }
+    if (mimeCapsMap_.find(mime) == mimeCapsMap_.end()) {
         std::vector<CapabilityData *> capsArray;
-        mimeCapsMap_.insert(std::make_pair(mime, capsArray));
+        mimeCapsMap_.emplace(mime, capsArray);
+    }
+    for (auto cap : mimeCapsMap_[mime]) {
+        if (cap->codecType == codecType && cap->isVendor == isHardward) {
+            return cap;
+        }
     }
     CapabilityData capaDataIn;
     int32_t ret = codecListService_->GetCapability(capaDataIn, mime, isEncoder, category);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Get capability failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Get capability failed from service,"
+        "mime: %{public}s, isEnc: %{public}d, category: %{public}d", mime.c_str(), isEncoder, category);
     std::string name = capaDataIn.codecName;
-    CHECK_AND_RETURN_RET_LOG(!name.empty(), nullptr, "Get capability failed");
+    CHECK_AND_RETURN_RET_LOG(!name.empty(), nullptr, "Codec name is empty");
     if (category == AVCodecCategory::AVCODEC_NONE && nameAddrMap_.find(name) != nameAddrMap_.end()) {
-        for (uint32_t i = 0; i < mimeCapsMap_[mime].size(); i++) {
-            if (mimeCapsMap_[mime][i]->codecType == codecType && mimeCapsMap_[mime][i]->codecName == name) {
-                return mimeCapsMap_[mime][i];
+        for (auto cap : mimeCapsMap_[mime]) {
+            if (cap->codecType == codecType && cap->codecName == name) {
+                return cap;
             }
         }
     }
     CapabilityData *cap = new CapabilityData(capaDataIn);
-    mimeCapsMap_.at(mime).emplace_back(cap);
-    uint32_t idx = mimeCapsMap_[mime].size() - 1;
-    return mimeCapsMap_[mime][idx];
+    CHECK_AND_RETURN_RET_LOG(cap != nullptr, nullptr, "New capabilityData failed");
+    mimeCapsMap_[mime].emplace_back(cap);
+    AVCODEC_LOGD("Get capabilityData successfully, mime: %{public}s, isEnc: %{public}d, category: %{public}d",
+        mime.c_str(), isEncoder, category);
+    return cap;
 }
 
 void *AVCodecListImpl::GetBuffer(const std::string &name, uint32_t sizeOfCap)
@@ -165,6 +209,7 @@ void *AVCodecListImpl::NewBuffer(size_t bufSize)
 void AVCodecListImpl::DeleteBuffer(void *bufAddr)
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    CHECK_AND_RETURN_LOG(bufAddr != nullptr, "bufAddr is nullptr!");
     uint8_t *temp = static_cast<uint8_t *>(bufAddr);
     bufAddrSet_.erase(temp);
     delete[] temp;

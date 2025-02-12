@@ -579,6 +579,7 @@ public:
     static constexpr std::string_view VIDEO_VP9 = "video/x-vnd.on2.vp9";
     static constexpr std::string_view VIDEO_RV30 = "video/rv30";
     static constexpr std::string_view VIDEO_RV40 = "video/rv40";
+    static constexpr std::string_view VIDEO_VVC = "video/vvc";
     static constexpr std::string_view AUDIO_AMR_NB = "audio/3gpp";
     static constexpr std::string_view AUDIO_AMR_WB = "audio/amr-wb";
     static constexpr std::string_view AUDIO_MPEG = "audio/mpeg";
@@ -590,13 +591,13 @@ public:
     static constexpr std::string_view AUDIO_G711MU = "audio/g711mu";
     static constexpr std::string_view AUDIO_COOK = "audio/cook";
     static constexpr std::string_view AUDIO_AC3 = "audio/ac3";
-    static constexpr std::string_view IMAGE_JPG = "image/jpeg";
-    static constexpr std::string_view IMAGE_PNG = "image/png";
-    static constexpr std::string_view IMAGE_BMP = "image/bmp";
+    static constexpr std::string_view AUDIO_VIVID = "audio/av3a";
     static constexpr std::string_view AUDIO_AVS3DA = "audio/av3a";
     static constexpr std::string_view AUDIO_LBVC = "audio/lbvc";
     static constexpr std::string_view AUDIO_APE = "audio/x-ape";
-    static constexpr std::string_view VIDEO_VVC = "video/vvc";
+    static constexpr std::string_view IMAGE_JPG = "image/jpeg";
+    static constexpr std::string_view IMAGE_PNG = "image/png";
+    static constexpr std::string_view IMAGE_BMP = "image/bmp";
 };
 
 /**
