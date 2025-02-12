@@ -32,8 +32,9 @@ void CodecServiceStub::RegisterMock(std::shared_ptr<CodecServiceStubMock> &mock)
     g_mockObject = mock;
 }
 
-sptr<CodecServiceStub> CodecServiceStub::Create()
+sptr<CodecServiceStub> CodecServiceStub::Create(int32_t instanceId)
 {
+    (void)instanceId;
     std::lock_guard<std::mutex> lock(g_mutex);
     UNITTEST_INFO_LOG("");
     auto mock = g_mockObject.lock();

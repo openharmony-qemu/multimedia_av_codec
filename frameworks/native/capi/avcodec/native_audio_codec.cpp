@@ -80,6 +80,8 @@ public:
             OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat(format);
             // The object lifecycle is controlled by the current function stack
             callback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
+        } else {
+            AVCODEC_LOGE("receive format changed but callback is nullptr");
         }
     }
 

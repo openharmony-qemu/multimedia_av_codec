@@ -74,6 +74,8 @@ public:
     virtual void OnError(CodecErrorType errorType, int32_t errorCode) = 0;
 
     virtual void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) = 0;
+
+    virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
 };
 
 class MediaCodec : public Plugins::DataCallback {
@@ -156,6 +158,8 @@ private:
 
     void HandleAudioCencDecryptError();
 
+    uint32_t GetApiVersion();
+
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
@@ -170,6 +174,7 @@ private:
     bool isSurfaceMode_;
     bool isBufferMode_;
     bool isDump_ = false;
+    bool isSupportAudioFormatChanged_ = true;
     std::string dumpPrefix_ = "";
     int32_t outputBufferCapacity_;
     std::string codecPluginName_;

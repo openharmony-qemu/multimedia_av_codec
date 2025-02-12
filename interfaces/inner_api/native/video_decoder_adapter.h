@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,6 +26,7 @@
 #include "osal/task/condition_variable.h"
 #include "meta/format.h"
 #include "video_sink.h"
+#include "performance_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -65,7 +66,12 @@ public:
 
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string& bundleName, uint64_t instanceId);
     void ResetRenderTime();
+    Status SetPerfRecEnabled(bool isPerfRecEnabled);
+
 private:
+    void PerfRecord(const std::shared_ptr<AVBuffer> buffer);
+    int32_t ReleaseOutputBufferWithPerfRecord(uint32_t index, bool render);
+
     std::shared_ptr<Media::AVBufferQueue> inputBufferQueue_;
     sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_;
     sptr<Media::AVBufferQueueConsumer> inputBufferQueueConsumer_;
@@ -83,6 +89,8 @@ private:
     int32_t appUid_ = -1;
     int32_t appPid_ = -1;
     std::string bundleName_;
+    bool isPerfRecEnabled_ { false };
+    PerfRecorder perfRecorder_ {};
 };
 
 class VideoDecoderCallback : public OHOS::MediaAVCodec::MediaCodecCallback {

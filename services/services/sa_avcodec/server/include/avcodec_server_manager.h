@@ -20,12 +20,16 @@
 #include <functional>
 #include <map>
 #include <list>
+#include <optional>
+#include <shared_mutex>
 #include "iremote_object.h"
 #include "ipc_skeleton.h"
 #include "nocopyable.h"
+#include "instance_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+using CodecInstance = std::pair<sptr<IRemoteObject>, InstanceInfo>;
 class AVCodecServerManager : public NoCopyable {
 public:
     static AVCodecServerManager& GetInstance();
@@ -39,6 +43,10 @@ public:
     void NotifyProcessStatus(const int32_t status);
     void SetMemMgrStatus(const bool isStarted);
     void SetCritical(const bool isKeyService);
+    std::vector<CodecInstance> GetInstanceInfoListByPid(pid_t pid);
+    std::vector<CodecInstance> GetInstanceInfoListByActualPid(pid_t pid);
+    std::optional<InstanceInfo> GetInstanceInfoByInstanceId(int32_t instanceId);
+    void SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info);
 
 private:
     AVCodecServerManager();
@@ -50,11 +58,8 @@ private:
     int32_t CreateCodecListStubObject(sptr<IRemoteObject> &object);
 #endif
 
-    void EraseObject(std::map<sptr<IRemoteObject>, pid_t>::iterator& iter,
-                     std::map<sptr<IRemoteObject>, pid_t>& stubMap,
-                     pid_t pid,
-                     const std::string& stubName);
-    void EraseObject(std::map<sptr<IRemoteObject>, pid_t>& stubMap, pid_t pid);
+    void EraseObject(std::map<sptr<IRemoteObject>, pid_t> &stubMap, pid_t pid);
+    void EraseCodecObjectByPid(pid_t pid);
     void Init();
 
     class AsyncExecutor {
@@ -70,11 +75,11 @@ private:
         std::mutex listMutex_;
     };
 
-    std::map<sptr<IRemoteObject>, pid_t> codecStubMap_;
+    std::unordered_multimap<pid_t, CodecInstance> codecStubMap_;
     std::map<sptr<IRemoteObject>, pid_t> codecListStubMap_;
     AsyncExecutor executor_;
     pid_t pid_ = 0;
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
     using NotifyProcessStatusFunc = int32_t(*)(int32_t pid, int32_t type, int32_t status, int32_t saId);
     using SetCriticalFunc = int32_t(*)(int32_t pid, bool critical, int32_t saId);
     static constexpr char LIB_PATH[] = "libmemmgrclient.z.so";

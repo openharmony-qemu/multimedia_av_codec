@@ -437,6 +437,19 @@ Status DecoderSurfaceFilter::DoWaitPrerollDone(bool render)
     return Status::OK;
 }
 
+Status DecoderSurfaceFilter::DoSetPerfRecEnabled(bool isPerfRecEnabled)
+{
+    isPerfRecEnabled_ = isPerfRecEnabled;
+    Status res = Status::OK;
+    if (videoSink_ != nullptr) {
+        res = videoSink_->SetPerfRecEnabled(isPerfRecEnabled);
+    }
+    if (videoDecoder_ != nullptr) {
+        res = videoDecoder_->SetPerfRecEnabled(isPerfRecEnabled);
+    }
+    return res;
+}
+
 Status DecoderSurfaceFilter::DoSetPlayRange(int64_t start, int64_t end)
 {
     MEDIA_LOG_I("DoSetPlayRange enter.");

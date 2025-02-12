@@ -1,0 +1,58 @@
+# Copyright (C) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+config("sa_manager_public_config") {
+  include_dirs = [ "./server/include/" ]
+}
+
+ohos_source_set("sa_manager") {
+  branch_protector_ret = "pac_ret"
+  sanitize = av_codec_sanitize
+  public_configs = [ ":sa_manager_public_config" ]
+
+  configs = [ "../../dfx:av_codec_service_log_dfx_public_config" ]
+
+  include_dirs = [
+    "./ipc/",
+    "./server/include/",
+    "../common/",
+    "../../../interfaces/inner_api/native/",
+    "../codec/ipc/",
+    "../codeclist/ipc/",
+    "../../include/",
+  ]
+
+  defines = av_codec_defines
+
+  sources = [
+    "ipc/avcodec_listener_proxy.cpp",
+    "ipc/avcodec_parcel.cpp",
+    "ipc/avcodec_service_stub.cpp",
+    "server/avcodec_server.cpp",
+    "server/avcodec_server_manager.cpp",
+  ]
+
+  external_deps = [
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}

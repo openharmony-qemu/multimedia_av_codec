@@ -15,6 +15,7 @@
 
 #include "codec_service_stub.h"
 #include <unistd.h>
+#include "codec_server.h"
 #include "avcodec_trace.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -27,6 +28,7 @@
 #include "key_session_service_proxy.h"
 #endif
 #include "ipc_skeleton.h"
+#include "event_manager.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceStub"};
@@ -72,12 +74,12 @@ const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
 
 namespace OHOS {
 namespace MediaAVCodec {
-sptr<CodecServiceStub> CodecServiceStub::Create()
+sptr<CodecServiceStub> CodecServiceStub::Create(int32_t instanceId)
 {
     sptr<CodecServiceStub> codecStub = new (std::nothrow) CodecServiceStub();
     CHECK_AND_RETURN_RET_LOG(codecStub != nullptr, nullptr, "Codec service stub create failed");
 
-    int32_t ret = codecStub->InitStub();
+    int32_t ret = codecStub->InitStub(instanceId);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Codec stub init failed");
     return codecStub;
 }
@@ -94,11 +96,11 @@ CodecServiceStub::~CodecServiceStub()
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
-int32_t CodecServiceStub::InitStub()
+int32_t CodecServiceStub::InitStub(int32_t instanceId)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_SYNC_TRACE;
-    codecServer_ = CodecServer::Create();
+    codecServer_ = CodecServer::Create(instanceId);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server create failed");
     return AVCS_ERR_OK;
 }
@@ -106,10 +108,15 @@ int32_t CodecServiceStub::InitStub()
 int32_t CodecServiceStub::DestroyStub()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (codecServer_ == nullptr) {
+        return AVCS_ERR_OK;
+    }
+
+    auto callerInfo = std::static_pointer_cast<CodecServer>(codecServer_)->GetCallerInfo();
     (void)InnerRelease();
     codecServer_ = nullptr;
-
     AVCodecServerManager::GetInstance().DestroyStubObject(AVCodecServerManager::CODEC, AsObject());
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, *callerInfo);
     return AVCS_ERR_OK;
 }
 
