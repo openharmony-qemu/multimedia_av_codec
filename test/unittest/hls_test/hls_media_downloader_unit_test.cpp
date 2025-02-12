@@ -1110,4 +1110,132 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GET_PLAYBACK_INFO_002, TestSize.Level1)
     downloader = nullptr;
 }
 
+HWTEST_F(HlsMediaDownloaderUnitTest, SET_INITIAL_BUFFERSIZE_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    PlayInfo playInfo;
+    playInfo.url_ = testUrl;
+    downloader->PutRequestIntoDownloader(playInfo);
+    EXPECT_EQ(downloader->SetInitialBufferSize(0, 0), false);
+    downloader->isBuffering_ = false;
+    EXPECT_EQ(downloader->SetInitialBufferSize(0, 20000000), true);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, SET_PLAY_STRATEGY_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    downloader->SetPlayStrategy(nullptr);
+    EXPECT_EQ(downloader->waterlineForPlaying_, 0);
+    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
+    playStrategy->width = 1280;
+    playStrategy->height = 720;
+    playStrategy->bufferDurationForPlaying = 5;
+    downloader->SetPlayStrategy(playStrategy);
+    EXPECT_NE(downloader->waterlineForPlaying_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    downloader->bufferDurationForPlaying_ = 0;
+    downloader->NotifyInitSuccess();
+    EXPECT_EQ(downloader->waterlineForPlaying_, 0);
+    downloader->bufferDurationForPlaying_ = 5;
+    downloader->NotifyInitSuccess();
+    EXPECT_EQ(downloader->waterlineForPlaying_, 0);
+    EXPECT_EQ(downloader->isBuffering_, true);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, IS_CACHED_INIT_SIZE_READY_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>();
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    EXPECT_EQ(downloader->IsCachedInitSizeReady(-1), false);
+    PlayInfo playInfo;
+    downloader->backPlayList_.push_back(playInfo);
+    EXPECT_EQ(downloader->backPlayList_.size(), 1);
+    EXPECT_EQ(downloader->IsCachedInitSizeReady(10), true);
+    downloader->tsStorageInfo_[0].second = true;
+    downloader->tsStorageInfo_[1].second = true;
+    downloader->backPlayList_.push_back(playInfo);
+    EXPECT_EQ(downloader->IsCachedInitSizeReady(10), true);
+    downloader->cacheMediaBuffer_ = nullptr;
+    EXPECT_EQ(downloader->IsCachedInitSizeReady(10), false);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, HANDLE_WATER_LINE_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>();
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    downloader->waterLineAbove_ = 0;
+    downloader->readOffset_ = 0;
+    downloader->initCacheSize_ = 5000;
+    downloader->isBuffering_ = true;
+    downloader->tsStorageInfo_[downloader->readTsIndex_ + 1] = std::make_pair(0, true);
+    downloader->HandleWaterLine();
+    EXPECT_EQ(downloader->initCacheSize_, -1);
+    EXPECT_EQ(downloader->isBuffering_, false);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>();
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    PlayInfo playInfo;
+    downloader->backPlayList_.push_back(playInfo);
+    downloader->initCacheSize_ = 100;
+    downloader->isSeekingFlag = true;
+    EXPECT_EQ(downloader->CacheBufferFullLoop(), true);
+    EXPECT_EQ(downloader->initCacheSize_, -1);
+    downloader->isSeekingFlag = false;
+    EXPECT_EQ(downloader->CacheBufferFullLoop(), false);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>();
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    EXPECT_EQ(downloader->IsNeedBufferForPlaying(), false);
+    downloader->bufferDurationForPlaying_ = 5;
+    downloader->isDemuxerInitSuccess_ = true;
+    downloader->isBuffering_ = true;
+    downloader->bufferingTime_ = static_cast<size_t>(downloader->
+                        steadyClock_.ElapsedMilliseconds()) - 100 * 1000;
+    EXPECT_EQ(downloader->IsNeedBufferForPlaying(), false);
+    downloader->bufferingTime_ = 0;
+    downloader->waterlineForPlaying_ = 0;
+    EXPECT_EQ(downloader->IsNeedBufferForPlaying(), false);
+}
 }

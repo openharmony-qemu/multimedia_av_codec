@@ -80,6 +80,7 @@ public:
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
+    void NotifyInitSuccess() override;
 
 private:
     int64_t HttpMonitorLoop();

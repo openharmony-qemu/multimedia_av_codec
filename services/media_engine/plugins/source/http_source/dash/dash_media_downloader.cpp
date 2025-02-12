@@ -398,6 +398,7 @@ void DashMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& p
         mpdDownloader_->SetDefaultLang(playStrategy->audioLanguage, MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
         mpdDownloader_->SetDefaultLang(playStrategy->subtitleLanguage, MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
         expectDuration_ = static_cast<uint64_t>(playStrategy->duration);
+        bufferDurationForPlaying_ = playStrategy->bufferDurationForPlaying;
     }
 }
 
@@ -469,6 +470,7 @@ void DashMediaDownloader::OpenInitSegment(
     if (initSeg != nullptr) {
         downloader->SetInitSegment(initSeg);
     }
+    downloader->SetDurationForPlaying(bufferDurationForPlaying_);
     downloader->Open(seg);
     MEDIA_LOG_I("dash first get segment in streamId " PUBLIC_LOG_D32 ", type "
         PUBLIC_LOG_D32, streamDesc->streamId_, streamDesc->type_);
@@ -815,6 +817,10 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
             continue;
         }
 
+        if (segmentDownloader->GetStreamType() == MediaAVCodec::MediaType::MEDIA_TYPE_VID &&
+            segmentDownloader->GetBufferSize() == 0 && seekTimeMs == 0) {
+            segmentDownloader->NotifyInitSuccess();
+        }
         MEDIA_LOG_D("Dash SeekToTs segment " PUBLIC_LOG_D64 ", duration:"
             PUBLIC_LOG_U32, segment->numberSeq_, segment->duration_);
         std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
@@ -1202,6 +1208,14 @@ bool DashMediaDownloader::GetBufferingTimeOut()
     return false;
 }
 
+void DashMediaDownloader::NotifyInitSuccess()
+{
+    for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
+        if (segmentDownloaders_[i] != nullptr) {
+            segmentDownloaders_[i]->NotifyInitSuccess();
+        }
+    }
+}
 }
 }
 }

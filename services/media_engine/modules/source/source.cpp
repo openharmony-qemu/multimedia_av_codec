@@ -543,5 +543,11 @@ void Source::WaitForBufferingEnd()
     FALSE_RETURN_MSG(plugin_ != nullptr, "WaitForBufferingEnd source plugin is nullptr");
     return plugin_->WaitForBufferingEnd();
 }
+
+void Source::NotifyInitSuccess()
+{
+    FALSE_RETURN_MSG(plugin_ != nullptr, "NotifyInitSuccess source plugin is nullptr");
+    plugin_->NotifyInitSuccess();
+}
 } // namespace Media
 } // namespace OHOS

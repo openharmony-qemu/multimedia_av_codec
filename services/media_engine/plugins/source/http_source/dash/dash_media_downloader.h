@@ -70,6 +70,7 @@ public:
     bool GetPlayable() override;
     void SetAppUid(int32_t appUid) override;
     bool GetBufferingTimeOut() override;
+    void NotifyInitSuccess() override;
 
 private:
     void ReceiveMpdStreamInitEvent();
@@ -123,6 +124,7 @@ private:
     std::mutex bufferingMutex_;
     uint32_t bufferingFlag_{0};
     uint32_t lastBufferingPercent_{0};
+    double bufferDurationForPlaying_ {0};
 };
 }
 }

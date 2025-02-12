@@ -459,6 +459,12 @@ bool DownloadMonitor::SetInitialBufferSize(int32_t offset, int32_t size)
 {
     return downloader_->SetInitialBufferSize(offset, size);
 }
+
+void DownloadMonitor::NotifyInitSuccess()
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "NotifyInitSuccess downloader is nullptr");
+    downloader_->NotifyInitSuccess();
+}
 }
 }
 }

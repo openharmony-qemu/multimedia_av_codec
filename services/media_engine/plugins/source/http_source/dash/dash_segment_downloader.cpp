@@ -46,6 +46,7 @@ constexpr uint32_t BUFFERING_SLEEP_TIME_MS = 10;
 constexpr uint32_t BUFFERING_TIME_OUT_MS = 1000;
 constexpr uint32_t UPDATE_CACHE_STEP = 10;
 constexpr double ZERO_THRESHOLD = 1e-9;
+constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID, VID_RING_BUFFER_SIZE},
@@ -308,7 +309,7 @@ bool DashSegmentDownloader::HandleBuffering(const std::atomic<bool> &isInterrupt
 
 void DashSegmentDownloader::SaveDataHandleBuffering()
 {
-    if (!isBuffering_.load()) {
+    if (IsNeedBufferForPlaying() || !isBuffering_.load()) {
         return;
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
@@ -1131,6 +1132,64 @@ bool DashSegmentDownloader::GetBufferringStatus() const
 bool DashSegmentDownloader::IsAllSegmentFinished() const
 {
     return isAllSegmentFinished_.load();
+}
+
+void DashSegmentDownloader::SetDurationForPlaying(double duration)
+{
+    if (duration > 0 && streamType_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
+        bufferDurationForPlaying_ = duration;
+        MEDIA_LOG_I("Dash buffer duration for playing : " PUBLIC_LOG ".3f", bufferDurationForPlaying_);
+    }
+}
+
+bool DashSegmentDownloader::IsNeedBufferForPlaying()
+{
+    if (bufferDurationForPlaying_ <= 0 || !isDemuxerInitSuccess_.load() || !isBuffering_.load()) {
+        return false;
+    }
+    if (GetBufferingTimeOut() && callback_) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+                            "buffer for playing"});
+        isBuffering_.store(false);
+        isDemuxerInitSuccess_.store(false);
+        bufferingTime_ = 0;
+        return false;
+    }
+    if (GetBufferSize() >= waterlineForPlaying_ || isAllSegmentFinished_.load()) {
+        MEDIA_LOG_I("Dash buffer duration for playing is enough, buffersize: " PUBLIC_LOG_U32 " waterLineAbove: "
+                    PUBLIC_LOG_U64, GetBufferSize(), waterlineForPlaying_);
+        isBuffering_.store(false);
+        isDemuxerInitSuccess_.store(false);
+        bufferingTime_ = 0;
+        return false;
+    }
+    return true;
+}
+
+void DashSegmentDownloader::NotifyInitSuccess()
+{
+    if (streamType_ != MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
+        return;
+    }
+    MEDIA_LOG_I("Dash NotifyInitSuccess in");
+    isDemuxerInitSuccess_.store(true);
+    if (bufferDurationForPlaying_ <= 0 || realTimeBitBate_ <= 0) {
+        return;
+    }
+    waterlineForPlaying_ = static_cast<uint64_t>(realTimeBitBate_ / static_cast<int64_t>(BYTES_TO_BIT) *
+                           bufferDurationForPlaying_);
+    isBuffering_.store(true);
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+}
+
+bool DashSegmentDownloader::GetBufferingTimeOut()
+{
+    if (bufferingTime_ == 0) {
+        return false;
+    } else {
+        size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+        return now >= bufferingTime_ ? now - bufferingTime_ >= MAX_BUFFERING_TIME_OUT : false;
+    }
 }
 }
 }

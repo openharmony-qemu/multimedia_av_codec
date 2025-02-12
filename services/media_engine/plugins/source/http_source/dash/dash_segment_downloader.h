@@ -173,6 +173,8 @@ public:
     bool GetBufferringStatus() const;
     uint32_t GetCachedPercent();
     bool IsAllSegmentFinished() const;
+    void SetDurationForPlaying(double duration);
+    void NotifyInitSuccess();
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -204,6 +206,8 @@ private:
     void UpdateCachedPercent(BufferingInfoType infoType);
     void UpdateBufferSegment(const std::shared_ptr<DashBufferSegment> &mediaSegment, uint32_t len);
     void DoBufferingEndEvent();
+    bool GetBufferingTimeOut();
+    bool IsNeedBufferForPlaying();
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
@@ -254,6 +258,10 @@ private:
     uint32_t lastCachedSize_{0};
     bool isFirstFrameArrived_{false};
     std::atomic<bool> isAllSegmentFinished_{false};
+    double bufferDurationForPlaying_ {0};
+    volatile size_t bufferingTime_ {0};
+    uint64_t waterlineForPlaying_ {0};
+    std::atomic<bool> isDemuxerInitSuccess_ {false};
 };
 }
 }

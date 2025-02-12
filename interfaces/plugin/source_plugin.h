@@ -257,6 +257,8 @@ public:
     {
         return false;
     }
+
+    virtual void NotifyInitSuccess() {}
 };
 
 /// Source plugin api major number.

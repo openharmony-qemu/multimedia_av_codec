@@ -508,6 +508,84 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     delete sourceCallback;
     sourceCallback = nullptr;
 }
+
+HWTEST_F(DashSegmentDownloaderUnitTest, SET_DURATION_FOR_PLAYING_001, TestSize.Level1)
+{
+    Plugins::Callback* sourceCallback = new SourceCallbackMock();
+    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
+        0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                              std::shared_ptr<DownloadRequest>& request) {};
+    segmentDownloaderSp->SetStatusCallback(statusCallback);
+    segmentDownloaderSp->SetDurationForPlaying(1);
+    segmentDownloaderSp->SetCurrentBitRate(100);
+    segmentDownloaderSp->NotifyInitSuccess();
+    EXPECT_EQ(segmentDownloaderSp->GetBufferringStatus(), true);
+}
+
+HWTEST_F(DashSegmentDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_001, TestSize.Level1)
+{
+    Plugins::Callback* sourceCallback = new SourceCallbackMock();
+    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
+        0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                              std::shared_ptr<DownloadRequest>& request) {};
+    segmentDownloaderSp->SetStatusCallback(statusCallback);
+    segmentDownloaderSp->SetDurationForPlaying(1);
+    segmentDownloaderSp->SetCurrentBitRate(100);
+    segmentDownloaderSp->NotifyInitSuccess();
+    OSAL::SleepFor(35000);
+    std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
+    segmentSp->url_ = VIDEO_INIT_SEGMENT_URL;
+    segmentSp->streamId_ = 0;
+    segmentSp->duration_ = 5;
+    segmentSp->bandwidth_ = 1024;
+    segmentSp->startNumberSeq_ = 0;
+    segmentSp->numberSeq_ = 0;
+    segmentDownloaderSp->Open(segmentSp);
+    OSAL::SleepFor(1000);
+    EXPECT_EQ(segmentDownloaderSp->GetBufferringStatus(), false);
+}
+
+HWTEST_F(DashSegmentDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_002, TestSize.Level1)
+{
+    Plugins::Callback* sourceCallback = new SourceCallbackMock();
+    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
+        0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                              std::shared_ptr<DownloadRequest>& request) {};
+    segmentDownloaderSp->SetStatusCallback(statusCallback);
+    segmentDownloaderSp->SetDurationForPlaying(0.000001);
+    segmentDownloaderSp->SetCurrentBitRate(100);
+    segmentDownloaderSp->NotifyInitSuccess();
+    std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
+    segmentSp->url_ = VIDEO_INIT_SEGMENT_URL;
+    segmentSp->streamId_ = 0;
+    segmentSp->duration_ = 5;
+    segmentSp->bandwidth_ = 1024;
+    segmentSp->startNumberSeq_ = 0;
+    segmentSp->numberSeq_ = 0;
+    segmentDownloaderSp->Open(segmentSp);
+    OSAL::SleepFor(1000);
+    EXPECT_EQ(segmentDownloaderSp->GetBufferringStatus(), false);
+}
+
+HWTEST_F(DashSegmentDownloaderUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
+{
+    Plugins::Callback* sourceCallback = new SourceCallbackMock();
+    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
+        0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                              std::shared_ptr<DownloadRequest>& request) {};
+    segmentDownloaderSp->SetStatusCallback(statusCallback);
+    segmentDownloaderSp->SetDurationForPlaying(10);
+    segmentDownloaderSp->SetCurrentBitRate(0);
+    segmentDownloaderSp->NotifyInitSuccess();
+    EXPECT_EQ(segmentDownloaderSp->GetBufferringStatus(), false);
+    segmentDownloaderSp->SetCurrentBitRate(100);
+    segmentDownloaderSp->NotifyInitSuccess();
+    EXPECT_EQ(segmentDownloaderSp->GetBufferringStatus(), true);
+}
 }
 }
 }
