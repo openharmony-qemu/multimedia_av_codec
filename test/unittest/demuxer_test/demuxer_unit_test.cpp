@@ -2635,7 +2635,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1801, TestSize.Level1)
     ASSERT_NE(demuxer_->SeekToTime(12000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
 }
-#endif
 
 /**
  * @tc.name: Demuxer_ReadSample_1802
@@ -3016,4 +3015,5 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1806, TestSize.Level1)
     ASSERT_NE(demuxer_->SeekToTime(12000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
 }
+#endif
 } // namespace
