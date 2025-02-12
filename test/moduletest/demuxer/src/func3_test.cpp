@@ -167,9 +167,7 @@ static void InitFile(const char *file, int32_t trackNum, int &fd, bool &initResu
 
 static bool CheckVideoSyncFrame(int &vKeyCount, int32_t &gopCount, int32_t &count)
 {
-    if (gopCount == 0 && vKeyCount == count + 1) {
-        return true;
-    } else if (gopCount % GOPNUM == 0 && vKeyCount == count + 1) {
+    if (gopCount % GOPNUM == 0 && vKeyCount == count + 1) {
         return true;
     } else if (gopCount % GOPNUM != 0 && vKeyCount == count) {
         return true;
