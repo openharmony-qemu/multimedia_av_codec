@@ -170,7 +170,7 @@ const std::string DEFAULT_VIDEO_VVC_MIME = std::string(CodecMimeType::VIDEO_VVC)
 constexpr int32_t MAX_SURPPORT_VCODEC_VVC = 4;
 constexpr int32_t DEFAULT_WIDTH_VVC = 3840;
 constexpr int32_t DEFAULT_HEIGHT_VVC = 2160;
-constexpr int32_t DEFAULT_VIDEO_VVC_PROFILE = VVC_PROFILE_MULTI_MAIN_10_444;
+constexpr int32_t DEFAULT_VIDEO_VVC_PROFILE = VVC_PROFILE_MAIN_10_STILL;
 constexpr int32_t DEFAULT_VIDEO_VVC_LEVEL = VVC_LEVEL_1;
 constexpr int32_t ERROR_VIDEO_VVC_PROFILE = -1;
 
@@ -184,12 +184,10 @@ const std::vector<int32_t> DEFAULT_VIDEO_VVC_PIXFORMATS = {
     static_cast<int32_t>(VideoPixelFormat::NV12), static_cast<int32_t>(VideoPixelFormat::NV12),
     static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::NV21)};
 const std::vector<int32_t> DEFAULT_VIDEO_VVC_PROFILES = {
-    VVC_PROFILE_MAIN_10, VVC_PROFILE_MULTI_MAIN_10,
-    VVC_PROFILE_MAIN_10_444, VVC_PROFILE_MULTI_MAIN_10_444,
-    VVC_PROFILE_MAIN_10_STILL, VVC_PROFILE_MAIN_10_444_STILL};
+    VVC_PROFILE_MAIN_10, VVC_PROFILE_MAIN_10_STILL};
 const std::vector<int32_t> DEFAULT_VIDEO_VVC_LEVELS = {
     VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31,
-    VVC_LEVEL_4, VVC_LEVEL_41, VVC_LEVEL_5, VVC_LEVEL_51};
+    VVC_LEVEL_4, VVC_LEVEL_41, VVC_LEVEL_5};
 } // namespace CodecListTestParam
 } // namespace MediaAVCodec
 } // namespace OHOS
