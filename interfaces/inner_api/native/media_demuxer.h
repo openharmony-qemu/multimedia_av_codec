@@ -158,6 +158,12 @@ private:
         int64_t basePts = -1;
         int64_t lastPts = 0;
     };
+
+    struct SyncFrameInfo {
+        int64_t pts = -1;
+        int32_t skipOpenGopUnrefFrameCnt = 0;
+    };
+
     bool isHttpSource_ = false;
     std::string videoMime_{};
 
@@ -226,6 +232,10 @@ private:
     Status InnerPrepare();
     Status HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status InitPtsInfo();
+    bool IsOpenGopBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
+    void UpdateSyncFrameInfo(std::shared_ptr<AVBuffer> sample, uint32_t trackId, bool isDiscardable = false);
+    void EnterDraggingOpenGopCnt();
+    void ResetDraggingOpenGopCnt();
     Status ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp,
         const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample);
 
@@ -307,6 +317,8 @@ private:
     bool isEnableReselectVideoTrack_ {false};
     int32_t videoTrackCount_ = 0;
     uint32_t targetVideoTrackId_ {TRACK_ID_DUMMY};
+    SyncFrameInfo syncFrameInfo_ {};
+    std::mutex syncFrameInfoMutex_ {};
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
 };
