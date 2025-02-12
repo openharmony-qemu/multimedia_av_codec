@@ -39,6 +39,7 @@ constexpr uint32_t MAX_CHANNEL_COUNT = 2;
 const std::string AAC_MIME_TYPE = "audio/mp4a-latm";
 const std::string UNKNOW_MIME_TYPE = "audio/unknow";
 const std::string AAC_DEC_CODEC_NAME = "OH.Media.Codec.Decoder.Audio.AAC";
+const std::string APE_DEC_CODEC_NAME = "OH.Media.Codec.Decoder.Audio.Ape";
 }  // namespace
 
 namespace OHOS {
@@ -855,11 +856,11 @@ HWTEST_F(AudioMediaCodecUnitTest, APEVersion_01, TestSize.Level1)
     fakedata[2] = 0;     // flags 0
     meta->Set<Tag::MEDIA_CODEC_CONFIG>(extradata);
     EXPECT_EQ(0, mediaCodec->Configure(meta));
-    auto format = make_shrared<Meta>();
+    auto format = make_shared<Meta>();
     mediaCodec->GetOutputFormat(format);
-    int16_t size;
+    int32_t size;
     format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
-    EXPECT_EQ(size, 589824); //Normal input size 589824
+    EXPECT_EQ(size, 300000); //Normal input size 300000
     
 }
 
@@ -883,9 +884,9 @@ HWTEST_F(AudioMediaCodecUnitTest, APEVersion_02, TestSize.Level1)
     fakedata[2] = 0;     // flags 0
     meta->Set<Tag::MEDIA_CODEC_CONFIG>(extradata);
     EXPECT_EQ(0, mediaCodec->Configure(meta));
-    auto format = make_shrared<Meta>();
+    auto format = make_shared<Meta>();
     mediaCodec->GetOutputFormat(format);
-    int16_t size;
+    int32_t size;
     format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
     EXPECT_EQ(size, 1179648); //Medium input size 1179648
     
@@ -911,11 +912,11 @@ HWTEST_F(AudioMediaCodecUnitTest, APEVersion_03, TestSize.Level1)
     fakedata[2] = 0;     // flags 0
     meta->Set<Tag::MEDIA_CODEC_CONFIG>(extradata);
     EXPECT_EQ(0, mediaCodec->Configure(meta));
-    auto format = make_shrared<Meta>();
+    auto format = make_shared<Meta>();
     mediaCodec->GetOutputFormat(format);
-    int16_t size;
+    int32_t size;
     format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
-    EXPECT_EQ(size, 2359296); //Insane input size 2359296
+    EXPECT_EQ(size, 4718592); //Insane input size 4718592
     
 }
 
@@ -939,9 +940,9 @@ HWTEST_F(AudioMediaCodecUnitTest, APEVersion_04, TestSize.Level1)
     fakedata[2] = 0;     // flags 0
     meta->Set<Tag::MEDIA_CODEC_CONFIG>(extradata);
     EXPECT_EQ(0, mediaCodec->Configure(meta));
-    auto format = make_shrared<Meta>();
+    auto format = make_shared<Meta>();
     mediaCodec->GetOutputFormat(format);
-    int16_t size;
+    int32_t size;
     format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
     EXPECT_EQ(size, 300000); //min input size 300000
     
