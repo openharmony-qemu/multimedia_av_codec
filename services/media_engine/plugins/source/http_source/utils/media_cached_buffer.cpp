@@ -99,7 +99,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     uint64_t diff = (totalBuffSize + chunkSize) > 1 ? (totalBuffSize + chunkSize) - 1 : 0;
     int64_t chunkNum = static_cast<int64_t>(diff / chunkSize) + 1;
     if ((chunkNum - static_cast<int64_t>(newFragmentInitChunkNum)) < 0 ||
-        chunkNum > MAX_CACHE_BUFFER_SIZE / CHUNK_SIZE) {
+        chunkNum > MAX_CACHE_BUFFER_SIZE) {
         return false;
     }
     if (newFragmentInitChunkNum > static_cast<double>(chunkNum) * NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR) {
