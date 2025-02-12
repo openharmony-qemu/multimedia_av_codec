@@ -835,6 +835,118 @@ HWTEST_F(AudioMediaCodecUnitTest, APEDecoderPlugin_02, TestSize.Level1)
     EXPECT_NE(Status::OK, plugin->SetParameter(meta));
 }
 
+HWTEST_F(AudioMediaCodecUnitTest, APEVersion_01, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Stop());
+    EXPECT_EQ(0, mediaCodec->Init(APE_DEC_CODEC_NAME));
+    auto implBufferQueue_ =
+        Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
+
+    vector<uint8_t> extradata(6);
+    int16_t *fakedata = reinterpret_cast<int16_t *>(extradata.data());
+    fakedata[0] = 3990;  // 3990 version
+    fakedata[1] = 2000;  // 2000 complexity
+    fakedata[2] = 0;     // flags 0
+    meta->Set<Tag::MEDIA_CODEC_CONFIG>(extradata);
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    auto format = make_shrared<Meta>();
+    mediaCodec->GetOutputFormat(format);
+    int16_t size;
+    format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
+    EXPECT_EQ(size, 589824); //Normal input size 589824
+    
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, APEVersion_02, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Stop());
+    EXPECT_EQ(0, mediaCodec->Init(APE_DEC_CODEC_NAME));
+    auto implBufferQueue_ =
+        Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
+
+    vector<uint8_t> extradata(6);
+    int16_t *fakedata = reinterpret_cast<int16_t *>(extradata.data());
+    fakedata[0] = 3990;  // 3990 version
+    fakedata[1] = 3000;  // 3000 complexity
+    fakedata[2] = 0;     // flags 0
+    meta->Set<Tag::MEDIA_CODEC_CONFIG>(extradata);
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    auto format = make_shrared<Meta>();
+    mediaCodec->GetOutputFormat(format);
+    int16_t size;
+    format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
+    EXPECT_EQ(size, 1179648); //Medium input size 1179648
+    
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, APEVersion_03, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Stop());
+    EXPECT_EQ(0, mediaCodec->Init(APE_DEC_CODEC_NAME));
+    auto implBufferQueue_ =
+        Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
+
+    vector<uint8_t> extradata(6);
+    int16_t *fakedata = reinterpret_cast<int16_t *>(extradata.data());
+    fakedata[0] = 3990;  // 3990 version
+    fakedata[1] = 5000;  // 5000 complexity
+    fakedata[2] = 0;     // flags 0
+    meta->Set<Tag::MEDIA_CODEC_CONFIG>(extradata);
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    auto format = make_shrared<Meta>();
+    mediaCodec->GetOutputFormat(format);
+    int16_t size;
+    format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
+    EXPECT_EQ(size, 2359296); //Insane input size 2359296
+    
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, APEVersion_04, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Stop());
+    EXPECT_EQ(0, mediaCodec->Init(APE_DEC_CODEC_NAME));
+    auto implBufferQueue_ =
+        Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
+
+    vector<uint8_t> extradata(6);
+    int16_t *fakedata = reinterpret_cast<int16_t *>(extradata.data());
+    fakedata[0] = 3800;  // 3800 version
+    fakedata[1] = 2000;  // 3000 complexity
+    fakedata[2] = 0;     // flags 0
+    meta->Set<Tag::MEDIA_CODEC_CONFIG>(extradata);
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    auto format = make_shrared<Meta>();
+    mediaCodec->GetOutputFormat(format);
+    int16_t size;
+    format->Get<Tag::AUDIO_MAX_INPUT_SIZE>(size);
+    EXPECT_EQ(size, 300000); //min input size 300000
+    
+}
+
 HWTEST_F(AudioMediaCodecUnitTest, FlacDecoderPlugin_01, TestSize.Level1)
 {
     std::string codecName = "OH.Media.Codec.Decoder.Audio.Flac";
