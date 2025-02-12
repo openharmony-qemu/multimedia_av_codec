@@ -743,7 +743,7 @@ typedef enum OH_HEVCProfile {
 /**
  * @brief VVC Profile: A specified subset of the syntax of VVC.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 15
  */
 typedef enum OH_VVCProfile {
     /** Main 10 profile */
@@ -969,7 +969,7 @@ typedef enum OH_HEVCLevel {
  * of VVC, or the value of a transform coefficient prior to scaling.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 14
+ * @since 15
  */
 typedef enum OH_VVCLevel {
     /** VVC level 1.0 */
