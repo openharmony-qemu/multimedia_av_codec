@@ -2324,7 +2324,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1803, TestSize.Level1)
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
-#endif
 
 /**
  * @tc.name: AVSource_GetFormat_1804
@@ -2608,5 +2607,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1808, TestSize.Level1)
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
+#endif
 
 } // namespace
