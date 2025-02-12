@@ -81,6 +81,17 @@ static int64_t GetFileSize(const char *fileName)
     return fileSize;
 }
 
+static void SetFileValue(OH_AVCodecBufferAttr attr, bool &gReadEnd, int &keyCount)
+{
+    if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+        gReadEnd = true;
+    } else {
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+            keyCount++;
+        }
+    }
+}
+
 int DemuxerSample::CreateDemuxer()
 {
     fd = open(filePath, O_RDONLY);
@@ -182,6 +193,7 @@ void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const
 void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, const char *setLanguage, Params params)
 {
     gReadEnd = false;
+    int keyCount = 0;
     int ret = CreateDemuxer();
     if (ret < 0) {
         return;
@@ -213,12 +225,10 @@ void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, 
                 break;
             }
             OH_AVBuffer_GetBufferAttr(buffer, &attr);
-            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                gReadEnd = true;
-                break;
-            }
+            SetFileValue(attr, gReadEnd, keyCount);
         }
     }
+    cout << "---keyCount---" << keyCount << endl;
     OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_CLOSEST_SYNC);
     OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_PREVIOUS_SYNC);
     OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_NEXT_SYNC);
