@@ -55,6 +55,7 @@ constexpr int FLV_AUDIONUM_AAC = 5148;
 constexpr int FLV_AUDIONUM_HEVC_AAC = 210;
 constexpr int FLV_VIDEONUM_HEVC_AAC_ALL = 602;
 constexpr int FLV_AUDIONUM_AVC_AAC = 318;
+constexpr int32_t GOPNUM = 60;
 void DemuxerFunc3NdkTest::SetUpTestCase() {}
 void DemuxerFunc3NdkTest::TearDownTestCase() {}
 void DemuxerFunc3NdkTest::SetUp()
@@ -168,9 +169,20 @@ static bool CheckVideoSyncFrame(int &vKeyCount, int32_t &gopCount, int32_t &coun
 {
     if (gopCount == 0 && vKeyCount == count + 1) {
         return true;
-    } else if (gopCount % 60 == 0 && vKeyCount == count + 1) {
+    } else if (gopCount % GOPNUM == 0 && vKeyCount == count + 1) {
         return true;
-    } else if (gopCount % 60 != 0 && vKeyCount == count){
+    } else if (gopCount % GOPNUM != 0 && vKeyCount == count) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static bool CheckVideoFirstSyncFrame(int32_t &gopCount)
+{
+    if (gopCount == 0 && vKeyCount == 1) {
+        return true;
+    } else if (gopCount != 0 && vKeyCount == 1) {
         return true;
     } else {
         return false;
@@ -290,7 +302,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0030, TestSize.Level0)
     ASSERT_TRUE(initResult);
     int aKeyCount = 0;
     int vKeyCount = 0;
-    int32_t count = 0;
+    int32_t gopCount = 0;
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
@@ -307,11 +319,9 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0030, TestSize.Level0)
             if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
             } else if (tarckType == MEDIA_TYPE_VID) {
-                count = vKeyCount;
                 SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
-                if (count == 0) {
-                    ASSERT_EQ(vKeyCount, 1);
-                }
+                ASSERT_TRUE(CheckVideoFirstSyncFrame(gopCount));
+                gopCount++;
             }
         }
     }
