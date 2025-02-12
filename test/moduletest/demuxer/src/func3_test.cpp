@@ -164,6 +164,18 @@ static void InitFile(const char *file, int32_t trackNum, int &fd, bool &initResu
     initResult = true;
 }
 
+static bool CheckVideoSyncFrame(int &vKeyCount, int32_t &gopCount, int32_t &count)
+{
+    if (gopCount == 0 && vKeyCount == count + 1) {
+        return true;
+    } else if (gopCount % 60 == 0 && vKeyCount == count + 1) {
+        return true;
+    } else if (gopCount % 60 != 0 && vKeyCount == count){
+        return true;
+    } else {
+        return false;
+    }
+}
 /**
  * @tc.number    : DEMUXER_FUNCTION_FLV_0010
  * @tc.name      : create source with fd, avc+aac gop60 flv
@@ -184,7 +196,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0010, TestSize.Level0)
     ASSERT_TRUE(initResult);
     int aKeyCount = 0;
     int vKeyCount = 0;
-    int32_t gop_count = 0;
+    int32_t gopCount = 0;
     int32_t count = 0;
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
@@ -204,16 +216,8 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0010, TestSize.Level0)
             } else if (tarckType == MEDIA_TYPE_VID) {
                 count = vKeyCount;
                 SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
-                if (count == 0) {
-                    ASSERT_EQ(vKeyCount, count + 1);
-                } else {
-                    if (gop_count % 60 == 0) {
-                        ASSERT_EQ(vKeyCount, count + 1);
-                    } else {
-                        ASSERT_EQ(vKeyCount, count);
-                    }
-                }
-                gop_count++;
+                ASSERT_TRUE(CheckVideoSyncFrame(vKeyCount, gopCount, count));
+                gopCount++;
             }
         }
     }
@@ -333,7 +337,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0040, TestSize.Level2)
     InitFile(file, 1, fd, initResult);
     ASSERT_TRUE(initResult);
     int vKeyCount = 0;
-    int32_t gop_count = 0;
+    int32_t gopCount = 0;
     int32_t count = 0;
     while (!videoIsEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
@@ -348,16 +352,8 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0040, TestSize.Level2)
             if (tarckType == MEDIA_TYPE_VID) {
                 count = vKeyCount;
                 SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
-                if (count == 0) {
-                    ASSERT_EQ(vKeyCount, count + 1);
-                } else {
-                    if (gop_count % 60 == 0) {
-                        ASSERT_EQ(vKeyCount, count + 1);
-                    } else {
-                        ASSERT_EQ(vKeyCount, count);
-                    }
-                }
-                gop_count++;
+                ASSERT_TRUE(CheckVideoSyncFrame(vKeyCount, gopCount, count));
+                gopCount++;
             }
         }
     }

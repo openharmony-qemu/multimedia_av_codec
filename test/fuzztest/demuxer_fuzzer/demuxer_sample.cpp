@@ -182,7 +182,7 @@ void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const
 void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, const char *setLanguage, Params params)
 {
     gReadEnd = false;
-    int32_t KeyCount = 0;
+    int32_t keyCount = 0;
     int ret = CreateDemuxer();
     if (ret < 0) {
         return;
@@ -217,14 +217,12 @@ void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, 
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 gReadEnd = true;
                 break;
-            } else {
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    KeyCount++;
-                }
+            } else if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
-    cout << "---KeyCount---" << KeyCount << endl;
+    cout << "---keyCount---" << keyCount << endl;
     OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_CLOSEST_SYNC);
     OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_PREVIOUS_SYNC);
     OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_NEXT_SYNC);
