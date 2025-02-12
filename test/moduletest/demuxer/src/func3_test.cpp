@@ -178,7 +178,7 @@ static bool CheckVideoSyncFrame(int &vKeyCount, int32_t &gopCount, int32_t &coun
     }
 }
 
-static bool CheckVideoFirstSyncFrame(int32_t &gopCount)
+static bool CheckVideoFirstSyncFrame(int32_t &gopCount, int &vKeyCount)
 {
     if (gopCount == 0 && vKeyCount == 1) {
         return true;
@@ -320,7 +320,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0030, TestSize.Level0)
                 SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
             } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
-                ASSERT_TRUE(CheckVideoFirstSyncFrame(gopCount));
+                ASSERT_TRUE(CheckVideoFirstSyncFrame(gopCount, vKeyCount));
                 gopCount++;
             }
         }
