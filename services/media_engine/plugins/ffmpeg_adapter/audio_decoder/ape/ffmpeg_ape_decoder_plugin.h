@@ -88,6 +88,7 @@ private:
     int32_t sampleSizePerOutBuffer;
     int16_t compressionLevel;
     int32_t sampleRate;
+    int32_t depth;
 };
 } // namespace Ffmpeg
 } // namespace Plugins

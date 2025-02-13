@@ -155,6 +155,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     if (codecCtx->bits_per_coded_sample == 0) {
         codecCtx->bits_per_coded_sample = SetBitsDepth(sampleFmt);
     }
+    depth = codecCtx->bits_per_coded_sample;
     CalcBufferSize(parameter, codecCtx->extradata);
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
@@ -245,11 +246,6 @@ int32_t FFmpegAPEDecoderPlugin::GetOutputBufferSize()
 void FFmpegAPEDecoderPlugin::CalcBufferSize(const std::shared_ptr<Meta> &parameter, void *extradata)
 {
     int32_t samplePreFrame = 0;
-    int32_t depth = 0;
-    parameter->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, depth);
-    if (!depth) {
-        depth = BITS_S16;
-    }
     if (depth == BITS_S24) { // depth S24 means S32 in auctual
         depth = BITS_S32;
     }
@@ -288,6 +284,7 @@ void FFmpegAPEDecoderPlugin::CalcBufferSize(const std::shared_ptr<Meta> &paramet
     sampleSizePerOutBuffer = sampleSizePerFrame/OUT_BUFFER_NUM;
     AVCODEC_LOGI("APE version %{public}d compressLevel %{public}d sampleSize %{public}d %{public}d", version,
                  compressionLevel, sampleSizePerFrame, sampleSizePerOutBuffer);
+    AVCODEC_LOGI("APE channel %{public}d deth %{public}d", channels_, depth);
 }
 } // namespace Ffmpeg
 } // namespace Plugins
