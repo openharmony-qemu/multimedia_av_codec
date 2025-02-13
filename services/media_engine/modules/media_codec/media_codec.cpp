@@ -732,6 +732,8 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
         MEDIA_LOG_D("The output data is not completely read, needs to be read again");
     } else if (ret == Status::END_OF_STREAM) {
         MEDIA_LOG_D("HandleOutputBuffer END_OF_STREAM");
+    } else if (ret == Status::ERROR_UNKNOWN) {
+        MEDIA_LOG_E("QueueOutputBuffer unknown error");
     } else if (ret != Status::OK) {
         MEDIA_LOG_E("QueueOutputBuffer error");
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
