@@ -2002,7 +2002,7 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 Status MediaDemuxer::ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp,
     const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample)
 {
-    FALSE_RETURN_V(perfRecEnabled_, pluginTemp->ReadSample(innerTrackID, sample));
+    FALSE_RETURN_V_NOLOG(perfRecEnabled_, pluginTemp->ReadSample(innerTrackID, sample));
     Status ret = Status::OK;
     int64_t demuxDuration = CALC_EXPR_TIME_MS(ret = pluginTemp->ReadSample(innerTrackID, sample));
     FALSE_RETURN_V_MSG(eventReceiver_ != nullptr, Status::OK, "Report perf failed, callback is nullptr");

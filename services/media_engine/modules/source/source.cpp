@@ -371,7 +371,7 @@ std::string Source::GetUriSuffix(const std::string& uri)
 Status Source::Read(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "ReadData, Source plugin is nullptr");
-    FALSE_RETURN_V(!perfRecEnabled_, ReadWithPerfRecord(streamID, buffer, offset, expectedLen));
+    FALSE_RETURN_V_NOLOG(!perfRecEnabled_, ReadWithPerfRecord(streamID, buffer, offset, expectedLen));
     if (seekToTimeFlag_) {
         return plugin_->Read(streamID, buffer, offset, expectedLen);
     }
