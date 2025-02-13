@@ -160,10 +160,9 @@ CapabilityData *AVCodecListImpl::GetCapability(const std::string &mime, const bo
     }
     CapabilityData capaDataIn;
     int32_t ret = codecListService_->GetCapability(capaDataIn, mime, isEncoder, category);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Get capability failed from service,"
-        "mime: %{public}s, isEnc: %{public}d, category: %{public}d", mime.c_str(), isEncoder, category);
     std::string name = capaDataIn.codecName;
-    CHECK_AND_RETURN_RET_LOG(!name.empty(), nullptr, "Codec name is empty");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && !name.empty(), nullptr, "Get capability failed from service,"
+        "mime: %{public}s, isEnc: %{public}d, category: %{public}d", mime.c_str(), isEncoder, category);
     if (category == AVCodecCategory::AVCODEC_NONE && nameAddrMap_.find(name) != nameAddrMap_.end()) {
         for (auto cap : mimeCapsMap_[mime]) {
             if (cap->codecType == codecType && cap->codecName == name) {

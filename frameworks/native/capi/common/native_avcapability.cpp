@@ -35,7 +35,7 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
 {
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "Get capability failed: mime is nullptr");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) != 0 && strlen(mime) < MAX_LENGTH, nullptr,
-        "Get capability failed: invalid mime strlen, %{public}u", strlen(mime));
+        "Get capability failed: invalid mime strlen, %{public}zu", strlen(mime));
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
     CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, nullptr, "Get capability failed: CreateAVCodecList failed");
     uint32_t sizeOfCap = sizeof(OH_AVCapability);
@@ -61,7 +61,7 @@ OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEnc
 {
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "Get capabilityByCategory failed: mime is nullptr");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) != 0 && strlen(mime) < MAX_LENGTH, nullptr,
-        "Get capabilityByCategory failed: invalid mime strlen, %{public}u", strlen(mime));
+        "Get capabilityByCategory failed: invalid mime strlen, %{public}zu", strlen(mime));
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
     CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, nullptr,
         "Get capabilityByCategory failed: CreateAVCodecList failed");
