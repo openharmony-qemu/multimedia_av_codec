@@ -17,6 +17,9 @@
 #include "avcodec_log.h"
 #include "unittest_log.h"
 #include "./codec_drm_decrypt_mock.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace OHOS {
 namespace MediaAVCodec {

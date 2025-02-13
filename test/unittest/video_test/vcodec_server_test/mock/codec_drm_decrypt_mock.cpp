@@ -16,6 +16,9 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "codec_drm_decrypt.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "CodecServer"};
@@ -217,14 +220,13 @@ void CodecDrmDecrypt::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessi
     (void)svpFlag;
 }
 
-int32_t CodecDrmDecrypt::SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf, const std::shared_ptr<AVBuffer> &outBuf,
-                                      DrmBuffer &inDrmBuffer, DrmBuffer &outDrmBuffer)
+int32_t CodecDrmDecrypt::SetDrmBuffer(const MetaDrmCencInfo *const cencInfo, const std::shared_ptr<AVBuffer> &inBuf,
+    const std::shared_ptr<AVBuffer> &outBuf) const
 {
     AVCODEC_LOGD("CodecDrmDecrypt SetDrmBuffer");
+    (void)cencInfo;
     (void)inBuf;
     (void)outBuf;
-    (void)inDrmBuffer;
-    (void)outDrmBuffer;
     return AVCS_ERR_OK;
 }
 

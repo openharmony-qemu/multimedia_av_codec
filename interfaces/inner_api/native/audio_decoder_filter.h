@@ -23,7 +23,7 @@
 #include "audio_decoder_adapter.h"
 #include "avcodec_common.h"
 #ifdef SUPPORT_DRM
-#include "i_keysession_service.h"
+#include "drm_i_keysession_service.h"
 #endif
 
 namespace OHOS {

@@ -27,8 +27,6 @@ ohos_executable("av_codec_demo") {
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
     "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
-    "$drm_framework_root_dir/interfaces/kits/c/drm_capi/common",
-    "$drm_framework_root_dir/interfaces/kits/c/drm_capi/include",
     "./audio_demo",
     "./video_demo",
     "./avmuxer",

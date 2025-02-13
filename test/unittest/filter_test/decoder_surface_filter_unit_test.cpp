@@ -24,6 +24,9 @@
 #include "video_decoder_adapter.h"
 #include "common/log.h"
 #include "parameters.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 using namespace OHOS;
 using namespace OHOS::Media;

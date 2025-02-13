@@ -22,8 +22,6 @@ swdecoder_moduletest_native_include_dirs = [
   "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
   "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
-  "$drm_framework_root_dir/interfaces/kits/c/drm_capi/common",
-  "$drm_framework_root_dir/interfaces/kits/c/drm_capi/include",
 ]
 
 swdecoder_moduletest_cflags = [

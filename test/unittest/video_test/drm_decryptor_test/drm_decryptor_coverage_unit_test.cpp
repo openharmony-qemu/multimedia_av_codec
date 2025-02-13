@@ -22,6 +22,9 @@
 #include "avcodec_codec_name.h"
 #include "unittest_log.h"
 #include "drm_decryptor_coverage_unit_test.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;

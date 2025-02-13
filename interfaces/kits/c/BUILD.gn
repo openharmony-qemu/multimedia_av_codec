@@ -39,9 +39,6 @@ config("av_codec_capi_config") {
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/utils/include",
-    "$drm_framework_root_dir/interfaces/kits/c/drm_capi",
-    "$drm_framework_root_dir/interfaces/kits/c/drm_capi/common",
-    "$drm_framework_root_dir/interfaces/kits/c/drm_capi/include",
   ]
 
   cflags = [
@@ -143,6 +140,14 @@ ohos_shared_library("native_media_avdemuxer") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [
+      "drm_framework:drm_framework",
+      "drm_framework:native_drm",
+    ]
+  }
+
   output_extension = "so"
   subsystem_name = "multimedia"
   part_name = "av_codec"

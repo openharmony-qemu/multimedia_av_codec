@@ -235,7 +235,6 @@ ohos_unittest("videodec_inner_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "drm_framework:drm_framework",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
@@ -244,6 +243,10 @@ ohos_unittest("videodec_inner_unit_test") {
     "openssl:libssl_shared",
     "window_manager:libwm",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -286,7 +289,6 @@ ohos_unittest("videodec_h263_inner_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "drm_framework:drm_framework",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
@@ -294,6 +296,10 @@ ohos_unittest("videodec_h263_inner_unit_test") {
     "openssl:libssl_shared",
     "window_manager:libwm",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -337,7 +343,6 @@ ohos_unittest("videodec_mpeg_func_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "drm_framework:drm_framework",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
@@ -346,6 +351,10 @@ ohos_unittest("videodec_mpeg_func_unit_test") {
     "openssl:libcrypto_shared",
     "window_manager:libwm",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -541,7 +550,6 @@ ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "drm_framework:drm_framework",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
@@ -549,6 +557,10 @@ ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
     "openssl:libssl_shared",
     "window_manager:libwm",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -846,7 +858,6 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "drm_framework:drm_framework",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
@@ -855,6 +866,10 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_unit_test") {
     "openssl:libssl_shared",
     "window_manager:libwm",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"

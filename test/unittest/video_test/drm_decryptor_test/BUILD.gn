@@ -71,11 +71,11 @@ ohos_unittest("drm_decryptor_coverage_unit_test") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
-    "//third_party/googletest:gmock_main",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
