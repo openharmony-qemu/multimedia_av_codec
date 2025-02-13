@@ -232,9 +232,7 @@ int32_t CodecListCore::GetCapability(CapabilityData &capData, const std::string 
                                      const AVCodecCategory &category)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (mime.empty()) {
-        return AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(!mime.empty(), AVCS_ERR_INVALID_VAL, "mime is empty");
     AVCodecType codecType = AVCODEC_TYPE_NONE;
     bool isVideo = mime.find("video") != std::string::npos;
     if (isVideo) {
@@ -249,6 +247,8 @@ int32_t CodecListCore::GetCapability(CapabilityData &capData, const std::string 
     if (mimeCapIdxMap.find(mime) == mimeCapIdxMap.end()) {
         return AVCS_ERR_INVALID_VAL;
     }
+    CHECK_AND_RETURN_RET_LOG(mimeCapIdxMap.find(mime) != mimeCapIdxMap.end(), AVCS_ERR_INVALID_VAL,
+        "mime is not supported, mime: %{public}s", mime.c_str());
     std::vector<size_t> capsIdx = mimeCapIdxMap.at(mime);
     for (auto iter = capsIdx.begin(); iter != capsIdx.end(); iter++) {
         if (capsDataArray[*iter].codecType == codecType && capsDataArray[*iter].mimeType == mime) {
@@ -256,10 +256,14 @@ int32_t CodecListCore::GetCapability(CapabilityData &capData, const std::string 
                 continue;
             }
             capData = capsDataArray[*iter];
-            AVCODEC_LOGI("Get capability of codec successful: %{public}s", mime.c_str());
+            AVCODEC_LOGI("find cap, mime: %{public}s, isEnc: %{public}d, category: %{public}d",
+                mime.c_str(), isEncoder, category);
             break;
         }
     }
+    CHECK_AND_RETURN_RET_LOG(!capData.codecName.empty(), AVCS_ERR_INVALID_VAL,
+        "can not find cap, mime: %{public}s, mimeCapIdx size: %{public}zu, isEnc: %{public}d, category: %{public}d",
+        mime.c_str(), capsIdx.size(), isEncoder, category);
     return AVCS_ERR_OK;
 }
 

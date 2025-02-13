@@ -74,11 +74,32 @@ CodecAbilitySingleton::~CodecAbilitySingleton()
     AVCODEC_LOGI("Succeed");
 }
 
+bool CodecAbilitySingleton::IsCapabilityValid(const CapabilityData &cap)
+{
+    CHECK_AND_RETURN_RET_LOG(!cap.codecName.empty(), false, "codecName is empty");
+    CHECK_AND_RETURN_RET_LOG(cap.codecType > AVCodecType::AVCODEC_TYPE_NONE && cap.codecType <=
+        AVCodecType::AVCODEC_TYPE_AUDIO_DECODER, false, "codecType is invalid, %{public}d", cap.codecType);
+    CHECK_AND_RETURN_RET_LOG(!cap.mimeType.empty(), false, "mimeType is empty");
+    CHECK_AND_RETURN_RET_LOG(cap.maxInstance > 0, false, "maxInstance is invalid, %{public}d", cap.maxInstance);
+    if (cap.codecType == AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER ||
+        cap.codecType == AVCodecType::AVCODEC_TYPE_VIDEO_DECODER) {
+        CHECK_AND_RETURN_RET_LOG(cap.width.minVal > 0 && cap.width.minVal <= cap.width.maxVal, false,
+            "width is invalid, range is [%{public}d, %{public}d]", cap.width.minVal, cap.width.maxVal);
+        CHECK_AND_RETURN_RET_LOG(cap.height.minVal > 0 && cap.height.minVal <= cap.height.maxVal, false,
+            "height is invalid, range is [%{public}d, %{public}d]", cap.height.minVal, cap.height.maxVal);
+    }
+    return true;
+}
+
 void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> &capaArray, CodecType codecType)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     size_t beginIdx = capabilityDataArray_.size();
     for (auto iter = capaArray.begin(); iter != capaArray.end(); iter++) {
+        if (!IsCapabilityValid(*iter)) {
+            AVCODEC_LOGE("cap is invalid, codecName is %{public}s", (*iter).codecName.c_str());
+            continue;
+        }
         std::string mimeType = (*iter).mimeType;
         std::vector<size_t> idxVec;
         if (mimeCapIdxMap_.find(mimeType) == mimeCapIdxMap_.end()) {

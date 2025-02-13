@@ -38,6 +38,7 @@ public:
 
 private:
     CodecAbilitySingleton();
+    bool IsCapabilityValid(const CapabilityData &cap);
     std::vector<CapabilityData> capabilityDataArray_;
     std::unordered_map<std::string, std::vector<size_t>> mimeCapIdxMap_;
     std::unordered_map<std::string, CodecType> nameCodecTypeMap_;
