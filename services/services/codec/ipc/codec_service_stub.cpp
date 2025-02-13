@@ -237,6 +237,10 @@ int32_t CodecServiceStub::Init(AVCodecType type, bool isMimeType, const std::str
         lock.unlock();
         DestroyStub();
     }
+    const std::string &tag = CreateVideoLogTag(callerInfo);
+    this->SetTag(tag);
+    codecServer_->SetTag(tag);
+    static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->SetTag(tag);
     return ret;
 }
 
@@ -432,13 +436,10 @@ int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
     AVCodecType type = static_cast<AVCodecType>(data.ReadInt32());
     bool isMimeType = data.ReadBool();
     std::string name = data.ReadString();
-
-    bool ret = reply.WriteInt32(Init(type, isMimeType, name, callerInfo));
-    ret = ret && callerInfo.ToParcel(reply);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    bool parcelRet = reply.WriteInt32(Init(type, isMimeType, name, callerInfo));
+    parcelRet = parcelRet && callerInfo.ToParcel(reply);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->Init();
-    this->UpdateTagWithThreadLocal(); // execute after CodecServer set thread_local
-    this->ResetThreadLocalTag();
     return AVCS_ERR_OK;
 }
 

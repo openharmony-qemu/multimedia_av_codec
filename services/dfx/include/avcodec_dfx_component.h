@@ -34,18 +34,12 @@ class AVCodecDfxComponent {
 public:
     AVCodecDfxComponent();
     ~AVCodecDfxComponent();
-    void SetThreadLocalTag(const std::string &str);
-    void ResetThreadLocalTag();
-    void UpdateTagWithThreadLocal();
+    void SetTag(const std::string &str);
+    const std::string &GetTag();
     std::atomic<const char *> tag_;
 
 private:
     std::string tagContent_ = "";
-    enum class LogTagFlag {
-        SET_THREAD_LOCAL = 1,
-        UPDATE_TAG,
-    };
-    void SetThreadLocalTagInner(LogTagFlag flag, const std::string &str = "");
 };
 
 std::string CreateVideoLogTag(const OHOS::Media::Meta &meta);

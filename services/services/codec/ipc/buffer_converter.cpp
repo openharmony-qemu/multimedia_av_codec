@@ -175,7 +175,6 @@ bool BufferConverter::Init(AVCodecType type)
     } else {
         return false;
     }
-    this->UpdateTagWithThreadLocal(); // execute after CodecServiceProxy set thread_local
     return true;
 }
 

@@ -28,18 +28,11 @@ std::string CreateVideoLogTag(const Meta &callerInfo)
     std::string type = "";
     bool ret = callerInfo.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId) &&
                callerInfo.GetData(Tag::MEDIA_CODEC_NAME, codecName);
-    if (ret || instanceId == 0) {
+    if (!ret || instanceId == 0) {
         return "";
     }
     std::transform(codecName.begin(), codecName.end(), codecName.begin(), ::tolower);
-    type = codecName.find("omx") != std::string::npos ? "hw." : "sw.";
-    if (codecName.find("decode") != std::string::npos) {
-        type += "vdec";
-    } else if (codecName.find("encode") != std::string::npos) {
-        type += "venc";
-    } else {
-        return "";
-    }
+    type = codecName.find("omx") != std::string::npos ? "hardware" : "software";
     return std::string("[") + std::to_string(instanceId) + "][" + type + "]";
 }
 
@@ -50,40 +43,15 @@ AVCodecDfxComponent::AVCodecDfxComponent()
 
 AVCodecDfxComponent::~AVCodecDfxComponent() {}
 
-void AVCodecDfxComponent::SetThreadLocalTag(const std::string &str)
+void AVCodecDfxComponent::SetTag(const std::string &str)
 {
-    SetThreadLocalTagInner(LogTagFlag::SET_THREAD_LOCAL, str);
-    return;
+    tagContent_ = str;
+    tag_.store(tagContent_.c_str());
 }
 
-void AVCodecDfxComponent::ResetThreadLocalTag()
+const std::string &AVCodecDfxComponent::GetTag()
 {
-    SetThreadLocalTagInner(LogTagFlag::SET_THREAD_LOCAL, "");
-    return;
-}
-
-void AVCodecDfxComponent::UpdateTagWithThreadLocal()
-{
-    SetThreadLocalTagInner(LogTagFlag::UPDATE_TAG);
-    return;
-}
-
-void AVCodecDfxComponent::SetThreadLocalTagInner(LogTagFlag flag, const std::string &str)
-{
-    thread_local std::string threadLocalTag = "";
-    switch (flag) {
-        case LogTagFlag::SET_THREAD_LOCAL: {
-            threadLocalTag = str;
-            return;
-        }
-        case LogTagFlag::UPDATE_TAG: {
-            tagContent_ = threadLocalTag;
-            tag_.store(tagContent_.c_str());
-            return;
-        }
-        default:
-            return;
-    }
+    return tagContent_;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

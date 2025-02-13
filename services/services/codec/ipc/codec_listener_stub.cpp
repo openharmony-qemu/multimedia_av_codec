@@ -310,10 +310,9 @@ CodecListenerStub::~CodecListenerStub()
 
 void CodecListenerStub::Init()
 {
-    // execute after CodecServiceProxy set thread_local
-    this->UpdateTagWithThreadLocal();
-    inputBufferCache_->UpdateTagWithThreadLocal();
-    outputBufferCache_->UpdateTagWithThreadLocal();
+    const std::string &tag = this->GetTag();
+    inputBufferCache_->SetTag(tag);
+    outputBufferCache_->SetTag(tag);
 }
 
 int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)

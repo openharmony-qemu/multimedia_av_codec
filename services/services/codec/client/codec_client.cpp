@@ -102,11 +102,18 @@ int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &
     callerInfo.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, std::string(program_invocation_name));
 
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    int32_t ret = codecProxy_->Init(type, isMimeType, name, callerInfo);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr && listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY,
+                                      "Server not exist");
+    auto codecProxy = static_cast<CodecServiceProxy *>(codecProxy_.GetRefPtr());
+    int32_t ret = codecProxy->Init(type, isMimeType, name, callerInfo);
+    const std::string tag = CreateVideoLogTag(callerInfo);
+    this->SetTag(tag);
+    converter_->SetTag(tag);
+    codecProxy->SetTag(tag);
+    listenerStub_->SetTag(tag);
+
     converter_->Init(type);
     listenerStub_->Init();
-    this->UpdateTagWithThreadLocal(); // execute after CodecServiceProxy set thread_local
     AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;
 }

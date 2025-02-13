@@ -37,7 +37,9 @@ private:
     sptr<IStandardCodecListener> listener_ = nullptr;
 };
 
-class CodecListenerProxy : public IRemoteProxy<IStandardCodecListener>, public AVCodecDfxComponent, public NoCopyable {
+class CodecListenerProxy : public IRemoteProxy<IStandardCodecListener>,
+                           public AVCodecDfxComponent,
+                           public NoCopyable {
 public:
     explicit CodecListenerProxy(const sptr<IRemoteObject> &impl);
     virtual ~CodecListenerProxy();

@@ -123,10 +123,9 @@ CodecListenerProxy::~CodecListenerProxy()
 
 void CodecListenerProxy::Init()
 {
-    // execute after CodecServer set thread_local
-    inputBufferCache_->UpdateTagWithThreadLocal();
-    outputBufferCache_->UpdateTagWithThreadLocal();
-    this->UpdateTagWithThreadLocal();
+    const std::string &tag = this->GetTag();
+    inputBufferCache_->SetTag(tag);
+    outputBufferCache_->SetTag(tag);
 }
 
 void CodecListenerProxy::OnError(AVCodecErrorType errorType, int32_t errorCode)

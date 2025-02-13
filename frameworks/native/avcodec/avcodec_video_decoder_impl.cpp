@@ -83,8 +83,7 @@ int32_t AVCodecVideoDecoderImpl::Init(AVCodecType type, bool isMimeType, const s
     int32_t ret = AVCodecServiceFactory::GetInstance().CreateCodecService(codecClient_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, ret, "Codec client create failed");
     ret = codecClient_->Init(type, isMimeType, name, *format.GetMeta());
-    this->UpdateTagWithThreadLocal(); // execute after CodecServiceProxy set thread_local
-    this->ResetThreadLocalTag();
+    this->SetTag(codecClient_->GetTag()); // execute with CodecServiceProxy initialization completed
     return ret;
 }
 
