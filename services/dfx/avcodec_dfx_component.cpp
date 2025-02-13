@@ -32,7 +32,14 @@ std::string CreateVideoLogTag(const Meta &callerInfo)
         return "";
     }
     std::transform(codecName.begin(), codecName.end(), codecName.begin(), ::tolower);
-    type = codecName.find("omx") != std::string::npos ? "hardware" : "software";
+    type += codecName.find("omx") != std::string::npos ? "h." : "s.";
+    if (codecName.find("decode") != std::string::npos) {
+        type += "vdec";
+    } else if (codecName.find("encode") != std::string::npos) {
+        type += "venc";
+    } else {
+        return "";
+    }
     return std::string("[") + std::to_string(instanceId) + "][" + type + "]";
 }
 

@@ -237,7 +237,7 @@ int32_t CodecServiceStub::Init(AVCodecType type, bool isMimeType, const std::str
         lock.unlock();
         DestroyStub();
     }
-    const std::string &tag = CreateVideoLogTag(callerInfo);
+    const std::string tag = CreateVideoLogTag(callerInfo);
     this->SetTag(tag);
     codecServer_->SetTag(tag);
     static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->SetTag(tag);
