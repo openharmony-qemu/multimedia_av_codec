@@ -304,12 +304,12 @@ int32_t FCodec::Configure(const Format &format)
             ConfigureDefaultVal(format, it.first, VIDEO_MIN_SIZE, VIDEO_MAX_HEIGHT_SIZE);
         } else if (it.first == MediaDescriptionKey::MD_KEY_BITRATE) {
             int64_t val64 = 0;
-            format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, val64);
-            CHECK_AND_RETURN_RET_LOG(format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, val64),
+            CHECK_AND_RETURN_RET_LOG(format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, val64) && val64 > 0l,
                                      AVCS_ERR_INVALID_VAL, "Cannot get bit rate!");
+            format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, val64);
         } else if (it.first == MediaDescriptionKey::MD_KEY_FRAME_RATE) {
             double val = 0;
-            CHECK_AND_RETURN_RET_LOG(format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, val),
+            CHECK_AND_RETURN_RET_LOG(format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, val) && val64 > 0.0f,
                                      AVCS_ERR_INVALID_VAL, "Cannot get frame rate!");
             format_.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, val);
         } else if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
@@ -1048,7 +1048,7 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
     AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
     int32_t ret;
     if (ffmpegFormat == static_cast<AVPixelFormat>(cachedFrame_->format)) {
-        for (int32_t i = 0; cachedFrame_->linesize[i] > 0 && i < AV_NUM_DATA_POINTERS; i++) {
+        for (int32_t i = 0; i < AV_NUM_DATA_POINTERS && cachedFrame_->linesize[i] > 0; i++) {
             scaleData_[i] = cachedFrame_->data[i];
             scaleLineSize_[i] = cachedFrame_->linesize[i];
         }
