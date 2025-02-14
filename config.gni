@@ -140,6 +140,10 @@ if (!av_codec_support_software_codec) {
   av_codec_support_hevc_decoder = false
 }
 
+if (av_codec_support_efficiency_manager) {
+  av_codec_defines += [ "USE_EFFICIENCY_MANAGER" ]
+}
+
 if (av_codec_enable_codec_rm) {
   av_codec_defines += [ "SUPPORT_CODEC_RM" ]
 }
