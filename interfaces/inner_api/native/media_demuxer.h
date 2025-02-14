@@ -232,6 +232,7 @@ private:
     Status InnerPrepare();
     Status HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status InitPtsInfo();
+    void UpdateBufferQueueListener(int32_t trackId);
     bool IsOpenGopBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     void UpdateSyncFrameInfo(std::shared_ptr<AVBuffer> sample, uint32_t trackId, bool isDiscardable = false);
     void EnterDraggingOpenGopCnt();
