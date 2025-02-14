@@ -70,7 +70,6 @@ VideoCaps::VideoCaps(CapabilityData *capabilityData) : data_(capabilityData)
     CHECK_AND_RETURN_LOG(capabilityData != nullptr, "capabilityData is null");
     InitParams();
     LoadLevelParams();
-    UpdateParams();
     AVCODEC_LOGD("VideoCaps:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
@@ -156,6 +155,7 @@ Range VideoCaps::GetSupportedEncodeQuality()
 bool VideoCaps::IsSizeSupported(int32_t width, int32_t height)
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, false, "data is null");
+    UpdateParams();
     CHECK_AND_RETURN_RET_LOG(width > 0 && height > 0 && width < MAX_PIC_SIDE && height < MAX_PIC_SIDE, false,
         "invalid param, width: %{public}d, height: %{public}d", width, height);
     ImgSize align = data_->alignment;
@@ -177,12 +177,13 @@ bool VideoCaps::IsSizeSupported(int32_t width, int32_t height)
 Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
+    UpdateParams();
     Range heightRange = data_->supportSwapWidthHeight ? data_->height.Union(data_->width) : data_->height;
     CHECK_AND_RETURN_RET_LOG(heightRange.InRange(height), Range(), "height range: [%{public}d, %{public}d]"
         ", height: %{public}d", heightRange.minVal, heightRange.maxVal, height);
     Range widthRange = data_->supportSwapWidthHeight ? data_->width.Union(data_->height) : data_->width;
     int32_t verticalBlockNum = DivCeil(height, blockHeight_);
-    CHECK_AND_RETURN_RET_LOG(verticalBlockNum > 0L && verticalBlockRange_.InRange(verticalBlockNum),
+    CHECK_AND_RETURN_RET_LOG(verticalBlockNum > 0 && verticalBlockRange_.InRange(verticalBlockNum),
         Range(), "vertBlock range: [%{public}d, %{public}d], vertBlock: %{public}d",
         verticalBlockRange_.minVal, verticalBlockRange_.maxVal, verticalBlockNum);
     Range horizontalBlockNum = horizontalBlockRange_.Intersect(
@@ -199,12 +200,13 @@ Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
 Range VideoCaps::GetVideoHeightRangeForWidth(int32_t width)
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
+    UpdateParams();
     Range widthRange = data_->supportSwapWidthHeight ? data_->width.Union(data_->height) : data_->width;
     CHECK_AND_RETURN_RET_LOG(widthRange.InRange(width), Range(), "width range: [%{public}d, %{public}d]"
         ", width: %{public}d", widthRange.minVal, widthRange.maxVal, width);
     Range heightRange = data_->supportSwapWidthHeight ? data_->height.Union(data_->width) : data_->height;
     int32_t horizontalBlockNum = DivCeil(width, blockWidth_);
-    CHECK_AND_RETURN_RET_LOG(horizontalBlockNum > 0L && horizontalBlockRange_.InRange(horizontalBlockNum),
+    CHECK_AND_RETURN_RET_LOG(horizontalBlockNum > 0 && horizontalBlockRange_.InRange(horizontalBlockNum),
         Range(), "horizontalBlock range: [%{public}d, %{public}d], horizontalBlock: %{public}d",
         horizontalBlockRange_.minVal, horizontalBlockRange_.maxVal, horizontalBlockNum);
     Range verticalBlockNum = verticalBlockRange_.Intersect(
@@ -377,15 +379,16 @@ void VideoCaps::InitParams()
 
 void VideoCaps::UpdateParams()
 {
+    if (isUpdateParam_) {
+        return;
+    }
     if (data_->blockSize.width == 0 || data_->blockSize.height == 0 || blockWidth_ == 0 || blockHeight_ == 0 ||
         verticalBlockRange_.maxVal == 0 || verticalBlockRange_.minVal == 0 || horizontalBlockRange_.maxVal == 0 ||
         horizontalBlockRange_.minVal == 0 || blockPerFrameRange_.minVal == 0 || blockPerFrameRange_.maxVal == 0) {
         AVCODEC_LOGE("Invalid param");
         return;
     }
-
     int32_t factor = (blockWidth_ * blockHeight_) / (data_->blockSize.width * data_->blockSize.height);
-
     blockPerFrameRange_ = blockPerFrameRange_.Intersect(DivRange(data_->blockPerFrame, factor));
     blockPerSecondRange_ = blockPerSecondRange_.Intersect(DivRange(data_->blockPerSecond, factor));
     horizontalBlockRange_ = horizontalBlockRange_.Intersect(
@@ -411,6 +414,7 @@ void VideoCaps::UpdateParams()
         frameRateRange_ = frameRateRange_.Intersect(blockPerSecondRange_.minVal / blockPerFrameRange_.maxVal,
                                                     blockPerSecondRange_.maxVal / blockPerFrameRange_.minVal);
     }
+    isUpdateParam_ = true;
 }
 
 Range VideoCaps::DivRange(const Range &range, const int32_t &divisor)

@@ -483,6 +483,7 @@ private:
     Range widthRange_;
     Range heightRange_;
     Range frameRateRange_;
+    bool isUpdateParam_ = false;
     void InitParams();
     void UpdateParams();
     void LoadLevelParams();
