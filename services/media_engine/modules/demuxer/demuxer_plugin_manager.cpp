@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -40,6 +40,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerPluginManager" };
 constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
+constexpr int32_t API_VERSION_16 = 16;
 }
 
 namespace OHOS {
@@ -142,6 +143,9 @@ void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
     } else {
         Meta format;
         format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(info.bitRate));
+        if (apiVersion_ >= API_VERSION_16) {
+            format.Set<Tag::MEDIA_LANGUAGE>(info.lang);
+        }
         format.Set<Tag::MIME_TYPE>("audio/xxx");
         streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_AUDIO>(true);
@@ -162,6 +166,10 @@ void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
         format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(info.bitRate));
         format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(info.videoWidth));
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(info.videoHeight));
+        if (apiVersion_ >= API_VERSION_16) {
+            format.Set<Tag::VIDEO_IS_HDR_VIVID>(
+                static_cast<uint32_t>(info.videoType == VideoType::VIDEO_TYPE_HDR_VIVID));
+        }
         format.Set<Tag::MIME_TYPE>("video/xxx");
         streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_VIDEO>(true);
@@ -895,6 +903,11 @@ Status DemuxerPluginManager::SetCacheLimit(uint32_t limitSize)
         streamInfoMap_[curSubTitleStreamID_].plugin->SetCacheLimit(limitSize);
     }
     return Status::OK;
+}
+
+void DemuxerPluginManager::SetApiVersion(int32_t apiVersion)
+{
+    apiVersion_ = apiVersion;
 }
 
 } // namespace Media

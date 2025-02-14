@@ -321,6 +321,7 @@ private:
     std::mutex syncFrameInfoMutex_ {};
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
+    int32_t apiVersion_ {0};
 };
 } // namespace Media
 } // namespace OHOS
