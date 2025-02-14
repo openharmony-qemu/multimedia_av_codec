@@ -24,7 +24,7 @@ constexpr int32_t FRAME_RATE_30 = 30;
 constexpr int32_t BLOCK_SIZE_MIN = 2;
 constexpr int32_t BASE_BLOCK_PER_FRAME = 99;
 constexpr int32_t BASE_BLOCK_PER_SECOND = 1485;
-constexpr int32_t MAX_PIC_SIDE = 15360;
+constexpr int32_t MAX_PIC_SIDE = 15360; // 16K long side
 } // namespace
 namespace OHOS {
 namespace MediaAVCodec {
@@ -156,40 +156,35 @@ bool VideoCaps::IsSizeSupported(int32_t width, int32_t height)
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, false, "data is null");
     UpdateParams();
-    CHECK_AND_RETURN_RET_LOG(width > 0 && height > 0 && width < MAX_PIC_SIDE && height < MAX_PIC_SIDE, false,
-        "invalid param, width: %{public}d, height: %{public}d", width, height);
-    ImgSize align = data_->alignment;
-    CHECK_AND_RETURN_RET_LOG(align.width > 0 && align.height > 0, false,
-        "invalid alignment: %{public}dx%{public}d", align.width, align.height);
-    CHECK_AND_RETURN_RET_LOG(width % align.width == 0 && height % align.height == 0, false, "can not match alignment"
-        ", size: %{public}dx%{public}d, align: %{public}dx%{public}d", width, height, align.width, align.height);
+    CHECK_AND_RETURN_RET_LOG(height > 0 && height <= MAX_PIC_SIDE, false, "invalid height: %{public}d", height);
+    CHECK_AND_RETURN_RET_LOG(data_->alignment.height > 0 && height % data_->alignment.height == 0, false,
+        "can not match alignH: %{public}d, height: %{public}d", data_->alignment.height, height);
     Range heightRange = GetVideoHeightRangeForWidth(width);
     CHECK_AND_RETURN_RET_LOG(heightRange.InRange(height), false, "can not match resolution"
         ", size: %{public}dx%{public}d, heightRange: [%{public}d, %{public}d]",
         width, height, heightRange.minVal, heightRange.maxVal);
-    int32_t blockPerFrame = DivCeil(width, blockWidth_) * DivCeil(height, blockHeight_);
-    CHECK_AND_RETURN_RET_LOG(blockPerFrameRange_.InRange(blockPerFrame), false, "can not match block pre frame"
-        ", size: %{public}dx%{public}d, need block: %{public}d, range: [%{public}d, %{public}d] ",
-        width, height, blockPerFrame, blockPerFrameRange_.minVal, blockPerFrameRange_.maxVal);
     return true;
 }
 
 Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
+    CHECK_AND_RETURN_RET_LOG(height > 0 && height <= MAX_PIC_SIDE, "invalid height: %{public}d", height);
     UpdateParams();
     Range heightRange = data_->supportSwapWidthHeight ? data_->height.Union(data_->width) : data_->height;
     CHECK_AND_RETURN_RET_LOG(heightRange.InRange(height), Range(), "height range: [%{public}d, %{public}d]"
         ", height: %{public}d", heightRange.minVal, heightRange.maxVal, height);
-    Range widthRange = data_->supportSwapWidthHeight ? data_->width.Union(data_->height) : data_->width;
+    CHECK_AND_RETURN_RET_LOG(data_->alignment.height > 0 && height % data_->alignment.height == 0, false,
+        "can not match alignH: %{public}d, height: %{public}d", data_->alignment.height, height);
+    CHECK_AND_RETURN_RET_LOG(blockHeight_ > 0, Range(), "invalid blockH");
     int32_t verticalBlockNum = DivCeil(height, blockHeight_);
-    CHECK_AND_RETURN_RET_LOG(verticalBlockNum > 0 && verticalBlockRange_.InRange(verticalBlockNum),
-        Range(), "vertBlock range: [%{public}d, %{public}d], vertBlock: %{public}d",
-        verticalBlockRange_.minVal, verticalBlockRange_.maxVal, verticalBlockNum);
+    CHECK_AND_RETURN_RET_LOG(verticalBlockNum > 0, Range(), "invalid vertBlock: %{public}d"
+        ", height: %{public}d, blockH: %{public}d", verticalBlockNum, height, blockHeight_);
     Range horizontalBlockNum = horizontalBlockRange_.Intersect(
         Range(blockPerFrameRange_.minVal / verticalBlockNum, blockPerFrameRange_.maxVal / verticalBlockNum));
     CHECK_AND_RETURN_RET_LOG(horizontalBlockNum.minVal > 0, Range(), "horizontalBlockNum range is"
         "[%{public}d, %{public}d]", horizontalBlockNum.minVal, horizontalBlockNum.maxVal);
+    Range widthRange = data_->supportSwapWidthHeight ? data_->width.Union(data_->height) : data_->width;
     widthRange = widthRange.Intersect(Range((horizontalBlockNum.minVal - 1) * blockWidth_ + data_->alignment.width,
         horizontalBlockNum.maxVal * blockWidth_));
     AVCODEC_LOGD("Get width range: [%{public}d, %{public}d] for height: %{public}d",
@@ -200,11 +195,14 @@ Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
 Range VideoCaps::GetVideoHeightRangeForWidth(int32_t width)
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
+    CHECK_AND_RETURN_RET_LOG(width > 0 && width <= MAX_PIC_SIDE, "invalid width: %{public}d", width);
     UpdateParams();
     Range widthRange = data_->supportSwapWidthHeight ? data_->width.Union(data_->height) : data_->width;
     CHECK_AND_RETURN_RET_LOG(widthRange.InRange(width), Range(), "width range: [%{public}d, %{public}d]"
         ", width: %{public}d", widthRange.minVal, widthRange.maxVal, width);
-    Range heightRange = data_->supportSwapWidthHeight ? data_->height.Union(data_->width) : data_->height;
+    CHECK_AND_RETURN_RET_LOG(data_->alignment.width > 0 && width % data_->alignment.width == 0, false,
+        "can not match alignW: %{public}d, width: %{public}d", data_->alignment.width, width);
+    CHECK_AND_RETURN_RET_LOG(blockWidth_ > 0, Range(), "invalid blockW");
     int32_t horizontalBlockNum = DivCeil(width, blockWidth_);
     CHECK_AND_RETURN_RET_LOG(horizontalBlockNum > 0 && horizontalBlockRange_.InRange(horizontalBlockNum),
         Range(), "horizontalBlock range: [%{public}d, %{public}d], horizontalBlock: %{public}d",
@@ -213,9 +211,9 @@ Range VideoCaps::GetVideoHeightRangeForWidth(int32_t width)
         Range(blockPerFrameRange_.minVal / horizontalBlockNum, blockPerFrameRange_.maxVal / horizontalBlockNum));
     CHECK_AND_RETURN_RET_LOG(verticalBlockNum.minVal > 0, Range(), "verticalBlockNum range is"
         "[%{public}d, %{public}d]", verticalBlockNum.minVal, verticalBlockNum.maxVal);
-    heightRange = heightRange.Intersect(
-        Range((verticalBlockNum.minVal - 1) * blockHeight_ + data_->alignment.height,
-            verticalBlockNum.maxVal * blockHeight_));
+    Range heightRange = data_->supportSwapWidthHeight ? data_->height.Union(data_->width) : data_->height;
+    heightRange = heightRange.Intersect(Range((verticalBlockNum.minVal - 1) * blockHeight_ + data_->alignment.height,
+        verticalBlockNum.maxVal * blockHeight_));
     AVCODEC_LOGD("Get height range: [%{public}d, %{public}d] for width: %{public}d",
         heightRange.minVal, heightRange.maxVal, width);
     return heightRange;
@@ -324,6 +322,9 @@ void VideoCaps::UpdateBlockParams(const int32_t &blockWidth, const int32_t &bloc
 {
     int32_t factor;
     if (blockWidth > blockWidth_ && blockHeight > blockHeight_) {
+        if (blockWidth_ == 0 || blockHeight_ == 0) {
+            return;
+        }
         factor = blockWidth * blockHeight / blockWidth_ / blockHeight_;
         blockPerFrameRange_ = DivRange(blockPerFrameRange_, factor);
         blockPerSecondRange_ = DivRange(blockPerSecondRange_, factor);
