@@ -68,7 +68,6 @@ constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY 
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
 constexpr int32_t US_TO_S = 1000000;
-constexpr int32_t DEFAULT_MULTI_VIDEO_TRACK_NUM = 5;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
@@ -587,9 +586,6 @@ Status MediaDemuxer::InnerPrepare()
         InitDefaultTrack(mediaInfo, videoTrackId_, audioTrackId_, subtitleTrackId_, videoMime_);
         InitMediaStartPts();
         if (videoTrackId_ != TRACK_ID_DUMMY) {
-            if (isEnableReselectVideoTrack_ && IsHasMultiVideoTrack()) {
-                videoTrackId_ = GetTargetVideoTrackId(mediaMetaData_.trackMetas);
-            }
             AddDemuxerCopyTask(videoTrackId_, TaskType::VIDEO);
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, videoTrackId_, -1);
             int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
@@ -630,9 +626,6 @@ uint32_t MediaDemuxer::GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> 
 {
     FALSE_RETURN_V(targetVideoTrackId_ == TRACK_ID_DUMMY, targetVideoTrackId_);
     MEDIA_LOG_I_SHORT("GetTargetVideoTrackId enter");
-    int64_t videoRes = 0;
-    int32_t videoWidth = 0;
-    int32_t videoHeight = 0;
     for (size_t index = 0; index < trackInfos.size(); index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
         if (meta == nullptr) {
@@ -646,19 +639,9 @@ uint32_t MediaDemuxer::GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> 
         if (mediaType != Plugins::MediaType::VIDEO) {
             continue;
         }
-        if (!meta->GetData(Tag::VIDEO_WIDTH, videoWidth)) {
-            continue;
-        }
-        if (!meta->GetData(Tag::VIDEO_HEIGHT, videoHeight)) {
-            continue;
-        }
-        MEDIA_LOG_I_SHORT("SelectVideoTrack trackId: %{public}d width: %{public}d height: %{public}d",
-            static_cast<int32_t>(index), videoWidth, videoHeight);
-        int64_t resolution = static_cast<int64_t>(videoWidth) * static_cast<int64_t>(videoHeight);
-        if (resolution > videoRes) {
-            videoRes = resolution;
-            targetVideoTrackId_ = static_cast<uint32_t>(index);
-        }
+        MEDIA_LOG_I_SHORT("SelectVideoTrack trackId: %{public}d", static_cast<int32_t>(index));
+        targetVideoTrackId_ = static_cast<uint32_t>(index);
+        break;
     }
     return targetVideoTrackId_;
 }
@@ -1615,7 +1598,6 @@ void MediaDemuxer::InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, uint32_
         bool ret = trackMeta.Get<Tag::MIME_TYPE>(mimeType);
         if (ret && mimeType.find("video") == 0 &&
             !IsTrackDisabled(Plugins::MediaType::VIDEO)) {
-            videoTrackCount_++;
             dafaultTrack += "/V:";
             dafaultTrack += std::to_string(index);
             videoMime = mimeType;
@@ -2479,11 +2461,6 @@ int32_t MediaDemuxer::GetCurrentVideoTrackId()
 void MediaDemuxer::SetIsEnableReselectVideoTrack(bool isEnable)
 {
     isEnableReselectVideoTrack_  = isEnable;
-}
-
-bool MediaDemuxer::IsHasMultiVideoTrack()
-{
-    return videoTrackCount_ >= DEFAULT_MULTI_VIDEO_TRACK_NUM;
 }
 
 bool MediaDemuxer::IsOpenGopBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId)
