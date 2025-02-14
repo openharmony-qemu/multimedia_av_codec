@@ -17,6 +17,9 @@
 #include <cstdint>
 #include "codec_drm_decrypt.h"
 #include "securec.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 #define FUZZ_PROJECT_NAME "drmdecryptor_fuzzer"
 

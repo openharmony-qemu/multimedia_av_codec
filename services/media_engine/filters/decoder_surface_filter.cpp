@@ -28,6 +28,9 @@
 #include "osal/utils/util.h"
 #include "parameters.h"
 #include "scope_guard.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DecoderSurfaceFilter" };

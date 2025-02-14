@@ -105,6 +105,14 @@ ohos_unittest("media_engine_filter_unit_test") {
     "safwk:system_ability_fwk",
   ]
 
+  if (av_codec_support_drm) {
+    defines += [ "SUPPORT_DRM" ]
+  }
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
+
   if (defined(av_codec_support_video_processing_engine) &&
       av_codec_support_video_processing_engine) {
     external_deps += [ "video_processing_engine:videoprocessingengine" ]

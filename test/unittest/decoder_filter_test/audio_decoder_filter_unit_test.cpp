@@ -20,6 +20,9 @@
 #include "avcodec_sysevent.h"
 
 #include "audio_decoder_filter_unit_test.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace OHOS::Media {
 

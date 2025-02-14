@@ -164,10 +164,6 @@ config("av_codec_client_compile_config") {
   }
 }
 
-config("av_codec_client_drm_config") {
-  include_dirs = [ "$drm_framework_root_dir/services/drm_service/ipc" ]
-}
-
 ohos_shared_library("av_codec_client") {
   branch_protector_ret = "pac_ret"
   install_enable = true
@@ -177,7 +173,6 @@ ohos_shared_library("av_codec_client") {
     ":av_codec_client_public_config",
     ":av_codec_packege_include",
     ":av_codec_client_codec_config",
-    ":av_codec_client_drm_config",
   ]
 
   public_external_deps = [

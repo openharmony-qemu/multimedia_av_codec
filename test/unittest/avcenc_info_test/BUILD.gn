@@ -61,11 +61,11 @@ ohos_unittest("avcenc_info_capi_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:native_media_avcencinfo",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/googletest:gmock_main",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]

@@ -32,6 +32,10 @@ config("decoder_filter_unittest_cfg") {
     "TESTING",
   ]
 
+  if (av_codec_support_drm) {
+    defines += [ "SUPPORT_DRM" ]
+  }
+
   cflags = [
     "-Wno-sign-compare",
     "-fno-exceptions",

@@ -36,9 +36,6 @@
 #include "drm_i_keysession_service.h"
 #include "interrupt_listener.h"
 #include "sei_parser_helper.h"
-#ifdef SUPPORT_DRM
-#include "i_keysession_service.h"
-#endif
 
 namespace OHOS {
 namespace Media {

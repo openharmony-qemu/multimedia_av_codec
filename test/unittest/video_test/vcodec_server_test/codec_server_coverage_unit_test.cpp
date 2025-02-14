@@ -25,6 +25,9 @@
 #include "window_option.h"
 #include "wm/window.h"
 #include "media_description.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 #define EXPECT_CALL_GET_HCODEC_CAPS_MOCK                                                                               \
     EXPECT_CALL(*codecBaseMock_, GetHCapabilityList).Times(AtLeast(1)).WillRepeatedly
 #define EXPECT_CALL_GET_FCODEC_CAPS_MOCK                                                                               \

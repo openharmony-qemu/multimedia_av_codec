@@ -106,6 +106,10 @@ ohos_unittest("audio_encoder_filter_unitest") {
     "samgr:samgr_proxy",
   ]
 
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
+
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }

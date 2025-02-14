@@ -73,7 +73,6 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/engine/source/hst_releated",
     "$av_codec_root_dir/services/media_engine/modules/media_codec/",
     "$av_codec_root_dir/interfaces",
-    "$drm_framework_root_dir/services/drm_service/ipc",
   ]
 
   if (target_cpu == "arm64" || is_emulator) {
@@ -162,7 +161,6 @@ ohos_shared_library("av_codec_service") {
 
   external_deps = [
     "c_utils:utils",
-    "drm_framework:drm_framework",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",

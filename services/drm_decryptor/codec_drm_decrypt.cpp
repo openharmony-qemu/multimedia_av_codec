@@ -17,6 +17,10 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "securec.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#include "i_mediadecryptmodule_service.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecDrmDecrypt"};
@@ -25,6 +29,9 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 namespace OHOS {
 namespace MediaAVCodec {
 
+#ifdef SUPPORT_DRM
+using DrmBuffer = DrmStandard::IMediaDecryptModuleService::DrmBuffer;
+#endif
 #define DRM_VIDEO_FRAME_ARR_LEN            3
 #define DRM_AMBIGUITY_ARR_LEN              3
 #define DRM_USER_DATA_REGISTERED_UUID_SIZE 16
@@ -674,10 +681,14 @@ void CodecDrmDecrypt::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessi
 }
 
 #ifdef SUPPORT_DRM
-int32_t CodecDrmDecrypt::SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf,
-    const std::shared_ptr<AVBuffer> &outBuf, DrmBuffer &inDrmBuffer, DrmBuffer &outDrmBuffer)
+int32_t CodecDrmDecrypt::SetDrmBuffer(const MetaDrmCencInfo * const cencInfo, const std::shared_ptr<AVBuffer> &inBuf,
+    const std::shared_ptr<AVBuffer> &outBuf) const
 {
     AVCODEC_LOGD("CodecDrmDecrypt SetDrmBuffer");
+    DrmBuffer inDrmBuffer;
+    DrmBuffer outDrmBuffer;
+    int32_t retCode = AVCS_ERR_INVALID_VAL;
+    DrmStandard::IMediaDecryptModuleService::CryptInfo cryptInfo;
     CHECK_AND_RETURN_RET_LOG((inBuf->memory_ != nullptr && outBuf->memory_ != nullptr), AVCS_ERR_NO_MEMORY,
         "CodecDrmDecrypt SetDrmBuffer memory_ null");
     inDrmBuffer.bufferType = static_cast<uint32_t>(inBuf->memory_->GetMemoryType());
@@ -699,21 +710,7 @@ int32_t CodecDrmDecrypt::SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf,
     outDrmBuffer.filledLen = static_cast<uint32_t>(outBuf->memory_->GetSize());
     outDrmBuffer.offset = static_cast<uint32_t>(outBuf->memory_->GetOffset());
     outDrmBuffer.sharedMemType = static_cast<uint32_t>(outBuf->memory_->GetMemoryFlag());
-    return AVCS_ERR_OK;
-}
-#endif
 
-int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> &inBuf,
-    std::shared_ptr<AVBuffer> &outBuf)
-{
-    AVCODEC_LOGI("CodecDrmDecrypt DecryptMediaData");
-#ifdef SUPPORT_DRM
-    std::lock_guard<std::mutex> drmLock(configMutex_);
-    int32_t retCode = AVCS_ERR_INVALID_VAL;
-    DrmStandard::IMediaDecryptModuleService::CryptInfo cryptInfo;
-    CHECK_AND_RETURN_RET_LOG(((cencInfo->keyIdLen <= static_cast<uint32_t>(META_DRM_KEY_ID_SIZE)) &&
-        (cencInfo->ivLen <= static_cast<uint32_t>(META_DRM_IV_SIZE)) &&
-        (cencInfo->subSampleNum <= static_cast<uint32_t>(META_DRM_MAX_SUB_SAMPLE_NUM))), retCode, "parameter err");
     cryptInfo.type = static_cast<DrmStandard::IMediaDecryptModuleService::CryptAlgorithmType>(cencInfo->algo);
     std::vector<uint8_t> keyIdVector(cencInfo->keyId, cencInfo->keyId + cencInfo->keyIdLen);
     cryptInfo.keyId = keyIdVector;
@@ -727,17 +724,32 @@ int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo
             cencInfo->subSamples[i].payLoadLen });
         cryptInfo.subSample.emplace_back(temp);
     }
-
-    DrmBuffer inDrmBuffer;
-    DrmBuffer outDrmBuffer;
-    retCode = SetDrmBuffer(inBuf, outBuf, inDrmBuffer, outDrmBuffer);
-    CHECK_AND_RETURN_RET_LOG((retCode == AVCS_ERR_OK), retCode, "SetDecryptConfig failed cause SetDrmBuffer failed");
-    retCode = AVCS_ERR_INVALID_VAL;
     CHECK_AND_RETURN_RET_LOG((decryptModuleProxy_ != nullptr), retCode,
         "SetDecryptConfig decryptModuleProxy_ nullptr");
 // LCOV_EXCL_START
     retCode = decryptModuleProxy_->DecryptMediaData(svpFlag_, cryptInfo, inDrmBuffer, outDrmBuffer);
     CHECK_AND_RETURN_RET_LOG((retCode == 0), AVCS_ERR_UNKNOWN, "CodecDrmDecrypt decrypt failed!");
+    return AVCS_ERR_OK;
+// LCOV_EXCL_STOP
+}
+#endif
+
+int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> &inBuf,
+    std::shared_ptr<AVBuffer> &outBuf)
+{
+    AVCODEC_LOGI("CodecDrmDecrypt DecryptMediaData");
+#ifdef SUPPORT_DRM
+    std::lock_guard<std::mutex> drmLock(configMutex_);
+    int32_t retCode = AVCS_ERR_INVALID_VAL;
+
+    CHECK_AND_RETURN_RET_LOG(((cencInfo != nullptr) &&
+        (cencInfo->keyIdLen <= static_cast<uint32_t>(META_DRM_KEY_ID_SIZE)) &&
+        (cencInfo->ivLen <= static_cast<uint32_t>(META_DRM_IV_SIZE)) &&
+        (cencInfo->subSampleNum <= static_cast<uint32_t>(META_DRM_MAX_SUB_SAMPLE_NUM))), retCode, "parameter err");
+
+    retCode = SetDrmBuffer(cencInfo, inBuf, outBuf);
+    CHECK_AND_RETURN_RET_LOG((retCode == AVCS_ERR_OK), retCode, "SetDecryptConfig failed cause SetDrmBuffer failed");
+// LCOV_EXCL_START
     return AVCS_ERR_OK;
 // LCOV_EXCL_STOP
 #else
