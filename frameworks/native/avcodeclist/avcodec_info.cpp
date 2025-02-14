@@ -169,12 +169,12 @@ bool VideoCaps::IsSizeSupported(int32_t width, int32_t height)
 Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
-    CHECK_AND_RETURN_RET_LOG(height > 0 && height <= MAX_PIC_SIDE, "invalid height: %{public}d", height);
+    CHECK_AND_RETURN_RET_LOG(height > 0 && height <= MAX_PIC_SIDE, Range(), "invalid height: %{public}d", height);
     UpdateParams();
     Range heightRange = data_->supportSwapWidthHeight ? data_->height.Union(data_->width) : data_->height;
     CHECK_AND_RETURN_RET_LOG(heightRange.InRange(height), Range(), "height range: [%{public}d, %{public}d]"
         ", height: %{public}d", heightRange.minVal, heightRange.maxVal, height);
-    CHECK_AND_RETURN_RET_LOG(data_->alignment.height > 0 && height % data_->alignment.height == 0, false,
+    CHECK_AND_RETURN_RET_LOG(data_->alignment.height > 0 && height % data_->alignment.height == 0, Range(),
         "can not match alignH: %{public}d, height: %{public}d", data_->alignment.height, height);
     CHECK_AND_RETURN_RET_LOG(blockHeight_ > 0, Range(), "invalid blockH");
     int32_t verticalBlockNum = DivCeil(height, blockHeight_);
@@ -195,12 +195,12 @@ Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
 Range VideoCaps::GetVideoHeightRangeForWidth(int32_t width)
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
-    CHECK_AND_RETURN_RET_LOG(width > 0 && width <= MAX_PIC_SIDE, "invalid width: %{public}d", width);
+    CHECK_AND_RETURN_RET_LOG(width > 0 && width <= MAX_PIC_SIDE, Range(), "invalid width: %{public}d", width);
     UpdateParams();
     Range widthRange = data_->supportSwapWidthHeight ? data_->width.Union(data_->height) : data_->width;
     CHECK_AND_RETURN_RET_LOG(widthRange.InRange(width), Range(), "width range: [%{public}d, %{public}d]"
         ", width: %{public}d", widthRange.minVal, widthRange.maxVal, width);
-    CHECK_AND_RETURN_RET_LOG(data_->alignment.width > 0 && width % data_->alignment.width == 0, false,
+    CHECK_AND_RETURN_RET_LOG(data_->alignment.width > 0 && width % data_->alignment.width == 0, Range(),
         "can not match alignW: %{public}d, width: %{public}d", data_->alignment.width, width);
     CHECK_AND_RETURN_RET_LOG(blockWidth_ > 0, Range(), "invalid blockW");
     int32_t horizontalBlockNum = DivCeil(width, blockWidth_);
