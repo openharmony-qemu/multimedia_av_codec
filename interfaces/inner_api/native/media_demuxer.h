@@ -144,6 +144,7 @@ public:
     uint32_t GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos);
     void SetIsEnableReselectVideoTrack(bool isEnable);
     bool IsHasMultiVideoTrack();
+    void SetApiVersion(int32_t apiVersion);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
