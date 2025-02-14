@@ -28,10 +28,10 @@ namespace MediaAVCodec {
 #ifdef USE_EFFICIENCY_MANAGER
 class SuspendStateObserverStubObj : public SuspendManager::SuspendStateObserverStub {
 public:
-    void OnActive(const std::vector<int32_t> &pidList, const int32_t uid) override;
-    void OnDoze(const int32_t uid) override;
-    void OnFrozen(const std::vector<int32_t> &pidList, const int32_t uid) override;
-    void OnFrozenUid(const int32_t uid, const uint32_t reasonId) override;
+    Errcode OnActive(const std::vector<int32_t> &pidList, const int32_t uid) override;
+    Errcode OnDoze(const int32_t uid) override;
+    Errcode OnFrozen(const std::vector<int32_t> &pidList, const int32_t uid) override;
+    Errcode OnFrozenUid(const int32_t uid, const uint32_t reasonId) override;
 };
 #endif //USE_EFFICIENCY_MANAGER
 

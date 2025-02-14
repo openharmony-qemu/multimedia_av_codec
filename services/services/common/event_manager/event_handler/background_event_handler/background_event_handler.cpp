@@ -65,30 +65,30 @@ static void NotifyActive(const std::vector<int32_t> &pidList)
     return;
 }
 
-void SuspendStateObserverStubObj::OnActive(const std::vector<int32_t> &pidList, const int32_t uid)
+Errcode SuspendStateObserverStubObj::OnActive(const std::vector<int32_t> &pidList, const int32_t uid)
 {
     AVCODEC_LOGI("OnActive, pidList size:%{public}zu, uid:%{public}d", pidList.size(), uid);
     NotifyActive(pidList);
-    return;
+    return ERR_OK;
 }
 
-void SuspendStateObserverStubObj::OnDoze(const int32_t uid)
+Errcode SuspendStateObserverStubObj::OnDoze(const int32_t uid)
 {
     AVCODEC_LOGI("OnDoze, uid:%{public}d", uid);
-    return;
+    return ERR_OK;
 }
 
-void SuspendStateObserverStubObj::OnFrozen(const std::vector<int32_t> &pidList, const int32_t uid)
+Errcode SuspendStateObserverStubObj::OnFrozen(const std::vector<int32_t> &pidList, const int32_t uid)
 {
     AVCODEC_LOGI("OnFrozen, pidList size:%{public}zu, uid:%{public}d", pidList.size(), uid);
     NotifyFrozen(pidList);
-    return;
+    return ERR_OK;
 }
 
-void SuspendStateObserverStubObj::OnFrozenUid(const int32_t uid, const uint32_t reasonId)
+Errcode SuspendStateObserverStubObj::OnFrozenUid(const int32_t uid, const uint32_t reasonId)
 {
     AVCODEC_LOGI("OnFrozenUid, uid:%{public}d, reasonId:%{public}u", uid, reasonId);
-    return;
+    return ERR_OK;
 }
 #endif //USE_EFFICIENCY_MANAGER
 
@@ -100,7 +100,7 @@ void BackGroundEventHandler::RegisterSuspendObserver()
     bool recycleMemory = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
     AVCODEC_LOGI("recycleMemory is %{public}d", recycleMemory);
     if (recycleMemory) {
-        if (suspendObservers_ != nullptr){
+        if (suspendObservers_ == nullptr) {
             suspendObservers_ = sptr<SuspendStateObserverStubObj>(new SuspendStateObserverStubObj());
             CHECK_AND_RETURN_LOG(suspendObservers_ != nullptr, "Create Suspend Observer failed");
         }

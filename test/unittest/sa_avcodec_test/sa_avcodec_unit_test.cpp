@@ -166,6 +166,7 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStart_001, TestSize.Level1)
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
     EXPECT_CALL(*saMock_, AddSystemAbilityListener(MEMORY_MANAGER_SA_ID)).Times(1);
+    EXPECT_CALL(*saMock_, AddSystemAbilityListener(SUSPEND_MANAGER_SYSTEM_ABILITY_ID)).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
 
@@ -186,6 +187,7 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStart_002, TestSize.Level1)
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
     EXPECT_CALL(*saMock_, AddSystemAbilityListener(MEMORY_MANAGER_SA_ID)).Times(1);
+    EXPECT_CALL(*saMock_, AddSystemAbilityListener(SUSPEND_MANAGER_SYSTEM_ABILITY_ID)).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
 
