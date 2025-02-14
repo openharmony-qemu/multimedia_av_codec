@@ -14,7 +14,6 @@
  */
 
 #include "codec_utils.h"
-#include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "media_description.h"
 namespace OHOS {
