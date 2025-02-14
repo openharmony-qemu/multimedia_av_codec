@@ -53,6 +53,12 @@ struct RgbImageData {
     int32_t bytesPerPixel = 0;
 };
 
+struct YuvImageData {
+    uint8_t *data = nullptr;
+    int32_t stride = 0;
+    int32_t uvOffset = 0;
+};
+
 #if defined(ARMV8)
 int32_t ConvertRgbToNv21Neon(uint8_t *dstData, int32_t width, int32_t height,
     int32_t bufferSize, RgbImageData &rgbData);
@@ -60,6 +66,10 @@ int32_t ConvertRgbToNv21Neon(uint8_t *dstData, int32_t width, int32_t height,
 
 int32_t ConvertRgbToNv21(uint8_t *dstData, int32_t width, int32_t height,
     int32_t bufferSize, RgbImageData &rgbData);
+
+int32_t ConvertNv12ToNv21(uint8_t *dstData, int32_t width, int32_t height,
+    int32_t bufferSize, YuvImageData &yuvData);
+
 #ifdef __cplusplus
 };
 #endif
