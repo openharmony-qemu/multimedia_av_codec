@@ -51,7 +51,6 @@ ohos_unittest("avsource_capi_unit_test") {
     "$av_codec_root_dir/test/unittest/format_test/capi",
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
-    "//third_party/ffmpeg",
   ]
 
   cflags = avsource_unittest_cflags
@@ -105,7 +104,6 @@ ohos_unittest("avsource_inner_unit_test") {
     "$av_codec_root_dir/test/unittest/format_test/inner",
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
-    "//third_party/ffmpeg",
   ]
 
   if (target_cpu == "arm64" || is_emulator) {
