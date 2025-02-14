@@ -1179,7 +1179,6 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_001, TestSize.Level1)
 {
     CreateHCodecByMime();
     server_->isModeConfirmed_ = true;
-    server_->isSurfaceMode_ = true;
 
     std::vector<CodecServer::CodecStatus> testList = {
         CodecServer::CodecStatus::RUNNING,
@@ -1203,7 +1202,6 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_002, TestSize.Level1)
 {
     CreateHCodecByMime();
     server_->isModeConfirmed_ = true;
-    server_->isSurfaceMode_ = false;
 
     std::vector<CodecServer::CodecStatus> testList = {
         CodecServer::CodecStatus::RUNNING,
@@ -1227,7 +1225,6 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Invalid_Test_001, TestSize.Level1
 {
     CreateHCodecByMime();
     server_->isModeConfirmed_ = true;
-    server_->isSurfaceMode_ = true;
 
     std::vector<CodecServer::CodecStatus> testList = {
         CodecServer::CodecStatus::INITIALIZED,
@@ -1251,21 +1248,6 @@ HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_001, TestSize.Level1)
 {
     CreateHCodecByMime();
     server_->isModeConfirmed_ = true;
-    server_->isSurfaceMode_ = true;
-    server_->isFreezedFlag_ = true;
-    server_->NotifyForeGround();
-    EXPECT_FALSE(server_->isFreezedFlag_);
-}
-
-/**
- * @tc.name: NotifyForeGround_Valid_Test_002
- * @tc.desc: NotifyForeGround valid progress - buffer mode
- */
-HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_002, TestSize.Level1)
-{
-    CreateHCodecByMime();
-    server_->isModeConfirmed_ = true;
-    server_->isSurfaceMode_ = false;
     server_->isFreezedFlag_ = true;
     server_->NotifyForeGround();
     EXPECT_FALSE(server_->isFreezedFlag_);

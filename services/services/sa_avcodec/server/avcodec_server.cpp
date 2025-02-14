@@ -62,6 +62,7 @@ void AVCodecServer::OnStart()
     IPCSkeleton::SetMaxWorkThreadNum(SERVER_MAX_IPC_THREAD_NUM);
     AddSystemAbilityListener(MEMORY_MANAGER_SA_ID);
     ServiceStartEventWrite(useTime, "AV_CODEC service");
+    AddSystemAbilityListener(SUSPEND_MANAGER_SYSTEM_ABILITY_ID);
     BackGroundEventHandler::GetInstance().RegisterSuspendObserver();
 }
 
@@ -90,6 +91,9 @@ void AVCodecServer::OnAddSystemAbility(int32_t systemAbilityId, const std::strin
     if (systemAbilityId == MEMORY_MANAGER_SA_ID) {
         AVCodecServerManager::GetInstance().SetMemMgrStatus(true);
         AVCodecServerManager::GetInstance().NotifyProcessStatus(1);
+    }
+    if (systemAbilityId == SUSPEND_MANAGER_SYSTEM_ABILITY_ID) {
+        BackGroundEventHandler::GetInstance().RegisterSuspendObserver();
     }
 }
 
