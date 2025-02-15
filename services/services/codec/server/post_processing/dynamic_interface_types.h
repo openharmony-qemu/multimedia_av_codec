@@ -16,7 +16,7 @@
 #ifndef POST_PROCESSING_DYNAMIC_INTERFACE_TYPES_H
 #define POST_PROCESSING_DYNAMIC_INTERFACE_TYPES_H
 
-#include "utils.h"
+#include "post_processing_utils.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

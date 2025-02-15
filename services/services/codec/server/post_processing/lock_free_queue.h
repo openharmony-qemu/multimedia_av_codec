@@ -21,7 +21,7 @@
 #include <mutex>
 #include <memory>
 #include <type_traits>
-#include "utils.h"
+#include "post_processing_utils.h"
 
 
 namespace OHOS {

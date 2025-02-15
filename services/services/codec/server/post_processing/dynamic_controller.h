@@ -18,7 +18,7 @@
 
 #include "controller.h"
 #include "dynamic_interface.h"
-#include "utils.h"
+#include "post_processing_utils.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

@@ -19,7 +19,7 @@
 #include <array>
 #include <type_traits>
 #include "avcodec_errors.h"
-#include "utils.h"
+#include "post_processing_utils.h"
 #include "dynamic_interface_types.h"
 
 namespace OHOS {
