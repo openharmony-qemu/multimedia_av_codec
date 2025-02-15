@@ -102,7 +102,7 @@ private:
     std::weak_ptr<AudioDecoderFilter> audioDecoderFilter_;
 };
 
-AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type, IS_FILTER_ASYNC)
+AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type)
 {
     filterType_ = type;
     MEDIA_LOG_I_SHORT("audio decoder filter create");
@@ -276,7 +276,7 @@ Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
     Status ret = decoder_->ChangePlugin(mime, false, meta);
     FALSE_RETURN_V_MSG(ret == Status::OK, ret, "decoder_ ChangePlugin failed");
 
-    return SetInputBufferQueueConsumerListener();
+    return Status::OK;
 }
 
 FilterType AudioDecoderFilter::GetFilterType()
@@ -400,8 +400,6 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     FALSE_RETURN_MSG(decoder_ != nullptr, "decoder_ is nullptr");
     decoder_->SetOutputBufferQueue(outputBufferQueue);
     decoder_->Prepare();
-
-    FALSE_RETURN_MSG(SetInputBufferQueueConsumerListener() == Status::OK, "SetInputBufferQueueConsumerListener failed");
 
     sptr<AVBufferQueueProducer> inputProducer = decoder_->GetInputBufferQueue();
     FALSE_RETURN(inputProducer != nullptr && onLinkedResultCallback_ != nullptr);
