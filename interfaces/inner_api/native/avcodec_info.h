@@ -111,6 +111,13 @@ struct Range {
     {
         return (value >= minVal && value <= maxVal);
     }
+
+    Range Union(const Range &range)
+    {
+        int32_t minCmp = this->minVal < range.minVal ? this->minVal : range.minVal;
+        int32_t maxCmp = this->maxVal > range.maxVal ? this->maxVal : range.maxVal;
+        return this->Create(minCmp, maxCmp);
+    }
 };
 
 /**
@@ -476,6 +483,7 @@ private:
     Range widthRange_;
     Range heightRange_;
     Range frameRateRange_;
+    bool isUpdateParam_ = false;
     void InitParams();
     void UpdateParams();
     void LoadLevelParams();
