@@ -309,7 +309,7 @@ int32_t FCodec::Configure(const Format &format)
             format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, val64);
         } else if (it.first == MediaDescriptionKey::MD_KEY_FRAME_RATE) {
             double val = 0;
-            CHECK_AND_RETURN_RET_LOG(format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, val) && val64 > 0.0f,
+            CHECK_AND_RETURN_RET_LOG(format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, val) && val > 0.0f,
                                      AVCS_ERR_INVALID_VAL, "Cannot get frame rate!");
             format_.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, val);
         } else if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
