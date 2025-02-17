@@ -404,11 +404,11 @@ void AVCodecAudioCodecImpl::ClearCache()
 
 void AVCodecAudioCodecImpl::ReturnInputBuffer()
 {
-    for (const auto &inputMap : inputBufferObjMap_) {
-        mediaCodecProducer_->PushBuffer(inputMap.second, false);
-    }
     {
         std::unique_lock lock(inputMutex_);
+        for (const auto &inputMap : inputBufferObjMap_) {
+            mediaCodecProducer_->PushBuffer(inputMap.second, false);
+        }
         inputBufferObjMap_.clear();
     }
     while (!inputIndexQueue.empty()) {
