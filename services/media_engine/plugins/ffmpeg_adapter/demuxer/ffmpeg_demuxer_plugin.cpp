@@ -1082,6 +1082,7 @@ bool FFmpegDemuxerPlugin::HasCodecParameters()
     int32_t param;
     for (uint32_t i = 0; i < formatContext_->nb_streams; i++) {
         auto avStream = formatContext_->streams[i];
+        FALSE_RETURN_V_MSG_E(static_cast<size_t>(i) < mediaInfo_.tracks.size(), false, "mediaInfo is error");
         Meta &format = mediaInfo_.tracks[i];
         bool flag = !HaveValidParser(avStream->codecpar->codec_id) ||
             (HaveValidParser(avStream->codecpar->codec_id) && streamParser_);
