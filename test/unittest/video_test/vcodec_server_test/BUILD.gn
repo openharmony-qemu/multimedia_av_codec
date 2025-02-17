@@ -62,7 +62,6 @@ codec_server_coverage_include_dirs = [
   "$av_codec_root_dir/services/services/common/event_manager/",
   "$av_codec_root_dir/services/services/codec/server/post_processing",
   "$av_codec_root_dir/services/utils/include",
-  "$av_codec_root_dir/services/services/common/",
 
   # av_codec_engine_codeclist_mock
   "$av_codec_root_dir/services/engine/codeclist",
