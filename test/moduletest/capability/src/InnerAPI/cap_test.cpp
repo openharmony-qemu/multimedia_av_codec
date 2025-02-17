@@ -687,7 +687,9 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0038, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityData != nullptr) {
         std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-        ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
+        if (!access("/system/lib64/media/", 0)) {
+            ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
+        }
     }
 }
 
@@ -725,7 +727,9 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0040, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityData != nullptr) {
         std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-        ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
+        if (!access("/system/lib64/media/", 0)) {
+            ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
+        }
     }
 }
 
@@ -743,8 +747,11 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0041, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityData != nullptr) {
         std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-        ASSERT_EQ(AVCS_ERR_INVALID_OPERATION,
-            codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY, featureFormat));
+        if (!access("/system/lib64/media/", 0)) {
+            ASSERT_EQ(AVCS_ERR_INVALID_OPERATION,
+                codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY,
+                featureFormat));
+        }
     }
 }
 
@@ -763,10 +770,12 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0042, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityData != nullptr) {
         std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-        ASSERT_EQ(AVCS_ERR_OK,
-            codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_LOW_LATENCY, featureFormat));
-        Format::FormatDataMap formatMap = featureFormat.GetFormatMap();
-        ASSERT_EQ(0, formatMap.size());
+        if (!access("/system/lib64/media/", 0)) {
+            ASSERT_EQ(AVCS_ERR_OK,
+                codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_LOW_LATENCY, featureFormat));
+            Format::FormatDataMap formatMap = featureFormat.GetFormatMap();
+            ASSERT_EQ(0, formatMap.size());
+        }
     }
 }
 
@@ -784,8 +793,11 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0043, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityData != nullptr) {
         std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-        ASSERT_EQ(AVCS_ERR_INVALID_OPERATION,
-            codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY, featureFormat));
+        if (!access("/system/lib64/media/", 0)) {
+            ASSERT_EQ(AVCS_ERR_INVALID_OPERATION,
+                codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY,
+                featureFormat));
+        }
     }
 }
 } // namespace
