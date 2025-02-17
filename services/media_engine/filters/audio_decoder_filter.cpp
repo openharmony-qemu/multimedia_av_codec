@@ -428,6 +428,14 @@ Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
     return Status::OK;
 }
 
+void AudioDecoderFilter::OnInterrupted(bool isInterruptNeeded)
+{
+    FALSE_RETURN_MSG(decoder_ != nullptr, "audioDecoder is nullptr");
+    if (isInterruptNeeded) {
+        decoder_->Flush();
+    }
+}
+
 Status AudioDecoderFilter::SetInputBufferQueueConsumerListener()
 {
     sptr<IConsumerListener> consumerListener = new (std::nothrow) AudioDecInputPortConsumerListener(shared_from_this());

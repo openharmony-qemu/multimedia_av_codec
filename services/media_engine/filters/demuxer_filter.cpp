@@ -433,6 +433,7 @@ Status DemuxerFilter::ResumeForSeek()
         if (filter != nullptr) {
             MEDIA_LOG_I_SHORT("filter resume");
             filter->Resume();
+            filter->WaitAllState(FilterState::RUNNING);
         }
     }
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
