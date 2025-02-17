@@ -114,6 +114,7 @@ public:
     int32_t GetCurrentVideoTrackId();
     void SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart);
     void SetIsEnableReselectVideoTrack(bool isEnable);
+    void SetApiVersion(int32_t apiVersion);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -159,6 +160,7 @@ private:
     std::string audioMime_;
     bool isNotPrepareBeforeStart_ {true};
     bool isEnableReselectVideoTrack_ {false};
+    int32_t apiVersion_ {0};
 };
 } // namespace Pipeline
 } // namespace Media

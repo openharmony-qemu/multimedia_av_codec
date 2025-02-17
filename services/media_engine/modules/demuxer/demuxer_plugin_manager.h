@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -133,6 +133,7 @@ public:
     bool CheckTrackIsActive(int32_t trackId);
     int32_t AddExternalSubtitle();
     Status localSubtitleSeekTo(int64_t seekTime);
+    void SetApiVersion(int32_t apiVersion);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
@@ -158,6 +159,7 @@ private:
     Plugins::MediaInfo curMediaInfo_;
     bool isDash_ = false;
     bool needResetEosStatus_ = false;
+    int32_t apiVersion_ {0};
 };
 } // namespace Media
 } // namespace OHOS
