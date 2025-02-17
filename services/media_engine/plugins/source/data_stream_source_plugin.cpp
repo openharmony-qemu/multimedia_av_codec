@@ -136,8 +136,9 @@ void DataStreamSourcePlugin::ResetPool()
 void DataStreamSourcePlugin::WaitForRetry(uint32_t time)
 {
     std::unique_lock<std::mutex> lock(mutex_);
-    readCond_.wait_for(lock, std::chrono::milliseconds(time), [&]
-                       { return isInterrupted_.load() || isExitRead_.load(); });
+    readCond_.wait_for(lock, std::chrono::milliseconds(time), [&] { 
+        return isInterrupted_.load() || isExitRead_.load(); 
+    });
 }
 
 Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset, size_t expectedLen)
