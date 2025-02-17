@@ -715,6 +715,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
     bool continueRead = true;
     Status ret = Status::OK;
     while (continueRead) {
+        FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE);
         if (pkt == nullptr) {
             pkt = av_packet_alloc();
             FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
@@ -1300,6 +1301,7 @@ Status FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
     AVPacket *pkt = nullptr;
     Status ret = Status::OK;
     while (1) {
+        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, " GetVideoFirstKeyFrame interrupt");
         if (pkt == nullptr) {
             pkt = av_packet_alloc();
             FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
@@ -1487,6 +1489,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ret = ReadPacketToCacheQueue(trackId);
     }
     while (!cacheQueue_.HasCache(trackId)) {
+        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, " ReadSample interrupt");
         ret = ReadPacketToCacheQueue(trackId);
         if (ret == Status::END_OF_STREAM) {
             MEDIA_LOG_D("Read to end");
@@ -1538,6 +1541,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, ret, "Read from ffmpeg faild");
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, ret, "Read from ffmpeg faild, retry");
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, ret, "Cache size out of limit");
+        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, " GetNextSampleSize interrupt");
     }
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_UNKNOWN, "Cache sample is nullptr");
@@ -1825,6 +1829,12 @@ void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
 {
     setLimitByUser = true;
     cachelimitSize_ = limitSize;
+}
+
+void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
+{
+    MEDIA_LOG_I("SetInterruptState %{public}d", isInterruptNeeded);
+    isInterruptNeeded_ = isInterruptNeeded;
 }
 
 namespace { // plugin set

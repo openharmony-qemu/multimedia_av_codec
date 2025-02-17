@@ -67,10 +67,20 @@ SubtitleSinkFilter::~SubtitleSinkFilter()
 void SubtitleSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
+    Init(receiver, callback, nullptr);
+}
+
+void SubtitleSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
+    const std::shared_ptr<FilterCallback> &callback, const std::shared_ptr<InterruptMonitor>& monitor)
+{
     Filter::Init(receiver, callback);
     eventReceiver_ = receiver;
     filterCallback_ = callback;
+    interruptMonitor_ = monitor;
     MEDIA_LOG_I("subtitle sink Init called");
+    if (interruptMonitor_) {
+        interruptMonitor_->RegisterListener(subtitleSink_);
+    }
 }
 
 Status SubtitleSinkFilter::DoInitAfterLink()

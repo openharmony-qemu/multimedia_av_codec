@@ -69,12 +69,22 @@ AudioSinkFilter::~AudioSinkFilter()
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
-                           const std::shared_ptr<FilterCallback> &callback)
+    const std::shared_ptr<FilterCallback> &callback)
+{
+    Init(receiver, callback, nullptr);
+}
+ 
+void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
+    const std::shared_ptr<FilterCallback> &callback, const std::shared_ptr<InterruptMonitor>& monitor)
 {
     Filter::Init(receiver, callback);
     eventReceiver_ = receiver;
     filterCallback_ = callback;
     MEDIA_LOG_D("audio sink Init called");
+    interruptMonitor_ = monitor;
+    if (interruptMonitor_) {
+        interruptMonitor_->RegisterListener(audioSink_);
+    }
 }
 
 Status AudioSinkFilter::DoInitAfterLink()

@@ -80,6 +80,7 @@ private:
     void DeleteCacheBuffer(char* buffer, size_t bufferSize);
     void CheckReadTime();
     bool IsValidTime(int64_t curTime, int64_t lastTime);
+    void WaitForInterrupt(int32_t waitTimeMS);
     
     int32_t fd_ {-1};
     int64_t offset_ {0};
@@ -92,6 +93,7 @@ private:
     std::atomic<bool> isInterrupted_ {false};
     std::atomic<bool> isReadBlocking_ {true};
     std::atomic<bool> inSeek_ {false};
+    std::condition_variable bufferCond_;
     std::shared_ptr<Task> downloadTask_;
     std::shared_mutex mutex_;
     std::mutex interruptMutex_;

@@ -843,5 +843,14 @@ Status AudioSink::SetSeekTime(int64_t seekTime)
     seekTimeUs_ = seekTime;
     return Status::OK;
 }
+
+void AudioSink::OnInterrupted(bool isInterruptNeeded)
+{
+    MEDIA_LOG_D("OnInterrupted %{public}d", isInterruptNeeded);
+    isInterruptNeeded_ = isInterruptNeeded;
+    if (plugin_ != nullptr) {
+        plugin_->SetInterruptState(isInterruptNeeded);
+    }
+}
 } // namespace MEDIA
 } // namespace OHOS

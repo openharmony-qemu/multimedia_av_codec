@@ -31,7 +31,10 @@ public:
     explicit AudioSinkFilter(const std::string& name, FilterType filterType = FilterType::FILTERTYPE_ASINK);
     ~AudioSinkFilter() override;
 
-    void Init(const std::shared_ptr<EventReceiver>& receiver, const std::shared_ptr<FilterCallback>& callback) override;
+    virtual void Init(const std::shared_ptr<EventReceiver>& receiver, const std::shared_ptr<FilterCallback>& callback) override;
+ 
+    virtual void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback,
+            const std::shared_ptr<InterruptMonitor>& monitor) override;
 
     Status DoInitAfterLink() override;
 

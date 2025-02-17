@@ -85,6 +85,14 @@ void MediaSynchronousSink::NotifyAllPrerolled()
     prerollCond_.NotifyAll();
 }
 
+void MediaSynchronousSink::OnInterrupted(bool isInterruptNeeded)
+{
+    MEDIA_LOG_I("MediaSynchronousSink onInterrupted %{public}d", isInterruptNeeded);
+    OHOS::Media::AutoLock lock(prerollMutex_);
+    isInterruptNeeded_ = isInterruptNeeded;
+    prerollCond_.NotifyAll();
+}
+
 void MediaSynchronousSink::UpdateMediaTimeRange(const std::shared_ptr<Meta>& meta)
 {
     FALSE_RETURN_MSG(meta != nullptr, "meta is null!");

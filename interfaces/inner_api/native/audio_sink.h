@@ -63,6 +63,8 @@ public:
     Status SetIsTransitent(bool isTransitent);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status SetMuted(bool isMuted);
+    virtual void OnInterrupted(bool isInterruptNeeded) override;
+
     float GetMaxAmplitude();
     int32_t SetMaxAmplitudeCbStatus(bool status);
     Status SetPerfRecEnabled(bool isPerfRecEnabled);

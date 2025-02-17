@@ -79,7 +79,7 @@ public:
         const uint32_t index, uint64_t &relativePresentationTimeUs) override;
     void SetCacheLimit(uint32_t limitSize) override;
     bool GetProbeSize(int32_t &offset, int32_t &size) override;
-
+    void SetInterruptState(bool isInterruptNeeded) override;
 private:
     enum DumpMode : unsigned long {
         DUMP_NONE = 0,
@@ -214,6 +214,7 @@ private:
     uint32_t cachelimitSize_ = 0;
     bool outOfLimit_ = false;
     bool setLimitByUser = false;
+    std::atomic<bool> isInterruptNeeded_{false};
 
     // dfx
     struct TrackDfxInfo {

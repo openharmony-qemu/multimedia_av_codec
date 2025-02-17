@@ -47,7 +47,7 @@ private:
     void InitPool();
     void HandleBufferingStart();
     void HandleBufferingEnd();
-    void SleepForRetry();
+    uint32_t GetRetryTime();
     std::shared_ptr<AVSharedMemory> GetMemory();
     void ResetPool();
     Plugins::Seekable seekable_ {Plugins::Seekable::INVALID};
@@ -56,6 +56,8 @@ private:
     std::atomic<bool> isBufferingStart{false};
     std::atomic<bool> isInterrupted_ {false};
     std::atomic<bool> isExitRead_ {false};
+    std::mutex mutex_;
+    std::condition_variable readCond_;
     Plugins::Callback* callback_ {nullptr};
     int64_t size_ {0};
     uint64_t offset_ {0};

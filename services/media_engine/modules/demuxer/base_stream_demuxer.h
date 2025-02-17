@@ -112,6 +112,7 @@ public:
     void SetIsIgnoreParse(bool state);
     bool GetIsIgnoreParse();
     Plugins::Seekable GetSeekable();
+    virtual void SetInterruptState(bool isInterruptNeeded);
     virtual std::string SnifferMediaType(int32_t streamID);
     bool IsDash() const;
     void SetIsDash(bool flag);
@@ -129,6 +130,7 @@ public:
     bool GetIsDataSrcNoSeek();
 protected:
     std::shared_ptr<Source> source_;
+    std::shared_ptr<TypeFinder> typeFinder;
     std::function<Status(int32_t, uint64_t, size_t)> checkRange_;
     std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;

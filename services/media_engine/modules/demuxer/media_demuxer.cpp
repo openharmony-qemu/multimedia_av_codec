@@ -766,6 +766,7 @@ void MediaDemuxer::OnInterrupted(bool isInterruptNeeded)
     }
     if (demuxerPluginManager_ != nullptr) {
         demuxerPluginManager_->NotifyInitialBufferingEnd(false);
+        demuxerPluginManager_->SetInterruptState(isInterruptNeeded);
     }
 }
 
@@ -1954,7 +1955,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, ret,
         "Get size failed for track " PUBLIC_LOG_U32 ", retry", trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, ret, "Get size failed for track " PUBLIC_LOG_U32, trackId);
-
+    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WRONG_STATE, ret, " Get size interrupt");
     if (HandleDashChangeStream(trackId)) {
         MEDIA_LOG_I("HandleDashChangeStream success");
         return Status::OK;

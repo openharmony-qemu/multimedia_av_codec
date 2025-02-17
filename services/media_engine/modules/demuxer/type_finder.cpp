@@ -33,6 +33,9 @@ namespace OHOS {
 namespace Media {
 using namespace Plugins;
 namespace {
+
+const int32_t WAIT_TIME = 5;
+
 std::string GetUriSuffix(const std::string& uri)
 {
     std::string suffix {""};
@@ -141,10 +144,14 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
 
     const int maxTryTimes = 3;
     int i = 0;
-    while ((checkRange_(streamID_, offset, expectedLen) != Status::OK) && (i < maxTryTimes)) {
+    while ((checkRange_(streamID_, offset, expectedLen) != Status::OK) && (i < maxTryTimes) &&
+           !isInterruptNeeded_.load()) {
         i++;
-        OSAL::SleepFor(5); // 5 ms
+        std::unique_lock<std::mutex> lock(mutex_);
+        readCond_.wait_for(lock, std::chrono::milliseconds(WAIT_TIME), [&] { return isInterruptNeeded_.load(); });
     }
+    FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE,
+        "ReadAt interrupt " PUBLIC_LOG_D32 " " PUBLIC_LOG_U64 " " PUBLIC_LOG_ZU, streamID_, offset, expectedLen);
     if (i == maxTryTimes) {
         MEDIA_LOG_E("ReadAt failed try 5 times");
         return Status::ERROR_NOT_ENOUGH_DATA;
@@ -217,5 +224,12 @@ int32_t TypeFinder::GetStreamID()
     return streamID_;
 }
 
+void TypeFinder::SetInterruptState(bool isInterruptNeeded)
+{
+    MEDIA_LOG_I("TypeFinder OnInterrupted %{public}d", isInterruptNeeded);
+    std::unique_lock<std::mutex> lock(mutex_);
+    isInterruptNeeded_ = isInterruptNeeded;
+    readCond_.notify_all();
+}
 } // namespace Media
 } // namespace OHOS

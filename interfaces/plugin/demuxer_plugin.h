@@ -161,6 +161,8 @@ struct DemuxerPlugin : public PluginBase {
         return Status::OK;
     }
 
+    virtual void SetInterruptState(bool isInterruptNeeded) {}
+
     virtual Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index) = 0;
 

@@ -38,6 +38,8 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_
 using namespace OHOS::Media::Plugins;
 constexpr int TUPLE_SECOND_ITEM_INDEX = 2;
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
+constexpr int32_t WRITE_WAIT_TIME = 5;
+ 
 
 const std::pair<AudioInterruptMode, OHOS::AudioStandard::InterruptMode> g_auInterruptMap[] = {
     {AudioInterruptMode::SHARE_MODE, OHOS::AudioStandard::InterruptMode::SHARE_MODE},
@@ -907,7 +909,13 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
             }
             break;
         } else if (static_cast<size_t>(ret) < destLength) {
-            OHOS::Media::SleepInJob(5); // 5ms
+            std::unique_lock<std::mutex> lock(mutex_);
+            writeCond_.wait_for(
+                lock, std::chrono::milliseconds(WRITE_WAIT_TIME), [&] { return isInterruptNeeded_.load(); });
+            if (isInterruptNeeded_.load()) {
+                shouldDrop = true;
+                break;
+            }
         }
         if (static_cast<size_t>(ret) > destLength) {
             MEDIA_LOG_W("audioRenderer_ return ret " PUBLIC_LOG_D32 "> destLength " PUBLIC_LOG_U64,
@@ -936,9 +944,12 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
     auto destBuffer = const_cast<uint8_t *>(srcBuffer);
     auto srcLength = mem->GetSize();
     size_t destLength = static_cast<size_t>(srcLength);
-    while (isForcePaused_ && seekable_ == Seekable::SEEKABLE) {
-        OHOS::Media::SleepInJob(5); // 5ms
+    while (isForcePaused_ && seekable_ == Seekable::SEEKABLE && !isInterruptNeeded_.load()) {
+        std::unique_lock<std::mutex> lock(mutex_);
+        writeCond_.wait_for(
+            lock, std::chrono::milliseconds(WRITE_WAIT_TIME), [&] { return isInterruptNeeded_.load(); });
     }
+    FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::OK, "Write isInterrupt");
     if (audioRenderer_ == nullptr) {
         DrainCacheData(false);
         return Status::ERROR_NULL_POINTER;
@@ -1115,6 +1126,15 @@ int64_t AudioServerSinkPlugin::GetWriteDurationMs()
     writeDuration_ = 0;
     return writeDuration;
 }
+
+void AudioServerSinkPlugin::SetInterruptState(bool isInterruptNeeded)
+{
+    MEDIA_LOG_D("onInterrupted %{public}d", isInterruptNeeded);
+    std::unique_lock<std::mutex> lock(mutex_);
+    isInterruptNeeded_ = isInterruptNeeded;
+    writeCond_.notify_all();
+}
+
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS

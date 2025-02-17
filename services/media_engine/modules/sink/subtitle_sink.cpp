@@ -350,6 +350,15 @@ void SubtitleSink::NotifyRender(SubtitleInfo &subtitleInfo)
     playerEventReceiver_->OnEvent(event);
 }
 
+void SubtitleSink::OnInterrupted(bool isInterruptNeeded)
+{
+    MEDIA_LOG_I("onInterrupted %{public}d", isInterruptNeeded);
+    std::unique_lock<std::mutex> lock(mutex_);
+    isInterruptNeeded_ = isInterruptNeeded;
+    isThreadExit_ = true;
+    updateCond_.notify_all();
+}
+
 void SubtitleSink::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
 {
     FALSE_RETURN(receiver != nullptr);

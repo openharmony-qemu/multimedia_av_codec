@@ -77,9 +77,10 @@ std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
 {
     MediaAVCodec::AVCodecTrace trace("BaseStreamDemuxer::SnifferMediaType");
     MEDIA_LOG_I_SHORT("BaseStreamDemuxer::SnifferMediaType called");
-    std::shared_ptr<TypeFinder> typeFinder = std::make_shared<TypeFinder>();
+    typeFinder = std::make_shared<TypeFinder>();
     typeFinder->Init(uri_, mediaDataSize_, checkRange_, peekRange_, streamID);
     std::string type = typeFinder->FindMediaType();
+    typeFinder = nullptr;
     MEDIA_LOG_D_SHORT("SnifferMediaType result type: " PUBLIC_LOG_S, type.c_str());
     return type;
 }
@@ -102,6 +103,7 @@ void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_D("BaseStreamDemuxer onInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
+    typeFinder->SetInterruptState(isInterruptNeeded);
 }
 
 void BaseStreamDemuxer::SetIsIgnoreParse(bool state)

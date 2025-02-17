@@ -932,6 +932,19 @@ int32_t DemuxerPluginManager::AddExternalSubtitle()
     return INVALID_STREAM_OR_TRACK_ID;
 }
 
+void DemuxerPluginManager::SetInterruptState(bool isInterruptNeeded)
+{
+    if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+        streamInfoMap_[curVideoStreamID_].plugin->SetInterruptState(isInterruptNeeded);
+    }
+    if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
+        streamInfoMap_[curAudioStreamID_].plugin->SetInterruptState(isInterruptNeeded);
+    }
+    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+        streamInfoMap_[curSubTitleStreamID_].plugin->SetInterruptState(isInterruptNeeded);
+    }
+}
+
 void DemuxerPluginManager::NotifyInitialBufferingEnd(bool isInitialBufferingSucc)
 {
     MEDIA_LOG_I("NotifyInitialBufferingEnd, bufferingEndCond NotifyAll.");
