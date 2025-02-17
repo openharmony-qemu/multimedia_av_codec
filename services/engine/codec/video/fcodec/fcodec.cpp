@@ -1347,7 +1347,8 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get old surface buffer error!");
         int32_t err = newSurface->AttachBufferToQueue(surfaceBuffer);
         CHECK_AND_RETURN_RET_LOG(err == 0, AVCS_ERR_UNKNOWN,
-                                 "Surface %{public}llu, AttachBufferToQueue(seq=%{public}u) failed, GSError=%{public}d",
+                                 "surface %{public}" PRIu64
+                                 ", AttachBufferToQueue(seq=%{public}u) failed, GSError=%{public}d",
                                  newId, surfaceBuffer->GetSeqNum(), err);
     }
     int32_t videoRotation = 0;
