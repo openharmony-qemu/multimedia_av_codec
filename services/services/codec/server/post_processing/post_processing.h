@@ -30,7 +30,7 @@
 #include "controller.h"
 #include "dynamic_controller.h"
 #include "state_machine.h"
-#include "utils.h"
+#include "post_processing_utils.h"
 #include "post_processing_callback.h"
 
 namespace OHOS {
