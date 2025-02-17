@@ -160,6 +160,43 @@ std::vector<TagType> g_supportSourceFormat = {
     Tag::MEDIA_CREATION_TIME
 };
 
+std::vector<std::string> SplitByChar(const char* str, const char* pattern)
+{
+    std::vector<std::string> resultVec;
+    char* tmpStr = strtok(const_cast<char*>(str), pattern);
+    while (tmpStr != nullptr) {
+        resultVec.push_back(std::string(tmpStr));
+        tmpStr = strtok(nullptr,  pattern);
+    }
+    MEDIA_LOG_D("Split [" PUBLIC_LOG_S "] by [" PUBLIC_LOG_S "], get " PUBLIC_LOG_ZU " string",
+        str, pattern, resultVec.size());
+    delete[] tmpStr;
+    return resultVec;
+}
+
+std::string RemoveDuplication(const std::string origin)
+{
+    FALSE_RETURN_V_NOLOG(origin.find(";") != std::string::npos, origin);
+    std::vector<std::string> subStrings = SplitByChar(origin.c_str(), ";");
+    FALSE_RETURN_V_NOLOG(subStrings.size() > 1, origin);
+
+    std::string outString;
+    std::vector<std::string> uniqueSubStrings;
+    for (auto str : subStrings) {
+        if (std::count(uniqueSubStrings.begin(), uniqueSubStrings.end(), str) == 0) {
+            uniqueSubStrings.push_back(str);
+        }
+    }
+    for (size_t idx = 0; idx < uniqueSubStrings.size(); idx++) {
+        outString += uniqueSubStrings[idx];
+        if (idx < uniqueSubStrings.size()) {
+            outString += ";";
+        }
+    }
+    MEDIA_LOG_D("[%{public}s]->[%{public}s]", origin.c_str(), outString.c_str());
+    return outString;
+}
+
 std::string ToLower(const std::string& str)
 {
     std::string res;
@@ -996,8 +1033,10 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Met
         }
         MEDIA_LOG_D("SupportMeta:" PUBLIC_LOG_S, valPtr->key);
         format.SetData(g_formatToString[tempKey], std::string(valPtr->value));
-        if (!IsUTF8(valPtr->value) && IsGBK(valPtr->value)) {
-            std::string resultStr = ConvertGBKToUTF8(std::string(valPtr->value));
+        // ffmpeg use ';' to contact all single value in vorbis-comment, need to remove duplicates
+        std::string value = RemoveDuplication(std::string(valPtr->value));
+        if (!IsUTF8(value.c_str()) && IsGBK(value.c_str())) {
+            std::string resultStr = ConvertGBKToUTF8(value);
             if (resultStr.length() > 0) {
                 format.SetData(g_formatToString[tempKey], resultStr);
             } else {
