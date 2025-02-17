@@ -461,7 +461,7 @@ void StreamDemuxer::SetInterruptState(bool isInterruptNeeded)
     std::unique_lock<std::mutex> lock(mutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     readCond_.notify_all();
-    if(typeFinder != nullptr){
+    if (typeFinder != nullptr) {
         typeFinder->SetInterruptState(isInterruptNeeded);
     }
 }

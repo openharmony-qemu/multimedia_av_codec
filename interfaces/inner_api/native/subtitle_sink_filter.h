@@ -31,9 +31,9 @@ public:
     explicit SubtitleSinkFilter(const std::string& name, FilterType filterType = FilterType::FILTERTYPE_SSINK);
     ~SubtitleSinkFilter() override;
 
-    virtual void Init(const std::shared_ptr<EventReceiver>& receiver, const std::shared_ptr<FilterCallback>& callback) override;
+    void Init(const std::shared_ptr<EventReceiver>& receiver, const std::shared_ptr<FilterCallback>& callback) override;
 
-    virtual void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback,
+    void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback,
             const std::shared_ptr<InterruptMonitor>& monitor) override;
 
     Status DoInitAfterLink() override;

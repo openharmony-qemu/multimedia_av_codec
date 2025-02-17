@@ -37,7 +37,7 @@ public:
 
     void NotifyAllPrerolled() final;
 
-    virtual void OnInterrupted(bool isInterruptNeeded) override;
+    void OnInterrupted(bool isInterruptNeeded) override;
 
 protected:
     virtual int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) = 0;

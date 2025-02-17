@@ -170,8 +170,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         }
         std::unique_lock<std::mutex> lock(mutex_);
         readCond_.wait_for(lock, std::chrono::milliseconds(GetRetryTime()), [&] {
-            return isInterrupted_.load() || isExitRead_.load();
-        });
+            return isInterrupted_.load() || isExitRead_.load(); });
         retryTimes_++;
     } while (retryTimes_ < DEFAULT_RETRY_TIMES);
     offset_ += static_cast<uint64_t>(realLen);
