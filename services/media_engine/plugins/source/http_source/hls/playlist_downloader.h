@@ -88,6 +88,11 @@ public:
     }
     void StopBufferring(bool isAppBackground);
 
+    virtual size_t GetLiveUpdateGap() const
+    {
+        return 0;
+    }
+
 protected:
     bool SaveData(uint8_t* data, uint32_t len);
     static void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,

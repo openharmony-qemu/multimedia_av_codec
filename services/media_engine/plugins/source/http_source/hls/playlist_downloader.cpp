@@ -28,7 +28,7 @@ namespace Plugins {
 namespace HttpPlugin {
 constexpr int FDPOS = 2;
 constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
-constexpr int MIN_PRE_PARSE_CONTENT_LEN = 5 * 1024; // 5k
+constexpr int MIN_PRE_PARSE_CONTENT_LEN = 10 * 1024; // 10k
 constexpr int RETRY_DELTA_TIME_TO_REPORT_ERROR = 5 * 1000; // 5s
 constexpr int RETRY_TIME_TO_REPORT_ERROR = 10; // 10
 
@@ -51,7 +51,11 @@ void PlayListDownloader::PlayListDownloaderInit()
     updateTask_ = std::make_shared<Task>(std::string("OS_FragmentListUpdate"), "", TaskType::SINGLETON);
     updateTask_->RegisterJob([this] {
         UpdateManifest();
-        return PLAYLIST_UPDATE_RATE;
+        size_t updateTime = GetLiveUpdateGap();
+        if (updateTime > 0) {
+            return updateTime;
+        }
+        return static_cast<size_t>(PLAYLIST_UPDATE_RATE);
     });
 }
 
