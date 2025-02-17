@@ -222,6 +222,13 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int6
         return AVSEEK_FLAG_FRAME;
     }
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && seekTime != 0) {
+        int64_t streamDuration = avStream->duration;
+        if (streamDuration == AV_NOPTS_VALUE || streamDuration <= 0) {
+            streamDuration = GetStreamDuration(*avStream);
+        }
+        if (streamDuration > 0 && ffTime >= streamDuration) {
+            return AVSEEK_FLAG_BACKWARD;
+        }
         return g_seekModeToFFmpegSeekFlags.at(mode);
     }
     if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO || seekTime == 0) {
