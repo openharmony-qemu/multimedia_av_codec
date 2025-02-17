@@ -48,6 +48,7 @@ private:
     void HandleBufferingStart();
     void HandleBufferingEnd();
     uint32_t GetRetryTime();
+    void WaitForRetry(uint32_t time);
     std::shared_ptr<AVSharedMemory> GetMemory();
     void ResetPool();
     Plugins::Seekable seekable_ {Plugins::Seekable::INVALID};

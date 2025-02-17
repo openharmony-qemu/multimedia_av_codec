@@ -708,6 +708,13 @@ void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(const AVPacket *pkt)
     }
 }
 
+void FFmpegDemuxerPlugin::ResetContext()
+{
+    formatContext_->pb->eof_reached = 0;
+    formatContext_->pb->error = 0;
+    ioContext_.retry = false;
+}
+
 Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -735,9 +742,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
                 AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
             if (ioContext_.retry) {
-                formatContext_->pb->eof_reached = 0;
-                formatContext_->pb->error = 0;
-                ioContext_.retry = false;
+                ResetContext();
                 return Status::ERROR_AGAIN;
             }
             return Status::ERROR_UNKNOWN;

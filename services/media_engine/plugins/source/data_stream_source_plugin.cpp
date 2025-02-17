@@ -133,6 +133,13 @@ void DataStreamSourcePlugin::ResetPool()
     pool_->Reset();
 }
 
+void DataStreamSourcePlugin::WaitForRetry(uint32_t time)
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+    readCond_.wait_for(lock, std::chrono::milliseconds(time), [&]
+                       { return isInterrupted_.load() || isExitRead_.load(); });
+}
+
 Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
     MEDIA_LOG_D("Read, offset: " PUBLIC_LOG_D64 ", expectedLen: " PUBLIC_LOG_ZU ", seekable: " PUBLIC_LOG_D32,
@@ -168,9 +175,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         if (realLen == 0) {
             HandleBufferingStart();
         }
-        std::unique_lock<std::mutex> lock(mutex_);
-        readCond_.wait_for(lock, std::chrono::milliseconds(GetRetryTime()), [&] {
-            return isInterrupted_.load() || isExitRead_.load(); });
+        WaitForRetry(GetRetryTime());
         retryTimes_++;
     } while (retryTimes_ < DEFAULT_RETRY_TIMES);
     offset_ += static_cast<uint64_t>(realLen);

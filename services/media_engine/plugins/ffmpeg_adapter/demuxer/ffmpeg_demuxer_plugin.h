@@ -165,6 +165,7 @@ private:
     void RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS);
     void PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
         int64_t pts, int64_t absolutePTS, uint32_t index);
+    void ResetContext();
     int64_t absolutePTSIndexZero_ = INT64_MAX;
     std::priority_queue<int64_t> indexToRelativePTSMaxHeap_;
     uint32_t indexToRelativePTSFrameCount_ = 0;
