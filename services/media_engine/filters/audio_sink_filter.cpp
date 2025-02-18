@@ -353,6 +353,18 @@ void AudioSinkFilter::SetIsCancelStart(bool isCancelStart)
 {
     isCancelStart_ = isCancelStart;
 }
+
+Status AudioSinkFilter::SetIsCalledBySystemApp(bool isCalledBySystemApp)
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->SetIsCalledBySystemApp(isCalledBySystemApp);
+}
+
+Status AudioSinkFilter::SetLooping(bool loop)
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->SetLooping(loop);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
