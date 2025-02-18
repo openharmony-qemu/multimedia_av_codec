@@ -931,6 +931,7 @@ HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_001, TestSize.Lev
     server_->videoCb_ = mock;
     EXPECT_CALL(*mock, OnOutputFormatChanged).Times(1);
     server_->OnOutputFormatChanged(validFormat_);
+    server_->videoCb_ = nullptr;
 }
 
 /**
@@ -945,6 +946,7 @@ HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_002, TestSize.Lev
     server_->codecCb_ = mock;
     EXPECT_CALL(*mock, OnOutputFormatChanged).Times(1);
     server_->OnOutputFormatChanged(validFormat_);
+    server_->codecCb_ = nullptr;
 }
 
 std::shared_ptr<AVSharedMemory> CreateAVSharedMemory(const int32_t size)
@@ -991,6 +993,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_002, Te
     std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
     EXPECT_CALL(*mock, OnInputBufferAvailable).Times(1);
     server_->OnInputBufferAvailable(index, buffer);
+    server_->videoCb_ = nullptr;
 }
 
 /**
@@ -1011,6 +1014,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_003, Te
     std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
     EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
+    server_->videoCb_ = nullptr;
 }
 
 /**
@@ -1031,6 +1035,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_004, Te
     std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
     EXPECT_CALL(*mock, OnInputBufferAvailable).Times(1);
     server_->OnInputBufferAvailable(index, buffer);
+    server_->videoCb_ = nullptr;
 }
 
 /**
