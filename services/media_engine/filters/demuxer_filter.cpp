@@ -887,6 +887,12 @@ void DemuxerFilter::SetApiVersion(int32_t apiVersion)
     apiVersion_ = apiVersion;
     demuxer_->SetApiVersion(apiVersion);
 }
+
+bool DemuxerFilter::IsLocalFd()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->IsLocalFd();
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

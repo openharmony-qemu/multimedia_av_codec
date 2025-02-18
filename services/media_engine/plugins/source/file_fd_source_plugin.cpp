@@ -762,6 +762,11 @@ void FileFdSourcePlugin::SetEnableOnlineFdCache(bool isEnableFdCache)
 {
     isEnableFdCache_ = isEnableFdCache;
 }
+
+bool FileFdSourcePlugin::IsLocalFd()
+{
+    return !isCloudFile_;
+}
 } // namespace FileFdSource
 } // namespace Plugin
 } // namespace Media
