@@ -25,12 +25,14 @@
 #ifdef SUPPORT_DRM
 #include "drm_i_keysession_service.h"
 #endif
+#include "interrupt_listener.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
 using namespace OHOS::Media::Plugins;
-class AudioDecoderFilter : public Filter, public std::enable_shared_from_this<AudioDecoderFilter> {
+class AudioDecoderFilter : public Filter, public InterruptListener,
+    public std::enable_shared_from_this<AudioDecoderFilter> {
 public:
     explicit AudioDecoderFilter(std::string name, FilterType type);
     ~AudioDecoderFilter() override;
@@ -68,6 +70,8 @@ public:
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
 
     Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
+
+    void OnInterrupted(bool isInterruptNeeded) override;
 
     Status HandleInputBuffer();
 

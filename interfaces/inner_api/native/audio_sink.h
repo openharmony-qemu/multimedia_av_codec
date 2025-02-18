@@ -85,6 +85,8 @@ public:
     Status SetSeekTime(int64_t seekTime);
     bool NeedImmediateRender();
     bool GetSyncCenterClockTime(int64_t &clockTime);
+    Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
+    Status SetLooping(bool loop);
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -207,6 +209,8 @@ private:
     std::atomic<int64_t> seekTimeUs_ {HST_TIME_NONE};
     PerfRecorder perfRecorder_ {};
     bool isPerfRecEnabled_ { false };
+    bool isCalledBySystemApp_ { false };
+    bool isLoop_ { false };
 };
 }
 }

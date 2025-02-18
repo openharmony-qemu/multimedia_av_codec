@@ -30,6 +30,7 @@ constexpr int MIN_PRE_PARSE_NUM = 2; // at least 2 ts frag
 const std::string M3U8_START_TAG = "#EXTM3U";
 const std::string M3U8_END_TAG = "#EXT-X-ENDLIST";
 const std::string M3U8_TS_TAG = "#EXTINF";
+constexpr unsigned int MAX_LIVE_TS_NUM = 3;
 }
 // StateMachine thread: call plugin SetSource -> call Open
 // StateMachine thread: call plugin GetSeekable -> call GetSeekable
@@ -143,6 +144,9 @@ void HlsPlayListDownloader::NotifyListChange()
     }
     if (!currentVariant_->m3u8_->localDrmInfos_.empty()) {
         callback_->OnDrmInfoChanged(currentVariant_->m3u8_->localDrmInfos_);
+    }
+    if (playList.size() > MAX_LIVE_TS_NUM && isParseFinished_ && master_->bLive_) {
+        playList.erase(playList.begin(), playList.end() - MAX_LIVE_TS_NUM);
     }
     callback_->OnPlayListChanged(playList);
     if (isParseFinished_) {
@@ -385,6 +389,14 @@ void HlsPlayListDownloader::SetInitResolution(uint32_t width, uint32_t height)
     if (width > 0 && height > 0) {
         initResolution_ = width * height;
     }
+}
+
+size_t HlsPlayListDownloader::GetLiveUpdateGap() const
+{
+    if (currentVariant_ && currentVariant_->m3u8_) {
+        return currentVariant_->m3u8_->GetLiveUpdateGap();
+    }
+    return 0;
 }
 }
 }

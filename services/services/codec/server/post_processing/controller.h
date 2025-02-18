@@ -20,7 +20,7 @@
 #include "surface.h"
 #include "avcodec_errors.h"
 #include "meta/format.h"
-#include "utils.h"
+#include "post_processing_utils.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

@@ -15,7 +15,7 @@
 
 #include "dynamic_interface.h"
 #include <dlfcn.h>
-#include "utils.h"
+#include "post_processing_utils.h"
 
 namespace {
 static constexpr const char* LIBRARY_PATH{"libvideoprocessingengine.z.so"};
