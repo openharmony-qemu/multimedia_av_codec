@@ -62,7 +62,8 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 FFmpegAPEDecoderPlugin::FFmpegAPEDecoderPlugin(const std::string& name)
-    : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
+    : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<FfmpegBaseDecoder>(), version_(0),
+      sampleSizePerFrame_(0), sampleSizePerOutBuffer_(0), compressionLevel_(0), sampleRate_(0), depth_(0))
 {
 }
 
@@ -101,11 +102,11 @@ Status FFmpegAPEDecoderPlugin::Stop()
 
 bool FFmpegAPEDecoderPlugin::SetSamplerate(const std::shared_ptr<Meta> &parameter)
 {
-    parameter->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
-    if (sampleRate < 0) {
+    parameter->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
+    if (sampleRate_ < 0) {
         return false;
     }
-    if (sampleRate == 0) {
+    if (sampleRate_ == 0) {
         parameter->SetData(Tag::AUDIO_SAMPLE_RATE, 16000); // set 16000 sample rate
     }
     return true;
@@ -138,7 +139,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
             return Status::ERROR_NO_MEMORY;
         }
         int16_t fakedata[3]; // 3 int16_t data
-        fakedata[0] = VERSION_3990;  // 3990 version
+        fakedata[0] = VERSION_3990;  // 3990 version_
         fakedata[1] = NORMAL_LEVEL;  // 2000 complexity
         fakedata[2] = 0;     // flags 0
         if (memcpy_s(codecCtx->extradata, EXTRA_DATA_SIZE, fakedata, EXTRA_DATA_SIZE) != EOK) {
@@ -155,7 +156,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     if (codecCtx->bits_per_coded_sample == 0) {
         codecCtx->bits_per_coded_sample = SetBitsDepth(sampleFmt);
     }
-    depth = codecCtx->bits_per_coded_sample;
+    depth_ = codecCtx->bits_per_coded_sample;
     CalcBufferSize(parameter, codecCtx->extradata);
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
@@ -173,7 +174,7 @@ int32_t FFmpegAPEDecoderPlugin::SetBitsDepth(AudioSampleFormat sampleFmt)
     } else if (sampleFmt == SAMPLE_S32LE || sampleFmt == SAMPLE_S32P) {
         ret = BITS_S24; // sample bit = 24 bit
     }
-    AVCODEC_LOGI("sample depth be set %{public}d.", ret);
+    AVCODEC_LOGI("sample depth_ be set %{public}d.", ret);
     return ret;
 }
 
@@ -229,62 +230,62 @@ bool FFmpegAPEDecoderPlugin::CheckChannelCount(const std::shared_ptr<Meta> &form
 
 int32_t FFmpegAPEDecoderPlugin::GetInputBufferSize()
 {
-    if (INPUT_BUFFER_SIZE_MIN > sampleSizePerFrame) {
-        sampleSizePerFrame = INPUT_BUFFER_SIZE_MIN;
+    if (INPUT_BUFFER_SIZE_MIN > sampleSizePerFrame_) {
+        sampleSizePerFrame_ = INPUT_BUFFER_SIZE_MIN;
     }
-    return sampleSizePerFrame;
+    return sampleSizePerFrame_;
 }
 
 int32_t FFmpegAPEDecoderPlugin::GetOutputBufferSize()
 {
-    if (OUTPUT_BUFFER_SIZE_MIN > sampleSizePerOutBuffer) {
-        sampleSizePerOutBuffer = OUTPUT_BUFFER_SIZE_MIN;
+    if (OUTPUT_BUFFER_SIZE_MIN > sampleSizePerOutBuffer_) {
+        sampleSizePerOutBuffer_ = OUTPUT_BUFFER_SIZE_MIN;
     }
-    return sampleSizePerOutBuffer;
+    return sampleSizePerOutBuffer_;
 }
 
 void FFmpegAPEDecoderPlugin::CalcBufferSize(const std::shared_ptr<Meta> &parameter, void *extradata)
 {
     int32_t samplePreFrame = 0;
-    if (depth == BITS_S24) { // depth S24 means S32 in auctual
-        depth = BITS_S32;
+    if (depth_ == BITS_S24) { // depth_ S24 means S32 in auctual
+        depth_ = BITS_S32;
     }
-    depth = depth / BITS_TO_BYTES; // divide by 8
+    depth_ = depth_ / BITS_TO_BYTES; // divide by 8
     
     parameter->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePreFrame);
     if (samplePreFrame != 0) {
-        sampleSizePerFrame = channels_ * samplePreFrame * depth;
-        sampleSizePerOutBuffer = sampleSizePerFrame / REDUNDANCY_SET;
+        sampleSizePerFrame_ = channels_ * samplePreFrame * depth_;
+        sampleSizePerOutBuffer_ = sampleSizePerFrame_ / REDUNDANCY_SET;
         AVCODEC_LOGI("APE sampleSize inbuffer: %{public}d outbuffer: %{public}d",
-                     sampleSizePerFrame, sampleSizePerOutBuffer);
+                     sampleSizePerFrame_, sampleSizePerOutBuffer_);
         return;
     }
     
     int16_t *extradata16 = nullptr;
     extradata16 = (int16_t *)extradata;
-    version = *extradata16;
-    compressionLevel =  *(extradata16 + 1);
+    version_ = *extradata16;
+    compressionLevel_ =  *(extradata16 + 1);
     // As for APE, different version has frame block in differ
-    if (version >= VERSION_3980) {
-        if (compressionLevel == INSANE_LEVEL) {
-            sampleSizePerFrame = DEFAULT_FRAME_BLOCK * FRAME_BLOCK_NUM * FRAME_BLOCK_NUM * channels_ * depth;
-        } else if (compressionLevel >= HIGH_LEVEL) {
-            sampleSizePerFrame = DEFAULT_FRAME_BLOCK * FRAME_BLOCK_NUM * channels_ * depth;
+    if (version_ >= VERSION_3980) {
+        if (compressionLevel_ == INSANE_LEVEL) {
+            sampleSizePerFrame_ = DEFAULT_FRAME_BLOCK * FRAME_BLOCK_NUM * FRAME_BLOCK_NUM * channels_ * depth_;
+        } else if (compressionLevel_ >= HIGH_LEVEL) {
+            sampleSizePerFrame_ = DEFAULT_FRAME_BLOCK * FRAME_BLOCK_NUM * channels_ * depth_;
         } else {
-            sampleSizePerFrame = DEFAULT_FRAME_BLOCK * channels_ * depth;
+            sampleSizePerFrame_ = DEFAULT_FRAME_BLOCK * channels_ * depth_;
         }
-    } else if (version >= VERSION_3950) {
-        sampleSizePerFrame = DEFAULT_FRAME_BLOCK * FRAME_BLOCK_NUM * channels_ * depth;
-    } else if (version >= VERSION_3900 || (version >= VERSION_3800 && compressionLevel >= EXTRA_HIGH_LEVEL)) {
-        sampleSizePerFrame = DEFAULT_FRAME_BLOCK * channels_ * depth;
+    } else if (version_ >= VERSION_3950) {
+        sampleSizePerFrame_ = DEFAULT_FRAME_BLOCK * FRAME_BLOCK_NUM * channels_ * depth_;
+    } else if (version_ >= VERSION_3900 || (version_ >= VERSION_3800 && compressionLevel_ >= EXTRA_HIGH_LEVEL)) {
+        sampleSizePerFrame_ = DEFAULT_FRAME_BLOCK * channels_ * depth_;
     } else {
-        sampleSizePerFrame = LOW_VERSION_BLOCK * channels_ * depth;
+        sampleSizePerFrame_ = LOW_VERSION_BLOCK * channels_ * depth_;
     }
-    basePlugin->SetMaxInputSize(sampleSizePerFrame);
-    sampleSizePerOutBuffer = sampleSizePerFrame/OUT_BUFFER_NUM;
-    AVCODEC_LOGI("APE version %{public}d compressLevel %{public}d sampleSize %{public}d %{public}d", version,
-                 compressionLevel, sampleSizePerFrame, sampleSizePerOutBuffer);
-    AVCODEC_LOGI("APE channel %{public}d deth %{public}d", channels_, depth);
+    basePlugin->SetMaxInputSize(sampleSizePerFrame_);
+    sampleSizePerOutBuffer_ = sampleSizePerFrame_/OUT_BUFFER_NUM;
+    AVCODEC_LOGI("APE version %{public}d compressLevel %{public}d sampleSize %{public}d %{public}d", version_,
+                 compressionLevel_, sampleSizePerFrame_, sampleSizePerOutBuffer_);
+    AVCODEC_LOGI("APE channel %{public}d deth %{public}d", channels_, depth_);
 }
 } // namespace Ffmpeg
 } // namespace Plugins
