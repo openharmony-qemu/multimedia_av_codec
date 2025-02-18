@@ -17,7 +17,6 @@
 #include <set>
 #include <thread>
 #include <malloc.h>
-#include "avcodec_errors.h"
 #include "syspara/parameters.h"
 #include "securec.h"
 #include "avcodec_trace.h"
