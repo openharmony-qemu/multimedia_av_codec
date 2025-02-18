@@ -162,15 +162,15 @@ std::vector<TagType> g_supportSourceFormat = {
 
 std::vector<std::string> SplitByChar(const char* str, const char* pattern)
 {
+    std::string tempStr(str);
     std::vector<std::string> resultVec;
-    char* tmpStr = strtok(const_cast<char*>(str), pattern);
-    while (tmpStr != nullptr) {
-        resultVec.push_back(std::string(tmpStr));
-        tmpStr = strtok(nullptr,  pattern);
+    char* subStr = strtok(const_cast<char*>(tempStr.c_str()), pattern);
+    while (subStr != nullptr) {
+        resultVec.push_back(std::string(subStr));
+        subStr = strtok(nullptr,  pattern);
     }
-    MEDIA_LOG_D("Split [" PUBLIC_LOG_S "] by [" PUBLIC_LOG_S "], get " PUBLIC_LOG_ZU " string",
-        str, pattern, resultVec.size());
-    delete[] tmpStr;
+    MEDIA_LOG_D("Split by [" PUBLIC_LOG_S "], get " PUBLIC_LOG_ZU " string", pattern, resultVec.size());
+    delete[] subStr;
     return resultVec;
 }
 
@@ -189,7 +189,7 @@ std::string RemoveDuplication(const std::string origin)
     }
     for (size_t idx = 0; idx < uniqueSubStrings.size(); idx++) {
         outString += uniqueSubStrings[idx];
-        if (idx < uniqueSubStrings.size()) {
+        if (idx < uniqueSubStrings.size() - 1) {
             outString += ";";
         }
     }
@@ -1032,9 +1032,9 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Met
             continue;
         }
         MEDIA_LOG_D("SupportMeta:" PUBLIC_LOG_S, valPtr->key);
-        format.SetData(g_formatToString[tempKey], std::string(valPtr->value));
         // ffmpeg use ';' to contact all single value in vorbis-comment, need to remove duplicates
         std::string value = RemoveDuplication(std::string(valPtr->value));
+        format.SetData(g_formatToString[tempKey], std::string(valPtr->value));
         if (!IsUTF8(value.c_str()) && IsGBK(value.c_str())) {
             std::string resultStr = ConvertGBKToUTF8(value);
             if (resultStr.length() > 0) {
