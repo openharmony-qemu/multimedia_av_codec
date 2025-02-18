@@ -397,7 +397,7 @@ Status Source::ReadWithPerfRecord(
     int64_t readDurationUs = 0;
     FALSE_RETURN_V_MSG(
         Plugins::Ms2Us(readDuration, readDurationUs), readRes, "Invalid readDuration %{public}" PRId64, readDuration);
-    int64_t readSpeed = expectedLen / readDurationUs;
+    int64_t readSpeed = static_cast<int64_t>(expectedLen) / readDurationUs;
     FALSE_RETURN_V_NOLOG(perfRecorder_.Record(readSpeed) == PerfRecorder::FULL, readRes);
     FALSE_RETURN_V_MSG(mediaDemuxerCallback_ != nullptr, readRes, "Report perf failed, callback is nullptr");
     mediaDemuxerCallback_->OnDfxEvent(
