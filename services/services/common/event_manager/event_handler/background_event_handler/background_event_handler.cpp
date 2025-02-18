@@ -19,6 +19,10 @@
 #include "avcodec_server.h"
 #include "avcodec_server_manager.h"
 #include "codec_service_stub.h"
+#ifdef USE_EFFICIENCY_MANAGER
+#include "syspara/parameters.h"
+#include "suspend_manager_client.h"
+#endif //USE_EFFICIENCY_MANAGER
 
 #ifdef USE_EFFICIENCY_MANAGER
 namespace {
@@ -33,9 +37,9 @@ static std::vector<sptr<IRemoteObject>> GetFreezeInfoList(pid_t pid)
     std::vector<sptr<IRemoteObject>> instanceList;
     std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> instanceInfos =
         AVCodecServerManager::GetInstance().GetInstanceInfoListByPid(pid);
-    for (auto &codecStub : instanceInfos) {
-        if ((codecStub.second.caller.pid == pid) && (codecStub.second.codecType == AVCODEC_TYPE_VIDEO_DECODER)) {
-            instanceList.push_back(codecStub.first);
+    for (auto &instance : instanceInfos) {
+        if ((instance.second.caller.pid == pid) && (instance.second.codecType == AVCODEC_TYPE_VIDEO_DECODER)) {
+            instanceList.push_back(instance.first);
         }
     }
     return instanceList;
@@ -74,7 +78,6 @@ Errcode SuspendStateObserverStubObj::OnActive(const std::vector<int32_t> &pidLis
 
 Errcode SuspendStateObserverStubObj::OnDoze(const int32_t uid)
 {
-    AVCODEC_LOGI("OnDoze, uid:%{public}d", uid);
     return ERR_OK;
 }
 
@@ -87,7 +90,6 @@ Errcode SuspendStateObserverStubObj::OnFrozen(const std::vector<int32_t> &pidLis
 
 Errcode SuspendStateObserverStubObj::OnFrozenUid(const int32_t uid, const uint32_t reasonId)
 {
-    AVCODEC_LOGI("OnFrozenUid, uid:%{public}d, reasonId:%{public}u", uid, reasonId);
     return ERR_OK;
 }
 #endif //USE_EFFICIENCY_MANAGER
@@ -101,10 +103,10 @@ void BackGroundEventHandler::RegisterSuspendObserver()
     AVCODEC_LOGI("recycleMemory is %{public}d", recycleMemory);
     if (recycleMemory) {
         if (suspendObservers_ == nullptr) {
-            suspendObservers_ = sptr<SuspendStateObserverStubObj>(new SuspendStateObserverStubObj());
+            suspendObservers_ = sptr<SuspendStateObserverStubObj>::MakeSptr();
             CHECK_AND_RETURN_LOG(suspendObservers_ != nullptr, "Create Suspend Observer failed");
         }
-        int32_t ret = SuspendManager::SuspendManagerClient::GetInstance().RegisterSuspendObserver(suspendObservers_);
+        auto ret = SuspendManager::SuspendManagerClient::GetInstance().RegisterSuspendObserver(suspendObservers_);
         CHECK_AND_RETURN_LOG(ret == ERR_OK, "RegisterSuspendObserver failed, return: %{public}d", ret);
         AVCODEC_LOGI("RegisterSuspendObserver succeed");
     }
@@ -116,7 +118,7 @@ void BackGroundEventHandler::UnregisterSuspendObserver()
 {
 #ifdef USE_EFFICIENCY_MANAGER
     if (suspendObservers_ != nullptr) {
-        int32_t ret = SuspendManager::SuspendManagerClient::GetInstance().UnregisterSuspendObserver(suspendObservers_);
+        auto ret = SuspendManager::SuspendManagerClient::GetInstance().UnregisterSuspendObserver(suspendObservers_);
         CHECK_AND_RETURN_LOG(ret == ERR_OK, "UnRegisterSuspendObserver failed, return: %{public}d", ret);
         suspendObservers_ = nullptr;
         AVCODEC_LOGI("UnRegisterSuspendObserver succeed");
@@ -125,7 +127,7 @@ void BackGroundEventHandler::UnregisterSuspendObserver()
     return;
 }
 
-BackGroundEventHandler& BackGroundEventHandler::GetInstance()
+BackGroundEventHandler &BackGroundEventHandler::GetInstance()
 {
     static BackGroundEventHandler instance;
     return instance;
