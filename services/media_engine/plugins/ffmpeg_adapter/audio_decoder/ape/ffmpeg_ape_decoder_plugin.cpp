@@ -61,7 +61,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-FFmpegApeDecoderPlugin::FFmpegApeDecoderPlugin(const std::string& name)
+FFmpegAPEDecoderPlugin::FFmpegAPEDecoderPlugin(const std::string& name)
     : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<FfmpegBaseDecoder>()), version_(0),
       sampleSizePerFrame_(0), sampleSizePerOutBuffer_(0), compressionLevel_(0), sampleRate_(0), depth_(0)
 {
