@@ -16,10 +16,8 @@
 #ifndef BACKGROUND_EVENT_HANDLER_H
 #define BACKGROUND_EVENT_HANDLER_H
 
-#include "iremote_object.h"
+#include "refbase.h"
 #ifdef USE_EFFICIENCY_MANAGER
-#include "syspara/parameters.h"
-#include "suspend_manager_client.h"
 #include "suspend_state_observer_stub.h"
 #endif //USE_EFFICIENCY_MANAGER
 
@@ -37,9 +35,9 @@ public:
 
 class BackGroundEventHandler {
 public:
-    static BackGroundEventHandler& GetInstance();
+    static BackGroundEventHandler &GetInstance();
     BackGroundEventHandler();
-    ~BackGroundEventHandler()=default;
+    ~BackGroundEventHandler() = default;
     void RegisterSuspendObserver();
     void UnregisterSuspendObserver();
 
