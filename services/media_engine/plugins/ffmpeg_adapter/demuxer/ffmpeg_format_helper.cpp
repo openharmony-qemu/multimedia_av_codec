@@ -1034,7 +1034,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Met
         MEDIA_LOG_D("SupportMeta:" PUBLIC_LOG_S, valPtr->key);
         // ffmpeg use ';' to contact all single value in vorbis-comment, need to remove duplicates
         std::string value = RemoveDuplication(std::string(valPtr->value));
-        format.SetData(g_formatToString[tempKey], std::string(valPtr->value));
+        format.SetData(g_formatToString[tempKey], value);
         if (!IsUTF8(value.c_str()) && IsGBK(value.c_str())) {
             std::string resultStr = ConvertGBKToUTF8(value);
             if (resultStr.length() > 0) {
