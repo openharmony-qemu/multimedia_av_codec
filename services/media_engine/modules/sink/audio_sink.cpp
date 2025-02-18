@@ -851,6 +851,8 @@ void AudioSink::OnInterrupted(bool isInterruptNeeded)
     if (plugin_ != nullptr) {
         plugin_->SetInterruptState(isInterruptNeeded);
     }
+}
+
 Status AudioSink::SetIsCalledBySystemApp(bool isCalledBySystemApp)
 {
     MEDIA_LOG_I("AudioSink isCalledBySystemApp = " PUBLIC_LOG_D32, isCalledBySystemApp);
