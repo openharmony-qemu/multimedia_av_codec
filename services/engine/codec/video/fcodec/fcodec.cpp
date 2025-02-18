@@ -1365,7 +1365,7 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
     int32_t scalingMode = 0;
     CHECK_AND_RETURN_RET_LOG(
         format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, scalingMode) && scalingMode >= 0 &&
-        scalingMode <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT), AVCS_ERR_INVALID_VAL, 
+        scalingMode <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT), AVCS_ERR_INVALID_VAL,
         "Invalid scaling mode %{public}d", scalingMode);
     sInfo_.scalingMode = static_cast<ScalingMode>(scalingMode);
     sInfo_.surface = newSurface;
