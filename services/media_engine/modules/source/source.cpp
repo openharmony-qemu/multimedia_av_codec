@@ -336,11 +336,11 @@ bool Source::CanAutoSelectBitRate()
 void Source::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("Source OnInterrupted %{public}d", isInterruptNeeded);
+    std::unique_lock<std::mutex> lock(mutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     if (plugin_) {
         plugin_->SetInterruptState(isInterruptNeeded_);
     }
-    std::unique_lock<std::mutex> lock(mutex_);
     seekCond_.notify_all();
 }
 
