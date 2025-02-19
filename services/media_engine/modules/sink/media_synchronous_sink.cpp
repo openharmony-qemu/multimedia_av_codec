@@ -90,6 +90,7 @@ void MediaSynchronousSink::OnInterrupted(bool isInterruptNeeded)
     MEDIA_LOG_I("MediaSynchronousSink onInterrupted %{public}d", isInterruptNeeded);
     OHOS::Media::AutoLock lock(prerollMutex_);
     isInterruptNeeded_ = isInterruptNeeded;
+    waitForPrerolled_ = false;
     prerollCond_.NotifyAll();
 }
 
