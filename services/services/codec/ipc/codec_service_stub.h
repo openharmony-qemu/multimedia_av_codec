@@ -63,6 +63,9 @@ public:
 #endif
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args) override;
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
+    // PurgeableMemory
+    void NotifyMemoryRecycle();
+    void NotifyMemoryWriteBack();
 
 private:
     CodecServiceStub();

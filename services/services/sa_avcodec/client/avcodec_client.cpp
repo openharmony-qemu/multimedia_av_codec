@@ -38,6 +38,8 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 
 namespace OHOS {
 namespace MediaAVCodec {
+static bool g_isDestructed = false;
+static std::mutex g_avCodecClientMutex;
 static AVCodecClient g_avCodecClientInstance;
 IAVCodecService &AVCodecServiceFactory::GetInstance()
 {
@@ -51,6 +53,8 @@ AVCodecClient::AVCodecClient() noexcept
 
 AVCodecClient::~AVCodecClient()
 {
+    std::lock_guard<std::mutex> lock(g_avCodecClientMutex);
+    g_isDestructed = true;
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -175,6 +179,9 @@ sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
 
 void AVCodecClient::AVCodecServerDied(pid_t pid)
 {
+    std::lock_guard<std::mutex> lock(g_avCodecClientMutex);
+    CHECK_AND_RETURN_LOG(!g_isDestructed, "AVCodecClient is destructed");
+
     AVCODEC_LOGE("AVCodec service is died, pid:%{public}d!", pid);
     g_avCodecClientInstance.DoAVCodecServerDied();
     FaultEventWrite(FaultType::FAULT_TYPE_CRASH, "AVCodec service is died", "AVCodecClient");

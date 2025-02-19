@@ -104,7 +104,9 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_003, TestSize.Level1)
     audioDecoder->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED, 111);
     audioDecoder->eventReceiver_ = nullptr;
     audioDecoder->OnError(CodecErrorType::CODEC_ERROR_EXTEND_START, 111);
+#ifdef SUPPORT_DRM
     EXPECT_EQ(audioDecoder->SetDecryptionConfig(nullptr, true), Status::ERROR_INVALID_PARAMETER);
+#endif
 }
 
 HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_004, TestSize.Level1)

@@ -2532,5 +2532,11 @@ void MediaDemuxer::SetApiVersion(int32_t apiVersion)
     apiVersion_ = apiVersion;
     demuxerPluginManager_->SetApiVersion(apiVersion);
 }
+
+bool MediaDemuxer::IsLocalFd()
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
+    return source_->IsLocalFd();
+}
 } // namespace Media
 } // namespace OHOS

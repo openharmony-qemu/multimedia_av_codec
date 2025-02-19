@@ -22,7 +22,9 @@
 #include "common/native_mfmagic.h"
 #include "native_avmagic.h"
 #include "native_object.h"
+#ifdef SUPPORT_DRM
 #include "native_drm_common.h"
+#endif
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "NativeAVDemuxer"};
 }
@@ -33,6 +35,7 @@ namespace NativeDrmTools {
 static int32_t ProcessApplicationDrmInfo(DRM_MediaKeySystemInfo *info,
     const std::multimap<std::string, std::vector<uint8_t>> &drmInfoMap)
 {
+#ifdef SUPPORT_DRM
     uint32_t count = drmInfoMap.size();
     if (count <= 0 || count > MAX_PSSH_INFO_COUNT) {
         return AV_ERR_INVALID_VAL;
@@ -62,6 +65,10 @@ static int32_t ProcessApplicationDrmInfo(DRM_MediaKeySystemInfo *info,
 
         index++;
     }
+#else
+    (void)info;
+    (void)drmInfoMap;
+#endif
     return AV_ERR_OK;
 }
 } // namespace NativeDrmTools
@@ -92,6 +99,7 @@ public:
 
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo) override
     {
+#ifdef SUPPORT_DRM
         AVCODEC_LOGI("NativeDemuxerCallback OnDrmInfoChanged is on call");
         std::unique_lock<std::shared_mutex> lock(mutex_);
         CHECK_AND_RETURN_LOG(demuxer_ != nullptr, "AVDemuxer is nullptr");
@@ -107,6 +115,12 @@ public:
         if (callbackObj_ != nullptr) {
             callbackObj_(demuxer_, &info);
         }
+#else
+        (void)drmInfo;
+        (void)demuxer_;
+        (void)callback_;
+        (void)callbackObj_;
+#endif
     }
 
 private:

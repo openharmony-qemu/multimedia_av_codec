@@ -83,12 +83,12 @@ private:
     int32_t channels_;
     DataCallback *dataCallback_{nullptr};
     std::unique_ptr<FfmpegBaseDecoder> basePlugin;
-    int16_t version;
-    int32_t sampleSizePerFrame;
-    int32_t sampleSizePerOutBuffer;
-    int16_t compressionLevel;
-    int32_t sampleRate;
-    int32_t depth;
+    int16_t version_;
+    int32_t sampleSizePerFrame_;
+    int32_t sampleSizePerOutBuffer_;
+    int16_t compressionLevel_;
+    int32_t sampleRate_;
+    int32_t depth_;
 };
 } // namespace Ffmpeg
 } // namespace Plugins

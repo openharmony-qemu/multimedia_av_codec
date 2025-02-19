@@ -104,5 +104,17 @@ int32_t CodecBase::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
     AVCODEC_LOGW("Set custom buffer is not supported");
     return AVCS_ERR_OK;
 }
+
+int32_t CodecBase::NotifyMemoryRecycle()
+{
+    AVCODEC_LOGW("Notify memory recycle is not supported");
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecBase::NotifyMemoryWriteBack()
+{
+    AVCODEC_LOGW("Notify memory write back is not supported");
+    return AVCS_ERR_OK;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -403,7 +403,7 @@ Status Source::ReadWithPerfRecord(
     int64_t readDurationUs = 0;
     FALSE_RETURN_V_MSG(
         Plugins::Ms2Us(readDuration, readDurationUs), readRes, "Invalid readDuration %{public}" PRId64, readDuration);
-    int64_t readSpeed = expectedLen / readDurationUs;
+    int64_t readSpeed = static_cast<int64_t>(expectedLen) / readDurationUs;
     FALSE_RETURN_V_NOLOG(perfRecorder_.Record(readSpeed) == PerfRecorder::FULL, readRes);
     FALSE_RETURN_V_MSG(mediaDemuxerCallback_ != nullptr, readRes, "Report perf failed, callback is nullptr");
     mediaDemuxerCallback_->OnDfxEvent(
@@ -554,6 +554,12 @@ void Source::NotifyInitSuccess()
 {
     FALSE_RETURN_MSG(plugin_ != nullptr, "NotifyInitSuccess source plugin is nullptr");
     plugin_->NotifyInitSuccess();
+}
+
+bool Source::IsLocalFd()
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "IsLocalFd source plugin is nullptr");
+    return plugin_->IsLocalFd();
 }
 } // namespace Media
 } // namespace OHOS

@@ -769,6 +769,11 @@ void FileFdSourcePlugin::WaitForInterrupt(int32_t waitTimeMS)
     std::unique_lock<std::mutex> lock(interruptMutex_);
     bufferCond_.wait_for(lock, std::chrono::milliseconds(waitTimeMS), [&] { return isInterrupted_.load(); });
 }
+
+bool FileFdSourcePlugin::IsLocalFd()
+{
+    return !isCloudFile_;
+}
 } // namespace FileFdSource
 } // namespace Plugin
 } // namespace Media
