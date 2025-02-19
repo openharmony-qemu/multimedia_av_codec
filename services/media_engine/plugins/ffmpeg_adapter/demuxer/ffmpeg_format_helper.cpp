@@ -83,8 +83,10 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AMR_WB, MimeType::AUDIO_AMR_WB},
     {AV_CODEC_ID_H264, MimeType::VIDEO_AVC},
     {AV_CODEC_ID_MPEG4, MimeType::VIDEO_MPEG4},
+#ifdef SUPPORT_CODEC_RV
     {AV_CODEC_ID_RV30, MimeType::VIDEO_RV30},
     {AV_CODEC_ID_RV40, MimeType::VIDEO_RV40},
+#endif
     {AV_CODEC_ID_MJPEG, MimeType::IMAGE_JPG},
     {AV_CODEC_ID_PNG, MimeType::IMAGE_PNG},
     {AV_CODEC_ID_BMP, MimeType::IMAGE_BMP},
@@ -98,8 +100,12 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
+#ifdef SUPPORT_CODEC_COOK
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
+#endif
+#ifdef SUPPORT_CODEC_AC3
     {AV_CODEC_ID_AC3, MimeType::AUDIO_AC3},
+#endif
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
     {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
     {AV_CODEC_ID_FFMETADATA, MimeType::TIMED_METADATA}
