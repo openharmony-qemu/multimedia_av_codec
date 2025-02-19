@@ -226,8 +226,8 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int6
         if (streamDuration == AV_NOPTS_VALUE || streamDuration <= 0) {
             streamDuration = GetStreamDuration(*avStream);
         }
-        // When the seekTime is within the last 1s, still use BACKWARD mode to ensure consistent func behavior.
-        int64_t buffering = ConvertTimeToFFmpeg(1000 * MS_TO_NS, avStream->time_base);
+        // When the seekTime is within the last 0.5s, still use BACKWARD mode to ensure consistent func behavior.
+        int64_t buffering = ConvertTimeToFFmpeg(500 * MS_TO_NS, avStream->time_base); // 0.5s
         if (streamDuration > 0  && (streamDuration < buffering || ffTime >= streamDuration - buffering)) {
             return AVSEEK_FLAG_BACKWARD;
         }
