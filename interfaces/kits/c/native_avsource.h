@@ -143,7 +143,7 @@ OH_AVFormat *OH_AVSource_GetTrackFormat(OH_AVSource *source, uint32_t trackIndex
  * 1. source is invalid.
  * @since 16
  */
-OH_AVFormat *OH_AVSource_GetCustomMetaDataFormat(OH_AVSource *source);
+OH_AVFormat *OH_AVSource_GetCustomMetadataFormat(OH_AVSource *source);
 
 #ifdef __cplusplus
 }
