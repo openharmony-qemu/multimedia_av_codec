@@ -355,8 +355,10 @@ void AudioCodecWorker::ConsumerOutputBuffer()
             }
             AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "Work %{public}s consumerOutputBuffer callback_ index:%{public}u",
                                name_.data(), index);
+            lock.unlock();
             callback_->OnOutputBufferAvailable(index, outBuffer->GetBufferAttr(), outBuffer->GetFlag(),
                                                outBuffer->GetBuffer());
+            lock.lock();
         }
     }
     outputCondition_.wait_for(lock, std::chrono::milliseconds(TIMEOUT_MS),
