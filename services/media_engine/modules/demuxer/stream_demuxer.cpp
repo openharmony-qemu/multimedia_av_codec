@@ -461,8 +461,8 @@ void StreamDemuxer::SetInterruptState(bool isInterruptNeeded)
     std::unique_lock<std::mutex> lock(mutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     readCond_.notify_all();
-    if (typeFinder != nullptr) {
-        typeFinder->SetInterruptState(isInterruptNeeded);
+    if (typeFinder_ != nullptr) {
+        typeFinder_->SetInterruptState(isInterruptNeeded);
     }
 }
 } // namespace Media
