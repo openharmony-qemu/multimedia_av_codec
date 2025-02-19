@@ -220,6 +220,7 @@ void CodecDrmDecrypt::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessi
     (void)svpFlag;
 }
 
+#ifdef SUPPORT_DRM
 int32_t CodecDrmDecrypt::SetDrmBuffer(const MetaDrmCencInfo *const cencInfo, const std::shared_ptr<AVBuffer> &inBuf,
     const std::shared_ptr<AVBuffer> &outBuf) const
 {
@@ -229,6 +230,7 @@ int32_t CodecDrmDecrypt::SetDrmBuffer(const MetaDrmCencInfo *const cencInfo, con
     (void)outBuf;
     return AVCS_ERR_OK;
 }
+#endif
 
 int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo *const cencInfo, std::shared_ptr<AVBuffer> &inBuf,
                                           std::shared_ptr<AVBuffer> &outBuf)

@@ -15,7 +15,9 @@
 
 #include <cinttypes>
 #include "avdemuxer_demo.h"
+#ifdef SUPPORT_DRM
 #include "native_drm_common.h"
+#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -142,6 +144,7 @@ int32_t AVDemuxerDemo::SeekToTime(int64_t millisecond, OH_AVSeekMode mode)
 
 static void OnDrmInfoChangedInApp(DRM_MediaKeySystemInfo *drmInfo)
 {
+#ifdef SUPPORT_DRM
     printf("OnDrmInfoChangedInApp \n");
     if (drmInfo == nullptr || drmInfo->psshCount > MAX_PSSH_INFO_COUNT) {
         return;
@@ -164,10 +167,14 @@ static void OnDrmInfoChangedInApp(DRM_MediaKeySystemInfo *drmInfo)
         }
         printf(" \n");
     }
+#else
+    (void)drmInfo;
+#endif
 }
 
 static void OnDrmInfoChangedWithObjInApp(OH_AVDemuxer *demuxer, DRM_MediaKeySystemInfo *drmInfo)
 {
+#ifdef SUPPORT_DRM
     printf("OnDrmInfoChangedWithObjInApp \n");
     printf("OnDrmInfoChangedWithObjInApp demuxer is %p\n", static_cast<void*>(demuxer));
     if (drmInfo == nullptr || drmInfo->psshCount > MAX_PSSH_INFO_COUNT) {
@@ -191,6 +198,10 @@ static void OnDrmInfoChangedWithObjInApp(OH_AVDemuxer *demuxer, DRM_MediaKeySyst
         }
         printf(" \n");
     }
+#else
+    (void)demuxer;
+    (void)drmInfo;
+#endif
 }
 
 int32_t AVDemuxerDemo::SetDrmAppCallback()
@@ -207,6 +218,7 @@ int32_t AVDemuxerDemo::SetDrmAppCallback()
 
 void AVDemuxerDemo::GetMediaKeySystemInfo()
 {
+#ifdef SUPPORT_DRM
     DRM_MediaKeySystemInfo mediaKeySystemInfo;
     OH_AVDemuxer_GetMediaKeySystemInfo(this->avdemxuer_, &mediaKeySystemInfo);
     printf("GetMediaKeySystemInfo count %d", mediaKeySystemInfo.psshCount);
@@ -222,6 +234,7 @@ void AVDemuxerDemo::GetMediaKeySystemInfo()
             printf("GetMediaKeySystemInfo print pssh %x \n", pssh[k]);
         }
     }
+#endif
 }
 
 }  // namespace MediaAVCodec
