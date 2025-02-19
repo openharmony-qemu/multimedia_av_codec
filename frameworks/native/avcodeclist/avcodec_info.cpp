@@ -201,7 +201,6 @@ Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
     Range horizontalBlockNum = Range(std::max(blockPerFrameRange_.minVal / verticalBlockNum, 1),
         blockPerFrameRange_.maxVal / verticalBlockNum);
     Range widthRange = data_->supportSwapWidthHeight ? GetRangeForOtherSide(height) : data_->width;
-    if (horizontalBlockNum.minVal )
     widthRange = widthRange.Intersect(Range((horizontalBlockNum.minVal - 1) * blockWidth_ + data_->alignment.width,
         horizontalBlockNum.maxVal * blockWidth_));
     AVCODEC_LOGD("Get width range: [%{public}d, %{public}d] for height: %{public}d",
