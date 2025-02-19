@@ -1136,7 +1136,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1070, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 10240, 10230, 10220, 30000, 30010}; // ms
-    vector<int32_t> audioVals = {1293, 1293, 1293, 852, 852, 852, 852, 853, 853, 852, 853, 853, 1, 2, 2, 1, 1};
+    vector<int32_t> audioVals = {1293, 1293, 1293, 852, 852, 852, 852, 853, 853, 852, 853, 853, 2, 2, 2, 1, 1, 1};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1198,7 +1198,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1090, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 14592, 15297, 15290, 29994, 29998}; // ms
-    vector<int32_t> audioVals = {1407, 1407, 1407, 723, 723, 723, 689, 690, 690, 690, 691, 691, 1, 2, 2, 1, 1};
+    vector<int32_t> audioVals = {1407, 1407, 1407, 723, 723, 723, 689, 690, 690, 690, 691, 691, 2, 2, 2, 1, 1, 1};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1229,7 +1229,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1100, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 4128, 11980, 11990, 30000, 30010}; // ms
-    vector<int32_t> audioVals = {1251, 1251, 1251, 1078, 1079, 1079, 751, 752, 752, 751, 752, 752, 1, 1, 1, 1, 1};
+    vector<int32_t> audioVals = {1251, 1251, 1251, 1078, 1079, 1079, 751, 752, 752, 751, 752, 752, 1, 1, 1, 1, 1, 1};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1324,7 +1324,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1130, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 8560, 8550, 8570, 30000, 30900}; // ms
     vector<int32_t> audioVals = {1501, 1501, 1501, 1073, 1073, 1073, 1073, 1074, 1074, 1072, 1073, 1073,
-        1, 1, 1, 1, 1};
+        1, 1, 1, 1, 1, 1};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1356,7 +1356,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1140, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 11920, 11910, 11930, 29980, 30800}; // ms
     vector<int32_t> audioVals = {1500, 1500, 1500, 904, 904, 904, 904, 905, 905, 903, 904, 904,
-        1, 1, 1, 1, 1};
+        1, 1, 1, 1, 1, 1};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1424,7 +1424,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1160, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 10000, 8000, 12300, 25000, 29000, 30800, 32000}; // ms
-    vector<int32_t> audioVals = {92, 92, 92, 67, 68, 68, 73, 74, 74, 60, 61, 61, 24, 25, 25, 12, 13, 13, 7, 8, 8};
+    vector<int32_t> audioVals = {92, 92, 92, 67, 68, 68, 73, 74, 74, 60, 61, 61, 24, 25, 25, 12, 13, 13, 8, 8, 8};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
