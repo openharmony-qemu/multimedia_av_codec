@@ -227,9 +227,11 @@ int32_t FCodec::ConfigureContext(const Format &format)
     CHECK_AND_RETURN_RET_LOG(avCodecContext_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                              "Configure codec failed: Allocate context error");
     avCodecContext_->codec_type = AVMEDIA_TYPE_VIDEO;
-    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_) && width_ > 0,
+    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_) &&
+                             width_ >= VIDEO_MIN_SIZE && width_ <= VIDEO_MAX_WIDTH_SIZE,
                              AVCS_ERR_INVALID_VAL, "Invalid width %{public}d!", width_);
-    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_) && height_ > 0,
+    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_) &&
+                             height_ >= VIDEO_MIN_SIZE && height_ <= VIDEO_MAX_HEIGHT_SIZE,
                              AVCS_ERR_INVALID_VAL, "Invalid height %{public}d!", height_);
     format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE,
                         outputPixelFmt_ == VideoPixelFormat::RGBA ? width_ * VIDEO_PIX_DEPTH_RGBA : width_);
@@ -724,9 +726,13 @@ int32_t FCodec::SetSurfaceCfg(int32_t bufferCnt)
     sInfo_.requestConfig.height = height_;
     sInfo_.requestConfig.format = surfacePixelFmt;
 
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32);
+    CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
+                             val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
+                             AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
     sInfo_.scalingMode = static_cast<ScalingMode>(val32);
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32);
+    CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
+                             val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270), AVCS_ERR_INVALID_VAL,
+                             "Invalid rotation angle %{public}d", val32);
     sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
     return AVCS_ERR_OK;
 }
@@ -755,8 +761,7 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
                                    "output surface memory %{public}d create fail", i);
             outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
             buf->avBuffer_ = AVBuffer::CreateAVBuffer(buf->sMemory_->GetBase(), buf->sMemory_->GetSize());
-            CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->sMemory_ != nullptr,
-                                   "Allocate output buffer failed, index=%{public}d", i);
+            CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr, "Allocate output buffer failed, index=%{public}d", i);
             AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}d, size=%{public}d, stride=%{public}d",
                          i, buf->sMemory_->GetSize(), buf->sMemory_->GetSurfaceBufferStride());
         }
@@ -1352,10 +1357,16 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
             newId, surfaceBuffer->GetSeqNum(), err);
     }
     int32_t videoRotation = 0;
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, videoRotation);
+    CHECK_AND_RETURN_RET_LOG(
+        format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, videoRotation) && videoRotation >= 0 &&
+        videoRotation <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270), AVCS_ERR_INVALID_VAL,
+        "Invalid rotation angle %{public}d", videoRotation);
     sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(videoRotation)));
     int32_t scalingMode = 0;
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, scalingMode);
+    CHECK_AND_RETURN_RET_LOG(
+        format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, scalingMode) && scalingMode >= 0 &&
+        scalingMode <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT), AVCS_ERR_INVALID_VAL,
+        "Invalid scaling mode %{public}d", scalingMode);
     sInfo_.scalingMode = static_cast<ScalingMode>(scalingMode);
     sInfo_.surface = newSurface;
 
