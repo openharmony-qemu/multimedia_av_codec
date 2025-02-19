@@ -197,7 +197,7 @@ Status SubtitleSink::PrepareInputBufferQueue()
         MEDIA_LOG_I("InputBufferQueue already create");
         return Status::ERROR_INVALID_OPERATION;
     }
-    int32_t inputBufferNum = 1;
+    int32_t inputBufferNum = 2;
     int32_t capacity = 1024;
     MemoryType memoryType = MemoryType::SHARED_MEMORY;
 #ifndef MEDIA_OHOS
@@ -252,6 +252,7 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
     {
         std::unique_lock<std::mutex> lock(mutex_);
         subtitleInfoVec_.push_back(subtitleInfo);
+        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
     }
     updateCond_.notify_all();
 }
