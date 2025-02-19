@@ -98,8 +98,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     double newFragmentInitChunkNum  = NEW_FRAGMENT_INIT_CHUNK_NUM;
     uint64_t diff = (totalBuffSize + chunkSize) > 1 ? (totalBuffSize + chunkSize) - 1 : 0;
     int64_t chunkNum = static_cast<int64_t>(diff / chunkSize) + 1;
-    if ((chunkNum - static_cast<int64_t>(newFragmentInitChunkNum)) < 0 ||
-        chunkNum > MAX_CACHE_BUFFER_SIZE) {
+    if ((chunkNum - static_cast<int64_t>(newFragmentInitChunkNum)) < 0) {
         return false;
     }
     if (newFragmentInitChunkNum > static_cast<double>(chunkNum) * NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR) {
@@ -112,11 +111,9 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     readPos_ = fragmentCacheBuffer_.end();
     writePos_ = fragmentCacheBuffer_.end();
     size_t sizePerChunk = sizeof(CacheChunk) + chunkSize;
-    int64_t totalSize = static_cast<int64_t>(sizePerChunk) * chunkNum;
-    if (totalSize < 0 || totalSize > MAX_CACHE_BUFFER_SIZE) {
-        return false;
-    }
-    bufferAddr_ = static_cast<uint8_t*>(malloc(totalSize));
+    FALSE_RETURN_V_MSG_E(static_cast<int64_t>(sizePerChunk) * chunkNum > 0, false,
+        "Invalid sizePerChunk and chunkNum.");
+    bufferAddr_ = static_cast<uint8_t*>(malloc(sizePerChunk * chunkNum));
     if (bufferAddr_ == nullptr) {
         return false;
     }
@@ -296,9 +293,6 @@ bool CacheMediaChunkBufferImpl::WriteMergerPre(uint64_t offset, size_t writeSize
             uint64_t dataLength = static_cast<uint64_t>(chunkInfo->dataLength);
             uint64_t moveLen = std::max(chunkInfo->offset + dataLength, newOffset) - newOffset;
             auto mergeDataLen = chunkInfo->dataLength > moveLen ? chunkInfo->dataLength - moveLen : 0;
-            if (moveLen > CHUNK_SIZE) {
-                return false;
-            }
             errno_t res = memmove_s(chunkInfo->data, moveLen, chunkInfo->data + mergeDataLen, moveLen);
             FALSE_RETURN_V_MSG_E(res == EOK, false, "memmove_s data err");
             chunkInfo->offset = newOffset;
