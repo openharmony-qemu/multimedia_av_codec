@@ -83,7 +83,8 @@
           "openssl",
           "hiview",
           "cJSON",
-          "bundle_framework"
+          "bundle_framework",
+          "efficiency_manager"
         ],
         "third_party": []
       },
