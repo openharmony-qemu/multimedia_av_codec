@@ -63,13 +63,6 @@ public:
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
-    static void GetMpeg2CapProf(std::vector<CapabilityData> &capaArray);
-    static void GetMpeg4esCapProf(std::vector<CapabilityData> &capaArray);
-    static void SetMpeg4LevelsProfileGroup1(CapabilityData& capsData);
-    static void SetMpeg4LevelsProfileGroup2(CapabilityData& capsData);
-    static void SetMpeg4Profiles(CapabilityData& capsData);
-    static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
-    static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
     struct FBuffer {
     public:
         FBuffer() = default;
@@ -123,6 +116,13 @@ private:
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
+    static void GetMpeg2CapProf(std::vector<CapabilityData> &capaArray);
+    static void GetMpeg4esCapProf(std::vector<CapabilityData> &capaArray);
+    static void SetMpeg4LevelsProfileGroup1(CapabilityData& capsData);
+    static void SetMpeg4LevelsProfileGroup2(CapabilityData& capsData);
+    static void SetMpeg4Profiles(CapabilityData& capsData);
+    static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
+    static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
 #ifdef SUPPORT_CODEC_RV
     int32_t SetCodecExtradata(const Format &format);
 #endif
