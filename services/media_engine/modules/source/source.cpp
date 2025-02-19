@@ -549,5 +549,11 @@ void Source::NotifyInitSuccess()
     FALSE_RETURN_MSG(plugin_ != nullptr, "NotifyInitSuccess source plugin is nullptr");
     plugin_->NotifyInitSuccess();
 }
+
+bool Source::IsLocalFd()
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "IsLocalFd source plugin is nullptr");
+    return plugin_->IsLocalFd();
+}
 } // namespace Media
 } // namespace OHOS

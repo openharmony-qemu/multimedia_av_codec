@@ -121,6 +121,7 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size);
     Status SetPerfRecEnabled(bool perfRecEnabled);
     void NotifyInitSuccess();
+    bool IsLocalFd();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

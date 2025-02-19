@@ -144,6 +144,7 @@ public:
     void SetIsEnableReselectVideoTrack(bool isEnable);
     bool IsHasMultiVideoTrack();
     void SetApiVersion(int32_t apiVersion);
+    bool IsLocalFd();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

@@ -259,6 +259,11 @@ public:
     }
 
     virtual void NotifyInitSuccess() {}
+
+    virtual bool IsLocalFd()
+    {
+        return false;
+    }
 };
 
 /// Source plugin api major number.
