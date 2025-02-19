@@ -910,9 +910,9 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
             break;
         } else if (static_cast<size_t>(ret) < destLength) {
             std::unique_lock<std::mutex> lock(mutex_);
-            writeCond_.wait_for(
+            auto waitStatus = writeCond_.wait_for(
                 lock, std::chrono::milliseconds(WRITE_WAIT_TIME), [&] { return isInterruptNeeded_.load(); });
-            if (isInterruptNeeded_.load()) {
+            if (waitStatus) {
                 shouldDrop = true;
                 break;
             }

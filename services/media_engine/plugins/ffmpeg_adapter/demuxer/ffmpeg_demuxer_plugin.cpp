@@ -1505,6 +1505,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, ret, "Read from ffmpeg faild");
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, ret, "Read from ffmpeg faild, retry");
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, ret, "Cache size out of limit");
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WRONG_STATE, ret, "Read from ffmpeg faild interrupt");
     }
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
     auto samplePacket = cacheQueue_.Front(trackId);
@@ -1549,7 +1550,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, ret, "Read from ffmpeg faild");
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, ret, "Read from ffmpeg faild, retry");
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, ret, "Cache size out of limit");
-        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, " GetNextSampleSize interrupt");
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WRONG_STATE, ret, " GetNextSampleSize interrupt");
     }
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_UNKNOWN, "Cache sample is nullptr");
