@@ -913,10 +913,6 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
-    if (!gotFirstInput_) {
-        HLOGI("got first input, id: %d, pts: %" PRId64, bufferId, bufferInfo->avBuffer->pts_);
-        gotFirstInput_ = true;
-    }
     bufferInfo->omxBuffer->filledLen = static_cast<uint32_t>
         (bufferInfo->avBuffer->memory_->GetSize());
     bufferInfo->omxBuffer->offset = static_cast<uint32_t>(bufferInfo->avBuffer->memory_->GetOffset());
@@ -979,6 +975,10 @@ void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
 int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
 {
     SCOPED_TRACE_FMT("id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
+    if (!gotFirstInput_) {
+        HLOGI("got first input, id: %d, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
+        gotFirstInput_ = true;
+    }
 #ifdef BUILD_ENG_VERSION
     info.Dump(compUniqueStr_, inTotalCnt_, dumpMode_, isEncoder_);
 #endif
@@ -1308,7 +1308,14 @@ void HCodec::ChangeOmxToTargetState(CodecStateType &state, CodecStateType target
         HLOGE("failed to change omx state, ret=%d", ret);
         return;
     }
-
+    if (targetState == CODEC_STATE_LOADED) {
+        for (const BufferInfo& info : inputBufferPool_) {
+            FreeOmxBuffer(OMX_DirInput, info);
+        }
+        for (const BufferInfo& info : outputBufferPool_) {
+            FreeOmxBuffer(OMX_DirOutput, info);
+        }
+    }
     int tryCnt = 0;
     do {
         if (tryCnt++ > 10) { // try up to 10 times
@@ -1358,15 +1365,7 @@ void HCodec::CleanUpOmxNode()
     if (compNode_ == nullptr) {
         return;
     }
-
-    if (RollOmxBackToLoaded()) {
-        for (const BufferInfo& info : inputBufferPool_) {
-            FreeOmxBuffer(OMX_DirInput, info);
-        }
-        for (const BufferInfo& info : outputBufferPool_) {
-            FreeOmxBuffer(OMX_DirOutput, info);
-        }
-    }
+    RollOmxBackToLoaded();
 }
 
 int32_t HCodec::OnAllocateComponent()

@@ -37,17 +37,17 @@ void HCodec::OnPrintAllBufferOwner(const MsgInfo& msg)
 {
     std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
     msg.param->GetValue(KEY_LAST_OWNER_CHANGE_TIME, lastOwnerChangeTime);
-    if ((lastOwnerChangeTime == lastOwnerChangeTime_) &&
-        (circulateWarnPrintedTimes_ < MAX_CIRCULATE_WARN_TIMES)) {
-        HLOGW("buffer circulate stoped");
-        UpdateOwner();
-        PrintAllBufferInfo();
-        circulateWarnPrintedTimes_++;
+    if (lastOwnerChangeTime == lastOwnerChangeTime_) {
+        UpdateOwner();  // update all owner count trace in case of systrace is catched too late
+        if (!circulateHasStopped_) {
+            HLOGW("buffer circulate stoped");
+            PrintAllBufferInfo();
+            circulateHasStopped_ = true;
+        }
     }
     ParamSP param = make_shared<ParamBundle>();
     param->SetValue(KEY_LAST_OWNER_CHANGE_TIME, lastOwnerChangeTime_);
-    SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, param,
-                 THREE_SECONDS_IN_US * (circulateWarnPrintedTimes_ + 1));
+    SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, param, THREE_SECONDS_IN_US);
 }
 
 void HCodec::PrintAllBufferInfo()
@@ -62,6 +62,7 @@ void HCodec::PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chron
     const char* inOutStr = isInput ? " in" : "out";
     bool eos = isInput ? inputPortEos_ : outputPortEos_;
     uint64_t cnt = isInput ? inTotalCnt_ : outRecord_.totalCnt;
+    int64_t lastPts = isInput ? lastInPts_ : lastOutPts_;
     const std::array<int, OWNER_CNT>& arr = isInput ? inputOwner_ : outputOwner_;
     const vector<BufferInfo>& pool = isInput ? inputBufferPool_ : outputBufferPool_;
 
@@ -70,7 +71,7 @@ void HCodec::PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chron
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
         s << info.bufferId << ":" << ToString(info.owner) << "(" << holdMs << "), ";
     }
-    HLOGI("%s: eos=%d, cnt=%" PRIu64 ", %d/%d/%d/%d, %s", inOutStr, eos, cnt,
+    HLOGI("%s: eos=%d, cnt=%" PRIu64 ", pts=%" PRId64 ", %d/%d/%d/%d, %s", inOutStr, eos, cnt, lastPts,
           arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE], s.str().c_str());
 }
 
@@ -150,10 +151,13 @@ void HCodec::PrintStatistic(bool isInput, std::chrono::time_point<std::chrono::s
         TotalCntAndCost& holdRecord = isInput ? inputHoldTimeRecord_[owner] : outputHoldTimeRecord_[owner];
         aveHoldMs[owner] = (holdRecord.totalCnt == 0) ? -1 : (holdRecord.totalCostUs / US_TO_MS / holdRecord.totalCnt);
     }
+    const char* inOutStr = isInput ? " in" : "out";
+    uint64_t cnt = isInput ? inTotalCnt_ : outRecord_.totalCnt;
+    int64_t lastPts = isInput ? lastInPts_ : lastOutPts_;
     uint64_t discardCnt = isInput ? inputDiscardCnt_ : outputDiscardCnt_;
     uint64_t waitFenceCostUs = isInput ? inputWaitFenceCostUs_ : outputWaitFenceCostUs_;
-    HLOGI("%s:%.0f; %d/%d/%d/%d, %.0f/%.0f/%.0f/%.0f, fence %.3f, discard %.0f%%",
-        (isInput ? " in" : "out"), fps,
+    HLOGI("%s: fps=%.1f, cnt=%" PRIu64 ", pts=%" PRId64 ", %d/%d/%d/%d, %.0f/%.0f/%.0f/%.0f, "
+        "fence %.3f, discard %.0f%%", inOutStr, fps, cnt, lastPts,
         arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE],
         aveHoldMs[OWNED_BY_US], aveHoldMs[OWNED_BY_USER], aveHoldMs[OWNED_BY_OMX], aveHoldMs[OWNED_BY_SURFACE],
         waitFenceCostUs / US_TO_MS / PRINT_PER_FRAME,
@@ -173,7 +177,13 @@ void HCodec::ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner)
     BufferOwner oldOwner = info.owner;
     auto now = chrono::steady_clock::now();
     lastOwnerChangeTime_ = now;
-    circulateWarnPrintedTimes_ = 0;
+    if (circulateHasStopped_) {
+        const char* oldOwnerStr = ToString(oldOwner);
+        const char* newOwnerStr = ToString(newOwner);
+        HLOGI("circulate resume, %s, %s -> %s, pts=%" PRId64,
+            (info.isInput ? "in" : "out"), oldOwnerStr, newOwnerStr, info.omxBuffer->pts);
+        circulateHasStopped_ = false;
+    }
     arr[oldOwner]--;
     arr[newOwner]++;
     CountTrace(HITRACE_TAG_ZMEDIA, ownerStr[oldOwner], arr[oldOwner]);
@@ -191,6 +201,7 @@ void HCodec::ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner)
     info.owner = newOwner;
 
     if (info.isInput && oldOwner == OWNED_BY_US && newOwner == OWNED_BY_OMX) {
+        lastInPts_ = info.omxBuffer->pts;
         if (inTotalCnt_ == 0) {
             firstInTime_ = now;
         }
@@ -203,7 +214,8 @@ void HCodec::ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner)
             inputDiscardCnt_ = 0;
         }
     }
-    if (!info.isInput && oldOwner == OWNED_BY_OMX && newOwner == OWNED_BY_US) {
+    if (!info.isInput && oldOwner == OWNED_BY_US && newOwner == OWNED_BY_USER) {
+        lastOutPts_ = info.omxBuffer->pts;
         if (outRecord_.totalCnt == 0) {
             firstOutTime_ = now;
         }
@@ -226,7 +238,7 @@ void HCodec::ChangeOwnerDebug(BufferInfo& info, BufferOwner newOwner)
     BufferOwner oldOwner = info.owner;
     auto now = chrono::steady_clock::now();
     lastOwnerChangeTime_ = now;
-    circulateWarnPrintedTimes_ = 0;
+    circulateHasStopped_ = false;
     arr[oldOwner]--;
     arr[newOwner]++;
     CountTrace(HITRACE_TAG_ZMEDIA, ownerStr[oldOwner], arr[oldOwner]);

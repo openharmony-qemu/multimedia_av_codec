@@ -369,6 +369,8 @@ protected:
     uint64_t inTotalCnt_ = 0;
     TotalCntAndCost outRecord_;
     std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
+    int64_t lastInPts_ = -1;
+    int64_t lastOutPts_ = -1;
 
     // normal: every 400 frames, debug: whole life time
     static constexpr uint64_t PRINT_PER_FRAME = 400;
@@ -384,8 +386,7 @@ protected:
     // used when buffer circulation stoped
     static constexpr char KEY_LAST_OWNER_CHANGE_TIME[] = "lastOwnerChangeTime";
     std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime_;
-    uint32_t circulateWarnPrintedTimes_ = 0;
-    static constexpr uint32_t MAX_CIRCULATE_WARN_TIMES = 3;
+    bool circulateHasStopped_ = false;
 
     std::array<int, HCodec::OWNER_CNT> inputOwner_ {};
     std::array<std::string, HCodec::OWNER_CNT> inputOwnerStr_ {};

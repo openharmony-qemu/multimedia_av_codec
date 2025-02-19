@@ -1305,7 +1305,7 @@ void HEncoder::CheckPts(int64_t currentPts)
         pts_ = currentPts;
     } else {
         int64_t lastPts = pts_.value();
-        if (currentPts <= lastPts) {
+        if (lastPts != 0 && currentPts != 0 && lastPts >= currentPts) {
             HLOGW("pts not incremental: last %" PRId64 ", current %" PRId64, lastPts, currentPts);
         }
         pts_ = currentPts;
