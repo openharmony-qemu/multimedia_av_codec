@@ -129,7 +129,7 @@ public:
     bool GetIsDataSrcNoSeek();
 protected:
     std::shared_ptr<Source> source_;
-    std::shared_ptr<TypeFinder> typeFinder;
+    std::shared_ptr<TypeFinder> typeFinder_;
     std::function<Status(int32_t, uint64_t, size_t)> checkRange_;
     std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
