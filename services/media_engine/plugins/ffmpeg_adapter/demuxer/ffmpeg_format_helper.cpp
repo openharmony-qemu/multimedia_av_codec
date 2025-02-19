@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <regex>
 #include <iconv.h>
+#include <sstream>
 #include "ffmpeg_converter.h"
 #include "meta/meta_key.h"
 #include "meta/media_types.h"
@@ -162,15 +163,17 @@ std::vector<TagType> g_supportSourceFormat = {
 
 std::vector<std::string> SplitByChar(const char* str, const char* pattern)
 {
+    FALSE_RETURN_V_NOLOG(str != nullptr && pattern != nullptr, {});
     std::string tempStr(str);
+    std::stringstream strStream(tempStr);
     std::vector<std::string> resultVec;
-    char* subStr = strtok(const_cast<char*>(tempStr.c_str()), pattern);
-    while (subStr != nullptr) {
-        resultVec.push_back(std::string(subStr));
-        subStr = strtok(nullptr,  pattern);
+    std::string item;
+    while (std::getline(strStream, item, *pattern)) {
+        if (!item.empty()) {
+            resultVec.push_back(item);
+        }
     }
     MEDIA_LOG_D("Split by [" PUBLIC_LOG_S "], get " PUBLIC_LOG_ZU " string", pattern, resultVec.size());
-    delete[] subStr;
     return resultVec;
 }
 
