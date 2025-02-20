@@ -272,7 +272,6 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU;
-extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;
 
 /**
  * @brief Enumerates the MIME type of audio low bitrate voice codec.
