@@ -49,6 +49,7 @@ struct HeaderInfo {
     bool isChunked {false};
     std::atomic<bool> isClosed {false};
     bool isServerAcceptRange {false};
+    bool isValidContentType {true};
 
     void Update(const HeaderInfo* info)
     {
@@ -194,6 +195,8 @@ private:
     void PauseLoop(bool isAsync = false);
     void WaitLoopPause();
     void NotifyLoopPause();
+    void ResetContentType();
+    void HandleRetErrorCode();
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;

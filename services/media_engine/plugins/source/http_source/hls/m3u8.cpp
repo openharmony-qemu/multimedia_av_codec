@@ -180,6 +180,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
     bLive_ = !info.bVod;
     size_t segmentTimeOffset = 0;
     size_t duration = 0;
+    minFragDuration_.store(0);
     for (const auto &frag : files_) {
         duration += static_cast<size_t>(frag->duration_ * SECOND_TO_MICROSECOND);
     }
@@ -190,20 +191,17 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
             bLive_ = !info.bVod;
             MEDIA_LOG_I("UpdateFromTags not live.");
         }
-
         if (hlsTag == HlsTag::EXTXDISCONTINUITY) {
             segmentTimeOffset = duration;
             hasDiscontinuity_ = true;
             MEDIA_LOG_I("segmentTimeOffset here is: " PUBLIC_LOG_ZU, segmentTimeOffset);
             continue;
         }
-
         auto iter = tagUpdatersMap_.find(hlsTag);
         if (iter != tagUpdatersMap_.end()) {
             auto updater = iter->second;
             updater(tag, info);
         }
-
         if (!info.uri.empty()) {
             if (!isFirstFragmentReady_ && !isDecryptAble_) {
                 firstFragment_ = info;
@@ -228,8 +226,19 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 
 void M3U8::AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration)
 {
+    if (minFragDuration_.load() <= 0 || minFragDuration_.load() > duration) {
+        minFragDuration_.store(duration);
+    }
     segmentOffsets_.emplace_back(duration);
     files_.emplace_back(fragment);
+}
+
+size_t M3U8::GetLiveUpdateGap() const
+{
+    if (minFragDuration_.load() <= 0) {
+        return 0;
+    }
+    return (minFragDuration_.load() - 1) / 2; // 2
 }
 
 void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
