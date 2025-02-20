@@ -59,8 +59,12 @@ constexpr int32_t TIME_SEC_TO_MS = 1000;
 constexpr int32_t VIDEO_QP_MAX = 51;
 constexpr int32_t VIDEO_QP_MIN = 4;
 constexpr int32_t VIDEO_QP_DEFAULT = 20;
-constexpr int32_t VIDEO_IFRAME_INTERVAL_DEFAULT = 30;
-constexpr double DEFAULT_FRAME_RATE = 30.0;
+constexpr int32_t VIDEO_IFRAME_INTERVAL_MIN_TIME = 1000;
+constexpr int32_t VIDEO_IFRAME_INTERVAL_MAX_TIME = 21000;
+constexpr int32_t DEFAULT_VIDEO_INTERVAL_TIME = 1;
+constexpr int32_t DEFAULT_VIDEO_IFRAME_INTERVAL = 30;
+constexpr int32_t DEFAULT_VIDEO_BITRATE = 6000000;
+constexpr double DEFAULT_VIDEO_FRAMERATE = 30.0;
 
 constexpr struct {
     const std::string_view codecName;
@@ -130,8 +134,8 @@ AvcEncoder::AvcEncoder(const std::string &name)
       encQp_(VIDEO_QP_DEFAULT),
       encQpMax_(VIDEO_QP_MAX),
       encQpMin_(VIDEO_QP_MIN),
-      encIperiod_(VIDEO_IFRAME_INTERVAL_DEFAULT),
-      encFrameRate_(DEFAULT_FRAME_RATE)
+      encIperiod_(DEFAULT_VIDEO_IFRAME_INTERVAL),
+      encFrameRate_(DEFAULT_VIDEO_FRAMERATE)
 {
     AVCODEC_SYNC_TRACE;
     std::unique_lock<std::mutex> lock(encoderCountMutex_);
@@ -237,23 +241,30 @@ void AvcEncoder::ClearDirtyList()
     }
 }
 
+void AvcEncoder::WaitForInBuffer()
+{
+    std::unique_lock<std::mutex> listLock(freeListMutex_);
+    surfaceRecvCv_.wait(listLock, [this] {
+        if (state_ == State::STOPPING) {
+            ReleaseSurfaceBuffer();
+            return true;
+        }
+
+        if (!freeList_.empty()) {
+            return true;
+        }
+
+        return false;
+    });
+}
+
 void AvcEncoder::GetBufferFromSurface()
 {
-    if (inputSurface_ == nullptr) {
-        AVCODEC_LOGW("inputSurface_ not exists");
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(inputSurface_ != nullptr, "inputSurface_ not exists");
     if (freeList_.empty()) {
-        ReleaseSurfaceBuffer();
-        AVCODEC_LOGW("no can use buffer drop surface data ...");
-        return;
+        WaitForInBuffer();
+        CHECK_AND_RETURN_LOG(state_ != State::STOPPING, "surface exit .");
     }
-
-    std::unique_lock<std::mutex> listLock(freeListMutex_);
-    uint32_t index = freeList_.front();
-    freeList_.pop_front();
-    listLock.unlock();
 
     sptr<SurfaceBuffer> buffer = nullptr;
     sptr<SyncFence> fence = nullptr;
@@ -270,12 +281,14 @@ void AvcEncoder::GetBufferFromSurface()
         return;
     }
     AVCODEC_LOGD("timestamp: %{public}" PRId64 ", dataSize: %{public}d", pts, buffer->GetSize());
-    std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
-    if (inputBuffer == nullptr) {
-        AVCODEC_LOGW("input buffer error impossible ...");
-        return;
-    }
 
+    std::unique_lock<std::mutex> listLock(freeListMutex_);
+    uint32_t index = freeList_.front();
+    freeList_.pop_front();
+    listLock.unlock();
+    std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
+
+    CHECK_AND_RETURN_LOG(inputBuffer != nullptr, "input buffer is null");
     if (enableSurfaceModeInputCb_) {
         inputBuffer->surfaceBuffer_ = buffer;
         inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer();
@@ -484,14 +497,16 @@ void AvcEncoder::GetBitRateFromUser(const Format &format)
     int64_t bitRateLong;
     if (format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateLong) && bitRateLong > 0 &&
         bitRateLong <= UINT32_MAX) {
-        AVCODEC_LOGI("user set bit rate %" PRId64 "", bitRateLong);
+        AVCODEC_LOGI("user set bitrate %{public}" PRId64 "", bitRateLong);
         encBitrate_ = static_cast<int32_t>(bitRateLong);
+        CheckBitRateSupport(encBitrate_);
         return;
     }
     int32_t bitRateInt;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateInt) && bitRateInt > 0) {
-        AVCODEC_LOGI("user set bit rate %{public}d", bitRateInt);
+        AVCODEC_LOGI("user set bitrate %{public}d", bitRateInt);
         encBitrate_ = bitRateInt;
+        CheckBitRateSupport(encBitrate_);
         return;
     }
     return;
@@ -503,9 +518,9 @@ bool AvcEncoder::GetPixelFmtFromUser(const Format &format)
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, *(int *)&innerFmt) &&
         innerFmt != VideoPixelFormat::SURFACE_FORMAT) {
         srcPixelFmt_ = innerFmt;
-        AVCODEC_LOGI("configuread pixel fmt min %{public}d", static_cast<int32_t>(innerFmt));
+        AVCODEC_LOGI("configuread pixel fmt %{public}d", static_cast<int32_t>(innerFmt));
     } else {
-        AVCODEC_LOGI("user don't set pixel fmt, use default");
+        AVCODEC_LOGI("user don't set pixel fmt, use default nv21");
     }
     return true;
 }
@@ -516,15 +531,17 @@ void AvcEncoder::GetFrameRateFromUser(const Format &format)
     if (format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRateDouble) && frameRateDouble > 0) {
         AVCODEC_LOGI("user set frame rate %{public}.2f", frameRateDouble);
         encFrameRate_ = frameRateDouble;
+        CheckFrameRateSupport(encFrameRate_);
         return;
     }
     int frameRateInt;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRateInt) && frameRateInt > 0) {
         AVCODEC_LOGI("user set frame rate %{public}d", frameRateInt);
         encFrameRate_ = static_cast<double>(frameRateInt);
+        CheckFrameRateSupport(encFrameRate_);
         return;
     }
-    encFrameRate_ = DEFAULT_FRAME_RATE; // default frame rate 30.0
+    encFrameRate_ = DEFAULT_VIDEO_FRAMERATE; // default frame rate 30.0
     return;
 }
 
@@ -563,6 +580,7 @@ void AvcEncoder::GetIFrameIntervalFromUser(const Format &format)
 {
     int32_t interval;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, interval) && interval > 0) {
+        CheckIFrameIntervalTimeSupport(interval);
         encIperiod_ = interval * encFrameRate_ / TIME_SEC_TO_MS;
         AVCODEC_LOGI("user set iframe interval %{public}d s %{public}d", interval, encIperiod_);
     }
@@ -597,9 +615,9 @@ void AvcEncoder::GetColorAspects(const Format &format)
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, matrix)) {
         AVCODEC_LOGI("user set matrix %{public}d", matrix);
     }
-    if (primary < 0 || primary > UINT8_MAX ||
-        transfer < 0 || transfer > UINT8_MAX ||
-        matrix < 0 || matrix > UINT8_MAX) {
+    if (primary < 0 || primary > ColorPrimary::COLOR_PRIMARY_P3D65 ||
+        transfer < 0 || transfer > TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG ||
+        matrix < 0 || matrix > MatrixCoefficient::MATRIX_COEFFICIENT_ICTCP) {
         AVCODEC_LOGW("user set invalid color");
         return;
     }
@@ -617,6 +635,37 @@ void AvcEncoder::CheckIfEnableCb(const Format &format)
     if (format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, enableCb)) {
         AVCODEC_LOGI("enable surface mode callback flag %{public}d", enableCb);
         enableSurfaceModeInputCb_ = static_cast<bool>(enableCb);
+    }
+    return;
+}
+
+void AvcEncoder::CheckBitRateSupport(int32_t &bitrate)
+{
+    if (bitrate > VIDEO_BITRATE_MAX_SIZE || bitrate < VIDEO_BITRATE_MIN_SIZE) {
+        AVCODEC_LOGW("bitrate %{public}d not in [%{public}d, %{public}d], set default %{public}d",
+            bitrate, VIDEO_BITRATE_MIN_SIZE, VIDEO_BITRATE_MAX_SIZE, DEFAULT_VIDEO_BITRATE);
+        bitrate = DEFAULT_VIDEO_BITRATE;
+    }
+    return;
+}
+
+void AvcEncoder::CheckFrameRateSupport(double &framerate)
+{
+    if (framerate > VIDEO_FRAMERATE_MAX_SIZE || framerate < VIDEO_FRAMERATE_MIN_SIZE) {
+        AVCODEC_LOGW("framerate %{public}f not in [%{public}d, %{public}d], set default %{public}f",
+            framerate, VIDEO_FRAMERATE_MIN_SIZE, VIDEO_FRAMERATE_MAX_SIZE, DEFAULT_VIDEO_FRAMERATE);
+        framerate = DEFAULT_VIDEO_FRAMERATE;
+    }
+    return;
+}
+
+void AvcEncoder::CheckIFrameIntervalTimeSupport(int32_t &interval)
+{
+    if (interval > VIDEO_IFRAME_INTERVAL_MAX_TIME || interval < VIDEO_IFRAME_INTERVAL_MIN_TIME) {
+        AVCODEC_LOGW("interval %{public}d not in [%{public}d, %{public}d], set default %{public}d",
+            interval, VIDEO_IFRAME_INTERVAL_MIN_TIME, VIDEO_IFRAME_INTERVAL_MAX_TIME,
+            DEFAULT_VIDEO_INTERVAL_TIME);
+        interval = DEFAULT_VIDEO_INTERVAL_TIME;
     }
     return;
 }
@@ -649,11 +698,6 @@ int32_t AvcEncoder::SignalRequestIDRFrame()
     AVCODEC_LOGI("request idr frame success");
     encIdrRequest_ = true;
     return AVCS_ERR_OK;
-}
-
-void AvcEncoder::SetAvcInfoToMeta(std::shared_ptr<Media::Meta> &meta)
-{
-    meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_REAL_BITRATE, encBitrate_);
 }
 
 void AvcEncoder::InitBuffers()
@@ -905,6 +949,7 @@ int32_t AvcEncoder::Stop()
     AVCODEC_LOGI("step into STOPPING status");
 
     if (inputSurface_ != nullptr) {
+        surfaceRecvCv_.notify_all();
         ClearDirtyList();
         inputSurface_->UnregisterConsumerListener();
     }
@@ -916,6 +961,17 @@ int32_t AvcEncoder::Stop()
     codecAvailQue_->SetActive(false, false);
     sendTask_->Stop();
     ResetBuffers();
+    std::unique_lock<std::mutex> runLock(encRunMutex_);
+    if (avcEncoder_ != nullptr && avcEncoderDeleteFunc_ != nullptr) {
+        uint32_t ret = avcEncoderDeleteFunc_(avcEncoder_);
+        if (ret != 0) {
+            AVCODEC_LOGE("Error: avc encoder delete error: %{public}d", ret);
+            callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+            state_ = State::ERROR;
+        }
+        avcEncoder_ = nullptr;
+    }
+    runLock.unlock();
     state_ = State::CONFIGURED;
     AVCODEC_LOGI("Stop codec successful, state: Configured");
     return AVCS_ERR_OK;
@@ -993,6 +1049,7 @@ void AvcEncoder::ReleaseResource()
     format_ = Format();
 
     if (inputSurface_ != nullptr) {
+        surfaceRecvCv_.notify_all();
         ClearDirtyList();
         inputSurface_->UnregisterConsumerListener();
     }
@@ -1061,7 +1118,7 @@ int32_t AvcEncoder::GetOutputFormat(Format &format)
 bool AvcEncoder::GetDiscardFlagFromAVBuffer(const std::shared_ptr<AVBuffer> &buffer)
 {
     bool ret = false;
-    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, ret)) {
+    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, ret) && ret) {
         AVCODEC_LOGD("discard by user, pts = %{public}" PRId64, buffer->pts_);
         return ret;
     }
@@ -1122,7 +1179,10 @@ int32_t AvcEncoder::ReleaseOutputBuffer(uint32_t index)
 
 int32_t AvcEncoder::NotifyEos()
 {
+    AVCODEC_LOGI(" start ");
+    WaitForInBuffer();
     if (freeList_.empty()) {
+        AVCODEC_LOGE("no empty buffer");
         return AVCS_ERR_OK;
     }
 
@@ -1174,6 +1234,7 @@ void AvcEncoder::NotifyUserToFillBuffer(uint32_t index, std::shared_ptr<AVBuffer
         std::unique_lock<std::mutex> listLock(freeListMutex_);
         freeList_.emplace_back(index);
         listLock.unlock();
+        surfaceRecvCv_.notify_one();
         auto surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
         inputSurface_->ReleaseBuffer(surfaceBuffer, -1);
     }
@@ -1238,7 +1299,7 @@ int32_t AvcEncoder::Nv21ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
 {
     NVFrame nvFrame = {
         .srcY    = inFrame.buffer,
-        .srcUV   = inFrame.buffer + inFrame.stride * inFrame.height,
+        .srcUV   = inFrame.buffer + inFrame.uvOffset,
         .yStride = inFrame.stride,
         .uvStide = inFrame.stride,
         .width   = inFrame.width,
@@ -1251,31 +1312,27 @@ int32_t AvcEncoder::Nv21ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
 
 int32_t AvcEncoder::Nv12ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &inArgs)
 {
-    uint8_t* srcData[AV_NUM_DATA_POINTERS] = {
-        inFrame.buffer,
-        inFrame.buffer + inFrame.stride * inFrame.height,
-        nullptr
+    int32_t width = inFrame.width;
+    int32_t height = inFrame.height;
+    uint8_t *dstData = convertBuffer_->memory_->GetAddr();
+    int32_t dstSize = convertBuffer_->memory_->GetCapacity();
+
+    YuvImageData yuvData = {
+        .data     = inFrame.buffer,
+        .stride   = inFrame.stride,
+        .uvOffset = inFrame.uvOffset,
     };
 
-    int32_t srcLineSize[AV_NUM_DATA_POINTERS] = {
-        inFrame.stride,
-        inFrame.stride,
-        0
-    };
-
-    int32_t ret = ConvertVideoFrame(&scale_,
-        srcData, srcLineSize, ConvertPixelFormatToFFmpeg(VideoPixelFormat::NV12),
-        inFrame.width, inFrame.height,
-        scaleData_, scaleLineSize_, ConvertPixelFormatToFFmpeg(VideoPixelFormat::NV21));
+    int32_t ret = ConvertNv12ToNv21(dstData, width, height, dstSize, yuvData);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
 
     NVFrame nvFrame = {
-        .srcY    = scaleData_[0],
-        .srcUV   = scaleData_[1],
-        .yStride = scaleLineSize_[0],
-        .uvStide = scaleLineSize_[1],
-        .width   = inFrame.width,
-        .height  = inFrame.height,
+        .srcY    = dstData,
+        .srcUV   = dstData + width * height,
+        .yStride = width,
+        .uvStide = width,
+        .width   = width,
+        .height  = height,
     };
 
     FillNV21ToAvcEncInArgs(inArgs, nvFrame, inFrame.pts);
@@ -1286,8 +1343,8 @@ int32_t AvcEncoder::Yuv420ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS
 {
     uint8_t* srcData[AV_NUM_DATA_POINTERS] = {
         inFrame.buffer,
-        inFrame.buffer + inFrame.stride * inFrame.height,
-        inFrame.buffer + inFrame.stride * inFrame.height * 5 / 4  // 5 / 4: v addr
+        inFrame.buffer + inFrame.uvOffset,
+        inFrame.buffer + inFrame.uvOffset + (inFrame.stride / 2) * (inFrame.height / 2),  // v: 1/2 width, 1/2 height
     };
     int32_t srcLineSize[AV_NUM_DATA_POINTERS] = {
         inFrame.stride,
@@ -1328,10 +1385,10 @@ int32_t AvcEncoder::RgbaToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
     int32_t dstSize = convertBuffer_->memory_->GetCapacity();
 
     RgbImageData rgbData = {
-        .data = inFrame.buffer,
+        .data   = inFrame.buffer,
         .stride = stride,
         .matrix = TranslateMatrix(srcMatrix_),
-        .range = TranslateRange(srcRange_),
+        .range  = TranslateRange(srcRange_),
         .bytesPerPixel = RGBA_COLINC,
     };
 
@@ -1355,6 +1412,30 @@ int32_t AvcEncoder::RgbaToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
     return AVCS_ERR_OK;
 }
 
+int32_t AvcEncoder::GetSurfaceBufferUvOffset(sptr<SurfaceBuffer> &surfaceBuffer, VideoPixelFormat format)
+{
+    int32_t uvOffset = 0;
+    if (!((format == VideoPixelFormat::YUVI420) ||
+        (format == VideoPixelFormat::NV12) ||
+        (format == VideoPixelFormat::NV21))) {
+        return uvOffset;
+    }
+
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal != GSERROR_OK || planes == nullptr) {
+        AVCODEC_LOGE(" GetPlanesInfo failed, retVal:%{public}d", retVal);
+        return uvOffset;
+    }
+    CHECK_AND_RETURN_RET_LOG(planes->planeCount > 1, uvOffset, "Get surface uvinfo failed");
+    if (format == VideoPixelFormat::NV21) {
+        uvOffset = static_cast<int32_t>(planes->planes[2].offset);     // 2: nv21 v offset
+    } else {
+        uvOffset = static_cast<int32_t>(planes->planes[1].offset);     // 1: nv21 yuv420 u offset
+    }
+    return uvOffset;
+}
+
 int32_t AvcEncoder::GetInputFrameFromAVBuffer(std::shared_ptr<AVBuffer> &buffer, InputFrame &inFrame)
 {
     inFrame.format = srcPixelFmt_;
@@ -1373,6 +1454,10 @@ int32_t AvcEncoder::GetInputFrameFromAVBuffer(std::shared_ptr<AVBuffer> &buffer,
         inFrame.stride = surfaceBuffer->GetStride();
         inFrame.size = static_cast<int32_t>(surfaceBuffer->GetSize());
         inFrame.buffer = reinterpret_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
+        inFrame.uvOffset = GetSurfaceBufferUvOffset(surfaceBuffer, inFrame.format);
+    }
+    if (inFrame.uvOffset == 0) {
+        inFrame.uvOffset = inFrame.stride * inFrame.height;
     }
     inFrame.pts = buffer->pts_;
     return AVCS_ERR_OK;

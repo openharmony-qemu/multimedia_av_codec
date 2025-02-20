@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "securec.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
@@ -261,6 +262,48 @@ int32_t ConvertRgbToNv21(uint8_t *dstData, int32_t width, int32_t height,
 
         dstData += dstStride;
     }
+    return AVCS_ERR_OK;
+}
+
+int32_t ConvertNv12ToNv21(uint8_t *dstData, int32_t width, int32_t height,
+    int32_t bufferSize, YuvImageData &yuvData)
+{
+    if (bufferSize < (width * height * 3 / 2)) {    // yuv bufferSize dstStride * height * 3 / 2
+        AVCODEC_LOGE("conversion buffer is too small for converting from RGB to YUV");
+        return AVCS_ERR_NO_MEMORY;
+    }
+
+    int32_t dstStride = width;
+    uint8_t *dstY = dstData;
+    uint8_t *dstU = dstData + dstStride * height;
+    uint8_t *dstV = dstData + dstStride * height + 1;
+
+    int32_t srcStride = yuvData.stride;
+    const uint8_t *srcY = yuvData.data;
+    const uint8_t *srcU = srcY + yuvData.uvOffset;
+    const uint8_t *srcV = srcU + 1;
+
+    for (int32_t y = 0; y < height; y++) {
+        errno_t ret = memcpy_s(dstY, width, srcY, width);
+        CHECK_AND_RETURN_RET_LOG(ret == EOK, AVCS_ERR_UNKNOWN, "memcpy_s failed");
+        dstY += dstStride;
+        srcY += srcStride;
+    }
+
+    height = height >> 1;
+    width = width >> 1;
+    for (int32_t y = 0; y < height; y++) {
+        for (int32_t x = 0; x < width; x++) {
+            dstU[x * 2] = srcV[x * 2];          // 2: addr + pos * 2 for u
+            dstV[x * 2] = srcU[x * 2];          // 2: (addr + 1) + pos * 2 for v
+        }
+
+        dstU += dstStride;
+        dstV += dstStride;
+        srcU += srcStride;
+        srcV += srcStride;
+    }
+
     return AVCS_ERR_OK;
 }
 
