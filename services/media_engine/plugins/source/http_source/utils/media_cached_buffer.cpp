@@ -92,11 +92,9 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     } else {
         lruCache_.ReCacheSize(CACHE_FRAGMENT_MAX_NUM_DEFAULT);
     }
-
     if (totalBuffSize == 0 || chunkSize == 0 || totalBuffSize < chunkSize) {
         return false;
     }
-
     double newFragmentInitChunkNum  = NEW_FRAGMENT_INIT_CHUNK_NUM;
     uint64_t diff = (totalBuffSize + chunkSize) > 1 ? (totalBuffSize + chunkSize) - 1 : 0;
     int64_t chunkNum = static_cast<int64_t>(diff / chunkSize) + 1;
@@ -110,7 +108,6 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     if (bufferAddr_ != nullptr) {
         return false;
     }
-
     readPos_ = fragmentCacheBuffer_.end();
     writePos_ = fragmentCacheBuffer_.end();
     size_t sizePerChunk = sizeof(CacheChunk) + chunkSize;
@@ -120,7 +117,6 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     if (bufferAddr_ == nullptr) {
         return false;
     }
-    
     uint8_t* temp = bufferAddr_;
     for (auto i = 0; i < chunkNum; ++i) {
         auto chunkInfo = reinterpret_cast<CacheChunk*>(temp);
@@ -295,15 +291,13 @@ bool CacheMediaChunkBufferImpl::WriteMergerPre(uint64_t offset, size_t writeSize
             auto &chunkInfo  = *endPos;
             uint64_t newOffset = offset + static_cast<uint64_t>(writeSize);
             uint64_t dataLength = static_cast<uint64_t>(chunkInfo->dataLength);
-            uint64_t moveLen = (chunkInfo->offset + dataLength) > newOffset ?
-                (chunkInfo->offset + dataLength) - newOffset : 0;
+            uint64_t moveLen = std::max(chunkInfo->offset + dataLength, newOffset) - newOffset;
             auto mergeDataLen = chunkInfo->dataLength > moveLen ? chunkInfo->dataLength - moveLen : 0;
             errno_t res = memmove_s(chunkInfo->data, moveLen, chunkInfo->data + mergeDataLen, moveLen);
             FALSE_RETURN_V_MSG_E(res == EOK, false, "memmove_s data err");
             chunkInfo->offset = newOffset;
             chunkInfo->dataLength = static_cast<uint32_t>(moveLen);
-            uint64_t lostLength = newOffset > nextFragmentPos->offsetBegin ?
-                newOffset - nextFragmentPos->offsetBegin : 0;
+            uint64_t lostLength = std::max(newOffset, nextFragmentPos->offsetBegin) - nextFragmentPos->offsetBegin;
             nextFragmentPos->dataLength -= static_cast<int64_t>(lostLength);
             lruCache_.Update(nextFragmentPos->offsetBegin, newOffset, nextFragmentPos);
             nextFragmentPos->offsetBegin = newOffset;
@@ -518,7 +512,7 @@ size_t CacheMediaChunkBufferImpl::WriteChunk(FragmentCacheBuffer& fragmentCacheB
         writedTmp += WriteOneChunkData(*chunkInfo, src, offset, writeSize);
         fragmentCacheBuffer.dataLength += static_cast<int64_t>(writedTmp);
     }
-    while (writedTmp < writeSize) {
+    while (writedTmp < writeSize && writedTmp >= 0) {
         auto chunkOffset = offset + static_cast<uint64_t>(writedTmp);
         auto freeChunk = GetFreeCacheChunk(chunkOffset);
         if (freeChunk == nullptr) {
