@@ -69,26 +69,26 @@ static void NotifyActive(const std::vector<int32_t> &pidList)
     return;
 }
 
-Errcode SuspendStateObserverStubObj::OnActive(const std::vector<int32_t> &pidList, const int32_t uid)
+ErrCode SuspendStateObserverStubObj::OnActive(const std::vector<int32_t> &pidList, const int32_t uid)
 {
     AVCODEC_LOGI("OnActive, pidList size:%{public}zu, uid:%{public}d", pidList.size(), uid);
     NotifyActive(pidList);
     return ERR_OK;
 }
 
-Errcode SuspendStateObserverStubObj::OnDoze(const int32_t uid)
+ErrCode SuspendStateObserverStubObj::OnDoze(const int32_t uid)
 {
     return ERR_OK;
 }
 
-Errcode SuspendStateObserverStubObj::OnFrozen(const std::vector<int32_t> &pidList, const int32_t uid)
+ErrCode SuspendStateObserverStubObj::OnFrozen(const std::vector<int32_t> &pidList, const int32_t uid)
 {
     AVCODEC_LOGI("OnFrozen, pidList size:%{public}zu, uid:%{public}d", pidList.size(), uid);
     NotifyFrozen(pidList);
     return ERR_OK;
 }
 
-Errcode SuspendStateObserverStubObj::OnFrozenUid(const int32_t uid, const uint32_t reasonId)
+ErrCode SuspendStateObserverStubObj::OnFrozenUid(const int32_t uid, const uint32_t reasonId)
 {
     return ERR_OK;
 }
