@@ -63,7 +63,7 @@ public:
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
-    static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
+    static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
     struct FBuffer {
     public:
         FBuffer() = default;
