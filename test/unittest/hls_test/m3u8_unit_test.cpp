@@ -472,4 +472,13 @@ HWTEST_F(M3u8UnitTest, ProcessDrmInfosTest, TestSize.Level1)
     ASSERT_EQ(testM3u8->isDecryptAble_, testM3u8->localDrmInfos_.empty());
 }
 
+HWTEST_F(M3u8UnitTest, GetLiveUpdateGap001, TestSize.Level1)
+{
+    M3U8 m3u8(testUri, "");
+    size_t time = m3u8.GetLiveUpdateGap();
+    EXPECT_EQ(0, time);
+    m3u8.minFragDuration_ = 1;
+    time = m3u8.GetLiveUpdateGap();
+    EXPECT_EQ(0, time);
+}
 }

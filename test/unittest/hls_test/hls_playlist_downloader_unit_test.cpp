@@ -153,4 +153,11 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, IS_LIVE, TestSize.Level1)
     bool isLive = downloader.IsLive();
     EXPECT_FALSE(isLive);
 }
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, GetLiveUpdateGap001, TestSize.Level1)
+{
+    HlsPlayListDownloader downloader;
+    size_t time = downloader.GetLiveUpdateGap();
+    EXPECT_EQ(0, time);
+}
 }
