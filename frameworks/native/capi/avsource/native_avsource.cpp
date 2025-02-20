@@ -157,7 +157,7 @@ OH_AVFormat *OH_AVSource_GetTrackFormat(OH_AVSource *source, uint32_t trackIndex
     return avFormat;
 }
 
-OH_AVFormat *OH_AVSource_GetCustomMetaDataFormat(OH_AVSource *source)
+OH_AVFormat *OH_AVSource_GetCustomMetadataFormat(OH_AVSource *source)
 {
     CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "Input source is nullptr");
     CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, nullptr, "Magic error");
