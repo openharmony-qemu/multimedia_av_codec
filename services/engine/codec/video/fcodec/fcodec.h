@@ -63,6 +63,7 @@ public:
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
+    static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
     struct FBuffer {
     public:
         FBuffer() = default;
@@ -121,7 +122,6 @@ private:
     static void SetMpeg4LevelsProfileGroup1(CapabilityData& capsData);
     static void SetMpeg4LevelsProfileGroup2(CapabilityData& capsData);
     static void SetMpeg4Profiles(CapabilityData& capsData);
-    static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
     static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
 #ifdef SUPPORT_CODEC_RV
     int32_t SetCodecExtradata(const Format &format);
