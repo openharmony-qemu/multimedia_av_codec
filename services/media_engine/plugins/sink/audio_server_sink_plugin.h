@@ -123,6 +123,14 @@ public:
     int64_t GetWriteDurationMs() override;
 
     void SetInterruptState(bool isInterruptNeeded) override;
+
+    Status SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback) override;
+ 
+    bool GetAudioPosition(timespec &time, uint32_t &framePosition) override;
+ 
+    Status Enqueue(const AudioStandard::BufferDesc &bufferDesc) override;
+ 
+    Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc) override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
@@ -151,6 +159,15 @@ private:
 
     private:
         std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
+    };
+    class AudioRendererWriteCallbackImpl : public AudioStandard::AudioRendererWriteCallback {
+    public:
+        explicit AudioRendererWriteCallbackImpl(AudioServerSinkPlugin *plugin,
+            const std::weak_ptr<AudioSinkDataCallback> &callback);
+        void OnWriteData(size_t length) override;
+    private:
+        AudioServerSinkPlugin *sinkPlugin_;
+        std::weak_ptr<AudioSinkDataCallback> callback_;
     };
     void ReleaseRender();
     __attribute__((no_sanitize("cfi"))) void ReleaseFile();
@@ -182,6 +199,7 @@ private:
     Status DrainCacheData(bool render);
     //return value is the remained buffer size
     size_t WriteAudioBuffer(uint8_t* inputBuffer, size_t bufferSize, bool& shouldDrop);
+    int32_t CalculateCallbackBufferSize();
 
     OHOS::Media::Mutex renderMutex_{};
     Callback *callback_{};
@@ -228,6 +246,7 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::mutex mutex_;
     std::condition_variable writeCond_;
+    std::shared_ptr<AudioStandard::AudioRendererWriteCallback> audioRenderWriteCallback_ {nullptr};
 };
 } // namespace Plugin
 } // namespace Media

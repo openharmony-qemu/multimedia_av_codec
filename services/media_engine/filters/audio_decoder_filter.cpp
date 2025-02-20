@@ -102,7 +102,7 @@ private:
     std::weak_ptr<AudioDecoderFilter> audioDecoderFilter_;
 };
 
-AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type)
+AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type, IS_FILTER_ASYNC)
 {
     filterType_ = type;
     MEDIA_LOG_I_SHORT("audio decoder filter create");
@@ -274,7 +274,15 @@ Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
     meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     Status ret = decoder_->ChangePlugin(mime, false, meta);
-    FALSE_RETURN_V_MSG(ret == Status::OK, ret, "decoder_ ChangePlugin failed");
+    FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin failed");
+ 
+    ret = SetInputBufferQueueConsumerListener();
+    FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin SetInputBufferQueueConsumerListener failed");
+ 
+    ret = SetOutputBufferQueueProducerListener();
+    FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin SetOutputBufferQueueProducerListener failed");
+ 
+    return Status::OK;
 
     return Status::OK;
 }
@@ -401,6 +409,12 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     decoder_->SetOutputBufferQueue(outputBufferQueue);
     decoder_->Prepare();
 
+    Status ret = SetInputBufferQueueConsumerListener();
+    FALSE_RETURN_MSG(ret == Status::OK, "OnLinkedResult SetInputBufferQueueConsumerListener failed");
+ 
+    ret = SetOutputBufferQueueProducerListener();
+    FALSE_RETURN_MSG(ret == Status::OK, "OnLinkedResult SetOutputBufferQueueProducerListener failed");
+ 
     sptr<AVBufferQueueProducer> inputProducer = decoder_->GetInputBufferQueue();
     FALSE_RETURN(inputProducer != nullptr && onLinkedResultCallback_ != nullptr);
     onLinkedResultCallback_->OnLinkedResult(inputProducer, meta_);

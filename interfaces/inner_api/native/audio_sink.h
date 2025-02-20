@@ -26,6 +26,8 @@
 #include "filter/filter.h"
 #include "plugin/plugin_time.h"
 #include "performance_utils.h"
+#include <queue>
+#include "audio_errors.h"
 
 namespace OHOS {
 namespace Media {
@@ -87,6 +89,26 @@ public:
     bool GetSyncCenterClockTime(int64_t &clockTime);
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
+    bool InputBufferDataEnough(int32_t size);
+    bool CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
+    Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc);
+    Status Enqueue(const AudioStandard::BufferDesc &bufferDesc);
+    void SyncWriteByRenderInfo();
+    void RecordChangeTrack();
+    void UpdateAmplitude();
+    void GetRemainingBuffer();
+    bool UpdateTimeAnchorIfNeeded();
+    bool CheckBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize);
+    bool DrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+        size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts);
+    void ReleaseBufferAfterWritten();
+    int64_t CalculateBufDescSampleCnt(int64_t writeDataSize);
+    void CalculateBufferDuration(int64_t writeDataSize);
+    void UpdateRenderInfo();
+    void WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer);
+    void ResetInfo();
+    bool CheckEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
+    void HandleEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -153,6 +175,13 @@ private:
         AudioDrainTimeGroup lastDrainTimeGroup_ {};
     };
 
+    class AudioSinkDataCallbackImpl : public AudioSinkDataCallback {
+    public:
+        explicit AudioSinkDataCallbackImpl(std::shared_ptr<AudioSink> sink);
+        void OnWriteData(int32_t size, bool isAudioVivid) override;
+    private:
+        std::weak_ptr<AudioSink> audioSink_;
+    };
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
@@ -202,6 +231,7 @@ private:
     bool isMuted_ = false;
     Mutex amplitudeMutex_ {};
     float maxAmplitude_ = 0;
+    float currentMaxAmplitude_ {0};
 
     bool calMaxAmplitudeCbStatus_ = false;
     UnderrunDetector underrunDetector_;
@@ -211,6 +241,40 @@ private:
     bool isPerfRecEnabled_ { false };
     bool isCalledBySystemApp_ { false };
     bool isLoop_ { false };
+    bool isCallbackMode_ {true};
+    std::shared_ptr<AudioSinkDataCallback> audioSinkDataCallback_ {nullptr};
+    std::mutex getBufferMutex_;
+    std::condition_variable getBufferCondition_;
+    std::atomic<size_t> availDataSize_ {0};
+    std::queue<std::shared_ptr<AVBuffer>> availableOutputBuffers_;
+    int32_t currentQueuedBufferOffset_ {0};
+    bool isEosBuffer_ {false};
+    bool isChangeTrack_ {false};
+    std::atomic<size_t> remainingDataSize_ {0};
+    class AudioDataSynchroizer {
+        public:
+            void SetBufferDuration(int64_t sampleDataDuration);
+            void SetLastBufferPTS(int64_t bufferPts);
+            int64_t GetLastReportedClockTime() const;
+            int64_t GetLastBufferPTS() const;
+            int64_t GetBufferDuration() const;
+            int64_t CalculateAudioLatency();
+            void UpdateReportTime(int64_t nowClockTime);
+            void UpdateLastBufferPTS(int32_t bufferOffset, float speed);
+            void OnRenderPositionUpdated(int64_t currentRenderPTS, int64_t currentRenderClockTime);
+            void Reset();
+        private:
+            int64_t lastBufferPTS_ {HST_TIME_NONE};
+            int64_t startPTS_ {HST_TIME_NONE};
+            int64_t curBufferPTS_ {HST_TIME_NONE};
+            int64_t bufferDuration_ {0};
+            int64_t currentRenderClockTime_ {0};
+            int64_t currentRenderPTS_ {0};
+            int64_t lastReportedClockTime_ {HST_TIME_NONE};
+            int32_t lastBufferOffset_ {0};
+            int64_t compensatePTS_ {0};
+    };
+    std::unique_ptr<AudioDataSynchroizer> innerSynchroizer_ = std::make_unique<AudioDataSynchroizer>();
 };
 }
 }
