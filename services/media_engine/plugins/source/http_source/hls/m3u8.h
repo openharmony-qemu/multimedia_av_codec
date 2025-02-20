@@ -76,6 +76,7 @@ struct M3U8 {
     void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const;
     double GetDuration() const;
     bool IsLive() const;
+    size_t GetLiveUpdateGap() const;
 
     std::string uri_;
     std::string name_;
@@ -116,6 +117,7 @@ struct M3U8 {
     bool hasDiscontinuity_ {false};
     std::vector<size_t> segmentOffsets_;
     std::map<std::string, std::string> httpHeader_ {};
+    std::atomic<size_t> minFragDuration_ {0};
 };
 
 struct M3U8Media {
