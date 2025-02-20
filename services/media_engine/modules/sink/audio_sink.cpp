@@ -177,7 +177,7 @@ Status AudioSink::Pause()
     Status ret = Status::OK;
     underrunDetector_.Reset();
     lagDetector_.Reset();
-    if (isTransitent_ || isEos_) {
+    if (isTransitent_ || (isEos_ && (isCalledBySystemApp_ || isLoop_))) {
         ret = plugin_->PauseTransitent();
     } else {
         ret = plugin_->Pause();
@@ -811,6 +811,20 @@ int32_t AudioSink::SetMaxAmplitudeCbStatus(bool status)
     calMaxAmplitudeCbStatus_ = status;
     MEDIA_LOG_I("audio SetMaxAmplitudeCbStatus  = " PUBLIC_LOG_D32, calMaxAmplitudeCbStatus_);
     return 0;
+}
+
+Status AudioSink::SetIsCalledBySystemApp(bool isCalledBySystemApp)
+{
+    MEDIA_LOG_I("AudioSink isCalledBySystemApp = " PUBLIC_LOG_D32, isCalledBySystemApp);
+    isCalledBySystemApp_ = isCalledBySystemApp;
+    return Status::OK;
+}
+
+Status AudioSink::SetLooping(bool loop)
+{
+    isLoop_ = loop;
+    MEDIA_LOG_I("AudioSink SetLooping isLoop_ = " PUBLIC_LOG_D32, isLoop_);
+    return Status::OK;
 }
 } // namespace MEDIA
 } // namespace OHOS

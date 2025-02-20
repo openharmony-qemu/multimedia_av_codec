@@ -64,6 +64,8 @@ public:
     Status SetMuted(bool isMuted);
     Status SetSeekTime(int64_t seekTime);
     bool GetSyncCenterClockTime(int64_t &clockTime);
+    Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
+    Status SetLooping(bool loop);
 
     float GetMaxAmplitude();
     int32_t SetMaxAmplitudeCbStatus(bool status);
@@ -191,6 +193,8 @@ private:
     std::atomic<int64_t> seekTimeUs_ {HST_TIME_NONE};
     PerfRecorder perfRecorder_ {};
     bool isPerfRecEnabled_ { false };
+    bool isCalledBySystemApp_ { false };
+    bool isLoop_ { false };
 };
 }
 }
