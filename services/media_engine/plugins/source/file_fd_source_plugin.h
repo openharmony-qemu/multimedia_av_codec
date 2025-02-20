@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -81,6 +81,7 @@ private:
     void DeleteCacheBuffer(char* buffer, size_t bufferSize);
     void CheckReadTime();
     bool IsValidTime(int64_t curTime, int64_t lastTime);
+    void WaitForInterrupt(int32_t waitTimeMS);
     
     int32_t fd_ {-1};
     int64_t offset_ {0};
@@ -93,6 +94,7 @@ private:
     std::atomic<bool> isInterrupted_ {false};
     std::atomic<bool> isReadBlocking_ {true};
     std::atomic<bool> inSeek_ {false};
+    std::condition_variable bufferCond_;
     std::shared_ptr<Task> downloadTask_;
     std::shared_mutex mutex_;
     std::mutex interruptMutex_;

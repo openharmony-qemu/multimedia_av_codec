@@ -40,6 +40,9 @@ static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"fd", ProtocolType::FD}
 };
 
+const int32_t MAX_RETRY = 20;
+const int32_t WAIT_TIME = 10;
+
 Source::Source()
     : protocol_(),
       uri_(),
@@ -333,10 +336,12 @@ bool Source::CanAutoSelectBitRate()
 void Source::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("Source OnInterrupted %{public}d", isInterruptNeeded);
+    std::unique_lock<std::mutex> lock(mutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     if (plugin_) {
         plugin_->SetInterruptState(isInterruptNeeded_);
     }
+    seekCond_.notify_all();
 }
 
 Plugins::Seekable Source::GetSeekable()
@@ -348,12 +353,13 @@ Plugins::Seekable Source::GetSeekable()
         seekable_ = plugin_->GetSeekable();
         retry++;
         if (seekable_ == Seekable::INVALID) {
-            if (retry >= 20) { // 20 means retry times
+            if (retry >= MAX_RETRY) {
                 break;
             }
-            OSAL::SleepFor(10); // 10 means sleep time pre retry
+            std::unique_lock<std::mutex> lock(mutex_);
+            seekCond_.wait_for(lock, std::chrono::milliseconds(WAIT_TIME), [&] { return isInterruptNeeded_.load(); });
         }
-    } while (seekable_ == Seekable::INVALID);
+    } while (seekable_ == Seekable::INVALID && !isInterruptNeeded_.load());
     return seekable_;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -133,6 +133,14 @@ void DataStreamSourcePlugin::ResetPool()
     pool_->Reset();
 }
 
+void DataStreamSourcePlugin::WaitForRetry(uint32_t time)
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+    readCond_.wait_for(lock, std::chrono::milliseconds(time), [&] {
+        return isInterrupted_.load() || isExitRead_.load();
+    });
+}
+
 Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
     MEDIA_LOG_D("Read, offset: " PUBLIC_LOG_D64 ", expectedLen: " PUBLIC_LOG_ZU ", seekable: " PUBLIC_LOG_D32,
@@ -168,7 +176,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         if (realLen == 0) {
             HandleBufferingStart();
         }
-        SleepForRetry();
+        WaitForRetry(GetRetryTime());
         retryTimes_++;
     } while (retryTimes_ < DEFAULT_RETRY_TIMES);
     offset_ += static_cast<uint64_t>(realLen);
@@ -185,17 +193,21 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     return Status::OK;
 }
 
-void DataStreamSourcePlugin::SleepForRetry()
+uint32_t DataStreamSourcePlugin::GetRetryTime()
 {
     MEDIA_LOG_I("read again. retryTimes:" PUBLIC_LOG_U32, retryTimes_);
-    FALSE_RETURN_V(retryTimes_ > RETRY_TIMES_ONE, OSAL::SleepFor(READ_AGAIN_RETRY_TIME_ONE));
-    FALSE_RETURN_V(retryTimes_ > RETRY_TIMES_TWO, OSAL::SleepFor(READ_AGAIN_RETRY_TIME_TWO));
-    OSAL::SleepFor(READ_AGAIN_RETRY_TIME_THREE);
+    FALSE_RETURN_V(retryTimes_ > RETRY_TIMES_ONE, READ_AGAIN_RETRY_TIME_ONE);
+    FALSE_RETURN_V(retryTimes_ > RETRY_TIMES_TWO, READ_AGAIN_RETRY_TIME_TWO);
+    return READ_AGAIN_RETRY_TIME_THREE;
 }
 
 void DataStreamSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
+    MEDIA_LOG_I("OnInterrupted %{public}d", isInterruptNeeded);
+    std::unique_lock<std::mutex> lock(mutex_);
     isInterrupted_ = isInterruptNeeded;
+    isExitRead_ = isInterruptNeeded;
+    readCond_.notify_all();
 }
 
 void DataStreamSourcePlugin::HandleBufferingStart()

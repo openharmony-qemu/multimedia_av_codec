@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -69,12 +69,22 @@ AudioSinkFilter::~AudioSinkFilter()
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
-                           const std::shared_ptr<FilterCallback> &callback)
+    const std::shared_ptr<FilterCallback> &callback)
+{
+    Init(receiver, callback, nullptr);
+}
+ 
+void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
+    const std::shared_ptr<FilterCallback> &callback, const std::shared_ptr<InterruptMonitor>& monitor)
 {
     Filter::Init(receiver, callback);
     eventReceiver_ = receiver;
     filterCallback_ = callback;
     MEDIA_LOG_D("audio sink Init called");
+    interruptMonitor_ = monitor;
+    if (interruptMonitor_) {
+        interruptMonitor_->RegisterListener(audioSink_);
+    }
 }
 
 Status AudioSinkFilter::DoInitAfterLink()

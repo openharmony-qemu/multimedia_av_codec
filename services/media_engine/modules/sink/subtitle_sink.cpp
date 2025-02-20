@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -349,6 +349,15 @@ void SubtitleSink::NotifyRender(SubtitleInfo &subtitleInfo)
     Event event{ .srcFilter = "SubtitleSink", .type = EventType::EVENT_SUBTITLE_TEXT_UPDATE, .param = format };
     FALSE_RETURN(playerEventReceiver_ != nullptr);
     playerEventReceiver_->OnEvent(event);
+}
+
+void SubtitleSink::OnInterrupted(bool isInterruptNeeded)
+{
+    MEDIA_LOG_I("onInterrupted %{public}d", isInterruptNeeded);
+    std::unique_lock<std::mutex> lock(mutex_);
+    isInterruptNeeded_ = isInterruptNeeded;
+    isThreadExit_ = true;
+    updateCond_.notify_all();
 }
 
 void SubtitleSink::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)

@@ -145,6 +145,8 @@ private:
 
     std::shared_ptr<CallbackImpl> mediaDemuxerCallback_;
     std::atomic<bool> isInterruptNeeded_{false};
+    std::mutex mutex_;
+    std::condition_variable seekCond_;
     bool isEnableFdCache_{ true };
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};

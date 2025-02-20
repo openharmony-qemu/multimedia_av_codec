@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -121,6 +121,8 @@ public:
     AudioSampleFormat GetSampleFormat() override;
 
     int64_t GetWriteDurationMs() override;
+
+    void SetInterruptState(bool isInterruptNeeded) override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
@@ -223,6 +225,9 @@ private:
     bool audioRenderSetFlag_ {false};
     std::list<std::vector<uint8_t>> cachedBuffers_;
     int64_t writeDuration_ = 0;
+    std::atomic<bool> isInterruptNeeded_{false};
+    std::mutex mutex_;
+    std::condition_variable writeCond_;
 };
 } // namespace Plugin
 } // namespace Media

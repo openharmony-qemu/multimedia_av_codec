@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -249,9 +249,13 @@ Status StreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size,
         }
         FALSE_RETURN_V_MSG_E(err != Status::ERROR_UNKNOWN, Status::ERROR_UNKNOWN, "error unknown");
         if (err != Status::END_OF_STREAM && data->GetMemory()->GetSize() == 0) {
-            OSAL::SleepFor(TRY_READ_SLEEP_TIME);
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                readCond_.wait_for(lock, std::chrono::milliseconds(TRY_READ_SLEEP_TIME),
+                                   [&] { return isInterruptNeeded_.load(); });
+            }
             retryTimes++;
-            if (retryTimes > TRY_READ_TIMES) {
+            if (retryTimes > TRY_READ_TIMES || isInterruptNeeded_.load()) {
                 break;
             }
             continue;
@@ -451,5 +455,15 @@ Status StreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shar
     return Status::OK;
 }
 
+void StreamDemuxer::SetInterruptState(bool isInterruptNeeded)
+{
+    MEDIA_LOG_I("StreamDemuxer OnInterrupted %{public}d", isInterruptNeeded);
+    std::unique_lock<std::mutex> lock(mutex_);
+    isInterruptNeeded_ = isInterruptNeeded;
+    readCond_.notify_all();
+    if (typeFinder_ != nullptr) {
+        typeFinder_->SetInterruptState(isInterruptNeeded);
+    }
+}
 } // namespace Media
 } // namespace OHOS

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+* Copyright (c) 2023-2025 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -842,6 +842,15 @@ Status AudioSink::SetSeekTime(int64_t seekTime)
     MEDIA_LOG_I("AudioSink SetSeekTime pts = " PUBLIC_LOG_D64, seekTime);
     seekTimeUs_ = seekTime;
     return Status::OK;
+}
+
+void AudioSink::OnInterrupted(bool isInterruptNeeded)
+{
+    MEDIA_LOG_D("OnInterrupted %{public}d", isInterruptNeeded);
+    isInterruptNeeded_ = isInterruptNeeded;
+    if (plugin_ != nullptr) {
+        plugin_->SetInterruptState(isInterruptNeeded);
+    }
 }
 
 Status AudioSink::SetIsCalledBySystemApp(bool isCalledBySystemApp)

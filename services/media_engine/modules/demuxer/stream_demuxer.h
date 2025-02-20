@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -65,9 +65,12 @@ private:
     Status HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
     Status CheckChangeStreamID(int32_t streamID, std::shared_ptr<Buffer>& buffer);
     Status ProcInnerDash(int32_t streamID,  uint64_t offset, std::shared_ptr<Buffer>& bufferPtr);
+    void SetInterruptState(bool isInterruptNeeded) override;
 private:
     std::map<int32_t, CacheData> cacheDataMap_;
     uint64_t position_;
+    std::mutex mutex_;
+    std::condition_variable readCond_;
 };
 } // namespace Media
 } // namespace OHOS

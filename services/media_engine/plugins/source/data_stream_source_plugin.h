@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -47,7 +47,8 @@ private:
     void InitPool();
     void HandleBufferingStart();
     void HandleBufferingEnd();
-    void SleepForRetry();
+    uint32_t GetRetryTime();
+    void WaitForRetry(uint32_t time);
     std::shared_ptr<AVSharedMemory> GetMemory();
     void ResetPool();
     Plugins::Seekable seekable_ {Plugins::Seekable::INVALID};
@@ -56,6 +57,8 @@ private:
     std::atomic<bool> isBufferingStart{false};
     std::atomic<bool> isInterrupted_ {false};
     std::atomic<bool> isExitRead_ {false};
+    std::mutex mutex_;
+    std::condition_variable readCond_;
     Plugins::Callback* callback_ {nullptr};
     int64_t size_ {0};
     uint64_t offset_ {0};

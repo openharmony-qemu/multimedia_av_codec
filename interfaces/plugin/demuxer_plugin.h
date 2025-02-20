@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -160,6 +160,8 @@ struct DemuxerPlugin : public PluginBase {
         (void)drmInfo;
         return Status::OK;
     }
+
+    virtual void SetInterruptState(bool isInterruptNeeded) {}
 
     virtual Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index) = 0;

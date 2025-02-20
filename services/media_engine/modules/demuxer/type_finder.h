@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,6 +24,7 @@
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_info.h"
+#include <mutex>
 
 namespace OHOS {
 namespace Media {
@@ -46,6 +47,8 @@ public:
     Plugins::Seekable GetSeekable() override;
 
     int32_t GetStreamID() override;
+
+    void SetInterruptState(bool isInterruptNeeded);
 
     bool IsDash() override { return false; }
 
@@ -71,6 +74,9 @@ private:
     std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<void(std::string)> typeFound_;
     int32_t streamID_ = -1;
+    std::mutex mutex_;
+    std::condition_variable readCond_;
+    std::atomic<bool> isInterruptNeeded_{false};
 };
 } // namespace Media
 } // namespace OHOS

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -79,7 +79,7 @@ public:
         const uint32_t index, uint64_t &relativePresentationTimeUs) override;
     void SetCacheLimit(uint32_t limitSize) override;
     bool GetProbeSize(int32_t &offset, int32_t &size) override;
-
+    void SetInterruptState(bool isInterruptNeeded) override;
 private:
     enum DumpMode : unsigned long {
         DUMP_NONE = 0,
@@ -165,6 +165,7 @@ private:
     void RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS);
     void PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
         int64_t pts, int64_t absolutePTS, uint32_t index);
+    void ResetContext();
     int64_t absolutePTSIndexZero_ = INT64_MAX;
     std::priority_queue<int64_t> indexToRelativePTSMaxHeap_;
     uint32_t indexToRelativePTSFrameCount_ = 0;
@@ -214,6 +215,7 @@ private:
     uint32_t cachelimitSize_ = 0;
     bool outOfLimit_ = false;
     bool setLimitByUser = false;
+    std::atomic<bool> isInterruptNeeded_{false};
 
     // dfx
     struct TrackDfxInfo {

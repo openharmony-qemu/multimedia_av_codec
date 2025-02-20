@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -106,12 +106,12 @@ public:
 
     virtual Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
         size_t expectedLen) = 0;
-    void SetInterruptState(bool isInterruptNeeded);
     virtual void SetDemuxerState(int32_t streamId, DemuxerState state);
     void SetBundleName(const std::string& bundleName);
     void SetIsIgnoreParse(bool state);
     bool GetIsIgnoreParse();
     Plugins::Seekable GetSeekable();
+    virtual void SetInterruptState(bool isInterruptNeeded);
     virtual std::string SnifferMediaType(int32_t streamID);
     bool IsDash() const;
     void SetIsDash(bool flag);
@@ -129,6 +129,7 @@ public:
     bool GetIsDataSrcNoSeek();
 protected:
     std::shared_ptr<Source> source_;
+    std::shared_ptr<TypeFinder> typeFinder_;
     std::function<Status(int32_t, uint64_t, size_t)> checkRange_;
     std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;

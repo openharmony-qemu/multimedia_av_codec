@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -77,9 +77,10 @@ std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
 {
     MediaAVCodec::AVCodecTrace trace("BaseStreamDemuxer::SnifferMediaType");
     MEDIA_LOG_I_SHORT("BaseStreamDemuxer::SnifferMediaType called");
-    std::shared_ptr<TypeFinder> typeFinder = std::make_shared<TypeFinder>();
-    typeFinder->Init(uri_, mediaDataSize_, checkRange_, peekRange_, streamID);
-    std::string type = typeFinder->FindMediaType();
+    typeFinder_ = std::make_shared<TypeFinder>();
+    typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_, streamID);
+    std::string type = typeFinder_->FindMediaType();
+    typeFinder_ = nullptr;
     MEDIA_LOG_D_SHORT("SnifferMediaType result type: " PUBLIC_LOG_S, type.c_str());
     return type;
 }
@@ -102,6 +103,9 @@ void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_D("BaseStreamDemuxer onInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
+    if (typeFinder_ != nullptr) {
+        typeFinder_->SetInterruptState(isInterruptNeeded);
+    }
 }
 
 void BaseStreamDemuxer::SetIsIgnoreParse(bool state)
