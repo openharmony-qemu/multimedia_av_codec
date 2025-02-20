@@ -374,9 +374,9 @@ OH_AVErrCode OH_AVCapability_GetVideoWidthRangeForHeight(OH_AVCapability *capabi
     const auto &width = codecInfo->GetVideoWidthRangeForHeight(height);
     widthRange->minVal = width.minVal;
     widthRange->maxVal = width.maxVal;
-    if (width.minVal == 0 && width.maxVal == 0) {
-        return AV_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(width.minVal != 0 || width.maxVal != 0, AV_ERR_INVALID_VAL, "width range is [0, 0]");
+    AVCODEC_LOGD("Success to get width range [%{public}d, %{public}d], by height %{public}d",
+        width.minVal, width.maxVal, height);
     return AV_ERR_OK;
 }
 
@@ -393,9 +393,9 @@ OH_AVErrCode OH_AVCapability_GetVideoHeightRangeForWidth(OH_AVCapability *capabi
     const auto &height = codecInfo->GetVideoHeightRangeForWidth(width);
     heightRange->minVal = height.minVal;
     heightRange->maxVal = height.maxVal;
-    if (height.minVal == 0 && height.maxVal == 0) {
-        return AV_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(height.minVal != 0 || height.maxVal != 0, AV_ERR_INVALID_VAL, "height range is [0, 0]");
+    AVCODEC_LOGD("Success to get height range [%{public}d, %{public}d], by width %{public}d",
+        height.minVal, height.maxVal, width);
     return AV_ERR_OK;
 }
 
@@ -463,9 +463,10 @@ OH_AVErrCode OH_AVCapability_GetVideoFrameRateRangeForSize(OH_AVCapability *capa
     const auto &frameRate = videoCap->GetSupportedFrameRatesFor(width, height);
     frameRateRange->minVal = frameRate.minVal;
     frameRateRange->maxVal = frameRate.maxVal;
-    if (frameRate.minVal == 0 && frameRate.maxVal == 0) {
-        return AV_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(frameRate.minVal != 0 || frameRate.maxVal != 0, AV_ERR_INVALID_VAL,
+        "frameRate range is [0, 0]");
+    AVCODEC_LOGD("Success to get frameRate range [%{public}d, %{public}d], by width %{public}d and height %{public}d",
+        frameRate.minVal, frameRate.maxVal, width, height);
     return AV_ERR_OK;
 }
 
