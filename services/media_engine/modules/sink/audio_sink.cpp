@@ -586,7 +586,7 @@ bool AudioSink::DrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::shar
 bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(size != 0 && size == bufferDesc.bufLength, false,
-        "OnWriteData, size is " PUBLIC_LOG_U64 " but bufLength is " PUBLIC_LOG_U64, size, bufferDesc.bufLength);
+        "bufferDesc or request size is unavailable");
     std::lock_guard<std::mutex> lock(getBufferMutex_);
     int64_t bufferPts = HST_TIME_NONE;
     do {
@@ -644,6 +644,7 @@ void AudioSink::AudioDataSynchroizer::UpdateLastBufferPTS(int32_t bufferOffset, 
     curBufferPTS_ = curBufferPTS_ == HST_TIME_NONE ? 0 : curBufferPTS_;
     lastBufferPTS_ = curBufferPTS_ + lastBufferOffset_ + bufferDuration_;
     lastBufferOffset_ = bufferOffset;
+    FALSE_RETURN_MSG(speed_ != 0, "speed is 0");
     compensatePTS_ += bufferDuration_ - bufferDuration_ / speed;
 }
  
@@ -792,7 +793,7 @@ void AudioSink::ResetInfo()
         ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
         if (ret != Status::OK) {
             MEDIA_LOG_D("AudioSink::ClearInputBuffer clear input Buffer");
-             return;
+            return;
          }
         inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
     }
@@ -820,8 +821,6 @@ void AudioSink::GetRemainingBuffer()
         availableOutputBuffers_.push(filledInputBuffer);
         MEDIA_LOG_D("the pts is " PUBLIC_LOG_D64 " buffer is push", filledInputBuffer->pts_);
         availDataSize_.fetch_add(filledInputBuffer->memory_->GetSize());
-        MEDIA_LOG_D("buffer pts is " PUBLIC_LOG_D64 "and add size " PUBLIC_LOG_D32 " availDataSize_ is " PUBLIC_LOG_U64,
-            filledInputBuffer->pts_, filledInputBuffer->memory_->GetSize(), availDataSize_.load());
     }
     return;
 }
@@ -831,7 +830,7 @@ void AudioSink::WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer)
     FALSE_RETURN(DropApeBuffer(filledOutputBuffer) == false);
     if (CheckEosBuffer(filledOutputBuffer)) {
         HandleEosBuffer(filledOutputBuffer);
-         return;
+        return;
     }
     FALSE_RETURN(plugin_ != nullptr);
     UpdateAudioWriteTimeMayWait();
