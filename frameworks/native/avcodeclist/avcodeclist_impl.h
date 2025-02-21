@@ -16,6 +16,7 @@
 #define AVCODEC_LIST_IMPL_H
 #include <mutex>
 #include <set>
+#include <vector>
 #include "avcodec_info.h"
 #include "avcodec_list.h"
 #include "nocopyable.h"
@@ -39,6 +40,7 @@ public:
     void DeleteBuffer(void *bufAddr) override;
 
 private:
+    bool IsStrMatch(const std::string &str, const std::vector<std::string>& strVec);
     std::shared_ptr<ICodecListService> codecListService_ = nullptr;
     std::unordered_map<std::string, std::vector<CapabilityData *>> mimeCapsMap_;
     std::unordered_map<std::string, void *> nameAddrMap_;

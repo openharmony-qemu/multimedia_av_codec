@@ -33,6 +33,7 @@ enum class AVMagic {
     AVCODEC_MAGIC_AVMUXER = AV_MAGIC('M', 'U', 'X', 'R'),
     AVCODEC_MAGIC_AVDEMUXER = AV_MAGIC('D', 'M', 'U', 'X'),
     AVCODEC_MAGIC_AVSOURCE = AV_MAGIC('S', 'O', 'U', 'C'),
+    AVCODEC_MAGIC_AVCAPABILITY = AV_MAGIC('C', 'A', 'P', 'A'),
 };
 
 struct AVObjectMagic : public OHOS::RefBase {
@@ -46,13 +47,14 @@ struct OH_AVCodec : public AVObjectMagic {
 };
 
 struct OH_AVCapability : public OHOS::RefBase {
-    explicit OH_AVCapability(OHOS::MediaAVCodec::CapabilityData *capabilityData);
+    OH_AVCapability();
     ~OH_AVCapability() override;
     OHOS::MediaAVCodec::CapabilityData *capabilityData_;
     int32_t *profiles_ = nullptr;
     int32_t *levels_ = nullptr;
     int32_t *pixFormats_ = nullptr;
     int32_t *sampleRates_ = nullptr;
+    enum AVMagic magic_;
 };
 
 struct OH_AVMuxer : public AVObjectMagic {

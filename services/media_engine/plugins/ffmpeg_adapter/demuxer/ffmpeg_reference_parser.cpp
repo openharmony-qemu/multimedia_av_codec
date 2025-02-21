@@ -99,9 +99,10 @@ bool FFmpegDemuxerPlugin::IsRefParserSupported()
         parserRefFormatContext_ : formatContext_;
     FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
     FileType type = FFmpegFormatHelper::GetFileTypeByName(*formatContext);
-    FALSE_RETURN_V_MSG_E(type == FileType::MP4 || type == FileType::MOV, false,
-        "Unsupported file type " PUBLIC_LOG_U32, type);
-    FALSE_RETURN_V_MSG_E(ParserRefCheckVideoValid(GetVideoStream()) == Status::OK, false, "Unsupported stream type");
+    FALSE_RETURN_V_MSG_W(type == FileType::MP4 || type == FileType::MOV, false,
+        "RefParser unsupported file type " PUBLIC_LOG_U32, type);
+    FALSE_RETURN_V_MSG_W(ParserRefCheckVideoValid(GetVideoStream()) == Status::OK, false,
+        "RefParser unsupported stream type");
     return true;
 }
 

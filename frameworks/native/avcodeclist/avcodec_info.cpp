@@ -180,11 +180,14 @@ Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
     Range ret = data_->width;
     if (blockWidth_ != 0 && blockHeight_ != 0) {
         int64_t verticalBlockNum = static_cast<int64_t>(DivCeil(height, blockHeight_));
-        if (verticalBlockNum < verticalBlockRange_.minVal || verticalBlockNum > verticalBlockRange_.maxVal) {
+        if (verticalBlockNum <= 0L || verticalBlockNum < verticalBlockRange_.minVal ||
+                verticalBlockNum > verticalBlockRange_.maxVal) {
             return Range(0, 0);
         }
         Range horizontalBlockNum = horizontalBlockRange_.Intersect(
             Range(blockPerFrameRange_.minVal / verticalBlockNum, blockPerFrameRange_.maxVal / verticalBlockNum));
+        CHECK_AND_RETURN_RET_LOG(horizontalBlockNum.minVal > 0, Range(0, 0), "horizontalBlockNum range is"
+            "[%{public}d, %{public}d]", horizontalBlockNum.minVal, horizontalBlockNum.maxVal);
         ret = ret.Intersect(
             Range((horizontalBlockNum.minVal - 1) * blockWidth_ + data_->alignment.width,
                 horizontalBlockNum.maxVal * blockWidth_));
@@ -202,11 +205,14 @@ Range VideoCaps::GetVideoHeightRangeForWidth(int32_t width)
     Range ret = data_->height;
     if (blockWidth_ != 0 && blockHeight_ != 0) {
         int64_t horizontalBlockNum = static_cast<int64_t>(DivCeil(width, blockWidth_));
-        if (horizontalBlockNum < horizontalBlockRange_.minVal || horizontalBlockNum > horizontalBlockRange_.maxVal) {
+        if (horizontalBlockNum <= 0L || horizontalBlockNum < horizontalBlockRange_.minVal ||
+                horizontalBlockNum > horizontalBlockRange_.maxVal) {
             return Range(0, 0);
         }
         Range verticalBlockNum = verticalBlockRange_.Intersect(
             Range(blockPerFrameRange_.minVal / horizontalBlockNum, blockPerFrameRange_.maxVal / horizontalBlockNum));
+        CHECK_AND_RETURN_RET_LOG(verticalBlockNum.minVal > 0, Range(0, 0), "verticalBlockNum range is"
+            "[%{public}d, %{public}d]", verticalBlockNum.minVal, verticalBlockNum.maxVal);
         ret = ret.Intersect(
             Range((verticalBlockNum.minVal - 1) * blockHeight_ + data_->alignment.height,
                 verticalBlockNum.maxVal * blockHeight_));
@@ -469,7 +475,7 @@ Range VideoCaps::GetPreferredFrameRate(int32_t width, int32_t height)
     }
     ImgSize closestSize = MatchClosestSize(ImgSize(width, height));
     if (data_->measuredFrameRate.find(closestSize) == data_->measuredFrameRate.end()) {
-        AVCODEC_LOGD("can not match measuredFrameRate of %{public}d x  %{public}d :", width, width);
+        AVCODEC_LOGD("can not match measuredFrameRate of %{public}d x %{public}d :", width, height);
         return range;
     }
     int64_t targetBlockNum = DivCeil(width, blockWidth_) * static_cast<int64_t>(DivCeil(height, blockHeight_));
