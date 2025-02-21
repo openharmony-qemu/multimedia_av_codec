@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -80,6 +80,8 @@ VDecFuzzSample::~VDecFuzzSample()
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     cout << "Error errorCode=" << errorCode << endl;
+    g_decSample->isRunning_.store(false);
+    g_decSample->signal_->inCond_.notify_all();
 }
 
 void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
@@ -398,6 +400,8 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
         return AV_ERR_TIMEOUT;
     index = signal_->inIdxQueue_.front();
     auto buffer = signal_->inBufferQueue_.front();
+    signal_->inIdxQueue_.pop();
+    signal_->inBufferQueue_.pop();
     lock.unlock();
     int32_t bufferSize = OH_AVMemory_GetSize(buffer);
     uint8_t *bufferAddr = OH_AVMemory_GetAddr(buffer);
@@ -408,14 +412,10 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
     if (memcpy_s(bufferAddr, bufferSize, data, size) != EOK) {
         cout << "Fatal: memcpy fail" << endl;
         OH_VideoDecoder_PushInputData(vdec_, index, attr);
-        signal_->inIdxQueue_.pop();
-        signal_->inBufferQueue_.pop();
         return AV_ERR_NO_MEMORY;
     }
     attr.pts = GetSystemTimeUs();
     OH_AVErrCode ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);
-    signal_->inIdxQueue_.pop();
-    signal_->inBufferQueue_.pop();
     return ret;
 }
 

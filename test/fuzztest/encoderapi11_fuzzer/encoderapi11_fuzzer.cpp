@@ -21,11 +21,20 @@
 #include "native_avcapability.h"
 #include "videoenc_api11_sample.h"
 #include <fuzzer/FuzzedDataProvider.h>
+#include <fstream>
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "encoderapi11_fuzzer"
 
+void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
+{
+    std::ofstream file(filename, std::ios::out | std::ios::binary);
+    if (file.is_open()) {
+        file.write(reinterpret_cast<const char*>(data), size);
+        file.close();
+    }
+}
 void RunNormalEncoder()
 {
     auto vEncSample = make_unique<VEncAPI11FuzzSample>();
@@ -39,7 +48,7 @@ void RunNormalEncoder()
     vEncSample->WaitForEOS();
 
     auto vEncSampleSurf = make_unique<VEncAPI11FuzzSample>();
-    vEncSample->surfInput = true;
+    vEncSampleSurf->surfInput = true;
     ret = vEncSampleSurf->CreateVideoEncoder();
     if (ret != 0) {
         return;
@@ -57,27 +66,29 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
+    std::string filename = "/data/test/corpus-EncoderAPI11FuzzTest";
+    SaveCorpus(data, size, filename);
     if (g_needRunNormalEncoder) {
         g_needRunNormalEncoder = false;
         RunNormalEncoder();
     }
     bool result = false;
     FuzzedDataProvider fdp(data, size);
-    int data0 = fdp.ConsumeIntegral<int32_t>();
     int data1 = fdp.ConsumeIntegral<int32_t>();
     bool data2 = fdp.ConsumeBool();
     VEncAPI11FuzzSample *vEncSample = new VEncAPI11FuzzSample();
     vEncSample->fuzzData = data;
     vEncSample->fuzzSize = size;
     vEncSample->surfInput = data2;
+    vEncSample->fuzzMode = true;
     vEncSample->enableRepeat = fdp.ConsumeBool();
     vEncSample->setMaxCount = fdp.ConsumeBool();
     vEncSample->defaultRangeFlag = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->DEFAULT_COLOR_PRIMARIES = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->DEFAULT_TRANSFER_CHARACTERISTICS = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->DEFAULT_MATRIX_COEFFICIENTS = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->defaultColorPrimaries = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->defaultTransferCharacteristics = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->defaultMatarixCoefficients = fdp.ConsumeIntegral<uint32_t>();
     vEncSample->defaultKeyFrameInterval = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->DEFAULT_BITRATE_MODE = fdp.ConsumeIntegral<uint32_t>();
+    vEncSample->defaultBitrateMode = fdp.ConsumeIntegral<uint32_t>();
     vEncSample->defaultBitRate = fdp.ConsumeIntegral<uint32_t>();
     vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
     vEncSample->defaultFrameAfter = fdp.ConsumeIntegral<int32_t>();
@@ -88,7 +99,7 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
         return true;
     }
     vEncSample->SetVideoEncoderCallback();
-    vEncSample->ConfigureVideoEncoderFuzz(data0);
+    vEncSample->ConfigureVideoEncoder();
     vEncSample->StartVideoEncoder();
     vEncSample->SetParameter(data1);
     vEncSample->WaitForEOS();
