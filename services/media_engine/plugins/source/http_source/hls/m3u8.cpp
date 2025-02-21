@@ -110,6 +110,7 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
     MEDIA_LOG_I("media playlist");
     std::list<std::shared_ptr<Tag>> tags = ParseEntries(playList);
     UpdateFromTags(tags);
+    MEDIA_LOG_I("UpdateFromTags done, isInterruptNeed " PUBLIC_LOG_D32, isInterruptNeeded_.load());
     tags.clear();
     playList_ = playList;
     return true;
@@ -185,6 +186,9 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
         duration += static_cast<size_t>(frag->duration_ * SECOND_TO_MICROSECOND);
     }
     for (auto& tag : tags) {
+        if (isInterruptNeeded_.load()) {
+            bread;
+        }
         HlsTag hlsTag = tag->GetType();
         if (hlsTag == HlsTag::EXTXENDLIST && !isPlayTypeFound_) {
             info.bVod = true;
@@ -466,7 +470,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();
     isSimple_ = true;
-    MEDIA_LOG_D("UpdateMediaPlaylist called, duration_ = " PUBLIC_LOG_F, duration_);
+    MEDIA_LOG_I("UpdateMediaPlaylist called, duration_ = " PUBLIC_LOG_F, duration_);
 }
 
 void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)

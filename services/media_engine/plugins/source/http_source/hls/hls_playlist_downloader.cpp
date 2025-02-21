@@ -138,6 +138,10 @@ void HlsPlayListDownloader::NotifyListChange()
     FALSE_RETURN_MSG(!isInterruptNeeded_, "HLS Seek return, isInterruptNeeded_.");
     playList.reserve(files.size());
     for (const auto &file: files) {
+        if (isInterruptNeeded_.load()) {
+            MEDIA_LOG_I("HLS OnPlayListChanged isInterruptNeeded.");
+            bread;
+        }
         PlayInfo palyInfo;
         palyInfo.url_ = file->uri_;
         palyInfo.duration_ = file->duration_;
