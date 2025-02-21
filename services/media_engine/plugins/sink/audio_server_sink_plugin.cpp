@@ -892,6 +892,7 @@ void AudioServerSinkPlugin::CacheData(uint8_t* inputBuffer, size_t bufferSize)
 
 size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t bufferSize, bool& shouldDrop)
 {
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::WriteAudioBuffer-size:" + std::to_string(bufferSize));
     uint8_t* destBuffer = inputBuffer;
     size_t destLength = bufferSize;
     while (destLength > 0) {

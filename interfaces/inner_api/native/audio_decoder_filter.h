@@ -69,11 +69,11 @@ public:
 
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
 
-    Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
-
     void OnInterrupted(bool isInterruptNeeded) override;
 
-    Status HandleInputBuffer();
+    Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
+
+    Status HandleInputBuffer(bool isTriggeredByOutPort);
 
     Status ChangePlugin(std::shared_ptr<Meta> meta);
 
@@ -104,6 +104,7 @@ protected:
 
 private:
     Status SetInputBufferQueueConsumerListener();
+    Status SetOutputBufferQueueProducerListener();
     void UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta);
 
     std::string name_;

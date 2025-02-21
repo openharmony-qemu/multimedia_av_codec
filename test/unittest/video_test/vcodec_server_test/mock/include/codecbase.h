@@ -225,6 +225,8 @@ public:
     MOCK_METHOD(int32_t, Prepare, ());
     MOCK_METHOD(sptr<Media::AVBufferQueueProducer>, GetInputBufferQueue, ());
     MOCK_METHOD(sptr<Media::AVBufferQueueConsumer>, GetInputBufferQueueConsumer, ());
+    MOCK_METHOD(sptr<Media::AVBufferQueueProducer>, GetOutputBufferQueueProducer, ());
+    MOCK_METHOD(void, ProcessInputBufferInner, (int32_t triggerSource, bool isFlushed));
     MOCK_METHOD(void, ProcessInputBuffer, ());
     MOCK_METHOD(int32_t, SetAudioDecryptionConfig,
                 (const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag));
@@ -299,6 +301,17 @@ public:
     virtual sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer()
     {
         return nullptr;
+    }
+
+    virtual sptr<Media::AVBufferQueueProducer> GetOutputBufferQueueProducer()
+    {
+        return nullptr;
+    }
+
+    virtual void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
+    {
+        (void)isTriggeredByOutPort;
+        (void)isFlushed;
     }
 };
 } // namespace MediaAVCodec
