@@ -47,6 +47,7 @@ ohos_shared_library("hcodec") {
     "msg_handle_loop.cpp",
     "state_machine.cpp",
     "type_converter.cpp",
+    "hcodec_bg.cpp",
   ]
 
   public_configs = [ ":hcodec_public_cfg" ]

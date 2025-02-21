@@ -1027,7 +1027,6 @@ void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
         return;
     }
     ChangeOwner(*info, BufferOwner::OWNED_BY_US);
-
     switch (mode) {
         case KEEP_BUFFER:
             return;
@@ -1079,7 +1078,9 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     info.omxBuffer->pts = info.avBuffer->pts_;
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
-
+    if (mode == KEEP_BUFFER) {
+        return;
+    }
     if (info.omxBuffer->filledLen != 0) {
         NotifySurfaceToRenderOutputBuffer(info);
     }

@@ -521,6 +521,10 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             return;
         case MsgWhat::CHECK_IF_STUCK:
             return;
+        case MsgWhat::FREEZE: {
+            OnFreeze(info);
+            break;
+        }
         default:
             BaseState::OnMsgReceived(info);
             break;
