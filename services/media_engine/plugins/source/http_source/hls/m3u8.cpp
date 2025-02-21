@@ -187,7 +187,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
     }
     for (auto& tag : tags) {
         if (isInterruptNeeded_.load()) {
-            bread;
+            break;
         }
         HlsTag hlsTag = tag->GetType();
         if (hlsTag == HlsTag::EXTXENDLIST && !isPlayTypeFound_) {

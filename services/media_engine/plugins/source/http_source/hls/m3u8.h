@@ -118,6 +118,7 @@ struct M3U8 {
     std::vector<size_t> segmentOffsets_;
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<size_t> minFragDuration_ {0};
+    std::atomic<bool> isInterruptNeeded_{false};
 };
 
 struct M3U8Media {

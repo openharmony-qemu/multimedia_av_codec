@@ -120,7 +120,7 @@ private:
     void HandleWaterline();
     bool CacheBufferFullLoop();
     bool IsNeedBufferForPlaying();
-    void WaitUntilInterrupt(int64_t timeoutMs, std::function<bool>()> pred)
+    void WaitUntilInterrupt(int64_t timeoutMs, std::function<bool>(void)> pred)
     {
         AutoLock lock(sleepMutex_);
         sleepCond_.WaitFor(lock, timeoutMs, pred);

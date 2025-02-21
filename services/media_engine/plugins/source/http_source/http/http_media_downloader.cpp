@@ -1309,8 +1309,8 @@ bool HttpMediaDownloader::CheckBufferingOneSeconds()
             isBuffering_ = false;
             break;
         }
-        WaitUntilInterrupt(TEN_MILLISECONDS, [this]() {
-            return isInterruptNeeded_.load()
+        WaitUntilInterrupt(TEN_MILLISECONDS, [this] {
+            return isInterruptNeeded_.load();
         });
         sleepTime += TEN_MILLISECONDS;
     }

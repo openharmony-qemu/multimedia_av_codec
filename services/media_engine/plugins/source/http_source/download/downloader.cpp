@@ -44,6 +44,7 @@ constexpr int SERVER_RANGE_ERROR_CODE = 416;
 constexpr int32_t LOOP_LOG_FEQUENCE = 50;
 constexpr int REQUEST_OFTEN_ERROR_CODE = 500;
 constexpr int SLEEP_TEN_MICRO_SEC = 10; // 10ms
+constexpr int64_t RETRY_SEG = 50;
 const std::string INVALID_CONTENT_TYPES[] = {"text/html", "application/json"};
 }
 
@@ -543,7 +544,6 @@ void Downloader::HttpDownloadLoop()
     MEDIA_LOGI_LIMIT(LOOP_LOG_FEQUENCE, "Downloader loop shouldStartNextRequest %{public}d",
         shouldStartNextRequest.load());
     if (isRetry_ && !isPause_) {
-        constexpr int64_t RETRY_SEG = 50;
         isRetry_ = false;
         retryCond_.WaitFor(lock, RETRY_SEG, [this] { return isPause_ || isInterruptNeeded_; });
     };
@@ -569,8 +569,9 @@ void Downloader::HttpDownloadLoop()
         shouldStartNextRequest = currentRequest_->IsClosed();
     }
     if (currentRequest_ == nullptr || client_ == nullptr || isPause_ || isInterruptNeeded_) {
-        MEDIA_LOG_I("currentRequest_ %{public}d, client_ %{public}d nullptr, isPause %{public}d, isInterruptNeeded_ %{public}d",
-                    currentRequest_ != nullptr, client_ != nullptr, isPause_, isInterruptNeeded_.load());
+        MEDIA_LOG_I("currentRequest_ " PUBLIC_LOG_D32 ", client_ " PUBLIC_LOG_D32 ", isPause " PUBLIC_LOG_D32
+            ", isInterruptNeeded_ " PUBLIC_LOG_D32,
+            currentRequest_ != nullptr, client_ != nullptr, isPause_, isInterruptNeeded_.load());
         PauseLoop(true);
         return;
     }

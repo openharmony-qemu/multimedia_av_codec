@@ -719,7 +719,7 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
     for (uint32_t i = 0; i < static_cast<uint32_t>(playList.size()); i++) {
         if (isInterruptNeeded_.load()) {
             MEDIA_LOG_I("HLS OnPlayListChanged isInterruptNeeded.");
-            bread;
+            break;
         }
         auto fragment = playList[i];
         PlaylistBackup(fragment);
@@ -1689,8 +1689,8 @@ bool HlsMediaDownloader::CheckBufferingOneSeconds()
         if (CheckBreakCondition()) {
             break;
         }
-        WaitUntilInterrupt(TEN_MILLISECONDS, [this]() {
-            return isInterruptNeeded_.load()
+        WaitUntilInterrupt(TEN_MILLISECONDS, [this] {
+            return isInterruptNeeded_.load();
         });
         sleepTime += TEN_MILLISECONDS;
     }
