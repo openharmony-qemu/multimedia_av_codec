@@ -33,7 +33,9 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class CodecServer : public std::enable_shared_from_this<CodecServer>, public ICodecService, public NoCopyable {
+class CodecServer : public std::enable_shared_from_this<CodecServer>,
+                    public ICodecService,
+                    public NoCopyable {
 public:
     static std::shared_ptr<ICodecService> Create(int32_t instanceId = INVALID_INSTANCE_ID);
     CodecServer();

@@ -17,6 +17,7 @@
 #define I_CODEC_SERVICE_H
 
 #include <string>
+#include "avcodec_dfx_component.h"
 #include "avcodec_common.h"
 #include "avcodec_info.h"
 #include "buffer/avsharedmemory.h"
@@ -33,7 +34,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class ICodecService {
+class ICodecService : public AVCodecDfxComponent {
 public:
     virtual ~ICodecService() = default;
 

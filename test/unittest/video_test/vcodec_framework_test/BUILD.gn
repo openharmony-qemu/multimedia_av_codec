@@ -726,6 +726,7 @@ ohos_unittest("video_buffer_converter_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "$av_codec_root_dir/services/services/codec/ipc",
+    "$av_codec_root_dir/services/services/common",
     "./common/utils",
   ]
   cflags = vcodec_unittest_cflags

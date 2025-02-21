@@ -20,6 +20,7 @@
 #include <shared_mutex>
 #include <unordered_map>
 #include "av_common.h"
+#include "avcodec_dfx_component.h"
 #include "block_queue.h"
 #include "buffer/avbuffer.h"
 
@@ -31,7 +32,7 @@ constexpr int32_t MIN_TEMPORAL_GOPSIZE = 2;
 constexpr int32_t DEFAULT_TEMPORAL_GOPSIZE = 4;
 constexpr int32_t DEFAULT_GOPSIZE = 30;
 
-class TemporalScalability {
+class TemporalScalability : public AVCodecDfxComponent {
 public:
     explicit TemporalScalability(const std::string &name);
     virtual ~TemporalScalability();

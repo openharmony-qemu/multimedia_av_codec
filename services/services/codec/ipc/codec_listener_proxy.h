@@ -16,13 +16,14 @@
 #ifndef CODEC_LISTENER_PROXY_H
 #define CODEC_LISTENER_PROXY_H
 
+#include "avcodec_dfx_component.h"
 #include "i_standard_codec_listener.h"
 #include "avcodec_death_recipient.h"
 #include "nocopyable.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-class CodecListenerCallback : public MediaCodecCallback, public NoCopyable {
+class CodecListenerCallback : public MediaCodecCallback, public NoCopyable, public AVCodecDfxComponent {
 public:
     explicit CodecListenerCallback(const sptr<IStandardCodecListener> &listener);
     virtual ~CodecListenerCallback();
@@ -36,11 +37,14 @@ private:
     sptr<IStandardCodecListener> listener_ = nullptr;
 };
 
-class CodecListenerProxy : public IRemoteProxy<IStandardCodecListener>, public NoCopyable {
+class CodecListenerProxy : public IRemoteProxy<IStandardCodecListener>,
+                           public AVCodecDfxComponent,
+                           public NoCopyable {
 public:
     explicit CodecListenerProxy(const sptr<IRemoteObject> &impl);
     virtual ~CodecListenerProxy();
 
+    void Init();
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
@@ -53,10 +57,10 @@ public:
 private:
     static inline BrokerDelegator<CodecListenerProxy> delegator_;
     class CodecBufferCache;
-    std::unique_ptr<CodecBufferCache> inputBufferCache_;
-    std::unique_ptr<CodecBufferCache> outputBufferCache_;
+    std::shared_ptr<CodecBufferCache> inputBufferCache_;
+    std::shared_ptr<CodecBufferCache> outputBufferCache_;
     uint64_t inputBufferGeneration_ { 0 };
-    uint64_t outputBufferGeneration_ { 0 };
+    uint64_t outputBufferGeneration_{0};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

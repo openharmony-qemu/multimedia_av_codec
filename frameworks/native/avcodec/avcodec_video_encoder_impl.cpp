@@ -79,17 +79,18 @@ int32_t VideoEncoderFactory::CreateByName(const std::string &name, Format &forma
 
 int32_t AVCodecVideoEncoderImpl::Init(AVCodecType type, bool isMimeType, const std::string &name, Format &format)
 {
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
 
     int32_t ret = AVCodecServiceFactory::GetInstance().CreateCodecService(codecClient_);
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, ret, "Codec client create failed");
-
-    return codecClient_->Init(type, isMimeType, name, *format.GetMeta());
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, ret, "Codec client create failed");
+    ret = codecClient_->Init(type, isMimeType, name, *format.GetMeta());
+    this->SetTag(codecClient_->GetTag()); // execute with CodecServiceProxy initialization completed
+    return ret;
 }
 
 AVCodecVideoEncoderImpl::AVCodecVideoEncoderImpl()
 {
-    AVCODEC_LOGD("AVCodecVideoEncoderImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("AVCodecVideoEncoderImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 AVCodecVideoEncoderImpl::~AVCodecVideoEncoderImpl()
@@ -98,177 +99,177 @@ AVCodecVideoEncoderImpl::~AVCodecVideoEncoderImpl()
         (void)AVCodecServiceFactory::GetInstance().DestroyCodecService(codecClient_);
         codecClient_ = nullptr;
     }
-    AVCODEC_LOGD("AVCodecVideoEncoderImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("AVCodecVideoEncoderImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 int32_t AVCodecVideoEncoderImpl::Configure(const Format &format)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->Configure(format);
 }
 
 int32_t AVCodecVideoEncoderImpl::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->SetCustomBuffer(buffer);
 }
 
 int32_t AVCodecVideoEncoderImpl::Prepare()
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return AVCS_ERR_OK;
 }
 
 int32_t AVCodecVideoEncoderImpl::Start()
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->Start();
 }
 
 int32_t AVCodecVideoEncoderImpl::Stop()
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->Stop();
 }
 
 int32_t AVCodecVideoEncoderImpl::Flush()
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->Flush();
 }
 
 int32_t AVCodecVideoEncoderImpl::NotifyEos()
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->NotifyEos();
 }
 
 int32_t AVCodecVideoEncoderImpl::Reset()
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->Reset();
 }
 
 int32_t AVCodecVideoEncoderImpl::Release()
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->Release();
 }
 
 sptr<Surface> AVCodecVideoEncoderImpl::CreateInputSurface()
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, nullptr, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, nullptr, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->CreateInputSurface();
 }
 
 int32_t AVCodecVideoEncoderImpl::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->QueueInputBuffer(index, info, flag);
 }
 
 int32_t AVCodecVideoEncoderImpl::QueueInputBuffer(uint32_t index)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->QueueInputBuffer(index);
 }
 
 int32_t AVCodecVideoEncoderImpl::QueueInputParameter(uint32_t index)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->QueueInputParameter(index);
 }
 
 int32_t AVCodecVideoEncoderImpl::GetOutputFormat(Format &format)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->GetOutputFormat(format);
 }
 
 int32_t AVCodecVideoEncoderImpl::ReleaseOutputBuffer(uint32_t index)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->ReleaseOutputBuffer(index);
 }
 
 int32_t AVCodecVideoEncoderImpl::SetParameter(const Format &format)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->SetParameter(format);
 }
 
 int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
-    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "Callback is nullptr");
-    AVCODEC_SYNC_TRACE;
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callback != nullptr, AVCS_ERR_INVALID_VAL, "Callback is nullptr");
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->SetCallback(callback);
 }
 
 int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
-    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->SetCallback(callback);
 }
 
 int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
-    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->SetCallback(callback);
 }
 
 int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
-    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->SetCallback(callback);
 }
 
 int32_t AVCodecVideoEncoderImpl::GetInputFormat(Format &format)
 {
-    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_SYNC_TRACE_WITH_TAG;
     return codecClient_->GetInputFormat(format);
 }
 } // namespace MediaAVCodec

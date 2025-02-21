@@ -41,7 +41,7 @@ public:
     std::string GetAttribute(const std::string &attrName);
 
 private:
-    static constexpr const char *const TAG = "XmlElement";
+    static constexpr const char *const tag_ = "XmlElement";
     xmlNodePtr xmlNodePtr_;
 };
 } // namespace HttpPluginLite
