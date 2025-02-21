@@ -266,15 +266,7 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
         REQUEST_QUEUE_SIZE);
     task_ = std::make_shared<Task>(std::string("OS_" + name_ + "Downloader"));
     task_->RegisterJob([this] {
-        {
-            AutoLock lk(loopPauseMutex_);
-            if (loopStatus_ == LoopStatus::PAUSE) {
-                MEDIA_LOG_I("0x%{public}06" PRIXPTR " loopStatus PAUSE to START", FAKE_POINTER(this));
-            }
-            loopStatus_ = LoopStatus::START;
-        }
         HttpDownloadLoop();
-        NotifyLoopPause();
         return 0;
     });
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader ctor", FAKE_POINTER(this));
@@ -327,10 +319,12 @@ void Downloader::Pause(bool isAsync)
         isClientClose_ = true;
         client_->Close(isAsync);
     }
-    PauseLoop(true);
-    if (!isAsync) {
-        WaitLoopPause();
+    if (isPause_ == false) {
+        isPause_ = true;
+        retryCond_.NotifyAll();
     }
+    PauseLoop(isAsync);
+    isPause_ = false;
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Pause End", FAKE_POINTER(this));
 }
 
@@ -345,8 +339,13 @@ void Downloader::Cancel()
     if (client_ != nullptr) {
         client_->Close(false);
     }
+    if (isPause_ == false) {
+        isPause_ = true;
+        retryCond_.NotifyAll();
+    }
+    retryCond_.NotifyAll();
     PauseLoop(true);
-    WaitLoopPause();
+    isPause_ = false;
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Cancel End", FAKE_POINTER(this));
 }
 
@@ -452,34 +451,21 @@ void Downloader::GetIp(std::string &ip)
 // Pause download thread before use currentRequest_
 bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
-    FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
-        "not Retry, client null or isDestructor or isInterruptNeeded");
+    FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_ && !isPause_, false,
+        "not Retry, client null or isDestructor or isInterruptNeeded or isPause_");
     if (isAppBackground_) {
-        Pause(true);
         MEDIA_LOG_I("Retry avoid, forground to background.");
         return true;
     }
     {
-        AutoLock lock(operatorMutex_);
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR " Retry Begin", FAKE_POINTER(this));
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest && !isDestructor_ && !isInterruptNeeded_, false);
-        requestQue_->SetActive(false, false);
-    }
-    PauseLoop(true);
-    WaitLoopPause();
-    {
-        AutoLock lock(operatorMutex_);
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest && !isDestructor_ && !isInterruptNeeded_, false);
         client_->Close(false);
         if (currentRequest_ != nullptr) {
             if (currentRequest_->IsSame(request) && !shouldStartNextRequest) {
                 currentRequest_->retryTimes_++;
                 currentRequest_->retryOnGoing_ = true;
                 currentRequest_->dropedDataLen_ = 0;
-                MEDIA_LOG_D("Do retry.");
             }
             client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
-            requestQue_->SetActive(true);
             currentRequest_->isEos_ = false;
             if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&
                 currentRequest_->endPos_ >= currentRequest_->startPos_) {
@@ -487,7 +473,9 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
             }
         }
     }
+    isRetry_ = true;
     task_->Start();
+    MEDIA_LOG_I("Do retry.");
     return true;
 }
 
@@ -554,6 +542,11 @@ void Downloader::HttpDownloadLoop()
     AutoLock lock(operatorMutex_);
     MEDIA_LOGI_LIMIT(LOOP_LOG_FEQUENCE, "Downloader loop shouldStartNextRequest %{public}d",
         shouldStartNextRequest.load());
+    if (isRetry_ && !isPause_) {
+        constexpr int64_t RETRY_SEG = 50;
+        isRetry_ = false;
+        retryCond_.WaitFor(lock, RETRY_SEG, [this] { return isPause_ || isInterruptNeeded_; });
+    };
     if (shouldStartNextRequest) {
         std::shared_ptr<DownloadRequest> tempRequest = requestQue_->Pop(1000); // 1000ms timeout limit.
         if (!tempRequest) {
@@ -568,13 +561,16 @@ void Downloader::HttpDownloadLoop()
         currentRequest_ = tempRequest;
         if (isInterruptNeeded_) {
             currentRequest_->isInterruptNeeded_ = true;
+            currentRequest_->IsClosed();
+            PauseLoop(true);
+            return;
         }
         BeginDownload();
         shouldStartNextRequest = currentRequest_->IsClosed();
     }
-    if (currentRequest_ == nullptr || client_ == nullptr) {
-        MEDIA_LOG_I("currentRequest_ %{public}d client_ %{public}d nullptr",
-                    currentRequest_ != nullptr, client_ != nullptr);
+    if (currentRequest_ == nullptr || client_ == nullptr || isPause_ || isInterruptNeeded_) {
+        MEDIA_LOG_I("currentRequest_ %{public}d, client_ %{public}d nullptr, isPause %{public}d, isInterruptNeeded_ %{public}d",
+                    currentRequest_ != nullptr, client_ != nullptr, isPause_, isInterruptNeeded_.load());
         PauseLoop(true);
         return;
     }
@@ -793,9 +789,6 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     UpdateHeaderInfo(mediaDownloader);
     MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData, dataLen: " + std::to_string(dataLen)
         + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
-    if (mediaDownloader->currentRequest_->IsClosed()) {
-        return 0;
-    }
     if (IsDropDataRetryRequest(mediaDownloader)) {
         return DropRetryData(buffer, dataLen, mediaDownloader);
     }
@@ -1020,39 +1013,8 @@ void Downloader::SetInterruptState(bool isInterruptNeeded)
     isInterruptNeeded_ = isInterruptNeeded;
     if (currentRequest_ != nullptr) {
         currentRequest_->isInterruptNeeded_ = isInterruptNeeded;
+        currentRequest_->Close();
     }
-    NotifyLoopPause();
-}
-
-void Downloader::NotifyLoopPause()
-{
-    AutoLock lk(loopPauseMutex_);
-    if (loopStatus_ == LoopStatus::PAUSE || isInterruptNeeded_) {
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader NotifyLoopPause", FAKE_POINTER(this));
-        loopStatus_ = LoopStatus::IDLE;
-        loopPauseCond_.NotifyAll();
-    } else {
-        loopStatus_ = LoopStatus::IDLE;
-        MEDIA_LOG_I("Downloader not NotifyLoopPause loopStatus %{public}d isInterruptNeeded %{public}d",
-            loopStatus_.load(), isInterruptNeeded_.load());
-    }
-}
-
-void Downloader::WaitLoopPause()
-{
-    AutoLock lk(loopPauseMutex_);
-    if (loopStatus_ == LoopStatus::IDLE) {
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR "Downloader not WaitLoopPause loopStatus is idle", FAKE_POINTER(this));
-        return;
-    }
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR "Downloader WaitLoopPause task loopStatus_ %{public}d",
-        FAKE_POINTER(this), loopStatus_.load());
-    loopStatus_ = LoopStatus::PAUSE;
-    loopPauseCond_.Wait(lk, [this]() {
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR " WaitLoopPause wake loopStatus %{public}d",
-            FAKE_POINTER(this), loopStatus_.load());
-        return loopStatus_ != LoopStatus::PAUSE || isInterruptNeeded_;
-    });
 }
 
 void Downloader::SetAppState(bool isAppBackground)

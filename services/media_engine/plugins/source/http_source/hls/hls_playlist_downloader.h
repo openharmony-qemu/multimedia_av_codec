@@ -55,6 +55,7 @@ public:
     bool GetHLSDiscontinuity() override;
     void SetInitResolution(uint32_t width, uint32_t height) override;
     size_t GetLiveUpdateGap() const override;
+    void InterruptM3U8Parse(bool isInterruptNeeded) override;
 
 private:
     void UpdateMasterInfo(bool isPreParse);

@@ -330,6 +330,7 @@ void PlayListDownloader::SetInterruptState(bool isInterruptNeeded)
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded);
     }
+    InterruptM3U8Parse(isInterruptNeeded);
 }
 
 void PlayListDownloader::SetAppUid(int32_t appUid)

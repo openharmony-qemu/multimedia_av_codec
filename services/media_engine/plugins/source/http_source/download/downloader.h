@@ -194,8 +194,6 @@ private:
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
     static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
     void PauseLoop(bool isAsync = false);
-    void WaitLoopPause();
-    void NotifyLoopPause();
     void ResetContentType();
     void HandleRetErrorCode();
 
@@ -212,15 +210,12 @@ private:
     std::atomic<bool> isClientClose_ {false};
     std::atomic<bool> isInterruptNeeded_{false};
 
-    enum struct LoopStatus {
-        IDLE,
-        START,
-        PAUSE,
-    };
-    std::atomic<LoopStatus> loopStatus_ {LoopStatus::IDLE};
     FairMutex loopPauseMutex_ {};
     ConditionVariable loopPauseCond_;
     std::atomic<bool> isAppBackground_ {false};
+    bool isRetry_ {false};
+    bool isPause_ {false};
+    ConditionVariable retryCond_;
 };
 }
 }

@@ -122,7 +122,7 @@ void HlsPlayListDownloader::NotifyListChange()
     auto files = currentVariant_->m3u8_->files_;
     auto playList = std::vector<PlayInfo>();
     if (currentVariant_->m3u8_->isDecryptAble_) {
-        while (!currentVariant_->m3u8_->isDecryptKeyReady_) {
+        while (!currentVariant_->m3u8_->isDecryptKeyReady_ && !isInterruptNeeded_) {
             Task::SleepInTask(10); // sleep 10ms
         }
         callback_->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
@@ -135,6 +135,7 @@ void HlsPlayListDownloader::NotifyListChange()
             callback_->OnSourceKeyChange(nullptr, 0, nullptr);
         }
     }
+    FALSE_RETURN_MSG(!isInterruptNeeded_, "HLS Seek return, isInterruptNeeded_.");
     playList.reserve(files.size());
     for (const auto &file: files) {
         PlayInfo palyInfo;
@@ -397,6 +398,13 @@ size_t HlsPlayListDownloader::GetLiveUpdateGap() const
         return currentVariant_->m3u8_->GetLiveUpdateGap();
     }
     return 0;
+}
+
+void InterruptM3U8Parse(bool isInterruptNeeded)
+{
+    if (currentVariant_ && currentVariant_->m3u8_) {
+        return currentVariant_->m3u8_->SetInterruptState();
+    }
 }
 }
 }

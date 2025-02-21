@@ -614,6 +614,7 @@ void HlsMediaDownloader::PrepareToSeek()
     int32_t retry {0};
     do {
         retry++;
+        FALSE_RETURN_MSG(!isInterruptNeeded_, "HLS Seek return, isInterruptNeeded_.");
         if (retry >= SEEK_STATUS_RETRY_TIMES) { // 100 means retry times
             MEDIA_LOG_I("HLS Seek may be failed");
             break;
@@ -653,6 +654,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     seekTime_ = static_cast<uint64_t>(seekTime);
     bufferingTime_ = 0;
     PrepareToSeek();
+    FALSE_RETURN_V_MSG(!isInterruptNeeded_, true, "HLS Seek return, isInterruptNeeded_.");
     if (seekTime_ < static_cast<uint64_t>(playlistDownloader_->GetDuration())) {
         SeekToTs(seekTime, mode);
     } else {
@@ -1471,6 +1473,7 @@ void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
         if (isInterruptNeeded_) {
             MEDIA_LOG_I("SetInterruptState bufferingEndCond NotifyAll.");
             bufferingEndCond_.NotifyAll();
+            sleepCond_.NotifyAll();
         }
     }
     if (playlistDownloader_ != nullptr) {
@@ -1682,7 +1685,9 @@ bool HlsMediaDownloader::CheckBufferingOneSeconds()
         if (CheckBreakCondition()) {
             break;
         }
-        OSAL::SleepFor(TEN_MILLISECONDS);
+        WaitUntilInterrupt(TEN_MILLISECONDS, [this]() {
+            return isInterruptNeeded_.load()
+        });
         sleepTime += TEN_MILLISECONDS;
     }
     MEDIA_LOG_I("HLS CheckBufferingOneSeconds out");

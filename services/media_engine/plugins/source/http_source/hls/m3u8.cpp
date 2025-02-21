@@ -477,7 +477,7 @@ void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
     m3u8->ParseKey(std::static_pointer_cast<AttributesTag>(tag));
     m3u8->DownloadKey();
     uint32_t downloadTime = 0;
-    while (!m3u8->isDecryptKeyReady_ && downloadTime < MAX_DOWNLOAD_TIME) {
+    while (!m3u8->isDecryptKeyReady_ && downloadTime < MAX_DOWNLOAD_TIME && !isInterruptNeeded_) {
         Task::SleepInTask(WAIT_KEY_SLEEP_TIME);
         downloadTime++;
     }
@@ -574,6 +574,13 @@ uint32_t M3U8MasterPlaylist::GetResolutionDelta(uint32_t width, uint32_t height)
         return initResolution_ - resolution;
     }
 }
+
+void M3U8MasterPlaylist::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+    MEDIA_LOG_I("M3U8MasterPlaylist SetInterruptState %{public}d.", isInterruptNeeded);
+}
+
 }
 }
 }

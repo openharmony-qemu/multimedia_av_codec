@@ -1095,6 +1095,7 @@ void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
         if (isInterruptNeeded_) {
             MEDIA_LOG_I("SetInterruptState, bufferingEndCond NotifyAll.");
             bufferingEndCond_.NotifyAll();
+            sleepCond_.NotifyAll();
         }
     }
     if (ringBuffer_ != nullptr && isInterruptNeeded) {
@@ -1308,7 +1309,9 @@ bool HttpMediaDownloader::CheckBufferingOneSeconds()
             isBuffering_ = false;
             break;
         }
-        OSAL::SleepFor(TEN_MILLISECONDS);
+        WaitUntilInterrupt(TEN_MILLISECONDS, [this]() {
+            return isInterruptNeeded_.load()
+        });
         sleepTime += TEN_MILLISECONDS;
     }
     MEDIA_LOG_I("HTTP CheckBufferingOneSeconds out");

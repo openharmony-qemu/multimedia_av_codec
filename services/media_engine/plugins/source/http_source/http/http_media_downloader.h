@@ -120,6 +120,11 @@ private:
     void HandleWaterline();
     bool CacheBufferFullLoop();
     bool IsNeedBufferForPlaying();
+    void WaitUntilInterrupt(int64_t timeoutMs, std::function<bool>()> pred)
+    {
+        AutoLock lock(sleepMutex_);
+        sleepCond_.WaitFor(lock, timeoutMs, pred);
+    }
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -204,6 +209,8 @@ private:
     double bufferDurationForPlaying_ {0};
     uint64_t waterlineForPlaying_ {0};
     std::atomic<bool> isDemuxerInitSuccess_ {false};
+    ConditionVariable sleepCond_;
+    FairMutex sleepMutex_ {};
 };
 }
 }
