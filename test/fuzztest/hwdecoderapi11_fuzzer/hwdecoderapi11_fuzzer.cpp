@@ -19,6 +19,7 @@
 #include "native_avcodec_base.h"
 #include "videodec_api11_sample.h"
 #include <fuzzer/FuzzedDataProvider.h>
+#include <fstream>
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -40,6 +41,14 @@ bool g_isSurfMode = true;
 
 namespace OHOS {
 
+void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
+{
+    std::ofstream file(filename, std::ios::out | std::ios::binary);
+    if (file.is_open()) {
+        file.write(reinterpret_cast<const char*>(data), size);
+        file.close();
+    }
+}
 void RunNormalDecoder()
 {
     VDecApi11FuzzSample *vDecSample = new VDecApi11FuzzSample();
@@ -82,7 +91,8 @@ bool HwdecoderApi11FuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-
+    std::string filename = "/data/test/corpus-HwdecoderApi11FuzzTest";
+    SaveCorpus(data, size, filename);
     if (g_needRunNormalDecoder) {
         g_needRunNormalDecoder = false;
         RunNormalDecoder();

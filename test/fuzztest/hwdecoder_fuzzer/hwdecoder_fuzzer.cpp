@@ -19,6 +19,7 @@
 #include "native_avcodec_base.h"
 #include "videodec_sample.h"
 #include <fuzzer/FuzzedDataProvider.h>
+#include <fstream>
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -37,6 +38,14 @@ constexpr uint8_t SPS[SPS_SIZE + START_CODE_SIZE] = {0x00, 0x00, 0x00, 0x01, 0x6
 constexpr uint8_t PPS[PPS_SIZE + START_CODE_SIZE] = {0x00, 0x00, 0x00, 0x01, 0x68, 0xEF, 0x0F, 0x2C, 0x8B};
 bool g_isSurfMode = true;
 
+void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
+{
+    std::ofstream file(filename, std::ios::out | std::ios::binary);
+    if (file.is_open()) {
+        file.write(reinterpret_cast<const char*>(data), size);
+        file.close();
+    }
+}
 void RunNormalDecoder()
 {
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
@@ -68,6 +77,8 @@ bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
+    std::string filename = "/data/test/corpus-HwdecoderFuzzTest";
+    SaveCorpus(data, size, filename);
     if (g_needRunNormalDecoder) {
         g_needRunNormalDecoder = false;
         RunNormalDecoder();

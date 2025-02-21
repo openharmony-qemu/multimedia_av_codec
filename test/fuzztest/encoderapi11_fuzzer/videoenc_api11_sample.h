@@ -98,16 +98,15 @@ public:
     bool sleepOnFPS = false;
     bool surfInput = false;
     uint32_t defaultRangeFlag = 0;
-    uint32_t DEFAULT_COLOR_PRIMARIES = COLOR_PRIMARY_BT709;
-    uint32_t DEFAULT_TRANSFER_CHARACTERISTICS = TRANSFER_CHARACTERISTIC_BT709;
-    uint32_t DEFAULT_MATRIX_COEFFICIENTS = MATRIX_COEFFICIENT_BT709;
-    uint32_t DEFAULT_BITRATE_MODE = CBR;
+    uint32_t defaultColorPrimaries = COLOR_PRIMARY_BT709;
+    uint32_t defaultTransferCharacteristics = TRANSFER_CHARACTERISTIC_BT709;
+    uint32_t defaultMatarixCoefficients = MATRIX_COEFFICIENT_BT709;
     bool enableRepeat = false;
     bool setMaxCount = false;
     int32_t defaultFrameAfter = 1;
     int32_t defaultMaxCount = 1;
-private:
     std::atomic<bool> isRunning_ { false };
+private:
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::ifstream> inFile_;
     std::unordered_map<uint32_t, OH_AVBuffer *> inBufferMap_;
