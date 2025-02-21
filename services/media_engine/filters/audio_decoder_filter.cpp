@@ -91,8 +91,9 @@ public:
 
     void OnBufferAvailable() override
     {
+        MEDIA_LOG_D("AudioDecInputPortConsumerListener OnBufferAvailable");
         if (auto audioDecoderFilter = audioDecoderFilter_.lock()) {
-            audioDecoderFilter->HandleInputBuffer();
+            audioDecoderFilter->HandleInputBuffer(false);
         } else {
             MEDIA_LOG_I("invalid audioDecoderFilter");
         }
@@ -101,6 +102,34 @@ public:
 private:
     std::weak_ptr<AudioDecoderFilter> audioDecoderFilter_;
 };
+
+class AudioDecOutPortProducerListener : public IRemoteStub<IProducerListener> {
+public:
+    explicit AudioDecOutPortProducerListener(std::shared_ptr<AudioDecoderFilter> audioDecoderFilter)
+    {
+        audioDecoderFilter_ = audioDecoderFilter;
+    }
+    virtual ~AudioDecOutPortProducerListener() = default;
+
+    int OnRemoteRequest(uint32_t code, MessageParcel& arguments, MessageParcel& reply, MessageOption& option) override
+    {
+        return IPCObjectStub::OnRemoteRequest(code, arguments, reply, option);
+    }
+
+    void OnBufferAvailable() override
+    {
+        MEDIA_LOG_D("AudioDecOutPortProducerListener OnBufferAvailable");
+        if (auto audioDecoderFilter = audioDecoderFilter_.lock()) {
+            audioDecoderFilter->HandleInputBuffer(true);
+        } else {
+            MEDIA_LOG_I("invalid audioDecoderFilter");
+        }
+    }
+
+private:
+    std::weak_ptr<AudioDecoderFilter> audioDecoderFilter_;
+};
+
 
 AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type)
 {
@@ -274,7 +303,7 @@ Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
     meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     Status ret = decoder_->ChangePlugin(mime, false, meta);
-    FALSE_RETURN_V_MSG(ret == Status::OK, ret, "decoder_ ChangePlugin failed");
+    FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin failed");
 
     return Status::OK;
 }
@@ -416,16 +445,38 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
     meta_ = meta;
 }
 
-Status AudioDecoderFilter::HandleInputBuffer()
+Status AudioDecoderFilter::HandleInputBuffer(bool isTriggeredByOutPort)
 {
-    ProcessInputBuffer();
+    ProcessInputBuffer(static_cast<int>(isTriggeredByOutPort ?
+        BufferQueueBufferAVailable::BUFFER_AVAILABLE_OUT_PORT : BufferQueueBufferAVailable::BUFFER_AVAILABLE_IN_PORT));
     return Status::OK;
 }
 
 Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
-    decoder_->ProcessInputBuffer();
+    decoder_->ProcessInputBufferInner(
+        recvArg == static_cast<int>(BufferQueueBufferAVailable::BUFFER_AVAILABLE_OUT_PORT), dropFrame);
     return Status::OK;
+}
+
+Status AudioDecoderFilter::SetInputBufferQueueConsumerListener()
+{
+    sptr<IConsumerListener> consumerListener =
+        OHOS::sptr<AudioDecInputPortConsumerListener>::MakeSptr(shared_from_this());
+    FALSE_RETURN_V_MSG(consumerListener != nullptr, Status::ERROR_NULL_POINTER, "consumerListener is nullptr");
+    sptr<Media::AVBufferQueueConsumer> inputConsumer = decoder_->GetInputBufferQueueConsumer();
+    FALSE_RETURN_V_MSG(inputConsumer != nullptr, Status::ERROR_NULL_POINTER, "inputConsumer is nullptr");
+    return inputConsumer->SetBufferAvailableListener(consumerListener);
+}
+
+Status AudioDecoderFilter::SetOutputBufferQueueProducerListener()
+{
+    sptr<IProducerListener> producerListener =
+        OHOS::sptr<AudioDecOutPortProducerListener>::MakeSptr(shared_from_this());
+    FALSE_RETURN_V_MSG(producerListener != nullptr, Status::ERROR_NULL_POINTER, "producerListener is nullptr");
+    sptr<Media::AVBufferQueueProducer> outputProducer = decoder_->GetOutputBufferQueueProducer();
+    FALSE_RETURN_V_MSG(outputProducer != nullptr, Status::ERROR_NULL_POINTER, "outputProducer is nullptr");
+    return outputProducer->SetBufferAvailableListener(producerListener);
 }
 
 void AudioDecoderFilter::OnInterrupted(bool isInterruptNeeded)
@@ -434,15 +485,6 @@ void AudioDecoderFilter::OnInterrupted(bool isInterruptNeeded)
     if (isInterruptNeeded) {
         decoder_->Flush();
     }
-}
-
-Status AudioDecoderFilter::SetInputBufferQueueConsumerListener()
-{
-    sptr<IConsumerListener> consumerListener = new (std::nothrow) AudioDecInputPortConsumerListener(shared_from_this());
-    FALSE_RETURN_V_MSG(consumerListener != nullptr, Status::ERROR_NULL_POINTER, "listener is nullptr");
-    sptr<Media::AVBufferQueueConsumer> inputConsumer = decoder_->GetInputBufferQueueConsumer();
-    FALSE_RETURN_V_MSG(inputConsumer != nullptr, Status::ERROR_NULL_POINTER, "inputConsumer is nullptr");
-    return inputConsumer->SetBufferAvailableListener(consumerListener);
 }
 
 void AudioDecoderFilter::OnDumpInfo(int32_t fd)

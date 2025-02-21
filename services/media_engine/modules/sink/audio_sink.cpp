@@ -228,6 +228,8 @@ Status AudioSink::Flush()
     Status ret = Status::OK;
     underrunDetector_.Reset();
     lagDetector_.Reset();
+    FALSE_RETURN_V_MSG_E(inputBufferQueueProducer_ != nullptr, Status::ERROR_NO_MEMORY, "flush failed");
+    inputBufferQueueProducer_->Clear();
     ret = plugin_->Flush();
     {
         AutoLock lock(eosMutex_);
@@ -235,7 +237,9 @@ Status AudioSink::Flush()
         eosDraining_ = false;
     }
     forceUpdateTimeAnchorNextTime_ = true;
-    return ret;
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "plugin flush failed");
+    ClearInputBuffer();
+    return Status::OK;
 }
 
 Status AudioSink::Release()
@@ -333,6 +337,7 @@ void AudioSink::SetThreadGroupId(const std::string& groupId)
 void AudioSink::HandleEosInner(bool drain)
 {
     AutoLock lock(eosMutex_);
+    MEDIA_LOG_I("HandleEosInner drain:%d", drain);
     eosDraining_ = true; // start draining task
     switch (eosInterruptType_) {
         case EosInterruptState::INITIAL: // No user operation during EOS drain, complete drain normally
@@ -373,6 +378,7 @@ void AudioSink::HandleEosInner(bool drain)
  
 void AudioSink::DrainAndReportEosEvent()
 {
+    MEDIA_LOG_I("DrainAndReportEosEvent");
     plugin_->Drain();
     if (appUid_ != 1003) { // 1003 is bootanimation uid
         plugin_->PauseTransitent();
@@ -438,14 +444,34 @@ bool AudioSink::DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
     return false;
 }
 
-void AudioSink::DrainOutputBuffer()
+void AudioSink::ClearInputBuffer()
+{
+    MEDIA_LOG_D("AudioSink::ClearInputBuffer enter");
+    if (!inputBufferQueueConsumer_) {
+        return;
+    }
+    std::shared_ptr<AVBuffer> filledInputBuffer;
+    Status ret = Status::OK;
+    while (ret == Status::OK) {
+        ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
+        if (ret != Status::OK) {
+            MEDIA_LOG_I("AudioSink::ClearInputBuffer clear input Buffer");
+            return;
+        }
+        inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
+    }
+}
+
+void AudioSink::DrainOutputBuffer(bool flushed)
 {
     std::lock_guard<std::mutex> lock(pluginMutex_);
     std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
     FALSE_RETURN(plugin_ != nullptr && inputBufferQueueConsumer_ != nullptr);
+    FALSE_RETURN_W(state_ != Pipeline::FilterState::PAUSED && state_ != Pipeline::FilterState::READY);
     Status ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
     FALSE_RETURN(ret == Status::OK && filledOutputBuffer != nullptr);
-    if (state_ != Pipeline::FilterState::RUNNING) {
+    if (state_ != Pipeline::FilterState::RUNNING || flushed) {
+        MEDIA_LOG_E("Drop buffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         return;
     }

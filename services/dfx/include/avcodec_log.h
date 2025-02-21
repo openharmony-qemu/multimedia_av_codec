@@ -69,6 +69,14 @@ namespace MediaAVCodec {
         }                                                                   \
     } while (0)
 
+#define CHECK_AND_RETURN_RET_LOGD(cond, ret, fmt, ...)                      \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGD(fmt, ##__VA_ARGS__);                               \
+            return ret;                                                     \
+        }                                                                   \
+    } while (0)
+
 #define CHECK_AND_RETURN_RET_LOGW(cond, ret, fmt, ...)                      \
     do {                                                                    \
         if (!(cond)) {                                                      \
@@ -117,6 +125,14 @@ namespace MediaAVCodec {
     do {                                                                    \
         if (!(cond)) {                                                      \
             AVCODEC_LOGE(fmt, ##__VA_ARGS__);                               \
+            return;                                                         \
+        }                                                                   \
+    } while (0)
+
+#define CHECK_AND_RETURN_LOGD(cond, fmt, ...)                               \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGD(fmt, ##__VA_ARGS__);                               \
             return;                                                         \
         }                                                                   \
     } while (0)

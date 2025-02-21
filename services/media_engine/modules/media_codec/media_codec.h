@@ -104,6 +104,10 @@ public:
 
     sptr<AVBufferQueueConsumer> GetInputBufferQueueConsumer();
 
+    sptr<AVBufferQueueProducer> GetOutputBufferQueueProducer();
+
+    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed);
+
     sptr<Surface> GetInputSurface();
 
     int32_t Start();
@@ -162,6 +166,12 @@ private:
 
     uint32_t GetApiVersion();
 
+    bool HandleOutputBufferInner();
+
+    Status HandleOutputBufferOnce(bool &isOutputBufferAvailable, uint32_t eosStatus, bool isSync);
+
+    void HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingNeeded, Status &ret);
+
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
@@ -181,6 +191,8 @@ private:
     int32_t outputBufferCapacity_;
     std::string codecPluginName_;
 
+    std::atomic<uint32_t> inputBufferEosStatus_ {0};
+    std::atomic<bool> isOutputBufferAvailable_ {true};
     std::atomic<CodecState> state_;
     std::shared_ptr<MediaAVCodec::CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::vector<std::shared_ptr<AVBuffer>> inputBufferVector_;

@@ -826,6 +826,7 @@ int32_t CodecServer::GetInputFormat(Format &format)
 
 int32_t CodecServer::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta)
 {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     return codecBase_->ChangePlugin(mime, isEncoder, meta);
 }
@@ -1210,6 +1211,19 @@ sptr<Media::AVBufferQueueConsumer> CodecServer::GetInputBufferQueueConsumer()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     return codecBase_ != nullptr ? codecBase_->GetInputBufferQueueConsumer() : nullptr;
+}
+
+sptr<Media::AVBufferQueueProducer> CodecServer::GetOutputBufferQueueProducer()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    return codecBase_ != nullptr ? codecBase_->GetOutputBufferQueueProducer() : nullptr;
+}
+
+void CodecServer::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "ProcessInputBufferInner codecBase is nullptr");
+    return codecBase_->ProcessInputBufferInner(isTriggeredByOutPort, isFlushed);
 }
 
 void CodecServer::ProcessInputBuffer()

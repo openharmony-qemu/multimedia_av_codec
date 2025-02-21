@@ -148,6 +148,17 @@ public:
     {
         return nullptr;
     }
+
+    virtual sptr<Media::AVBufferQueueProducer> GetOutputBufferQueueProducer()
+    {
+        return nullptr;
+    }
+
+    virtual void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
+    {
+        (void)isTriggeredByOutPort;
+        (void)isFlushed;
+    }
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

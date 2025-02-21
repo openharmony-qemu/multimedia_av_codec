@@ -1434,7 +1434,18 @@ Status MediaDemuxer::ResumeDragging()
 
 Status MediaDemuxer::ResumeAudioAlign()
 {
-    MEDIA_LOG_I("Resume");
+    MEDIA_LOG_I("ResumeAudioAlign");
+    {
+        AutoLock lock(mapMutex_);
+        auto it = bufferQueueMap_.begin();
+        while (it != bufferQueueMap_.end()) {
+            uint32_t trackId = it->first;
+            if (trackId == audioTrackId_) {
+                bufferQueueMap_[trackId]->Clear();
+            }
+            it++;
+        }
+    }
     if (streamDemuxer_) {
         streamDemuxer_->Resume();
     }

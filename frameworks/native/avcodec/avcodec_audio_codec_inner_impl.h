@@ -39,6 +39,10 @@ public:
 
     sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer() override;
 
+    sptr<Media::AVBufferQueueProducer> GetOutputBufferQueueProducer() override;
+
+    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed) override;
+
     int32_t Start() override;
 
     int32_t Stop() override;

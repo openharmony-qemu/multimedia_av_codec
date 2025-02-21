@@ -109,6 +109,8 @@ public:
     int32_t Prepare() override;
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
     sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer() override;
+    sptr<Media::AVBufferQueueProducer> GetOutputBufferQueueProducer() override;
+    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed) override;
     void ProcessInputBuffer() override;
     bool CheckRunning() override;
 

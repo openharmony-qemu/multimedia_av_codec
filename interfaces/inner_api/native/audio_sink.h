@@ -49,7 +49,7 @@ public:
     Status Release();
     Status SetPlayRange(int64_t start, int64_t end);
     Status SetVolume(float volume);
-    void DrainOutputBuffer();
+    void DrainOutputBuffer(bool flushed);
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status GetLatency(uint64_t& nanoSec);
     void SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter);
@@ -105,6 +105,7 @@ private:
     bool DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer);
     int64_t CalcBufferDuration(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void PerfRecord(int64_t audioWriteMs);
+    void ClearInputBuffer();
 
     class UnderrunDetector {
     public:
