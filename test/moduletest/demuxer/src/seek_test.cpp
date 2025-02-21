@@ -1197,7 +1197,7 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0040, TestSize.Level1)
 {
     seekInfo fileTest1{"/data/test/media/m4a_fmp4.mp4", SEEK_MODE_NEXT_SYNC, 0, 0, 352, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/m4a_fmp4.mp4", SEEK_MODE_NEXT_SYNC, 15018666, 0, 177, 0};
+    seekInfo fileTest2{"/data/test/media/m4a_fmp4.mp4", SEEK_MODE_NEXT_SYNC, 15018666, 0, 176, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/m4a_fmp4.mp4", SEEK_MODE_NEXT_SYNC, 29952000, 0, 1, 0};
     CheckSeekMode(fileTest3);
@@ -1272,9 +1272,9 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0043, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/MP3_avcc_10sec.bin", SEEK_MODE_NEXT_SYNC, 0, 0, 10552, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/MP3_avcc_10sec.bin", SEEK_MODE_NEXT_SYNC, 126624000, 0, 9287, 0};
+    seekInfo fileTest2{"/data/test/media/MP3_avcc_10sec.bin", SEEK_MODE_NEXT_SYNC, 126624000, 0, 9286, 0};
     CheckSeekMode(fileTest2);
-    seekInfo fileTest3{"/data/test/media/MP3_avcc_10sec.bin", SEEK_MODE_NEXT_SYNC, 253224000, 0, 8022, 0};
+    seekInfo fileTest3{"/data/test/media/MP3_avcc_10sec.bin", SEEK_MODE_NEXT_SYNC, 253224000, 0, 8021, 0};
     CheckSeekMode(fileTest3);
     seekInfo fileTest4{"/data/test/media/MP3_avcc_10sec.bin", SEEK_MODE_PREVIOUS_SYNC, 0, 0, 10552, 0};
     CheckSeekMode(fileTest4);
@@ -1299,9 +1299,9 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0044, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/MP3_OGG_48000_1.bin", SEEK_MODE_NEXT_SYNC, 0, 0, 9420, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/MP3_OGG_48000_1.bin", SEEK_MODE_NEXT_SYNC, 113040000, 0, 7109, 0};
+    seekInfo fileTest2{"/data/test/media/MP3_OGG_48000_1.bin", SEEK_MODE_NEXT_SYNC, 113040000, 0, 7108, 0};
     CheckSeekMode(fileTest2);
-    seekInfo fileTest3{"/data/test/media/MP3_OGG_48000_1.bin", SEEK_MODE_NEXT_SYNC, 226056000, 0, 4798, 0};
+    seekInfo fileTest3{"/data/test/media/MP3_OGG_48000_1.bin", SEEK_MODE_NEXT_SYNC, 226056000, 0, 4797, 0};
     CheckSeekMode(fileTest3);
     seekInfo fileTest4{"/data/test/media/MP3_OGG_48000_1.bin", SEEK_MODE_PREVIOUS_SYNC, 0, 0, 9420, 0};
     CheckSeekMode(fileTest4);
@@ -2027,7 +2027,7 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0073, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/audio/AAC_48000_1.aac", SEEK_MODE_NEXT_SYNC, 0, 0, 9457, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/audio/AAC_48000_1.aac", SEEK_MODE_NEXT_SYNC, 109783945, 0, 4730, 0};
+    seekInfo fileTest2{"/data/test/media/audio/AAC_48000_1.aac", SEEK_MODE_NEXT_SYNC, 109783945, 0, 4729, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/audio/AAC_48000_1.aac", SEEK_MODE_NEXT_SYNC, 219567891, 0, 2, 0};
     CheckSeekMode(fileTest3);
@@ -2135,7 +2135,7 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0077, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/audio/feff_bom.mp3", SEEK_MODE_NEXT_SYNC, 0, 0, 203, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/audio/feff_bom.mp3", SEEK_MODE_NEXT_SYNC, 2638367, 0, 107, 0};
+    seekInfo fileTest2{"/data/test/media/audio/feff_bom.mp3", SEEK_MODE_NEXT_SYNC, 2638367, 0, 106, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/audio/feff_bom.mp3", SEEK_MODE_NEXT_SYNC, 5276734, 0, 11, 0};
     CheckSeekMode(fileTest3);
@@ -2162,7 +2162,7 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0078, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/audio/fffe_bom.mp3", SEEK_MODE_NEXT_SYNC, 0, 0, 203, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/audio/fffe_bom.mp3", SEEK_MODE_NEXT_SYNC, 2638367, 0, 107, 0};
+    seekInfo fileTest2{"/data/test/media/audio/fffe_bom.mp3", SEEK_MODE_NEXT_SYNC, 2638367, 0, 106, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/audio/fffe_bom.mp3", SEEK_MODE_NEXT_SYNC, 5276734, 0, 11, 0};
     CheckSeekMode(fileTest3);
@@ -2216,7 +2216,7 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0080, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/audio/M4A_48000_1.m4a", SEEK_MODE_NEXT_SYNC, 0, 0, 10292, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/audio/M4A_48000_1.m4a", SEEK_MODE_NEXT_SYNC, 109781333, 0, 5147, 0};
+    seekInfo fileTest2{"/data/test/media/audio/M4A_48000_1.m4a", SEEK_MODE_NEXT_SYNC, 109781333, 0, 5146, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/audio/M4A_48000_1.m4a", SEEK_MODE_NEXT_SYNC, 219541333, 0, 2, 0};
     CheckSeekMode(fileTest3);
@@ -2243,7 +2243,7 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0081, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_NEXT_SYNC, 0, 0, 9150, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_NEXT_SYNC, 109800000, 0, 4575, 0};
+    seekInfo fileTest2{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_NEXT_SYNC, 109800000, 0, 4574, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_NEXT_SYNC, 219576000, 0, 16, 0};
     CheckSeekMode(fileTest3);
@@ -2270,7 +2270,7 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0082, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/audio/nonstandard_bom.mp3", SEEK_MODE_NEXT_SYNC, 0, 0, 203, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/audio/nonstandard_bom.mp3", SEEK_MODE_NEXT_SYNC, 2638367, 0, 107, 0};
+    seekInfo fileTest2{"/data/test/media/audio/nonstandard_bom.mp3", SEEK_MODE_NEXT_SYNC, 2638367, 0, 106, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/audio/nonstandard_bom.mp3", SEEK_MODE_NEXT_SYNC, 5276734, 0, 11, 0};
     CheckSeekMode(fileTest3);
@@ -2297,7 +2297,7 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0083, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/audio/OGG_48000_1.ogg", SEEK_MODE_NEXT_SYNC, 0, 0, 11439, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/audio/OGG_48000_1.ogg", SEEK_MODE_NEXT_SYNC, 104726666, 0, 5724, 0};
+    seekInfo fileTest2{"/data/test/media/audio/OGG_48000_1.ogg", SEEK_MODE_NEXT_SYNC, 104726666, 0, 5677, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/audio/OGG_48000_1.ogg", SEEK_MODE_NEXT_SYNC, 219545333, 0, 66, 0};
     CheckSeekMode(fileTest3);
