@@ -1477,7 +1477,6 @@ void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
         if (isInterruptNeeded_) {
             MEDIA_LOG_I("SetInterruptState bufferingEndCond NotifyAll.");
             bufferingEndCond_.NotifyAll();
-            sleepCond_.NotifyAll();
         }
     }
     if (playlistDownloader_ != nullptr) {
@@ -1689,9 +1688,7 @@ bool HlsMediaDownloader::CheckBufferingOneSeconds()
         if (CheckBreakCondition()) {
             break;
         }
-        WaitUntilInterrupt(TEN_MILLISECONDS, [this] {
-            return isInterruptNeeded_.load();
-        });
+        OSAL::SleepFor(TEN_MILLISECONDS);
         sleepTime += TEN_MILLISECONDS;
     }
     MEDIA_LOG_I("HLS CheckBufferingOneSeconds out");
