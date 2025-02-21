@@ -93,6 +93,7 @@ std::string HCodec::OnGetHidumperInfo()
     for (const BufferInfo& info : inputBufferPool_) {
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
         s << "        " << "inBufId = " << info.bufferId << ", owner = " << ToString(info.owner)
+          << ", hasSwapedOut = " << info.hasSwapedOut << ", nextOwner = " << ToString(info.nextStepOwner)
           << ", holdMs = " << holdMs << endl;
     }
     s << "        " << "----------------------------" << endl;
@@ -100,8 +101,10 @@ std::string HCodec::OnGetHidumperInfo()
     s << "        " << "eos:" << outputPortEos_ << ", fbd:" << outRecord_.totalCnt
       << ", bufferCapacity:" << getbufferCapacity(outputBufferPool_) << endl;
     for (const BufferInfo& info : outputBufferPool_) {
+        int fd = info.surfaceBuffer == nullptr ? -1 : info.surfaceBuffer->GetFileDescriptor();
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
-        s << "        " << "outBufId = " << info.bufferId << ", owner = " << ToString(info.owner)
+        s << "        " << "outBufId = " << info.bufferId << ", fd = " << fd << ", owner = " << ToString(info.owner)
+          << ", hasSwapedOut = " << info.hasSwapedOut << ", nextOwner = " << ToString(info.nextStepOwner)
           << ", holdMs = " << holdMs << endl;
     }
     s << "        " << "----------------------------" << endl << endl;
