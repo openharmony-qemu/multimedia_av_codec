@@ -82,6 +82,8 @@ public:
     Status SetMuted(bool isMuted) override;
 
     Status SetSeekTime(int64_t seekTime);
+    Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
+    Status SetLooping(bool loop);
     float GetMaxAmplitude();
     int32_t SetMaxAmplitudeCbStatus(bool status);
 
