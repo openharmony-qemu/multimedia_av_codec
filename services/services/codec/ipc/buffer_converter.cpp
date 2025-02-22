@@ -157,17 +157,25 @@ using MemoryType = Media::MemoryType;
 using Tag = Media::Tag;
 std::shared_ptr<BufferConverter> BufferConverter::Create(AVCodecType type)
 {
-    if (type == AVCODEC_TYPE_VIDEO_ENCODER) {
-        return std::make_shared<BufferConverter>(true);
-    } else if (type == AVCODEC_TYPE_VIDEO_DECODER) {
-        return std::make_shared<BufferConverter>(false);
+    auto converter = std::make_shared<BufferConverter>();
+    if (converter->Init(type)) {
+        return converter;
     }
     return nullptr;
 }
 
-BufferConverter::BufferConverter(bool isEncoder)
-    : func_(ConvertYUV420SP), isEncoder_(isEncoder), isSharedMemory_(false), needResetFormat_(true)
+BufferConverter::BufferConverter() : func_(ConvertYUV420SP), isSharedMemory_(false), needResetFormat_(true) {}
+
+bool BufferConverter::Init(AVCodecType type)
 {
+    if (type == AVCODEC_TYPE_VIDEO_ENCODER) {
+        isEncoder_ = true;
+    } else if (type == AVCODEC_TYPE_VIDEO_DECODER) {
+        isEncoder_ = false;
+    } else {
+        return false;
+    }
+    return true;
 }
 
 int32_t BufferConverter::ReadFromBuffer(std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory)
@@ -176,20 +184,21 @@ int32_t BufferConverter::ReadFromBuffer(std::shared_ptr<AVBuffer> &buffer, std::
     if (isSharedMemory_) {
         return AVCS_ERR_OK;
     }
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_VAL, "buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, AVCS_ERR_INVALID_VAL, "buffer is nullptr");
     if (buffer->memory_ == nullptr) {
         return AVCS_ERR_OK;
     }
-    CHECK_AND_RETURN_RET_LOG(buffer->memory_->GetAddr() != nullptr, AVCS_ERR_INVALID_VAL, "buffer addr is nullptr");
-    CHECK_AND_RETURN_RET_LOG(memory != nullptr && memory->GetBase() != nullptr, AVCS_ERR_INVALID_VAL,
-                             "shared memory is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer->memory_->GetAddr() != nullptr, AVCS_ERR_INVALID_VAL,
+                                      "buffer addr is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(memory != nullptr && memory->GetBase() != nullptr, AVCS_ERR_INVALID_VAL,
+                                      "shared memory is nullptr");
     int32_t size = buffer->memory_->GetSize();
     if (size <= 0) {
         return AVCS_ERR_OK;
     }
     if (isEncoder_) {
         int32_t ret = buffer->memory_->Read(memory->GetBase(), size, 0);
-        CHECK_AND_RETURN_RET_LOG(ret == size, AVCS_ERR_INVALID_VAL, "Read avbuffer's data failed.");
+        CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == size, AVCS_ERR_INVALID_VAL, "Read avbuffer's data failed");
         return AVCS_ERR_OK;
     }
     AVCodecRect rects[3] = {usrRect_, hwRect_, rect_}; // 1:dstRect, 2:srcRect, 3:rect
@@ -204,10 +213,11 @@ int32_t BufferConverter::WriteToBuffer(std::shared_ptr<AVBuffer> &buffer, std::s
     if (isSharedMemory_) {
         return AVCS_ERR_OK;
     }
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr && buffer->memory_->GetAddr() != nullptr,
-                             AVCS_ERR_INVALID_VAL, "buffer is nullptr");
-    CHECK_AND_RETURN_RET_LOG(memory != nullptr && memory->GetBase() != nullptr, AVCS_ERR_INVALID_VAL,
-                             "shared memory is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr && buffer->memory_ != nullptr &&
+                                          buffer->memory_->GetAddr() != nullptr,
+                                      AVCS_ERR_INVALID_VAL, "buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(memory != nullptr && memory->GetBase() != nullptr, AVCS_ERR_INVALID_VAL,
+                                      "shared memory is nullptr");
     int32_t size = buffer->memory_->GetSize();
     if (size <= 0) {
         return AVCS_ERR_OK;
@@ -280,12 +290,12 @@ void BufferConverter::SetFormat(const Format &format)
     needResetFormat_ = !SetRectValue(width, height, wStride, hStride) ||
                        pixelFormat == static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
     if (needResetFormat_) {
-        AVCODEC_LOGW("Invalid format:%{public}s", format.Stringify().c_str());
+        AVCODEC_LOGW_WITH_TAG("Invalid format:%{public}s", format.Stringify().c_str());
         return;
     }
-    AVCODEC_LOGD(
-        "Actual:(%{public}d x %{public}d), Converter:(%{public}d x %{public}d), Hardware:(%{public}d x %{public}d).",
-        width, rect_.hStride, usrRect_.wStride, usrRect_.hStride, hwRect_.wStride, hwRect_.hStride);
+    AVCODEC_LOGD_WITH_TAG(
+        "Actual:(%{public}dx%{public}d),Converter:(%{public}dx%{public}d),Hardware:(%{public}dx%{public}d)", width,
+        rect_.hStride, usrRect_.wStride, usrRect_.hStride, hwRect_.wStride, hwRect_.hStride);
 }
 
 void BufferConverter::SetInputBufferFormat(std::shared_ptr<AVBuffer> &buffer)
@@ -327,7 +337,7 @@ void BufferConverter::SetPixFormat(const VideoPixelFormat pixelFormat)
             func_ = ConverteRGBA8888;
             break;
         default:
-            AVCODEC_LOGE("Invalid video pix format:%{public}d", static_cast<int32_t>(pixelFormat));
+            AVCODEC_LOGE_WITH_TAG("Invalid video pix format:%{public}d", static_cast<int32_t>(pixelFormat));
             break;
     };
 }
@@ -366,20 +376,20 @@ inline void BufferConverter::SetHeightStride(const int32_t hStride)
 
 bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 {
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, false, "buffer is nullptr");
     if (buffer->memory_ == nullptr) {
         isSharedMemory_ = true;
-        AVCODEC_LOGW("memory is nullptr");
+        AVCODEC_LOGW_WITH_TAG("memory is nullptr");
         return true;
     }
     isSharedMemory_ = buffer->memory_->GetMemoryType() == MemoryType::SHARED_MEMORY;
     if (isSharedMemory_) {
-        AVCODEC_LOGW("AVBuffer is shared memory");
+        AVCODEC_LOGW_WITH_TAG("AVBuffer is shared memory");
         return true;
     }
 
     auto surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
-    CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, false, "surface buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(surfaceBuffer != nullptr, false, "surface buffer is nullptr");
     // pixelFormat
     VideoPixelFormat pixelFormat = TranslateSurfaceFormat(static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
     SetPixFormat(pixelFormat);
@@ -388,18 +398,18 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
     int32_t wStride = surfaceBuffer->GetStride();
     int32_t hStride = GetSliceHeightFromSurfaceBuffer(surfaceBuffer);
     bool ret = SetRectValue(width, height, wStride, hStride);
-    CHECK_AND_RETURN_RET_LOG(ret, false, "width is 0");
-    AVCODEC_LOGI(
-        "Actual:(%{public}d x %{public}d), Converter:(%{public}d x %{public}d), Hardware:(%{public}d x %{public}d).",
-        width, rect_.hStride, usrRect_.wStride, usrRect_.hStride, hwRect_.wStride, hwRect_.hStride);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, false, "width is 0");
+    AVCODEC_LOGI_WITH_TAG(
+        "Actual:(%{public}dx%{public}d),Converter:(%{public}dx%{public}d),Hardware:(%{public}dx%{public}d)",
+        rect_.wStride, rect_.hStride, usrRect_.wStride, usrRect_.hStride, hwRect_.wStride, hwRect_.hStride);
     return true;
 }
 
 bool BufferConverter::SetRectValue(const int32_t width, const int32_t height, const int32_t wStride,
                                    const int32_t hStride)
 {
-    CHECK_AND_RETURN_RET_LOG(wStride > 0, false, "stride <= 0");
-    CHECK_AND_RETURN_RET_LOG(width > 0 && height > 0, false, "width/height <= 0");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(wStride > 0, false, "stride <= 0");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(width > 0 && height > 0, false, "width/height <= 0");
     int32_t tempPixelSize = wStride / width;
     tempPixelSize = (tempPixelSize <= 0) ? 1 : tempPixelSize;
 

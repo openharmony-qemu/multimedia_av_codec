@@ -93,7 +93,6 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
             return codec;
     }
     (void)apiVersion;
-    EXPECT_AND_LOGI(codec != nullptr, "Create codec %{public}s successful", name.c_str());
     return codec;
 }
 } // namespace MediaAVCodec

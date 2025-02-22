@@ -208,7 +208,8 @@ Status AudioSinkFilter::DoSetPlayRange(int64_t start, int64_t end)
 
 Status AudioSinkFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
-    audioSink_->DrainOutputBuffer();
+    (void)recvArg;
+    audioSink_->DrainOutputBuffer(dropFrame);
     return Status::OK;
 }
 

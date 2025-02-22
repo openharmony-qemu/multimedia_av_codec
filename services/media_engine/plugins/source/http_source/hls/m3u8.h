@@ -118,6 +118,7 @@ struct M3U8 {
     std::vector<size_t> segmentOffsets_;
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<size_t> minFragDuration_ {0};
+    std::atomic<bool> isInterruptNeeded_{false};
 };
 
 struct M3U8Media {
@@ -156,6 +157,7 @@ struct M3U8MasterPlaylist {
     bool IsNearToInitResolution(const std::shared_ptr<M3U8VariantStream> &choosedStream,
     const std::shared_ptr<M3U8VariantStream> &currentStream);
     uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
+    void SetInterruptState(bool isInterruptNeeded);
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
     std::string uri_;
@@ -173,6 +175,7 @@ struct M3U8MasterPlaylist {
     std::vector<size_t> segmentOffsets_;
     std::map<std::string, std::string> httpHeader_ {};
     uint32_t initResolution_ {0};
+    std::atomic<bool> isInterruptNeeded_{false};
 };
 }
 }

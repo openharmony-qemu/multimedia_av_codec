@@ -56,6 +56,10 @@ public:
 
     sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer();
 
+    sptr<Media::AVBufferQueueProducer> GetOutputBufferQueueProducer();
+
+    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed);
+
     void ProcessInputBuffer();
 
     int32_t NotifyEos();

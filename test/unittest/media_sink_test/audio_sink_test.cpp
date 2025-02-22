@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -884,7 +884,7 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_001, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->plugin_ = nullptr;
     audioSink->inputBufferQueueConsumer_ = nullptr;
-    audioSink->DrainOutputBuffer();
+    audioSink->DrainOutputBuffer(true);
     ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
 }
 
@@ -894,7 +894,7 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_002, TestSize.Level1)
     auto audioSink = std::make_shared<AudioSink>();
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->inputBufferQueueConsumer_ = nullptr;
-    audioSink->DrainOutputBuffer();
+    audioSink->DrainOutputBuffer(true);
     ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
 }
 
@@ -905,7 +905,7 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_003, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->inputBufferQueue_ = AVBufferQueue::Create(5, MemoryType::SHARED_MEMORY, "test");
     audioSink->inputBufferQueueConsumer_ = audioSink->inputBufferQueue_->GetConsumer();
-    audioSink->DrainOutputBuffer();
+    audioSink->DrainOutputBuffer(true);
     ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
 }
 

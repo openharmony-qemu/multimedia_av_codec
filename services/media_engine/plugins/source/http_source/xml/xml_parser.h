@@ -39,7 +39,7 @@ public:
     void DestroyDoc();
 
 private:
-    static constexpr const char *const TAG = "XmlParser";
+    static constexpr const char *const tag_ = "XmlParser";
     xmlDocPtr xmlDocPtr_;
 };
 } // namespace HttpPluginLite

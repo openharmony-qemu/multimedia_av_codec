@@ -298,7 +298,7 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_AssignSampleFmtIfSupported, 
     ASSERT_FALSE(audioServerSinkPlugin->AssignSampleFmtIfSupported(Plugins::AudioSampleFormat::SAMPLE_S24P));
     ASSERT_TRUE(audioServerSinkPlugin->AssignSampleFmtIfSupported(Plugins::AudioSampleFormat::SAMPLE_U8P));
     ASSERT_TRUE(audioServerSinkPlugin->AssignSampleFmtIfSupported(Plugins::AudioSampleFormat::SAMPLE_U8));
-    ASSERT_FALSE(audioServerSinkPlugin->AssignSampleFmtIfSupported(Plugins::AudioSampleFormat::SAMPLE_F32LE));
+    ASSERT_TRUE(audioServerSinkPlugin->AssignSampleFmtIfSupported(Plugins::AudioSampleFormat::SAMPLE_F32LE));
 }
 
 HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_SetInterruptMode, TestSize.Level1)

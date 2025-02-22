@@ -476,7 +476,6 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
                 currentRequest_->retryTimes_++;
                 currentRequest_->retryOnGoing_ = true;
                 currentRequest_->dropedDataLen_ = 0;
-                MEDIA_LOG_D("Do retry.");
             }
             client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
             requestQue_->SetActive(true);
@@ -488,6 +487,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
         }
     }
     task_->Start();
+    MEDIA_LOG_I("Do retry.");
     return true;
 }
 

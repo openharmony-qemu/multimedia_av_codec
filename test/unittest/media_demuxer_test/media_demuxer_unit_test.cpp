@@ -2110,4 +2110,22 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsOpenGopBufferDroppable_001, TestSi
     demuxer->ResetDraggingOpenGopCnt();
     EXPECT_FALSE(demuxer->IsOpenGopBufferDroppable(buffer, 1));
 }
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsLoaclFd_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/h264_fmp4.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+ 
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    EXPECT_TRUE(demuxer->IsLocalFd());
+}
 }

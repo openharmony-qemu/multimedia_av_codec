@@ -15,13 +15,14 @@
 #ifndef AVCODEC_VIDEO_DECODER_IMPL_H
 #define AVCODEC_VIDEO_DECODER_IMPL_H
 
+#include "avcodec_dfx_component.h"
 #include "avcodec_video_decoder.h"
 #include "nocopyable.h"
 #include "i_avcodec_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-class AVCodecVideoDecoderImpl : public AVCodecVideoDecoder, public NoCopyable {
+class AVCodecVideoDecoderImpl : public AVCodecVideoDecoder, public AVCodecDfxComponent, public NoCopyable {
 public:
     AVCodecVideoDecoderImpl();
     ~AVCodecVideoDecoderImpl();

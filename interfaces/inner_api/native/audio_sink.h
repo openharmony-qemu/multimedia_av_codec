@@ -129,6 +129,7 @@ private:
     int64_t CalcBufferDuration(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void PerfRecord(int64_t audioWriteMs);
     int32_t GetSampleFormat();
+    void ClearInputBuffer();
 
     class UnderrunDetector {
     public:

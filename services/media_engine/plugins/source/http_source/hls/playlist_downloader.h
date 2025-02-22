@@ -92,6 +92,7 @@ public:
     {
         return 0;
     }
+    virtual void InterruptM3U8Parse(bool isInterruptNeeded) {}
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);

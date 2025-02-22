@@ -34,6 +34,7 @@ private:
         sptr<SurfaceBuffer> buffer;
         sptr<SyncFence> fence;
         int32_t generation = 0;
+        bool hasSwapedOut = false;
     };
 
 private:
@@ -87,6 +88,7 @@ private:
     void DynamicModeSubmitBuffer() override;
     void DynamicModeSubmitIfEos() override;
     void DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator nullSlot);
+    void SubmitBuffersToNextOwner() override;
 
     // switch surface
     void OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface,
@@ -102,6 +104,11 @@ private:
 
     // VRR
     int32_t SetVrrEnable(const Format &format);
+
+    // swap dma buffer
+    bool CanSwapOut(OMX_DIRTYPE portIndex, BufferInfo& info);
+    int32_t SwapInBufferByPortIndex(OMX_DIRTYPE portIndex);
+    int32_t SwapOutBufferByPortIndex(OMX_DIRTYPE portIndex);
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t VrrPrediction(BufferInfo &info) override;
     int32_t InitVrr();
@@ -120,6 +127,9 @@ private:
     bool vrrDynamicSwitch_ = false;
     Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* vrrHandle_ = nullptr;
 #endif
+    // freeze
+    int32_t FreezeBuffers() override;
+    int32_t ActiveBuffers() override;
 
 private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;

@@ -18,9 +18,10 @@
 
 #include <map>
 #include <shared_mutex>
+#include "avcodec_dfx_component.h"
+#include "avcodec_death_recipient.h"
 #include "meta.h"
 #include "i_codec_service.h"
-#include "avcodec_death_recipient.h"
 #include "i_standard_codec_listener.h"
 #include "i_standard_codec_service.h"
 #include "nocopyable.h"
@@ -28,7 +29,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class CodecServiceStub : public IRemoteStub<IStandardCodecService>, public NoCopyable {
+class CodecServiceStub : public IRemoteStub<IStandardCodecService>, public AVCodecDfxComponent, public NoCopyable {
 public:
     static sptr<CodecServiceStub> Create(int32_t instanceId = INVALID_INSTANCE_ID);
     virtual ~CodecServiceStub();

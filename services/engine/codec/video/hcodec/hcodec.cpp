@@ -311,6 +311,8 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
     debugMode_ = HiLogIsLoggable(HCODEC_DOMAIN, HCODEC_TAG, LOG_DEBUG);
     string dumpModeStr = OHOS::system::GetParameter("hcodec.dump", "0");
     dumpMode_ = static_cast<DumpMode>(strtoul(dumpModeStr.c_str(), nullptr, 2)); // 2 is binary
+    disableDmaSwap_ = OHOS::system::GetBoolParameter("hcodec.dmaswap.disable", false);
+    pid_ = getpid();
     LOGI(">> debug mode = %d, dump mode = %s(%lu)",
         debugMode_, dumpModeStr.c_str(), dumpMode_);
 
@@ -341,6 +343,7 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
     outputPortChangedState_ = make_shared<OutputPortChangedState>(this);
     stoppingState_ = make_shared<StoppingState>(this);
     flushingState_ = make_shared<FlushingState>(this);
+    frozenState_ = make_shared<FrozenState>(this);
     StateMachine::ChangeStateTo(uninitializedState_);
 }
 
@@ -1107,7 +1110,16 @@ void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     OnReleaseOutputBuffer(info);
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
+    OnReleaseOutputBuffer(bufferId, mode);
+}
 
+void HCodec::OnReleaseOutputBuffer(uint32_t bufferId, BufferOperationMode mode)
+{
+    optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);
+    if (!idx.has_value()) {
+        return;
+    }
+    BufferInfo& info = outputBufferPool_[idx.value()];
     switch (mode) {
         case KEEP_BUFFER: {
             return;

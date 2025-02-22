@@ -287,6 +287,8 @@ Status AudioSink::Flush()
     Status ret = Status::OK;
     underrunDetector_.Reset();
     lagDetector_.Reset();
+    FALSE_RETURN_V_MSG_E(inputBufferQueueProducer_ != nullptr, Status::ERROR_NO_MEMORY, "flush failed");
+    inputBufferQueueProducer_->Clear();
     ret = plugin_->Flush();
     {
         AutoLock lock(eosMutex_);
@@ -294,7 +296,8 @@ Status AudioSink::Flush()
         eosDraining_ = false;
     }
     ResetInfo();
-    return ret;
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "plugin flush failed");
+    return Status::OK;
 }
 
 Status AudioSink::Release()
@@ -393,6 +396,7 @@ void AudioSink::SetThreadGroupId(const std::string& groupId)
 void AudioSink::HandleEosInner(bool drain)
 {
     AutoLock lock(eosMutex_);
+    MEDIA_LOG_I("HandleEosInner drain:%d", drain);
     eosDraining_ = true; // start draining task
     switch (eosInterruptType_) {
         case EosInterruptState::INITIAL: // No user operation during EOS drain, complete drain normally
@@ -433,6 +437,7 @@ void AudioSink::HandleEosInner(bool drain)
  
 void AudioSink::DrainAndReportEosEvent()
 {
+    MEDIA_LOG_I("DrainAndReportEosEvent");
     plugin_->Drain();
     if (appUid_ != 1003) { // 1003 is bootanimation uid
         plugin_->PauseTransitent();
@@ -521,6 +526,24 @@ int32_t AudioSink::GetSampleFormat()
             break;
     }
     return format;
+}
+
+void AudioSink::ClearInputBuffer()
+{
+    MEDIA_LOG_D("AudioSink::ClearInputBuffer enter");
+    if (!inputBufferQueueConsumer_) {
+        return;
+    }
+    std::shared_ptr<AVBuffer> filledInputBuffer;
+    Status ret = Status::OK;
+    while (ret == Status::OK) {
+        ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
+        if (ret != Status::OK) {
+            MEDIA_LOG_I("AudioSink::ClearInputBuffer clear input Buffer");
+            return;
+        }
+        inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
+    }
 }
 
 int64_t AudioSink::CalculateBufDescSampleCnt(int64_t writeDataSize)
@@ -788,15 +811,7 @@ void AudioSink::ResetInfo()
     std::shared_ptr<AVBuffer> filledInputBuffer;
     Status ret = Status::OK;
     availDataSize_.store(0);
-    FALSE_RETURN(inputBufferQueueConsumer_ != nullptr);
-    while (ret == Status::OK) {
-        ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
-        if (ret != Status::OK) {
-            MEDIA_LOG_D("AudioSink::ClearInputBuffer clear input Buffer");
-            return;
-         }
-        inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
-    }
+    ClearInputBuffer();
 }
 
 void AudioSink::GetRemainingBuffer()

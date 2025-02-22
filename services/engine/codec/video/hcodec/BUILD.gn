@@ -38,6 +38,7 @@ ohos_shared_library("hcodec") {
   sources = [
     "hcodec.cpp",
     "hcodec_api.cpp",
+    "hcodec_bg.cpp",
     "hcodec_dfx.cpp",
     "hcodec_list.cpp",
     "hcodec_state.cpp",

@@ -844,8 +844,9 @@ Status AudioServerSinkPlugin::DrainCacheData(bool render)
     }
     AudioStandard::RendererState rendererState = (audioRenderer_ != nullptr) ?
         audioRenderer_->GetStatus() : AudioStandard::RendererState::RENDERER_INVALID;
-    FALSE_RETURN_V_MSG(rendererState != AudioStandard::RendererState::RENDERER_PAUSED,
-        Status::ERROR_AGAIN, "audioRenderer_ is still paused, try again later");
+    FALSE_RETURN_V_MSG(rendererState != AudioStandard::RendererState::RENDERER_PAUSED
+        && rendererState != AudioStandard::RendererState::RENDERER_STOPPED,
+        Status::ERROR_AGAIN, "audioRenderer_ is still paused or stopped, try again later");
     if (rendererState != AudioStandard::RendererState::RENDERER_RUNNING) {
         cachedBuffers_.clear();
         MEDIA_LOG_W("Drop cache buffer because audioRenderer_ state invalid");
@@ -893,6 +894,7 @@ void AudioServerSinkPlugin::CacheData(uint8_t* inputBuffer, size_t bufferSize)
 
 size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t bufferSize, bool& shouldDrop)
 {
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::WriteAudioBuffer-size:" + std::to_string(bufferSize));
     uint8_t* destBuffer = inputBuffer;
     size_t destLength = bufferSize;
     while (destLength > 0) {
@@ -901,8 +903,11 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
         int32_t ret = audioRenderer_->Write(destBuffer, destLength);
         writeDuration_ = std::max(Plugins::GetCurrentMillisecond() - systemTimeBeforeWriteMs, writeDuration_);
         if (ret < 0) {
-            if (audioRenderer_->GetStatus() == AudioStandard::RendererState::RENDERER_PAUSED) {
-                MEDIA_LOG_W("WriteAudioBuffer error because audioRenderer_ paused, cache data.");
+            AudioStandard::RendererState rendererState = (audioRenderer_ != nullptr) ?
+                audioRenderer_->GetStatus() : AudioStandard::RendererState::RENDERER_INVALID;
+            if (rendererState == AudioStandard::RendererState::RENDERER_PAUSED ||
+                rendererState == AudioStandard::RendererState::RENDERER_STOPPED) {
+                MEDIA_LOG_W("WriteAudioBuffer error because audioRenderer_ paused or stopped, cache data.");
                 shouldDrop = false;
             } else {
                 MEDIA_LOG_W("WriteAudioBuffer error because audioRenderer_ error, drop data.");

@@ -96,6 +96,18 @@ public:
         return mediaCodec_ != nullptr ? mediaCodec_->GetInputBufferQueueConsumer() : nullptr;
     }
 
+    sptr<Media::AVBufferQueueProducer> GetOutputBufferQueueProducer() override
+    {
+        return mediaCodec_ != nullptr ? mediaCodec_->GetOutputBufferQueueProducer() : nullptr;
+    }
+
+    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed) override
+    {
+        if (mediaCodec_ != nullptr) {
+            mediaCodec_->ProcessInputBufferInner(isTriggeredByOutPort, isFlushed);
+        }
+    }
+
     void ProcessInputBuffer() override
     {
         if (mediaCodec_ != nullptr) {

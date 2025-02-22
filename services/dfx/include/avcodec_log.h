@@ -33,11 +33,12 @@ namespace MediaAVCodec {
 #undef  LOG_DOMAIN_MUXER
 #define LOG_DOMAIN_MUXER         0xD002B3B
 
-#ifndef AVCODEC_LOG_USE_NO_DICT_LOG
-#define AVCODEC_LOG(level, fmt, args...)                                    \
-    do {                                                                    \
-        (void)HILOG_IMPL(LABEL.type, level, LABEL.domain, LABEL.tag, "{%{public}s():%{public}d} " \
-            fmt, __FUNCTION__, __LINE__, ##args);                           \
+#define STRINGFY_INNER(x) #x
+#define STRINGFY(x) STRINGFY_INNER(x)
+#define AVCODEC_LOG(level, fmt, args...)                                                                               \
+    do {                                                                                                               \
+        (void)HILOG_IMPL(LABEL.type, level, LABEL.domain, LABEL.tag, "{%{public}s():" STRINGFY(__LINE__) "} " fmt,     \
+                         __FUNCTION__, ##args);                                                                        \
     } while (0)
 
 #define AVCODEC_LOGF(fmt, ...) AVCODEC_LOG(LOG_FATAL, fmt, ##__VA_ARGS__)
@@ -45,18 +46,6 @@ namespace MediaAVCodec {
 #define AVCODEC_LOGW(fmt, ...) AVCODEC_LOG(LOG_WARN,  fmt, ##__VA_ARGS__)
 #define AVCODEC_LOGI(fmt, ...) AVCODEC_LOG(LOG_INFO,  fmt, ##__VA_ARGS__)
 #define AVCODEC_LOGD(fmt, ...) AVCODEC_LOG(LOG_DEBUG, fmt, ##__VA_ARGS__)
-#else
-#define AVCODEC_LOG(func, fmt, args...)                                     \
-    do {                                                                    \
-        (void)func(LABEL, "{%{public}s():%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);   \
-    } while (0)
-
-#define AVCODEC_LOGF(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Fatal, fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGE(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Error, fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGW(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Warn,  fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGI(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Info,  fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGD(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Debug, fmt, ##__VA_ARGS__)
-#endif
 
 #define AVCODEC_LOG_LIMIT(logger, frequency, fmt, ...)                      \
     do {                                                                    \
@@ -76,6 +65,14 @@ namespace MediaAVCodec {
     do {                                                                    \
         if (!(cond)) {                                                      \
             AVCODEC_LOGE(fmt, ##__VA_ARGS__);                               \
+            return ret;                                                     \
+        }                                                                   \
+    } while (0)
+
+#define CHECK_AND_RETURN_RET_LOGD(cond, ret, fmt, ...)                      \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGD(fmt, ##__VA_ARGS__);                               \
             return ret;                                                     \
         }                                                                   \
     } while (0)
@@ -132,6 +129,14 @@ namespace MediaAVCodec {
         }                                                                   \
     } while (0)
 
+#define CHECK_AND_RETURN_LOGD(cond, fmt, ...)                               \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGD(fmt, ##__VA_ARGS__);                               \
+            return;                                                         \
+        }                                                                   \
+    } while (0)
+
 #define CHECK_AND_RETURN_LOG_LIMIT(cond, frequency, fmt, ...)               \
     do {                                                                    \
         if (!(cond)) {                                                      \
@@ -155,7 +160,6 @@ namespace MediaAVCodec {
             continue;                                                       \
         }                                                                   \
     } else void (0)
-
 #define POINTER_MASK 0x00FFFFFF
 #define FAKE_POINTER(addr) (POINTER_MASK & reinterpret_cast<uintptr_t>(addr))
 } // namespace MediaAVCodec
