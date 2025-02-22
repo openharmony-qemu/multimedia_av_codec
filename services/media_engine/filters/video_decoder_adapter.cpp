@@ -187,18 +187,22 @@ Status VideoDecoderAdapter::Flush()
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     FALSE_RETURN_V_MSG(isConfigured_, Status::ERROR_INVALID_STATE, "mediaCodec_ is not configured");
     int32_t ret = mediaCodec_->Flush();
-    std::unique_lock<std::mutex> lock(mutex_);
-    if (inputBufferQueueConsumer_ != nullptr) {
-        for (auto &buffer : bufferVector_) {
-            inputBufferQueueConsumer_->DetachBuffer(buffer);
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (inputBufferQueueConsumer_ != nullptr) {
+            for (auto &buffer : bufferVector_) {
+                inputBufferQueueConsumer_->DetachBuffer(buffer);
+            }
+            bufferVector_.clear();
+            inputBufferQueueConsumer_->SetQueueSize(0);
         }
-        bufferVector_.clear();
-        inputBufferQueueConsumer_->SetQueueSize(0);
     }
-    std::unique_lock<std::mutex> lock(dtsQueMutex_);
-    if (!inputBufferDtsQue_.empty()) {
-        MEDIA_LOG_I("Clear dtsQue_, currrent size: " PUBLIC_LOG_U64, static_cast<uint64_t>(inputBufferDtsQue_.size()));
-        inputBufferDtsQue_.clear();
+    {
+        std::unique_lock<std::mutex> lock(dtsQueMutex_);
+        if (!inputBufferDtsQue_.empty()) {
+            MEDIA_LOG_I("Clear dtsQue_, currrent size: " PUBLIC_LOG_U64, static_cast<uint64_t>(inputBufferDtsQue_.size()));
+            inputBufferDtsQue_.clear();
+        }
     }
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
