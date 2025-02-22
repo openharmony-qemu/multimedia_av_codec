@@ -200,7 +200,8 @@ Status VideoDecoderAdapter::Flush()
     {
         std::unique_lock<std::mutex> lock(dtsQueMutex_);
         if (!inputBufferDtsQue_.empty()) {
-            MEDIA_LOG_I("Clear dtsQue_, currrent size: " PUBLIC_LOG_U64, static_cast<uint64_t>(inputBufferDtsQue_.size()));
+            MEDIA_LOG_I("Clear dtsQue_, currrent size: " PUBLIC_LOG_U64,
+                static_cast<uint64_t>(inputBufferDtsQue_.size()));
             inputBufferDtsQue_.clear();
         }
     }
