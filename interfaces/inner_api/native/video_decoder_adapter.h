@@ -87,6 +87,7 @@ private:
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_ {nullptr};
 
     std::mutex mutex_;
+    std::mutex dtsQueMutex_;
     std::vector<std::shared_ptr<AVBuffer>> bufferVector_;
     int64_t currentTime_ = 0;
     bool isConfigured_ {false};
