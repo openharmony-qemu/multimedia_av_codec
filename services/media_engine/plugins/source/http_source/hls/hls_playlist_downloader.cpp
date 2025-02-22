@@ -409,10 +409,8 @@ void HlsPlayListDownloader::InterruptM3U8Parse(bool isInterruptNeeded)
     if (master_) {
         master_->SetInterruptState(isInterruptNeeded);
     }
-    if (currentVariant_) {
-        if (currentVariant_->m3u8_) {
-            currentVariant_->m3u8_->isInterruptNeeded_.store(isInterruptNeeded);
-        }
+    if (currentVariant_ && currentVariant_->m3u8_) {
+        currentVariant_->m3u8_->isInterruptNeeded_.store(isInterruptNeeded);
     }
 }
 }

@@ -285,7 +285,8 @@ void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
             return item.request->IsSame(request);
         });
         if (!exists) {
-            downloader->Retry(request);
+            RetryRequest retryRequest {request, [downloader, request] { downloader->Retry(request); }};
+            retryTasks_.emplace_back(std::move(retryRequest));
         }
     }
 }
