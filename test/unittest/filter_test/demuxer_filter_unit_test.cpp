@@ -784,7 +784,6 @@ HWTEST_F(DemuxerFilterUnitTest, IsLocalFd_0400, TestSize.Level1)
     demuxerFilter->SetDataSource(mediaSource);
     EXPECT_TRUE(demuxerFilter->IsLocalFd());
 }
-
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
