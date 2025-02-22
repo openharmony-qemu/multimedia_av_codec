@@ -303,5 +303,18 @@ HWTEST_F(SourceUnitTest, Source_GetProtocolByUri_0100, TestSize.Level1)
     source_->uri_ = "example.com";
     EXPECT_FALSE(source_->GetProtocolByUri());
 }
+/**
+ * @tc.name: Source_IsLocalFd_0100
+ * @tc.desc: Source_IsLocalFd_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(SourceUnitTest, Source_IsLocalFd_0100, TestSize.Level1)
+{
+    std::shared_ptr<Source> source = std::make_shared<Source>();
+    std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
+    source->SetSource(mediaSource);
+    // source plugin is file_source_plugin, it is for local fd
+    EXPECT_TRUE(source->IsLocalFd());
+}
 } // namespace Media
 } // namespace OHOS

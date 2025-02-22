@@ -264,6 +264,11 @@ public:
     {
         return false;
     }
+
+    virtual bool IsLocalFd()
+    {
+        return false;
+    }
 };
 
 /// Source plugin api major number.
