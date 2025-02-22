@@ -772,6 +772,19 @@ HWTEST_F(DemuxerFilterUnitTest, OnUnLinked_0400, TestSize.Level1)
     Status res = demuxerFilter_->OnUnLinked(streamType, callback);
     EXPECT_EQ(res, Status::OK);
 }
+
+HWTEST_F(DemuxerFilterUnitTest, IsLocalFd_0400, TestSize.Level1)
+{
+    auto demuxerFilter = std::make_shared<DemuxerFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_DEMUXER);
+    auto receiver = std::make_shared<FilterEventReceiverMock>();
+    demuxerFilter->receiver_ = receiver;
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxerFilter->demuxer_ = demuxer;
+    auto mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
+    demuxerFilter->SetDataSource(mediaSource);
+    EXPECT_TRUE(demuxerFilter->IsLocalFd());
+}
+
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
