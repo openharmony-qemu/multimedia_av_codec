@@ -101,6 +101,7 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
     mediaCodec_->Release();
     if (!inputBufferDtsQue_.empty()) {
         MEDIA_LOG_I("Clear dtsQue_, currrent size: " PUBLIC_LOG_U64, static_cast<uint64_t>(inputBufferDtsQue_.size()));
+        std::unique_lock<std::mutex> lock(dtsQueMutex_);
         inputBufferDtsQue_.clear();
     }
 }
@@ -196,6 +197,7 @@ Status VideoDecoderAdapter::Flush()
     }
     if (!inputBufferDtsQue_.empty()) {
         MEDIA_LOG_I("Clear dtsQue_, currrent size: " PUBLIC_LOG_U64, static_cast<uint64_t>(inputBufferDtsQue_.size()));
+        std::unique_lock<std::mutex> lock(dtsQueMutex_);
         inputBufferDtsQue_.clear();
     }
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
@@ -305,6 +307,7 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
 void VideoDecoderAdapter::GetInputBufferDts(std::shared_ptr<AVBuffer> &inputBuffer)
 {
     FALSE_RETURN_MSG(inputBuffer != nullptr, "inputBuffer is nullptr.");
+    std::unique_lock<std::mutex> lock(dtsQueMutex_);
     inputBufferDtsQue_.push_back(inputBuffer->dts_);
     MEDIA_LOG_D("Inputbuffer DTS: " PUBLIC_LOG_D64 " dtsQue_ size: " PUBLIC_LOG_U64,
         inputBuffer->dts_, static_cast<uint64_t>(inputBufferDtsQue_.size()));
@@ -314,6 +317,7 @@ void VideoDecoderAdapter::SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBu
 {
     FALSE_RETURN_MSG(outputBuffer != nullptr, "outputBuffer is nullptr.");
     if (!inputBufferDtsQue_.empty()) {
+        std::unique_lock<std::mutex> lock(dtsQueMutex_);
         outputBuffer->pts_ = inputBufferDtsQue_.front();
         inputBufferDtsQue_.pop_front();
         MEDIA_LOG_D("Outputbuffer PTS: " PUBLIC_LOG_D64 " dtsQue_ size: " PUBLIC_LOG_U64,
