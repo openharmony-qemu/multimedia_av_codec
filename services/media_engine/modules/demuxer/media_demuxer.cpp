@@ -1605,6 +1605,9 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
 {
     AutoLock lock(mapMutex_);
     mediaMetaData_.globalMeta = std::make_shared<Meta>(mediaInfo.general);
+    if (mediaMetaData_.globalMeta != nullptr && mediaMetaData_.globalMeta->GetData(Tag::MEDIA_FILE_TYPE, fileType_)) {
+        MEDIA_LOG_D("fileType " PUBLIC_LOG_D32, static_cast<int32_t>(fileType_));
+    }
     mediaMetaData_.trackMetas.clear();
     mediaMetaData_.trackMetas.reserve(mediaInfo.tracks.size());
     for (uint32_t index = 0; index < mediaInfo.tracks.size(); index++) {
@@ -1897,12 +1900,22 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
         }
         HandleAutoMaintainPts(trackId, bufferMap_[trackId]);
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
+        if (fileType_ == FileType::AVI) {
+            SetOutputBufferPts(bufferMap_[trackId]);
+        }
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
     } else {
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
         MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
     }
     return ret;
+}
+
+void MediaDemuxer::SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    FALSE_RETURN_MSG(outputBuffer != nullptr, "outputBuffer is nullptr.");
+    MEDIA_LOG_D("OutputBuffer PTS: " PUBLIC_LOG_D64 " DTS: " PUBLIC_LOG_D64, outputBuffer->pts_, outputBuffer->dts_);
+    outputBuffer->pts_ = outputBuffer->dts_;
 }
 
 bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
