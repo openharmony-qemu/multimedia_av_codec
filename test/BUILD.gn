@@ -221,6 +221,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/encoderconfigure_fuzzer:EncoderConfigureFuzzTest",
       "fuzztest/encoderinner_fuzzer:EncoderInnerFuzzTest",
       "fuzztest/encodersetparameter_fuzzer:EncoderSetParameterFuzzTest",
+      "fuzztest/hdrmuxer_fuzzer:HdrMuxerFuzzTest",
       "fuzztest/hevcswdecoderconfigure_fuzzer:HevcSwdecoderConfigureFuzzTest",
       "fuzztest/hevcswdecoderserver_fuzzer:HevcSwdecoderServerFuzzTest",
       "fuzztest/hevcswdecodersetparameter_fuzzer:HevcSwdecoderSetParameterFuzzTest",
