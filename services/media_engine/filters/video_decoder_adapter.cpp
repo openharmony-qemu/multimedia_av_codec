@@ -100,7 +100,7 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
     MEDIA_LOG_D("VideoDecoderAdapter::QueueInputBuffer");
     mediaCodec_->Release();
     if (!inputBufferDtsQue_.empty()) {
-        MEDIA_LOG_I("Clear DtsQue, currrent size: " PUBLIC_LOG_U64, inputBufferDtsQue_.size());
+        MEDIA_LOG_I("Clear dtsQue_, currrent size: " PUBLIC_LOG_U64, inputBufferDtsQue_.size());
         inputBufferDtsQue_.clear();
     }
 }
