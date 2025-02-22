@@ -56,8 +56,7 @@ ohos_fuzztest("HdrMuxerFuzzTest") {
 ###############################################################################
 group("fuzztest") {
   testonly = true
-  deps = []
-  deps += [
+  deps = [
     # deps file
     ":HdrMuxerFuzzTest",  #引用测试套
   ]
