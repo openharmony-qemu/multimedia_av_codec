@@ -542,7 +542,7 @@ bool AudioSink::IsBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cac
 }
  
 bool AudioSink::IsDrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
-                                size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts)
+    size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts)
 {
     if (cacheBufferSize > size) {
         FALSE_RETURN_V_MSG_D(!isAudioVivid, false, "audiovivid cant split");
@@ -645,7 +645,7 @@ void AudioSink::AudioDataSynchroizer::UpdateLastBufferPTS(int32_t bufferOffset, 
     curBufferPTS_ = curBufferPTS_ == HST_TIME_NONE ? 0 : curBufferPTS_;
     lastBufferPTS_ = curBufferPTS_ + lastBufferOffset_ + bufferDuration_;
     lastBufferOffset_ = bufferOffset;
-    FALSE_RETURN_MSG(speed_ != 0, "speed is 0");
+    FALSE_RETURN_MSG(speed != 0, "speed is 0");
     compensatePTS_ += bufferDuration_ - bufferDuration_ / speed;
 }
  
@@ -795,7 +795,7 @@ void AudioSink::ResetInfo()
         if (ret != Status::OK) {
             MEDIA_LOG_D("AudioSink::ClearInputBuffer clear input Buffer");
             return;
-         }
+        }
         inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
     }
 }
