@@ -195,7 +195,7 @@ Status VideoDecoderAdapter::Flush()
         inputBufferQueueConsumer_->SetQueueSize(0);
     }
     if (!inputBufferDtsQue_.empty()) {
-        MEDIA_LOG_I("Clear DtsQue, currrent size: " PUBLIC_LOG_U64, inputBufferDtsQue_.size());
+        MEDIA_LOG_I("Clear dtsQue_, currrent size: " PUBLIC_LOG_U64, inputBufferDtsQue_.size());
         inputBufferDtsQue_.clear();
     }
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
