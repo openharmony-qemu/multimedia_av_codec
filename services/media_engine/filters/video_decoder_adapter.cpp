@@ -306,7 +306,7 @@ void VideoDecoderAdapter::GetInputBufferDts(std::shared_ptr<AVBuffer> &inputBuff
 {
     FALSE_RETURN_MSG(inputBuffer != nullptr, "inputBuffer is nullptr.");
     inputBufferDtsQue_.push_back(inputBuffer->dts_);
-    MEDIA_LOG_D("inputbuffer DTS: " PUBLIC_LOG_D64 " DtsQue size: " PUBLIC_LOG_U64,
+    MEDIA_LOG_D("Inputbuffer DTS: " PUBLIC_LOG_D64 " dtsQue_ size: " PUBLIC_LOG_U64,
         inputBuffer->dts_, static_cast<uint64_t>(inputBufferDtsQue_.size()));
 }
 
@@ -316,10 +316,10 @@ void VideoDecoderAdapter::SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBu
     if (!inputBufferDtsQue_.empty()) {
         outputBuffer->pts_ = inputBufferDtsQue_.front();
         inputBufferDtsQue_.pop_front();
-        MEDIA_LOG_D("outputbuffer PTS: " PUBLIC_LOG_D64 " DtsQue size: " PUBLIC_LOG_U64,
+        MEDIA_LOG_D("Outputbuffer PTS: " PUBLIC_LOG_D64 " dtsQue_ size: " PUBLIC_LOG_U64,
             outputBuffer->pts_, static_cast<uint64_t>(inputBufferDtsQue_.size()));
     } else {
-        MEDIA_LOG_W("inputBufferDtsQue is empty.")
+        MEDIA_LOG_W("DtsQue_ is empty.")
         outputBuffer->pts_ = outputBuffer->dts_;
     }
 }
