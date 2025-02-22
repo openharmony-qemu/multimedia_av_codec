@@ -1888,7 +1888,7 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
     }
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
-             return HandleTrackEos(trackId);
+            return HandleTrackEos(trackId);
         }
         HandleAutoMaintainPts(trackId, bufferMap_[trackId]);
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
