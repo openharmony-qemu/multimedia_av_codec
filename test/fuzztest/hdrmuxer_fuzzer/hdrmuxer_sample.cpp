@@ -46,7 +46,7 @@ static int64_t GetFileSize(const char *fileName)
 }
 
 
-void MuxerSample::InitMuxerDeMuxer(const char *mp4File)
+bool MuxerSample::InitMuxerDeMuxer(const char *mp4File)
 {
     fd = open(mp4File, O_RDONLY);
     outFd = open("./output.mp4", O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
@@ -54,12 +54,14 @@ void MuxerSample::InitMuxerDeMuxer(const char *mp4File)
     inSource = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!inSource) {
         cout << "create source failed" << endl;
+        return false;
     }
 
     demuxer = OH_AVDemuxer_CreateWithSource(inSource);
     muxer = OH_AVMuxer_Create(outFd, AV_OUTPUT_FORMAT_MPEG_4);
     if (!muxer || !demuxer) {
         cout << "create muxer demuxer failed" << endl;
+        return false;
     }
 
     OH_AVFormat *sourceFormat = OH_AVSource_GetSourceFormat(inSource);
@@ -89,6 +91,7 @@ void MuxerSample::InitMuxerDeMuxer(const char *mp4File)
         OH_AVFormat_Destroy(trackFormat);
     }
     OH_AVFormat_Destroy(sourceFormat);
+    return true;
 }
 
 MuxerSample::~MuxerSample()
@@ -110,8 +113,11 @@ void MuxerSample::RunHdrMuxer(const uint8_t *data, size_t size, const char *mp4F
 {
     fuzzSize = size;
     fuzzData = data;
-    InitMuxerDeMuxer(mp4File);
-
+    bool ret = InitMuxerDeMuxer(mp4File);
+    if (!ret) {
+        cout << "InitMuxerDeMuxer failed" << endl;
+        return;
+    }
     Start();
     WaitForEOS();
 }
@@ -138,6 +144,9 @@ void MuxerSample::WriteVideoTrack()
     buffer = OH_AVBuffer_Create(fuzzSize);
     while (!isVideoFinish.load()) {
         uint8_t *bufferAddr = OH_AVBuffer_GetAddr(buffer);
+        if (bufferAddr == nullptr) {
+            return;
+        }
         memcpy_s(bufferAddr, fuzzSize, fuzzData, fuzzSize);
         OH_AVCodecBufferAttr attr;
         OH_AVBuffer_GetBufferAttr(buffer, &attr);
