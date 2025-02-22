@@ -18,6 +18,7 @@
 
 #include <shared_mutex>
 #include <vector>
+#include <deque>
 #include "surface.h"
 #include "avcodec_video_decoder.h"
 #include "buffer/avbuffer.h"
@@ -71,6 +72,8 @@ public:
 private:
     void PerfRecord(const std::shared_ptr<AVBuffer> buffer);
     int32_t ReleaseOutputBufferWithPerfRecord(uint32_t index, bool render);
+    void GetInputBufferDts(std::shared_ptr<AVBuffer> &inputBuffer);
+    void SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer);
 
     std::shared_ptr<Media::AVBufferQueue> inputBufferQueue_;
     sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_;
@@ -93,6 +96,8 @@ private:
     std::string bundleName_;
     bool isPerfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
+    int32_t fileType_{0};
+    std::deque<int64_t> inputBufferDtsQue_;
 };
 
 class VideoDecoderCallback : public OHOS::MediaAVCodec::MediaCodecCallback {
