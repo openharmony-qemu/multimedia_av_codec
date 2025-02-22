@@ -1606,7 +1606,7 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
     AutoLock lock(mapMutex_);
     mediaMetaData_.globalMeta = std::make_shared<Meta>(mediaInfo.general);
     if (mediaMetaData_.globalMeta != nullptr && mediaMetaData_.globalMeta->GetData(Tag::MEDIA_FILE_TYPE, fileType_)) {
-        MEDIA_LOG_D("fileType " PUBLIC_LOG_D32, static_cast<int32_t>(fileType_));
+        MEDIA_LOG_D("FileType " PUBLIC_LOG_D32, static_cast<int32_t>(fileType_));
     }
     mediaMetaData_.trackMetas.clear();
     mediaMetaData_.trackMetas.reserve(mediaInfo.tracks.size());
