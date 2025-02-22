@@ -325,6 +325,11 @@ void FileSourcePlugin::CloseFile()
         fp_ = nullptr;
     }
 }
+
+bool FileSourcePlugin::IsLocalFd()
+{
+    return true;
+}
 } // namespace FileSource
 } // namespace Plugin
 } // namespace Media
