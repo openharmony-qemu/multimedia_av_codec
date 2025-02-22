@@ -2181,6 +2181,56 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_003, TestSize.Level0)
 }
 
 /**
+ * @tc.name: Muxer_SetFormat_UserKey_004
+ * @tc.desc: Muxer set format with user key(string keys length more than 256 characters)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_004, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    std::string str = "";
+    for (uint32_t i = 0; i < 260; ++i) {
+        char ch = '0' + i % 10;
+        str += ch;
+    }
+    audioParams->PutStringValue("com.openharmony.model", str);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 3);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_UserKey_005
+ * @tc.desc: Muxer set format with user key(string keys length less than 256 characters)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_005, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    std::string str = "";
+    for (uint32_t i = 0; i < 255; ++i) {
+        char ch = '0' + i % 10;
+        str += ch;
+    }
+    audioParams->PutStringValue("com.openharmony.model", str);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
  * @tc.name: Muxer_SetFormat_DefinedKey_And_UserKey_001
  * @tc.desc: Muxer set format with user key(true keys)
  * @tc.type: FUNC
