@@ -37,7 +37,7 @@ public:
     void Stop();
     void WriteAudioTrack();
     void WriteVideoTrack();
-    void InitMuxerDeMuxer(const char *mp4File);
+    bool InitMuxerDeMuxer(const char *mp4File);
     void RunHdrMuxer(const uint8_t *data, size_t size, const char *mp4File);
     OH_AVDemuxer *demuxer = nullptr;
     OH_AVMuxer *muxer = nullptr;
