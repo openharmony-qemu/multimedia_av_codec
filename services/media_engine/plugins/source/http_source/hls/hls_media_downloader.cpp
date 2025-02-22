@@ -614,6 +614,7 @@ void HlsMediaDownloader::PrepareToSeek()
     int32_t retry {0};
     do {
         retry++;
+        FALSE_RETURN_MSG(!isInterruptNeeded_, "HLS Seek return, isInterruptNeeded_.");
         if (retry >= SEEK_STATUS_RETRY_TIMES) { // 100 means retry times
             MEDIA_LOG_I("HLS Seek may be failed");
             break;
@@ -653,6 +654,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     seekTime_ = static_cast<uint64_t>(seekTime);
     bufferingTime_ = 0;
     PrepareToSeek();
+    FALSE_RETURN_V_MSG(!isInterruptNeeded_, true, "HLS Seek return, isInterruptNeeded_.");
     if (seekTime_ < static_cast<uint64_t>(playlistDownloader_->GetDuration())) {
         SeekToTs(seekTime, mode);
     } else {
@@ -715,6 +717,10 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
 {
     ResetPlaylistCapacity(static_cast<size_t>(playList.size()));
     for (uint32_t i = 0; i < static_cast<uint32_t>(playList.size()); i++) {
+        if (isInterruptNeeded_.load()) {
+            MEDIA_LOG_I("HLS OnPlayListChanged isInterruptNeeded.");
+            break;
+        }
         auto fragment = playList[i];
         PlaylistBackup(fragment);
         if (isSelectingBitrate_ && (GetSeekable() == Seekable::SEEKABLE)) {
@@ -732,7 +738,7 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
             fragmentPushed[fragment.url_] = true;
         }
     }
-    if (!isDownloadStarted_ && !playList_->Empty()) {
+    if (!isDownloadStarted_ && !playList_->Empty() && !isInterruptNeeded_.load()) {
         auto playInfo = playList_->Pop();
         std::string url = playInfo.url_;
         isDownloadStarted_ = true;
