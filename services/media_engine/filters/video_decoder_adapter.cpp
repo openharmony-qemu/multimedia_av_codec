@@ -319,7 +319,7 @@ void VideoDecoderAdapter::SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBu
         MEDIA_LOG_D("Outputbuffer PTS: " PUBLIC_LOG_D64 " dtsQue_ size: " PUBLIC_LOG_U64,
             outputBuffer->pts_, static_cast<uint64_t>(inputBufferDtsQue_.size()));
     } else {
-        MEDIA_LOG_W("DtsQue_ is empty.")
+        MEDIA_LOG_W("DtsQue_ is empty.");
         outputBuffer->pts_ = outputBuffer->dts_;
     }
 }
