@@ -1588,6 +1588,9 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
 {
     AutoLock lock(mapMutex_);
     mediaMetaData_.globalMeta = std::make_shared<Meta>(mediaInfo.general);
+    if (mediaMetaData_.globalMeta != nullptr && mediaMetaData_.globalMeta->GetData(Tag::MEDIA_FILE_TYPE, fileType_)) {
+        MEDIA_LOG_D("FileType " PUBLIC_LOG_D32, static_cast<int32_t>(fileType_));
+    }
     mediaMetaData_.trackMetas.clear();
     mediaMetaData_.trackMetas.reserve(mediaInfo.tracks.size());
     for (uint32_t index = 0; index < mediaInfo.tracks.size(); index++) {
@@ -1867,24 +1870,39 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
     }
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
-            eosMap_[trackId] = true;
-            if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
-                taskMap_[trackId]->StopAsync();
-            }
-            MEDIA_LOG_I("Track eos, track: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
-                ", pts: " PUBLIC_LOG_D64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
-                bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
-            ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
-            return Status::OK;
+            return HandleTrackEos(trackId);
         }
         HandleAutoMaintainPts(trackId, bufferMap_[trackId]);
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
+        if (fileType_ == FileType::AVI) {
+            SetOutputBufferPts(bufferMap_[trackId]);
+        }
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
     } else {
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
         MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
     }
     return ret;
+}
+
+Status MediaDemuxer::HandleTrackEos(uint32_t trackId)
+{
+    eosMap_[trackId] = true;
+    if (taskMap_.find(trackId) != taskMap_.end() && taskMap_[trackId] != nullptr) {
+        taskMap_[trackId]->StopAsync();
+    }
+    MEDIA_LOG_I("Track eos, track: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
+        ", pts: " PUBLIC_LOG_D64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
+        bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
+    (void)bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
+    return Status::OK;
+}
+
+void MediaDemuxer::SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    FALSE_RETURN_MSG(outputBuffer != nullptr, "outputBuffer is nullptr.");
+    MEDIA_LOG_D("OutputBuffer PTS: " PUBLIC_LOG_D64 " DTS: " PUBLIC_LOG_D64, outputBuffer->pts_, outputBuffer->dts_);
+    outputBuffer->pts_ = outputBuffer->dts_;
 }
 
 bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
