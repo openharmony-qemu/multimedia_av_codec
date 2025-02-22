@@ -625,7 +625,7 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     MEDIA_LOG_I_SHORT("LinkNext NextFilter FilterType " PUBLIC_LOG_D32, nextFilter_->GetFilterType());
     meta->SetData(Tag::REGULAR_TRACK_ID, trackId);
     if (fileType == FileType::AVI) {
-        MEDIA_LOG_I("File type is AVI " PABLIC_LOG_D32, static_cast<int32_t>(FileType::AVI));
+        MEDIA_LOG_I("File type is AVI " PUBLIC_LOG_D32, static_cast<int32_t>(FileType::AVI));
         meta->SetData(Tag::MEDIA_FILE_TYPE, FileType::AVI);
     }
     std::shared_ptr<FilterLinkCallback> filterLinkCallback
