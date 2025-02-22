@@ -89,17 +89,17 @@ public:
     bool GetSyncCenterClockTime(int64_t &clockTime);
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
-    bool InputBufferDataEnough(int32_t size);
-    bool CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
+    bool IsInputBufferDataEnough(int32_t size);
+    bool IsSucessCopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
     Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc);
     Status Enqueue(const AudioStandard::BufferDesc &bufferDesc);
     void SyncWriteByRenderInfo();
     void RecordChangeTrack();
     void UpdateAmplitude();
     void GetRemainingBuffer();
-    bool UpdateTimeAnchorIfNeeded();
-    bool CheckBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize);
-    bool DrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+    bool IsNeededUpdateTimeAnchor();
+    bool IsBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize);
+    bool IsDrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
         size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts);
     void ReleaseBufferAfterWritten();
     int64_t CalculateBufDescSampleCnt(int64_t writeDataSize);
@@ -107,9 +107,9 @@ public:
     void UpdateRenderInfo();
     void WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     void ResetInfo();
-    bool CheckEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
+    bool IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     void HandleEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
-    bool HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
+    bool isSucessHandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -129,7 +129,6 @@ private:
     int64_t CalcBufferDuration(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void PerfRecord(int64_t audioWriteMs);
     int32_t GetSampleFormat();
-    void ClearInputBuffer();
 
     class UnderrunDetector {
     public:
@@ -281,5 +280,4 @@ private:
 };
 }
 }
-
 #endif // HISTREAMER_AUDIO_SINK_H

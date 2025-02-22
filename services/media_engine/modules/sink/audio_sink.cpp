@@ -73,8 +73,9 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
     FALSE_RETURN_MSG(ret == Status::OK, "GetBufferDesc fail, ret=" PUBLIC_LOG_D32, ret);
     bufferDesc.dataLength = 0;
     
-    if (sink->InputBufferDataEnough(size)) {
-        bool isCopySucess = sink->HandleAudioRenderRequest(static_cast<size_t>(size), isAudioVivid, bufferDesc);
+    if (sink->IsInputBufferDataEnough(size)) {
+        bool isCopySucess = sink->isSucessHandleAudioRenderRequest(static_cast<size_t>(size),
+            isAudioVivid, bufferDesc);
         bufferDesc.dataLength = isCopySucess ? bufferDesc.dataLength : 0;
     }
     ret = sink->Enqueue(bufferDesc);
@@ -82,14 +83,14 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
     FALSE_RETURN_NOLOG(sink->isEosBuffer_);
     auto cacheBuffer = sink->availableOutputBuffers_.front();
     FALSE_RETURN(cacheBuffer != nullptr);
-    FALSE_RETURN(sink->CheckEosBuffer(cacheBuffer));
+    FALSE_RETURN(sink->IsEosBuffer(cacheBuffer));
     sink->HandleEosBuffer(cacheBuffer);
 }
 
-bool AudioSink::HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
+bool AudioSink::isSucessHandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V(!eosDraining_, false);
-    bool isCopySucess = CopyDataToBufferDesc(static_cast<size_t>(size), isAudioVivid, bufferDesc);
+    bool isCopySucess = IsSucessCopyDataToBufferDesc(static_cast<size_t>(size), isAudioVivid, bufferDesc);
     FALSE_RETURN_V_MSG_D(isCopySucess, false, "CopyDataToBufferDesc failed");
     UpdateAudioWriteTimeMayWait();
     SyncWriteByRenderInfo();
@@ -109,7 +110,7 @@ Status AudioSink::Enqueue(const AudioStandard::BufferDesc &bufferDesc)
     return plugin_->Enqueue(bufferDesc);
 }
  
-bool AudioSink::InputBufferDataEnough(int32_t size)
+bool AudioSink::IsInputBufferDataEnough(int32_t size)
 {
     std::lock_guard<std::mutex> lock(getBufferMutex_);
     return availDataSize_.load() >= static_cast<size_t>(size) || isChangeTrack_ || isEosBuffer_;
@@ -287,8 +288,6 @@ Status AudioSink::Flush()
     Status ret = Status::OK;
     underrunDetector_.Reset();
     lagDetector_.Reset();
-    FALSE_RETURN_V_MSG_E(inputBufferQueueProducer_ != nullptr, Status::ERROR_NO_MEMORY, "flush failed");
-    inputBufferQueueProducer_->Clear();
     ret = plugin_->Flush();
     {
         AutoLock lock(eosMutex_);
@@ -296,8 +295,7 @@ Status AudioSink::Flush()
         eosDraining_ = false;
     }
     ResetInfo();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "plugin flush failed");
-    return Status::OK;
+    return ret;
 }
 
 Status AudioSink::Release()
@@ -396,7 +394,6 @@ void AudioSink::SetThreadGroupId(const std::string& groupId)
 void AudioSink::HandleEosInner(bool drain)
 {
     AutoLock lock(eosMutex_);
-    MEDIA_LOG_I("HandleEosInner drain:%d", drain);
     eosDraining_ = true; // start draining task
     switch (eosInterruptType_) {
         case EosInterruptState::INITIAL: // No user operation during EOS drain, complete drain normally
@@ -437,7 +434,6 @@ void AudioSink::HandleEosInner(bool drain)
  
 void AudioSink::DrainAndReportEosEvent()
 {
-    MEDIA_LOG_I("DrainAndReportEosEvent");
     plugin_->Drain();
     if (appUid_ != 1003) { // 1003 is bootanimation uid
         plugin_->PauseTransitent();
@@ -528,24 +524,6 @@ int32_t AudioSink::GetSampleFormat()
     return format;
 }
 
-void AudioSink::ClearInputBuffer()
-{
-    MEDIA_LOG_D("AudioSink::ClearInputBuffer enter");
-    if (!inputBufferQueueConsumer_) {
-        return;
-    }
-    std::shared_ptr<AVBuffer> filledInputBuffer;
-    Status ret = Status::OK;
-    while (ret == Status::OK) {
-        ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
-        if (ret != Status::OK) {
-            MEDIA_LOG_I("AudioSink::ClearInputBuffer clear input Buffer");
-            return;
-        }
-        inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
-    }
-}
-
 int64_t AudioSink::CalculateBufDescSampleCnt(int64_t writeDataSize)
 {
     int32_t format = GetSampleFormat();
@@ -553,7 +531,7 @@ int64_t AudioSink::CalculateBufDescSampleCnt(int64_t writeDataSize)
     return writeDataSize / format / audioChannelCount_;
 }
  
-bool AudioSink::CheckBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize)
+bool AudioSink::IsBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize)
 {
     FALSE_RETURN_V_MSG_D(buffer != nullptr, false, "buffer is nullptr.");
     FALSE_RETURN_V_MSG_D(buffer->memory_ != nullptr, false, "buffer->memory_ is nullptr.");
@@ -563,7 +541,7 @@ bool AudioSink::CheckBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &
     return true;
 }
  
-bool AudioSink::DrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+bool AudioSink::IsDrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
                                 size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts)
 {
     if (cacheBufferSize > size) {
@@ -606,7 +584,7 @@ bool AudioSink::DrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::shar
     return true;
 }
  
-bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
+bool AudioSink::IsSucessCopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(size != 0 && size == bufferDesc.bufLength, false,
         "bufferDesc or request size is unavailable");
@@ -615,13 +593,13 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
     do {
         FALSE_RETURN_V_MSG(!availableOutputBuffers_.empty(), false, "buffer queue is empty");
         auto cacheBuffer = availableOutputBuffers_.front();
-        if (CheckEosBuffer(cacheBuffer)) {
+        if (IsEosBuffer(cacheBuffer)) {
             MEDIA_LOG_I("AudioSink Recv EOS");
             break;
         }
         size_t cacheBufferSize = 0;
-        if (CheckBufferAvailable(cacheBuffer, cacheBufferSize)) {
-            if (!DrainBufferData(bufferDesc, cacheBuffer, size, cacheBufferSize, isAudioVivid, bufferPts)) {
+        if (IsBufferAvailable(cacheBuffer, cacheBufferSize)) {
+            if (!IsDrainBufferData(bufferDesc, cacheBuffer, size, cacheBufferSize, isAudioVivid, bufferPts)) {
                 break;
             }
             CalcMaxAmplitude(cacheBuffer);
@@ -737,7 +715,7 @@ void AudioSink::AudioDataSynchroizer::Reset()
     compensatePTS_ = 0;
 }
  
-bool AudioSink::UpdateTimeAnchorIfNeeded()
+bool AudioSink::IsNeededUpdateTimeAnchor()
 {
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN_V(syncCenter != nullptr, false);
@@ -775,7 +753,7 @@ void AudioSink::SyncWriteByRenderInfo()
             firstPts_ = innerSynchroizer_->GetLastBufferPTS();
         }
     }
-    bool anchorUpdated = UpdateTimeAnchorIfNeeded();
+    bool anchorUpdated = IsNeededUpdateTimeAnchor();
     innerSynchroizer_->UpdateLastBufferPTS(currentQueuedBufferOffset_, speed_);
     latestBufferDuration_ = innerSynchroizer_->GetBufferDuration() / speed_;
     if (anchorUpdated) {
@@ -811,7 +789,15 @@ void AudioSink::ResetInfo()
     std::shared_ptr<AVBuffer> filledInputBuffer;
     Status ret = Status::OK;
     availDataSize_.store(0);
-    ClearInputBuffer();
+    FALSE_RETURN(inputBufferQueueConsumer_ != nullptr);
+    while (ret == Status::OK) {
+        ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
+        if (ret != Status::OK) {
+            MEDIA_LOG_D("AudioSink::ClearInputBuffer clear input Buffer");
+            return;
+         }
+        inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
+    }
 }
 
 void AudioSink::GetRemainingBuffer()
@@ -829,7 +815,7 @@ void AudioSink::GetRemainingBuffer()
         }
         FALSE_RETURN_NOLOG(filledInputBuffer->memory_ != nullptr);
         FALSE_RETURN(DropApeBuffer(filledInputBuffer) == false);
-        if (CheckEosBuffer(filledInputBuffer)) {
+        if (IsEosBuffer(filledInputBuffer)) {
             MEDIA_LOG_I("AudioSink Recv EOS");
             isEosBuffer_ = true;
         }
@@ -843,7 +829,7 @@ void AudioSink::GetRemainingBuffer()
 void AudioSink::WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer)
 {
     FALSE_RETURN(DropApeBuffer(filledOutputBuffer) == false);
-    if (CheckEosBuffer(filledOutputBuffer)) {
+    if (IsEosBuffer(filledOutputBuffer)) {
         HandleEosBuffer(filledOutputBuffer);
         return;
     }
@@ -869,7 +855,7 @@ void AudioSink::WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer)
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
 }
 
-bool AudioSink::CheckEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer)
+bool AudioSink::IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer)
 {
     return (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) ||
         ((playRangeEndTime_ != DEFAULT_PLAY_RANGE_VALUE) &&
