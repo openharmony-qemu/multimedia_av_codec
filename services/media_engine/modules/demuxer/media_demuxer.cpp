@@ -1874,7 +1874,7 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
         }
         HandleAutoMaintainPts(trackId, bufferMap_[trackId]);
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
-        if (fileType_ == FileType::AVI) {
+        if (fileType_ == FileType::AVI && trackId == videoTrackId_) {
             SetOutputBufferPts(bufferMap_[trackId]);
         }
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
