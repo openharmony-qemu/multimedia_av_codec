@@ -254,7 +254,7 @@ sptr<OHOS::Surface> CodecClient::CreateInputSurface()
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, nullptr, "Server not exist");
 
     auto ret = codecProxy_->CreateInputSurface();
-    EXPECT_AND_LOGI(ret != nullptr, "Succeed");
+    AVCODEC_LOGI_WITH_TAG("%{public}s", (ret != nullptr) ? "succeed" : "failed");
     codecMode_ |= CODEC_SURFACE_MODE;
     return ret;
 }
@@ -265,7 +265,7 @@ int32_t CodecClient::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->SetOutputSurface(surface);
-    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+    AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     codecMode_ = CODEC_SURFACE_MODE;
     return ret;
 }
@@ -277,8 +277,8 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ == MEMORY_CALLBACK, AVCS_ERR_INVALID_STATE,
                                       "The callback of AVSharedMemory is invalid!");
     int32_t ret = codecProxy_->QueueInputBuffer(index, info, flag);
-    AVCODEC_LOGD("%{public}s. index:%{public}u", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str(),
-                 index);
+    AVCODEC_LOGD_WITH_TAG("%{public}s. index:%{public}u",
+                          AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str(), index);
     return ret;
 }
 
@@ -314,7 +314,7 @@ int32_t CodecClient::GetOutputFormat(Format &format)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
     int32_t ret = codecProxy_->GetOutputFormat(format);
     UpdateFormat(format);
-    AVCODEC_LOGD("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+    AVCODEC_LOGD_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;
 }
 
