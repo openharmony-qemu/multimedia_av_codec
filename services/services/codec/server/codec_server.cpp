@@ -192,10 +192,10 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
                                       "Init failed. isMimeType:(%{public}d), name:(%{public}s), error:(%{public}d)",
                                       isMimeType, name.c_str(), ret);
     SetCallerInfo(callerInfo);
-#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
     callerInfo.SetData(Tag::MEDIA_CODEC_NAME, codecName_);
     callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
-    callerInfo.SetData(EventInfoExtentedKey::CODEC_TYPE.data(), type);
+#ifdef AVCODEC_SUPPORT_EVENT_MANAGER
+    callerInfo.SetData(EventInfoExtentedKey::CODEC_TYPE.data(), static_cast<int32_t>(type));
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
 #endif
     shareBufCallback_ = std::make_shared<CodecBaseCallback>(shared_from_this());
