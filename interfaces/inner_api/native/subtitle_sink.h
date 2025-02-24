@@ -86,6 +86,7 @@ private:
     std::unique_ptr<std::thread> readThread_ = nullptr;
     std::mutex mutex_;
     std::condition_variable updateCond_;
+    std::shared_ptr<AVBuffer> filledOutputBuffer_;
     std::atomic<bool> isPaused_{false};
     std::atomic<bool> isThreadExit_{false};
     std::atomic<bool> shouldUpdate_{false};
