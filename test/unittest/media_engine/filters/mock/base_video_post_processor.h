@@ -46,9 +46,9 @@ enum VideoPostProcessorType {
 class BaseVideoPostProcessor {
 public:
     MOCK_METHOD(Status, Init, (), ());
-    MOCK_METHOD(Status, Flush,(), ());
-    MOCK_METHOD(Status, Stop,(), ());
-    MOCK_METHOD(Status, Start,(), ());
+    MOCK_METHOD(Status, Flush, (), ());
+    MOCK_METHOD(Status, Stop, (), ());
+    MOCK_METHOD(Status, Start, (), ());
 
     MOCK_METHOD(sptr<Surface>, GetInputSurface, (), ());
     MOCK_METHOD(Status, SetOutputSurface, (sptr<Surface> surface), ());
