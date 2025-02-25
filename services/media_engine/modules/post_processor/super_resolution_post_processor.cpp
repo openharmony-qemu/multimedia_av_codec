@@ -38,8 +38,8 @@ static bool isSuperResolutionSupported(const std::shared_ptr<Meta>& meta)
     meta->GetData(Tag::VIDEO_HEIGHT, height);
     meta->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdrVivid);
     meta->GetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, isDrmProtected);
-    bool isVideoSizeValid = (width > 0 && width <= MAX_WIDTH)
-                        && (height > 0 && height <= MAX_HEIGHT);
+    bool isVideoSizeValid = (width > 0 && width <= MAX_WIDTH) &&
+                            (height > 0 && height <= MAX_HEIGHT);
     bool canCreatePostProcessor = !isDrmProtected && !isHdrVivid && isVideoSizeValid;
     if (!canCreatePostProcessor) {
         MEDIA_LOG_E("invalid input stream for super resolution! width: " PUBLIC_LOG_D32
