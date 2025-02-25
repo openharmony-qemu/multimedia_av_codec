@@ -43,7 +43,6 @@ constexpr float LONGITUDE_MIN = -180.0f;
 constexpr float LONGITUDE_MAX = 180.0f;
 constexpr int32_t MIN_HE_AAC_SAMPLE_RATE = 16000;
 const std::string TIMED_METADATA_HANDLER_NAME = "timed_metadata";
-constexpr int32_t MAX_USERMETA_STRING_LENGTH = 256;
 
 bool IsMuxerSupported(const char *name)
 {
@@ -395,11 +394,6 @@ Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
             value += std::to_string(dataFloat);
         } else if (userMeta->GetData(k, dataStr)) {
             value = "00000001";
-            if (dataStr.length() > MAX_USERMETA_STRING_LENGTH) {
-                MEDIA_LOG_E("the usermeta key %{public}s string value length %{public}zu more than 256 characters.",
-                    k.c_str(), dataStr.length());
-                return Status::ERROR_INVALID_DATA;
-            }
             value += dataStr;
         } else {
             MEDIA_LOG_E("the value type of meta key %{public}s is not supported!", k.c_str());
