@@ -178,6 +178,7 @@ Status AudioLbvcEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
     if (inputBuffer->flag_ == BUFFER_FLAG_EOS) {
         AVCODEC_LOGI("QueueInputBuffer Eos!");
         eosFlag_ = true;
+        dataCallback_->OnInputBufferDone(inputBuffer);
         return Status::OK;
     }
 
