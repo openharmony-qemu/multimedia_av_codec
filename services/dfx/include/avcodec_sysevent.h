@@ -97,7 +97,6 @@ __attribute__((visibility("default"))) void ServiceStartEventWrite(uint32_t useT
 __attribute__((visibility("default"))) void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo);
 __attribute__((visibility("default"))) void CodecStopEventWrite(pid_t clientPid, uid_t clientUid,
                                                                 int32_t codecInstanceId);
-__attribute__((visibility("default"))) void DemuxerInitEventWrite(uint32_t downloadSize, std::string sourceType);
 __attribute__((visibility("default"))) void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo);
 __attribute__((visibility("default"))) void FaultAudioCodecEventWrite(AudioCodecFaultInfo& audioCodecFaultInfo);
 __attribute__((visibility("default"))) void FaultVideoCodecEventWrite(VideoCodecFaultInfo& videoCodecFaultInfo);
