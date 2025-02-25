@@ -35,6 +35,7 @@ namespace Media {
 namespace Pipeline {
 using namespace MediaAVCodec;
 using MediaType = OHOS::Media::Plugins::MediaType;
+using FileType = OHOS::Media::Plugins::FileType;
 namespace {
     const std::string MIME_IMAGE = "image";
     const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
@@ -566,6 +567,11 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
         MEDIA_LOG_E("FindTrackId failed.");
         return Status::ERROR_INVALID_PARAMETER;
     }
+    std::shared_ptr<Meta> globalInfo = demuxer_->GetGlobalMetaInfo();
+    FileType fileType = FileType::UNKNOW;
+    if (globalInfo == nullptr || !globalInfo->GetData(Tag::MEDIA_FILE_TYPE, fileType)) {
+        MEDIA_LOG_W("Get file type failed");
+    }
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     if (outType == StreamType::STREAMTYPE_ENCODED_VIDEO && isEnableReselectVideoTrack_
         && demuxer_->IsHasMultiVideoTrack()) {
@@ -584,6 +590,10 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     nextFiltersMap_[outType].push_back(nextFilter_);
     MEDIA_LOG_I("LinkNext NextFilter FilterType " PUBLIC_LOG_D32, nextFilter_->GetFilterType());
     meta->SetData(Tag::REGULAR_TRACK_ID, trackId);
+    if (fileType == FileType::AVI) {
+        MEDIA_LOG_I("File type is AVI " PUBLIC_LOG_D32, static_cast<int32_t>(FileType::AVI));
+        meta->SetData(Tag::MEDIA_FILE_TYPE, FileType::AVI);
+    }
     std::shared_ptr<FilterLinkCallback> filterLinkCallback
         = std::make_shared<DemuxerFilterLinkCallback>(shared_from_this());
     return nextFilter->OnLinked(outType, meta, filterLinkCallback);
