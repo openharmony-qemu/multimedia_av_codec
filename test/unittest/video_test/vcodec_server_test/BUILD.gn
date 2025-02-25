@@ -120,6 +120,7 @@ ohos_unittest("codec_server_coverage_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "hisysevent:libhisysevent",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "window_manager:libwm",
