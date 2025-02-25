@@ -46,6 +46,7 @@ namespace {
 }
 
 using MediaSource = OHOS::Media::Plugins::MediaSource;
+using FileType = OHOS::Media::Plugins::FileType;
 class BaseStreamDemuxer;
 class DemuxerPluginManager;
 class Source;
@@ -240,6 +241,8 @@ private:
     void ResetDraggingOpenGopCnt();
     Status ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp,
         const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample);
+    Status HandleTrackEos(uint32_t trackId);
+    void SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer);
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -276,6 +279,7 @@ private:
 
     std::string playerId_;
     int64_t duration_ {0};
+    FileType fileType_ = FileType::UNKNOW;
 
     std::atomic<bool> isDecodeOptimizationEnabled_ {false};
     std::atomic<float> speed_ {1.0f};
