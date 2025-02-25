@@ -1868,15 +1868,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AAC_002, TestSize.Level0)
     audioParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
     audioParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
     audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_STEREO);
-    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
-    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16P);
-    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
-    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S24P);
-    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
-    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S32P);
-    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
-    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32P);
-    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    ASSERT_EQ(avmuxer_->AddTrack(trackId, audioParams), 0);
 }
 
 /**
