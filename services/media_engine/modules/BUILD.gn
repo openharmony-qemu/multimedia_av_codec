@@ -103,9 +103,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
 
   if (defined(av_codec_support_video_processing_engine) &&
       av_codec_support_video_processing_engine) {
-    sources += [
-      "post_processor/super_resolution_post_processor.cpp",
-    ]
+    sources += [ "post_processor/super_resolution_post_processor.cpp" ]
   }
 
   deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
