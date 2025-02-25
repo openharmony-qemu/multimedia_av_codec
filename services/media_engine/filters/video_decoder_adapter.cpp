@@ -38,6 +38,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 namespace OHOS {
 namespace Media {
 using namespace MediaAVCodec;
+using FileType = OHOS::Media::Plugins::FileType;
 const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
 
 VideoDecoderCallback::VideoDecoderCallback(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
@@ -97,6 +98,11 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
     MEDIA_LOG_I("~VideoDecoderAdapter.");
     FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
     mediaCodec_->Release();
+    std::unique_lock<std::mutex> lock(dtsQueMutex_);
+    if (!inputBufferDtsQue_.empty()) {
+        MEDIA_LOG_I("Clear dtsQue_, currrent size: " PUBLIC_LOG_U64, static_cast<uint64_t>(inputBufferDtsQue_.size()));
+        inputBufferDtsQue_.clear();
+    }
 }
 
 Status VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name)
@@ -127,6 +133,12 @@ Status VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType
 Status VideoDecoderAdapter::Configure(const Format &format)
 {
     MEDIA_LOG_I("VideoDecoderAdapter->Configure.");
+    std::shared_ptr<Media::Meta> metaInfo = const_cast<Format &>(format).GetMeta();
+    FileType currentFileType = FileType::UNKNOW;
+    if (metaInfo != nullptr && metaInfo->GetData(Media::Tag::MEDIA_FILE_TYPE, currentFileType)) {
+        fileType_ = static_cast<int32_t>(currentFileType);
+        MEDIA_LOG_I("Media file type " PUBLIC_LOG_D32, fileType_);
+    }
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     int32_t ret = mediaCodec_->Configure(format);
     isConfigured_ = ret == AVCodecServiceErrCode::AVCS_ERR_OK;
@@ -174,13 +186,23 @@ Status VideoDecoderAdapter::Flush()
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     FALSE_RETURN_V_MSG(isConfigured_, Status::ERROR_INVALID_STATE, "mediaCodec_ is not configured");
     int32_t ret = mediaCodec_->Flush();
-    std::unique_lock<std::mutex> lock(mutex_);
-    if (inputBufferQueueConsumer_ != nullptr) {
-        for (auto &buffer : bufferVector_) {
-            inputBufferQueueConsumer_->DetachBuffer(buffer);
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (inputBufferQueueConsumer_ != nullptr) {
+            for (auto &buffer : bufferVector_) {
+                inputBufferQueueConsumer_->DetachBuffer(buffer);
+            }
+            bufferVector_.clear();
+            inputBufferQueueConsumer_->SetQueueSize(0);
         }
-        bufferVector_.clear();
-        inputBufferQueueConsumer_->SetQueueSize(0);
+    }
+    {
+        std::unique_lock<std::mutex> lock(dtsQueMutex_);
+        if (!inputBufferDtsQue_.empty()) {
+            MEDIA_LOG_I("Clear dtsQue_, currrent size: " PUBLIC_LOG_U64,
+                static_cast<uint64_t>(inputBufferDtsQue_.size()));
+            inputBufferDtsQue_.clear();
+        }
     }
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
@@ -258,6 +280,9 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
     std::unique_lock<std::mutex> lock(mutex_);
     std::shared_ptr<AVBuffer> tmpBuffer;
     if (inputBufferQueueConsumer_->AcquireBuffer(tmpBuffer) == Status::OK) {
+        if (fileType_ == static_cast<int32_t>(FileType::AVI)) {
+            GetInputBufferDts(tmpBuffer);
+        }
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
         uint32_t index;
         FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
@@ -284,6 +309,30 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
         }
     } else {
         MEDIA_LOG_E("AcquireBuffer failed.");
+    }
+}
+
+void VideoDecoderAdapter::GetInputBufferDts(std::shared_ptr<AVBuffer> &inputBuffer)
+{
+    FALSE_RETURN_MSG(inputBuffer != nullptr, "inputBuffer is nullptr.");
+    std::unique_lock<std::mutex> lock(dtsQueMutex_);
+    inputBufferDtsQue_.push_back(inputBuffer->dts_);
+    MEDIA_LOG_D("Inputbuffer DTS: " PUBLIC_LOG_D64 " dtsQue_ size: " PUBLIC_LOG_U64,
+        inputBuffer->dts_, static_cast<uint64_t>(inputBufferDtsQue_.size()));
+}
+
+void VideoDecoderAdapter::SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    FALSE_RETURN_MSG(outputBuffer != nullptr, "outputBuffer is nullptr.");
+    std::unique_lock<std::mutex> lock(dtsQueMutex_);
+    if (!inputBufferDtsQue_.empty()) {
+        outputBuffer->pts_ = inputBufferDtsQue_.front();
+        inputBufferDtsQue_.pop_front();
+        MEDIA_LOG_D("Outputbuffer PTS: " PUBLIC_LOG_D64 " dtsQue_ size: " PUBLIC_LOG_U64,
+            outputBuffer->pts_, static_cast<uint64_t>(inputBufferDtsQue_.size()));
+    } else {
+        MEDIA_LOG_W("DtsQue_ is empty.");
+        outputBuffer->pts_ = outputBuffer->dts_;
     }
 }
 
@@ -337,6 +386,9 @@ void VideoDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_pt
             ", pts: %{public}" PRIu64 ", flag: %{public}u", index, buffer->GetUniqueId(), buffer->pts_, buffer->flag_);
     } else {
         MEDIA_LOG_D("OnOutputBufferAvailable start. buffer is nullptr, index: %{public}u", index);
+    }
+    if (fileType_ == static_cast<int32_t>(FileType::AVI)) {
+        SetOutputBufferPts(buffer);
     }
     FALSE_RETURN_MSG(callback_ != nullptr, "callback_ is nullptr");
     callback_->OnOutputBufferAvailable(index, buffer);
