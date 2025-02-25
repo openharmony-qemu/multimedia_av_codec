@@ -43,7 +43,6 @@ constexpr float LONGITUDE_MIN = -180.0f;
 constexpr float LONGITUDE_MAX = 180.0f;
 constexpr int32_t MIN_HE_AAC_SAMPLE_RATE = 16000;
 const std::string TIMED_METADATA_HANDLER_NAME = "timed_metadata";
-constexpr int32_t MAX_USERMETA_STRING_LENGTH = 256;
 
 bool IsMuxerSupported(const char *name)
 {
@@ -395,11 +394,6 @@ Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
             value += std::to_string(dataFloat);
         } else if (userMeta->GetData(k, dataStr)) {
             value = "00000001";
-            if (dataStr.length() > MAX_USERMETA_STRING_LENGTH) {
-                MEDIA_LOG_E("the usermeta key %{public}s string value length %{public}zu more than 256 characters.",
-                    k.c_str(), dataStr.length());
-                return Status::ERROR_INVALID_DATA;
-            }
             value += dataStr;
         } else {
             MEDIA_LOG_E("the value type of meta key %{public}s is not supported!", k.c_str());
@@ -415,6 +409,11 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfAudioTrack(AVStream *stream, const 
     AVCodecParameters *par = stream->codecpar;
     if (trackDesc->Find(Tag::MEDIA_BITRATE) != trackDesc->end()) {
         trackDesc->Get<Tag::MEDIA_BITRATE>(par->bit_rate); // bit rate
+    }
+
+    if (pluginName_ == "ffmpegMux_adts" && CheckAacParam(trackDesc) != Status::NO_ERROR) {
+        MEDIA_LOG_E("aac is adts, but CheckAacParam failed");
+        return Status::ERROR_MISMATCHED_TYPE;
     }
 
     int32_t isAacAdts = 0;
@@ -632,6 +631,26 @@ Status FFmpegMuxerPlugin::SetDisplayMatrix(AVStream* stream)
     errno_t rc = memcpy_s(data, sizeof(displayMatrix), displayMatrix, sizeof(displayMatrix));
     FALSE_RETURN_V_MSG_E(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
     return Status::NO_ERROR;
+}
+
+Status FFmpegMuxerPlugin::CheckAacParam(const std::shared_ptr<Meta> &trackDesc)
+{
+    int32_t profile = 0;
+    int32_t adts = 0;
+    Status ret = Status::NO_ERROR;
+
+    trackDesc->Get<Tag::MEDIA_PROFILE>(profile);
+    if (profile != AAC_PROFILE_LC && profile != AAC_PROFILE_HE && profile != AAC_PROFILE_HE_V2) {
+        ret = Status::ERROR_MISMATCHED_TYPE;
+        MEDIA_LOG_E("invalid AAC profile, profile: %{public}d", profile);
+    }
+
+    trackDesc->Get<Tag::AUDIO_AAC_IS_ADTS>(adts);
+    if (adts != 0 && adts != 1) {
+        ret = Status::ERROR_MISMATCHED_TYPE;
+        MEDIA_LOG_E("invalid AAC adts, adts: %{public}d", adts);
+    }
+    return ret;
 }
 
 Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID)
