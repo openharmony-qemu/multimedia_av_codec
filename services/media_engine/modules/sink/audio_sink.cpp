@@ -302,17 +302,19 @@ Status AudioSink::Flush()
 {
     std::lock_guard<std::mutex> lock(pluginMutex_);
     MEDIA_LOG_D("do audioSink flush");
-    Status ret = Status::OK;
     underrunDetector_.Reset();
     lagDetector_.Reset();
-    ret = plugin_->Flush();
+    
     {
         AutoLock lock(eosMutex_);
         eosInterruptType_ = EosInterruptState::NONE;
         eosDraining_ = false;
     }
+    Status ret = Status::OK;
+    ret = plugin_->Flush();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "plugin flush failed");
     ResetInfo();
-    return ret;
+    return Status::OK;
 }
 
 Status AudioSink::Release()
@@ -928,7 +930,7 @@ void AudioSink::DrainOutputBuffer(bool flushed)
         return;
     }
     if (isCallbackMode_) {
-        GetRemainingBuffer();
+        GetAvailableOutputBuffers();
     } else {
         std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
         Status ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
@@ -1241,7 +1243,8 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     }
     plugin_ = CreatePlugin();
 
-    Status ret = InitAudioSinkPlugins(meta, receiver);
+    Status ret = Status::OK;
+    ret = InitAudioSinkPlugins(meta, receiver);
     FALSE_RETURN_V(ret == Status::OK, ret);
 
     ret = InitAudioSinkInfo(meta);
@@ -1252,13 +1255,13 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
 
     forceUpdateTimeAnchorNextTime_ = true;
 
-    return res;
+    return Status::OK;
 }
 
 Status AudioSink::SetAudioSinkPluginParameters()
 {
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
-    Status res = Status::OK;
+    Status ret = Status::OK;
     if (volume_ >= 0) {
         plugin_->SetVolume(volume_);
     }
