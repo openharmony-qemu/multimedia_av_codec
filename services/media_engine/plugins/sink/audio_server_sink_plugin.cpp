@@ -1174,7 +1174,7 @@ Status AudioServerSinkPlugin::GetBufferDesc(AudioStandard::BufferDesc &bufferDes
     return Status::OK;
 }
  
-int32_t AudioServerSinkPlugin::CalculateCallbackBufferSize()
+int32_t AudioServerSinkPlugin::CalculateCallbackBufferDuration()
 {
     FALSE_RETURN_V(mimeType_ != MimeType::AUDIO_AVS3DA, -1);
     FALSE_RETURN_V_MSG(sampleRate_ > 0, -1, "Can not calculate callback buffer size because sampleRate <= 0.");
@@ -1194,8 +1194,8 @@ Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<Audio
     ret = audioRenderer_->SetRendererWriteCallback(audioRenderWriteCallback_);
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "audioRender_->SetRenderWriteCallback fail.");
-    int32_t callbackBufferSize = CalculateCallbackBufferSize();
-    FALSE_RETURN_V_MSG_W(callbackBufferSize > 0, Status::OK,
+    int32_t callbackBufferDuration= CalculateCallbackBufferDuration();
+    FALSE_RETURN_V_MSG_W(callbackBufferDuration > 0, Status::OK,
         "minetype is audioVivid");
     audioRenderer_->SetBufferDuration(CALLBACK_BUFFER_DURATION_IN_MILLISECONDS);
     MEDIA_LOG_I("Set Preferred duration is " PUBLIC_LOG_D32 " ms", callbackBufferSize);

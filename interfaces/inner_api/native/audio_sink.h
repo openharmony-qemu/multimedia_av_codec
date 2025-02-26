@@ -90,13 +90,12 @@ public:
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
     bool IsInputBufferDataEnough(int32_t size);
-    bool IsSucessCopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
+    bool IsCopyDataToBufferDescSucess(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
     Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc);
     Status Enqueue(const AudioStandard::BufferDesc &bufferDesc);
     void SyncWriteByRenderInfo();
     void RecordChangeTrack();
     void UpdateAmplitude();
-    void GetRemainingBuffer();
     bool IsNeededUpdateTimeAnchor();
     bool IsBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize);
     bool IsDrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
@@ -128,7 +127,14 @@ private:
     bool DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer);
     int64_t CalcBufferDuration(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void PerfRecord(int64_t audioWriteMs);
-    int32_t GetSampleFormat();
+    int32_t GetSampleFormatBytes();
+    int32_t HandleCopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+        size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts);
+    bool HandleCopyAudioVividMetaInfo(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer);
+    Status InitAudioSinkPlugins(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    Status InitAudioSinkInfo(std::shared_ptr<Meta>& meta);
+    void GetAvailableOutputBuffers();
+    void ClearAvailableOutputBuffers();
 
     class UnderrunDetector {
     public:
@@ -246,7 +252,6 @@ private:
     bool isCallbackMode_ {true};
     std::shared_ptr<AudioSinkDataCallback> audioSinkDataCallback_ {nullptr};
     std::mutex getBufferMutex_;
-    std::condition_variable getBufferCondition_;
     std::atomic<size_t> availDataSize_ {0};
     std::queue<std::shared_ptr<AVBuffer>> availableOutputBuffers_;
     int32_t currentQueuedBufferOffset_ {0};

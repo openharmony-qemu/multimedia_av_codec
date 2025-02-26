@@ -199,7 +199,7 @@ private:
     Status DrainCacheData(bool render);
     //return value is the remained buffer size
     size_t WriteAudioBuffer(uint8_t* inputBuffer, size_t bufferSize, bool& shouldDrop);
-    int32_t CalculateCallbackBufferSize();
+    int32_t CalculateCallbackBufferDuration();
 
     OHOS::Media::Mutex renderMutex_{};
     Callback *callback_{};
