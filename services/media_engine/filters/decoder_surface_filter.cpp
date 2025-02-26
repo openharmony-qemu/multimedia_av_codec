@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -85,6 +85,84 @@ private:
 const std::unordered_map<VideoScaleType, OHOS::ScalingMode> SCALEMODE_MAP = {
     { VideoScaleType::VIDEO_SCALE_TYPE_FIT, OHOS::SCALING_MODE_SCALE_TO_WINDOW },
     { VideoScaleType::VIDEO_SCALE_TYPE_FIT_CROP, OHOS::SCALING_MODE_SCALE_CROP},
+};
+
+class FilterVideoPostProcessorCallback : public PostProcessorCallback {
+public:
+    explicit FilterVideoPostProcessorCallback(std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter)
+        : decoderSurfaceFilter_(decoderSurfaceFilter) {}
+
+    ~FilterVideoPostProcessorCallback() = default;
+
+    void OnError(int32_t errorCode) override
+    {
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->PostProcessorOnError(errorCode);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
+    }
+
+    void OnOutputFormatChanged(const Format &format) override
+    {
+    }
+
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
+    {
+    }
+
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
+    {
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->DrainOutputBuffer(index, buffer);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
+    }
+private:
+    std::weak_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
+};
+
+class FilterMediaCodecCallbackWithPostProcessor : public OHOS::MediaAVCodec::MediaCodecCallback {
+public:
+    explicit FilterMediaCodecCallbackWithPostProcessor(std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter)
+        : decoderSurfaceFilter_(decoderSurfaceFilter) {}
+
+    ~FilterMediaCodecCallbackWithPostProcessor() = default;
+
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
+    {
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->OnError(errorType, errorCode);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
+    }
+
+    void OnOutputFormatChanged(const MediaAVCodec::Format &format) override
+    {
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->OnOutputFormatChanged(format);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
+    }
+
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
+    {
+    }
+
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
+    {
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->DecoderDrainOutputBuffer(index, buffer);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
+    }
+
+private:
+    std::weak_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
 };
 
 class FilterMediaCodecCallback : public OHOS::MediaAVCodec::MediaCodecCallback {
@@ -178,6 +256,13 @@ void DecoderSurfaceFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int
     eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
 }
 
+void DecoderSurfaceFilter::PostProcessorOnError(int32_t errorCode)
+{
+    MEDIA_LOG_E("Post processor error happened. ErrorCode: %{public}d", errorCode);
+    FALSE_RETURN(eventReceiver_ != nullptr);
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
+}
+
 void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
@@ -195,8 +280,16 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
     configureParameter_ = parameter;
     configFormat_.SetMeta(configureParameter_);
     Status ret = videoDecoder_->Configure(configFormat_);
-    std::shared_ptr<MediaAVCodec::MediaCodecCallback> mediaCodecCallback
-        = std::make_shared<FilterMediaCodecCallback>(shared_from_this());
+
+    std::shared_ptr<MediaAVCodec::MediaCodecCallback> mediaCodecCallback = nullptr;
+    if (postProcessor_ != nullptr) {
+        mediaCodecCallback = std::make_shared<FilterMediaCodecCallbackWithPostProcessor>(shared_from_this());
+        std::shared_ptr<PostProcessorCallback> postProcessorCallback
+            = std::make_shared<FilterVideoPostProcessorCallback>(shared_from_this());
+        postProcessor_->SetCallback(postProcessorCallback);
+    } else {
+        mediaCodecCallback = std::make_shared<FilterMediaCodecCallback>(shared_from_this());
+    }
     videoDecoder_->SetCallback(mediaCodecCallback);
     return ret;
 }
@@ -236,11 +329,19 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     ParseDecodeRateLimit();
-    videoDecoder_->SetOutputSurface(videoSurface_);
+    videoDecoder_->SetOutputSurface(decoderOutputSurface_);
     if (isDrmProtected_) {
 #ifdef SUPPORT_DRM
         videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
 #endif
+    }
+
+    if (postProcessor_) {
+        postProcessor_->SetOutputSurface(videoSurface_);
+        postProcessor_->SetEventReceiver(eventReceiver_);
+        postProcessor_->SetVideoWindowSize(postProcessorTargetWidth_, postProcessorTargetHeight_);
+        postProcessor_->SetPostProcessorOn(isPostProcessorOn_);
+        postProcessor_->Init();
     }
     videoSink_->SetParameter(meta_);
     eosTask_ = std::make_unique<Task>("OS_EOSv", groupId_, TaskType::VIDEO, TaskPriority::HIGH, false);
@@ -283,7 +384,11 @@ Status DecoderSurfaceFilter::DoStart()
         readThread_ = std::make_unique<std::thread>(&DecoderSurfaceFilter::RenderLoop, this);
         pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     }
-    return videoDecoder_->Start();
+    auto ret = videoDecoder_->Start();
+    if (postProcessor_) {
+        postProcessor_->Start();
+    }
+    return ret;
 }
 
 Status DecoderSurfaceFilter::DoPause()
@@ -309,7 +414,7 @@ Status DecoderSurfaceFilter::DoPauseDragging()
         if (!outputBufferMap_.empty()) {
             MEDIA_LOG_E("DoPauseDragging outputBufferMap_ size = %{public}zu", outputBufferMap_.size());
             for (auto it = outputBufferMap_.begin(); it != outputBufferMap_.end(); ++it) {
-                videoDecoder_->ReleaseOutputBuffer(it->first, false);
+                DoReleaseOutputBuffer(it->first, false);
             }
             outputBufferMap_.clear();
         }
@@ -327,6 +432,9 @@ Status DecoderSurfaceFilter::DoResume()
         condBufferAvailable_.notify_all();
     }
     videoDecoder_->Start();
+    if (postProcessor_) {
+        postProcessor_->Start();
+    }
     return Status::OK;
 }
 
@@ -340,6 +448,9 @@ Status DecoderSurfaceFilter::DoResumeDragging()
         condBufferAvailable_.notify_all();
     }
     videoDecoder_->Start();
+    if (postProcessor_) {
+        postProcessor_->Start();
+    }
     return Status::OK;
 }
 
@@ -360,6 +471,9 @@ Status DecoderSurfaceFilter::DoStop()
     stopTime_ = (int64_t)tv.tv_sec * 1000000 + (int64_t)tv.tv_usec; // 1000000 means transfering from s to us.
     videoSink_->ResetSyncInfo();
     auto ret = videoDecoder_->Stop();
+    if (postProcessor_) {
+        postProcessor_->Stop();
+    }
     if (!IS_FILTER_ASYNC && !isThreadExit_.load()) {
         isThreadExit_ = true;
         condBufferAvailable_.notify_all();
@@ -375,6 +489,9 @@ Status DecoderSurfaceFilter::DoFlush()
     MEDIA_LOG_I("Flush");
     lastRenderTimeNs_ = HST_TIME_NONE;
     videoDecoder_->Flush();
+    if (postProcessor_) {
+        postProcessor_->Flush();
+    }
     {
         std::lock_guard<std::mutex> lock(mutex_);
         MEDIA_LOG_I("Flush");
@@ -439,7 +556,7 @@ Status DecoderSurfaceFilter::DoWaitPrerollDone(bool render)
     if (render && !eosNext_.load() && !outputBuffers_.empty()) {
         std::pair<int, std::shared_ptr<AVBuffer>> nextTask = std::move(outputBuffers_.front());
         outputBuffers_.pop_front();
-        videoDecoder_->ReleaseOutputBuffer(nextTask.first, true);
+        DoReleaseOutputBuffer(nextTask.first, true);
     }
     eosNext_.store(false);
     if (!outputBuffers_.empty()) {
@@ -511,7 +628,7 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
             DoStop();
         }
         videoDecoder_->Configure(configFormat_);
-        videoDecoder_->SetOutputSurface(videoSurface_);
+        videoDecoder_->SetOutputSurface(decoderOutputSurface_);
         if (isDrmProtected_) {
 #ifdef SUPPORT_DRM
             videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
@@ -583,6 +700,12 @@ std::string DecoderSurfaceFilter::GetCodecName(std::string mimeType)
     return codecName;
 }
 
+bool DecoderSurfaceFilter::IsPostProcessorSupported()
+{
+    MEDIA_LOG_D("IsPostProcessorSupported enter.");
+    return VideoPostProcessorFactory::Instance().IsPostProcessorSupported(postProcessorType_, meta_);
+}
+
 Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
@@ -591,6 +714,12 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     FALSE_RETURN_V_MSG(meta->GetData(Tag::MIME_TYPE, codecMimeType_),
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
 
+    isPostProcessorSupported_ = IsPostProcessorSupported();
+    if (!isPostProcessorSupported_ || CreatePostProcessor() == nullptr) {
+        if (postProcessorType_ == VideoPostProcessorType::SUPER_RESOLUTION) {
+            eventReceiver_->OnEvent({"SuperResolutionPostProcessor", EventType::EVENT_SUPER_RESOLUTION_CHANGED, false});
+        }
+    }
     onLinkedResultCallback_ = callback;
     return Filter::OnLinked(inType, meta, callback);
 }
@@ -688,7 +817,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
 
     if (outBuffer->pts_ < 0) {
         MEDIA_LOG_W("Avoid render video frame with pts=" PUBLIC_LOG_D64, outBuffer->pts_);
-        videoDecoder_->ReleaseOutputBuffer(index, false);
+        DoReleaseOutputBuffer(index, false);
         return Status::OK;
     }
 
@@ -700,14 +829,14 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         MEDIA_LOG_D("ReleaseOutputBuffer index " PUBLIC_LOG_U32 " renderTime " PUBLIC_LOG_D64 " curTime " PUBLIC_LOG_D64
             " lastRenderTimeNs " PUBLIC_LOG_D64, index, renderTime, currentSysTimeNs, lastRenderTimeNs);
         RenderAtTimeDfx(renderTime, currentSysTimeNs, lastRenderTimeNs);
-        videoDecoder_->RenderOutputBufferAtTime(index, renderTime);
+        DoRenderOutputBufferAtTime(index, renderTime);
         if (!isInSeekContinous_) {
             lastRenderTimeNs_ = renderTime;
         }
     } else {
         MEDIA_LOG_D("ReleaseOutputBuffer index= " PUBLIC_LOG_D32" isRender= " PUBLIC_LOG_U32" pts= " PUBLIC_LOG_D64,
                     index, static_cast<uint32_t>(render), outBuffer->pts_);
-        videoDecoder_->ReleaseOutputBuffer(index, render);
+        DoReleaseOutputBuffer(index, render);
     }
     if (!isInSeekContinous_) {
         int64_t renderDelay = renderTime > 0L && render ?
@@ -715,6 +844,24 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         videoSink_->SetLastPts(outBuffer->pts_, renderDelay);
     }
     return Status::OK;
+}
+
+void DecoderSurfaceFilter::DoReleaseOutputBuffer(uint32_t index, bool render)
+{
+    if (postProcessor_) {
+        postProcessor_->ReleaseOutputBuffer(index, render);
+    } else if (videoDecoder_) {
+        videoDecoder_->ReleaseOutputBuffer(index, render);
+    }
+}
+
+void DecoderSurfaceFilter::DoRenderOutputBufferAtTime(uint32_t index, int64_t renderTime)
+{
+    if (postProcessor_) {
+        postProcessor_->RenderOutputBufferAtTime(index, renderTime);
+    } else if (videoDecoder_) {
+        videoDecoder_->RenderOutputBufferAtTime(index, renderTime);
+    }
 }
 
 Status DecoderSurfaceFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
@@ -725,6 +872,7 @@ Status DecoderSurfaceFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 
 int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    (void) index;
     int64_t waitTime = -1;
     MEDIA_LOG_D("DrainOutputBuffer not seeking and render. pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
     videoSink_->SetFirstPts(outputBuffer->pts_);
@@ -763,12 +911,16 @@ void DecoderSurfaceFilter::ConsumeVideoFrame(uint32_t index, bool isRender, int6
 
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
-    if (outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)) {
-        MEDIA_LOG_I("Decoder output EOS");
+    MEDIA_LOG_D("DrainOutputBuffer, pts:" PUBLIC_LOG_D64, outputBuffer->pts_);
+    if ((outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS))) {
+        MEDIA_LOG_I("DrainOutputBuffer output EOS");
+        eosPts_ = outputBuffer->pts_;
+    } else if (outputBuffer->pts_ == eosPts_) {
+        outputBuffer->flag_|=static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     }
     std::unique_lock<std::mutex> lock(mutex_);
     FALSE_RETURN_NOLOG(!DrainSeekContinuous(index, outputBuffer));
-    FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
+    FALSE_RETURN_NOLOG(postProcessor_ != nullptr || !DrainSeekClosest(index, outputBuffer));
     FALSE_RETURN_NOLOG(!DrainPreroll(index, outputBuffer));
     if (IS_FILTER_ASYNC && outputBuffers_.empty()) {
         RenderNextOutput(index, outputBuffer);
@@ -777,6 +929,17 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_one();
     }
+}
+
+void DecoderSurfaceFilter::DecoderDrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    MEDIA_LOG_D("DecoderDrainOutputBuffer pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
+    if (outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)) {
+        MEDIA_LOG_I("Decoder output EOS");
+        eosPts_ = outputBuffer->pts_;
+    }
+    FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
+    videoDecoder_->ReleaseOutputBuffer(index, true);
 }
 
 void DecoderSurfaceFilter::RenderLoop()
@@ -864,9 +1027,20 @@ Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
         return Status::ERROR_INVALID_PARAMETER;
     }
     videoSurface_ = videoSurface;
+    if (postProcessor_ != nullptr) {
+        MEDIA_LOG_I("postProcessor_ SetOutputSurface in");
+        Status res = postProcessor_->SetOutputSurface(videoSurface_);
+        if (res != Status::OK) {
+            MEDIA_LOG_E(" postProcessor_ SetOutputSurface error, result is " PUBLIC_LOG_D32, res);
+            return Status::ERROR_UNKNOWN;
+        }
+    } else {
+        decoderOutputSurface_ = videoSurface;
+    }
+
     if (videoDecoder_ != nullptr) {
         MEDIA_LOG_I("videoDecoder_ SetOutputSurface in");
-        int32_t res = videoDecoder_->SetOutputSurface(videoSurface_);
+        int32_t res = videoDecoder_->SetOutputSurface(decoderOutputSurface_);
         if (res != OHOS::MediaAVCodec::AVCodecServiceErrCode::AVCS_ERR_OK) {
             MEDIA_LOG_E("videoDecoder_ SetOutputSurface error, result is " PUBLIC_LOG_D32, res);
             return Status::ERROR_UNKNOWN;
@@ -879,7 +1053,7 @@ Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
 void DecoderSurfaceFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
 {
     MEDIA_LOG_I("SetSyncCenter enter");
-    FALSE_RETURN(videoDecoder_ != nullptr);
+    FALSE_RETURN(videoSink_ != nullptr);
     videoSink_->SetSyncCenter(syncCenter);
 }
 
@@ -1046,7 +1220,7 @@ void DecoderSurfaceFilter::HandleEosOutput(int index)
     int64_t lastRenderTimeNs = lastRenderTimeNs_.load();
     if (lastRenderTimeNs == HST_TIME_NONE || curTimeNs >= lastRenderTimeNs || !eosTask_) {
         MEDIA_LOG_I("HandleEosOutput sync");
-        videoDecoder_->ReleaseOutputBuffer(index, false);
+        DoReleaseOutputBuffer(index, false);
         ReportEosEvent();
         return;
     }
@@ -1060,9 +1234,7 @@ void DecoderSurfaceFilter::HandleEosOutput(int index)
             lastRenderTimeNs - strongPtr->GetSystimeTimeNs() > TASK_DELAY_TOLERANCE) { // flush before release EOS
             return;
         }
-        if (strongPtr->videoDecoder_) {
-            strongPtr->videoDecoder_->ReleaseOutputBuffer(index, false);
-        }
+        strongPtr->DoReleaseOutputBuffer(index, false);
         strongPtr->ReportEosEvent();
         }, (lastRenderTimeNs - curTimeNs) / MICROSECONDS_CONVERT_UNIT, false);
 }
@@ -1116,6 +1288,45 @@ Status DecoderSurfaceFilter::SetSeiMessageCbStatus(bool status, const std::vecto
     }
     producerListener_->SetSeiMessageCbStatus(status, payloadTypes);
     return Status::OK;
+}
+
+void DecoderSurfaceFilter::SetPostProcessorType(VideoPostProcessorType type)
+{
+    postProcessorType_ = type;
+}
+
+std::shared_ptr<BaseVideoPostProcessor> DecoderSurfaceFilter::CreatePostProcessor()
+{
+    MEDIA_LOG_D("CreatePostProcessor In");
+    FALSE_RETURN_V_MSG(postProcessor_ == nullptr, nullptr, "Post processor is allready created!");
+    FALSE_RETURN_V_MSG(postProcessorType_ != VideoPostProcessorType::NONE, nullptr, "post processor type is not set");
+    postProcessor_ =
+        VideoPostProcessorFactory::Instance().CreateVideoPostProcessor<BaseVideoPostProcessor>(postProcessorType_);
+    if (postProcessor_ != nullptr) {
+        decoderOutputSurface_ = postProcessor_->GetInputSurface();
+        videoDecoder_->SetOutputSurface(decoderOutputSurface_);
+        postProcessor_->SetOutputSurface(videoSurface_);
+    }
+    return postProcessor_;
+}
+
+Status DecoderSurfaceFilter::SetPostProcessorOn(bool isPostProcessorOn)
+{
+    isPostProcessorOn_ = isPostProcessorOn;
+    FALSE_RETURN_V(isPostProcessorSupported_, Status::ERROR_UNSUPPORTED_FORMAT);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
+
+    return postProcessor_->SetPostProcessorOn(isPostProcessorOn);
+}
+
+Status DecoderSurfaceFilter::SetVideoWindowSize(int32_t width, int32_t height)
+{
+    postProcessorTargetWidth_ = width;
+    postProcessorTargetHeight_ = height;
+    FALSE_RETURN_V(isPostProcessorSupported_, Status::ERROR_UNSUPPORTED_FORMAT);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
+
+    return postProcessor_->SetVideoWindowSize(width, height);
 }
 } // namespace Pipeline
 } // namespace MEDIA

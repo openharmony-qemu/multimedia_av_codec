@@ -97,7 +97,7 @@ void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBu
 
 int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
-    FALSE_RETURN_V(buffer != nullptr, false);
+    FALSE_RETURN_V(buffer != nullptr, 0);
     int64_t waitTime = 0;
     bool render = true;
     auto syncCenter = syncCenter_.lock();

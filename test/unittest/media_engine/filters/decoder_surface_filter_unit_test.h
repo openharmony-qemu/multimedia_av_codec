@@ -19,6 +19,7 @@
 #include "mock/video_sink.h"
 #include "mock/video_decoder_adapter.h"
 #include "mock/av_buffer_queue.h"
+#include "mock/base_video_post_processor.h"
 #include "decoder_surface_filter.cpp"
 
 namespace OHOS {
