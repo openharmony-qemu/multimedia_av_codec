@@ -208,6 +208,60 @@ static const CalculatorParameter SOFTWARE_DECODER_HEVC_10BIT_YUV420_PARAMETER = 
     false
 };
 
+static const CalculatorParameter SOFTWARE_DECODER_MPEG2_YUV420_PARAMETER = {
+    AVCODEC_TYPE_VIDEO_DECODER,
+    CodecMimeType::VIDEO_MPEG2.data(),
+    CalculatorParameterPixelFormat::YUV420,
+    BitDepth::BIT_8,
+    false,
+    false
+};
+
+static const CalculatorParameter SOFTWARE_DECODER_MPEG2_RGBA_PARAMETER = {
+    AVCODEC_TYPE_VIDEO_DECODER,
+    CodecMimeType::VIDEO_MPEG2.data(),
+    CalculatorParameterPixelFormat::RGBA,
+    BitDepth::BIT_8,
+    false,
+    false
+};
+
+static const CalculatorParameter SOFTWARE_DECODER_MPEG4_YUV420_PARAMETER = {
+    AVCODEC_TYPE_VIDEO_DECODER,
+    CodecMimeType::VIDEO_MPEG4.data(),
+    CalculatorParameterPixelFormat::YUV420,
+    BitDepth::BIT_8,
+    false,
+    false
+};
+
+static const CalculatorParameter SOFTWARE_DECODER_MPEG4_RGBA_PARAMETER = {
+    AVCODEC_TYPE_VIDEO_DECODER,
+    CodecMimeType::VIDEO_MPEG4.data(),
+    CalculatorParameterPixelFormat::RGBA,
+    BitDepth::BIT_8,
+    false,
+    false
+};
+
+static const CalculatorParameter SOFTWARE_DECODER_H263_YUV420_PARAMETER = {
+    AVCODEC_TYPE_VIDEO_DECODER,
+    CodecMimeType::VIDEO_H263.data(),
+    CalculatorParameterPixelFormat::YUV420,
+    BitDepth::BIT_8,
+    false,
+    false
+};
+
+static const CalculatorParameter SOFTWARE_DECODER_H263_RGBA_PARAMETER = {
+    AVCODEC_TYPE_VIDEO_DECODER,
+    CodecMimeType::VIDEO_H263.data(),
+    CalculatorParameterPixelFormat::RGBA,
+    BitDepth::BIT_8,
+    false,
+    false
+};
+
 constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1 = 3762;
 constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1 = 8036;
 constexpr uint32_t BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_5_1 = 36686;
@@ -260,13 +314,13 @@ uint32_t HardwareDecoderVvc10BitYUV420(uint32_t blockSize)
     auto linearIntercept = 0U;
     if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_3_1) {
         linearSlope = 6.1835;       // 6.1835: HardwareDecoderVvc10BitYUV420 level1-3.1 slope
-        linearIntercept = 13035;    // 13035: HardwareDecoderVvc10BitYUV420 level1-3.1 intercept
+        linearIntercept = 13035;    // 13035:  HardwareDecoderVvc10BitYUV420 level1-3.1 intercept
     } else if (blockSize <= BLOCK_SIZE_HARDWARED_PROFILE_LEVEL_4_1) {
         linearSlope = 5.8492;       // 5.8492: HardwareDecoderVvc10BitYUV420 level3.1-4.1 slope
-        linearIntercept = 21025;    // 21025: HardwareDecoderVvc10BitYUV420 level3.1-4.1 intercept
+        linearIntercept = 21025;    // 21025:  HardwareDecoderVvc10BitYUV420 level3.1-4.1 intercept
     } else {
         linearSlope = 5.9106;       // 5.9106: HardwareDecoderVvc10BitYUV420 level4.1+ slope
-        linearIntercept = 33072;    // 33072: HardwareDecoderVvc10BitYUV420 level4.1+ intercept
+        linearIntercept = 33072;    // 33072:  HardwareDecoderVvc10BitYUV420 level4.1+ intercept
     }
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
@@ -311,7 +365,7 @@ uint32_t HardwareDecoderYUV420(uint32_t blockSize)
 uint32_t HardwareEncoderHevc10BitYUV420(uint32_t blockSize)
 {
     auto linearSlope = 7.8221;      // 7.8221: HardwareEncoderHevc10BitYUV420 slope
-    auto linearIntercept = 7386;    // 7386: HardwareEncoderHevc10BitYUV420 intercept
+    auto linearIntercept = 7386;    // 7386:   HardwareEncoderHevc10BitYUV420 intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
@@ -345,15 +399,57 @@ uint32_t SoftwareDecoderAvcYUV420(uint32_t blockSize)
 
 uint32_t SoftwareDecoderHevcYUV420(uint32_t blockSize)
 {
-    auto linearSlope = 5.7488;      // 5.7488:  SoftwareDecoderHevcYUV420 slope
-    auto linearIntercept = 11087;   // 11087: SoftwareDecoderHevcYUV420 intercept
+    auto linearSlope = 5.7488;      // 5.7488: SoftwareDecoderHevcYUV420 slope
+    auto linearIntercept = 11087;   // 11087:  SoftwareDecoderHevcYUV420 intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
 uint32_t SoftwareDecoderHevc10BitYUV420(uint32_t blockSize)
 {
-    auto linearSlope = 9.6653;      // 9.6653:  SoftwareDecoderHevc10BitYUV420 slope
-    auto linearIntercept = 15608;   // 15608: SoftwareDecoderHevc10BitYUV420 intercept
+    auto linearSlope = 9.6653;      // 9.6653: SoftwareDecoderHevc10BitYUV420 slope
+    auto linearIntercept = 15608;   // 15608:  SoftwareDecoderHevc10BitYUV420 intercept
+    return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
+}
+
+uint32_t SoftwareDecoderMpeg2YUV420(uint32_t blockSize)
+{
+    auto linearSlope = 2.717;      // 2.717: SoftwareDecoderMpeg2YUV420 slope
+    auto linearIntercept = 7718;   // 7718:  SoftwareDecoderMpeg2YUV420 intercept
+    return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
+}
+
+uint32_t SoftwareDecoderMpeg2RGBA(uint32_t blockSize)
+{
+    auto linearSlope = 5.866;      // 5.866: SoftwareDecoderMpeg2RGBA slope
+    auto linearIntercept = 8853;   // 8853:  SoftwareDecoderMpeg2RGBA intercept
+    return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
+}
+
+uint32_t SoftwareDecoderMpeg4YUV420(uint32_t blockSize)
+{
+    auto linearSlope = 3.698;      // 3.698: SoftwareDecoderMpeg4YUV420 slope
+    auto linearIntercept = 9117;   // 9117:  SoftwareDecoderMpeg4YUV420 intercept
+    return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
+}
+
+uint32_t SoftwareDecoderMpeg4RGBA(uint32_t blockSize)
+{
+    auto linearSlope = 6.848;      // 6.848: SoftwareDecoderMpeg4RGBA slope
+    auto linearIntercept = 9976;   // 9976:  SoftwareDecoderMpeg4RGBA intercept
+    return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
+}
+
+uint32_t SoftwareDecoderH263YUV420(uint32_t blockSize)
+{
+    auto linearSlope = 3.103;      // 3.103: SoftwareDecoderH263YUV420 slope
+    auto linearIntercept = 7515;   // 7515:  SoftwareDecoderH263YUV420 intercept
+    return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
+}
+
+uint32_t SoftwareDecoderH263RGBA(uint32_t blockSize)
+{
+    auto linearSlope = 6.291;      // 6.291: SoftwareDecoderH263RGBA slope
+    auto linearIntercept = 7799;   // 7799:  SoftwareDecoderH263RGBA intercept
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
 
@@ -373,7 +469,13 @@ const std::unordered_map<CalculatorParameter, uint32_t (*)(uint32_t),
     {SOFTWARE_DECODER_AVC_RGBA_PARAMETER, SoftwareDecoderAvcRGBA},
     {SOFTWARE_DECODER_AVC_YUV420_PARAMETER, SoftwareDecoderAvcYUV420},
     {SOFTWARE_DECODER_HEVC_YUV420_PARAMETER, SoftwareDecoderHevcYUV420},
-    {SOFTWARE_DECODER_HEVC_10BIT_YUV420_PARAMETER, SoftwareDecoderHevc10BitYUV420}
+    {SOFTWARE_DECODER_HEVC_10BIT_YUV420_PARAMETER, SoftwareDecoderHevc10BitYUV420},
+    {SOFTWARE_DECODER_MPEG2_YUV420_PARAMETER, SoftwareDecoderMpeg2YUV420},
+    {SOFTWARE_DECODER_MPEG2_RGBA_PARAMETER, SoftwareDecoderMpeg2RGBA},
+    {SOFTWARE_DECODER_MPEG4_YUV420_PARAMETER, SoftwareDecoderMpeg4YUV420},
+    {SOFTWARE_DECODER_MPEG4_RGBA_PARAMETER, SoftwareDecoderMpeg4RGBA},
+    {SOFTWARE_DECODER_H263_YUV420_PARAMETER, SoftwareDecoderH263YUV420},
+    {SOFTWARE_DECODER_H263_RGBA_PARAMETER, SoftwareDecoderH263RGBA}
 };
 
 std::optional<CalculatorType> InstanceMemoryUpdateEventHandler::GetCalculator(const Media::Meta &meta)
