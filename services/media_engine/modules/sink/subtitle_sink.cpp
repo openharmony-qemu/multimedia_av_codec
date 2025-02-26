@@ -249,11 +249,11 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
     FALSE_RETURN(!isEos_.load());
     std::shared_ptr<AVBuffer> filledOutputBuffer;
     ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
-    if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
-        isEos_ = true;
-    }
     if (ret != Status::OK || filledOutputBuffer == nullptr || filledOutputBuffer->memory_ == nullptr) {
         return;
+    }
+    if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
+        isEos_ = true;
     }
     std::string subtitleText(reinterpret_cast<const char *>(filledOutputBuffer->memory_->GetAddr()),
                              filledOutputBuffer->memory_->GetSize());
