@@ -109,6 +109,7 @@ public:
     bool IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     void HandleEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     bool HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
+    void HandleAudioRenderRequestPost();
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;

@@ -80,11 +80,7 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
     }
     ret = sink->Enqueue(bufferDesc);
     FALSE_RETURN_MSG(ret == Status::OK, "enqueue failed, ret=" PUBLIC_LOG_D32, ret);
-    FALSE_RETURN_NOLOG(sink->isEosBuffer_);
-    auto cacheBuffer = sink->availableOutputBuffers_.front();
-    FALSE_RETURN(cacheBuffer != nullptr);
-    FALSE_RETURN(sink->IsEosBuffer(cacheBuffer));
-    sink->HandleEosBuffer(cacheBuffer);
+    sink->HandleAudioRenderRequestPost();
 }
 
 bool AudioSink::HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
@@ -96,6 +92,17 @@ bool AudioSink::HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioSt
     SyncWriteByRenderInfo();
     UpdateAmplitude();
     return true;
+}
+
+void AudioSink::HandleAudioRenderRequestPost()
+{
+    std::lock_guard<std::mutex> lock(getBufferMutex_);
+    FALSE_RETURN_NOLOG(isEosBuffer_);
+    FALSE_RETURN_NOLOG(!availableOutputBuffers_.empty());
+    auto cacheBuffer = availableOutputBuffers_.front();
+    FALSE_RETURN(cacheBuffer != nullptr);
+    FALSE_RETURN(IsEosBuffer(cacheBuffer));
+    HandleEosBuffer(cacheBuffer);
 }
  
 Status AudioSink::GetBufferDesc(AudioStandard::BufferDesc &bufferDesc)
@@ -1233,14 +1240,13 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
 {
     MEDIA_LOG_I("GetAudioEffectMode ChangeTrack. ");
     std::lock_guard<std::mutex> lock(pluginMutex_);
-    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     if (plugin_) {
         plugin_->Stop();
         plugin_->Deinit();
         plugin_ = nullptr;
     }
     plugin_ = CreatePlugin();
-
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     Status ret = Status::OK;
     ret = InitAudioSinkPlugins(meta, receiver);
     FALSE_RETURN_V(ret == Status::OK, ret);
