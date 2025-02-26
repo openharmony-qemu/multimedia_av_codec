@@ -1328,12 +1328,12 @@ HWTEST_F(CapsUnitTest, AVCaps_MixedUse_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVCaps_MixedUse_001
+ * @tc.name: AVCaps_MixedUse_003
  * @tc.desc: AVCaps mixed use cap, decoder cap to get encoder info
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(CapsUnitTest, AVCaps_MixedUse_001, TestSize.Level1)
+HWTEST_F(CapsUnitTest, AVCaps_MixedUse_003, TestSize.Level1)
 {
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     EXPECT_NE(cap, nullptr);
