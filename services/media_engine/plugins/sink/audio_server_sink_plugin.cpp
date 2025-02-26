@@ -1194,7 +1194,7 @@ Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<Audio
     ret = audioRenderer_->SetRendererWriteCallback(audioRenderWriteCallback_);
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "audioRender_->SetRenderWriteCallback fail.");
-    int32_t callbackBufferDuration= CalculateCallbackBufferDuration();
+    int32_t callbackBufferDuration = CalculateCallbackBufferDuration();
     FALSE_RETURN_V_MSG_W(callbackBufferDuration > 0, Status::OK,
         "minetype is audioVivid");
     audioRenderer_->SetBufferDuration(CALLBACK_BUFFER_DURATION_IN_MILLISECONDS);
@@ -1202,7 +1202,7 @@ Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<Audio
     return Status::OK;
 }
  
-bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosition) 
+bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosition)
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, false, "GetAudioPosition audioRender_ is nullptr");
     AudioStandard::Timestamp audioPositionTimestamp;

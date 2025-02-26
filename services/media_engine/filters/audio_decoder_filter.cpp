@@ -311,7 +311,7 @@ Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
     
         ret = SetOutputBufferQueueProducerListener();
         FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin SetOutputBufferQueueProducerListener failed");
-    } 
+    }
  
     return Status::OK;
 }
