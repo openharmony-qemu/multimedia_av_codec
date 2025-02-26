@@ -133,7 +133,7 @@ private:
 AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type, IS_FILTER_ASYNC)
 {
     filterType_ = type;
-    isAysyncMode_ = IS_FILTER_ASYNC;
+    isAsyncMode_ = IS_FILTER_ASYNC;
     MEDIA_LOG_I_SHORT("audio decoder filter create");
 }
 

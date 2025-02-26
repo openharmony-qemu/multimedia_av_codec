@@ -237,6 +237,7 @@ Status AudioSink::Start()
 
 Status AudioSink::Stop()
 {
+    std::lock_guard<std::mutex> lock(pluginMutex_);
     playRangeStartTime_ = DEFAULT_PLAY_RANGE_VALUE;
     playRangeEndTime_ = DEFAULT_PLAY_RANGE_VALUE;
     Status ret = plugin_->Stop();
@@ -299,6 +300,7 @@ Status AudioSink::Resume()
 
 Status AudioSink::Flush()
 {
+    std::lock_guard<std::mutex> lock(pluginMutex_);
     MEDIA_LOG_D("do audioSink flush");
     Status ret = Status::OK;
     underrunDetector_.Reset();
@@ -1231,26 +1233,32 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
 {
     MEDIA_LOG_I("GetAudioEffectMode ChangeTrack. ");
     std::lock_guard<std::mutex> lock(pluginMutex_);
-    Status res = Status::OK;
-
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     if (plugin_) {
         plugin_->Stop();
         plugin_->Deinit();
         plugin_ = nullptr;
     }
     plugin_ = CreatePlugin();
+
+    Status ret = InitAudioSinkPlugins(meta, receiver);
+    FALSE_RETURN_V(ret == Status::OK, ret);
+
+    ret = InitAudioSinkInfo(meta);
+    FALSE_RETURN_V(ret == Status::OK, ret);
+
+    ret = SetAudioSinkPluginParameters();
+    FALSE_RETURN_V(ret == Status::OK, ret);
+
+    forceUpdateTimeAnchorNextTime_ = true;
+
+    return res;
+}
+
+Status AudioSink::SetAudioSinkPluginParameters()
+{
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
-    FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
-    meta->SetData(Tag::APP_PID, appPid_);
-    meta->SetData(Tag::APP_UID, appUid_);
-    plugin_->SetEventReceiver(receiver);
-    plugin_->SetParameter(meta);
-    plugin_->Init();
-    plugin_->Prepare();
-    plugin_->SetMuted(isMuted_);
-    meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
-    meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
-    meta->GetData(Tag::AUDIO_CHANNEL_COUNT, audioChannelCount_);
+    Status res = Status::OK;
     if (volume_ >= 0) {
         plugin_->SetVolume(volume_);
     }
@@ -1261,10 +1269,9 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
         plugin_->SetAudioEffectMode(effectMode_);
     }
     if (state_ == Pipeline::FilterState::RUNNING) {
-        res = plugin_->Start();
+        ret = plugin_->Start();
     }
-    forceUpdateTimeAnchorNextTime_ = true;
-    return res;
+    return ret;
 }
 
 Status AudioSink::SetMuted(bool isMuted)

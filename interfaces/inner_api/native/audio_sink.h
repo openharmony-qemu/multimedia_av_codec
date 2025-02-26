@@ -103,7 +103,7 @@ public:
     void ReleaseBufferAfterWritten();
     int64_t CalculateBufDescSampleCnt(int64_t writeDataSize);
     void CalculateBufferDuration(int64_t writeDataSize);
-    void UpdateRenderInfo();git 
+    void UpdateRenderInfo();
     void WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     void ResetInfo();
     bool IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
@@ -134,6 +134,7 @@ private:
     bool HandleCopyAudioVividMetaInfo(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer);
     Status InitAudioSinkPlugins(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status InitAudioSinkInfo(std::shared_ptr<Meta>& meta);
+    Status SetAudioSinkPluginParameters();
     void GetAvailableOutputBuffers();
     void ClearAvailableOutputBuffers();
 
