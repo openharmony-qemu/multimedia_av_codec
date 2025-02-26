@@ -129,7 +129,7 @@ private:
     void PerfRecord(int64_t audioWriteMs);
     void ClearInputBuffer();
     int32_t GetSampleFormatBytes();
-    int32_t HandleCopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+    bool HandleCopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
         size_t &size, size_t &cacheBufferSize, int64_t &bufferPts);
     bool HandleCopyAudioVividMetaInfo(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer);
     Status InitAudioSinkPlugins(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);

@@ -619,9 +619,7 @@ bool AudioSink::IsDrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::sh
 {
     FALSE_RETURN_V_MSG(cacheBufferSize <= size || !isAudioVivid, false, "copy from cache buffer may fail.");
     bool ret = HandleCopyBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts);
-    if (isAudioVivid) {
-        ret = ret && HandleCopyAudioVividMetaInfo(bufferDesc, buffer);
-    }
+    ret = isAudioVivid == true ? ret && HandleCopyAudioVividMetaInfo(bufferDesc, buffer) : ret;
     return ret;
 }
  

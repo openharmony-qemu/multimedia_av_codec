@@ -1198,11 +1198,11 @@ Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<Audio
     FALSE_RETURN_V_MSG_W(callbackBufferDuration > 0, Status::OK,
         "minetype is audioVivid");
     audioRenderer_->SetBufferDuration(CALLBACK_BUFFER_DURATION_IN_MILLISECONDS);
-    MEDIA_LOG_I("Set Preferred duration is " PUBLIC_LOG_D32 " ms", callbackBufferSize);
+    MEDIA_LOG_I("Set Preferred duration is " PUBLIC_LOG_D32 " ms", callbackBufferDuration);
     return Status::OK;
 }
  
-bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosition)
+bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosition) 
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, false, "GetAudioPosition audioRender_ is nullptr");
     AudioStandard::Timestamp audioPositionTimestamp;
