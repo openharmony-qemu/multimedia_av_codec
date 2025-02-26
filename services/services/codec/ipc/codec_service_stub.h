@@ -95,7 +95,7 @@ private:
 #endif
     int32_t SetCustomBuffer(MessageParcel &data, MessageParcel &reply);
     int32_t InnerRelease();
-
+    bool isServerReleased_ = false;
     std::shared_ptr<ICodecService> codecServer_ = nullptr;
     std::shared_mutex mutex_;
     sptr<IStandardCodecListener> listener_ = nullptr;
