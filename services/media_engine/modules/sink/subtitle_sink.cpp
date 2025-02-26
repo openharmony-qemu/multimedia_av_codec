@@ -174,6 +174,15 @@ Status SubtitleSink::Flush()
             subtitleInfoVec_.clear();
         }
     }
+    uint32_t queueSize = inputBufferQueueConsumer_->GetQueueSize();
+    std::shared_ptr<AVBuffer> filledOutputBuffer;
+    for (int i = 0; i<queueSize; i++) {
+        Status ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
+        if (ret != Status::OK || filledOutputBuffer == nullptr || filledOutputBuffer->memory_ == nullptr) {
+            break;
+        }
+        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+    }
     isFlush_.store(true);
     updateCond_.notify_all();
     return Status::OK;
