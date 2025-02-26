@@ -111,6 +111,13 @@ struct Range {
     {
         return (value >= minVal && value <= maxVal);
     }
+
+    Range Union(const Range &range)
+    {
+        int32_t minCmp = this->minVal < range.minVal ? this->minVal : range.minVal;
+        int32_t maxCmp = this->maxVal > range.maxVal ? this->maxVal : range.maxVal;
+        return this->Create(minCmp, maxCmp);
+    }
 };
 
 /**
@@ -469,13 +476,12 @@ private:
     CapabilityData *data_;
     int32_t blockWidth_ = 0;
     int32_t blockHeight_ = 0;
-    Range horizontalBlockRange_;
-    Range verticalBlockRange_;
     Range blockPerFrameRange_;
     Range blockPerSecondRange_;
     Range widthRange_;
     Range heightRange_;
     Range frameRateRange_;
+    bool isUpdateParam_ = false;
     void InitParams();
     void UpdateParams();
     void LoadLevelParams();
@@ -486,6 +492,7 @@ private:
     Range DivRange(const Range &range, const int32_t &divisor);
     void UpdateBlockParams(const int32_t &blockWidth, const int32_t &blockHeight, Range &blockPerFrameRange,
                            Range &blockPerSecondRange);
+    Range GetRangeForOtherSide(int32_t side);
 };
 
 constexpr uint32_t MAX_MAP_SIZE = 20;

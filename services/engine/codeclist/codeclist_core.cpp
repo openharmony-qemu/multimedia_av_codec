@@ -244,9 +244,6 @@ int32_t CodecListCore::GetCapability(CapabilityData &capData, const std::string 
     std::vector<CapabilityData> capsDataArray = CodecAbilitySingleton::GetInstance().GetCapabilityArray();
     std::unordered_map<std::string, std::vector<size_t>> mimeCapIdxMap =
         CodecAbilitySingleton::GetInstance().GetMimeCapIdxMap();
-    if (mimeCapIdxMap.find(mime) == mimeCapIdxMap.end()) {
-        return AVCS_ERR_INVALID_VAL;
-    }
     CHECK_AND_RETURN_RET_LOG(mimeCapIdxMap.find(mime) != mimeCapIdxMap.end(), AVCS_ERR_INVALID_VAL,
         "mime is not supported, mime: %{public}s", mime.c_str());
     std::vector<size_t> capsIdx = mimeCapIdxMap.at(mime);
