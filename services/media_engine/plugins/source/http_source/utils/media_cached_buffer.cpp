@@ -113,7 +113,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     writePos_ = fragmentCacheBuffer_.end();
     size_t sizePerChunk = sizeof(CacheChunk) + chunkSize;
     int64_t totalSize = static_cast<int64_t>(sizePerChunk) * chunkNum;
-    if (totalSize < 0 || totalSize > MAX_CACHE_BUFFER_SIZE * CHUNK_SIZE) {
+    if (totalSize <= 0 || totalSize > MAX_CACHE_BUFFER_SIZE * CHUNK_SIZE) {
         return false;
     }
     bufferAddr_ = static_cast<uint8_t*>(malloc(totalSize));

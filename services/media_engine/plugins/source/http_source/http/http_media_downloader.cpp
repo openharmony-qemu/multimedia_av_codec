@@ -368,7 +368,7 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
     if (GetCurrentBufferSize() >= cacheWaterLine) {
         return false;
     }
-    if (!canWrite_.load() || GetCurrentBufferSize() >= wantReadLength) {
+    if (GetCurrentBufferSize() >= wantReadLength) {
         return false;
     }
     return true;
