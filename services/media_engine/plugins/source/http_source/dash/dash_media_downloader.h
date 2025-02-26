@@ -35,7 +35,7 @@ struct DashPreparedAction {
 
 class DashMediaDownloader : public MediaDownloader, public DashMpdCallback {
 public:
-    DashMediaDownloader() noexcept;
+    explicit DashMediaDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~DashMediaDownloader() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
@@ -125,6 +125,8 @@ private:
     uint32_t bufferingFlag_{0};
     uint32_t lastBufferingPercent_{0};
     double bufferDurationForPlaying_ {0};
+
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
 };
 }
 }

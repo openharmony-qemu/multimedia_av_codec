@@ -38,12 +38,18 @@ constexpr unsigned int SLEEP_TIME = 1;
 constexpr int32_t MPD_HTTP_TIME_OUT_MS = 5 * 1000;
 constexpr unsigned int SEGMENT_DURATION_DELTA = 100; // ms
 
-DashMpdDownloader::DashMpdDownloader()
+DashMpdDownloader::DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
-    downloader_ = std::make_shared<Downloader>("dashMpd");
+    if (sourceLoader != nullptr) {
+        MEDIA_LOG_I("DashMpdDownloader app download.");
+        downloader_ = std::make_shared<Downloader>("dashMpd", sourceLoader);
+    } else {
+        downloader_ = std::make_shared<Downloader>("dashMpd");
+    }
 
-    dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
+    dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) {
+        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
+            std::forward<decltype(notBlock)>(notBlock));
     };
 
     mpdParser_ = std::make_shared<DashMpdParser>();
@@ -795,7 +801,7 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
         UpdateDownloadFinished(url);
     };
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
-
+    downloadRequest_->SetRequestProtocolType(RequestProtocolType::DASH);
     if (!requestWholeFile) {
         downloadRequest_->SetRangePos(startRange, endRange);
     }
@@ -803,11 +809,11 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
     downloader_->Start();
 }
 
-bool DashMpdDownloader::SaveData(uint8_t* data, uint32_t len)
+uint32_t DashMpdDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     MEDIA_LOG_D("SaveData:size=%{public}u len=%{public}u", (unsigned int)downloadContent_.size(), len);
     downloadContent_.append(reinterpret_cast<const char*>(data), len);
-    return true;
+    return len;
 }
 
 void DashMpdDownloader::SetMpdCallback(DashMpdCallback *callback)

@@ -298,8 +298,8 @@ void M3U8::DownloadKey()
     }
 
     downloader_ = std::make_shared<Downloader>("hlsSourceKey");
-    dataSave_ = [this](uint8_t *&&data, uint32_t &&len) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
+    dataSave_ = [this](uint8_t *&&data, uint32_t &&len, bool &&notBlock) {
+        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len), notBlock);
     };
     // this is default callback
     statusCallback_ = [this](DownloadStatus &&status, std::shared_ptr<Downloader> d,
@@ -319,17 +319,17 @@ void M3U8::DownloadKey()
     downloader_->Start();
 }
 
-bool M3U8::SaveData(uint8_t *data, uint32_t len)
+uint32_t M3U8::SaveData(uint8_t *data, uint32_t len, bool notBlock)
 {
     // 16 is a magic number
     if (len <= MAX_LOOP && len != 0) {
-        NZERO_RETURN_V(memcpy_s(key_, MAX_LOOP, data, len), false);
+        NZERO_RETURN_V(memcpy_s(key_, MAX_LOOP, data, len), 0);
         keyLen_ = len;
         isDecryptKeyReady_ = true;
         MEDIA_LOG_I("DownloadKey hlsSourceKey end.\n");
-        return true;
+        return len;
     }
-    return false;
+    return 0;
 }
 
 void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,

@@ -39,7 +39,8 @@ struct PlayListChangeCallback {
 class PlayListDownloader {
 public:
     explicit PlayListDownloader(
-        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>(),
+        std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     explicit PlayListDownloader(std::shared_ptr<Downloader> downloader,
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
     virtual ~PlayListDownloader() = default;
@@ -95,7 +96,7 @@ public:
     virtual void InterruptM3U8Parse(bool isInterruptNeeded) {}
 
 protected:
-    bool SaveData(uint8_t* data, uint32_t len);
+    uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     static void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
                           std::shared_ptr<DownloadRequest>& request);
     void DoOpen(const std::string& url);

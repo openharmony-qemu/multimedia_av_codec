@@ -111,7 +111,7 @@ struct DashMpdCallback {
 
 class DashMpdDownloader {
 public:
-    DashMpdDownloader();
+    explicit DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     virtual ~DashMpdDownloader() noexcept;
 
     void Open(const std::string &url);
@@ -146,7 +146,7 @@ private:
     void ParseSidx();
     void OpenStream(std::shared_ptr<DashStreamDescription> stream);
     void DoOpen(const std::string &url, int64_t startRange = -1, int64_t endRange = -1);
-    bool SaveData(uint8_t *data, uint32_t len);
+    uint32_t SaveData(uint8_t *data, uint32_t len, bool notBlock);
     void SetOndemandSegBase();
     bool SetOndemandSegBase(std::list<DashAdptSetInfo *> adptSetList);
     bool SetOndemandSegBase(std::list<DashRepresentationInfo *> repList);
