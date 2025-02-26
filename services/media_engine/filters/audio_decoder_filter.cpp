@@ -130,9 +130,10 @@ private:
     std::weak_ptr<AudioDecoderFilter> audioDecoderFilter_;
 };
 
-AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name,` type, IS_FILTER_ASYNC)
+AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type, IS_FILTER_ASYNC)
 {
     filterType_ = type;
+    isAysyncMode_ = IS_FILTER_ASYNC;
     MEDIA_LOG_I_SHORT("audio decoder filter create");
 }
 
@@ -304,11 +305,13 @@ Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
     Status ret = decoder_->ChangePlugin(mime, false, meta);
     FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin failed");
  
-    ret = SetInputBufferQueueConsumerListener();
-    FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin SetInputBufferQueueConsumerListener failed");
- 
-    ret = SetOutputBufferQueueProducerListener();
-    FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin SetOutputBufferQueueProducerListener failed");
+    if (IsAsyncMode()) {
+        ret = SetInputBufferQueueConsumerListener();
+        FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin SetInputBufferQueueConsumerListener failed");
+    
+        ret = SetOutputBufferQueueProducerListener();
+        FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin SetOutputBufferQueueProducerListener failed");
+    } 
  
     return Status::OK;
 }
@@ -435,14 +438,17 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     decoder_->SetOutputBufferQueue(outputBufferQueue);
     decoder_->Prepare();
 
-    Status ret = SetInputBufferQueueConsumerListener();
-    FALSE_RETURN_MSG(ret == Status::OK, "OnLinkedResult SetInputBufferQueueConsumerListener failed");
- 
-    ret = SetOutputBufferQueueProducerListener();
-    FALSE_RETURN_MSG(ret == Status::OK, "OnLinkedResult SetOutputBufferQueueProducerListener failed");
+    if (IsAsyncMode()) {
+        Status ret = SetInputBufferQueueConsumerListener();
+        FALSE_RETURN_MSG(ret == Status::OK, "OnLinkedResult SetInputBufferQueueConsumerListener failed");
+    
+        ret = SetOutputBufferQueueProducerListener();
+        FALSE_RETURN_MSG(ret == Status::OK, "OnLinkedResult SetOutputBufferQueueProducerListener failed");
+    }
  
     sptr<AVBufferQueueProducer> inputProducer = decoder_->GetInputBufferQueue();
     FALSE_RETURN(inputProducer != nullptr && onLinkedResultCallback_ != nullptr);
+
     onLinkedResultCallback_->OnLinkedResult(inputProducer, meta_);
 }
 

@@ -74,7 +74,7 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
     bufferDesc.dataLength = 0;
     
     if (sink->IsInputBufferDataEnough(size)) {
-        bool isCopySucess = sink->isSucessHandleAudioRenderRequest(static_cast<size_t>(size),
+        bool isCopySucess = sink->HandleAudioRenderRequest(static_cast<size_t>(size),
             isAudioVivid, bufferDesc);
         bufferDesc.dataLength = isCopySucess ? bufferDesc.dataLength : 0;
     }
@@ -87,10 +87,10 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
     sink->HandleEosBuffer(cacheBuffer);
 }
 
-bool AudioSink::isSucessHandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
+bool AudioSink::HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V(!eosDraining_, false);
-    bool isCopySucess = IsCopyDataToBufferDescSucess(static_cast<size_t>(size), isAudioVivid, bufferDesc);
+    bool isCopySucess = CopyDataToBufferDesc(static_cast<size_t>(size), isAudioVivid, bufferDesc);
     FALSE_RETURN_V_MSG_D(isCopySucess, false, "CopyDataToBufferDesc failed");
     UpdateAudioWriteTimeMayWait();
     SyncWriteByRenderInfo();
@@ -517,6 +517,24 @@ bool AudioSink::DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
     return false;
 }
 
+void AudioSink::ClearInputBuffer()
+{
+    MEDIA_LOG_D("AudioSink::ClearInputBuffer enter");
+    if (!inputBufferQueueConsumer_) {
+        return;
+    }
+    std::shared_ptr<AVBuffer> filledInputBuffer;
+    Status ret = Status::OK;
+    while (ret == Status::OK) {
+        ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
+        if (ret != Status::OK) {
+            MEDIA_LOG_I("AudioSink::ClearInputBuffer clear input Buffer");
+            return;
+        }
+        inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
+    }
+}
+
 int32_t AudioSink::GetSampleFormatBytes()
 {
     int32_t format = 0;
@@ -603,7 +621,7 @@ bool AudioSink::IsDrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::sh
     return ret;
 }
  
-bool AudioSink::IsCopyDataToBufferDescSucess(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
+bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(size != 0 && size == bufferDesc.bufLength, false,
         "bufferDesc or request size is unavailable");

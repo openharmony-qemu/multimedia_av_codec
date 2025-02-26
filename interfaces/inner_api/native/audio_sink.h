@@ -90,7 +90,7 @@ public:
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
     bool IsInputBufferDataEnough(int32_t size);
-    bool IsCopyDataToBufferDescSucess(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
+    bool CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
     Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc);
     Status Enqueue(const AudioStandard::BufferDesc &bufferDesc);
     void SyncWriteByRenderInfo();
@@ -103,12 +103,12 @@ public:
     void ReleaseBufferAfterWritten();
     int64_t CalculateBufDescSampleCnt(int64_t writeDataSize);
     void CalculateBufferDuration(int64_t writeDataSize);
-    void UpdateRenderInfo();
+    void UpdateRenderInfo();git 
     void WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     void ResetInfo();
     bool IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     void HandleEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
-    bool isSucessHandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
+    bool HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -127,6 +127,7 @@ private:
     bool DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer);
     int64_t CalcBufferDuration(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void PerfRecord(int64_t audioWriteMs);
+    void ClearInputBuffer();
     int32_t GetSampleFormatBytes();
     int32_t HandleCopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
         size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts);
@@ -285,4 +286,5 @@ private:
 };
 }
 }
+
 #endif // HISTREAMER_AUDIO_SINK_H
