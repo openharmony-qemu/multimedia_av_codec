@@ -237,7 +237,7 @@ Status AudioSink::Start()
 
 Status AudioSink::Stop()
 {
-    std::lock_guard<std::mutex> lock(pluginMutex_);
+    std::lock_guard<std::mutex> lockPlugin(pluginMutex_);
     playRangeStartTime_ = DEFAULT_PLAY_RANGE_VALUE;
     playRangeEndTime_ = DEFAULT_PLAY_RANGE_VALUE;
     Status ret = plugin_->Stop();
@@ -300,7 +300,7 @@ Status AudioSink::Resume()
 
 Status AudioSink::Flush()
 {
-    std::lock_guard<std::mutex> lock(pluginMutex_);
+    std::lock_guard<std::mutex> lockPlugin(pluginMutex_);
     MEDIA_LOG_D("do audioSink flush");
     underrunDetector_.Reset();
     lagDetector_.Reset();
