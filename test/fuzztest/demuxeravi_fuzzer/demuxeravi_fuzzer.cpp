@@ -47,8 +47,7 @@ const size_t SAMPLE_RATE_SIZE = 33;
 const size_t CHANNEL_COUNT = 34;
 const size_t VIDEO_HEIGHT_SIZE = 35;
 const size_t VIDEO_WIDTH_SIZE = 36;
-
-bool ChangeBinaryInData(const uint8_t *data, size_t size)
+bool CheckDataValidity(const uint8_t *data, size_t size)
 {
     if (size < EXPECT_SIZE) {
         return false;
@@ -63,7 +62,13 @@ bool ChangeBinaryInData(const uint8_t *data, size_t size)
         return false;
     }
     close(fd);
-    close(fd);
+    return true;
+}
+bool ChangeBinaryInData(const uint8_t *data, size_t size)
+{
+    if (!CheckDataValidity(data, size)) {
+        return false;
+    }
     struct Params params;
     params.time = data[size - TIME_SIZE];
     char *uri = new char[URI_BUFFER_SIZE];
