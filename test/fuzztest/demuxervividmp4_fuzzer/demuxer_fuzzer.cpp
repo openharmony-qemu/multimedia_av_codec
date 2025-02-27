@@ -31,7 +31,7 @@ namespace OHOS {
 const char *MP4_PATH = "/data/test/fuzz_create.mp4";
 const int64_t EXPECT_SIZE = 4;
 
-bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
+bool DemuxerFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < EXPECT_SIZE) {
         return false;
@@ -42,6 +42,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     int len = write(fd, data, size);
     if (len <= 0) {
+        close(fd);
         return false;
     }
     close(fd);
@@ -61,6 +62,6 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::DoSomethingInterestingWithMyAPI(data, size);
+    OHOS::DemuxerFuzzTest(data, size);
     return 0;
 }

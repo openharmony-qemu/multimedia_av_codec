@@ -59,8 +59,10 @@ bool ChangeBinaryInData(const uint8_t *data, size_t size)
     }
     int len = write(fd, data, size - 36);
     if (len <= 0) {
+        close(fd);
         return false;
     }
+    close(fd);
     close(fd);
     struct Params params;
     params.time = data[size - TIME_SIZE];

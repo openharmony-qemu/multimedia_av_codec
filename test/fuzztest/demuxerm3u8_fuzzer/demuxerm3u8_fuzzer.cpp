@@ -49,7 +49,7 @@ const size_t VIDEO_HEIGHT_SIZE = 35;
 const size_t VIDEO_WIDTH_SIZE = 36;
 
 
-bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
+bool DemuxerFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < EXPECT_SIZE) {
         return false;
@@ -60,6 +60,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     int len = write(fd, data, size - 36);
     if (len <= 0) {
+        close(fd);
         return false;
     }
     close(fd);
@@ -106,6 +107,6 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::DoSomethingInterestingWithMyAPI(data, size);
+    OHOS::DemuxerFuzzTest(data, size);
     return 0;
 }

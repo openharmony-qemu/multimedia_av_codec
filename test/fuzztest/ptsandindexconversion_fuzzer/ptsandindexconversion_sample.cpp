@@ -52,8 +52,8 @@ bool PtsAndIndexConversion::Init(const uint8_t *data, size_t size)
     }
     int len = write(fd_, data, size);
     if (len <= 0) {
-        close(fd_);
         fd_ = -1;
+        close(fd_);
         return false;
     }
     std::string uri = "fd://" + std::to_string(fd_) + "?offset=0&size=" + std::to_string(size);
