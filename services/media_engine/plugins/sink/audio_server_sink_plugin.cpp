@@ -39,7 +39,6 @@ using namespace OHOS::Media::Plugins;
 constexpr int TUPLE_SECOND_ITEM_INDEX = 2;
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
 constexpr int32_t WRITE_WAIT_TIME = 5;
- 
 
 const std::pair<AudioInterruptMode, OHOS::AudioStandard::InterruptMode> g_auInterruptMap[] = {
     {AudioInterruptMode::SHARE_MODE, OHOS::AudioStandard::InterruptMode::SHARE_MODE},
@@ -136,6 +135,7 @@ inline void ResetAudioRendererParams(OHOS::AudioStandard::AudioRendererParams &p
     param.channelCount = OHOS::AudioStandard::MONO;
     param.encodingType = ENCODING_INVALID;
 }
+constexpr int32_t CALLBACK_BUFFER_DURATION_IN_MILLISECONDS = 20;
 } // namespace
 
 namespace OHOS {
@@ -1138,6 +1138,80 @@ void AudioServerSinkPlugin::SetInterruptState(bool isInterruptNeeded)
     std::unique_lock<std::mutex> lock(mutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     writeCond_.notify_all();
+}
+
+AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::AudioRendererWriteCallbackImpl(
+    const std::weak_ptr<AudioSinkDataCallback> &callback, bool isAudioVivid): callback_(callback),
+    isAudioVivid_(isAudioVivid)
+{
+}
+
+void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::OnWriteData(size_t length)
+{
+    auto cb = callback_.lock();
+    FALSE_RETURN_MSG(cb != nullptr, "AudioServerSinkPlugin OnWriteData callback is nullptr");
+    cb->OnWriteData(length, isAudioVivid_);
+}
+
+Status AudioServerSinkPlugin::EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc)
+{
+    FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "Enqueue audioRender_ is nullptr");
+    int32_t ret = 0;
+    ret = audioRenderer_->Enqueue(bufferDesc);
+    FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
+        "Enqueue BufferDesc failed, ret=" PUBLIC_LOG_D32, ret);
+    return Status::OK;
+}
+
+Status AudioServerSinkPlugin::GetBufferDesc(AudioStandard::BufferDesc &bufferDesc)
+{
+    FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "GetBufferDesc audioRender_ is nullptr");
+    int32_t ret = 0;
+    ret = audioRenderer_->GetBufferDesc(bufferDesc);
+    FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
+        "Get BufferDesc failed, ret=" PUBLIC_LOG_D32, ret);
+    return Status::OK;
+}
+
+int32_t AudioServerSinkPlugin::GetCallbackBufferDuration()
+{
+    FALSE_RETURN_V(mimeType_ != MimeType::AUDIO_AVS3DA, -1);
+    FALSE_RETURN_V_MSG(sampleRate_ > 0, -1, "Can not calculate callback buffer size because sampleRate <= 0.");
+    return CALLBACK_BUFFER_DURATION_IN_MILLISECONDS;
+}
+
+Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback)
+{
+    FALSE_RETURN_V_MSG(audioRenderWriteCallback_ == nullptr, Status::ERROR_UNKNOWN,
+        "audiorender callback has been set.");
+    FALSE_RETURN_V_MSG(callback != nullptr && audioRenderer_ != nullptr, Status::ERROR_UNKNOWN,
+        "audiorender callback set failed");
+    bool isAudioVivid = mimeType_ == MimeType::AUDIO_AVS3DA;
+    audioRenderWriteCallback_ = std::make_shared<AudioRendererWriteCallbackImpl>(callback, isAudioVivid);
+    int32_t ret = 0;
+    ret = audioRenderer_->SetRenderMode(AudioStandard::RENDER_MODE_CALLBACK);
+    FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN, "audioRender_->SetRenderMode fail.");
+    ret = audioRenderer_->SetRendererWriteCallback(audioRenderWriteCallback_);
+    FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
+        "audioRender_->SetRenderWriteCallback fail.");
+    int32_t callbackBufferDuration = GetCallbackBufferDuration();
+    FALSE_RETURN_V_MSG_W(callbackBufferDuration > 0, Status::OK,
+        "minetype is audioVivid");
+    audioRenderer_->SetBufferDuration(CALLBACK_BUFFER_DURATION_IN_MILLISECONDS);
+    MEDIA_LOG_I("Set Preferred duration is " PUBLIC_LOG_D32 " ms", callbackBufferDuration);
+    return Status::OK;
+}
+
+bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosition)
+{
+    FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, false, "GetAudioPosition audioRender_ is nullptr");
+    AudioStandard::Timestamp audioPositionTimestamp;
+    bool ret = audioRenderer_->GetAudioPosition(audioPositionTimestamp,
+        AudioStandard::Timestamp::Timestampbase::MONOTONIC);
+    FALSE_RETURN_V_MSG(ret, false, "GetAudioPosition failed");
+    time = audioPositionTimestamp.time;
+    framePosition = audioPositionTimestamp.framePosition;
+    return ret;
 }
 
 bool AudioServerSinkPlugin::IsOffloading()
