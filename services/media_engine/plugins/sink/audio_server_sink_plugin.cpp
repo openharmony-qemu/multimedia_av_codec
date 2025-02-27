@@ -1140,6 +1140,11 @@ void AudioServerSinkPlugin::SetInterruptState(bool isInterruptNeeded)
     writeCond_.notify_all();
 }
 
+bool AudioServerSinkPlugin::IsOffloading()
+{
+    FALSE_RETURN_V(audioRenderer_ != nullptr, false);
+    return audioRenderer_->IsOffloadEnable();
+}
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS

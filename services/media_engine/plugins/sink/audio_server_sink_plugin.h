@@ -121,6 +121,8 @@ public:
     AudioSampleFormat GetSampleFormat() override;
 
     int64_t GetWriteDurationMs() override;
+ 
+    bool IsOffloading() override;
 
     void SetInterruptState(bool isInterruptNeeded) override;
 private:
