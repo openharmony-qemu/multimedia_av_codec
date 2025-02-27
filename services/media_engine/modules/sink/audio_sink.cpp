@@ -437,7 +437,7 @@ void AudioSink::HandleEosInner(bool drain)
             eosDraining_ = false; // abort draining task
             return;
     }
-    if (drain) {
+    if (drain || !plugin_->IsOffloading()) {
         MEDIA_LOG_I("Drain audiosink and report EOS");
         DrainAndReportEosEvent();
         return;

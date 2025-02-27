@@ -230,6 +230,7 @@ ohos_shared_library("native_media_acodec") {
     external_deps += [
       "drm_framework:drm_framework",
       "drm_framework:native_drm",
+      "hisysevent:libhisysevent",
     ]
   }
   innerapi_tags = [ "ndk" ]
@@ -306,11 +307,11 @@ ohos_shared_library("native_media_vdec") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
-
   if (av_codec_support_drm) {
     external_deps += [
       "drm_framework:drm_framework",
       "drm_framework:native_drm",
+      "hisysevent:libhisysevent",
     ]
   }
   output_extension = "so"

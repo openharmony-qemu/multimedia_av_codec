@@ -260,12 +260,14 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
     virtual int64_t GetWriteDurationMs() { return 0; };
 
     virtual Status SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback) = 0;
- 
+
     virtual bool GetAudioPosition(timespec &time, uint32_t &framePosition) = 0;
- 
+
     virtual Status GetBufferDesc(AudioStandard::BufferDesc &bufDesc) = 0;
- 
+
     virtual Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufDesc) = 0;
+
+    virtual bool IsOffloading() { return false; }
 };
 
 /// Audio sink plugin api major number.

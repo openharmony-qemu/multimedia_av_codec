@@ -367,6 +367,118 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_ReleaseOutputBuffer,
     ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, buffer, 0L);
     EXPECT_EQ(ret, Status::OK);
 }
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_IsPostProcessorSupported_None, TestSize.Level1)
+{
+    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::NONE;
+    EXPECT_EQ(decoderSurfaceFilter_->IsPostProcessorSupported(), false);
+}
+
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_IsPostProcessorSupported_SuperResolution, TestSize.Level1)
+{
+    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::SUPER_RESOLUTION;
+
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 1280);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 720);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_IS_HDR_VIVID, false);
+    decoderSurfaceFilter_->meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, false);
+    EXPECT_EQ(decoderSurfaceFilter_->IsPostProcessorSupported(), true);
+
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 1920);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 1080);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_IS_HDR_VIVID, false);
+    decoderSurfaceFilter_->meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, false);
+    EXPECT_EQ(decoderSurfaceFilter_->IsPostProcessorSupported(), true);
+
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 0);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 0);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_IS_HDR_VIVID, false);
+    decoderSurfaceFilter_->meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, false);
+    EXPECT_EQ(decoderSurfaceFilter_->IsPostProcessorSupported(), false);
+
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 720);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 480);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_IS_HDR_VIVID, true);
+    decoderSurfaceFilter_->meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, false);
+    EXPECT_EQ(decoderSurfaceFilter_->IsPostProcessorSupported(), false);
+
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 720);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 480);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_IS_HDR_VIVID, false);
+    decoderSurfaceFilter_->meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, true);
+    EXPECT_EQ(decoderSurfaceFilter_->IsPostProcessorSupported(), false);
+}
+#endif
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetPostProcessorOn, TestSize.Level1)
+{
+    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::SUPER_RESOLUTION;
+
+    decoderSurfaceFilter_->isPostProcessorSupported_ = false;
+    EXPECT_EQ(decoderSurfaceFilter_->SetPostProcessorOn(true), Status::ERROR_UNSUPPORTED_FORMAT);
+
+    decoderSurfaceFilter_->isPostProcessorSupported_ = true;
+    EXPECT_EQ(decoderSurfaceFilter_->SetPostProcessorOn(true), Status::OK);
+
+    std::shared_ptr<BaseVideoPostProcessor> postProcessor = std::make_shared<BaseVideoPostProcessor>();
+    decoderSurfaceFilter_->postProcessor_ = postProcessor;
+    EXPECT_CALL(*postProcessor, SetPostProcessorOn(_)).WillRepeatedly(Return(Status::OK));
+    EXPECT_EQ(decoderSurfaceFilter_->SetPostProcessorOn(true), Status::OK);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetVideoWindowSize, TestSize.Level1)
+{
+    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::SUPER_RESOLUTION;
+    int32_t width = 1080;
+    int32_t height = 720;
+
+    decoderSurfaceFilter_->isPostProcessorSupported_ = false;
+    EXPECT_EQ(decoderSurfaceFilter_->SetVideoWindowSize(width, height), Status::ERROR_UNSUPPORTED_FORMAT);
+
+    decoderSurfaceFilter_->isPostProcessorSupported_ = true;
+    EXPECT_EQ(decoderSurfaceFilter_->SetVideoWindowSize(width, height), Status::OK);
+
+    std::shared_ptr<BaseVideoPostProcessor> postProcessor = std::make_shared<BaseVideoPostProcessor>();
+    decoderSurfaceFilter_->postProcessor_ = postProcessor;
+    EXPECT_CALL(*postProcessor, SetVideoWindowSize(_, _)).WillRepeatedly(Return(Status::OK));
+    EXPECT_EQ(decoderSurfaceFilter_->SetVideoWindowSize(width, height), Status::OK);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetVideoSurface, TestSize.Level1)
+{
+    decoderSurfaceFilter_->videoDecoder_ = nullptr;
+    decoderSurfaceFilter_->postProcessor_ = nullptr;
+    sptr<Surface> surface = Surface::CreateSurfaceAsConsumer("TestSurface");
+    Status ret = Status::OK;
+
+    ret = decoderSurfaceFilter_->SetVideoSurface(nullptr);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+
+    ret = decoderSurfaceFilter_->SetVideoSurface(surface);
+    EXPECT_EQ(ret, Status::OK);
+
+    std::shared_ptr<VideoDecoderAdapter> videoDecoderAdapter = std::make_shared<VideoDecoderAdapter>();
+    decoderSurfaceFilter_->videoDecoder_ = videoDecoderAdapter;
+    EXPECT_CALL(*videoDecoderAdapter, SetOutputSurface(_)).WillRepeatedly(Return(MediaAVCodec::AVCS_ERR_INVALID_STATE));
+    ret = decoderSurfaceFilter_->SetVideoSurface(surface);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+
+    EXPECT_CALL(*videoDecoderAdapter, SetOutputSurface(_)).WillRepeatedly(Return(MediaAVCodec::AVCS_ERR_OK));
+    ret = decoderSurfaceFilter_->SetVideoSurface(surface);
+    EXPECT_EQ(ret, Status::OK);
+
+    std::shared_ptr<BaseVideoPostProcessor> postProcessor = std::make_shared<BaseVideoPostProcessor>();
+    decoderSurfaceFilter_->postProcessor_ = postProcessor;
+    EXPECT_CALL(*postProcessor, SetOutputSurface(_)).WillRepeatedly(Return(Status::OK));
+    ret = decoderSurfaceFilter_->SetVideoSurface(surface);
+    EXPECT_EQ(ret, Status::OK);
+
+    EXPECT_CALL(*postProcessor, SetOutputSurface(_)).WillRepeatedly(Return(Status::ERROR_UNKNOWN));
+    ret = decoderSurfaceFilter_->SetVideoSurface(surface);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

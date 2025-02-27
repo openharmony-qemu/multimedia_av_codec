@@ -22,6 +22,7 @@
 #include "plugin/source_plugin.h"
 #include "download/downloader.h"
 #include "common/media_source.h"
+#include "download/media_source_loading_request.h"
 
 namespace OHOS {
 namespace Media {
@@ -152,7 +153,7 @@ public:
      
     virtual void SetIsReportedErrorCode() {}
     
-    virtual bool GetReadTimeOut()
+    virtual bool GetReadTimeOut(bool isDelay)
     {
         return false;
     }

@@ -49,6 +49,7 @@ ohos_source_set("sa_manager") {
 
   external_deps = [
     "hilog:libhilog",
+    "hisysevent:libhisysevent",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

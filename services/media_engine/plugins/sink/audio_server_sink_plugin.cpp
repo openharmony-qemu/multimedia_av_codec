@@ -39,7 +39,6 @@ using namespace OHOS::Media::Plugins;
 constexpr int TUPLE_SECOND_ITEM_INDEX = 2;
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
 constexpr int32_t WRITE_WAIT_TIME = 5;
- 
 
 const std::pair<AudioInterruptMode, OHOS::AudioStandard::InterruptMode> g_auInterruptMap[] = {
     {AudioInterruptMode::SHARE_MODE, OHOS::AudioStandard::InterruptMode::SHARE_MODE},
@@ -1146,14 +1145,14 @@ AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::AudioRendererWriteCallbac
     isAudioVivid_(isAudioVivid)
 {
 }
- 
+
 void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::OnWriteData(size_t length)
 {
     auto cb = callback_.lock();
     FALSE_RETURN_MSG(cb != nullptr, "AudioServerSinkPlugin OnWriteData callback is nullptr");
     cb->OnWriteData(length, isAudioVivid_);
 }
- 
+
 Status AudioServerSinkPlugin::EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "Enqueue audioRender_ is nullptr");
@@ -1163,7 +1162,7 @@ Status AudioServerSinkPlugin::EnqueueBufferDesc(const AudioStandard::BufferDesc 
         "Enqueue BufferDesc failed, ret=" PUBLIC_LOG_D32, ret);
     return Status::OK;
 }
- 
+
 Status AudioServerSinkPlugin::GetBufferDesc(AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "GetBufferDesc audioRender_ is nullptr");
@@ -1173,14 +1172,14 @@ Status AudioServerSinkPlugin::GetBufferDesc(AudioStandard::BufferDesc &bufferDes
         "Get BufferDesc failed, ret=" PUBLIC_LOG_D32, ret);
     return Status::OK;
 }
- 
+
 int32_t AudioServerSinkPlugin::GetCallbackBufferDuration()
 {
     FALSE_RETURN_V(mimeType_ != MimeType::AUDIO_AVS3DA, -1);
     FALSE_RETURN_V_MSG(sampleRate_ > 0, -1, "Can not calculate callback buffer size because sampleRate <= 0.");
     return CALLBACK_BUFFER_DURATION_IN_MILLISECONDS;
 }
- 
+
 Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback)
 {
     FALSE_RETURN_V_MSG(audioRenderWriteCallback_ == nullptr, Status::ERROR_UNKNOWN,
@@ -1202,7 +1201,7 @@ Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<Audio
     MEDIA_LOG_I("Set Preferred duration is " PUBLIC_LOG_D32 " ms", callbackBufferDuration);
     return Status::OK;
 }
- 
+
 bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosition)
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, false, "GetAudioPosition audioRender_ is nullptr");
@@ -1213,6 +1212,12 @@ bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosi
     time = audioPositionTimestamp.time;
     framePosition = audioPositionTimestamp.framePosition;
     return ret;
+}
+
+bool AudioServerSinkPlugin::IsOffloading()
+{
+    FALSE_RETURN_V(audioRenderer_ != nullptr, false);
+    return audioRenderer_->IsOffloadEnable();
 }
 } // namespace Plugin
 } // namespace Media

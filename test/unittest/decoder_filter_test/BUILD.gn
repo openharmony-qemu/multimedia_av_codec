@@ -106,6 +106,7 @@ ohos_unittest("decoder_filter_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "hisysevent:libhisysevent",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

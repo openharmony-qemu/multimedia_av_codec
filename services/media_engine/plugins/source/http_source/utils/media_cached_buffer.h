@@ -81,7 +81,7 @@ public:
 
     bool Init(uint64_t totalBuffSize, uint32_t chunkSize);
     size_t Read(void* ptr, uint64_t offset, size_t readSize);
-    size_t Write(void* ptr, uint64_t inOffset, size_t inWriteSize);
+    virtual size_t Write(void* ptr, uint64_t inOffset, size_t inWriteSize);
     bool Seek(uint64_t offset);
     size_t GetBufferSize(uint64_t offset);
     uint64_t GetNextBufferOffset(uint64_t offset);
@@ -241,6 +241,7 @@ protected:
     ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter, uint64_t offset,
         ChunkIterator chunkPos) override;
     ChunkIterator AddFragmentCacheBuffer(uint64_t offset) override;
+    size_t Write(void* ptr, uint64_t inOffset, size_t inWriteSize) override;
 };
 
 }

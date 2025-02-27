@@ -48,6 +48,7 @@ static OH_AVFormat *sourceFormat = nullptr;
 static OH_AVFormat *trackFormat = nullptr;
 static OH_AVBuffer *avBuffer = nullptr;
 static OH_AVFormat *format = nullptr;
+static OH_AVFormat *metaFormat = nullptr;
 static int32_t g_trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
@@ -94,6 +95,10 @@ void DemuxerFunc3NdkTest::TearDown()
     if (avBuffer != nullptr) {
         OH_AVBuffer_Destroy(avBuffer);
         avBuffer = nullptr;
+    }
+    if (metaFormat != nullptr) {
+        OH_AVFormat_Destroy(metaFormat);
+        metaFormat = nullptr;
     }
 }
 } // namespace Media
@@ -401,5 +406,278 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0050, TestSize.Level2)
         }
     }
     ASSERT_EQ(aKeyCount, FLV_AUDIONUM_AAC);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_META_0010
+ * @tc.name      : demuxer meta info, get value with right key
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0010, TestSize.Level1)
+{
+    int32_t metaIntValue = 0;
+    const char *file = "/data/test/media/metaIntval.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
+    ASSERT_NE(metaFormat, nullptr);
+    int32_t metaNum = 101010101;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(metaFormat, "com.openharmony.intval.intvalintval", &metaIntValue));
+    ASSERT_EQ(metaIntValue, metaNum);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_META_0020
+ * @tc.name      : demuxer meta info, get value with right key
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0020, TestSize.Level1)
+{
+    float metaFloatValue = 0.0;
+    const char *file = "/data/test/media/metaFloatval.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
+    ASSERT_NE(metaFormat, nullptr);
+    float metaFloatVal = 2.3;
+    ASSERT_TRUE(OH_AVFormat_GetFloatValue(metaFormat, "com.openharmony.floatval.aaa", &metaFloatValue));
+    ASSERT_EQ(metaFloatValue, metaFloatVal);
+    metaFloatVal = 25.3;
+    ASSERT_TRUE(OH_AVFormat_GetFloatValue(metaFormat, "com.openharmony.floatval.bbb", &metaFloatValue));
+    ASSERT_EQ(metaFloatValue, metaFloatVal);
+    metaFloatVal = 252.3;
+    ASSERT_TRUE(OH_AVFormat_GetFloatValue(metaFormat, "com.openharmony.floatval.ccc", &metaFloatValue));
+    ASSERT_EQ(metaFloatValue, metaFloatVal);
+    metaFloatVal = 2525.3;
+    ASSERT_TRUE(OH_AVFormat_GetFloatValue(metaFormat, "com.openharmony.floatval.ddd", &metaFloatValue));
+    ASSERT_EQ(metaFloatValue, metaFloatVal);
+    metaFloatVal = 25252.3;
+    ASSERT_TRUE(OH_AVFormat_GetFloatValue(metaFormat, "com.openharmony.floatval.eee", &metaFloatValue));
+    ASSERT_EQ(metaFloatValue, metaFloatVal);
+    close(fd);
+}
+/**
+ * @tc.number    : DEMUXER_META_0030
+ * @tc.name      : demuxer meta info, get value with right key
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0030, TestSize.Level1)
+{
+    const char *file = "/data/test/media/metaStringval.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
+    ASSERT_NE(metaFormat, nullptr);
+    const char* metaStringValue = nullptr;
+    string metaKeyAdd = "aba";
+    string metaKey = "com.openharmony.stringval.";
+    string metaVal = "aaaaa";
+    string metaValAdd = "b";
+    for (int i = 0; i < 100; i++) {
+        metaKey.append(metaKeyAdd);
+        metaVal.append(metaValAdd);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(metaFormat, metaKey.c_str(), &metaStringValue));
+        ASSERT_EQ(metaStringValue, metaVal);
+    }
+    close(fd);
+}
+/**
+ * @tc.number    : DEMUXER_META_0040
+ * @tc.name      : demuxer meta info, get value with right key
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0040, TestSize.Level2)
+{
+    const char* metaStringValue = nullptr;
+    int32_t metaIntValue = 0;
+    float metaFloatValue = 0.0;
+    const char *file = "/data/test/media/metaAlltype.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
+    ASSERT_NE(metaFormat, nullptr);
+    string metaKeyAdd = "a";
+    string metaKey = "com.openharmony.stringval.";
+    string metaVal = "aaaaa";
+    string metaValAdd = "b";
+    for (int i = 0; i < 50; i++) {
+        metaKey.append(metaKeyAdd);
+        metaVal.append(metaValAdd);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(metaFormat, metaKey.c_str(), &metaStringValue));
+        ASSERT_EQ(metaStringValue, metaVal);
+    }
+
+    metaKeyAdd = "a";
+    metaKey = "com.openharmony.floatval.";
+    float metaFloatVal = 123.5;
+    for (int i = 0; i < 50; i++) {
+        metaKey.append(metaKeyAdd);
+        metaFloatVal = metaFloatVal + 2;
+        ASSERT_TRUE(OH_AVFormat_GetFloatValue(metaFormat, metaKey.c_str(), &metaFloatValue));
+        ASSERT_EQ(metaFloatValue, metaFloatVal);
+    }
+    metaKeyAdd = "a";
+    metaKey = "com.openharmony.Intval.";
+    int32_t metaIntVal = 123;
+    for (int i = 0; i < 50; i++) {
+        metaKey.append(metaKeyAdd);
+        metaIntVal = metaIntVal + 2;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(metaFormat, metaKey.c_str(), &metaIntValue));
+        ASSERT_EQ(metaIntValue, metaIntVal);
+    }
+    close(fd);
+}
+/**
+ * @tc.number    : DEMUXER_META_0050
+ * @tc.name      : demuxer meta info, get value with error key
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0050, TestSize.Level2)
+{
+    const char* metaStringValue = nullptr;
+    int32_t metaIntValue = 0;
+    float metaFloatValue = 0.0;
+    const char *file = "/data/test/media/metaAlltype.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
+    ASSERT_NE(metaFormat, nullptr);
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(metaFormat, "com.openharmony.stringval.abb", &metaStringValue));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(metaFormat, "com.openharmony.intnum.abb", &metaIntValue));
+    ASSERT_FALSE(OH_AVFormat_GetFloatValue(metaFormat, "com.openharmony.floatval.abb", &metaFloatValue));
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_META_0060
+ * @tc.name      : demuxer meta info, get value with error key type
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0060, TestSize.Level2)
+{
+    const char* metaStringValue = nullptr;
+    int32_t metaIntValue = 0;
+    float metaFloatValue = 0.0;
+    const char *file = "/data/test/media/metaAlltype.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
+    ASSERT_NE(metaFormat, nullptr);
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(metaFormat, "com.openharmony.floatval.a", &metaStringValue));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(metaFormat, "com.openharmony.stringval.a", &metaIntValue));
+    ASSERT_FALSE(OH_AVFormat_GetFloatValue(metaFormat, "com.openharmony.intnum.a", &metaFloatValue));
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_META_0070
+ * @tc.name      : demuxer meta info, file with no meta
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0070, TestSize.Level2)
+{
+    const char *file = "/data/test/media/m4v_fmp4.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
+    ASSERT_NE(metaFormat, nullptr);
+    const char* language = OH_AVFormat_DumpInfo(metaFormat);
+    ASSERT_EQ(language, nullptr);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_META_0080
+ * @tc.name      : demuxer meta info, get value with right key
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0080, TestSize.Level3)
+{
+    const char *file = "/data/test/media/double_hevc.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
+    ASSERT_NE(metaFormat, nullptr);
+    string metamanufacturer = "ABCDEF";
+    string metamarketingName = "AABBAABBAABBAABBAA";
+    string metamodel = "ABABABAB";
+    string metaversion = "12";
+    const char* manufacturer;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(metaFormat, "com.abababa.manufacturer", &manufacturer));
+    ASSERT_EQ(manufacturer, metamanufacturer);
+    const char* marketingName;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(metaFormat, "com.abababa.marketing_name", &marketingName));
+    ASSERT_EQ(marketingName, metamarketingName);
+    const char* model;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(metaFormat, "com.abababa.model", &model));
+    ASSERT_EQ(model, metamodel);
+    const char* version;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(metaFormat, "com.abababa.version", &version));
+    ASSERT_EQ(version, metaversion);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_META_0090
+ * @tc.name      : demuxer meta info, souce is null
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0090, TestSize.Level0)
+{
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(nullptr);
+    ASSERT_EQ(metaFormat, nullptr);
+}
+
+/**
+ * @tc.number    : DEMUXER_META_0100
+ * @tc.name      : demuxer meta info, get max value
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0100, TestSize.Level2)
+{
+    const char* metaStringValue = nullptr;
+    int32_t metaIntValue = 0;
+    float metaFloatValue = 0.0;
+    const char *file = "/data/test/media/metaMaxval.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
+    ASSERT_NE(metaFormat, nullptr);
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(metaFormat, "com.openharmony.stringval", &metaStringValue));
+    float floatValue = 3.4028235E38;
+    ASSERT_TRUE(OH_AVFormat_GetFloatValue(metaFormat, "com.openharmony.floatval.eee", &metaFloatValue));
+    ASSERT_EQ(floatValue, metaFloatValue);
+    int32_t intValue = 2147483647;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(metaFormat, "com.openharmony.intval.aaaa", &metaIntValue));
+    ASSERT_EQ(metaIntValue, intValue);
     close(fd);
 }

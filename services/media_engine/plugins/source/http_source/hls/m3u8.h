@@ -90,7 +90,7 @@ struct M3U8 {
     std::string playList_;
     void ParseKey(const std::shared_ptr<AttributesTag> &tag);
     void DownloadKey();
-    bool SaveData(uint8_t *data, uint32_t len);
+    uint32_t SaveData(uint8_t *data, uint32_t len, bool notBlock);
     static void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,
         std::shared_ptr<DownloadRequest> &request);
     bool SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo);

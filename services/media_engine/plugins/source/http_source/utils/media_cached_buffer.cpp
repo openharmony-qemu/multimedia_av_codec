@@ -98,7 +98,8 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     double newFragmentInitChunkNum  = NEW_FRAGMENT_INIT_CHUNK_NUM;
     uint64_t diff = (totalBuffSize + chunkSize) > 1 ? (totalBuffSize + chunkSize) - 1 : 0;
     int64_t chunkNum = static_cast<int64_t>(diff / chunkSize) + 1;
-    if ((chunkNum - static_cast<int64_t>(newFragmentInitChunkNum)) < 0) {
+    if ((chunkNum - static_cast<int64_t>(newFragmentInitChunkNum)) < 0 ||
+        chunkNum > MAX_CACHE_BUFFER_SIZE) {
         return false;
     }
     if (newFragmentInitChunkNum > static_cast<double>(chunkNum) * NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR) {
@@ -111,9 +112,11 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     readPos_ = fragmentCacheBuffer_.end();
     writePos_ = fragmentCacheBuffer_.end();
     size_t sizePerChunk = sizeof(CacheChunk) + chunkSize;
-    FALSE_RETURN_V_MSG_E(static_cast<int64_t>(sizePerChunk) * chunkNum > 0, false,
-        "Invalid sizePerChunk and chunkNum.");
-    bufferAddr_ = static_cast<uint8_t*>(malloc(sizePerChunk * chunkNum));
+    int64_t totalSize = static_cast<int64_t>(sizePerChunk) * chunkNum;
+    if (totalSize <= 0 || totalSize > MAX_CACHE_BUFFER_SIZE * CHUNK_SIZE) {
+        return false;
+    }
+    bufferAddr_ = static_cast<uint8_t*>(malloc(totalSize));
     if (bufferAddr_ == nullptr) {
         return false;
     }
@@ -360,6 +363,49 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, uint64_t inOffset, size_t inW
     } else {
         if (freeChunks_.empty()) {
             MEDIA_LOG_D("no free chunk.");
+        }
+        MEDIA_LOG_D("not find fragment.");
+        chunkPos = AddFragmentCacheBuffer(offset);
+    }
+    FragmentIterator nextFragmentPos = fragmentCacheBuffer_.end();
+    auto success = WriteMergerPre(offset, writeSize, nextFragmentPos);
+    if (!success) {
+        return dupWriteSize;
+    }
+    auto writeSizeTmp = WriteChunk(*writePos_, chunkPos, src, offset, writeSize);
+    if (writeSize != writeSizeTmp) {
+        nextFragmentPos = fragmentCacheBuffer_.end();
+    }
+    WriteMergerPost(nextFragmentPos);
+    return writeSizeTmp + dupWriteSize;
+}
+
+size_t CacheMediaChunkBufferHlsImpl::Write(void* ptr, uint64_t inOffset, size_t inWriteSize)
+{
+    std::lock_guard lock(mutex_);
+    uint64_t offset = inOffset;
+    size_t writeSize = inWriteSize;
+    uint8_t* src = static_cast<uint8_t*>(ptr);
+    size_t dupWriteSize = 0;
+
+    auto fragmentPos = GetOffsetFragmentCache(writePos_, offset, BoundedIntervalComp);
+    ChunkIterator chunkPos;
+    if (fragmentPos != fragmentCacheBuffer_.end()) {
+        auto& chunkList = fragmentPos->chunks;
+        writePos_ = fragmentPos;
+        if ((fragmentPos->offsetBegin + static_cast<uint64_t>(fragmentPos->dataLength)) != offset) {
+            auto ret = WriteInPlace(fragmentPos, src, offset, writeSize, dupWriteSize);
+            if (!ret || dupWriteSize >= writeSize) {
+                return ret ? writeSize : dupWriteSize;
+            }
+            src += dupWriteSize;
+            offset += dupWriteSize;
+            writeSize -= dupWriteSize;
+        }
+        chunkPos = std::prev(chunkList.end());
+    } else {
+        if (freeChunks_.empty()) {
+            return 0; // 只有hls可以return 0
         }
         MEDIA_LOG_D("not find fragment.");
         chunkPos = AddFragmentCacheBuffer(offset);

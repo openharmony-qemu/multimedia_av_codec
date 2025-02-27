@@ -28,7 +28,7 @@ std::string CreateVideoLogTag(const Meta &callerInfo)
     std::string type = "";
     bool ret = callerInfo.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId) &&
                callerInfo.GetData(Tag::MEDIA_CODEC_NAME, codecName);
-    if (!ret || instanceId == 0) {
+    if (!ret || instanceId == INVALID_INSTANCE_ID) {
         return "";
     }
     std::transform(codecName.begin(), codecName.end(), codecName.begin(), ::tolower);
@@ -52,6 +52,9 @@ AVCodecDfxComponent::~AVCodecDfxComponent() {}
 
 void AVCodecDfxComponent::SetTag(const std::string &str)
 {
+    if (str == "") {
+        return;
+    }
     tagContent_ = str;
     tag_.store(tagContent_.c_str());
 }

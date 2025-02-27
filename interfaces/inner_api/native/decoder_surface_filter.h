@@ -36,6 +36,8 @@
 #include "drm_i_keysession_service.h"
 #include "interrupt_listener.h"
 #include "sei_parser_helper.h"
+#include "post_processor/base_video_post_processor.h"
+#include "post_processor/video_post_processor_factory.h"
 
 namespace OHOS {
 namespace Media {
@@ -79,12 +81,14 @@ public:
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
     FilterType GetFilterType();
     void DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
+    void DecoderDrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     Status SetVideoSurface(sptr<Surface> videoSurface);
 
     Status SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         bool svp);
 
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
+    void PostProcessorOnError(int32_t errorCode);
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
@@ -107,6 +111,10 @@ public:
     void ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs = 0L);
     Status SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes);
 
+    void SetPostProcessorType(VideoPostProcessorType type);
+    Status SetPostProcessorOn(bool isSuperResolutionOn);
+    Status SetVideoWindowSize(int32_t width, int32_t height);
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -121,6 +129,8 @@ private:
     void ParseDecodeRateLimit();
     void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer, int64_t renderTime);
+    void DoReleaseOutputBuffer(uint32_t index, bool render);
+    void DoRenderOutputBufferAtTime(uint32_t index, int64_t renderTime);
     bool AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer,
         int64_t renderTime = 0);
     bool DrainSeekContinuous(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
@@ -131,6 +141,8 @@ private:
     void ReportEosEvent();
     void RenderAtTimeDfx(int64_t renderTimeNs, int64_t currentTimeNs, int64_t lastRenderTimeNs);
     int64_t GetSystimeTimeNs();
+    bool IsPostProcessorSupported();
+    std::shared_ptr<BaseVideoPostProcessor> CreatePostProcessor();
 
     std::string name_;
     FilterType filterType_;
@@ -157,6 +169,7 @@ private:
     int64_t latestPausedTime_{HST_TIME_NONE};
     int64_t totalPausedTime_{0};
     int64_t stopTime_{0};
+    sptr<Surface> decoderOutputSurface_;
     sptr<Surface> videoSurface_;
     bool isDrmProtected_ = false;
 #ifdef SUPPORT_DRM
@@ -208,6 +221,17 @@ private:
     std::vector<int32_t> payloadTypes_ {};
     sptr<SeiParserListener> producerListener_ {};
     sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_ {};
+
+    static constexpr int32_t DEFAULT_TARGET_WIDTH = 1920;
+    static constexpr int32_t DEFAULT_TARGET_HEIGHT = 1080;
+    int32_t postProcessorTargetWidth_ {DEFAULT_TARGET_WIDTH};
+    int32_t postProcessorTargetHeight_ {DEFAULT_TARGET_HEIGHT};
+    bool isPostProcessorOn_ {false};
+    bool isPostProcessorSupported_ {true};
+    VideoPostProcessorType postProcessorType_ { VideoPostProcessorType::NONE };
+    std::shared_ptr<BaseVideoPostProcessor> postProcessor_;
+
+    int64_t eosPts_ {-1};
 };
 } // namespace Pipeline
 } // namespace Media
