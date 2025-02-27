@@ -68,7 +68,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
 {
     if (!CheckDataValidity(data, size)) {
         return false;
-    } 
+    }
     struct Params params;
     params.time = data[size - TIME_SIZE];
     char *uri = new char[URI_BUFFER_SIZE];
