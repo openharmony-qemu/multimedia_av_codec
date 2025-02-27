@@ -411,7 +411,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0050, TestSize.Level2)
 
 /**
  * @tc.number    : DEMUXER_META_0010
- * @tc.name      : demuxer meta info, get value with right key 
+ * @tc.name      : demuxer meta info, get value with right key
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0010, TestSize.Level1)
@@ -433,7 +433,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0010, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_META_0020
- * @tc.name      : demuxer meta info, get value with right key 
+ * @tc.name      : demuxer meta info, get value with right key
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0020, TestSize.Level1)
@@ -466,7 +466,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0020, TestSize.Level1)
 }
 /**
  * @tc.number    : DEMUXER_META_0030
- * @tc.name      : demuxer meta info, get value with right key 
+ * @tc.name      : demuxer meta info, get value with right key
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0030, TestSize.Level1)
@@ -494,7 +494,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0030, TestSize.Level1)
 }
 /**
  * @tc.number    : DEMUXER_META_0040
- * @tc.name      : demuxer meta info, get value with right key 
+ * @tc.name      : demuxer meta info, get value with right key
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0040, TestSize.Level2)
@@ -591,7 +591,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0060, TestSize.Level2)
 
 /**
  * @tc.number    : DEMUXER_META_0070
- * @tc.name      : demuxer meta info, file with no meta 
+ * @tc.name      : demuxer meta info, file with no meta
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0070, TestSize.Level2)
@@ -611,7 +611,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0070, TestSize.Level2)
 
 /**
  * @tc.number    : DEMUXER_META_0080
- * @tc.name      : demuxer meta info, file with no meta 
+ * @tc.name      : demuxer meta info, get value with right key
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0080, TestSize.Level3)
