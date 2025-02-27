@@ -265,7 +265,7 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
  
     virtual Status GetBufferDesc(AudioStandard::BufferDesc &bufDesc) = 0;
  
-    virtual Status Enqueue(const AudioStandard::BufferDesc &bufDesc) = 0;
+    virtual Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufDesc) = 0;
 };
 
 /// Audio sink plugin api major number.

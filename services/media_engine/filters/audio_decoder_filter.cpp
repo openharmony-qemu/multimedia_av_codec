@@ -133,7 +133,6 @@ private:
 AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type, IS_FILTER_ASYNC)
 {
     filterType_ = type;
-    SetAsyncMode(IS_FILTER_ASYNC);
     MEDIA_LOG_I_SHORT("audio decoder filter create");
 }
 
@@ -292,27 +291,28 @@ Status AudioDecoderFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter,
 Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
 {
     MEDIA_LOG_I("AudioDecoderFilter::ChangePlugin.");
+    FALSE_RETURN_V_MSG(meta != nullptr, Status::ERROR_NULL_POINTER, "meta is nullptr");
     std::string mime;
-    meta_ = meta;
     bool mimeGetRes = meta_->GetData(Tag::MIME_TYPE, mime);
     if (!mimeGetRes && eventReceiver_ != nullptr) {
         MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
         eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
-    meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
+    UpdateTrackInfoSampleFormat(mime, meta);
+    meta_ = meta;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     Status ret = decoder_->ChangePlugin(mime, false, meta);
     FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin failed");
- 
+
     if (IsAsyncMode()) {
         ret = SetInputBufferQueueConsumerListener();
         FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin SetInputBufferQueueConsumerListener failed");
-    
+
         ret = SetOutputBufferQueueProducerListener();
         FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin SetOutputBufferQueueProducerListener failed");
     }
- 
+
     return Status::OK;
 }
 
@@ -364,20 +364,23 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
 
 void AudioDecoderFilter::UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta)
 {
+    MEDIA_LOG_I_SHORT("UpdateTrackInfoSampleFormat mime:" PUBLIC_LOG_S, mime.c_str());
     if (mime != CodecMimeType::AUDIO_APE && mime != CodecMimeType::AUDIO_FLAC) {
         meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
         return;
     }
     int32_t sampleRate = 0;
     bool sampleRateGetRes = meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+    MEDIA_LOG_I_SHORT("UpdateTrackInfoSampleFormat sampleRate:" PUBLIC_LOG_D32, sampleRate);
     if (!sampleRateGetRes || sampleRate < SAMPLE_RATE_48K) {
         meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
         return;
     }
     Plugins::AudioSampleFormat sampleFormat = Plugins::SAMPLE_U8;
     bool sampleFormatGetRes = meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
-    MEDIA_LOG_I_SHORT("Audio decoder set sampleFormat before is: " PUBLIC_LOG_D32, sampleFormat);
+    MEDIA_LOG_I_SHORT("sampleFormat before is: " PUBLIC_LOG_D32, sampleFormat);
     if (sampleFormatGetRes && AudioSampleFormatToBitDepth(sampleFormat) > SAMPLE_FORMAT_BIT_DEPTH_16) {
+        MEDIA_LOG_I_SHORT("sampleFormat after is: " PUBLIC_LOG_D32, Plugins::SAMPLE_S32LE);
         meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S32LE);
         return;
     }
@@ -386,13 +389,16 @@ void AudioDecoderFilter::UpdateTrackInfoSampleFormat(const std::string& mime, co
     bool hasSampleDepthData = meta->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, sampleDepth);
     if (hasSampleDepthData && sampleDepth > SAMPLE_FORMAT_BIT_DEPTH_16) {
         meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S32LE);
+        MEDIA_LOG_I_SHORT("sampleFormat after is: " PUBLIC_LOG_D32, Plugins::SAMPLE_S32LE);
         return;
     }
     bool hasPerRawSampleData = meta->GetData(Tag::AUDIO_BITS_PER_RAW_SAMPLE, sampleDepth);
     if (hasPerRawSampleData && sampleDepth > SAMPLE_FORMAT_BIT_DEPTH_16) {
         meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S32LE);
+        MEDIA_LOG_I_SHORT("sampleFormat after is: " PUBLIC_LOG_D32, Plugins::SAMPLE_S32LE);
         return;
     }
+    MEDIA_LOG_I_SHORT("sampleFormat after is: " PUBLIC_LOG_D32, Plugins::SAMPLE_S16LE);
     meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
 }
 

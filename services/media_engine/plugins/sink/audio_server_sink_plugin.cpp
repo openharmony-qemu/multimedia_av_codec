@@ -1141,8 +1141,8 @@ void AudioServerSinkPlugin::SetInterruptState(bool isInterruptNeeded)
     writeCond_.notify_all();
 }
 
-AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::AudioRendererWriteCallbackImpl(AudioServerSinkPlugin *plugin,
-    const std::weak_ptr<AudioSinkDataCallback> &callback): sinkPlugin_(plugin), callback_(callback)
+AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::AudioRendererWriteCallbackImpl(const std::weak_ptr<AudioSinkDataCallback> &callback,
+    bool isAudioVivid): callback_(callback), isAudioVivid_(isAudioVivid)
 {
 }
  
@@ -1150,11 +1150,10 @@ void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::OnWriteData(size_t l
 {
     auto cb = callback_.lock();
     FALSE_RETURN_MSG(cb != nullptr, "AudioServerSinkPlugin OnWriteData callback is nullptr");
-    bool isAudioVivid = sinkPlugin_->mimeType_ == MimeType::AUDIO_AVS3DA;
-    cb->OnWriteData(length, isAudioVivid);
+    cb->OnWriteData(length, isAudioVivid_);
 }
  
-Status AudioServerSinkPlugin::Enqueue(const AudioStandard::BufferDesc &bufferDesc)
+Status AudioServerSinkPlugin::EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "Enqueue audioRender_ is nullptr");
     int32_t ret = 0;
@@ -1174,7 +1173,7 @@ Status AudioServerSinkPlugin::GetBufferDesc(AudioStandard::BufferDesc &bufferDes
     return Status::OK;
 }
  
-int32_t AudioServerSinkPlugin::CalculateCallbackBufferDuration()
+int32_t AudioServerSinkPlugin::GetCallbackBufferDuration()
 {
     FALSE_RETURN_V(mimeType_ != MimeType::AUDIO_AVS3DA, -1);
     FALSE_RETURN_V_MSG(sampleRate_ > 0, -1, "Can not calculate callback buffer size because sampleRate <= 0.");
@@ -1187,14 +1186,15 @@ Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<Audio
         "audiorender callback has been set.");
     FALSE_RETURN_V_MSG(callback != nullptr && audioRenderer_ != nullptr, Status::ERROR_UNKNOWN,
         "audiorender callback set failed");
-    audioRenderWriteCallback_ = std::make_shared<AudioRendererWriteCallbackImpl>(this, callback);
+    bool isAudioVivid = mimeType_ == MimeType::AUDIO_AVS3DA;
+    audioRenderWriteCallback_ = std::make_shared<AudioRendererWriteCallbackImpl>(callback, isAudioVivid);
     int32_t ret = 0;
     ret = audioRenderer_->SetRenderMode(AudioStandard::RENDER_MODE_CALLBACK);
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN, "audioRender_->SetRenderMode fail.");
     ret = audioRenderer_->SetRendererWriteCallback(audioRenderWriteCallback_);
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "audioRender_->SetRenderWriteCallback fail.");
-    int32_t callbackBufferDuration = CalculateCallbackBufferDuration();
+    int32_t callbackBufferDuration = GetCallbackBufferDuration();
     FALSE_RETURN_V_MSG_W(callbackBufferDuration > 0, Status::OK,
         "minetype is audioVivid");
     audioRenderer_->SetBufferDuration(CALLBACK_BUFFER_DURATION_IN_MILLISECONDS);

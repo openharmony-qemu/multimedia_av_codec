@@ -188,7 +188,7 @@ public:
         (void)bufDesc;
         return Status::OK;
     }
-    Status Enqueue(const AudioStandard::BufferDesc &bufDesc) override
+    Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufDesc) override
     {
         (void)bufDesc;
         return Status::OK;

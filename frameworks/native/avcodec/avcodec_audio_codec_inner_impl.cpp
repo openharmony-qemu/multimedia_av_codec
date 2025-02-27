@@ -131,7 +131,7 @@ sptr<Media::AVBufferQueueConsumer> AVCodecAudioCodecInnerImpl::GetInputBufferQue
 
 sptr<Media::AVBufferQueueProducer> AVCodecAudioCodecInnerImpl::GetOutputBufferQueueProducer()
 {
-    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl GetOutputBufferQueueConsumer");
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl GetOutputBufferQueueProducer");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, nullptr, "GetOutputBufferQueueProducer service died");
     return codecService_->GetOutputBufferQueueProducer();
 }

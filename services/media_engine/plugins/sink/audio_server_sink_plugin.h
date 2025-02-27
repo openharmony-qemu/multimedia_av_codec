@@ -128,7 +128,7 @@ public:
  
     bool GetAudioPosition(timespec &time, uint32_t &framePosition) override;
  
-    Status Enqueue(const AudioStandard::BufferDesc &bufferDesc) override;
+    Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc) override;
  
     Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc) override;
 private:
@@ -162,12 +162,12 @@ private:
     };
     class AudioRendererWriteCallbackImpl : public AudioStandard::AudioRendererWriteCallback {
     public:
-        explicit AudioRendererWriteCallbackImpl(AudioServerSinkPlugin *plugin,
-            const std::weak_ptr<AudioSinkDataCallback> &callback);
+        explicit AudioRendererWriteCallbackImpl(const std::weak_ptr<AudioSinkDataCallback> &callback,
+            bool isAudioVivid);
         void OnWriteData(size_t length) override;
     private:
-        AudioServerSinkPlugin *sinkPlugin_;
         std::weak_ptr<AudioSinkDataCallback> callback_;
+        bool isAudioVivid_ {false};
     };
     void ReleaseRender();
     __attribute__((no_sanitize("cfi"))) void ReleaseFile();
@@ -199,7 +199,7 @@ private:
     Status DrainCacheData(bool render);
     //return value is the remained buffer size
     size_t WriteAudioBuffer(uint8_t* inputBuffer, size_t bufferSize, bool& shouldDrop);
-    int32_t CalculateCallbackBufferDuration();
+    int32_t GetCallbackBufferDuration();
 
     OHOS::Media::Mutex renderMutex_{};
     Callback *callback_{};

@@ -78,7 +78,7 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
             isAudioVivid, bufferDesc);
         bufferDesc.dataLength = isCopySucess ? bufferDesc.dataLength : 0;
     }
-    ret = sink->Enqueue(bufferDesc);
+    ret = sink->EnqueueBufferDesc(bufferDesc);
     FALSE_RETURN_MSG(ret == Status::OK, "enqueue failed, ret=" PUBLIC_LOG_D32, ret);
     sink->HandleAudioRenderRequestPost();
 }
@@ -96,10 +96,10 @@ bool AudioSink::HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioSt
 
 void AudioSink::HandleAudioRenderRequestPost()
 {
-    std::lock_guard<std::mutex> lock(getBufferMutex_);
+    std::lock_guard<std::mutex> lock(availBufferMutex_);
     FALSE_RETURN_NOLOG(isEosBuffer_);
-    FALSE_RETURN_NOLOG(!availableOutputBuffers_.empty());
-    auto cacheBuffer = availableOutputBuffers_.front();
+    FALSE_RETURN_NOLOG(!availOutputBuffers_.empty());
+    auto cacheBuffer = availOutputBuffers_.front();
     FALSE_RETURN(cacheBuffer != nullptr);
     FALSE_RETURN(IsEosBuffer(cacheBuffer));
     HandleEosBuffer(cacheBuffer);
@@ -111,29 +111,29 @@ Status AudioSink::GetBufferDesc(AudioStandard::BufferDesc &bufferDesc)
     return plugin_->GetBufferDesc(bufferDesc);
 }
  
-Status AudioSink::Enqueue(const AudioStandard::BufferDesc &bufferDesc)
+Status AudioSink::EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(plugin_ != nullptr, Status::ERROR_UNKNOWN, "Enqueue audioSinkPlugin is nullptr");
-    return plugin_->Enqueue(bufferDesc);
+    return plugin_->EnqueueBufferDesc(bufferDesc);
 }
  
 bool AudioSink::IsInputBufferDataEnough(int32_t size)
 {
-    std::lock_guard<std::mutex> lock(getBufferMutex_);
-    return availDataSize_.load() >= static_cast<size_t>(size) || isChangeTrack_ || isEosBuffer_;
+    std::lock_guard<std::mutex> lock(availBufferMutex_);
+    return availDataSize_.load() >= static_cast<size_t>(size) || isEosBuffer_;
 }
 
 Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
     state_ = Pipeline::FilterState::INITIALIZED;
-    Status ret = InitAudioSinkPlugins(meta, receiver);
+    Status ret = InitAudioSinkPlugin(meta, receiver);
     FALSE_RETURN_V(ret == Status::OK, ret);
     ret = InitAudioSinkInfo(meta);
     FALSE_RETURN_V(ret == Status::OK, ret);
     return Status::OK;
 }
 
-Status AudioSink::InitAudioSinkPlugins(std::shared_ptr<Meta>& meta,
+Status AudioSink::InitAudioSinkPlugin(std::shared_ptr<Meta>& meta,
     const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
@@ -567,37 +567,25 @@ int32_t AudioSink::GetSampleFormatBytes()
     }
     return format;
 }
-
-int64_t AudioSink::CalculateBufDescSampleCnt(int64_t writeDataSize)
-{
-    int32_t format = GetSampleFormatBytes();
-    FALSE_RETURN_V(format > 0 && audioChannelCount_ > 0, 0);
-    return writeDataSize / format / audioChannelCount_;
-}
  
 bool AudioSink::IsBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize)
 {
-    FALSE_RETURN_V_MSG_D(buffer != nullptr, false, "buffer is nullptr.");
-    FALSE_RETURN_V_MSG_D(buffer->memory_ != nullptr, false, "buffer->memory_ is nullptr.");
-    FALSE_RETURN_V_MSG_D(buffer->memory_->GetSize() >= currentQueuedBufferOffset_,
-        false, "buffer is empty, skip this buffer.");
-    cacheBufferSize = buffer->memory_->GetSize() - currentQueuedBufferOffset_;
+    FALSE_RETURN_V_MSG_D(buffer != nullptr && buffer->memory_ != nullptr, false, "buffer is null.");
+    int32_t bufferSize = buffer->memory_->GetSize();
+    FALSE_RETURN_V_MSG_D(bufferSize >= currentQueuedBufferOffset_, false, "buffer is empty, skip this buffer.");
+    cacheBufferSize = static_cast<size_t>(bufferSize - currentQueuedBufferOffset_);
     return true;
 }
 
-bool AudioSink::HandleCopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+bool AudioSink::CopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
     size_t &size, size_t &cacheBufferSize, int64_t &bufferPts)
 {
     size_t availableSize = cacheBufferSize > size ? size : cacheBufferSize;
     auto ret = memcpy_s(bufferDesc.buffer + bufferDesc.dataLength, availableSize,
         buffer->memory_->GetAddr() + currentQueuedBufferOffset_, availableSize);
     FALSE_RETURN_V_MSG(ret == 0, false, "copy from cache buffer may fail.");
-    bufferPts = bufferPts == HST_TIME_NONE ? buffer->pts_ : bufferPts;
     bufferDesc.dataLength += availableSize;
     availDataSize_.fetch_sub(availableSize);
-    if (isChangeTrack_) {
-        remainingDataSize_.fetch_sub(availableSize);
-    }
     if (cacheBufferSize > size) {
         currentQueuedBufferOffset_ += size;
         size = 0;
@@ -608,25 +596,34 @@ bool AudioSink::HandleCopyBufferData(AudioStandard::BufferDesc &bufferDesc, std:
     return true;
 }
 
-bool AudioSink::HandleCopyAudioVividMetaInfo(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer)
+bool AudioSink::CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+    size_t &size, size_t &cacheBufferSize, int64_t &bufferPts)
 {
+    auto ret = memcpy_s(bufferDesc.buffer + bufferDesc.dataLength, cacheBufferSize,
+        buffer->memory_->GetAddr() + currentQueuedBufferOffset_, cacheBufferSize);
+    FALSE_RETURN_V_MSG(ret == 0, false, "copy from cache buffer may fail.");
+    bufferDesc.dataLength += cacheBufferSize;
+    size -= cacheBufferSize;
+    availDataSize_.fetch_sub(cacheBufferSize);
+    currentQueuedBufferOffset_ = 0;
     auto meta = buffer->meta_;
     std::vector<uint8_t> metaData;
     meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData);
     if (metaData.size() == bufferDesc.metaLength && bufferDesc.metaLength > 0) {
-        auto ret = memcpy_s(bufferDesc.metaBuffer, bufferDesc.metaLength,
+        ret = memcpy_s(bufferDesc.metaBuffer, bufferDesc.metaLength,
             metaData.data(), bufferDesc.metaLength);
         FALSE_RETURN_V_MSG(ret == 0, false, "copy from cache buffer may fail.");
     }
     return true;
 }
  
-bool AudioSink::IsDrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+bool AudioSink::IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
     size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts)
 {
     FALSE_RETURN_V_MSG(cacheBufferSize <= size || !isAudioVivid, false, "copy from cache buffer may fail.");
-    bool ret = HandleCopyBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts);
-    ret = isAudioVivid == true ? ret && HandleCopyAudioVividMetaInfo(bufferDesc, buffer) : ret;
+    bool ret = isAudioVivid ? CopyBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts) :
+        CopyAudioVividBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts);
+    bufferPts = bufferPts == HST_TIME_NONE && ret ? buffer->pts_ : bufferPts;
     return ret;
 }
  
@@ -634,59 +631,53 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
 {
     FALSE_RETURN_V_MSG(size != 0 && size == bufferDesc.bufLength, false,
         "bufferDesc or request size is unavailable");
-    std::lock_guard<std::mutex> lock(getBufferMutex_);
+    std::lock_guard<std::mutex> lock(availBufferMutex_);
     int64_t bufferPts = HST_TIME_NONE;
     do {
-        FALSE_RETURN_V_MSG(!availableOutputBuffers_.empty(), false, "buffer queue is empty");
-        auto cacheBuffer = availableOutputBuffers_.front();
+        FALSE_RETURN_V_MSG(!availOutputBuffers_.empty(), false, "buffer queue is empty");
+        auto cacheBuffer = availOutputBuffers_.front();
         if (IsEosBuffer(cacheBuffer)) {
             MEDIA_LOG_I("AudioSink Recv EOS");
             break;
         }
         size_t cacheBufferSize = 0;
         if (IsBufferAvailable(cacheBuffer, cacheBufferSize)) {
-            if (!IsDrainBufferData(bufferDesc, cacheBuffer, size, cacheBufferSize, isAudioVivid, bufferPts)) {
+            if (!IsBufferDataDrained(bufferDesc, cacheBuffer, size, cacheBufferSize, isAudioVivid, bufferPts)) {
                 break;
             }
             CalcMaxAmplitude(cacheBuffer);
         }
-        ReleaseBufferAfterWritten();
-        if (remainingDataSize_.load() == 0 && isChangeTrack_) {
-            isChangeTrack_ = false;
-            break;
-        }
+        ReleaseChacheBuffer();
     } while (size > 0 && !isAudioVivid);
     if (bufferPts >= 0) {
-        innerSynchroizer_->SetLastBufferPTS(bufferPts);
-        CalculateBufferDuration(bufferDesc.dataLength);
+        int64_t bufferDuration = CalculateBufferDuration(bufferDesc.dataLength);
+        innerSynchroizer_->UpdateCurrentBufferInfo(bufferPts, bufferDuration);
         return true;
     }
     return false;
 }
  
-void AudioSink::CalculateBufferDuration(int64_t writeDataSize)
+int64_t AudioSink::CalculateBufferDuration(int64_t writeDataSize)
 {
-    int64_t sampleDataNums = CalculateBufDescSampleCnt(writeDataSize);
+    int32_t format = GetSampleFormatBytes();
+    FALSE_RETURN_V(format > 0 && audioChannelCount_ > 0, 0);
+    int64_t sampleDataNums = writeDataSize / format / audioChannelCount_;
+    FALSE_RETURN_V(sampleRate_ > 0, 0);
     int64_t sampleDataDuration = sampleDataNums * SEC_TO_US / sampleRate_;
-    innerSynchroizer_->SetBufferDuration(sampleDataDuration);
+    return sampleDataDuration;
 }
  
-void AudioSink::AudioDataSynchroizer::SetLastBufferPTS(int64_t bufferPts)
+void AudioSink::AudioDataSynchroizer::UpdateCurrentBufferInfo(int64_t bufferPts, int64_t bufferDuration)
 {
-    MEDIA_LOG_D("SetLastBufferPTS current buffer PTS is " PUBLIC_LOG_D64, bufferPts);
+    bufferDuration_ = bufferDuration;
     startPTS_ = startPTS_ == HST_TIME_NONE ? bufferPts : startPTS_;
     lastBufferPTS_ = lastBufferPTS_ == HST_TIME_NONE ? bufferPts : lastBufferPTS_;
     curBufferPTS_ = bufferPts;
 }
  
-void AudioSink::AudioDataSynchroizer::SetBufferDuration(int64_t sampleDataDuration)
+void AudioSink::AudioDataSynchroizer::UpdateLastBufferPTS(int64_t bufferOffset, float speed)
 {
-    bufferDuration_ = sampleDataDuration;
-}
- 
-void AudioSink::AudioDataSynchroizer::UpdateLastBufferPTS(int32_t bufferOffset, float speed)
-{
-    MEDIA_LOG_D("lastBuffer Info: lastBufferPTS_ is " PUBLIC_LOG_D64 " lastBufferOffset_ is " PUBLIC_LOG_D32
+    MEDIA_LOG_D("lastBuffer Info: lastBufferPTS_ is " PUBLIC_LOG_D64 " lastBufferOffset_ is " PUBLIC_LOG_D64
         " and compensatePTS_ is " PUBLIC_LOG_D64, lastBufferPTS_, lastBufferOffset_, compensatePTS_);
     curBufferPTS_ = curBufferPTS_ == HST_TIME_NONE ? 0 : curBufferPTS_;
     lastBufferPTS_ = curBufferPTS_ + lastBufferOffset_ + bufferDuration_;
@@ -761,7 +752,7 @@ void AudioSink::AudioDataSynchroizer::Reset()
     compensatePTS_ = 0;
 }
  
-bool AudioSink::IsNeededUpdateTimeAnchor()
+bool AudioSink::IsTimeAnchorNeedUpdate()
 {
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN_V(syncCenter != nullptr, false);
@@ -799,8 +790,8 @@ void AudioSink::SyncWriteByRenderInfo()
             firstPts_ = innerSynchroizer_->GetLastBufferPTS();
         }
     }
-    bool anchorUpdated = IsNeededUpdateTimeAnchor();
-    innerSynchroizer_->UpdateLastBufferPTS(currentQueuedBufferOffset_, speed_);
+    bool anchorUpdated = IsTimeAnchorNeedUpdate();
+    innerSynchroizer_->UpdateLastBufferPTS(CalculateBufferDuration(currentQueuedBufferOffset_), speed_);
     latestBufferDuration_ = innerSynchroizer_->GetBufferDuration() / speed_;
     if (anchorUpdated) {
         bufferDurationSinceLastAnchor_ = latestBufferDuration_;
@@ -813,10 +804,10 @@ void AudioSink::SyncWriteByRenderInfo()
     }
 }
  
-void AudioSink::ReleaseBufferAfterWritten()
+void AudioSink::ReleaseChacheBuffer()
 {
-    auto buffer = availableOutputBuffers_.front();
-    availableOutputBuffers_.pop();
+    auto buffer = availOutputBuffers_.front();
+    availOutputBuffers_.pop();
     FALSE_RETURN_MSG(buffer != nullptr, "release buffer, but buffer is null");
     MEDIA_LOG_D("the pts is " PUBLIC_LOG_D64 " buffer is release", buffer->pts_);
     Status ret = inputBufferQueueConsumer_->ReleaseBuffer(buffer);
@@ -840,16 +831,16 @@ void AudioSink::ResetInfo()
 void AudioSink::ClearAvailableOutputBuffers()
 {
     FALSE_RETURN(inputBufferQueueConsumer_ != nullptr);
-    std::lock_guard<std::mutex> lock(getBufferMutex_);
-    while (!availableOutputBuffers_.empty()) {
-        ReleaseBufferAfterWritten();
+    std::lock_guard<std::mutex> lock(availBufferMutex_);
+    while (!availOutputBuffers_.empty()) {
+        ReleaseChacheBuffer();
     }
 }
 
 void AudioSink::GetAvailableOutputBuffers()
 {
     FALSE_RETURN(inputBufferQueueConsumer_ != nullptr);
-    std::lock_guard<std::mutex> lock(getBufferMutex_);
+    std::lock_guard<std::mutex> lock(availBufferMutex_);
     std::shared_ptr<AVBuffer> filledInputBuffer;
     Status ret = Status::OK;
     while (ret == Status::OK) {
@@ -865,7 +856,7 @@ void AudioSink::GetAvailableOutputBuffers()
             MEDIA_LOG_I("AudioSink Recv EOS");
             isEosBuffer_ = true;
         }
-        availableOutputBuffers_.push(filledInputBuffer);
+        availOutputBuffers_.push(filledInputBuffer);
         MEDIA_LOG_D("the pts is " PUBLIC_LOG_D64 " buffer is push", filledInputBuffer->pts_);
         availDataSize_.fetch_add(filledInputBuffer->memory_->GetSize());
     }
@@ -930,7 +921,8 @@ void AudioSink::DrainOutputBuffer(bool flushed)
 {
     std::lock_guard<std::mutex> lock(pluginMutex_);
     FALSE_RETURN(plugin_ != nullptr && inputBufferQueueConsumer_ != nullptr);
-    if (state_ == Pipeline::FilterState::PAUSED || state_ == Pipeline::FilterState::READY) {
+    if (state_ == Pipeline::FilterState::PAUSED || state_ == Pipeline::FilterState::READY ||
+            state_ == Pipeline::FilterState::STOPPED) {
         MEDIA_LOG_I("DrainOutputBuffer ignore for PAUSE/READY, state = " PUBLIC_LOG_D32, state_.load());
         return;
     }
@@ -1229,13 +1221,6 @@ void AudioSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
     MediaSynchronousSink::Init();
 }
 
-void AudioSink::RecordChangeTrack()
-{
-    std::lock_guard<std::mutex> lock(getBufferMutex_);
-    isChangeTrack_ = true;
-    remainingDataSize_.store(availDataSize_.load());
-}
-
 Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
     MEDIA_LOG_I("GetAudioEffectMode ChangeTrack. ");
@@ -1248,7 +1233,7 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     plugin_ = CreatePlugin();
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     Status ret = Status::OK;
-    ret = InitAudioSinkPlugins(meta, receiver);
+    ret = InitAudioSinkPlugin(meta, receiver);
     FALSE_RETURN_V(ret == Status::OK, ret);
 
     ret = InitAudioSinkInfo(meta);

@@ -92,18 +92,16 @@ public:
     bool IsInputBufferDataEnough(int32_t size);
     bool CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
     Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc);
-    Status Enqueue(const AudioStandard::BufferDesc &bufferDesc);
+    Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc);
     void SyncWriteByRenderInfo();
-    void RecordChangeTrack();
-    void UpdateAmplitude();
-    bool IsNeededUpdateTimeAnchor();
-    bool IsBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize);
-    bool IsDrainBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
-        size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts);
-    void ReleaseBufferAfterWritten();
-    int64_t CalculateBufDescSampleCnt(int64_t writeDataSize);
-    void CalculateBufferDuration(int64_t writeDataSize);
     void UpdateRenderInfo();
+    void UpdateAmplitude();
+    bool IsTimeAnchorNeedUpdate();
+    bool IsBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize);
+    bool IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+        size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts);
+    void ReleaseChacheBuffer();
+    int64_t CalculateBufferDuration(int64_t writeDataSize);
     void WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     void ResetInfo();
     bool IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
@@ -130,10 +128,11 @@ private:
     void PerfRecord(int64_t audioWriteMs);
     void ClearInputBuffer();
     int32_t GetSampleFormatBytes();
-    bool HandleCopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+    bool CopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
         size_t &size, size_t &cacheBufferSize, int64_t &bufferPts);
-    bool HandleCopyAudioVividMetaInfo(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer);
-    Status InitAudioSinkPlugins(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    bool CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+        size_t &size, size_t &cacheBufferSize, int64_t &bufferPts);
+    Status InitAudioSinkPlugin(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status InitAudioSinkInfo(std::shared_ptr<Meta>& meta);
     Status SetAudioSinkPluginParameters();
     void GetAvailableOutputBuffers();
@@ -254,23 +253,21 @@ private:
     bool isLoop_ { false };
     bool isCallbackMode_ {true};
     std::shared_ptr<AudioSinkDataCallback> audioSinkDataCallback_ {nullptr};
-    std::mutex getBufferMutex_;
+    std::mutex availBufferMutex_;
     std::atomic<size_t> availDataSize_ {0};
-    std::queue<std::shared_ptr<AVBuffer>> availableOutputBuffers_;
+    std::atomic<size_t> remainingDataSize_ {0};
+    std::queue<std::shared_ptr<AVBuffer>> availOutputBuffers_;
     int32_t currentQueuedBufferOffset_ {0};
     bool isEosBuffer_ {false};
-    bool isChangeTrack_ {false};
-    std::atomic<size_t> remainingDataSize_ {0};
     class AudioDataSynchroizer {
         public:
-            void SetBufferDuration(int64_t sampleDataDuration);
-            void SetLastBufferPTS(int64_t bufferPts);
+            void UpdateCurrentBufferInfo(int64_t bufferPts, int64_t bufferDuration);
             int64_t GetLastReportedClockTime() const;
             int64_t GetLastBufferPTS() const;
             int64_t GetBufferDuration() const;
             int64_t CalculateAudioLatency();
             void UpdateReportTime(int64_t nowClockTime);
-            void UpdateLastBufferPTS(int32_t bufferOffset, float speed);
+            void UpdateLastBufferPTS(int64_t bufferOffset, float speed);
             void OnRenderPositionUpdated(int64_t currentRenderPTS, int64_t currentRenderClockTime);
             void Reset();
         private:
@@ -281,7 +278,7 @@ private:
             int64_t currentRenderClockTime_ {0};
             int64_t currentRenderPTS_ {0};
             int64_t lastReportedClockTime_ {HST_TIME_NONE};
-            int32_t lastBufferOffset_ {0};
+            int64_t lastBufferOffset_ {0};
             int64_t compensatePTS_ {0};
     };
     std::unique_ptr<AudioDataSynchroizer> innerSynchroizer_ = std::make_unique<AudioDataSynchroizer>();

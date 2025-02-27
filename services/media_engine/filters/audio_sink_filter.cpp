@@ -319,13 +319,6 @@ Status AudioSinkFilter::ChangeTrack(std::shared_ptr<Meta>& meta)
     return audioSink_->ChangeTrack(meta, eventReceiver_);
 }
 
-void AudioSinkFilter::RecordChangeTrack()
-{
-    MEDIA_LOG_D("AudioSinkFilter::RecordChangeTrack in");
-    FALSE_RETURN(audioSink_ != nullptr);
-    return audioSink_->RecordChangeTrack();
-}
-
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
     const std::shared_ptr<FilterLinkCallback>& callback)
 {
