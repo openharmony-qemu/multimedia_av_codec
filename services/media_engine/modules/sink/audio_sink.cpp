@@ -257,6 +257,14 @@ Status AudioSink::SetPlayRange(int64_t start, int64_t end)
     return Status::OK;
 }
 
+Status AudioSink::SetVolumeMode(int32_t mode)
+{
+    if (plugin_ == nullptr) {
+        return Status::ERROR_NULL_POINTER;
+    }
+    return plugin_->SetVolumeMode(mode);
+}
+
 Status AudioSink::SetVolume(float volume)
 {
     if (plugin_ == nullptr) {

@@ -82,7 +82,7 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
      * @retval ERROR_INVALID_DATA: The value is not in the valid range.
      */
     virtual Status SetVolume(float volume) = 0;
-
+    virtual Status SetVolumeMode(int32_t mode) = 0;
     /**
      * @brief Get the current audio rendering speed.
      *

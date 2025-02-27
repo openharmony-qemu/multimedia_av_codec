@@ -68,6 +68,8 @@ public:
 
     Status SetVolume(float volume);
 
+    Status SetVolumeMode(int32_t mode);
+
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
 
     Status SetSpeed(float speed);

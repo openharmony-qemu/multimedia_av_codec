@@ -74,6 +74,8 @@ public:
 
     Status SetVolume(float volume) override;
 
+    Status SetVolumeMode(int32_t volume) override;
+
     Status GetSpeed(float &speed) override;
 
     Status SetSpeed(float speed) override;
@@ -228,6 +230,7 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::mutex mutex_;
     std::condition_variable writeCond_;
+    int32_t volumeMode_ = 0;
 };
 } // namespace Plugin
 } // namespace Media
