@@ -622,8 +622,8 @@ bool AudioSink::IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::
     size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts)
 {
     FALSE_RETURN_V_MSG(cacheBufferSize <= size || !isAudioVivid, false, "copy from cache buffer may fail.");
-    bool ret = isAudioVivid ? CopyBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts) :
-        CopyAudioVividBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts);
+    bool ret = isAudioVivid ? CopyAudioVividBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts) :
+        CopyBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts);
     bufferPts = (bufferPts == HST_TIME_NONE && ret) ? buffer->pts_ : bufferPts;
     return ret;
 }
