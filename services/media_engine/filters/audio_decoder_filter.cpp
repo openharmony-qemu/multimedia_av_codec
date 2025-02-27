@@ -293,7 +293,7 @@ Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
     MEDIA_LOG_I("AudioDecoderFilter::ChangePlugin.");
     FALSE_RETURN_V_MSG(meta != nullptr, Status::ERROR_NULL_POINTER, "meta is nullptr");
     std::string mime;
-    bool mimeGetRes = meta_->GetData(Tag::MIME_TYPE, mime);
+    bool mimeGetRes = meta->GetData(Tag::MIME_TYPE, mime);
     if (!mimeGetRes && eventReceiver_ != nullptr) {
         MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
         eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
