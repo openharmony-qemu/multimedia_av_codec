@@ -144,7 +144,7 @@ Status AudioSink::InitAudioSinkPlugin(std::shared_ptr<Meta>& meta,
     plugin_->SetParameter(meta);
     plugin_->Init();
     if (isCallbackMode_) {
-        audioSinkDataCallback_ = std::make_shared<AudioSinkDataCallbackImpl> (shared_from_this());
+        audioSinkDataCallback_ = std::make_shared<AudioSinkDataCallbackImpl>(shared_from_this());
         Status ret = plugin_->SetRequestDataCallback(audioSinkDataCallback_);
         isCallbackMode_ = ret == Status::OK ? true : false;
     }
@@ -173,6 +173,7 @@ Status AudioSink::InitAudioSinkInfo(std::shared_ptr<Meta>& meta)
         isFlac_ = true;
         MEDIA_LOG_I("AudioSink::Init is flac");
     }
+
     return Status::OK;
 }
 
@@ -623,7 +624,7 @@ bool AudioSink::IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::
     FALSE_RETURN_V_MSG(cacheBufferSize <= size || !isAudioVivid, false, "copy from cache buffer may fail.");
     bool ret = isAudioVivid ? CopyBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts) :
         CopyAudioVividBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts);
-    bufferPts = bufferPts == HST_TIME_NONE && ret ? buffer->pts_ : bufferPts;
+    bufferPts = (bufferPts == HST_TIME_NONE && ret) ? buffer->pts_ : bufferPts;
     return ret;
 }
  
