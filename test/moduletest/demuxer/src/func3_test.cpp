@@ -423,10 +423,10 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0010, TestSize.Level1)
     cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
-    metaFormat= OH_AVSource_GetCustomMetaDataFormat(source);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
     ASSERT_NE(metaFormat, nullptr);
     int32_t metaNum = 101010101;
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(metaFormat, "com.openharmony.intvalintval", &metaIntValue));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(metaFormat, "com.openharmony.intval.intvalintval", &metaIntValue));
     ASSERT_EQ(metaIntValue, metaNum);
     close(fd);
 }
@@ -445,7 +445,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0020, TestSize.Level1)
     cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
-    metaFormat= OH_AVSource_GetCustomMetaDataFormat(source);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
     ASSERT_NE(metaFormat, nullptr);
     float metaFloatVal = 2.3;
     ASSERT_TRUE(OH_AVFormat_GetFloatValue(metaFormat, "com.openharmony.floatval.aaa", &metaFloatValue));
@@ -477,7 +477,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0030, TestSize.Level1)
     cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
-    metaFormat= OH_AVSource_GetCustomMetaDataFormat(source);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
     ASSERT_NE(metaFormat, nullptr);
     const char* metaStringValue = nullptr;
     string metaKeyAdd = "aba";
@@ -508,7 +508,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0040, TestSize.Level2)
     cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
-    metaFormat= OH_AVSource_GetCustomMetaDataFormat(source);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
     ASSERT_NE(metaFormat, nullptr);
     string metaKeyAdd = "a";
     string metaKey = "com.openharmony.stringval.";
@@ -557,7 +557,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0050, TestSize.Level2)
     cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
-    metaFormat= OH_AVSource_GetCustomMetaDataFormat(source);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
     ASSERT_NE(metaFormat, nullptr);
     ASSERT_FALSE(OH_AVFormat_GetStringValue(metaFormat, "com.openharmony.stringval.abb", &metaStringValue));
     ASSERT_FALSE(OH_AVFormat_GetIntValue(metaFormat, "com.openharmony.intnum.abb", &metaIntValue));
@@ -581,7 +581,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0060, TestSize.Level2)
     cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
-    metaFormat= OH_AVSource_GetCustomMetaDataFormat(source);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
     ASSERT_NE(metaFormat, nullptr);
     ASSERT_FALSE(OH_AVFormat_GetStringValue(metaFormat, "com.openharmony.floatval.a", &metaStringValue));
     ASSERT_FALSE(OH_AVFormat_GetIntValue(metaFormat, "com.openharmony.stringval.a", &metaIntValue));
@@ -602,7 +602,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0070, TestSize.Level2)
     cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
-    metaFormat= OH_AVSource_GetCustomMetaDataFormat(source);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
     ASSERT_NE(metaFormat, nullptr);
     const char* language = OH_AVFormat_DumpInfo(metaFormat);
     ASSERT_EQ(language, nullptr);
@@ -622,7 +622,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0080, TestSize.Level3)
     cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
-    metaFormat= OH_AVSource_GetCustomMetaDataFormat(source);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
     ASSERT_NE(metaFormat, nullptr);
     string metamanufacturer = "ABCDEF";
     string metamarketingName = "AABBAABBAABBAABBAA";
@@ -650,13 +650,13 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0080, TestSize.Level3)
  */
 HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0090, TestSize.Level0)
 {
-    metaFormat= OH_AVSource_GetCustomMetaDataFormat(nullptr);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(nullptr);
     ASSERT_EQ(metaFormat, nullptr);
 }
 
 /**
  * @tc.number    : DEMUXER_META_0100
- * @tc.name      : demuxer meta info, get value with error key type
+ * @tc.name      : demuxer meta info, get max value
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0100, TestSize.Level2)
@@ -670,7 +670,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0100, TestSize.Level2)
     cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
-    metaFormat= OH_AVSource_GetCustomMetaDataFormat(source);
+    metaFormat= OH_AVSource_GetCustomMetadataFormat(source);
     ASSERT_NE(metaFormat, nullptr);
     ASSERT_FALSE(OH_AVFormat_GetStringValue(metaFormat, "com.openharmony.stringval", &metaStringValue));
     float floatValue = 3.4028235E38;
