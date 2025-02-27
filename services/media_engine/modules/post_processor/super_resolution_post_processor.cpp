@@ -22,13 +22,16 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 namespace OHOS {
 namespace Media {
 
+namespace {
+constexpr int32_t MAX_WIDTH = 1920;
+constexpr int32_t MAX_HEIGHT = 1080;
+}
+
 using namespace VideoProcessingEngine;
 
 static bool isSuperResolutionSupported(const std::shared_ptr<Meta>& meta)
 {
     FALSE_RETURN_V(meta != nullptr, false);
-    static constexpr int32_t MAX_WIDTH = 1920;
-    static constexpr int32_t MAX_HEIGHT = 1080;
 
     int32_t width = 0;
     int32_t height = 0;
