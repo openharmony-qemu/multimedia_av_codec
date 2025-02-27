@@ -527,7 +527,7 @@ void CapsUnitTest::CheckAVDecVorbis(const std::shared_ptr<AudioCaps> &audioCaps)
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
-    EXPECT_EQ(0, audioCaps->GetSupportedSampleRates().size());
+    EXPECT_EQ(12, audioCaps->GetSupportedSampleRates().size()); // 12: supported samplerate count
     EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
 }
