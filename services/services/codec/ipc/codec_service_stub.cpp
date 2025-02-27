@@ -241,6 +241,7 @@ int32_t CodecServiceStub::Init(AVCodecType type, bool isMimeType, const std::str
     this->SetTag(tag);
     codecServer_->SetTag(tag);
     static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->SetTag(tag);
+    AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;
 }
 
@@ -465,6 +466,7 @@ int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
     bool isMimeType = data.ReadBool();
     std::string name = data.ReadString();
     bool parcelRet = reply.WriteInt32(Init(type, isMimeType, name, callerInfo));
+    callerInfo.Remove(EventInfoExtentedKey::CODEC_TYPE.data());
     parcelRet = parcelRet && callerInfo.ToParcel(reply);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->Init();
@@ -700,9 +702,12 @@ int32_t CodecServiceStub::SetCustomBuffer(MessageParcel &data, MessageParcel &re
 
 int32_t CodecServiceStub::InnerRelease()
 {
-    CHECK_AND_RETURN_RET_LOGW_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    if (isServerReleased_) {
+        return AVCS_ERR_NO_MEMORY;
+    }
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     int32_t ret = codecServer_->Release();
-    codecServer_ = nullptr;
+    isServerReleased_ = (ret == AVCS_ERR_OK);
     return ret;
 }
 } // namespace MediaAVCodec
