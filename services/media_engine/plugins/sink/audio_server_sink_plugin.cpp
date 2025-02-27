@@ -1141,8 +1141,9 @@ void AudioServerSinkPlugin::SetInterruptState(bool isInterruptNeeded)
     writeCond_.notify_all();
 }
 
-AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::AudioRendererWriteCallbackImpl(const std::weak_ptr<AudioSinkDataCallback> &callback,
-    bool isAudioVivid): callback_(callback), isAudioVivid_(isAudioVivid)
+AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::AudioRendererWriteCallbackImpl(
+    const std::weak_ptr<AudioSinkDataCallback> &callback, bool isAudioVivid): callback_(callback),
+    isAudioVivid_(isAudioVivid)
 {
 }
  
