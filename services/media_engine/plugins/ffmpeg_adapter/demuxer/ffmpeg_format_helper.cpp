@@ -1022,7 +1022,7 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
 void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Meta &format)
 {
     AVDictionaryEntry *valPtr = nullptr;
-    while ((valPtr =av_dict_get(metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)) != nullptr) {
+    while ((valPtr = av_dict_get(metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)) != nullptr) {
         std::string tempKey = ToLower(std::string(valPtr->key));
         if (tempKey.find("moov_level_meta_key_") == 0) {
             MEDIA_LOG_D("UserMeta:" PUBLIC_LOG_S, valPtr->key);
