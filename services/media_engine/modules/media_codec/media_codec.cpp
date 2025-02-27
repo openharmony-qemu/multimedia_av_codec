@@ -785,9 +785,9 @@ Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const s
     ret = codecPlugin_->SetDataCallback(this);
     MEDIA_LOG_I("codecPlugin SetDataCallback ret %{public}d", ret);
 
+    // discard undecoded data and unconsumed decoded data.
     inputBufferQueueProducer_->Clear();
     FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN, "inputBufferQueue_ is nullptr");
-    // discard undecoded data and unconsumed decoded data.
     ClearInputBuffer();
     inputBufferEosStatus_.store(0);
     isOutputBufferAvailable_.store(true);
