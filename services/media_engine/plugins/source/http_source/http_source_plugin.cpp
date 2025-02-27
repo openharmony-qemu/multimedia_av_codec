@@ -29,6 +29,7 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr int DEFAULT_BUFFER_SIZE = 200 * 1024;
+constexpr int DEFAULT_EXPECT_DURATION = 19;
 constexpr int ERROR_COUNT = 5;
 const std::string LOWER_M3U8 = "m3u8";
 const std::string DASH_SUFFIX = ".mpd";
@@ -199,6 +200,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 
 void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source)
 {
+    FALSE_RETURN_MSG(source != nullptr, "source is null.");
     std::shared_ptr<PlayStrategy> playStrategy;
     if (source != nullptr) {
         uri_ = source->GetSourceUri();
@@ -206,29 +208,29 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         playStrategy = source->GetPlayStrategy();
         mimeType_ = source->GetMimeType();
     }
-
+    if (source->GetSourceLoader() != nullptr) {
+        loaderCombinations_ = std::make_shared<MediaSourceLoaderCombinations>(source->GetSourceLoader());
+    }
+ 
     if (uri_.find(".mpd") != std::string::npos) {
-        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<DashMediaDownloader>());
+        downloader_ = std::make_shared<DownloadMonitor>(
+                      std::make_shared<DashMediaDownloader>(loaderCombinations_));
         delayReady = false;
     } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
+        uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
         if (playStrategy != nullptr && playStrategy->duration > 0) {
-            uint32_t expectDuration = playStrategy->duration;
-            downloader_ = std::make_shared<DownloadMonitor>(
-                            std::make_shared<HlsMediaDownloader>(expectDuration, httpHeader_));
-        } else {
-            downloader_ = std::make_shared<DownloadMonitor>(
-                            std::make_shared<HlsMediaDownloader>(httpHeader_));
+            expectDuration = playStrategy->duration;
         }
+        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>
+                      (expectDuration, httpHeader_, loaderCombinations_));
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
+        uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
         if (playStrategy != nullptr && playStrategy->duration > 0) {
-            uint32_t expectDuration = playStrategy->duration;
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
-                                                            (source->GetSourceUri(), expectDuration));
-        } else {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
-                                                            (source->GetSourceUri()));
+            expectDuration = playStrategy->duration;
         }
+        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
+            (source->GetSourceUri(), expectDuration, loaderCombinations_));
     }
     if (downloader_ != nullptr && playStrategy != nullptr) {
         downloader_->SetPlayStrategy(playStrategy);

@@ -55,7 +55,7 @@ static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE, SUBTITLE_RING_BUFFER_SIZE}};
 
 DashSegmentDownloader::DashSegmentDownloader(Callback *callback, int streamId, MediaAVCodec::MediaType streamType,
-                                             uint64_t expectDuration)
+    uint64_t expectDuration, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
     callback_ = callback;
     streamId_ = streamId;
@@ -72,10 +72,12 @@ DashSegmentDownloader::DashSegmentDownloader(Callback *callback, int streamId, M
     buffer_ = std::make_shared<RingBuffer>(ringBufferSize);
     buffer_->Init();
 
-    downloader_ = std::make_shared<Downloader>("dashSegment");
-
-    dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
+    sourceLoader_ = sourceLoader;
+    downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+ 
+    dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) {
+        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
+            std::forward<decltype(notBlock)>(notBlock));
     };
 
     downloadRequest_ = nullptr;
@@ -197,7 +199,7 @@ DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInf
     if (ReadInitSegment(buff, wantReadLength, realReadLength, currentStreamId)) {
         return DASH_READ_OK;
     }
-
+    bool canWriteTmp = canWrite_;
     uint32_t maxReadLength = GetMaxReadLength(wantReadLength, currentSegment, currentStreamId);
     realReadLength = buffer_->ReadBuffer(buff, maxReadLength, DEFAULT_WAIT_TIME);
     if (realReadLength == 0) {
@@ -205,6 +207,10 @@ DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInf
             ", realReadLength:" PUBLIC_LOG_U32, currentStreamId, buffer_->GetHead(), buffer_->GetTail(),
             realReadLength);
         return DASH_READ_AGAIN;
+    }
+    if (sourceLoader_ && !canWriteTmp && realReadLength > 0) {
+        MEDIA_LOG_I("Dash read resume.");
+        downloader_->Resume();
     }
 
     MEDIA_LOG_D("After read: streamId:" PUBLIC_LOG_D32 " ,bufferHead:" PUBLIC_LOG_ZU ", bufferTail:" PUBLIC_LOG_ZU
@@ -669,7 +675,7 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
             break;
         }
 
-        downloader_ = std::make_shared<Downloader>("dashSegment");
+        downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
         buffer_->Clear();
         segmentList_.clear();
         buffer_->SetActive(true);
@@ -721,7 +727,7 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
             return (bufferSegment->numberSeq_ > remainLastNumberSeq);
         });
 
-        downloader_ = std::make_shared<Downloader>("dashSegment");
+        downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
         MEDIA_LOG_I("CleanSegmentBuffer bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
             PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(), clearTail);
         buffer_->SetTail(clearTail);
@@ -806,7 +812,7 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
             return (bufferSegment->numberSeq_ > remainLastNumberSeq);
         });
 
-        downloader_ = std::make_shared<Downloader>("dashSegment");
+        downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
         MEDIA_LOG_I("CleanBufferByTime bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
             PUBLIC_LOG_ZU " ,seq:" PUBLIC_LOG_D64 ",size:" PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(),
             clearTail, remainLastNumberSeq, segmentList_.size());
@@ -840,10 +846,22 @@ bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segme
     return false;
 }
 
-bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
+uint32_t DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     MEDIA_LOG_D("SaveData:streamId:" PUBLIC_LOG_D32 ", len:" PUBLIC_LOG_D32, streamId_, len);
+    size_t freeSize = buffer_->GetFreeSize();
     startedPlayStatus_ = true;
+    if (notBlock && len >= freeSize) {
+        MEDIA_LOG_D("SaveData buffer not enough, freeSize " PUBLIC_LOG_ZU ", len:" PUBLIC_LOG_U32, freeSize, len);
+        canWrite_.store(false);
+        if (freeSize == 0) {
+            return 0;
+        }
+        len = freeSize;
+    }
+    if (notBlock && len < freeSize) {
+        canWrite_.store(true);
+    }
     if (streamType_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
         OnWriteRingBuffer(len);
     }
@@ -854,7 +872,7 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
             MEDIA_LOG_I("SaveData:streamId:" PUBLIC_LOG_D32 ", writeState:"
                 PUBLIC_LOG_D32, streamId_, initSegment->writeState_);
             initSegment->content_.append(reinterpret_cast<const char*>(data), len);
-            return true;
+            return len;
         }
     }
 
@@ -864,7 +882,7 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
     SaveDataHandleBuffering();
     if (!writeRet) {
         MEDIA_LOG_E("SaveData:error streamId:" PUBLIC_LOG_D32 ", len:" PUBLIC_LOG_D32, streamId_, len);
-        return writeRet;
+        return 0;
     }
 
     std::lock_guard<std::mutex> lock(segmentMutex_);
@@ -880,7 +898,7 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
         UpdateBufferSegment(mediaSegment, len);
         break;
     }
-    return writeRet;
+    return len;
 }
 
 void DashSegmentDownloader::UpdateBufferSegment(const std::shared_ptr<DashBufferSegment> &mediaSegment, uint32_t len)
@@ -1017,6 +1035,7 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     downloadRequest_ = std::make_shared<DownloadRequest>(duration, dataSave_,
                                                          realStatusCallback, mediaSouce, requestWholeFile);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
+    downloadRequest_->SetRequestProtocolType(RequestProtocolType::DASH);
     if (!requestWholeFile && (endPos > startPos)) {
         downloadRequest_->SetRangePos(startPos, endPos);
     }

@@ -19,6 +19,7 @@
 #include "media_downloader.h"
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
+#include "download/media_source_loading_request.h"
 
 namespace OHOS {
 namespace Media {
@@ -82,6 +83,7 @@ private:
     std::map<std::string, std::string> httpHeader_ {};
     std::string mimeType_ {};
     std::atomic<bool> isInterruptNeeded_{false};
+    std::shared_ptr<MediaSourceLoaderCombinations> loaderCombinations_ {nullptr};
 };
 } // namespace HttpPluginLite
 } // namespace Plugin
