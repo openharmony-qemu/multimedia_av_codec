@@ -54,6 +54,7 @@ public:
     size_t GetSegmentOffset(uint32_t tsIndex) override;
     bool GetHLSDiscontinuity() override;
     void SetInitResolution(uint32_t width, uint32_t height) override;
+    size_t GetLiveUpdateGap() const override;
 
 private:
     void UpdateMasterInfo(bool isPreParse);

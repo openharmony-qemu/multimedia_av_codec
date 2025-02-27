@@ -267,6 +267,24 @@ HWTEST_F(DownloaderUnitTest, IsExcluded_04, TestSize.Level1)
     EXPECT_FALSE(IsExcluded(str, exclusions, split));
 }
 
+HWTEST_F(DownloaderUnitTest, HandleRetErrorCode001, TestSize.Level1)
+{
+    downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return true;
+    };
+    downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader->currentRequest_->serverError_ = 500;
+    downloader->HandleRetErrorCode();
+    EXPECT_NE(downloader->client_, nullptr);
+}
 }
 }
 }
