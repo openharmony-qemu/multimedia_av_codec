@@ -47,8 +47,7 @@ const size_t SAMPLE_RATE_SIZE = 33;
 const size_t CHANNEL_COUNT = 34;
 const size_t VIDEO_HEIGHT_SIZE = 35;
 const size_t VIDEO_WIDTH_SIZE = 36;
-
-bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
+bool CheckDataValidity(const uint8_t *data, size_t size)
 {
     if (size < EXPECT_SIZE) {
         return false;
@@ -59,9 +58,17 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     int len = write(fd, data, size - 36);
     if (len <= 0) {
+        close(fd);
         return false;
     }
     close(fd);
+    return true;
+}
+bool DemuxerFuzzTest(const uint8_t *data, size_t size)
+{
+    if (!CheckDataValidity(data, size)) {
+        return false;
+    }
     struct Params params;
     params.time = data[size - TIME_SIZE];
     char *uri = new char[URI_BUFFER_SIZE];
@@ -105,6 +112,6 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::DoSomethingInterestingWithMyAPI(data, size);
+    OHOS::DemuxerFuzzTest(data, size);
     return 0;
 }
