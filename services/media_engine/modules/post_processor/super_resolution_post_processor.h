@@ -35,6 +35,7 @@ public:
     Status Flush() override;
     Status Stop() override;
     Status Start() override;
+    Status Release() override;
 
     sptr<Surface> GetInputSurface() override;
     Status SetOutputSurface(sptr<Surface> surface) override;

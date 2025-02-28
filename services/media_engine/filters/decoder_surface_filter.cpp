@@ -506,6 +506,9 @@ Status DecoderSurfaceFilter::DoRelease()
 {
     MEDIA_LOG_I("Release");
     videoDecoder_->Release();
+    if (postProcessor_) {
+        postProcessor_->Release();
+    }
     return Status::OK;
 }
 
