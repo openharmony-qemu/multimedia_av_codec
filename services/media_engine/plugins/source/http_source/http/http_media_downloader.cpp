@@ -185,7 +185,7 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
         HandleBuffering();
     };
     RequestInfo requestInfo;
-    requestInfo.url = url;
+    requestInfo.url = defaultStream_ != nullptr ? defaultStream_->url : url;
     requestInfo.httpHeader = httpHeader;
     downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
@@ -1562,6 +1562,10 @@ void HttpMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& p
                            bufferDurationForPlaying_);
         MEDIA_LOG_I("HTTP buffer duration for playing : " PUBLIC_LOG ".3f", bufferDurationForPlaying_);
     }
+    if (playStrategy->width > 0 && playStrategy->height > 0) {
+        initResolution_ = playStrategy->width * playStrategy->height;
+        ChooseStreamByResolution();
+    }
 }
 
 bool HttpMediaDownloader::IsNeedBufferForPlaying()
@@ -1601,6 +1605,110 @@ void HttpMediaDownloader::NotifyInitSuccess()
     }
     isBuffering_.store(true);
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+}
+
+void HttpMediaDownloader::SetStartPts(int64_t startPts)
+{
+    flvStartPts_ = startPts;
+}
+
+bool HttpMediaDownloader::SelectBitRate(uint32_t bitRate)
+{
+    if (playMediaStreams_.size() <= 1 || !isRingBuffer_) {
+        MEDIA_LOG_E("HTTP SelectBitRate error.");
+        return true;
+    }
+    if (ringBuffer_ == nullptr || downloader_ == nullptr || downloadRequest_ == nullptr) {
+        return true;
+    }
+    MEDIA_LOG_I("HTTP SelectBitRate " PUBLIC_LOG_U32, bitRate);
+    defaultStream_ = playMediaStreams_.front();
+    uint32_t preBitrate = 0;
+    for (const auto &stream : playMediaStreams_) {
+        if (preBitrate == 0 && bitRate <= stream->bitrate) {
+            break;
+        } else if (bitRate > preBitrate && bitRate <= stream->bitrate) {
+            uint32_t deltaA = bitRate - preBitrate;
+            uint32_t deltaB = stream->bitrate - bitRate;
+            deltaB < deltaA ? defaultStream_ = stream : 0;
+            break;
+        } else if (preBitrate == stream->bitrate) {
+            continue;
+        } else {
+            defaultStream_ = stream;
+            preBitrate = stream->bitrate;
+        }
+    }
+    isSelectingBitrate_.store(true);
+    ringBuffer_->SetActive(false, true);
+    downloader_->Pause(false);
+    ringBuffer_->SetActive(true, true);
+    isSelectingBitrate_.store(false);
+    std::string url = defaultStream_->url;
+    AddParamForUrl(url, "startPts", std::to_string(flvStartPts_));
+    MEDIA_LOG_I("flvStartPts_ " PUBLIC_LOG_D64, flvStartPts_);
+    currentBitRate_ = defaultStream_->bitrate;
+    downloadRequest_->SetUrl(url);
+    downloadRequest_->SetRangePos(0, -1);
+    downloader_->Resume();
+    return true;
+}
+
+void HttpMediaDownloader::AddParamForUrl(std::string& url, const std::string& key, const std::string& value)
+{
+    std::string param;
+    if (url.find("?") == std::string::npos) {
+        param = "?" + key + "=" + value;
+    } else {
+        param = "&" + key + "=" + value;
+    }
+    url += param;
+}
+
+void HttpMediaDownloader::SetMediaStreams(const MediaStreamList& mediaStreams)
+{
+    MEDIA_LOG_I("HTTP MediaStreams size is " PUBLIC_LOG_ZU, static_cast<size_t>(mediaStreams.size()));
+    playMediaStreams_ = mediaStreams;
+    defaultStream_ = playMediaStreams_.front();
+}
+
+void HttpMediaDownloader::ChooseStreamByResolution()
+{
+    if (initResolution_ == 0 || defaultStream_ == nullptr) {
+        return;
+    }
+    for (const auto &stream : playMediaStreams_) {
+        if (stream == nullptr) {
+            continue;
+        }
+        if (IsNearToInitResolution(defaultStream_, stream)) {
+            defaultStream_ = stream;
+        }
+    }
+    MEDIA_LOG_I("resolution, width:" PUBLIC_LOG_U32 ", height:" PUBLIC_LOG_U32,
+                defaultStream_->width, defaultStream_->height);
+}
+
+bool HttpMediaDownloader::IsNearToInitResolution(const std::shared_ptr<PlayMediaStream> &choosedStream,
+    const std::shared_ptr<PlayMediaStream> &currentStream)
+{
+    if (choosedStream == nullptr || currentStream == nullptr || initResolution_ == 0) {
+        return false;
+    }
+    uint32_t choosedDelta = GetResolutionDelta(choosedStream->width, choosedStream->height);
+    uint32_t currentDelta = GetResolutionDelta(currentStream->width, currentStream->height);
+    return (currentDelta < choosedDelta)
+           || (currentDelta == choosedDelta && currentStream->bitrate < choosedStream->bitrate);
+}
+
+uint32_t HttpMediaDownloader::GetResolutionDelta(uint32_t width, uint32_t height)
+{
+    uint32_t resolution = width * height;
+    if (resolution > initResolution_) {
+        return resolution - initResolution_;
+    } else {
+        return initResolution_ - resolution;
+    }
 }
 }
 }

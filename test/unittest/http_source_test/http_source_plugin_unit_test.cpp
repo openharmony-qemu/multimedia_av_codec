@@ -31,6 +31,7 @@ const uint32_t WATERLINE_HIGH_ = 512;
 const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
 static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:46666/segment_base/index.mpd";
 static const std::string M3U8_SEGMENT_BASE = "http://127.0.0.1:46666/test_hls/testHLSEncode.m3u8";
+const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
 
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server;
 class HttpSourcePluginUnitTest : public testing::Test {
@@ -399,6 +400,47 @@ HWTEST_F(HttpSourcePluginUnitTest, SetInterruptState2, TestSize.Level1)
     EXPECT_EQ(httpSourcePlugin->isInterruptNeeded_, isInterruptNeeded);
 }
 
+HWTEST_F(HttpSourcePluginUnitTest, INIT_HTTP_SOURCE_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    MediaStreamList mediaStreams;
+    std::shared_ptr<PlayMediaStream> mediaStreamA = std::make_shared<PlayMediaStream>();
+    mediaStreamA->width = 480;
+    mediaStreamA->height = 360;
+    mediaStreamA->bitrate = 3200;
+    mediaStreamA->url = FLV_SEGMENT_BASE;
+    mediaStreams.push_back(mediaStreamA);
+    std::shared_ptr<PlayMediaStream> mediaStreamB = std::make_shared<PlayMediaStream>();
+    mediaStreamB->width = 640;
+    mediaStreamB->height = 480;
+    mediaStreamB->bitrate = 4800;
+    mediaStreamB->url = FLV_SEGMENT_BASE;
+    mediaStreams.push_back(mediaStreamB);
+    std::shared_ptr<PlayMediaStream> mediaStreamC = std::make_shared<PlayMediaStream>();
+    mediaStreamC->width = 640;
+    mediaStreamC->height = 480;
+    mediaStreamC->bitrate = 4000;
+    mediaStreamC->url = FLV_SEGMENT_BASE;
+    mediaStreams.push_back(mediaStreamC);
+    std::shared_ptr<PlayMediaStream> mediaStreamD = std::make_shared<PlayMediaStream>();
+    mediaStreamD->width = 1280;
+    mediaStreamD->height = 720;
+    mediaStreamD->bitrate = 8000;
+    mediaStreamD->url = FLV_SEGMENT_BASE;
+    mediaStreams.push_back(mediaStreamD);
+    std::shared_ptr<PlayMediaStream> mediaStreamE = std::make_shared<PlayMediaStream>();
+    mediaStreamE->width = 1280;
+    mediaStreamE->height = 720;
+    mediaStreamE->bitrate = 4000;
+    mediaStreamE->url = FLV_SEGMENT_BASE;
+    mediaStreams.push_back(mediaStreamE);
+
+    source->playMediaStreamVec_ = mediaStreams;
+    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetCallback(sourceCallback);
+    EXPECT_NE(httpSourcePlugin->downloader_, nullptr);
+}
 }
 }
 }

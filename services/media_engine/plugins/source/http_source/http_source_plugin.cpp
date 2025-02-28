@@ -225,12 +225,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
                       (expectDuration, httpHeader_, loaderCombinations_));
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
-        uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
-        if (playStrategy != nullptr && playStrategy->duration > 0) {
-            expectDuration = playStrategy->duration;
-        }
-        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
-            (source->GetSourceUri(), expectDuration, loaderCombinations_));
+        InitHttpSource(source);
     }
     if (downloader_ != nullptr && playStrategy != nullptr) {
         downloader_->SetPlayStrategy(playStrategy);
@@ -242,6 +237,28 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         downloader_->SetInterruptState(isInterruptNeeded_);
         downloader_->SetAppUid(source->GetAppUid());
     }
+}
+
+void HttpSourcePlugin::InitHttpSource(const std::shared_ptr<MediaSource>& source)
+{
+    std::shared_ptr<PlayStrategy> playStrategy = source->GetPlayStrategy();
+    auto playMediaStreams = source->GetMediaStreamList();
+    if (playMediaStreams.size() > 0) {
+        std::sort(playMediaStreams.begin(), playMediaStreams.end(),
+            [](const std::shared_ptr<PlayMediaStream>& streamA, const std::shared_ptr<PlayMediaStream>& streamB) {
+                return (streamA->bitrate < streamB->bitrate) ||
+                       (streamA->bitrate == streamB->bitrate &&
+                        streamA->width * streamA->height < streamB->width * streamB->height);
+        });
+        uri_ = playMediaStreams.front()->url;
+    }
+    uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
+    if (playStrategy != nullptr && playStrategy->duration > 0) {
+        expectDuration = playStrategy->duration;
+    }
+    downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
+        (uri_, expectDuration, loaderCombinations_));
+    downloader_->SetMediaStreams(playMediaStreams);
 }
 
 bool HttpSourcePlugin::IsSeekToTimeSupported()
@@ -492,6 +509,12 @@ void HttpSourcePlugin::NotifyInitSuccess()
     FALSE_RETURN_MSG(downloader_ != nullptr, "NotifyInitSuccess downloader is nullptr");
     downloader_->NotifyInitSuccess();
 }
+
+Status HttpSourcePlugin::SetStartPts(int64_t startPts)
+{
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    downloader_->SetStartPts(startPts);
+    return Status::OK;
 }
 }
 }

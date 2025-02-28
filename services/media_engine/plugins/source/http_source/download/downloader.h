@@ -116,6 +116,10 @@ public:
     {
         return httpHeader_;
     }
+    void SetUrl(const std::string& url)
+    {
+        url_ = url;
+    }
     bool IsClosed() const;
     void Close();
     double GetDuration() const;

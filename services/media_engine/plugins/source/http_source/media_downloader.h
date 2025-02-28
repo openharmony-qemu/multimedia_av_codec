@@ -164,6 +164,16 @@ public:
     }
 
     virtual void NotifyInitSuccess() {}
+
+    virtual void SetStartPts(int64_t startPts)
+    {
+        MEDIA_LOG_W("SetStartPts is unimplemented.");
+    }
+
+    virtual void SetMediaStreams(const MediaStreamList& mediaStreams)
+    {
+        MEDIA_LOG_W("SetMediaStreams is unimplemented.");
+    }
 };
 }
 }
