@@ -40,12 +40,29 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegReferenceParser" };
 constexpr int64_t REFERENCE_PARSER_TIMEOUT_MS = 10000;
+const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000u;
 }
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
+
+bool FFmpegDemuxerPlugin::IsLessMaxReferenceParserFrames(uint32_t trackIndex)
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, false, "AVFormatContext is nullptr");
+    AVStream *avStream = formatContext_->streams[trackIndex];
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, false, "Avstream is nullptr");
+    FALSE_RETURN_V_MSG_E(avStream->stts_data != nullptr && avStream->stts_count != 0, false,
+                         "AVStream->stts_data is empty");
+    uint32_t frames = 0u;
+    for (auto i = 0u; i < avStream->stts_count; i++) {
+        FALSE_RETURN_V_MSG_E(frames <= UINT32_MAX - avStream->stts_data[i].count, false, "Frame count exceeds limit");
+        frames += avStream->stts_data[i].count;
+        FALSE_RETURN_V_MSG_E(frames <= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT, false, "Frame count exceeds limit");
+    }
+    return true;
+}
 
 void FFmpegDemuxerPlugin::ParserBoxInfo()
 {
