@@ -80,8 +80,8 @@ HWTEST_F(DownloaderUnitTest, Retry_1, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     std::shared_ptr<DownloadRequest> Request_ =
         std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
@@ -97,8 +97,8 @@ HWTEST_F(DownloaderUnitTest, Retry_2, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     std::shared_ptr<DownloadRequest> Request_ =
         std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
@@ -115,8 +115,8 @@ HWTEST_F(DownloaderUnitTest, Retry_3, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     std::shared_ptr<DownloadRequest> Request_ =
         std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
@@ -133,8 +133,8 @@ HWTEST_F(DownloaderUnitTest, Retry_4, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     std::shared_ptr<DownloadRequest> Request_ =
         std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
@@ -151,8 +151,8 @@ HWTEST_F(DownloaderUnitTest, Retry_5, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     std::shared_ptr<DownloadRequest> Request_ =
         std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
@@ -170,8 +170,8 @@ HWTEST_F(DownloaderUnitTest, Retry_6, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     std::shared_ptr<DownloadRequest> Request_ =
         std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
@@ -578,8 +578,8 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_2, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isAppBackground_ = true;
@@ -597,8 +597,8 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_3, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isAppBackground_ = false;
@@ -615,8 +615,8 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_4, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isAppBackground_ = false;
@@ -634,8 +634,8 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_5, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->currentRequest_->startPos_ = START_POS;
@@ -655,8 +655,8 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_6, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isAppBackground_ = false;
@@ -885,8 +885,8 @@ HWTEST_F(DownloaderUnitTest, HandleRetErrorCode001, TestSize.Level1)
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
     };
-    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
-        return true;
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
     };
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->currentRequest_->serverError_ = 500;

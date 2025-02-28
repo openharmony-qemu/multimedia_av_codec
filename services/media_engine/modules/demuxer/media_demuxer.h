@@ -42,6 +42,7 @@
 namespace OHOS {
 namespace Media {
 using MediaSource = OHOS::Media::Plugins::MediaSource;
+using FileType = OHOS::Media::Plugins::FileType;
 class BaseStreamDemuxer;
 class DemuxerPluginManager;
 class Source;
@@ -142,7 +143,6 @@ public:
     int32_t GetCurrentVideoTrackId();
     uint32_t GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos);
     void SetIsEnableReselectVideoTrack(bool isEnable);
-    bool IsHasMultiVideoTrack();
     void SetApiVersion(int32_t apiVersion);
     bool IsLocalFd();
 private:
@@ -245,6 +245,8 @@ private:
     void ResetDraggingOpenGopCnt();
     Status ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp,
         const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample);
+    Status HandleTrackEos(uint32_t trackId);
+    void SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer);
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -298,6 +300,7 @@ private:
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
     int64_t duration_ {0};
+    FileType fileType_ = FileType::UNKNOW;
 
     std::mutex prerollMutex_ {};
     std::atomic<bool> inPreroll_ = false;
@@ -321,7 +324,6 @@ private:
     std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
     int64_t mediaStartPts_ {HST_TIME_NONE};
     bool isEnableReselectVideoTrack_ {false};
-    int32_t videoTrackCount_ = 0;
     uint32_t targetVideoTrackId_ {TRACK_ID_DUMMY};
     SyncFrameInfo syncFrameInfo_ {};
     std::mutex syncFrameInfoMutex_ {};

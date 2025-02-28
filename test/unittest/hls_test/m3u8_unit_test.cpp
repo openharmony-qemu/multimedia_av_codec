@@ -233,7 +233,7 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_VALID_DATA, TestSize.Level1)
     uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     uint32_t len = 10;
 
-    bool result = m3u8.SaveData(data, len);
+    bool result = m3u8.SaveData(data, len, false);
 
     EXPECT_TRUE(result);
     EXPECT_EQ(m3u8.keyLen_, len);
@@ -246,7 +246,7 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_INVALID_DATA, TestSize.Level1)
     uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     uint32_t len = 10;
 
-    bool result = m3u8.SaveData(data, len);
+    bool result = m3u8.SaveData(data, len, false);
 
     EXPECT_TRUE(result);
     EXPECT_EQ(m3u8.keyLen_, len);
@@ -259,7 +259,7 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_EXVEEDS_MAX_LOOP, TestSize.Level1)
     uint8_t data[MAX_LOOP + 1];
     uint32_t len = MAX_LOOP + 1;
 
-    bool result = m3u8.SaveData(data, len);
+    bool result = m3u8.SaveData(data, len, false);
 
     EXPECT_FALSE(result);
     EXPECT_EQ(m3u8.keyLen_, 0);
@@ -428,7 +428,7 @@ HWTEST_F(M3u8UnitTest, ParseKeyTest, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, SaveDataTest, TestSize.Level1)
 {
     uint8_t data[] = {0x01, 0x02, 0x03, 0x04};
-    bool result = testM3u8->SaveData(data, sizeof(data));
+    bool result = testM3u8->SaveData(data, sizeof(data), false);
     ASSERT_TRUE(result);
 
     // 验证 key_ 成员变量中的数据是否与传入的数据一致

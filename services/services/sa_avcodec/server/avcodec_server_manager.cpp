@@ -150,6 +150,9 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
         .caller = { .pid = pid },
     };
     instanceId++;
+    if (instanceId == INT32_MAX) {
+        instanceId = 0;
+    }
     codecStubMap_.emplace(pid, std::make_pair(object, instanceInfo));
 
     SetCritical(true);

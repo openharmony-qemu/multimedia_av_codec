@@ -138,7 +138,7 @@ using SegmentBufferingCbFunc = std::function<void(int, BufferingInfoType)>;
 class DashSegmentDownloader {
 public:
     DashSegmentDownloader(Callback *callback, int streamId, MediaAVCodec::MediaType streamType,
-                          uint64_t expectDuration);
+                          uint64_t expectDuration, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
     virtual ~DashSegmentDownloader() noexcept;
 
     bool Open(const std::shared_ptr<DashSegment> &dashSegment);
@@ -177,7 +177,7 @@ public:
     void NotifyInitSuccess();
 
 private:
-    bool SaveData(uint8_t* data, uint32_t len);
+    uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     void PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos, const std::string &url);
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     bool UpdateInitSegmentFinish();
@@ -262,6 +262,8 @@ private:
     volatile size_t bufferingTime_ {0};
     uint64_t waterlineForPlaying_ {0};
     std::atomic<bool> isDemuxerInitSuccess_ {false};
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
+    std::atomic<bool> canWrite_{true};
 };
 }
 }

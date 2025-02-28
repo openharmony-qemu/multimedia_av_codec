@@ -123,6 +123,16 @@ HWTEST_F(FileSourceUnitTest, FileSource_ParseFileName_0100, TestSize.Level1)
     fileSourcePlugin_->SetSource(source);
     EXPECT_EQ(Status::OK, fileSourcePlugin_->Deinit());
 }
+
+/**
+ * @tc.name: FileSource_IsLocalFd_0100
+ * @tc.desc: FileSource_IsLocalFd_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceUnitTest, FileSource_IsLocalFd_0100, TestSize.Level1)
+{
+    ASSERT_TRUE(fileSourcePlugin_->IsLocalFd());
+}
 } // namespace FileSource
 } // namespace Plugins
 } // namespace Media

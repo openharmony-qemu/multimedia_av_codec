@@ -53,6 +53,7 @@ public:
     Status GetSize(uint64_t& size) override;
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
+    bool IsLocalFd() override;
 
     std::shared_ptr<Allocator> GetAllocator();
 private:

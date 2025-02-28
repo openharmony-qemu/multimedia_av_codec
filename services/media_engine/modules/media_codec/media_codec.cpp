@@ -279,31 +279,30 @@ void MediaCodec::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlush
     FALSE_RETURN_MSG(!isFlushed, "ProcessInputBufferInner isFlushed true");
     FALSE_RETURN_MSG(inputBufferQueueConsumer_->GetFilledBufferSize() != 0 || !isOutputBufferAvailable_.load(),
         "ProcessInputBufferInner ignore");
-    MEDIA_LOG_D("ProcessInputBufferInner enter");
+
     MediaAVCodec::AVCodecTrace trace("MediaCodec::ProcessInputBufferInner");
+    Status ret = Status::OK;
 
     // The last process failed to RequestBuffer from outputBufferQueueProducer, perform HandleOutputBufferInner firstly.
     if (!isOutputBufferAvailable_.load() || inputBufferEosStatus_.load() != 0) {
-        CHECK_AND_RETURN_LOGD(HandleOutputBufferInner(), "HandleOutputBufferInner-S1 isOutputBufferAvailable false");
+    CHECK_AND_RETURN_LOGD(HandleOutputBufferInner(ret), "S1 output buffer unavailable, ret:%{public}d", ret);
         inputBufferEosStatus_.store(0);
     }
 
     bool isProcessingNeeded = false;
     uint32_t eosStatus = 0;
-    Status ret = Status::OK;
+    ret = Status::OK;
     HandleInputBufferInner(eosStatus, isProcessingNeeded, ret);
     CHECK_AND_RETURN_LOG(isProcessingNeeded, "ProcessInputBufferInner failed %{public}d", static_cast<int32_t>(ret));
 
     inputBufferEosStatus_ = eosStatus;
-    CHECK_AND_RETURN_LOGD(HandleOutputBufferInner(), "HandleOutputBufferInner-S2 isOutputBufferAvailable false");
+    CHECK_AND_RETURN_LOGD(HandleOutputBufferInner(ret), "S2 output buffer unavailable, ret:%{public}d", ret);
     inputBufferEosStatus_.store(0);
 }
 
-bool MediaCodec::HandleOutputBufferInner()
+bool MediaCodec::HandleOutputBufferInner(Status &ret)
 {
-    MEDIA_LOG_D("HandleOutputBufferInner enter");
     MediaAVCodec::AVCodecTrace trace("MediaCodec::HandleOutputBufferInner");
-    Status ret = Status::ERROR_UNKNOWN;
     bool isBufferAvailable = false;
     do {
         isBufferAvailable = false;
@@ -678,10 +677,10 @@ void MediaCodec::ProcessInputBuffer()
     MediaAVCodec::AVCodecTrace trace("MediaCodec::ProcessInputBuffer");
 
     bool isProcessingNeeded = false;
-    Status ret;
+    Status ret = Status::OK;
     uint32_t eosStatus = 0;
     HandleInputBufferInner(eosStatus, isProcessingNeeded, ret);
-    CHECK_AND_RETURN_LOG(isProcessingNeeded, "ProcessInputBufferInner failed %{public}d", static_cast<int32_t>(ret));
+    CHECK_AND_RETURN_LOG(isProcessingNeeded, "ProcessInputBuffer failed %{public}d", static_cast<int32_t>(ret));
 
     do {
         ret = HandleOutputBuffer(eosStatus);
@@ -690,12 +689,12 @@ void MediaCodec::ProcessInputBuffer()
 
 void MediaCodec::HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingNeeded, Status &ret)
 {
-    MEDIA_LOG_D("HandleInputBufferInner enter");
     MediaAVCodec::AVCodecTrace traceHandleInputBufferInner("MediaCodec::HandleInputBufferInner");
 
     std::shared_ptr<AVBuffer> filledInputBuffer;
     if (state_ != CodecState::RUNNING) {
-        MEDIA_LOG_E("HandleInputBufferInner status changed, current status is not running");
+        MEDIA_LOG_I("HandleInputBufferInner status changed, current status is not running");
+        ret = Status::ERROR_INVALID_STATE;
         return;
     }
     {
@@ -707,8 +706,9 @@ void MediaCodec::HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingN
         }
     }
     if (state_ != CodecState::RUNNING) {
-        MEDIA_LOG_D("HandleInputBufferInner ReleaseBuffer name:MediaCodecInputBufferQueue");
+        MEDIA_LOG_D("HandleInputBufferInner not running, ReleaseBuffer name:MediaCodecInputBufferQueue");
         inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
+        ret = Status::ERROR_INVALID_STATE;
         return;
     }
     int8_t retryCount = 0;
@@ -732,8 +732,7 @@ void MediaCodec::HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingN
 
     if (ret != Status::OK || state_ != CodecState::RUNNING) {
         inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
-        FALSE_RETURN_MSG(state_ == CodecState::RUNNING, "state_ invalid, ret:%{public}d", ret);
-        MEDIA_LOG_E("HandleInputBufferInner codecPlugin queueInputBuffer failed");
+        MEDIA_LOG_E("Plugin queueInputBuffer failed, state_:%{public}d, ret:%{public}d", state_.load(), ret);
         return;
     }
     isProcessingNeeded = true;
@@ -785,6 +784,14 @@ Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const s
     MEDIA_LOG_I("codecPlugin Init ret %{public}d", ret);
     ret = codecPlugin_->SetDataCallback(this);
     MEDIA_LOG_I("codecPlugin SetDataCallback ret %{public}d", ret);
+
+    // discard undecoded data and unconsumed decoded data.
+    inputBufferQueueProducer_->Clear();
+    FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN, "inputBufferQueue_ is nullptr");
+    ClearInputBuffer();
+    inputBufferEosStatus_.store(0);
+    isOutputBufferAvailable_.store(true);
+
     PrepareInputBufferQueue();
     PrepareOutputBufferQueue();
     if (state_ == CodecState::RUNNING) {
@@ -806,7 +813,6 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
 
 Status MediaCodec::HandleOutputBufferOnce(bool &isBufferAvailable, uint32_t eosStatus, bool isSync)
 {
-    MEDIA_LOG_D("HandleOutputBufferOnce enter");
     MediaAVCodec::AVCodecTrace traceHandleOutputBufferOnce("MediaCodec::HandleOutputBufferOnce");
     Status ret = Status::OK;
     std::shared_ptr<AVBuffer> emptyOutputBuffer;

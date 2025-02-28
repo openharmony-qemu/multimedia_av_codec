@@ -26,6 +26,8 @@
 #include "filter/filter.h"
 #include "plugin/plugin_time.h"
 #include "performance_utils.h"
+#include <queue>
+#include "audio_errors.h"
 
 namespace OHOS {
 namespace Media {
@@ -88,6 +90,25 @@ public:
     bool GetSyncCenterClockTime(int64_t &clockTime);
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
+    bool IsInputBufferDataEnough(int32_t size);
+    bool CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
+    Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc);
+    Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc);
+    void SyncWriteByRenderInfo();
+    void UpdateRenderInfo();
+    void UpdateAmplitude();
+    bool IsTimeAnchorNeedUpdate();
+    bool IsBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize);
+    bool IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+        size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts);
+    void ReleaseChacheBuffer();
+    int64_t CalculateBufferDuration(int64_t writeDataSize);
+    void WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer);
+    void ResetInfo();
+    bool IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
+    void HandleEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
+    bool HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
+    void HandleAudioRenderRequestPost();
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -107,6 +128,16 @@ private:
     int64_t CalcBufferDuration(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void PerfRecord(int64_t audioWriteMs);
     void ClearInputBuffer();
+    int32_t GetSampleFormatBytes();
+    bool CopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+        size_t &size, size_t &cacheBufferSize, int64_t &bufferPts);
+    bool CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
+        size_t &size, size_t &cacheBufferSize, int64_t &bufferPts);
+    Status InitAudioSinkPlugin(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    Status InitAudioSinkInfo(std::shared_ptr<Meta>& meta);
+    Status SetAudioSinkPluginParameters();
+    void GetAvailableOutputBuffers();
+    void ClearAvailableOutputBuffers();
 
     class UnderrunDetector {
     public:
@@ -155,6 +186,13 @@ private:
         AudioDrainTimeGroup lastDrainTimeGroup_ {};
     };
 
+    class AudioSinkDataCallbackImpl : public AudioSinkDataCallback {
+    public:
+        explicit AudioSinkDataCallbackImpl(std::shared_ptr<AudioSink> sink);
+        void OnWriteData(int32_t size, bool isAudioVivid) override;
+    private:
+        std::weak_ptr<AudioSink> audioSink_;
+    };
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
@@ -204,6 +242,7 @@ private:
     bool isMuted_ = false;
     Mutex amplitudeMutex_ {};
     float maxAmplitude_ = 0;
+    float currentMaxAmplitude_ {0};
 
     bool calMaxAmplitudeCbStatus_ = false;
     UnderrunDetector underrunDetector_;
@@ -213,6 +252,37 @@ private:
     bool isPerfRecEnabled_ { false };
     bool isCalledBySystemApp_ { false };
     bool isLoop_ { false };
+    bool isCallbackMode_ {true};
+    std::shared_ptr<AudioSinkDataCallback> audioSinkDataCallback_ {nullptr};
+    std::mutex availBufferMutex_;
+    std::atomic<size_t> availDataSize_ {0};
+    std::atomic<size_t> remainingDataSize_ {0};
+    std::queue<std::shared_ptr<AVBuffer>> availOutputBuffers_;
+    int32_t currentQueuedBufferOffset_ {0};
+    bool isEosBuffer_ {false};
+    class AudioDataSynchroizer {
+        public:
+            void UpdateCurrentBufferInfo(int64_t bufferPts, int64_t bufferDuration);
+            int64_t GetLastReportedClockTime() const;
+            int64_t GetLastBufferPTS() const;
+            int64_t GetBufferDuration() const;
+            int64_t CalculateAudioLatency();
+            void UpdateReportTime(int64_t nowClockTime);
+            void UpdateLastBufferPTS(int64_t bufferOffset, float speed);
+            void OnRenderPositionUpdated(int64_t currentRenderPTS, int64_t currentRenderClockTime);
+            void Reset();
+        private:
+            int64_t lastBufferPTS_ {HST_TIME_NONE};
+            int64_t startPTS_ {HST_TIME_NONE};
+            int64_t curBufferPTS_ {HST_TIME_NONE};
+            int64_t bufferDuration_ {0};
+            int64_t currentRenderClockTime_ {0};
+            int64_t currentRenderPTS_ {0};
+            int64_t lastReportedClockTime_ {HST_TIME_NONE};
+            int64_t lastBufferOffset_ {0};
+            int64_t compensatePTS_ {0};
+    };
+    std::unique_ptr<AudioDataSynchroizer> innerSynchroizer_ = std::make_unique<AudioDataSynchroizer>();
 };
 }
 }

@@ -166,7 +166,7 @@ private:
 
     uint32_t GetApiVersion();
 
-    bool HandleOutputBufferInner();
+    bool HandleOutputBufferInner(Status &ret);
 
     Status HandleOutputBufferOnce(bool &isOutputBufferAvailable, uint32_t eosStatus, bool isSync);
 

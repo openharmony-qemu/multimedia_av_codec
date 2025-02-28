@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,8 +37,8 @@ namespace Plugins {
 namespace HttpPlugin {
 class HttpMediaDownloader : public MediaDownloader {
 public:
-    explicit HttpMediaDownloader(std::string url);
-    explicit HttpMediaDownloader(std::string url, uint32_t expectBufferDuration);
+    explicit HttpMediaDownloader(std::string url, uint32_t expectBufferDuration,
+                                 std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~HttpMediaDownloader() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
@@ -71,7 +71,7 @@ public:
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
-    bool GetReadTimeOut() override;
+    bool GetReadTimeOut(bool isDelay) override;
     void SetAppUid(int32_t appUid) override;
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
@@ -85,10 +85,10 @@ public:
     void NotifyInitSuccess() override;
 
 private:
-    bool SaveData(uint8_t* data, uint32_t len);
-    bool SaveCacheBufferData(uint8_t* data, uint32_t len);
+    uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
+    uint32_t SaveCacheBufferData(uint8_t* data, uint32_t len, bool notBlock);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
-    bool SaveRingBufferData(uint8_t* data, uint32_t len);
+    uint32_t SaveRingBufferData(uint8_t* data, uint32_t len, bool notBlock);
     void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -100,6 +100,9 @@ private:
     bool SeekCacheBuffer(int64_t offset);
     void InitRingBuffer(uint32_t expectBufferDuration);
     void InitCacheBuffer(uint32_t expectBufferDuration);
+
+    Status HandleRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
+    Status HandleCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
 
     bool HandleBuffering();
     bool StartBuffering(unsigned int& wantReadLength);
@@ -120,6 +123,7 @@ private:
     void HandleWaterline();
     bool CacheBufferFullLoop();
     bool IsNeedBufferForPlaying();
+    uint32_t SaveCacheBufferDataNotblock(uint8_t* data, uint32_t len);
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -204,6 +208,9 @@ private:
     double bufferDurationForPlaying_ {0};
     uint64_t waterlineForPlaying_ {0};
     std::atomic<bool> isDemuxerInitSuccess_ {false};
+	
+    size_t timeoutInterval_ = 0;
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
 };
 }
 }

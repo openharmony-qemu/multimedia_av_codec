@@ -48,11 +48,7 @@ void AudioSinkFilter::AVBufferAvailableListener::OnBufferAvailable()
 {
     auto sink = audioSinkFilter_.lock();
     FALSE_RETURN_MSG(sink != nullptr, "invalid audioSink");
-    if (sink->NeedImmediateRender()) {
-        sink->DoProcessInputBuffer(0, 0);
-    } else {
-        sink->ProcessInputBuffer();
-    }
+    sink->ProcessInputBuffer();
 }
 
 AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)

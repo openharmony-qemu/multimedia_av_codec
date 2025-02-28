@@ -21,10 +21,16 @@
 #include "plugin/plugin_caps.h"
 #include "plugin/plugin_base.h"
 #include "plugin/plugin_definition.h"
+#include "audio_info.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
+class AudioSinkDataCallback {
+public:
+    virtual ~AudioSinkDataCallback() = default;
+    virtual void OnWriteData(int32_t size, bool isAudioVivid) = 0;
+};
 /**
  * @brief Audio Sink Plugin.
  *
@@ -252,6 +258,16 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
      * @return Time consuming of writing buffer, unit is ms
      */
     virtual int64_t GetWriteDurationMs() { return 0; };
+
+    virtual Status SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback) = 0;
+
+    virtual bool GetAudioPosition(timespec &time, uint32_t &framePosition) = 0;
+
+    virtual Status GetBufferDesc(AudioStandard::BufferDesc &bufDesc) = 0;
+
+    virtual Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufDesc) = 0;
+
+    virtual bool IsOffloading() { return false; }
 };
 
 /// Audio sink plugin api major number.

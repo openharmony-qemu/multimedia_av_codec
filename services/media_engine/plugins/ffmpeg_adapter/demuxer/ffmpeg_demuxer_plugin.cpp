@@ -34,7 +34,6 @@
 #include "plugin/plugin_definition.h"
 #include "common/log.h"
 #include "meta/video_types.h"
-#include "avcodec_sysevent.h"
 #include "demuxer_log_compressor.h"
 #include "ffmpeg_demuxer_plugin.h"
 #include "meta/format.h"
@@ -1048,7 +1047,6 @@ void FFmpegDemuxerPlugin::NotifyInitializationCompleted()
     ioContext_.initCompleted = true;
     if (ioContext_.initDownloadDataSize >= INIT_DOWNLOADS_DATA_SIZE_THRESHOLD) {
         MEDIA_LOG_I("Large init size %{public}u", ioContext_.initDownloadDataSize);
-        MediaAVCodec::DemuxerInitEventWrite(ioContext_.initDownloadDataSize, pluginName_);
     }
 }
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
