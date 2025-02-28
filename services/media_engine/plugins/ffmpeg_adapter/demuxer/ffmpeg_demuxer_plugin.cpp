@@ -1100,7 +1100,7 @@ bool FFmpegDemuxerPlugin::HasCodecParameters()
         "mediaInfo is error");
     for (uint32_t i = 0; i < formatContext_->nb_streams; i++) {
         auto avStream = formatContext_->streams[i];
-        FALSE_RETURN_V_MSG_E(avStream != nullptr, false, "AVStream is nullptr");
+        FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, false, "AVStream is nullptr");
         Meta &format = mediaInfo_.tracks[i];
         bool flag = !HaveValidParser(avStream->codecpar->codec_id) ||
             (HaveValidParser(avStream->codecpar->codec_id) && streamParser_);

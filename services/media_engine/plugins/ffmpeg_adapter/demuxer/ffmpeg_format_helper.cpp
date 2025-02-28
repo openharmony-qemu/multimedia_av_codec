@@ -208,14 +208,10 @@ std::string RemoveDuplication(const std::string origin)
 
 std::string ToLower(const std::string& str)
 {
-    std::string res;
-    for (char c : str) {
-        if (c == '_') {
-            res += c;
-        } else {
-            res += std::tolower(c);
-        }
-    }
+    std::string res = str;
+    std::transform(res.begin(), res.end(), res.begin(), [](unsigned char c) {
+        return (c == '_') ? c : std::tolower(c);
+    });
     MEDIA_LOG_D("[" PUBLIC_LOG_S "] -> [" PUBLIC_LOG_S "]", str.c_str(), res.c_str());
     return res;
 }
@@ -248,7 +244,7 @@ bool IsUTF8(const std::string &data)
 {
     int32_t nBytes = 0;
     for (size_t i = 0; i < data.size(); ++i) {
-        if (!IsUTF8Char(static_cast<char>(data[i]), nBytes)) {
+        if (!IsUTF8Char(data[i], nBytes)) {
             MEDIA_LOG_D("Detect char not in uft8");
             return false;
         }
@@ -265,7 +261,7 @@ std::string ConvertGBKToUTF8(const std::string &strGbk)
     const std::string fromCharset = "gb18030";
     const std::string toCharset = "utf-8";
     iconv_t cd = iconv_open(toCharset.c_str(), fromCharset.c_str());
-    if (cd == reinterpret_cast<iconv_t>(-1)) {
+    if (cd == reinterpret_cast<iconv_t>(-1)) { // iconv_t is a void* type
         MEDIA_LOG_D("Call iconv_open failed");
         return "";
     }
@@ -284,7 +280,7 @@ std::string ConvertGBKToUTF8(const std::string &strGbk)
         return "";
     }
     char* outBufBack = outBuf;
-    if (iconv(cd, &inBuf, &inLen, &outBuf, &outLen) == static_cast<size_t>(-1)) {
+    if (iconv(cd, &inBuf, &inLen, &outBuf, &outLen) == static_cast<size_t>(-1)) { // iconv return SIZE_MAX when failed
         MEDIA_LOG_D("Call iconv failed");
         delete[] outBufBack;
         outBufBack = nullptr;
@@ -1026,7 +1022,7 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
 void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Meta &format)
 {
     AVDictionaryEntry *valPtr = nullptr;
-    while ((valPtr = av_dict_get(metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)))  {
+    while ((valPtr = av_dict_get(metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)) != nullptr) {
         std::string tempKey = ToLower(std::string(valPtr->key));
         if (tempKey.find("moov_level_meta_key_") == 0) {
             MEDIA_LOG_D("UserMeta:" PUBLIC_LOG_S, valPtr->key);
@@ -1036,7 +1032,8 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Met
                                    std::string(valPtr->value + VALUE_PREFIX_LEN));
                 }
             continue;
-        } else if (g_formatToString.count(tempKey) <= 0) {
+        }
+        if (g_formatToString.count(tempKey) <= 0) {
             MEDIA_LOG_D("UnsupportMeta:" PUBLIC_LOG_S, valPtr->key);
             continue;
         }
