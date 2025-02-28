@@ -120,6 +120,11 @@ public:
         (void)volume;
         return Status::ERROR_UNKNOWN;
     }
+    Status SetVolumeMode(int32_t mode) override
+    {
+        (void)mode;
+        return Status::ERROR_UNKNOWN;
+    }
     Status GetSpeed(float& speed) override
     {
         (void)speed;

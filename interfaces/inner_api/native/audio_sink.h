@@ -51,6 +51,7 @@ public:
     Status Release();
     Status SetPlayRange(int64_t start, int64_t end);
     Status SetVolume(float volume);
+    Status SetVolumeMode(int32_t mode);
     void DrainOutputBuffer(bool flushed);
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status GetLatency(uint64_t& nanoSec);

@@ -269,6 +269,7 @@ Status AudioServerSinkPlugin::Init()
     rendererOptions_.rendererInfo.contentType = static_cast<AudioStandard::ContentType>(audioRenderInfo_.contentType);
     rendererOptions_.rendererInfo.streamUsage = static_cast<AudioStandard::StreamUsage>(audioRenderInfo_.streamUsage);
     rendererOptions_.rendererInfo.rendererFlags = audioRenderInfo_.rendererFlags;
+    rendererOptions_.rendererInfo.volumeMode = static_cast<AudioStandard::AudioVolumeMode>(volumeMode_);
     rendererOptions_.streamInfo.samplingRate = rendererParams_.sampleRate;
     rendererOptions_.streamInfo.encoding =
         mimeType_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
@@ -742,6 +743,13 @@ Status AudioServerSinkPlugin::SetVolume(float volume)
         return Status::OK;
     }
     return Status::ERROR_WRONG_STATE;
+}
+
+Status AudioServerSinkPlugin::SetVolumeMode(int32_t mode)
+{
+    MEDIA_LOG_D("SetVolumeMode entered.");
+    volumeMode_ = mode;
+    return Status::OK;
 }
 
 Status AudioServerSinkPlugin::GetAudioEffectMode(int32_t &effectMode)

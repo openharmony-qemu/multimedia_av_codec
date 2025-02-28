@@ -256,6 +256,14 @@ Status AudioSinkFilter::DoSetPerfRecEnabled(bool isPerfRecEnabled)
     return Status::OK;
 }
 
+Status AudioSinkFilter::SetVolumeMode(int32_t mode)
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    auto err = audioSink_->SetVolumeMode(mode);
+    MEDIA_LOG_I("set volume mode = %{public}d", mode);
+    return err;
+}
+
 Status AudioSinkFilter::SetVolume(float volume)
 {
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
