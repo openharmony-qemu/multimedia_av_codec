@@ -50,7 +50,7 @@ public:
     static constexpr int64_t MIN_SWITCH_BITRATE_TIME_US = 3000000;
     static constexpr size_t MAX_BITRATE_SWITCH_WAIT_NUMBER = 1;
     struct Config {
-        uint32_t queueId_;
+        uint32_t queueId_{0};
         std::string queueName_{""};
         uint32_t queueSize_{DEFAULT_SAMPLE_QUEUE_SIZE};
         uint32_t bufferCap_{DEFAULT_SAMPLE_BUFFER_CAP};
