@@ -160,6 +160,13 @@ Status SuperResolutionPostProcessor::Start()
     return Status::OK;
 }
 
+Status SuperResolutionPostProcessor::Release()
+{
+    MEDIA_LOG_D("Release in");
+    postProcessor_->Release();
+    return Status::OK;
+}
+
 sptr<Surface> SuperResolutionPostProcessor::GetInputSurface()
 {
     return postProcessor_->GetInputSurface();
