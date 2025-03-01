@@ -869,10 +869,10 @@ void DemuxerFilter::WaitForBufferingEnd()
     demuxer_->WaitForBufferingEnd();
 }
 
-int32_t DemuxerFilter::GetCurrentVideoTrackId()
+void DemuxerFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
 {
-    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, -1, "demuxer_ is nullptr");
-    return demuxer_->GetCurrentVideoTrackId();
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    demuxer_->SetSyncCenter(syncCenter);
 }
 
 void DemuxerFilter::SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart)
@@ -896,6 +896,12 @@ bool DemuxerFilter::IsLocalFd()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->IsLocalFd();
+}
+
+int32_t DemuxerFilter::GetCurrentVideoTrackId()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, -1, "demuxer_ is nullptr");
+    return demuxer_->GetCurrentVideoTrackId();
 }
 } // namespace Pipeline
 } // namespace Media

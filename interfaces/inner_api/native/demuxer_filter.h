@@ -24,6 +24,7 @@
 #include "meta/meta.h"
 #include "meta/media_types.h"
 #include "osal/task/mutex.h"
+#include "media_sync_manager.h"
 #include "interrupt_monitor.h"
 
 namespace OHOS {
@@ -113,6 +114,8 @@ public:
     Status PauseDemuxerReadLoop();
     void WaitForBufferingEnd();
     int32_t GetCurrentVideoTrackId();
+
+    void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart);
     void SetIsEnableReselectVideoTrack(bool isEnable);
     void SetApiVersion(int32_t apiVersion);

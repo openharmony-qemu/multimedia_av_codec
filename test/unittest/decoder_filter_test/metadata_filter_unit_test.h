@@ -130,6 +130,10 @@ public:
     {
         return  Status::OK;
     }
+    Status ClearBufferIf(std::function<bool(const std::shared_ptr<AVBuffer> &)> pred)
+    {
+        return  Status::OK;
+    }
     DECLARE_INTERFACE_DESCRIPTOR(u"Media.MyAVBufferQueueProducer");
 
 protected:
@@ -201,6 +205,7 @@ public:
     MOCK_METHOD(Status, RemoveBufferFilledListener, (sptr<IBrokerListener> & listener), (override));
     MOCK_METHOD(Status, SetBufferAvailableListener, (sptr<IProducerListener> & listener), (override));
     MOCK_METHOD(Status, Clear, (), (override));
+    MOCK_METHOD(Status, ClearBufferIf, (std::function<bool(const std::shared_ptr<AVBuffer> &)> pred), (override));
     DECLARE_INTERFACE_DESCRIPTOR(u"Media.MyAVBufferQueueProducer");
 
 protected:

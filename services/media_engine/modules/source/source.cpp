@@ -81,6 +81,10 @@ void Source::ClearData()
     seekToTimeFlag_ = false;
 }
 
+bool Source::IsFlvLiveStream() const
+{
+    return isFlvLiveStream_;
+}
 Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::SetSource");
@@ -101,6 +105,16 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 
     MEDIA_LOG_I("SetSource exit.");
     return Status::OK;
+}
+
+Status Source::SetStartPts(int64_t startPts)
+{
+    MEDIA_LOG_D("startPts=" PUBLIC_LOG_D64, startPts);
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("SetStartPts failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->SetStartPts(startPts);
 }
 
 void Source::SetBundleName(const std::string& bundleName)
@@ -174,7 +188,7 @@ Status Source::GetBitRates(std::vector<uint32_t>& bitRates)
 
 Status Source::SelectBitRate(uint32_t bitRate)
 {
-    MEDIA_LOG_I("SelectBitRate");
+    MEDIA_LOG_I("SelectBitRate" PUBLIC_LOG_U32, bitRate);
     if (plugin_ == nullptr) {
         MEDIA_LOG_E("SelectBitRate failed, plugin_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
@@ -463,6 +477,7 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
     MEDIA_LOG_D("sourceType = " PUBLIC_LOG_D32, CppExt::to_underlying(srcType));
     if (srcType == SourceType::SOURCE_TYPE_URI) {
         uri_ = source->GetSourceUri();
+        isFlvLiveStream_ = source->GetMediaStreamList().size() > 0;
         std::string mimeType = source->GetMimeType();
         if (mimeType == AVMimeTypes::APPLICATION_M3U8) {
             protocol_ = "http";
