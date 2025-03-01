@@ -271,7 +271,7 @@ Status SuperResolutionPostProcessor::SetVideoWindowSize(int32_t width, int32_t h
 void SuperResolutionPostProcessor::OnError(VPEAlgoErrCode errorCode)
 {
     FALSE_RETURN_MSG(filterCallback_ != nullptr, "OnOutputFormatChanged callback_ is nullptr");
-    filterCallback_->OnError(errorCode);
+    MEDIA_LOG_E("SuperResolutionPostProcessor error happened. ErrorCode: %{public}d", errorCode);
 }
 
 void SuperResolutionPostProcessor::OnOutputFormatChanged(const Format &format)
