@@ -717,6 +717,7 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     FALSE_RETURN_V_MSG(meta->GetData(Tag::MIME_TYPE, codecMimeType_),
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
 
+    meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, isDrmProtected_);
     isPostProcessorSupported_ = IsPostProcessorSupported();
     if (!isPostProcessorSupported_ || CreatePostProcessor() == nullptr) {
         if (postProcessorType_ == VideoPostProcessorType::SUPER_RESOLUTION) {
