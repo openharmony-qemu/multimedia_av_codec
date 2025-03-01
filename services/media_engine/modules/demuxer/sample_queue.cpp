@@ -303,7 +303,7 @@ Status SampleQueue::QuerySizeForNextAcquireBuffer(size_t& size)
     }
     FALSE_RETURN_V(sampleBuffer != nullptr, Status::ERROR_NULL_POINT_BUFFER);
     size = sampleBuffer->GetConfig().capacity;
-    MEDIA_LOG_D(PUBLIC_LOG_S " QuerySizeForNextAcquireBuffer size=" PUBLIC_LOG_U64, config_.queueName_.c_str(), size);
+    MEDIA_LOG_D(PUBLIC_LOG_S " QuerySizeForNextAcquireBuffer size=" PUBLIC_LOG_U32, config_.queueName_.c_str(), size);
     return Status::OK;
 }
 
