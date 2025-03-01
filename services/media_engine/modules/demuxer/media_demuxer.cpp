@@ -951,7 +951,7 @@ Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
 
 Status MediaDemuxer::StartTask(int32_t trackId)
 {
-   MEDIA_LOG_I("In, track " PUBLIC_LOG_D32, trackId);
+    MEDIA_LOG_I("In, track " PUBLIC_LOG_D32, trackId);
     Status ret = Status::OK;
     TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
     auto iterTrack = TRACK_MAP.find(trackType);
@@ -1385,7 +1385,7 @@ Status MediaDemuxer::PauseAllTask()
 {
     MEDIA_LOG_I("In");
     isDemuxerLoopExecuting_ = false;
-     for (auto &iter : taskMap_) {
+    for (auto &iter : taskMap_) {
         if (iter.second != nullptr) {
             iter.second->Pause();
         }
@@ -1410,7 +1410,6 @@ Status MediaDemuxer::PauseAllTaskAsync()
         }
     }
     for (auto &iter : sampleConsumerTaskMap_) {
- 
         if (iter.second != nullptr) {
             iter.second->PauseAsync();
         }
@@ -1673,7 +1672,7 @@ Status MediaDemuxer::Start()
         it->second = 0;
     }
     InitPtsInfo();
-     {
+    {
         std::unique_lock<std::mutex> stopLock(stopMutex_);
         isThreadExit_ = false;
         isStopped_ = false;
@@ -1979,7 +1978,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
                 inSelectTrackType_.erase(static_cast<int32_t>(type));
             }
         }
-       if (CheckTrackEnabledById(trackId)) {
+        if (CheckTrackEnabledById(trackId)) {
             taskMap_[trackId]->StopAsync(); // stop self
             sampleConsumerTaskMap_[trackId]->StopAsync();
         }
