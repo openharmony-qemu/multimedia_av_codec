@@ -333,7 +333,6 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
 {
     if (!isFirstFrameArrived_) {
         if (GetCurrentBufferSize() >= wantReadLength || HandleBreak()) {
-            MEDIA_LOG_I("HTTP buffersize is ok.");
             return false;
         } else {
             waterLineAbove_ = wantReadLength;
@@ -565,12 +564,7 @@ Status HttpMediaDownloader::HandleCacheBuffer(unsigned char* buff, ReadDataInfo&
     if (StartBuffering(readDataInfo.wantReadLength_)) {
         return Status::ERROR_AGAIN;
     }
-    bool canWriteTmp = canWrite_;
     Status res = ReadCacheBuffer(buff, readDataInfo);
-    if (sourceLoader_ && !canWriteTmp && readDataInfo.realReadLength_ > 0) {
-        MEDIA_LOG_I("HTTP read resume.");
-        downloader_->Resume();
-    }
 
     HandleDownloadWaterLine();
     return res;
