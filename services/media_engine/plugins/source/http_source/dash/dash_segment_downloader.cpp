@@ -199,7 +199,6 @@ DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInf
     if (ReadInitSegment(buff, wantReadLength, realReadLength, currentStreamId)) {
         return DASH_READ_OK;
     }
-    bool canWriteTmp = canWrite_;
     uint32_t maxReadLength = GetMaxReadLength(wantReadLength, currentSegment, currentStreamId);
     realReadLength = buffer_->ReadBuffer(buff, maxReadLength, DEFAULT_WAIT_TIME);
     if (realReadLength == 0) {
@@ -207,10 +206,6 @@ DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInf
             ", realReadLength:" PUBLIC_LOG_U32, currentStreamId, buffer_->GetHead(), buffer_->GetTail(),
             realReadLength);
         return DASH_READ_AGAIN;
-    }
-    if (sourceLoader_ && !canWriteTmp && realReadLength > 0) {
-        MEDIA_LOG_I("Dash read resume.");
-        downloader_->Resume();
     }
 
     MEDIA_LOG_D("After read: streamId:" PUBLIC_LOG_D32 " ,bufferHead:" PUBLIC_LOG_ZU ", bufferTail:" PUBLIC_LOG_ZU

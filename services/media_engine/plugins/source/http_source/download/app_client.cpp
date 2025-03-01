@@ -34,6 +34,7 @@ namespace {
     constexpr int DROP_APP_DATA = -2;
     constexpr int BUFFER_FULL = -3;
     constexpr int RETRY_SLEEP_TIME = 500; // ms
+    constexpr int FINISHLOADING_SLEEP_TIME = 10; // ms
 }
  
 AppClient::AppClient(RxHeader headCallback, RxBody bodyCallback, void *userParam)
@@ -103,6 +104,7 @@ Status AppClient::RequestData(long startPos, int len, const RequestInfo& request
  
     int32_t clientCode = 0;
     int32_t serverCode = 0;
+    LoadingRequestError requestState;
     {
         AutoLock lock(mutex_);
         isResponseCompleted_.store(false);
@@ -112,8 +114,9 @@ Status AppClient::RequestData(long startPos, int len, const RequestInfo& request
         responseCondition_.Wait(lock, [this] {
             return isResponseCompleted_.load();
         });
-        clientCode = static_cast<int32_t>(requestState_) * (-1);
+        requestState = requestState_;
     }
+    clientCode = static_cast<int32_t>(requestState) * (-1);
  
     Status ret = Status::OK;
     if (requestState_ == LoadingRequestError::LOADING_ERROR_SUCCESS) {
@@ -212,7 +215,7 @@ int32_t AppClient::RespondData(int64_t uuid, int64_t offset, const std::shared_p
     if (res == 0) {
         MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient buffer full, can not write, uuid: " PUBLIC_LOG_D64,
             FAKE_POINTER(this), uuid);
-        NotifyResponseDataEnd(LoadingRequestError::LOADING_ERROR_SUCCESS);
+        NotifyResponseDataEnd(LoadingRequestError::LOADING_ERROR_NOT_READY);
         return BUFFER_FULL;
     }
     
@@ -234,6 +237,7 @@ int32_t AppClient::FinishLoading(int64_t uuid, LoadingRequestError state)
 {
     FALSE_RETURN_V_MSG_E(uuid == uuid_, 0, "FinishLoading uuid invalid.");
     MEDIA_LOG_I("0x%{public}06" PRIXPTR "AppClient FinishLoading uuid " PUBLIC_LOG_D64, FAKE_POINTER(this), uuid);
+    Task::SleepInTask(FINISHLOADING_SLEEP_TIME);
     NotifyResponseDataEnd(state);
     return 0;
 }

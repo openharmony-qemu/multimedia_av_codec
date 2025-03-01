@@ -593,12 +593,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 
     HandleFfmpegReadback(readDataInfo.ffmpegOffset);
 
-    bool canWriteTmp = canWrite_;
     auto ret = ReadDelegate(buff, readDataInfo);
-    if (sourceLoader_ && !canWriteTmp && readDataInfo.realReadLength_ > 0) {
-        MEDIA_LOG_I("HTTP read resume.");
-        downloader_->Resume();
-    }
 
     readTotalBytes_ += readDataInfo.realReadLength_;
     if (now > lastReadCheckTime_ && now - lastReadCheckTime_ > SAMPLE_INTERVAL) {

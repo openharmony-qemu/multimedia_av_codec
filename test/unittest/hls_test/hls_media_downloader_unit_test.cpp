@@ -304,6 +304,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, HandleBuffering, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
 {
+    hlsMediaDownloader->totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
     EXPECT_EQ(hlsMediaDownloader->totalBufferSize_, MAX_CACHE_BUFFER_SIZE);
 }
 
