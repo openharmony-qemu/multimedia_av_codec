@@ -37,7 +37,7 @@ namespace OHOS {
 namespace Media {
 
 const int32_t DEFAULT_BUFFER_QUEUE_SIZE = 8;
-const int32_t APE_BUFFER_QUEUE_SIZE = 32;
+const int32_t APE_BUFFER_QUEUE_SIZE = 30;
 const int64_t DEFAULT_PLAY_RANGE_VALUE = -1;
 const int64_t MICROSECONDS_CONVERT_UNITS = 1000;
 
@@ -593,6 +593,7 @@ bool AudioSink::CopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::share
     auto ret = memcpy_s(bufferDesc.buffer + bufferDesc.dataLength, availableSize,
         buffer->memory_->GetAddr() + currentQueuedBufferOffset_, availableSize);
     FALSE_RETURN_V_MSG(ret == 0, false, "copy from cache buffer may fail.");
+    bufferPts = (bufferPts == HST_TIME_NONE) ? buffer->pts_ : bufferPts;
     bufferDesc.dataLength += availableSize;
     availDataSize_.fetch_sub(availableSize);
     if (cacheBufferSize > size) {
@@ -611,6 +612,7 @@ bool AudioSink::CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, 
     auto ret = memcpy_s(bufferDesc.buffer + bufferDesc.dataLength, cacheBufferSize,
         buffer->memory_->GetAddr() + currentQueuedBufferOffset_, cacheBufferSize);
     FALSE_RETURN_V_MSG(ret == 0, false, "copy from cache buffer may fail.");
+    bufferPts = (bufferPts == HST_TIME_NONE) ? buffer->pts_ : bufferPts;
     bufferDesc.dataLength += cacheBufferSize;
     size -= cacheBufferSize;
     availDataSize_.fetch_sub(cacheBufferSize);
@@ -632,7 +634,6 @@ bool AudioSink::IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::
     FALSE_RETURN_V_MSG(cacheBufferSize <= size || !isAudioVivid, false, "copy from cache buffer may fail.");
     bool ret = isAudioVivid ? CopyAudioVividBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts) :
         CopyBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts);
-    bufferPts = (bufferPts == HST_TIME_NONE && ret) ? buffer->pts_ : bufferPts;
     return ret;
 }
 

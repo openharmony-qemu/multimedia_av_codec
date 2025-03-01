@@ -447,7 +447,7 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     if (IsAsyncMode()) {
         Status ret = SetInputBufferQueueConsumerListener();
         FALSE_RETURN_MSG(ret == Status::OK, "OnLinkedResult SetInputBufferQueueConsumerListener failed");
-    
+
         ret = SetOutputBufferQueueProducerListener();
         FALSE_RETURN_MSG(ret == Status::OK, "OnLinkedResult SetOutputBufferQueueProducerListener failed");
     }
