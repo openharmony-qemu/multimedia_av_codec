@@ -957,7 +957,7 @@ uint32_t HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len, bool n
         }
     }
     MEDIA_LOG_D("SaveEncryptData, return len " PUBLIC_LOG_D32, len);
-    return len;
+    return writeSuccessLen == realLen ? len : writeSuccessLen;
 }
 
 void HlsMediaDownloader::DownloadRecordHistory(int64_t nowTime)

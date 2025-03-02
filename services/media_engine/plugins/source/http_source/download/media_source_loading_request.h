@@ -61,6 +61,7 @@ public:
 
 private:
     std::map<int64_t, std::shared_ptr<LoadingRequestElements>> requestMap_ {};
+    FairMutex clientMutex_{};
 };
 
 class MediaSourceLoaderCombinations {
