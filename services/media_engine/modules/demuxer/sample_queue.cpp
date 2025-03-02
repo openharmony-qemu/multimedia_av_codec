@@ -23,6 +23,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "SampleQueue" };
+constexpr uint32_t INVALID_TRACK_ID = -1;
 }
 
 namespace OHOS {
@@ -205,13 +206,12 @@ Status SampleQueue::CopyBuffer(std::shared_ptr<AVBuffer>& srcBuffer, std::shared
     dstBuffer->duration_ = srcBuffer->duration_;
     dstBuffer->flag_ = srcBuffer->flag_;
 
+    CopyMeta(srcBuffer, dstBuffer);
+
     if (IsEosFrame(dstBuffer)) {
         MEDIA_LOG_I(PUBLIC_LOG_S " receive  IsEosFrame", config_.queueName_.c_str());
         return Status::OK;
     }
-
-    CopyMeta(srcBuffer, dstBuffer);
-
     return CopyAVMemory(srcBuffer, dstBuffer);
 }
 
@@ -222,16 +222,17 @@ void SampleQueue::CopyMeta(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr
         dstBuffer->meta_ = nullptr;
         return;
     }
+
+    uint32_t trackId = INVALID_TRACK_ID;
+    if (!dstBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, trackId)) {
+        MEDIA_LOG_W("trackId not found");
+    }
+
     dstBuffer->meta_ = std::make_shared<Meta>(*(srcBuffer->meta_));
     if (dstBuffer->meta_ == nullptr) {
         return;
     }
 
-    constexpr uint32_t INVALID_TRACK_ID = -1;
-    uint32_t trackId = INVALID_TRACK_ID;
-    if (!srcBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, trackId)) {
-        MEDIA_LOG_W("trackId not found");
-    }
     if (trackId != INVALID_TRACK_ID) {
         dstBuffer->meta_->SetData(Tag::REGULAR_TRACK_ID, trackId);
     }

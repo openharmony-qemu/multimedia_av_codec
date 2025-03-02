@@ -44,9 +44,9 @@ class SampleQueue : public std::enable_shared_from_this<SampleQueue> {
 public:
     static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE = 150;
     static constexpr uint32_t DEFAULT_SAMPLE_QUEUE_SIZE = 1;
-    static constexpr uint32_t MAX_SAMPLE_BUFFER_CAP = 2 * 1024 * 1024;
-    static constexpr uint32_t DEFAULT_VIDEO_SAMPLE_BUFFER_CAP = 256 * 1024;
-    static constexpr uint32_t DEFAULT_SAMPLE_BUFFER_CAP = 2 * 1024;
+    static constexpr uint32_t MAX_SAMPLE_BUFFER_CAP = 10 * 1024 * 1024;
+    static constexpr uint32_t DEFAULT_VIDEO_SAMPLE_BUFFER_CAP = 1 * 1024 * 1024;
+    static constexpr uint32_t DEFAULT_SAMPLE_BUFFER_CAP = 4 * 1024;
     static constexpr int64_t MIN_SWITCH_BITRATE_TIME_US = 3000000;
     static constexpr size_t MAX_BITRATE_SWITCH_WAIT_NUMBER = 1;
     struct Config {
