@@ -639,6 +639,9 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         }
     }
     videoDecoder_->SetParameter(format);
+    if (postProcessor_) {
+        postProcessor_->SetParameter(format);
+    }
 }
 
 Status DecoderSurfaceFilter::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)

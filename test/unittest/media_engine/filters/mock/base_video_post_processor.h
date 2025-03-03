@@ -60,7 +60,7 @@ public:
     MOCK_METHOD(Status, SetCallback, (const std::shared_ptr<PostProcessorCallback> callback), ());
     MOCK_METHOD(Status, SetEventReceiver, (const std::shared_ptr<Pipeline::EventReceiver> &receiver), ());
 
-    MOCK_METHOD(Status, Setparameter, (const Format &format), ());
+    MOCK_METHOD(Status, SetParameter, (const Format &format), ());
     MOCK_METHOD(Status, SetPostProcessorOn, (bool isPostProcessorOn), ());
     MOCK_METHOD(Status, SetVideoWindowSize, (int32_t width, int32_t height), ());
 };
