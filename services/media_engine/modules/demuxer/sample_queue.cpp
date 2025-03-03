@@ -333,6 +333,7 @@ Status SampleQueue::DiscardSampleAfter(int64_t startPts)
         MEDIA_LOG_E("before DiscardSampleAfter keyFramePtsSet_ =" PUBLIC_LOG_S, SetToString(keyFramePtsSet_).c_str());
         auto it = keyFramePtsSet_.lower_bound(startPts);
         keyFramePtsSet_.erase(it, keyFramePtsSet_.end());
+        lastEndSamplePts_ = startPts;
     }
     FALSE_RETURN_V(sampleBufferQueueProducer_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
     auto isNewerSample = [startPts](const std::shared_ptr<AVBuffer>& buffer) {
