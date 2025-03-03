@@ -341,8 +341,8 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
         postProcessor_->SetEventReceiver(eventReceiver_);
         postProcessor_->SetVideoWindowSize(postProcessorTargetWidth_, postProcessorTargetHeight_);
         postProcessor_->SetPostProcessorOn(isPostProcessorOn_);
-        postProcessor_->Init();
         postProcessor_->SetParameter(meta_);
+        postProcessor_->Init();
     }
     videoSink_->SetParameter(meta_);
     eosTask_ = std::make_unique<Task>("OS_EOSv", groupId_, TaskType::VIDEO, TaskPriority::HIGH, false);
