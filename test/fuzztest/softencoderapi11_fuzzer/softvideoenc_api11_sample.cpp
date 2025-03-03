@@ -113,8 +113,7 @@ int32_t VEncAPI11FuzzSample::SetVideoEncoderCallback()
     }
     if (surfInput) {
         int32_t ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParam, static_cast<void *>(this));
-        if (ret != AV_ERR_OK)
-        {
+        if (ret != AV_ERR_OK) {
             return ret;
         }
     }
@@ -201,8 +200,7 @@ void VEncAPI11FuzzSample::InputFunc()
 {
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.wait(lock, [this]()
-                              {
+        signal_->inCond_.wait(lock, [this]() {
             if (!isRunning_.load()) {
                 return true;
             }
