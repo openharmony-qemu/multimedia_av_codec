@@ -341,7 +341,6 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
         postProcessor_->SetEventReceiver(eventReceiver_);
         postProcessor_->SetVideoWindowSize(postProcessorTargetWidth_, postProcessorTargetHeight_);
         postProcessor_->SetPostProcessorOn(isPostProcessorOn_);
-        postProcessor_->SetParameter(meta_);
         postProcessor_->Init();
     }
     videoSink_->SetParameter(meta_);
