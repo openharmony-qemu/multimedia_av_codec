@@ -250,6 +250,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
       "fuzztest/swdecoderserver_fuzzer:SwdecoderServerFuzzTest",
       "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
+      "fuzztest/softencoderapi11_fuzzer:SoftEncoderAPI11FuzzTest",
     ]
   }
 }
