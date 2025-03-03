@@ -25,33 +25,30 @@ using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "softencoderapi11_fuzzer"
 
-namespace OHOS
+namespace OHOS {
+bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
 {
-    bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
-    {
-        if (size < sizeof(int32_t))
-        {
-            return false;
-        }
-        bool result = false;
-        VEncAPI11FuzzSample *vEncSample = new VEncAPI11FuzzSample();
-        vEncSample->fuzzData = data;
-        vEncSample->fuzzSize = size;
-        OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, SOFTWARE);
-        string tmpCodecName = OH_AVCapability_GetName(cap);
-        int32_t ret = vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
-        if (ret != 0)
-        {
-            delete vEncSample;
-            return true;
-        }
-        vEncSample->SetVideoEncoderCallback();
-        vEncSample->ConfigureVideoEncoder();
-        vEncSample->StartVideoEncoder();
-        vEncSample->WaitForEOS();
-        delete vEncSample;
-        return result;
+    if (size < sizeof(int32_t)) {
+        return false;
     }
+    bool result = false;
+    VEncAPI11FuzzSample *vEncSample = new VEncAPI11FuzzSample();
+    vEncSample->fuzzData = data;
+    vEncSample->fuzzSize = size;
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, SOFTWARE);
+    string tmpCodecName = OH_AVCapability_GetName(cap);
+    int32_t ret = vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
+    if (ret != 0) {
+        delete vEncSample;
+        return true;
+    }
+    vEncSample->SetVideoEncoderCallback();
+    vEncSample->ConfigureVideoEncoder();
+    vEncSample->StartVideoEncoder();
+    vEncSample->WaitForEOS();
+    delete vEncSample;
+    return result;
+}
 } // namespace OHOS
 
 /* Fuzzer entry point */
