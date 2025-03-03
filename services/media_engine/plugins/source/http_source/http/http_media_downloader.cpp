@@ -1669,7 +1669,7 @@ void HttpMediaDownloader::SetMediaStreams(const MediaStreamList& mediaStreams)
 {
     MEDIA_LOG_I("HTTP MediaStreams size is " PUBLIC_LOG_ZU, static_cast<size_t>(mediaStreams.size()));
     playMediaStreams_ = mediaStreams;
-    defaultStream_ = playMediaStreams_.front();
+    defaultStream_ = playMediaStreams_.empty() ? nullptr : playMediaStreams_.front();
 }
 
 void HttpMediaDownloader::ChooseStreamByResolution()
