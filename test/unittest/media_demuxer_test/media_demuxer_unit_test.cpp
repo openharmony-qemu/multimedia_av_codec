@@ -282,6 +282,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectTrack_003, TestSize.Level1)
 	AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(2, inputBufferQueueProducer), Status::OK);
     EXPECT_EQ(demuxer->SelectTrack(2), Status::OK);
 }
 
@@ -1706,6 +1707,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ResumeDragging_0100, TestSize.Level1
     demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     demuxer->source_ = std::shared_ptr<Source>();
     demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    demuxer->sampleConsumerTaskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
     EXPECT_EQ(demuxer->ResumeDragging(), Status::OK);
 }
 

@@ -1055,7 +1055,9 @@ Status MediaDemuxer::DoSelectTrack(int32_t trackId, int32_t curTrackId)
         sampleQueueMap_.insert(
             std::pair<uint32_t, std::shared_ptr<SampleQueue>>(trackId, sampleQueueMap_[curTrackId]));
         sampleQueueMap_.erase(curTrackId);
-        sampleQueueMap_[trackId]->UpdateQueueId(trackId);
+        if (sampleQueueMap_[trackId] != nullptr) {
+            sampleQueueMap_[trackId]->UpdateQueueId(trackId);
+        }
         return InnerSelectTrack(trackId);
     }
     return Status::ERROR_UNKNOWN;
