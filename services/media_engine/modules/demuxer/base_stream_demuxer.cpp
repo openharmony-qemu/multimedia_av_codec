@@ -103,8 +103,9 @@ void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_D("BaseStreamDemuxer onInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
-    if (typeFinder_ != nullptr) {
-        typeFinder_->SetInterruptState(isInterruptNeeded);
+    std::shared_ptr<TypeFinder> typeFinder = typeFinder_;
+    if (typeFinder != nullptr) {
+        typeFinder->SetInterruptState(isInterruptNeeded);
     }
 }
 
