@@ -143,6 +143,7 @@ private:
     bool CanDropHevcPkt(const AVPacket& pkt);
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
+    bool IsLessMaxReferenceParserFrames(uint32_t trackIndex);
     void WebvttMP4EOSProcess(const AVPacket *pkt);
     Status CheckCacheDataLimit(uint32_t trackId);
 

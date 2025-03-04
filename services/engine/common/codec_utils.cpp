@@ -154,8 +154,12 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct Surface
 {
     int32_t height;
     int32_t fmt;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt);
+    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height) && height > 0,
+                             AVCS_ERR_INVALID_VAL, "Invalid height %{public}d!", height);
+    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt) &&
+                             fmt >= static_cast<int32_t>(VideoPixelFormat::YUV420P) &&
+                             fmt <= static_cast<int32_t>(VideoPixelFormat::RGBA),
+                             AVCS_ERR_INVALID_VAL, "Cannot get pixel format");
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
     if (surfaceInfo.surfaceFence != nullptr) {
         surfaceInfo.surfaceFence->Wait(100); // 100ms
@@ -186,9 +190,14 @@ int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scale
     int32_t height;
     int32_t width;
     int32_t fmt;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt);
+    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height) && height > 0,
+                             AVCS_ERR_INVALID_VAL, "Invalid height %{public}d!", height);
+    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width) && width > 0,
+                             AVCS_ERR_INVALID_VAL, "Invalid width %{public}d!", width);
+    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt) &&
+                             fmt >= static_cast<int32_t>(VideoPixelFormat::YUV420P) &&
+                             fmt <= static_cast<int32_t>(VideoPixelFormat::RGBA),
+                             AVCS_ERR_INVALID_VAL, "Cannot get pixel format");
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
 
     if (IsYuvFormat(pixFmt)) {
