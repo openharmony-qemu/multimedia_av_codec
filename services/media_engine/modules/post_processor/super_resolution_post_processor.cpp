@@ -135,7 +135,6 @@ Status SuperResolutionPostProcessor::Init()
     auto callback = std::make_shared<VPECallback>(shared_from_this());
     SetQualityLevel(DEFAULT_QUALITY_LEVEL);
     postProcessor_->RegisterCallback(callback);
-    postProcessor_->Start();
     return Status::OK;
 }
 
