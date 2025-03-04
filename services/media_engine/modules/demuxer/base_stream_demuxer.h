@@ -138,6 +138,7 @@ protected:
     std::atomic<bool> isInterruptNeeded_{false};
     std::string bundleName_ {};
     std::string uri_ {};
+    virtual void TypeFinderInterrupt(bool isInterruptNeeded);
 public:
     uint64_t mediaDataSize_{0};
     Plugins::Seekable seekable_;
@@ -149,6 +150,7 @@ private:
     std::atomic<int32_t> newAudioStreamID_ = -1;
     std::atomic<int32_t> newSubtitleStreamID_ = -1;
     std::atomic<bool> changeStreamFlag_ = true;
+    std::mutex typeFinderMutex_ {};
 };
 } // namespace Media
 } // namespace OHOS

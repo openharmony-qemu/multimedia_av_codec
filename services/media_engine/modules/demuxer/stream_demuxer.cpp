@@ -458,12 +458,12 @@ Status StreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shar
 void StreamDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("StreamDemuxer OnInterrupted %{public}d", isInterruptNeeded);
-    std::unique_lock<std::mutex> lock(mutex_);
-    isInterruptNeeded_ = isInterruptNeeded;
-    readCond_.notify_all();
-    if (typeFinder_ != nullptr) {
-        typeFinder_->SetInterruptState(isInterruptNeeded);
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        isInterruptNeeded_ = isInterruptNeeded;
+        readCond_.notify_all();
     }
+    TypeFinderInterrupt(isInterruptNeeded);
 }
 } // namespace Media
 } // namespace OHOS
