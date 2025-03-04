@@ -246,6 +246,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/mpeg4swdecodersetparameter_fuzzer:Mpeg4SwdecoderSetParameterFuzzTest",
       "fuzztest/ptsandindexconversion_fuzzer:PtsAndIndexConversionFuzzTest",
       "fuzztest/referenceparser_fuzzer:ReferenceparserFuzzTest",
+      "fuzztest/softencoderapi11_fuzzer:SoftEncoderAPI11FuzzTest",
       "fuzztest/swdecoderconfigure_fuzzer:SwdecoderConfigureFuzzTest",
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
       "fuzztest/swdecoderserver_fuzzer:SwdecoderServerFuzzTest",
