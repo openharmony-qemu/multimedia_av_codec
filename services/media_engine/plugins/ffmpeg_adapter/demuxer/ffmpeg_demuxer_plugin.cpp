@@ -220,6 +220,18 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int6
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE && ffTime == 0) {
         return AVSEEK_FLAG_FRAME;
     }
+    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && seekTime != 0) {
+        int64_t streamDuration = avStream->duration;
+        if (streamDuration == AV_NOPTS_VALUE || streamDuration <= 0) {
+            streamDuration = GetStreamDuration(*avStream);
+        }
+        // When the seekTime is within the last 0.5s, still use BACKWARD mode to ensure consistent func behavior.
+        int64_t buffering = ConvertTimeToFFmpeg(500 * MS_TO_NS, avStream->time_base); // 0.5s
+        if (streamDuration > 0  && (streamDuration < buffering || ffTime >= streamDuration - buffering)) {
+            return AVSEEK_FLAG_BACKWARD;
+        }
+        return g_seekModeToFFmpegSeekFlags.at(mode);
+    }
     if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO || seekTime == 0) {
         return AVSEEK_FLAG_BACKWARD;
     }
