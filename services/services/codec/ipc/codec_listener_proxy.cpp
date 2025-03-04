@@ -124,8 +124,8 @@ CodecListenerProxy::~CodecListenerProxy()
 void CodecListenerProxy::Init()
 {
     const std::string &tag = this->GetTag();
-    inputBufferCache_->SetTag(tag);
-    outputBufferCache_->SetTag(tag);
+    inputBufferCache_->SetTag(tag + "[in]");
+    outputBufferCache_->SetTag(tag + "[out]");
 }
 
 void CodecListenerProxy::OnError(AVCodecErrorType errorType, int32_t errorCode)
