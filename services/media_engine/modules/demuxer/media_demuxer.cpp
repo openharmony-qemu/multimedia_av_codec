@@ -377,7 +377,7 @@ void MediaDemuxer::AccelerateSampleConsumerTask(uint32_t trackId)
     }
     AutoLock lock(mapMutex_);
     auto track = trackMap_.find(trackId);
-    if (track == trackMap_.end() || !track->second->GetNotifySampleConsumerFlag()) {
+    if (track == trackMap_.end() || track->second == nullptr || !track->second->GetNotifySampleConsumerFlag()) {
         return;
     }
     track->second->SetNotifySampleConsumerFlag(false);
@@ -400,7 +400,7 @@ void MediaDemuxer::AccelerateTrackTask(uint32_t trackId)
     AutoLock lock(mapMutex_);
 
     auto track = trackMap_.find(trackId);
-    if (track == trackMap_.end() || !track->second->GetNotifyFlag()) {
+    if (track == trackMap_.end() || track->second == nullptr || !track->second->GetNotifyFlag()) {
         return;
     }
     track->second->SetNotifyFlag(false);
@@ -417,7 +417,7 @@ void MediaDemuxer::SetTrackNotifyFlag(uint32_t trackId, bool isNotifyNeeded)
 {
     // This function is called in demuxer track working thread, and if track info exists it is valid.
     auto track = trackMap_.find(trackId);
-    if (track != trackMap_.end()) {
+    if (track != trackMap_.end() && track->second != nullptr) {
         track->second->SetNotifyFlag(isNotifyNeeded);
     }
 }
@@ -426,7 +426,7 @@ void MediaDemuxer::SetTrackNotifySampleConsumerFlag(uint32_t trackId, bool isNot
 {
     // This function is called in samplequeue consumer working thread, and if track info exists it is valid.
     auto track = trackMap_.find(trackId);
-    if (track != trackMap_.end()) {
+    if (track != trackMap_.end() && track->second != nullptr) {
         track->second->SetNotifySampleConsumerFlag(isNotifySampleConsumerNeeded);
     }
 }
@@ -2849,10 +2849,9 @@ void MediaDemuxer::UpdateLastVideoBufferAbsPts(uint32_t trackId)
     }
     AutoLock lock(mapMutex_);
     auto sqIt = sampleQueueMap_.find(trackId);
-    if (sqIt == sampleQueueMap_.end() || !sqIt->second) {
-        return;
+    if (sqIt != sampleQueueMap_.end() && sqIt->second != nullptr) {
+        sqIt->second->UpdateLastEndSamplePts(lastVideoBufferAbsPts);
     }
-    sqIt->second->UpdateLastEndSamplePts(lastVideoBufferAbsPts);
 }
 
 // now only for the flv living streaming case, callback by SampleQueue
@@ -2888,7 +2887,7 @@ Status MediaDemuxer::OnSampleQueueBufferConsume(uint32_t queueId)
     AutoLock lock(mapMutex_);
 
     auto track = trackMap_.find(trackId);
-    if (track == trackMap_.end()) {
+    if (track == trackMap_.end() || track->second == nullptr) {
         return Status::ERROR_INVALID_PARAMETER;
     }
     track->second->SetNotifySampleConsumerFlag(false);
