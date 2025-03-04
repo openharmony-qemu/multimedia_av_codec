@@ -36,7 +36,7 @@ bool EncoderInnerFuzzTest(const uint8_t *data, size_t size)
     string gCodecMime = "video/avc";
     string gCodecName = "";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(gCodecMime.c_str(), true, HARDWARE);
-    if (!cap) {
+    if (cap == nullptr) {
         return false;
     }
     const char *tmpCodecName = OH_AVCapability_GetName(cap);
