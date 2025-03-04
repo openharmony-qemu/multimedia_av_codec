@@ -174,6 +174,11 @@ public:
         return Status::OK;
     }
 
+    virtual Status SetStartPts(int64_t startPts)
+    {
+        return Status::OK;
+    }
+
     virtual Status SelectBitRate(uint32_t bitRate)
     {
         return Status::OK;

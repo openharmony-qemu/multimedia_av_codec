@@ -75,6 +75,9 @@ public:
     bool InSeeking();
     // notified when leaving seeking，that is, isSeeking_ is set to false
     std::condition_variable seekCond_;
+
+    void SetLastVideoBufferAbsPts(int64_t lastVideoBufferAbsPts) override;
+    int64_t GetLastVideoBufferAbsPts() const override;
 private:
     enum class State {
         RESUMED,
@@ -143,6 +146,8 @@ private:
     int8_t currentSyncerPriority_ {IMediaSynchronizer::NONE};
     int8_t currentRangeStartPriority_ {IMediaSynchronizer::NONE};
     int8_t currentRangeEndPriority_ {IMediaSynchronizer::NONE};
+
+    int64_t lastVideoBufferAbsPts_ {HST_TIME_NONE};
 };
 } // namespace Pipeline
 } // namespace Media

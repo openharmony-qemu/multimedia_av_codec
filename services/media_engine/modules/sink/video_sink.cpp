@@ -73,6 +73,7 @@ void VideoSink::UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN(syncCenter != nullptr && buffer != nullptr);
     syncCenter->SetLastVideoBufferPts(buffer->pts_ - firstPts_);
+    syncCenter->SetLastVideoBufferAbsPts(buffer->pts_);
     if (!needUpdateTimeAnchor_) {
         return;
     }

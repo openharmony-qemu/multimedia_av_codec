@@ -81,6 +81,8 @@ public:
     void WaitForBufferingEnd() override;
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void NotifyInitSuccess() override;
+    void SetStartPts(int64_t startPts) override;
+    void SetMediaStreams(const MediaStreamList& mediaStreams) override;
 
 private:
     int64_t HttpMonitorLoop();

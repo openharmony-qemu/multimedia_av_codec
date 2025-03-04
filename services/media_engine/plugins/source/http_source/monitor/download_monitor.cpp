@@ -470,6 +470,20 @@ void DownloadMonitor::NotifyInitSuccess()
     FALSE_RETURN_MSG(downloader_ != nullptr, "NotifyInitSuccess downloader is nullptr");
     downloader_->NotifyInitSuccess();
 }
+
+void DownloadMonitor::SetStartPts(int64_t startPts)
+{
+    if (downloader_) {
+        downloader_->SetStartPts(startPts);
+    }
+}
+
+void DownloadMonitor::SetMediaStreams(const MediaStreamList& mediaStreams)
+{
+    if (downloader_) {
+        downloader_->SetMediaStreams(mediaStreams);
+    }
+}
 }
 }
 }

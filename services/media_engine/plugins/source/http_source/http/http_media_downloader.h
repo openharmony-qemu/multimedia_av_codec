@@ -78,11 +78,17 @@ public:
     void SetIsReportedErrorCode() override;
     bool isNotRetry(const std::shared_ptr<DownloadRequest>& request) override
     {
+        if (isRingBuffer_ && isSelectingBitrate_.load()) {
+            return false;
+        }
         return isRingBuffer_ && request->GetFileContentLengthNoWait() == 0;
     }
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     void NotifyInitSuccess() override;
+    void SetStartPts(int64_t startPts) override;
+    bool SelectBitRate(uint32_t bitRate) override;
+    void SetMediaStreams(const MediaStreamList& mediaStreams) override;
 
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
@@ -124,6 +130,11 @@ private:
     bool CacheBufferFullLoop();
     bool IsNeedBufferForPlaying();
     uint32_t SaveCacheBufferDataNotblock(uint8_t* data, uint32_t len);
+    void AddParamForUrl(std::string& url, const std::string& key, const std::string& value);
+    void ChooseStreamByResolution();
+    bool IsNearToInitResolution(const std::shared_ptr<PlayMediaStream> &choosedStream,
+        const std::shared_ptr<PlayMediaStream> &currentStream);
+    uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -211,6 +222,11 @@ private:
 	
     size_t timeoutInterval_ = 0;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
+    int64_t flvStartPts_ {0};
+    MediaStreamList playMediaStreams_;
+    std::atomic<bool> isSelectingBitrate_ {false};
+    std::shared_ptr<PlayMediaStream> defaultStream_ {nullptr};
+    uint32_t initResolution_ {0};
 };
 }
 }
