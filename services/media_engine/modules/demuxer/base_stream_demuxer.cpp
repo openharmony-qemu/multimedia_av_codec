@@ -80,6 +80,7 @@ std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
     typeFinder_ = std::make_shared<TypeFinder>();
     typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_, streamID);
     std::string type = typeFinder_->FindMediaType();
+    std::unique_lock<std::mutex> lock(typeFinderMutex_);
     typeFinder_ = nullptr;
     MEDIA_LOG_D_SHORT("SnifferMediaType result type: " PUBLIC_LOG_S, type.c_str());
     return type;
@@ -103,9 +104,14 @@ void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_D("BaseStreamDemuxer onInterrupted %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
-    std::shared_ptr<TypeFinder> typeFinder = typeFinder_;
-    if (typeFinder != nullptr) {
-        typeFinder->SetInterruptState(isInterruptNeeded);
+    TypeFinderInterrupt(isInterruptNeeded);
+}
+
+void BaseStreamDemuxer::TypeFinderInterrupt(bool isInterruptNeeded)
+{
+    std::unique_lock<std::mutex> lock(typeFinderMutex_);
+    if (typeFinder_ != nullptr) {
+        typeFinder_->SetInterruptState(isInterruptNeeded);
     }
 }
 
