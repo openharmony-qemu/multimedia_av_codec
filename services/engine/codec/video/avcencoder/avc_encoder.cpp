@@ -262,8 +262,11 @@ void AvcEncoder::GetBufferFromSurface()
     CHECK_AND_RETURN_LOG(inputSurface_ != nullptr, "inputSurface_ not exists");
     if (freeList_.empty()) {
         WaitForInBuffer();
+    }
+    if (state_ == State::STOPPING) {
         ReleaseSurfaceBuffer();
-        CHECK_AND_RETURN_LOG(state_ != State::STOPPING, "surface exit .");
+        AVCODEC_LOGE("surface exit .");
+        return;
     }
 
     sptr<SurfaceBuffer> buffer = nullptr;
