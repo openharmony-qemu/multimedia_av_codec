@@ -94,7 +94,7 @@ public:
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
         if (isFirstSend_) {
-            AVCODEC_LOGI_WITH_TAG("first send %{public}s buffer to service", isOutput_ ? "out" : "in");
+            AVCODEC_LOGI_WITH_TAG("first send buffer to service");
             isFirstSend_ = false;
         }
         auto iter = caches_.find(index);
@@ -108,8 +108,10 @@ public:
         } else {
             AVCODEC_LOGW_WITH_TAG("Did not receive new callback of this index(%{public}u)", index);
         }
-        EXPECT_AND_LOGD_WITH_TAG(elem.buffer != nullptr, "index=%{public}d, flag=%{public}u, pts=%{public}" PRId64,
-                                 index, elem.buffer->flag_, elem.buffer->pts_);
+        EXPECT_AND_LOGD_WITH_TAG(elem.buffer != nullptr,
+                                 "index=%{public}d, size=%{public}d, flag=%{public}u, pts=%{public}" PRId64, index,
+                                 elem.buffer->memory_ != nullptr ? elem.buffer->memory_->GetSize() : 0,
+                                 elem.buffer->flag_, elem.buffer->pts_);
     }
 
     void ClearCaches()
@@ -157,8 +159,7 @@ public:
         }
         serverCaches << ")";
         userCaches << ")";
-        AVCODEC_LOGI_WITH_TAG("%{public}s caches: %{public}s, %{public}s", (isOutput_ ? "out" : "in"),
-                              userCaches.str().c_str(), serverCaches.str().c_str());
+        AVCODEC_LOGI_WITH_TAG("caches:%{public}s, %{public}s", userCaches.str().c_str(), serverCaches.str().c_str());
     }
 
 private:
@@ -190,7 +191,7 @@ private:
             return;
         }
         bool isReadSuc = elem.buffer->ReadFromMessageParcel(parcel);
-        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Read input buffer from parcel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Read buffer from parcel failed");
         elem.buffer->flag_ = 0;
         if (elem.buffer->memory_ != nullptr) {
             elem.buffer->memory_->SetOffset(0);
@@ -209,7 +210,7 @@ private:
     void HitOutputCache(BufferElem &elem, MessageParcel &parcel, const UpdateFilter &filter)
     {
         bool isReadSuc = elem.buffer->ReadFromMessageParcel(parcel);
-        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Read output buffer from parcel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Read buffer from parcel failed");
         if (filter == ELEM_GET_AVMEMORY && converter_ != nullptr) {
             converter_->ReadFromBuffer(elem.buffer, elem.memory);
         }
@@ -219,7 +220,7 @@ private:
     {
         elem.buffer = AVBuffer::CreateAVBuffer();
         bool isReadSuc = (elem.buffer != nullptr) && elem.buffer->ReadFromMessageParcel(parcel);
-        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Create input buffer from parcel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Create buffer from parcel failed");
         if (filter == ELEM_GET_PARAMETER) {
             elem.parameter = std::make_shared<Format>();
             elem.parameter->SetMeta(std::move(elem.buffer->meta_));
@@ -243,7 +244,7 @@ private:
     {
         elem.buffer = AVBuffer::CreateAVBuffer();
         bool isReadSuc = (elem.buffer != nullptr) && elem.buffer->ReadFromMessageParcel(parcel);
-        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Create output buffer from parcel failed");
+        CHECK_AND_RETURN_LOG_WITH_TAG(isReadSuc, "Create buffer from parcel failed");
         if (filter == ELEM_GET_AVMEMORY) {
             AVBufferToAVSharedMemory(elem.buffer, elem.memory);
             if (converter_ != nullptr) {
@@ -256,7 +257,7 @@ private:
     bool CheckReadFromParcelResult(const BufferElem &elem, const UpdateFilter filter)
     {
         if (isFirstReceive_) {
-            AVCODEC_LOGI_WITH_TAG("first receive %{public}s buffer from service", isOutput_ ? "out" : "in");
+            AVCODEC_LOGI_WITH_TAG("first receive buffer from service");
             isFirstReceive_ = false;
         }
         switch (filter) {
@@ -311,8 +312,8 @@ CodecListenerStub::~CodecListenerStub()
 void CodecListenerStub::Init()
 {
     const std::string &tag = this->GetTag();
-    inputBufferCache_->SetTag(tag);
-    outputBufferCache_->SetTag(tag);
+    inputBufferCache_->SetTag(tag + "[in]");
+    outputBufferCache_->SetTag(tag + "[out]");
 }
 
 int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
