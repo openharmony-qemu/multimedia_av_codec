@@ -21,10 +21,10 @@ MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 ohos_fuzztest("HwdecoderAPI10H26510BitFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file =
-      "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi10_h26510bit_fuzzer"
+      "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi10h26510bit_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
-    "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi10_h26510bit_fuzzer/include",
+    "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi10h26510bit_fuzzer/include",
 
     #"$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
   ]
