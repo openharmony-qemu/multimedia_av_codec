@@ -1299,48 +1299,6 @@ HWTEST_F(CapsUnitTest, AVCaps_Levels_005, TestSize.Level1)
     }
 }
 
-/**
- * @tc.name: AVCaps_MixedUse_001
- * @tc.desc: AVCaps mixed use cap, video cap to get audio info
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(CapsUnitTest, AVCaps_MixedUse_001, TestSize.Level1)
-{
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
-    EXPECT_NE(cap, nullptr);
-    OH_AVRange range = {-1, -1};
-    EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &range), AV_ERR_INVALID_VAL);
-}
-
-/**
- * @tc.name: AVCaps_MixedUse_002
- * @tc.desc: AVCaps mixed use cap, audio cap to get video info
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(CapsUnitTest, AVCaps_MixedUse_002, TestSize.Level1)
-{
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_AUDIO_AAC, false, SOFTWARE);
-    EXPECT_NE(cap, nullptr);
-    OH_AVRange range = {-1, -1};
-    EXPECT_EQ(OH_AVCapability_GetVideoWidthRange(cap, &range), AV_ERR_INVALID_VAL);
-}
-
-/**
- * @tc.name: AVCaps_MixedUse_003
- * @tc.desc: AVCaps mixed use cap, decoder cap to get encoder info
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(CapsUnitTest, AVCaps_MixedUse_003, TestSize.Level1)
-{
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
-    EXPECT_NE(cap, nullptr);
-    OH_AVRange range = {-1, -1};
-    EXPECT_EQ(OH_AVCapability_GetEncoderQualityRange(cap, &range), AV_ERR_INVALID_VAL);
-}
-
 #endif
 } // namespace MediaAVCodec
 } // namespace OHOS

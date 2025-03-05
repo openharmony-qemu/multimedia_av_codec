@@ -593,24 +593,6 @@ AVCodecInfo::~AVCodecInfo()
     AVCODEC_LOGD("AVCodecInfo:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
-bool AVCodecInfo::isEncoder(int32_t codecType)
-{
-    return codecType == static_cast<int32_t>(AVCODEC_TYPE_VIDEO_ENCODER) ||
-        codecType == static_cast<int32_t>(AVCODEC_TYPE_AUDIO_ENCODER);
-}
-
-bool AVCodecInfo::isAudio(int32_t codecType)
-{
-    return codecType == static_cast<int32_t>(AVCODEC_TYPE_AUDIO_ENCODER) ||
-        codecType == static_cast<int32_t>(AVCODEC_TYPE_AUDIO_DECODER);
-}
-
-bool AVCodecInfo::isVideo(int32_t codecType)
-{
-    return codecType == static_cast<int32_t>(AVCODEC_TYPE_VIDEO_ENCODER) ||
-        codecType == static_cast<int32_t>(AVCODEC_TYPE_VIDEO_DECODER);
-}
-
 std::string AVCodecInfo::GetName()
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, "", "data is null");

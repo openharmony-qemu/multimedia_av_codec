@@ -205,9 +205,6 @@ class __attribute__((visibility("default"))) AVCodecInfo {
 public:
     explicit AVCodecInfo(CapabilityData *capabilityData);
     ~AVCodecInfo();
-    static bool isEncoder(int32_t codecType);
-    static bool isAudio(int32_t codecType);
-    static bool isVideo(int32_t codecType);
 
     /**
      * @brief Get name of this codec, used to create the codec instance.
