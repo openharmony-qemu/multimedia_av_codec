@@ -31,6 +31,8 @@ constexpr int64_t AUDIO_SAMPLE_16_BIT = 2;
 constexpr int64_t AUDIO_SAMPLE_24_BIT = 3;
 constexpr int64_t AUDIO_SAMPLE_32_BIT = 4;
 constexpr int64_t SEC_TO_US = 1000 * 1000;
+constexpr int64_t EOS_CALLBACK_WAIT_MS = 1000;
+constexpr int32_t BOOT_APP_UID = 1003;
 }
 
 namespace OHOS {
@@ -97,11 +99,18 @@ bool AudioSink::HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioSt
 void AudioSink::HandleAudioRenderRequestPost()
 {
     std::lock_guard<std::mutex> lock(availBufferMutex_);
+    if (appUid_ == BOOT_APP_UID && isEosBuffer_ && availOutputBuffers_.empty()) {
+        std::unique_lock<std::mutex> eosCbLock(eosCbMutex_);
+        hangeOnEosCb_ = true;
+        eosCbCond_.wait_for(eosCbLock, std::chrono::milliseconds(EOS_CALLBACK_WAIT_MS),
+            [this] () { return !hangeOnEosCb_; });
+    }
     FALSE_RETURN_NOLOG(isEosBuffer_);
     FALSE_RETURN_NOLOG(!availOutputBuffers_.empty());
     auto cacheBuffer = availOutputBuffers_.front();
     FALSE_RETURN(cacheBuffer != nullptr);
     FALSE_RETURN(IsEosBuffer(cacheBuffer));
+    availOutputBuffers_.pop();
     HandleEosBuffer(cacheBuffer);
 }
 
@@ -268,7 +277,18 @@ Status AudioSink::Pause()
     Status ret = Status::OK;
     underrunDetector_.Reset();
     lagDetector_.Reset();
-    if (isTransitent_ || (isEos_ && (isCalledBySystemApp_ || isLoop_))) {
+    if (appUid_ == BOOT_APP_UID) {
+        if (eosTask_  != nullptr) {
+            eosTask_->SubmitJobOnce([this] {
+                {
+                    std::unique_lock<std::mutex> eosCbLock(eosCbMutex_);
+                    hangeOnEosCb_ = false;
+                    eosCbCond_.notify_all();
+                }
+                plugin_->PauseTransitent();
+            });
+        }
+    } else if (isTransitent_ || (isEos_ && (isCalledBySystemApp_ || isLoop_))) {
         ret = plugin_->PauseTransitent();
     } else {
         ret = plugin_->Pause();
@@ -470,7 +490,7 @@ void AudioSink::HandleEosInner(bool drain)
 void AudioSink::DrainAndReportEosEvent()
 {
     plugin_->Drain();
-    if (appUid_ != 1003) { // 1003 is bootanimation uid
+    if (appUid_ != BOOT_APP_UID) {
         plugin_->PauseTransitent();
     }
     eosInterruptType_ = EosInterruptState::NONE;
@@ -827,6 +847,11 @@ void AudioSink::ReleaseChacheBuffer()
 
 void AudioSink::ResetInfo()
 {
+    if (appUid_ == BOOT_APP_UID) {
+        std::unique_lock<std::mutex> eosCbLock(eosCbMutex_);
+        hangeOnEosCb_ = false;
+        eosCbCond_.notify_all();
+    }
     innerSynchroizer_->Reset();
     maxAmplitude_ = 0;
     currentMaxAmplitude_ = 0;

@@ -260,6 +260,9 @@ private:
     std::queue<std::shared_ptr<AVBuffer>> availOutputBuffers_;
     int32_t currentQueuedBufferOffset_ {0};
     bool isEosBuffer_ {false};
+    std::mutex eosCbMutex_ {};
+    bool hangeOnEosCb_ {false};
+    std::condition_variable eosCbCond_ {};
     class AudioDataSynchroizer {
         public:
             void UpdateCurrentBufferInfo(int64_t bufferPts, int64_t bufferDuration);
