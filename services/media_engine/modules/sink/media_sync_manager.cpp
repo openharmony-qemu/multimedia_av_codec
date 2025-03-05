@@ -319,7 +319,7 @@ int64_t MediaSyncManager::GetMaxMediaProgress()
         currentAnchorMediaTime_ + lastAudioBufferDuration_);
     FALSE_RETURN_V_NOLOG(currentSyncerPriority_ != IMediaSynchronizer::VIDEO_SINK,
         lastVideoBufferPts_);
-    return currentAnchorMediaTime_;
+    return std::max(currentAnchorMediaTime_, lastReportMediaTime_.load());
 }
 
 int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
