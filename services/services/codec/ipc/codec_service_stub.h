@@ -99,6 +99,7 @@ private:
     std::shared_ptr<ICodecService> codecServer_ = nullptr;
     std::shared_mutex mutex_;
     sptr<IStandardCodecListener> listener_ = nullptr;
+    bool isFreezedFlag_{false};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
