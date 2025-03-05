@@ -753,7 +753,7 @@ int32_t AvcEncoder::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
                 AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
             CHECK_AND_CONTINUE_LOG(allocator != nullptr, "input buffer %{public}d allocator is nullptr", i);
             buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, inBufferSize);
-            CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_!= nullptr,
+            CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_ != nullptr,
                 "Allocate input buffer failed, index=%{public}d", i);
             AVCODEC_LOGI("Allocate input buffer success: index=%{public}d, size=%{public}d",
                 i, buf->avBuffer_->memory_->GetCapacity());
@@ -781,7 +781,7 @@ int32_t AvcEncoder::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSiz
         CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
 
         buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outBufferSize);
-        CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_!= nullptr,
+        CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_ != nullptr,
             "Allocate output buffer failed, index=%{public}d", i);
         AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d",
             i, buf->avBuffer_->memory_->GetCapacity());
