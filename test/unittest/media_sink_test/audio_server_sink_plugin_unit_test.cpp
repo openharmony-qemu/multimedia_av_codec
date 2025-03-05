@@ -36,7 +36,7 @@ public:
     MOCK_METHOD(int32_t, Write, (uint8_t *, size_t, uint8_t *, size_t), (override));
     MOCK_METHOD(RendererState, GetStatus, (), (const, override));
     MOCK_METHOD(bool, GetAudioTime, (Timestamp &, Timestamp::Timestampbase), (const, override));
-    MOCK_METHOD(bool, GetAudioPosition, (Timestamp &, Timestamp::Timestampbase), (const, override));
+    MOCK_METHOD(bool, GetAudioPosition, (Timestamp &, Timestamp::Timestampbase), (override));
     MOCK_METHOD(int32_t, GetLatency, (uint64_t &), (const, override));
     MOCK_METHOD(bool, Drain, (), (const, override));
     MOCK_METHOD(bool, Flush, (), (const, override));
@@ -67,8 +67,8 @@ public:
     MOCK_METHOD(int32_t, SetRendererWriteCallback, (const std::shared_ptr<AudioRendererWriteCallback> &), (override));
     MOCK_METHOD(int32_t, SetRendererFirstFrameWritingCallback,
         (const std::shared_ptr<AudioRendererFirstFrameWritingCallback> &), (override));
-    MOCK_METHOD(int32_t, GetBufferDesc, (BufferDesc &), (const, override));
-    MOCK_METHOD(int32_t, Enqueue, (const BufferDesc &), (const, override));
+    MOCK_METHOD(int32_t, GetBufferDesc, (BufferDesc &), (override));
+    MOCK_METHOD(int32_t, Enqueue, (const BufferDesc &), (override));
     MOCK_METHOD(int32_t, Clear, (), (const, override));
     MOCK_METHOD(int32_t, GetBufQueueState, (BufferQueueState &), (const, override));
     MOCK_METHOD(void, SetInterruptMode, (InterruptMode), (override));
