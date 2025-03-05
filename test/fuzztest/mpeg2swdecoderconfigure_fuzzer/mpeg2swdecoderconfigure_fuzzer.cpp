@@ -18,6 +18,7 @@
 #include "native_averrors.h"
 #include "native_avcodec_base.h"
 #include "videodec_sample.h"
+#include <fuzzer/FuzzedDataProvider.h>
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -30,14 +31,19 @@ bool Mpeg2SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     bool result = false;
-    int32_t dataValue = *reinterpret_cast<const int32_t *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int consumeWidth = fdp.ConsumeIntegral<int32_t>();
+    int consumeHeight = fdp.ConsumeIntegral<int32_t>();
+    int consumeFrameRate = fdp.ConsumeIntegral<int32_t>();
+    int consumeRotation  = fdp.ConsumeIntegral<int32_t>();
+    int consumePixelFormat = fdp.ConsumeIntegral<int32_t>();
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
     vDecSample->inpDir = "";
-    vDecSample->defaultWidth = dataValue;
-    vDecSample->defaultHeight = dataValue;
-    vDecSample->defaultFrameRate = dataValue;
-    vDecSample->defaultRotation = dataValue;
-    vDecSample->defaultPixelFormat = dataValue;
+    vDecSample->defaultWidth = consumeWidth;
+    vDecSample->defaultHeight = consumeHeight;
+    vDecSample->defaultFrameRate = consumeFrameRate;
+    vDecSample->defaultRotation = consumeRotation ;
+    vDecSample->defaultPixelFormat = consumePixelFormat;
     vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG2");
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();
