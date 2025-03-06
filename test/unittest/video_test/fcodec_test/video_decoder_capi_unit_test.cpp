@@ -83,7 +83,7 @@ constexpr string_view inputFilePath = "/data/test/media/out_320_240_10s.h264";
 constexpr string_view formatChangeInputFilePath = "/data/test/media/format_change_testseq.h264";
 constexpr string_view outputFilePath = "/data/test/media/out_320_240_10s.yuv";
 constexpr string_view outputSurfacePath = "/data/test/media/out_320_240_10s.rgba";
-uint32_t writeFrameCount = 0;
+uint32_t g_writeFrameCount = 0;
 } // namespace
 
 namespace OHOS {
@@ -138,7 +138,7 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemo
         signal->outQueue_.push(index);
         signal->outBufferQueue_.push(data);
         signal->attrQueue_.push(*attr);
-        writeFrameCount += attr->size > 0 ? 1 : 0;
+        g_writeFrameCount += attr->size > 0 ? 1 : 0;
         signal->outCond_.notify_all();
     } else {
         cout << "OnOutputBufferAvailable error, attr is nullptr!" << endl;
@@ -232,7 +232,7 @@ void VideoCodeCapiDecoderUnitTest::TearDownTestCase(void)
 void VideoCodeCapiDecoderUnitTest::SetUp(void)
 {
     cout << "[SetUp]: SetUp!!!" << endl;
-    writeFrameCount = 0;
+    g_writeFrameCount = 0;
 }
 
 void VideoCodeCapiDecoderUnitTest::TearDown(void)
@@ -369,7 +369,7 @@ void VideoCodeCapiDecoderUnitTest::OutputFunc()
         }
 
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
-            cout << "decode eos, write frame:" << writeFrameCount << endl;
+            cout << "decode eos, write frame:" << g_writeFrameCount << endl;
             isRunning_.store(false);
         }
         signal_->outBufferQueue_.pop();
@@ -445,6 +445,35 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_04, TestSize.Level
     OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
+}
+
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_05, TestSize.Level1)
+{
+    ProceFunc();
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, 1000000);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
+}
+
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_06, TestSize.Level1)
+{
+    ProceFunc();
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_SCALING_MODE, DEFAULT_HEIGHT);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
+}
+
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_07, TestSize.Level1)
+{
+    ProceFunc();
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    OH_AVFormat_SetIntValue(format_, OH_MD_MAX_INPUT_BUFFER_COUNT, 4);
+    OH_AVFormat_SetIntValue(format_, OH_MD_MAX_OUTPUT_BUFFER_COUNT, 4);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_BITRATE, 30000);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 4);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
 }
 
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Start_01, TestSize.Level1)
@@ -619,6 +648,13 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_02, TestSize.Leve
 
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Start(videoDec_));
     while (isRunning_.load()) {
+        if (g_writeFrameCount == 5) {
+            OH_AVFormat *format = OH_AVFormat_Create();
+            EXPECT_NE(nullptr, format);
+            OH_AVFormat_SetIntValue(format_, OH_MD_KEY_PIXEL_FORMAT, 0);
+            OH_AVFormat_SetIntValue(format_, OH_MD_KEY_ROTATION, 0);
+            OH_AVFormat_SetIntValue(format_, OH_MD_KEY_SCALING_MODE, 0);
+        }
         sleep(1); // sleep 1s
     }
 
