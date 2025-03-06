@@ -60,13 +60,10 @@ int32_t AVCodecXCollie::SetTimer(const std::string &name, bool recovery, uint32_
     unsigned int flag = HiviewDFX::XCOLLIE_FLAG_LOG | HiviewDFX::XCOLLIE_FLAG_NOOP;
     flag |= (recovery ? HiviewDFX::XCOLLIE_FLAG_RECOVERY : 0);
 
-    TimerInfo timerInfo = {
-        .name = name.data(),
-        .startTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()),
-        .timeout = timeout
-    };
-    int32_t id = HiviewDFX::XCollie::GetInstance().SetTimer(
-        name.data(), timeout, callback, reinterpret_cast<void *>(&timerInfo), flag);
+    auto timerInfo = std::make_shared<TimerInfo>(
+        name, std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()), timeout);
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer(
+        name.data(), timeout, callback, reinterpret_cast<void *>(timerInfo.get()), flag);
     if (id != HiviewDFX::INVALID_ID) {
         dfxDumper_.emplace(id, timerInfo);
     }
@@ -118,12 +115,12 @@ int32_t AVCodecXCollie::Dump(int32_t fd)
         uint32_t timeInfoIndex = 1;
         auto titleIndex = DUMP_XCOLLIE_INDEX + (dumperIndex << DUMP_OFFSET_16);
         dumpControler.AddInfo(titleIndex, "Timer_"s + std::to_string(dumperIndex));
-        dumpControler.AddInfo(titleIndex + (timeInfoIndex++ << DUMP_OFFSET_8), "TimerName", iter.second.name);
+        dumpControler.AddInfo(titleIndex + (timeInfoIndex++ << DUMP_OFFSET_8), "TimerName", iter.second->name);
         dumpControler.AddInfo(titleIndex + (timeInfoIndex++ << DUMP_OFFSET_8),
-            "StartTime", GetTimeString(iter.second.startTime).c_str());
+            "StartTime", GetTimeString(iter.second->startTime).c_str());
         dumpControler.AddInfo(titleIndex + (timeInfoIndex++ << DUMP_OFFSET_8),
             "TimeLeft",
-            std::to_string(iter.second.timeout + iter.second.startTime -
+            std::to_string(iter.second->timeout + iter.second->startTime -
                 std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())));
         dumperIndex++;
     }
