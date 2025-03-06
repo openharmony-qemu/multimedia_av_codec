@@ -313,6 +313,7 @@ bool HlsMediaDownloader::HandleBuffering()
     if (isBuffering_ && GetBufferingTimeOut() && callback_) {
         MEDIA_LOG_I("HTTP cachebuffer buffering time out.");
         callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "buffering"});
+        isTimeoutErrorNotified_.store(true);
         isBuffering_ = false;
         return false;
     }
@@ -523,6 +524,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
     }
     if (isBuffering_ && GetBufferingTimeOut() && callback_ && !isReportedErrorCode_) {
         callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        isTimeoutErrorNotified_.store(true);
         MEDIA_LOG_D("HLS return END_OF_STREAM.");
         return Status::END_OF_STREAM;
     }
@@ -1328,6 +1330,7 @@ void HlsMediaDownloader::SetDownloadErrorState()
     downloadErrorState_ = true;
     if (callback_ != nullptr && !isReportedErrorCode_) {
         callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "download"});
+        isTimeoutErrorNotified_.store(true);
     }
     Close(true);
 }
@@ -1905,7 +1908,7 @@ bool HlsMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
 {
     AutoLock lock(initCacheMutex_);
     bool isInitBufferSizeOk = IsCachedInitSizeReady(size) >= size || CheckBreakCondition();
-    if (isInitBufferSizeOk || !downloader_ || !downloadRequest_) {
+    if (isInitBufferSizeOk || !downloader_ || !downloadRequest_ || isTimeoutErrorNotified_.load()) {
         MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize ok.");
         return false;
     }
@@ -1944,6 +1947,7 @@ bool HlsMediaDownloader::IsNeedBufferForPlaying()
     if (GetBufferingTimeOut()) {
         callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
                             "buffer for playing"});
+        isTimeoutErrorNotified_.store(true);
         isBuffering_.store(false);
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;

@@ -227,6 +227,7 @@ private:
     std::atomic<bool> isSelectingBitrate_ {false};
     std::shared_ptr<PlayMediaStream> defaultStream_ {nullptr};
     uint32_t initResolution_ {0};
+    std::atomic<bool> isTimeoutErrorNotified_ {false};
 };
 }
 }
