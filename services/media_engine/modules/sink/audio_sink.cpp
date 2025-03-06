@@ -31,7 +31,7 @@ constexpr int64_t AUDIO_SAMPLE_16_BIT = 2;
 constexpr int64_t AUDIO_SAMPLE_24_BIT = 3;
 constexpr int64_t AUDIO_SAMPLE_32_BIT = 4;
 constexpr int64_t SEC_TO_US = 1000 * 1000;
-constexpr int64_t EOS_CALLBACK_WAIT_MS = 1000;
+constexpr int64_t EOS_CALLBACK_WAIT_MS = 500;
 constexpr int32_t BOOT_APP_UID = 1003;
 }
 
