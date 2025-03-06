@@ -134,6 +134,8 @@ void MuxerSample::WriteAudioTrack()
             break;
         }
         OH_AVMuxer_WriteSampleBuffer(muxer, audioTrackID, buffer);
+        isAudioFinish.store(true);
+        waitCond.notify_all();
     }
     OH_AVBuffer_Destroy(buffer);
 }
@@ -154,6 +156,8 @@ void MuxerSample::WriteVideoTrack()
             break;
         }
         OH_AVMuxer_WriteSampleBuffer(muxer, videoTrackID, buffer);
+        isVideoFinish.store(true);
+        waitCond.notify_all();
     }
     OH_AVBuffer_Destroy(buffer);
 }
@@ -176,19 +180,22 @@ void MuxerSample::WaitForEOS()
     std::mutex videoWaitMtx;
     unique_lock<mutex> audioLock(audioWaitMtx);
     unique_lock<mutex> videoLock(videoWaitMtx);
-    waitCond.wait(audioLock, [this]() {
-        return isAudioFinish.load();
-    });
-    waitCond.wait(videoLock, [this]() {
-        return isVideoFinish.load();
-    });
-    if (audioThread) {
+    if (audioThread != nullptr) {
+        waitCond.wait(audioLock, [this]() {
+            return isAudioFinish.load();
+        });
+    }
+    if (videoThread != nullptr) {
+        waitCond.wait(videoLock, [this]() {
+            return isVideoFinish.load();
+        });
+    }
+    if (audioThread != nullptr) {
         audioThread->join();
     }
-    if (videoThread) {
+    if (videoThread != nullptr) {
         videoThread->join();
     }
-    cout << "task finish" << endl;
 }
 
 void MuxerSample::Stop()

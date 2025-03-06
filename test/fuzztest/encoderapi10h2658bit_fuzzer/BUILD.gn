@@ -18,13 +18,13 @@ module_output_path = "av_codec/av_codec"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("EncoderAPI11H2658BitFuzzTest") {
+ohos_fuzztest("EncoderAPI10H2658BitFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file =
-      "$MEDIA_ROOT_DIR/test/fuzztest/encoderapi11_h2658bit_fuzzer"
+      "$MEDIA_ROOT_DIR/test/fuzztest/encoderapi10h2658bit_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
-    "$MEDIA_ROOT_DIR/test/fuzztest/encoderapi11_h2658bit_fuzzer",
+    "$MEDIA_ROOT_DIR/test/fuzztest/encoderapi10h2658bit_fuzzer",
   ]
   cflags = [
     "-g",
@@ -33,8 +33,8 @@ ohos_fuzztest("EncoderAPI11H2658BitFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "encoderapi11_fuzzer.cpp",
-    "videoenc_api11_sample.cpp",
+    "encoderapi10_fuzzer.cpp",
+    "videoenc_ndk_sample.cpp",
   ]
 
   external_deps = [
@@ -60,6 +60,6 @@ group("fuzztest") {
 
   deps += [
     # deps file
-    ":EncoderAPI11H2658BitFuzzTest",  #引用测试套
+    ":EncoderAPI10H2658BitFuzzTest",  #引用测试套
   ]
 }
