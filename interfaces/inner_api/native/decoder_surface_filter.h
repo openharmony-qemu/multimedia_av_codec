@@ -232,6 +232,7 @@ private:
     std::shared_ptr<BaseVideoPostProcessor> postProcessor_;
 
     int64_t eosPts_ {-1};
+    int64_t prevDecoderPts_ {-1};
 };
 } // namespace Pipeline
 } // namespace Media
