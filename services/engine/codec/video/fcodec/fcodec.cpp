@@ -785,15 +785,10 @@ int32_t FCodec::AllocateBuffers()
     if (sInfo_.surface != nullptr) {
         renderAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("renderAvailQue", outputBufferCnt);
     }
-    int32_t allocInputBuffersRet = AllocateInputBuffer(inputBufferCnt, inputBufferSize_);
-    int32_t allocOutputBuffersRet = AllocateOutputBuffer(outputBufferCnt, outputBufferSize_);
-    if (allocInputBuffersRet == AVCS_ERR_OK && allocOutputBuffersRet == AVCS_ERR_OK) {
-        AVCODEC_LOGI("Allocate buffers successful");
-        return AVCS_ERR_OK;
-    }
-    CHECK_AND_RETURN_RET_LOG(allocInputBuffersRet == AVCS_ERR_NO_MEMORY || allocInputBuffersRet == AVCS_ERR_NO_MEMORY,
+    CHECK_AND_RETURN_RET_LOG(AllocateInputBuffer(inputBufferCnt, inputBufferSize_) == AVCS_ERR_OK &&
+                             AllocateOutputBuffer(outputBufferCnt, outputBufferSize_) == AVCS_ERR_OK,
                              AVCS_ERR_UNKNOWN, "Allocate buffers failed!");
-    return AVCS_ERR_NO_MEMORY;
+    return AVCS_ERR_OK;
 }
 
 int32_t FCodec::UpdateBuffers(uint32_t index, int32_t bufferSize, uint32_t bufferType)
