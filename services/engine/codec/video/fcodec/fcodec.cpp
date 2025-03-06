@@ -687,7 +687,7 @@ int32_t FCodec::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
         buffers_[INDEX_INPUT].emplace_back(buf);
         valBufferCnt++;
     }
-    CHECK_AND_RETURN_RET_LOG(valBufferCnt < DEFAULT_MIN_BUFFER_CNT, AVCS_ERR_OK, "Allocate input buffers successful");
+    CHECK_AND_RETURN_RET_LOGD(valBufferCnt < DEFAULT_MIN_BUFFER_CNT, AVCS_ERR_OK, "Allocate input buffers successful");
     AVCODEC_LOGE("Allocate input buffer failed: only %{public}d buffer is allocated, no memory", valBufferCnt);
     buffers_[INDEX_INPUT].clear();
     return AVCS_ERR_NO_MEMORY;
@@ -753,7 +753,7 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
         buffers_[INDEX_OUTPUT].emplace_back(buf);
         valBufferCnt++;
     }
-    CHECK_AND_RETURN_RET_LOG(valBufferCnt < DEFAULT_MIN_BUFFER_CNT, AVCS_ERR_OK, "Allocate output buffers successful");
+    CHECK_AND_RETURN_RET_LOGD(valBufferCnt < DEFAULT_MIN_BUFFER_CNT, AVCS_ERR_OK, "Allocate output buffers successful");
     AVCODEC_LOGE("Allocate output buffer failed: only %{public}d buffer is allocated, no memory", valBufferCnt);
     buffers_[INDEX_INPUT].clear();
     buffers_[INDEX_OUTPUT].clear();
@@ -785,13 +785,13 @@ int32_t FCodec::AllocateBuffers()
     if (sInfo_.surface != nullptr) {
         renderAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("renderAvailQue", outputBufferCnt);
     }
-    if (AllocateInputBuffer(inputBufferCnt, inputBufferSize_) == AVCS_ERR_OK &&
-        AllocateOutputBuffer(outputBufferCnt, outputBufferSize_) == AVCS_ERR_OK) {
+    int32_t allocInputBuffersRet = AllocateInputBuffer(inputBufferCnt, inputBufferSize_);
+    int32_t allocOutputBuffersRet = AllocateOutputBuffer(outputBufferCnt, outputBufferSize_);
+    if (allocInputBuffersRet == AVCS_ERR_OK && allocOutputBuffersRet == AVCS_ERR_OK) {
         AVCODEC_LOGI("Allocate buffers successful");
         return AVCS_ERR_OK;
     }
-    CHECK_AND_RETURN_RET_LOG(AllocateInputBuffer(inputBufferCnt, inputBufferSize_) == AVCS_ERR_NO_MEMORY ||
-                             AllocateOutputBuffer(outputBufferCnt, outputBufferSize_) == AVCS_ERR_NO_MEMORY,
+    CHECK_AND_RETURN_RET_LOG(allocInputBuffersRet == AVCS_ERR_NO_MEMORY || allocInputBuffersRet == AVCS_ERR_NO_MEMORY,
                              AVCS_ERR_UNKNOWN, "Allocate buffers failed!");
     return AVCS_ERR_NO_MEMORY;
 }

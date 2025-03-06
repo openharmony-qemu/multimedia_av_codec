@@ -651,9 +651,10 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_02, TestSize.Leve
         if (g_writeFrameCount == 5) {
             OH_AVFormat *format = OH_AVFormat_Create();
             EXPECT_NE(nullptr, format);
-            OH_AVFormat_SetIntValue(format_, OH_MD_KEY_PIXEL_FORMAT, 0);
-            OH_AVFormat_SetIntValue(format_, OH_MD_KEY_ROTATION, 0);
-            OH_AVFormat_SetIntValue(format_, OH_MD_KEY_SCALING_MODE, 0);
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, 0);
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, 0);
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_SCALING_MODE, 0);
+            EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_SetParameter(videoDec_, format));
         }
         sleep(1); // sleep 1s
     }
