@@ -585,7 +585,8 @@ void AvcEncoder::GetIFrameIntervalFromUser(const Format &format)
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, interval) && interval > 0) {
         CheckIFrameIntervalTimeSupport(interval);
         encIperiod_ = interval * encFrameRate_ / TIME_SEC_TO_MS;
-        AVCODEC_LOGI("user set iframe interval %{public}d s %{public}d", interval, encIperiod_);
+        AVCODEC_LOGI("user set iframe interval %{public}ds, transfer to %{public}dframes",
+            interval / TIME_SEC_TO_MS, encIperiod_);
     }
     return;
 }
