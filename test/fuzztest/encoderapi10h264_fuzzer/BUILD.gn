@@ -18,13 +18,12 @@ module_output_path = "av_codec/av_codec"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("EncoderAPI10H26510BitFuzzTest") {
+ohos_fuzztest("EncoderAPI10H264FuzzTest") {
   module_out_path = module_output_path
-  fuzz_config_file =
-      "$MEDIA_ROOT_DIR/test/fuzztest/encoderapi10_h26510bit_fuzzer"
+  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/encoderapi10h264_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
-    "$MEDIA_ROOT_DIR/test/fuzztest/encoderapi10_h26510bit_fuzzer",
+    "$MEDIA_ROOT_DIR/test/fuzztest/encoderapi10h264_fuzzer",
   ]
   cflags = [
     "-g",
@@ -60,6 +59,6 @@ group("fuzztest") {
 
   deps += [
     # deps file
-    ":EncoderAPI10H26510BitFuzzTest",  #引用测试套
+    ":EncoderAPI10H264FuzzTest",  #引用测试套
   ]
 }

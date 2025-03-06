@@ -18,15 +18,13 @@ module_output_path = "av_codec/av_codec"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("HwdecoderAPI11H26510BitFuzzTest") {
+ohos_fuzztest("EncoderAPI11H26510BitFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file =
-      "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi11_h26510bit_fuzzer"
+      "$MEDIA_ROOT_DIR/test/fuzztest/encoderapi11h26510bit_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
-    "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi11_h26510bit_fuzzer/include",
-
-    #"$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
+    "$MEDIA_ROOT_DIR/test/fuzztest/encoderapi11h26510bit_fuzzer",
   ]
   cflags = [
     "-g",
@@ -35,26 +33,22 @@ ohos_fuzztest("HwdecoderAPI11H26510BitFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "hwdecoderapi11_fuzzer.cpp",
-    "videodec_api11_sample.cpp",
+    "encoderapi11_fuzzer.cpp",
+    "videoenc_api11_sample.cpp",
   ]
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:libgraphic_utils",
-    "graphic_2d:librender_service_client",
-    "graphic_surface:surface",
-    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_single",
-    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
+    "openssl:libcrypto_shared",
     "window_manager:libwm",
   ]
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_venc",
   ]
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
@@ -66,6 +60,6 @@ group("fuzztest") {
 
   deps += [
     # deps file
-    ":HwdecoderAPI11H26510BitFuzzTest",  #引用测试套
+    ":EncoderAPI11H26510BitFuzzTest",  #引用测试套
   ]
 }

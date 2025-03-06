@@ -18,13 +18,13 @@ module_output_path = "av_codec/av_codec"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("HwdecoderAPI10H2658BitFuzzTest") {
+ohos_fuzztest("HwdecoderAPI11H26510BitFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file =
-      "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi10_h2658bit_fuzzer"
+      "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi11h26510bit_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
-    "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi10_h2658bit_fuzzer/include",
+    "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi11h26510bit_fuzzer/include",
 
     #"$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
   ]
@@ -35,8 +35,8 @@ ohos_fuzztest("HwdecoderAPI10H2658BitFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "hwdecoder_fuzzer.cpp",
-    "videodec_sample.cpp",
+    "hwdecoderapi11_fuzzer.cpp",
+    "videodec_api11_sample.cpp",
   ]
 
   external_deps = [
@@ -66,6 +66,6 @@ group("fuzztest") {
 
   deps += [
     # deps file
-    ":HwdecoderAPI10H2658BitFuzzTest",  #引用测试套
+    ":HwdecoderAPI11H26510BitFuzzTest",  #引用测试套
   ]
 }

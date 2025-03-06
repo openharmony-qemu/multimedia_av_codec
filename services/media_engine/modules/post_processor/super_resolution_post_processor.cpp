@@ -125,7 +125,6 @@ SuperResolutionPostProcessor::SuperResolutionPostProcessor()
 
 SuperResolutionPostProcessor::~SuperResolutionPostProcessor()
 {
-    postProcessor_->Stop();
     postProcessor_ = nullptr;
 }
 
@@ -252,6 +251,7 @@ Status SuperResolutionPostProcessor::SetQualityLevel(DetailEnhancerQualityLevel 
     MEDIA_LOG_D("SetQualityLevel in");
     Format parameter;
     parameter.PutIntValue(ParameterKey::DETAIL_ENHANCER_QUALITY_LEVEL, level);
+    parameter.PutIntValue(ParameterKey::DETAIL_ENHANCER_AUTO_DOWNSHIFT, 0);
     auto ret = postProcessor_->SetParameter(parameter);
     return ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK ? Status::OK : Status::ERROR_INVALID_PARAMETER;
 }

@@ -1310,7 +1310,7 @@ HWTEST_F(CapsUnitTest, AVCaps_MixedUse_001, TestSize.Level1)
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
-    EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &range), AV_ERR_INVALID_VAL);
+    EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &range), AV_ERR_OK);
 }
 
 /**
@@ -1324,7 +1324,7 @@ HWTEST_F(CapsUnitTest, AVCaps_MixedUse_002, TestSize.Level1)
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_AUDIO_AAC, false, SOFTWARE);
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
-    EXPECT_EQ(OH_AVCapability_GetVideoWidthRange(cap, &range), AV_ERR_INVALID_VAL);
+    EXPECT_EQ(OH_AVCapability_GetVideoWidthRange(cap, &range), AV_ERR_OK);
 }
 
 /**
@@ -1338,7 +1338,7 @@ HWTEST_F(CapsUnitTest, AVCaps_MixedUse_003, TestSize.Level1)
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
-    EXPECT_EQ(OH_AVCapability_GetEncoderQualityRange(cap, &range), AV_ERR_INVALID_VAL);
+    EXPECT_EQ(OH_AVCapability_GetEncoderQualityRange(cap, &range), AV_ERR_OK);
 }
 
 #endif

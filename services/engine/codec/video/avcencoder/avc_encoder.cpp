@@ -246,7 +246,6 @@ void AvcEncoder::WaitForInBuffer()
     std::unique_lock<std::mutex> listLock(freeListMutex_);
     surfaceRecvCv_.wait(listLock, [this] {
         if (state_ == State::STOPPING) {
-            ReleaseSurfaceBuffer();
             return true;
         }
 
@@ -263,7 +262,11 @@ void AvcEncoder::GetBufferFromSurface()
     CHECK_AND_RETURN_LOG(inputSurface_ != nullptr, "inputSurface_ not exists");
     if (freeList_.empty()) {
         WaitForInBuffer();
-        CHECK_AND_RETURN_LOG(state_ != State::STOPPING, "surface exit .");
+    }
+    if (state_ == State::STOPPING) {
+        ReleaseSurfaceBuffer();
+        AVCODEC_LOGE("surface exit .");
+        return;
     }
 
     sptr<SurfaceBuffer> buffer = nullptr;
@@ -750,7 +753,8 @@ int32_t AvcEncoder::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
                 AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
             CHECK_AND_CONTINUE_LOG(allocator != nullptr, "input buffer %{public}d allocator is nullptr", i);
             buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, inBufferSize);
-            CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr, "Allocate input buffer failed, index=%{public}d", i);
+            CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_ != nullptr,
+                "Allocate input buffer failed, index=%{public}d", i);
             AVCODEC_LOGI("Allocate input buffer success: index=%{public}d, size=%{public}d",
                 i, buf->avBuffer_->memory_->GetCapacity());
         } else {
@@ -777,7 +781,8 @@ int32_t AvcEncoder::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSiz
         CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
 
         buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outBufferSize);
-        CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr, "Allocate output buffer failed, index=%{public}d", i);
+        CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_ != nullptr,
+            "Allocate output buffer failed, index=%{public}d", i);
         AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d",
             i, buf->avBuffer_->memory_->GetCapacity());
 
@@ -1450,10 +1455,18 @@ int32_t AvcEncoder::GetInputFrameFromAVBuffer(std::shared_ptr<AVBuffer> &buffer,
         inFrame.format =
             TranslateVideoPixelFormat(static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
         inFrame.width = surfaceBuffer->GetWidth();
+        CHECK_AND_RETURN_RET_LOG((inFrame.width >= VIDEO_MIN_SIZE) && (inFrame.width <= VIDEO_MAX_WIDTH_SIZE),
+            AVCS_ERR_INVALID_DATA, "Get surface width failed!");
         inFrame.height = surfaceBuffer->GetHeight();
+        CHECK_AND_RETURN_RET_LOG((inFrame.height >= VIDEO_MIN_SIZE) && (inFrame.height <= VIDEO_MAX_HEIGHT_SIZE),
+            AVCS_ERR_INVALID_DATA, "Get surface height failed!");
         inFrame.stride = surfaceBuffer->GetStride();
+        CHECK_AND_RETURN_RET_LOG(inFrame.stride >= inFrame.width, AVCS_ERR_INVALID_DATA,
+            "Get surface stride failed!");
         inFrame.size = static_cast<int32_t>(surfaceBuffer->GetSize());
         inFrame.buffer = reinterpret_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
+        CHECK_AND_RETURN_RET_LOG(inFrame.buffer != nullptr, AVCS_ERR_INVALID_DATA,
+            "Get surface buffer failed!");
         inFrame.uvOffset = GetSurfaceBufferUvOffset(surfaceBuffer, inFrame.format);
     }
     if (inFrame.uvOffset == 0) {
