@@ -921,7 +921,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     MEDIA_LOG_D("DrainOutputBuffer, pts:" PUBLIC_LOG_D64, outputBuffer->pts_);
     if ((outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS))) {
         MEDIA_LOG_I("DrainOutputBuffer output EOS");
-    } else if (postProcessorType_ == VideoPostProcessorType::SUPER_RESOLUTION && outputBuffer->pts_ == eosPts_) {
+    } else if (postProcessorType_ == VideoPostProcessorType::SUPER_RESOLUTION && outputBuffer->pts_ >= eosPts_) {
         outputBuffer->flag_|=static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     }
     std::unique_lock<std::mutex> lock(mutex_);
