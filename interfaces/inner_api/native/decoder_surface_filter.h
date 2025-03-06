@@ -231,8 +231,8 @@ private:
     VideoPostProcessorType postProcessorType_ { VideoPostProcessorType::NONE };
     std::shared_ptr<BaseVideoPostProcessor> postProcessor_;
 
-    int64_t eosPts_ {-1};
-    int64_t prevDecoderPts_ {-1};
+    int64_t eosPts_ {INT64_MAX};
+    int64_t prevDecoderPts_ {INT64_MAX};
 };
 } // namespace Pipeline
 } // namespace Media
