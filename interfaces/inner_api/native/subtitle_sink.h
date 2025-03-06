@@ -16,6 +16,7 @@
 #ifndef HISTREAMER_SUBTITLE_SINK_H
 #define HISTREAMER_SUBTITLE_SINK_H
 #include <mutex>
+#include <deque>
 #include "common/status.h"
 #include "meta/meta.h"
 #include "sink/media_synchronous_sink.h"
@@ -94,7 +95,7 @@ private:
         SHOW,
         DROP,
     };
-    std::vector<SubtitleInfo> subtitleInfoVec_;
+    std::deque<SubtitleInfo> subtitleInfoVec_;
     uint32_t currentInfoIndex_ = 0;
     std::atomic<bool> isFlush_ = false;
     std::vector<std::shared_ptr<AVBuffer>> inputBufferVector_;
