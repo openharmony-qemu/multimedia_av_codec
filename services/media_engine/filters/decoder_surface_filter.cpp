@@ -488,6 +488,7 @@ Status DecoderSurfaceFilter::DoFlush()
 {
     MEDIA_LOG_I("Flush");
     lastRenderTimeNs_ = HST_TIME_NONE;
+    eosPts_ = INT64_MAX;
     videoDecoder_->Flush();
     if (postProcessor_) {
         postProcessor_->Flush();
