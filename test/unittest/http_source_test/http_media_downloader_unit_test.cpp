@@ -700,4 +700,47 @@ HWTEST_F(HttpMediaDownloaderUnitTest, SET_PLAY_STRATEGY_002, TestSize.Level1)
     EXPECT_EQ(httpMediaDownloader->defaultStream_->height, 720);
     EXPECT_EQ(httpMediaDownloader->defaultStream_->bitrate, 4000);
 }
+
+HWTEST_F(HttpMediaDownloaderUnitTest, SELECT_BIT_RATE_001, TestSize.Level1)
+{
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
+        std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 5, nullptr);
+    std::map<std::string, std::string> httpHeader;
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader->SetStatusCallback(statusCallback);
+    httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    httpMediaDownloader->callback_ = sourceCallback;
+    MediaStreamList mediaStreams;
+    std::shared_ptr<PlayMediaStream> mediaStreamA = std::make_shared<PlayMediaStream>();
+    mediaStreamA->width = 480;
+    mediaStreamA->height = 360;
+    mediaStreamA->bitrate = 3200;
+    mediaStreamA->url = FLV_SEGMENT_BASE;
+    mediaStreams.push_back(mediaStreamA);
+    std::shared_ptr<PlayMediaStream> mediaStreamB = std::make_shared<PlayMediaStream>();
+    mediaStreamB->width = 640;
+    mediaStreamB->height = 480;
+    mediaStreamB->bitrate = 4800;
+    mediaStreamB->url = FLV_SEGMENT_BASE;
+    mediaStreams.push_back(mediaStreamB);
+    std::shared_ptr<PlayMediaStream> mediaStreamC = std::make_shared<PlayMediaStream>();
+    mediaStreamC->width = 640;
+    mediaStreamC->height = 480;
+    mediaStreamC->bitrate = 4000;
+    mediaStreamC->url = FLV_SEGMENT_BASE;
+    mediaStreams.push_back(mediaStreamC);
+    std::sort(mediaStreams.begin(), mediaStreams.end(),
+        [](const std::shared_ptr<PlayMediaStream>& streamA, const std::shared_ptr<PlayMediaStream>& streamB) {
+            return (streamA->bitrate < streamB->bitrate) ||
+                (streamA->bitrate == streamB->bitrate &&
+                    streamA->width * streamA->height < streamB->width * streamB->height);
+    });
+    httpMediaDownloader->SetMediaStreams(mediaStreams);
+    httpMediaDownloader->SelectBitRate(4000);
+    EXPECT_EQ(httpMediaDownloader->defaultStream_->width, 640);
+    EXPECT_EQ(httpMediaDownloader->defaultStream_->height, 480);
+    EXPECT_EQ(httpMediaDownloader->defaultStream_->bitrate, 4000);
+}
 }
