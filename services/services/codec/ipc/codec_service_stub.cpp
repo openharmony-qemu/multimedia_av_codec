@@ -274,6 +274,9 @@ int32_t CodecServiceStub::Start()
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecServer_->CheckRunning()), AVCS_ERR_INVALID_STATE,
                                       "In invalid state, running");
     (void)listener_->UpdateGeneration();
+    if (isFreezedFlag_ == true) {
+        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
+    }
     int32_t ret = codecServer_->Start();
     if (ret != AVCS_ERR_OK) {
         (void)listener_->RestoreGeneration();
