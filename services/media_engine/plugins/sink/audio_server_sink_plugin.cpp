@@ -316,6 +316,7 @@ AudioSampleFormat AudioServerSinkPlugin::GetSampleFormat()
 
 void AudioServerSinkPlugin::ReleaseRender()
 {
+    OHOS::Media::AutoLock lock(releaseRendererMutex_);
     if (audioRenderer_ != nullptr && audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_RELEASED) {
         MEDIA_LOG_I_SHORT("AudioRenderer::Release start");
         FALSE_RETURN_MSG(audioRenderer_->Release(), "AudioRenderer::Release failed");
