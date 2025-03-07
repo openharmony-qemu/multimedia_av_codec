@@ -60,9 +60,9 @@ constexpr int32_t VIDEO_QP_MAX = 51;
 constexpr int32_t VIDEO_QP_MIN = 4;
 constexpr int32_t VIDEO_QP_DEFAULT = 20;
 constexpr int32_t VIDEO_IFRAME_INTERVAL_MIN_TIME = 1000;
-constexpr int32_t VIDEO_IFRAME_INTERVAL_MAX_TIME = 21000;
-constexpr int32_t DEFAULT_VIDEO_INTERVAL_TIME = 1;
-constexpr int32_t DEFAULT_VIDEO_IFRAME_INTERVAL = 30;
+constexpr int32_t VIDEO_IFRAME_INTERVAL_MAX_TIME = 3600000;
+constexpr int32_t DEFAULT_VIDEO_INTERVAL_TIME = 2000;
+constexpr int32_t DEFAULT_VIDEO_IFRAME_INTERVAL = 60;
 constexpr int32_t DEFAULT_VIDEO_BITRATE = 6000000;
 constexpr double DEFAULT_VIDEO_FRAMERATE = 30.0;
 
@@ -585,7 +585,8 @@ void AvcEncoder::GetIFrameIntervalFromUser(const Format &format)
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, interval) && interval > 0) {
         CheckIFrameIntervalTimeSupport(interval);
         encIperiod_ = interval * encFrameRate_ / TIME_SEC_TO_MS;
-        AVCODEC_LOGI("user set iframe interval %{public}d s %{public}d", interval, encIperiod_);
+        AVCODEC_LOGI("user set iframe interval %{public}ds, transfer to %{public}dframes",
+            interval / TIME_SEC_TO_MS, encIperiod_);
     }
     return;
 }
