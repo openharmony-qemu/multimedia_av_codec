@@ -302,6 +302,7 @@ private:
     size_t timeoutInterval_ = 0;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
     std::atomic<bool> isTimeoutErrorNotified_ {false};
+    std::atomic<bool> isNeedResume_ {false};
 };
 }
 }
