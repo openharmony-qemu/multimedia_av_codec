@@ -24,7 +24,9 @@ ohos_unittest("av_codec_dfx_test") {
   ]
 
   sources = [
+    "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "dump_utils_test.cpp",
+    "error_code_coverage_unit_test.cpp",
     "xcollie_test.cpp",
   ]
 
