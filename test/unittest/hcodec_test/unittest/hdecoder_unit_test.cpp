@@ -109,6 +109,17 @@ HWTEST_F(HDecoderPreparingUnitTest, create_by_empty_name, TestSize.Level1)
     ASSERT_FALSE(testObj);
 }
 
+#ifdef HMOS_TEST
+HWTEST_F(HDecoderPreparingUnitTest, create_by_secure_avc_name, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.decoder.avc.secure");
+    ASSERT_TRUE(testObj != nullptr);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+}
+#endif
+
 /* ============== SET_CALLBACK ============== */
 HWTEST_F(HDecoderPreparingUnitTest, set_empty_callback, TestSize.Level1)
 {
@@ -259,6 +270,105 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_maxInputSize, TestSiz
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
+HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_maxwidth, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 10000);//beyond the scope
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_UNKNOWN, ret);
+}
+ 
+HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_width, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 0);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 768);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+}
+ 
+HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_maxheight, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 10000);//beyond the scope
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_UNKNOWN,ret);
+}
+ 
+HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_height, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 0);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+}
+ 
+HWTEST_F(HDecoderPreparingUnitTest, configure_invalid_pixelfmt, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::UNKNOWN));
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 1000000);
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, 1);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+}
+ 
+HWTEST_F(HDecoderPreparingUnitTest, configure_invalid_scaletype, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 1000000);
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, 1);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, -1);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 HWTEST_F(HDecoderPreparingUnitTest, configure_vrr_ok, TestSize.Level1)
 {
@@ -301,6 +411,20 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_vrr_without_framerate, TestSize.Le
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 #endif
+
+/* ============== GET_INPUT_FORMAT ============== */
+HWTEST_F(HDecoderPreparingUnitTest, get_input_format_before_configure, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+ 
+    Format format;
+    int32_t ret = testObj->GetInputFormat(format);
+    ASSERT_NE(AVCS_ERR_OK, ret);
+}
 
 /* ============== GET_OUTPUT_FORMAT ============== */
 HWTEST_F(HDecoderPreparingUnitTest, get_output_format_before_configure, TestSize.Level1)
