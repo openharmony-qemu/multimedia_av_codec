@@ -204,6 +204,7 @@ private:
     //return value is the remained buffer size
     size_t WriteAudioBuffer(uint8_t* inputBuffer, size_t bufferSize, bool& shouldDrop);
     int32_t GetCallbackBufferDuration();
+    int32_t ChooseVolumeMode();
 
     OHOS::Media::Mutex renderMutex_{};
     Callback *callback_{};
@@ -231,6 +232,7 @@ private:
     int64_t bitRate_{0};
     int32_t appPid_{0};
     int32_t appUid_{0};
+    int32_t volumeMode_{0};
     bool needReformat_{false};
     Plugins::Seekable seekable_{Plugins::Seekable::INVALID};
     std::shared_ptr<Ffmpeg::Resample> resample_{nullptr};
@@ -250,7 +252,6 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::mutex mutex_;
     std::condition_variable writeCond_;
-    int32_t volumeMode_ = 0;
     std::shared_ptr<AudioStandard::AudioRendererWriteCallback> audioRenderWriteCallback_ {nullptr};
 };
 } // namespace Plugin

@@ -269,7 +269,7 @@ Status AudioServerSinkPlugin::Init()
     rendererOptions_.rendererInfo.contentType = static_cast<AudioStandard::ContentType>(audioRenderInfo_.contentType);
     rendererOptions_.rendererInfo.streamUsage = static_cast<AudioStandard::StreamUsage>(audioRenderInfo_.streamUsage);
     rendererOptions_.rendererInfo.rendererFlags = audioRenderInfo_.rendererFlags;
-    rendererOptions_.rendererInfo.volumeMode = static_cast<AudioStandard::AudioVolumeMode>(volumeMode_);
+    rendererOptions_.rendererInfo.volumeMode = static_cast<AudioStandard::AudioVolumeMode>(ChooseVolumeMode());
     rendererOptions_.streamInfo.samplingRate = rendererParams_.sampleRate;
     rendererOptions_.streamInfo.encoding =
         mimeType_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
@@ -292,6 +292,21 @@ Status AudioServerSinkPlugin::Init()
     }
     audioRenderer_->SetInterruptMode(audioInterruptMode_);
     return Status::OK;
+}
+
+int32_t AudioServerSinkPlugin::ChooseVolumeMode()
+{
+    MEDIA_LOG_I_SHORT("volumeMode_ = %{public}d, audioRenderInfo_.volumeMode = %{public}d", volumeMode_,
+        audioRenderInfo_.volumeMode);
+    int32_t mode = static_cast<int32_t>(AudioStandard::AudioVolumeMode::AUDIOSTREAM_VOLUMEMODE_SYSTEM_GLOBAL);
+    if (volumeMode_ ==
+        static_cast<int32_t>(AudioStandard::AudioVolumeMode::AUDIOSTREAM_VOLUMEMODE_APP_INDIVIDUAL)) {
+        mode = volumeMode_;
+    } else if (audioRenderInfo_.volumeMode ==
+        static_cast<int32_t>(AudioStandard::AudioVolumeMode::AUDIOSTREAM_VOLUMEMODE_APP_INDIVIDUAL)) {
+        mode = audioRenderInfo_.volumeMode;
+    }
+    return mode;
 }
 
 AudioSampleFormat AudioServerSinkPlugin::GetSampleFormat()
@@ -747,7 +762,7 @@ Status AudioServerSinkPlugin::SetVolume(float volume)
 
 Status AudioServerSinkPlugin::SetVolumeMode(int32_t mode)
 {
-    MEDIA_LOG_D("SetVolumeMode entered.");
+    MEDIA_LOG_D("SetVolumeMode entered. mode = %{public}d", mode);
     volumeMode_ = mode;
     return Status::OK;
 }
