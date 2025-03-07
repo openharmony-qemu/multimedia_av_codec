@@ -249,6 +249,8 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
      * @return Time consuming of writing buffer, unit is ms
      */
     virtual int64_t GetWriteDurationMs() { return 0; };
+ 
+    virtual bool IsOffloading() { return false; }
 };
 
 /// Audio sink plugin api major number.

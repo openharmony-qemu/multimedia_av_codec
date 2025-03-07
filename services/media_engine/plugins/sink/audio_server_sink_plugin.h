@@ -121,6 +121,8 @@ public:
     AudioSampleFormat GetSampleFormat() override;
 
     int64_t GetWriteDurationMs() override;
+ 
+    bool IsOffloading() override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
