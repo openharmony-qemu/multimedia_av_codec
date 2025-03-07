@@ -488,6 +488,7 @@ Status DecoderSurfaceFilter::DoFlush()
 {
     MEDIA_LOG_I("Flush");
     lastRenderTimeNs_ = HST_TIME_NONE;
+    eosPts_ = INT64_MAX;
     videoDecoder_->Flush();
     if (postProcessor_) {
         postProcessor_->Flush();
@@ -921,9 +922,8 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     MEDIA_LOG_D("DrainOutputBuffer, pts:" PUBLIC_LOG_D64, outputBuffer->pts_);
     if ((outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS))) {
         MEDIA_LOG_I("DrainOutputBuffer output EOS");
-        eosPts_ = outputBuffer->pts_;
-    } else if (postProcessorType_ == VideoPostProcessorType::SUPER_RESOLUTION && outputBuffer->pts_ == eosPts_) {
-        outputBuffer->flag_|=static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
+    } else if (postProcessorType_ == VideoPostProcessorType::SUPER_RESOLUTION && outputBuffer->pts_ >= eosPts_) {
+        outputBuffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     }
     std::unique_lock<std::mutex> lock(mutex_);
     FALSE_RETURN_NOLOG(!DrainSeekContinuous(index, outputBuffer));
@@ -943,8 +943,9 @@ void DecoderSurfaceFilter::DecoderDrainOutputBuffer(uint32_t index, std::shared_
     MEDIA_LOG_D("DecoderDrainOutputBuffer pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
     if (outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)) {
         MEDIA_LOG_I("Decoder output EOS");
-        eosPts_ = outputBuffer->pts_;
+        eosPts_ = prevDecoderPts_;
     }
+    prevDecoderPts_ = outputBuffer->pts_;
     FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
     videoDecoder_->ReleaseOutputBuffer(index, true);
 }
