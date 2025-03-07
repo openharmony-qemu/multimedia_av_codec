@@ -22,7 +22,7 @@ using namespace testing::ext;
 using namespace OHOS::MediaAVCodec;
 
 namespace {
-    constexpr OH_AVErrCode OHAVCODEC_ERROR_CODE = AV_ERR_OK;
+    constexpr int32_t INVALID_VALUE = -1;
     const std::string UNKOWN_ERROR = "unkown error";
 };
 
@@ -33,6 +33,7 @@ public:
     static void TearDownTestCase(void) {};
     void SetUp(void) {};
     void TearDown(void) {};
+    AVCodecServiceErrCode codecServiceErrCode;
 };
 
 /**
@@ -41,7 +42,7 @@ public:
  */
 HWTEST_F(ErrorCodeCoverageUnitTest, OHAVErrCodeToString_Coverage_Unit_Test_001, TestSize.Level1)
 {
-    std::string ret = OHAVErrCodeToString(OHAVCODEC_ERROR_CODE);
+    std::string ret = OHAVErrCodeToString(AV_ERR_OK);
     EXPECT_NE(ret, UNKOWN_ERROR);
 }
 
@@ -51,7 +52,6 @@ HWTEST_F(ErrorCodeCoverageUnitTest, OHAVErrCodeToString_Coverage_Unit_Test_001, 
  */
 HWTEST_F(ErrorCodeCoverageUnitTest, OHAVErrCodeToString_Coverage_Unit_Test_002, TestSize.Level1)
 {
-    constexpr int32_t INVALID_VALUE = -1;
     std::string ret = OHAVErrCodeToString(static_cast<OH_AVErrCode>(INVALID_VALUE));
     EXPECT_EQ(ret, UNKOWN_ERROR);
 }
@@ -62,8 +62,8 @@ HWTEST_F(ErrorCodeCoverageUnitTest, OHAVErrCodeToString_Coverage_Unit_Test_002, 
  */
 HWTEST_F(ErrorCodeCoverageUnitTest, AVCSErrorToOHAVErrCodeString_Coverage_Unit_Test_001, TestSize.Level1)
 {
-    constexpr int32_t ERROR_CODE = AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION;
-    std::string ret = AVCSErrorToOHAVErrCodeString(static_cast<AVCodecServiceErrCode>(ERROR_CODE));
+    codecServiceErrCode = AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION;
+    std::string ret = AVCSErrorToOHAVErrCodeString(static_cast<AVCodecServiceErrCode>(codecServiceErrCode));
     EXPECT_NE(ret, UNKOWN_ERROR);
 }
 
@@ -73,8 +73,8 @@ HWTEST_F(ErrorCodeCoverageUnitTest, AVCSErrorToOHAVErrCodeString_Coverage_Unit_T
  */
 HWTEST_F(ErrorCodeCoverageUnitTest, AVCSErrorToOHAVErrCodeString_Coverage_Unit_Test_002, TestSize.Level1)
 {
-    constexpr int32_t ERROR_CODE = AVCS_ERR_OK;
-    std::string ret = AVCSErrorToOHAVErrCodeString(static_cast<AVCodecServiceErrCode>(ERROR_CODE));
+    codecServiceErrCode = AVCS_ERR_OK;
+    std::string ret = AVCSErrorToOHAVErrCodeString(static_cast<AVCodecServiceErrCode>(codecServiceErrCode));
     EXPECT_NE(ret, UNKOWN_ERROR);
 }
 
@@ -84,8 +84,7 @@ HWTEST_F(ErrorCodeCoverageUnitTest, AVCSErrorToOHAVErrCodeString_Coverage_Unit_T
  */
 HWTEST_F(ErrorCodeCoverageUnitTest, AVCSErrorToOHAVErrCodeString_Coverage_Unit_Test_003, TestSize.Level1)
 {
-    constexpr int32_t ERROR_CODE = OH_AVErrCode::AV_ERR_NO_MEMORY;
-    std::string ret = AVCSErrorToOHAVErrCodeString(static_cast<AVCodecServiceErrCode>(ERROR_CODE));
+    std::string ret = AVCSErrorToOHAVErrCodeString(static_cast<AVCodecServiceErrCode>(AV_ERR_NO_MEMORY));
     EXPECT_EQ(ret, UNKOWN_ERROR);
 }
 
@@ -95,7 +94,6 @@ HWTEST_F(ErrorCodeCoverageUnitTest, AVCSErrorToOHAVErrCodeString_Coverage_Unit_T
  */
 HWTEST_F(ErrorCodeCoverageUnitTest, AVCSErrorToOHAVErrCodeString_Coverage_Unit_Test_004, TestSize.Level1)
 {
-    constexpr int32_t INVALID_VALUE = -1;
     std::string ret = AVCSErrorToOHAVErrCodeString(static_cast<AVCodecServiceErrCode>(INVALID_VALUE));
     EXPECT_EQ(ret, UNKOWN_ERROR);
 }
