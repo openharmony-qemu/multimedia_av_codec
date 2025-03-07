@@ -286,6 +286,9 @@ int32_t CodecServiceStub::Stop()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
+    if (isFreezedFlag_ == true) {
+        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
+    }
     int32_t ret = codecServer_->Stop();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
@@ -298,6 +301,9 @@ int32_t CodecServiceStub::Flush()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
+    if (isFreezedFlag_ == true) {
+        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
+    }
     int32_t ret = codecServer_->Flush();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
@@ -310,6 +316,9 @@ int32_t CodecServiceStub::Reset()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
+    if (isFreezedFlag_ == true) {
+        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
+    }
     int32_t ret = codecServer_->Reset();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
@@ -321,6 +330,9 @@ int32_t CodecServiceStub::Reset()
 int32_t CodecServiceStub::Release()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (isFreezedFlag_ == true) {
+        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
+    }
     return InnerRelease();
 }
 
@@ -412,6 +424,7 @@ int32_t CodecServiceStub::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySess
 void CodecServiceStub::NotifyMemoryRecycle()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    isFreezedFlag_ = true;
     CHECK_AND_RETURN_LOG(codecServer_ != nullptr, "Codec server is nullptr");
     std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
     std::static_pointer_cast<CodecServer>(codecServer_)->NotifyBackGround();
@@ -426,6 +439,7 @@ void CodecServiceStub::NotifyMemoryRecycle()
 void CodecServiceStub::NotifyMemoryWriteBack()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    isFreezedFlag_ = false;
     CHECK_AND_RETURN_LOG(codecServer_ != nullptr, "Codec server is nullptr");
     std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
     std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();

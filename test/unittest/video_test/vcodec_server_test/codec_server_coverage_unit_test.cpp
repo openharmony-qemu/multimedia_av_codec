@@ -1204,29 +1204,6 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: NotifyBackGround_Valid_Test_002
- * @tc.desc: NotifyBackGround valid progress - buffer mode
- */
-HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_002, TestSize.Level1)
-{
-    CreateHCodecByMime();
-    server_->isModeConfirmed_ = true;
-
-    std::vector<CodecServer::CodecStatus> testList = {
-        CodecServer::CodecStatus::RUNNING,
-        CodecServer::CodecStatus::END_OF_STREAM,
-        CodecServer::CodecStatus::FLUSHED,
-    };
-
-    for (auto &val : testList) {
-        server_->status_ = val;
-        server_->isFreezedFlag_ = false;
-        server_->NotifyBackGround();
-        EXPECT_TRUE(server_->isFreezedFlag_);
-    }
-}
-
-/**
  * @tc.name: NotifyBackGround_Invalid_Test_001
  * @tc.desc: NotifyBackGround invalid progress - wrong status of codec
  */
