@@ -771,7 +771,7 @@ int32_t HevcDecoder::AllocateBuffers()
         renderAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("renderAvailQue", outputBufferCnt);
     }
     CHECK_AND_RETURN_RET_LOG(AllocateInputBuffer(inputBufferCnt, inputBufferSize_) == AVCS_ERR_OK &&
-                             AllocateOutputBuffer(outputBufferCnt, outputBufferSize_) == AVCS_ERR_OK,
+                             AllocateOutputBuffer(outputBufferCnt) == AVCS_ERR_OK,
                              AVCS_ERR_UNKNOWN, "Allocate buffers failed!");
     return AVCS_ERR_OK;
 }
