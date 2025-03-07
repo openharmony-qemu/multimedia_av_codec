@@ -231,7 +231,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/hwdecoder_fuzzer:HwdecoderFuzzTest",
       "fuzztest/hwdecoderapi10h26510bit_fuzzer:HwdecoderAPI10H26510BitFuzzTest",
       "fuzztest/hwdecoderapi10h2658bit_fuzzer:HwdecoderAPI10H2658BitFuzzTest",
-      "fuzztest/hwdecoderapi10hdr2sdr_fuzzer:HwdecoderAPI10Hdr2SdrBitFuzzTest",
+      "fuzztest/hwdecoderapi10hdr2sdr_fuzzer:HwdecoderAPI10Hdr2SdrFuzzTest",
       "fuzztest/hwdecoderapi11_fuzzer:HwdecoderApi11FuzzTest",
       "fuzztest/hwdecoderapi11h26510bit_fuzzer:HwdecoderAPI11H26510BitFuzzTest",
       "fuzztest/hwdecoderapi11h2658bit_fuzzer:HwdecoderAPI11H2658BitFuzzTest",
