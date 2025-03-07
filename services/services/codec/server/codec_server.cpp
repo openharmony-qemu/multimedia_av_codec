@@ -1184,7 +1184,8 @@ int32_t CodecServer::GetOutputFormat(std::shared_ptr<Media::Meta> &parameter)
 int32_t CodecServer::SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(bufferQueueProducer != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    CHECK_AND_RETURN_RET_LOG(bufferQueueProducer != nullptr, AVCS_ERR_NO_MEMORY, "bufferQueueProducer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "codecBase_ is nullptr");
     return codecBase_->SetOutputBufferQueue(bufferQueueProducer);
 }
 int32_t CodecServer::Prepare()
