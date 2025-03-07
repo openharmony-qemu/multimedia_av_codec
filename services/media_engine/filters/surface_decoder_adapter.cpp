@@ -391,12 +391,12 @@ void SurfaceDecoderAdapter::ReleaseBuffer()
             dropIndexs_.clear();
         }
         for (auto &index : indexs) {
-            MEDIA_LOG_D("Release buffer, index: ", index);
+            MEDIA_LOG_D("Release buffer, index: " PUBLIC_LOG_U32, index);
             codecServer_->ReleaseOutputBuffer(index, true);
         }
         for (auto &dropIndex : dropIndexs) {
             MediaAVCodec::AVCodecTrace trace("ReleaseBuffer drop " + std::to_string(dropIndex));
-            MEDIA_LOG_D("Drop buffer, index: ", index);
+            MEDIA_LOG_D("Drop buffer, index: " PUBLIC_LOG_U32, index);
             codecServer_->ReleaseOutputBuffer(dropIndex, false);
         }
     }
