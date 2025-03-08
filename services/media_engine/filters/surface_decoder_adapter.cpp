@@ -68,8 +68,8 @@ public:
             MEDIA_LOG_D("OnOutputBuffer flag " PUBLIC_LOG_D32, buffer->flag_);
             surfaceDecoderAdapter->OnOutputBufferAvailable(index, buffer);
             if ((buffer->flag_ & BUFFER_IS_EOS) == 1) {
-                int64_t lastBufferPts = surfaceDecoderAdapter->lastBufferPts_.load();
-                int64_t frameNum = surfaceDecoderAdapter->frameNum_.load();
+                int64_t lastBufferPts = surfaceDecoderAdapter->GetLastBufferPts();
+                int64_t frameNum = surfaceDecoderAdapter->GetFrameNum();
                 MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,
                     lastBufferPts, frameNum);
                 surfaceDecoderAdapter->decoderAdapterCallback_->OnBufferEos(lastBufferPts, frameNum);
@@ -142,6 +142,16 @@ Status SurfaceDecoderAdapter::Configure(const Format &format)
     }
     int32_t ret = codecServer_->Configure(format);
     return ret == 0 ? Status::OK : Status::ERROR_UNKNOWN;
+}
+
+int64_t SurfaceDecoderAdapter::GetFrameNum()
+{
+    return frameNum_.load();
+}
+
+int64_t SurfaceDecoderAdapter::GetLastBufferPts()
+{
+    return lastBufferPts_.load();
 }
 
 sptr<OHOS::Media::AVBufferQueueProducer> SurfaceDecoderAdapter::GetInputBufferQueue()
