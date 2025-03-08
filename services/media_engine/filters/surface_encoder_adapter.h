@@ -45,15 +45,15 @@ enum class StateCode {
 };
 
 enum class ProcessStateCode {
-    IDLE;
+    IDLE,
     // operate start, resume
-    RECORDING;
+    RECORDING,
     // operate pause
-    PAUSED;
+    PAUSED,
     // operate stop
-    STOPED;
-    ERROR;
-}
+    STOPED,
+    ERROR,
+};
 
 class EncoderAdapterCallback {
 public:
