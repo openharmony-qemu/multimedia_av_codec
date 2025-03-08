@@ -464,8 +464,8 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_qprange, TestSize.Lev
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
-    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, 0);//invalid MinQp
-    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, 52);//invalid MaxQp
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, 0); // invalid MinQp
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, 52); // invalid MaxQp
     int32_t ret = testObj->Configure(format);
     ASSERT_NE(AVCS_ERR_OK, ret);
 }
