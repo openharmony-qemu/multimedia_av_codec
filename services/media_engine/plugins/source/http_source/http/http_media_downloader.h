@@ -228,6 +228,9 @@ private:
     std::shared_ptr<PlayMediaStream> defaultStream_ {nullptr};
     uint32_t initResolution_ {0};
     std::atomic<bool> isTimeoutErrorNotified_ {false};
+    std::atomic<bool> isNeedResume_ {false};
+    size_t totalConsumeSize_ {0};
+    FairMutex savedataMutex_ {};
 };
 }
 }

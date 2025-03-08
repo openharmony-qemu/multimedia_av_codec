@@ -135,6 +135,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
 
     if (sourceLoader != nullptr) {
         sourceLoader_ = sourceLoader;
+        isLargeOffsetSpan_ = true;
         downloader_ = std::make_shared<Downloader>("http", sourceLoader);
         MEDIA_LOG_I("HTTP app download.");
     } else {
@@ -334,6 +335,7 @@ void HttpMediaDownloader::HandleWaterline()
 
 bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
 {
+    AutoLock lk(savedataMutex_);
     if (!isFirstFrameArrived_) {
         if (GetCurrentBufferSize() >= wantReadLength || HandleBreak()) {
             return false;
@@ -374,6 +376,16 @@ bool HttpMediaDownloader::StartBuffering(unsigned int& wantReadLength)
     if (!StartBufferingCheck(wantReadLength)) {
         return false;
     }
+
+    if (isNeedResume_.load()) {
+        isNeedResume_.store(false);
+        totalConsumeSize_ = 0;
+        downloader_->Resume();
+        if (!StartBufferingCheck(wantReadLength)) {
+            return false;
+        }
+    }
+
     if (!canWrite_.load()) { // Clear cacheBuffer when we can neither read nor write.
         MEDIA_LOG_I("HTTP ClearCacheBuffer.");
         ClearCacheBuffer();
@@ -494,7 +506,7 @@ void HttpMediaDownloader::HandleDownloadWaterLine()
     if (downloader_ == nullptr || !isFirstFrameArrived_ || isBuffering_ || isLargeOffsetSpan_) {
         return;
     }
-    if (!isNeedClearHasRead_) {
+    if (!isNeedClearHasRead_ || sourceLoader_ != nullptr) {
         return;
     }
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
@@ -570,6 +582,16 @@ Status HttpMediaDownloader::HandleCacheBuffer(unsigned char* buff, ReadDataInfo&
         return Status::ERROR_AGAIN;
     }
     Status res = ReadCacheBuffer(buff, readDataInfo);
+
+    if (isNeedResume_.load() && readDataInfo.realReadLength_ > 0) {
+        totalConsumeSize_ += readDataInfo.realReadLength_;
+        if (totalConsumeSize_ > DEFAULT_WATER_LINE_ABOVE) {
+            isNeedResume_.store(false);
+            totalConsumeSize_ = 0;
+            downloader_->Resume();
+            MEDIA_LOG_D("HTTP downloader resume.");
+        }
+    }
 
     HandleDownloadWaterLine();
     return res;
@@ -671,7 +693,7 @@ bool HttpMediaDownloader::SeekRingBuffer(int64_t offset)
 
 void HttpMediaDownloader::UpdateMinAndMaxReadOffset()
 {
-    if ((!isLargeOffsetSpan_ && isMinAndMaxOffsetUpdate_) || !isNeedClearHasRead_) {
+    if ((!isLargeOffsetSpan_ && isMinAndMaxOffsetUpdate_) || !isNeedClearHasRead_ || sourceLoader_ != nullptr) {
         return;
     }
     uint64_t readOffsetTmp = static_cast<uint64_t>(readOffset_);
@@ -816,7 +838,7 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
 
     uint64_t diff = static_cast<size_t>(offset) > writeOffset_ ?
                         static_cast<size_t>(offset) - writeOffset_ : 0;
-    if (diff > 0 && diff < ALLOW_SEEK_MIN_SIZE) {
+    if (diff > 0 && diff < ALLOW_SEEK_MIN_SIZE && sourceLoader_ == nullptr) {
         isSeekWait_ = true;
         MEDIA_LOG_I("HTTP Seek miss, diff is too small so return and wait.");
         return true;
@@ -961,6 +983,7 @@ bool HttpMediaDownloader::CacheBufferFullLoop()
 
 uint32_t HttpMediaDownloader::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t len)
 {
+    AutoLock lk(savedataMutex_);
     isServerAcceptRange_ = downloadRequest_->IsServerAcceptRange();
 
     size_t res = cacheMediaBuffer_->Write(data, writeOffset_, len);
@@ -971,7 +994,7 @@ uint32_t HttpMediaDownloader::SaveCacheBufferDataNotblock(uint8_t* data, uint32_
 
     writeBitrateCaculator_->UpdateWriteBytes(res);
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
-    MEDIA_LOG_I("ClearFragmentBeforeOffset, freeSize: " PUBLIC_LOG_U64, freeSize);
+    MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "SaveCacheBufferDataNotblock, freeSize: " PUBLIC_LOG_U64, freeSize);
     HandleCachedDuration();
     writeBitrateCaculator_->StartClock();
     uint64_t writeTime  = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLISECONDS;
@@ -979,8 +1002,9 @@ uint32_t HttpMediaDownloader::SaveCacheBufferDataNotblock(uint8_t* data, uint32_
         writeBitrateCaculator_->ResetClock();
     }
 
-    if (res == 0) {
+    if (res < len) {
         cacheMediaBuffer_->Dump(0);
+        isNeedResume_.store(true);
     }
 
     return res;

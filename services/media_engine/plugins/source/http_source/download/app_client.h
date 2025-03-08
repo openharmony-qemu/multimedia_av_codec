@@ -85,7 +85,7 @@ private:
     long startPos_ {0};
     int len_ {0};
     std::string redirectUrl_ {};
-    long curOffset_ {};
+    int64_t curOffset_ {};
 };
 }
 }

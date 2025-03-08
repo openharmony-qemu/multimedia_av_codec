@@ -70,6 +70,8 @@ constexpr uint64_t READ_BACK_SAVE_SIZE = 1 * 1024 * 1024;
 constexpr int32_t SAVE_DATA_LOG_FREQUENCY = 50;
 constexpr uint32_t KILO = 1024;
 constexpr int32_t ONE_HUNDRED_MILLIONSECOND = 100;
+constexpr uint64_t RESUME_FREE_SIZE_THRESHOLD = 2 * 1024 * 1024;
+constexpr size_t STORP_WRITE_BUFFER_REDUNDANCY = 1 * 1024 * 1024;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -597,6 +599,13 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 
     auto ret = ReadDelegate(buff, readDataInfo);
 
+    uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
+    if (freeSize > RESUME_FREE_SIZE_THRESHOLD && isNeedResume_.load()) {
+        downloader_->Resume();
+        isNeedResume_.store(false);
+        MEDIA_LOG_D("HLS downloader resume.");
+    }
+
     readTotalBytes_ += readDataInfo.realReadLength_;
     if (now > lastReadCheckTime_ && now - lastReadCheckTime_ > SAMPLE_INTERVAL) {
         readRecordDuringTime_ = now - lastReadCheckTime_;
@@ -785,6 +794,13 @@ bool HlsMediaDownloader::CacheBufferFullLoop()
 
 uint32_t HlsMediaDownloader::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t len)
 {
+    uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
+    if (freeSize <= (len + STORP_WRITE_BUFFER_REDUNDANCY) && !isNeedResume_.load()) {
+        isNeedResume_.store(true);
+        MEDIA_LOG_I("HLS stop write, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32, freeSize, len);
+        return 0;
+    }
+
     size_t res = cacheMediaBuffer_->Write(data, writeOffset_, len);
     writeOffset_ += res;
     MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "SaveCacheBufferDataNotblock writeOffset " PUBLIC_LOG_U64 " res "
@@ -798,19 +814,12 @@ uint32_t HlsMediaDownloader::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t
 
     writeBitrateCaculator_->UpdateWriteBytes(res);
     ClearChunksOfFragment();
-    uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
-    MEDIA_LOG_I("ClearFragmentBeforeOffset, freeSize: " PUBLIC_LOG_U64, freeSize);
     HandleCachedDuration();
     writeBitrateCaculator_->StartClock();
     uint64_t writeTime  = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLISECONDS;
     if (writeTime > ONE_SECONDS) {
         writeBitrateCaculator_->ResetClock();
     }
-
-    if (res == 0) {
-        cacheMediaBuffer_->Dump(0);
-    }
-
     return res;
 }
 

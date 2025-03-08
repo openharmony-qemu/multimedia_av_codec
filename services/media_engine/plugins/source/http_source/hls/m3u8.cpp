@@ -541,6 +541,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
 
 void M3U8MasterPlaylist::ChooseStreamByResolution()
 {
+    FALSE_RETURN_MSG(defaultVariant_ != nullptr, "defaultVariant is nullptr.");
     if (initResolution_ == 0) {
         return;
     }

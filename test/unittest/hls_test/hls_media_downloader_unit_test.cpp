@@ -1175,6 +1175,8 @@ HWTEST_F(HlsMediaDownloaderUnitTest, IS_CACHED_INIT_SIZE_READY_001, TestSize.Lev
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
     Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
     downloader->callback_ = sourceCallback;
     EXPECT_EQ(downloader->IsCachedInitSizeReady(-1), false);
     PlayInfo playInfo;
@@ -1221,6 +1223,8 @@ HWTEST_F(HlsMediaDownloaderUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1
     downloader->backPlayList_.push_back(playInfo);
     downloader->initCacheSize_ = 100;
     downloader->isSeekingFlag = true;
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
     EXPECT_EQ(downloader->CacheBufferFullLoop(), true);
     EXPECT_EQ(downloader->initCacheSize_, -1);
     downloader->isSeekingFlag = false;
