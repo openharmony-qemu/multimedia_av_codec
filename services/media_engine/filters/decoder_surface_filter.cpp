@@ -724,8 +724,8 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, isDrmProtected_);
     isPostProcessorSupported_ = IsPostProcessorSupported();
     if (!isPostProcessorSupported_ || CreatePostProcessor() == nullptr) {
+        isPostProcessorSupported_ = false;
         if (postProcessorType_ == VideoPostProcessorType::SUPER_RESOLUTION) {
-            isPostProcessorSupported_ = false;
             eventReceiver_->OnEvent({"SuperResolutionPostProcessor", EventType::EVENT_SUPER_RESOLUTION_CHANGED, false});
         }
     }
