@@ -67,6 +67,8 @@ public:
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
     void NotifyInitSuccess() override;
+    uint64_t GetCachedDuration() override;
+    void RestartAndClearBuffer() override;
 
 private:
     void CloseUri(bool isAsync = false);

@@ -576,5 +576,17 @@ bool Source::IsLocalFd()
     FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "IsLocalFd source plugin is nullptr");
     return plugin_->IsLocalFd();
 }
+
+uint64_t Source::GetCachedDuration()
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, 0, "source_ is nullptr");
+    return plugin_->GetCachedDuration();
+}
+
+void Source::RestartAndClearBuffer()
+{
+    FALSE_RETURN_MSG(plugin_ != nullptr, "source_ is nullptr");
+    return plugin_->RestartAndClearBuffer();
+}
 } // namespace Media
 } // namespace OHOS

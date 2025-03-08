@@ -81,7 +81,7 @@ public:
         if (isRingBuffer_ && isSelectingBitrate_.load()) {
             return false;
         }
-        return isRingBuffer_ && request->GetFileContentLengthNoWait() == 0;
+        return isRingBuffer_ && request->GetFileContentLengthNoWait() == 0 && !isAllowResume_.load();
     }
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
@@ -89,7 +89,8 @@ public:
     void SetStartPts(int64_t startPts) override;
     bool SelectBitRate(uint32_t bitRate) override;
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
-
+    uint64_t GetCachedDuration() override;
+    void RestartAndClearBuffer() override;
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     uint32_t SaveCacheBufferData(uint8_t* data, uint32_t len, bool notBlock);
@@ -231,6 +232,8 @@ private:
     std::atomic<bool> isNeedResume_ {false};
     size_t totalConsumeSize_ {0};
     FairMutex savedataMutex_ {};
+    uint64_t cachedDuration_ {0};
+    std::atomic<bool> isAllowResume_ {false};
 };
 }
 }

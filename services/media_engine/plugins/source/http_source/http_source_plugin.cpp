@@ -516,6 +516,18 @@ Status HttpSourcePlugin::SetStartPts(int64_t startPts)
     downloader_->SetStartPts(startPts);
     return Status::OK;
 }
+
+uint64_t HttpSourcePlugin::GetCachedDuration()
+{
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
+    return downloader_->GetCachedDuration();
+}
+
+void HttpSourcePlugin::RestartAndClearBuffer()
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
+    return downloader_->RestartAndClearBuffer();
+}
 }
 }
 }

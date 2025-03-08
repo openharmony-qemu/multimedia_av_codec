@@ -269,6 +269,11 @@ public:
     {
         return false;
     }
+    virtual uint64_t GetCachedDuration()
+    {
+        return 0;
+    }
+    virtual void RestartAndClearBuffer() {}
 };
 
 /// Source plugin api major number.

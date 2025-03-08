@@ -157,6 +157,8 @@ public:
     bool IsLocalFd();
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
+    uint64_t GetCachedDuration();
+    void RestartAndClearBuffer();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

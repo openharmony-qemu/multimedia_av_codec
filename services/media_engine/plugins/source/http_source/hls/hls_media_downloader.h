@@ -108,6 +108,7 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     void NotifyInitSuccess() override;
+    uint64_t GetCachedDuration() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -303,6 +304,7 @@ private:
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
     std::atomic<bool> isTimeoutErrorNotified_ {false};
     std::atomic<bool> isNeedResume_ {false};
+    uint64_t cachedDuration_ {0};
 };
 }
 }

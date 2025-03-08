@@ -124,6 +124,8 @@ public:
     void NotifyInitSuccess();
     bool IsLocalFd();
     bool IsFlvLiveStream() const;
+    uint64_t GetCachedDuration();
+    void RestartAndClearBuffer();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
