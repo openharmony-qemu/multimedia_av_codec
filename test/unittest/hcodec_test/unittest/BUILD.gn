@@ -52,8 +52,8 @@ ohos_unittest("hdecoder_unit_test") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
-  if(target_cpu == "arm64"){
-    defines += ["HMOS_TEST"]
+  if (target_cpu == "arm64") {
+    defines += [ "HMOS_TEST" ]
   }
 }
 
@@ -77,8 +77,8 @@ ohos_unittest("hencoder_unit_test") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
-  if(target_cpu == "arm64"){
-    defines = ["HMOS_TEST"]
+  if (target_cpu == "arm64") {
+    defines = [ "HMOS_TEST" ]
   }
 }
 
