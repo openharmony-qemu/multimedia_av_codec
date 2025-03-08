@@ -348,16 +348,17 @@ Status SurfaceEncoderAdapter::Stop()
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
     // operate stop when it is paused state.
-    if(curState_ == ProcessStateCode::PAUSED && !isTransCoderMode) {
-        //  current frame is not the last frame before the pasue time, wait for stop
-        if(currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / videoFrameRate_)) {
+    if (curState_ == ProcessStateCode::PAUSED && !isTransCoderMode) {
+        // current frame is not the last frame before the pasue time, wait for stop
+        if (currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / videoFrameRate_)) {
             MEDIA_LOG_D("paused state -> stop, wait for stop.");
             stopTime_ = pauseTime_;
             HandleWaitforStop();
-        } // else stop directly  
+        }
+        // else stop directly  
     }
     // operate stop when it is recording state.
-    if(curState_ == ProcessStateCode::RECORDING && !isTransCoderMode) {
+    if (curState_ == ProcessStateCode::RECORDING && !isTransCoderMode) {
         MEDIA_LOG_D("recording state -> stop, wait for stop.");
         HandleWaitforStop();
     }
