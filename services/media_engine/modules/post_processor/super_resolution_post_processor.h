@@ -31,6 +31,8 @@ public:
     SuperResolutionPostProcessor();
     ~SuperResolutionPostProcessor() override;
 
+    bool IsValid();
+
     Status Init() override;
     Status Flush() override;
     Status Stop() override;
