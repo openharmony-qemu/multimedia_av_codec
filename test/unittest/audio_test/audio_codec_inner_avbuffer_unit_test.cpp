@@ -97,7 +97,7 @@ int32_t AudioDecInnerAvBuffer::RunCase()
     innerBufferQueue_ = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "InnerDemo");  // 4
     audioCodec_ = AudioCodecFactory::CreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     DEMO_CHECK_AND_RETURN_RET_LOG(audioCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
-                             "audioCodec_ is null");
+                                  "audioCodec_ is null");
     audioCodec_->Configure(meta_);
 
     audioCodec_->SetOutputBufferQueue(innerBufferQueue_->GetProducer());
