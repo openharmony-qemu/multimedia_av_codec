@@ -93,13 +93,11 @@ void AVCodecAudioCodecUnitTest::TearDown(void)
 
 int32_t AudioDecInnerAvBuffer::RunCase()
 {
+    int32_t ret = AVCodecServiceErrCode::AVCS_ERR_OK;
     innerBufferQueue_ = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "InnerDemo");  // 4
-
     audioCodec_ = AudioCodecFactory::CreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
-    if (audioCodec_ == nullptr) {
-        std::cout << "codec == nullptr" << std::endl;
-        return;
-    }
+    DEMO_CHECK_AND_RETURN_RET_LOG(audioCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
+                             "audioCodec_ is null");
     audioCodec_->Configure(meta_);
 
     audioCodec_->SetOutputBufferQueue(innerBufferQueue_->GetProducer());
@@ -119,7 +117,7 @@ int32_t AudioDecInnerAvBuffer::RunCase()
     InputFunc();
     inputFile_->close();
     outputFile_->close();
-    return;
+    return ret;
 }
 
 int32_t AudioDecInnerAvBuffer::GetInputBufferSize()
@@ -334,7 +332,7 @@ HWTEST_F(AVCodecAudioCodecUnitTest, SetParameter_001, TestSize.Level1)
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetOutputBufferQueue(innerBufferQueue->GetProducer()));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Prepare());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Start());
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetParameter());
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetParameter(meta));
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, ChangePlugin_001, TestSize.Level1)
@@ -345,8 +343,8 @@ HWTEST_F(AVCodecAudioCodecUnitTest, ChangePlugin_001, TestSize.Level1)
     dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
     meta = std::make_shared<Media::Meta>();
     std::string mime;
-    meta->GetData(Tag::MIMETYPE, mime);
-    meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16E);
+    meta->GetData(Tag::MIME_TYPE, mime);
+    meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
@@ -365,7 +363,7 @@ HWTEST_F(AVCodecAudioCodecUnitTest, SetDataCallback_001, TestSize.Level1)
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
     auto& innerBufferQueue = audioDec->GetInnerBufferQueue();
     std::shared_ptr<MediaCodecCallback> codecCallback = std::make_shared<AVCodecInnerCallback>();
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetDataCallback(codecCallback));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetCodecCallback(codecCallback));
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, ProcessInputBuffer_001, TestSize.Level1)
@@ -419,7 +417,7 @@ HWTEST_F(AVCodecAudioCodecUnitTest, GetInputBufferQueueConsumer_001, TestSize.Le
     EXPECT_EQ(inputConsumer, nullptr);
 }
 
-HWTEST_F(AVCodecAudioCodecUnitTest, GetInputBufferQueueConsumer_001, TestSize.Level1)
+HWTEST_F(AVCodecAudioCodecUnitTest, GetOutputBufferQueueProducer_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
     auto& dec = audioDec->GetAudioCodec();
@@ -429,8 +427,8 @@ HWTEST_F(AVCodecAudioCodecUnitTest, GetInputBufferQueueConsumer_001, TestSize.Le
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
-    sptr<Media::AVBufferQueueProducer> outputConsumer = dec->GetOutputBufferQueueProducer();
-    EXPECT_EQ(outputConsumer, nullptr);
+    sptr<Media::AVBufferQueueProducer> outputProducer = dec->GetOutputBufferQueueProducer();
+    EXPECT_EQ(outputProducer, nullptr);
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, ProcessInputBufferInner_001, TestSize.Level1)
@@ -449,6 +447,7 @@ HWTEST_F(AVCodecAudioCodecUnitTest, ProcessInputBufferInner_001, TestSize.Level1
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Prepare());
     
     auto& implConsumer = audioDec->GetImplConsumer();
+    implConsumer = innerBufferQueue->GetConsumer();
     bool isTriggeredByOutport = true;
     bool isFlushed = true;
     dec->ProcessInputBufferInner(isTriggeredByOutport, isFlushed);
@@ -464,7 +463,7 @@ HWTEST_F(AVCodecAudioCodecUnitTest, AudioDecode_001, TestSize.Level1)
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // expected sampleRate
     meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Runcase());
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->Runcase());
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, OnOutputFormatChanged_001, TestSize.Level1)
@@ -477,7 +476,7 @@ HWTEST_F(AVCodecAudioCodecUnitTest, OnOutputFormatChanged_001, TestSize.Level1)
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(48000); // supported but unexpected sampleRate
     meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Runcase());
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->Runcase());
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

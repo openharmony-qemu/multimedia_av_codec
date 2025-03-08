@@ -93,7 +93,7 @@ private:
 class AVCodecInnerCallback : public MediaCodecCallback {
 public:
     AVCodecInnerCallback() = default;
-    virtual ~AVCodecInnerCallback = default;
+    virtual ~AVCodecInnerCallback() = default;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
