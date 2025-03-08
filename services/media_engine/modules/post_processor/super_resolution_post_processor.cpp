@@ -54,7 +54,12 @@ static bool isSuperResolutionSupported(const std::shared_ptr<Meta>& meta)
 
 static AutoRegisterPostProcessor<SuperResolutionPostProcessor> g_registerSuperResolutionPostProcessor(
     VideoPostProcessorType::SUPER_RESOLUTION, []() {
-        return std::make_shared<SuperResolutionPostProcessor>();
+        auto postProcessor = std::make_shared<SuperResolutionPostProcessor>(); 
+        if (postProcessor == nullptr || !postProcessor->IsValid()) {
+            return nullptr;
+        } else {
+            return postProcessor;
+        }
     }, &isSuperResolutionSupported);
 
 class VPECallback : public VpeVideoCallback {
@@ -126,6 +131,11 @@ SuperResolutionPostProcessor::SuperResolutionPostProcessor()
 SuperResolutionPostProcessor::~SuperResolutionPostProcessor()
 {
     postProcessor_ = nullptr;
+}
+
+bool SuperResolutionPostProcessor::IsValid()
+{
+    return postProcessor_ != nullptr;
 }
 
 Status SuperResolutionPostProcessor::Init()

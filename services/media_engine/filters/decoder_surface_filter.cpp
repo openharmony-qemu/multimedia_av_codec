@@ -237,7 +237,7 @@ DecoderSurfaceFilter::~DecoderSurfaceFilter()
 {
     MEDIA_LOG_I("~DecoderSurfaceFilter()");
     ON_SCOPE_EXIT(0) {
-        videoDecoder_->Release();
+        DoRelease();
         MEDIA_LOG_I("~DecoderSurfaceFilter() exit.");
     };
     FALSE_RETURN(!IS_FILTER_ASYNC && !isThreadExit_);
