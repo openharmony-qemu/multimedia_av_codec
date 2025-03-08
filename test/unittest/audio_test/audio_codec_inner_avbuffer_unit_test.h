@@ -48,10 +48,9 @@ public:
     int32_t RunCase();
     void InputFunc();
     void OutputFunc();
-    void SetSampleRate(int32_t sampleRate);
     std::shared_ptr<AVCodecAudioCodec>& GetAudioCodec()
     {
-        return audiocodec_;
+        return audioCodec_;
     }
     std::shared_ptr<Media::Meta>& GetAudioMeta()
     {
@@ -72,7 +71,7 @@ private:
     std::atomic<int32_t> bufferConsumerAvailableCount_ = 0;
     std::atomic<bool> isRunning_ = false;
     std::unique_ptr<std::ifstream> testFile_;
-    std::shared_ptr<AVCodecAudioCodec> audiocodec_;
+    std::shared_ptr<AVCodecAudioCodec> audioCodec_;
     std::shared_ptr<Media::Meta> meta_;
     std::shared_ptr<Media::AVBufferQueue> innerBufferQueue_;
     sptr<Media::AVBufferQueueConsumer> implConsumer_;
@@ -95,8 +94,8 @@ class AVCodecInnerCallback : public MediaCodecCallback {
 public:
     AVCodecInnerCallback() = default;
     virtual ~AVCodecInnerCallback = default;
-    void onError(AVCodecErrorType errorType, int32_t errorCode) override;
-    void OnOutPutFormatChanged(const Format &format) override;
+    void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
+    void OnOutputFormatChanged(const Format &format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
 };

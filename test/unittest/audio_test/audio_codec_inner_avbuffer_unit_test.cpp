@@ -91,7 +91,7 @@ void AVCodecAudioCodecUnitTest::TearDown(void)
     cout << "[TearDown]: over!!!" << endl;
 }
 
-void AudioDecInnerAvBuffer::RunCase()
+int32_t AudioDecInnerAvBuffer::RunCase()
 {
     innerBufferQueue_ = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "InnerDemo");  // 4
 
@@ -208,15 +208,6 @@ void AudioDecInnerAvBuffer::OutputFunc()
         implConsumer_->ReleaseBuffer(outputBuffer);
         bufferConsumerAvailableCount_--;
     }
-}
-void AudioDecInnerAvBuffer::SetSampleRate(int32_t sampleRate)
-{
-    auto meta_ = std::make_shared<Media::Meta>();
-    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
-    meta_->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Media::Plugins::AudioChannelLayout::STEREO);
-    meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
-    meta_->Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
-    meta_->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
 }
 
 AudioCodecConsumerListener::AudioCodecConsumerListener(AudioDecInnerAvBuffer *demo)
@@ -466,14 +457,26 @@ HWTEST_F(AVCodecAudioCodecUnitTest, ProcessInputBufferInner_001, TestSize.Level1
 HWTEST_F(AVCodecAudioCodecUnitTest, AudioDecode_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    audioDec->SetSampleRate(44100); //expected sampleRate
+    auto& meta = audioDec->GetAudioMeta();
+    meta = std::make_shared<Media::Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Media::Plugins::AudioChannelLayout::STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // expected sampleRate
+    meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
     EXPECT_EQ(ACCodecServiceErrCode::AVCS_ERR_OK, dec->Runcase());
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, OnOutputFormatChanged_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    audioDec->SetSampleRate(48000); //supported but unexpected sampleRate
+    auto& meta = audioDec->GetAudioMeta();
+    meta = std::make_shared<Media::Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Media::Plugins::AudioChannelLayout::STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(48000); // supported but unexpected sampleRate
+    meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
     EXPECT_EQ(ACCodecServiceErrCode::AVCS_ERR_OK, dec->Runcase());
 }
 } // namespace MediaAVCodec
