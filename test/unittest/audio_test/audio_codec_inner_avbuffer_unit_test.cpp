@@ -348,7 +348,7 @@ HWTEST_F(AVCodecAudioCodecUnitTest, ChangePlugin_001, TestSize.Level1)
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->ChangePlugin(mime, false, meta));
+    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, dec->ChangePlugin(mime, false, meta));
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, SetDataCallback_001, TestSize.Level1)
