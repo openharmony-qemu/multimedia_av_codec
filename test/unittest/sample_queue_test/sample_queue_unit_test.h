@@ -28,7 +28,7 @@ class SampleQueueCallbackMock : public SampleQueueCallback {
 public:
     explicit SampleQueueCallbackMock() {}
     virtual ~SampleQueueCallbackMock() = default;
-    virtual Status OnSelectBitrateOk(int64_t startPts, uint32_t bitRate) 
+    virtual Status OnSelectBitrateOk(int64_t startPts, uint32_t bitRate)
     {
         std::cout << "<===> OnSelectBitrateOk startPts=" << startPts << " ,bitRate=" << bitRate << std::endl;
         switchPtsVec_.push_back(startPts);
@@ -58,9 +58,9 @@ public:
 
     static void TearDownTestCase(void);
 
-    virtual void SetUp(void) override;
+    void SetUp(void) override;
 
-    virtual void TearDown(void) override;
+    void TearDown(void) override;
 
     Status InitLargeSampleQueue();
 
@@ -68,13 +68,14 @@ public:
 
     Status SetCallback();
 
-    Status UpdateBufferInfo(const std::shared_ptr<AVBuffer>& buffer, int64_t pts, size_t bufferSize, bool isKeyFrame = false);
+    Status UpdateBufferInfo(
+        const std::shared_ptr<AVBuffer>& buffer, int64_t pts, size_t bufferSize, bool isKeyFrame = false);
 
     void ProducerLoop(int64_t frameCount, int64_t frameIntervalMs, size_t bufferSize);
 
     void ConsumerLoop(int64_t frameCount, int64_t frameIntervalMs);
 
-    std::shared_ptr<SampleQueue> sampleQueue_; 
+    std::shared_ptr<SampleQueue> sampleQueue_;
 
     std::shared_ptr<std::thread> producerThread_ = nullptr;
 

@@ -20,7 +20,7 @@
 namespace OHOS::Media {
 using namespace testing::ext;
 constexpr int64_t FRAME_INTERVAL_MS = 5;
-
+constexpr uint32_t LARGER_QUEUE_SIZE = 150;
 
 void SampleQueueUnitTest::SetUpTestCase(void)
 {
@@ -47,7 +47,7 @@ Status SampleQueueUnitTest::InitLargeSampleQueue()
     sampleQueueConfig.isFlvLiveStream_ = true;
     sampleQueueConfig.isSupportBitrateSwitch_ = true;
     sampleQueueConfig.queueId_ = 1;
-    sampleQueueConfig.bufferCap_ = 150;
+    sampleQueueConfig.bufferCap_ = LARGER_QUEUE_SIZE;
     Status status = sampleQueue_->Init(sampleQueueConfig);
     return status;
 }
@@ -79,8 +79,8 @@ Status SampleQueueUnitTest::UpdateBufferInfo(
 
 void SampleQueueUnitTest::ProducerLoop(int64_t frameCount, int64_t frameIntervalMs, size_t bufferSize)
 {
-    int pushFrames = 0;
-    while(1) {
+    int64_t pushFrames = 0;
+    while (pushFrames < frameCount) {
         std::this_thread::sleep_for(std::chrono::milliseconds(frameIntervalMs));
         int64_t pts = pushFrames;
         AVBufferConfig avBufferConfig;
@@ -97,16 +97,13 @@ void SampleQueueUnitTest::ProducerLoop(int64_t frameCount, int64_t frameInterval
         status = sampleQueue_->PushBuffer(sampleBuffer, true);
         pushFrames++;
         std::cout << "========== pushFrames " << pushFrames << std::endl;
-        if (pushFrames == frameCount) {
-            break;
-        }
     }
 }
 
 void SampleQueueUnitTest::ConsumerLoop(int64_t frameCount, int64_t frameIntervalMs)
 {
-    int acquireFrames = 0;
-    while(1) {
+    int64_t acquireFrames = 0;
+    while (acquireFrames < frameCount) {
         std::this_thread::sleep_for(std::chrono::milliseconds(frameIntervalMs));
 
         size_t size = 0;
@@ -126,9 +123,6 @@ void SampleQueueUnitTest::ConsumerLoop(int64_t frameCount, int64_t frameInterval
         }
         acquireFrames++;
         std::cout << "========== acquireFrames " << acquireFrames << std::endl;
-        if (acquireFrames == frameCount) {
-            break;
-        }
     }
 }
 
@@ -180,7 +174,6 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_RequestBuffer, TestSize.Level1)
 
 HWTEST_F(SampleQueueUnitTest, SampleQueue_PushBuffer, TestSize.Level1)
 {
-
     Status status = InitLargeSampleQueue();
     EXPECT_EQ(status, Status::OK);
 
@@ -207,7 +200,6 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_PushBuffer, TestSize.Level1)
 
 HWTEST_F(SampleQueueUnitTest, SampleQueue_AcquireCopyToDstBuffer, TestSize.Level1)
 {
-
     Status status = InitLargeSampleQueue();
     EXPECT_EQ(status, Status::OK);
 
@@ -247,7 +239,6 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_AcquireCopyToDstBuffer, TestSize.Level
 
 HWTEST_F(SampleQueueUnitTest, SampleQueue_AcquireCopyToDstBufferFail, TestSize.Level1)
 {
-
     Status status = InitLargeSampleQueue();
     EXPECT_EQ(status, Status::OK);
 
@@ -288,7 +279,6 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_AcquireCopyToDstBufferFail, TestSize.L
 
 HWTEST_F(SampleQueueUnitTest, SampleQueue_NormalSampleQueueLoop, TestSize.Level1)
 {
-
     EXPECT_EQ(InitNormalSampleQueue(), Status::OK);
 
     int64_t frameCount = 100;
@@ -345,7 +335,6 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_LargerSampleQueueLoop, TestSize.Level1
 
 HWTEST_F(SampleQueueUnitTest, SampleQueue_SwitchBitrateNormal, TestSize.Level1)
 {
-
     EXPECT_EQ(InitLargeSampleQueue(), Status::OK);
 
     int64_t frameCount = 500;
@@ -355,8 +344,7 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_SwitchBitrateNormal, TestSize.Level1)
 
     // threadProducer: push and producer
     producerThread_ = std::make_shared<std::thread>([this, &frameCount, &frameIntervalMs, &bufferSize]() {
-
-        while(1) {
+        while (pushFrames_ < frameCount) {
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
             int64_t pts = pushFrames_ * FRAME_INTERVAL_MS * 1000;
             AVBufferConfig avBufferConfig;
@@ -373,9 +361,6 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_SwitchBitrateNormal, TestSize.Level1)
             status = sampleQueue_->PushBuffer(sampleBuffer, true);
             pushFrames_++;
             std::cout << "========== pushFrames " << pushFrames_ << std::endl;
-            if (pushFrames_ == frameCount) {
-                break;
-            }
             if (pushFrames_ == 300) {
                 sampleQueue_->ReadySwitchBitrate(2000);
             }
