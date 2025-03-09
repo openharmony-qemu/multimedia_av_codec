@@ -906,6 +906,7 @@ void DemuxerFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
 
 bool DemuxerFilter::IsFlvLiveStream()
 {
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->IsFlvLiveStream();
 }
 
