@@ -66,6 +66,7 @@ Status SampleQueue::Init(const Config& config)
 
     sampleBufferQueueConsumer_ = sampleBufferQueue_->GetConsumer();
     sptr<IConsumerListener> consumerListener = new(std::nothrow) SampleBufferConsumerListener(shared_from_this());
+    FALSE_RETURN_V_MSG_E(consumerListener != nullptr, Status::ERROR_NO_MEMORY, "SampleBufferConsumerListener nullptr");
     sampleBufferQueueConsumer_->SetBufferAvailableListener(consumerListener);
 
     MEDIA_LOG_I(PUBLIC_LOG_S " AVBufferQueue::Create queueSize_" PUBLIC_LOG_U32,
@@ -330,7 +331,7 @@ Status SampleQueue::DiscardSampleAfter(int64_t startPts)
     MEDIA_LOG_I(PUBLIC_LOG_S "DiscardSampleAfter startPts=" PUBLIC_LOG_D64, config_.queueName_.c_str(), startPts);
     {
         std::lock_guard<std::mutex> ptsLock(ptsMutex_);
-        MEDIA_LOG_E("before DiscardSampleAfter keyFramePtsSet_ =" PUBLIC_LOG_S, SetToString(keyFramePtsSet_).c_str());
+        MEDIA_LOG_I("before DiscardSampleAfter keyFramePtsSet_ =" PUBLIC_LOG_S, SetToString(keyFramePtsSet_).c_str());
         auto it = keyFramePtsSet_.lower_bound(startPts);
         keyFramePtsSet_.erase(it, keyFramePtsSet_.end());
         lastEndSamplePts_ = startPts;
