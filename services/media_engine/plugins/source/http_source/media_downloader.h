@@ -174,6 +174,11 @@ public:
     {
         MEDIA_LOG_W("SetMediaStreams is unimplemented.");
     }
+    virtual uint64_t GetCachedDuration()
+    {
+        return 0;
+    }
+    virtual void RestartAndClearBuffer() {}
 };
 }
 }

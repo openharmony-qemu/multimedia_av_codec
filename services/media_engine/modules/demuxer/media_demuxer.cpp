@@ -2950,5 +2950,17 @@ bool MediaDemuxer::IsIgonreBuffering()
     MEDIA_LOG_I("samplequeue cacheDuration=" PUBLIC_LOG_D64, cacheDuration);
     return cacheDuration > BUFFERING_WAVELINE_FOR_SAMPLE_QUEUE;
 }
+
+uint64_t MediaDemuxer::GetCachedDuration()
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, 0, "source_ is nullptr");
+    return source_->GetCachedDuration();
+}
+
+void MediaDemuxer::RestartAndClearBuffer()
+{
+    FALSE_RETURN_MSG(source_ != nullptr, "source_ is nullptr");
+    return source_->RestartAndClearBuffer();
+}
 } // namespace Media
 } // namespace OHOS

@@ -484,6 +484,18 @@ void DownloadMonitor::SetMediaStreams(const MediaStreamList& mediaStreams)
         downloader_->SetMediaStreams(mediaStreams);
     }
 }
+
+uint64_t DownloadMonitor::GetCachedDuration()
+{
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
+    return downloader_->GetCachedDuration();
+}
+
+void DownloadMonitor::RestartAndClearBuffer()
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
+    return downloader_->RestartAndClearBuffer();
+}
 }
 }
 }

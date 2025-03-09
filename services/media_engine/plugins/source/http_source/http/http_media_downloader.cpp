@@ -925,6 +925,7 @@ uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len, bo
             writeBitrateCaculator_->ResetClock();
         }
     }
+    HandleCachedDuration();
     return len;
 }
 
@@ -1321,16 +1322,16 @@ void HttpMediaDownloader::HandleCachedDuration()
     if (currentBitRate_ <= 0 || callback_ == nullptr) {
         return;
     }
-    uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetCurrentBufferSize()) *
+    cachedDuration_ = static_cast<uint64_t>((static_cast<int64_t>(GetCurrentBufferSize()) *
         BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / static_cast<int64_t>(currentBitRate_));
     // Subtraction of unsigned integers requires size comparison first.
-    if ((cachedDuration > lastDurationReacord_ &&
-        cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
-        (lastDurationReacord_ > cachedDuration &&
-        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
-        MEDIA_LOG_D("HTTP OnEvent cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
-        callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
-        lastDurationReacord_ = cachedDuration;
+    if ((cachedDuration_ > lastDurationReacord_ &&
+        cachedDuration_ - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
+        (lastDurationReacord_ > cachedDuration_ &&
+        lastDurationReacord_ - cachedDuration_ > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
+        MEDIA_LOG_D("HTTP OnEvent cachedDuration: " PUBLIC_LOG_U64, cachedDuration_);
+        callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration_}, "buffering_duration"});
+        lastDurationReacord_ = cachedDuration_;
     }
 }
 
@@ -1746,6 +1747,32 @@ uint32_t HttpMediaDownloader::GetResolutionDelta(uint32_t width, uint32_t height
     } else {
         return initResolution_ - resolution;
     }
+}
+
+uint64_t HttpMediaDownloader::GetCachedDuration()
+{
+    MEDIA_LOG_I("HTTP GetCachedDuration: " PUBLIC_LOG_U64, cachedDuration_);
+    return cachedDuration_;
+}
+
+void HttpMediaDownloader::RestartAndClearBuffer()
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
+    FALSE_RETURN_MSG(ringBuffer_ != nullptr || cacheMediaBuffer_ != nullptr, "buffer is nullptr");
+    MEDIA_LOG_I("HTTP RestartAndClearBuffer in.");
+    isAllowResume_.store(true);
+    downloader_->Pause();
+    if (isRingBuffer_) {
+        ringBuffer_->SetActive(false);
+        ringBuffer_->SetActive(true);
+        MEDIA_LOG_I("HTTP clear ringbuffer done.");
+    } else {
+        cacheMediaBuffer_->Clear();
+        MEDIA_LOG_I("HTTP clear cachebuffer done.");
+    }
+    downloader_->Resume();
+    isAllowResume_.store(true);
+    MEDIA_LOG_I("HTTP RestartAndClearBuffer out.");
 }
 }
 }

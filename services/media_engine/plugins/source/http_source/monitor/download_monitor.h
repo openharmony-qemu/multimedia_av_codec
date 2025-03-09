@@ -83,6 +83,8 @@ public:
     void NotifyInitSuccess() override;
     void SetStartPts(int64_t startPts) override;
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
+    uint64_t GetCachedDuration() override;
+    void RestartAndClearBuffer() override;
 
 private:
     int64_t HttpMonitorLoop();

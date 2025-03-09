@@ -120,6 +120,8 @@ public:
     void SetIsEnableReselectVideoTrack(bool isEnable);
     void SetApiVersion(int32_t apiVersion);
     bool IsLocalFd();
+    uint64_t GetCachedDuration();
+    void RestartAndClearBuffer();
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
