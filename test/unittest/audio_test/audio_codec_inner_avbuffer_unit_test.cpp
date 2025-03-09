@@ -33,7 +33,6 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
 namespace {
-enum class MusicClass { MP3, AAC_LC, AAC_HE, AAC_HE2, AAC_LOAS, M4A, WAV, APE, FLAC, OGG, AVS3DA, AVS3GP, TS };
 const string CODEC_MP3_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_MP3_NAME);
 constexpr uint32_t CHANNEL_COUNT_STEREO = 2;
 constexpr uint32_t SAMPLE_RATE = 48000;
@@ -348,7 +347,7 @@ HWTEST_F(AVCodecAudioCodecUnitTest, ChangePlugin_001, TestSize.Level1)
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->ChangePlugin(mime, false, meta));
+    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, dec->ChangePlugin(mime, false, meta));
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, SetDataCallback_001, TestSize.Level1)

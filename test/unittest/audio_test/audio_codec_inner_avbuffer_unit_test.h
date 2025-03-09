@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_AUDIO_AVBUFFER_DECODER_INNER_DEMO_H
-#define AVCODEC_AUDIO_AVBUFFER_DECODER_INNER_DEMO_H
+#ifndef AUDIO_CODEC_INNER_AVBUFFER_UNIT_TEST
+#define AUDIO_CODEC_INNER_AVBUFFER_UNIT_TEST
 
 #include <gtest/gtest.h>
 #include <atomic>
@@ -101,4 +101,4 @@ public:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_AUDIO_AVBUFFER_DECODER_INNER_DEMO_H
+#endif // AUDIO_CODEC_INNER_AVBUFFER_UNIT_TEST
