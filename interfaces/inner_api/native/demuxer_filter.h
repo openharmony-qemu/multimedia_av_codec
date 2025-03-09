@@ -120,6 +120,8 @@ public:
     void SetIsEnableReselectVideoTrack(bool isEnable);
     void SetApiVersion(int32_t apiVersion);
     bool IsLocalFd();
+    bool IsFlvLiveStream();
+    Status RebootPlugin();
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
 protected:

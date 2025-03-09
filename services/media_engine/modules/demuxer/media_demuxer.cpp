@@ -2951,10 +2951,36 @@ bool MediaDemuxer::IsIgonreBuffering()
     return cacheDuration > BUFFERING_WAVELINE_FOR_SAMPLE_QUEUE;
 }
 
+Status MediaDemuxer::RebootPlugin()
+{
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::RebootPlugin");
+    FALSE_RETURN_V(source_ != nullptr && demuxerPluginManager_ != nullptr && streamDemuxer_ != nullptr,
+        Status::ERROR_NULL_POINTER);
+    RestartAndClearBuffer();
+    Status ret = Status::OK;
+    int32_t videoStreamID = streamDemuxer_->GetNewVideoStreamID();
+    demuxerPluginManager_->StopPlugin(videoStreamID, streamDemuxer_);
+    ret = demuxerPluginManager_->StartPlugin(videoStreamID, streamDemuxer_);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Start plugin failed" PUBLIC_LOG_D32, videoStreamID);
+    InnerSelectTrack(static_cast<int32_t>(videoTrackId_));
+    InnerSelectTrack(static_cast<int32_t>(audioTrackId_));
+    return ret;
+}
+
+bool MediaDemuxer::IsFlvLiveStream()
+{
+    return isFlvLiveStream_;
+}
+
 uint64_t MediaDemuxer::GetCachedDuration()
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, 0, "source_ is nullptr");
-    return source_->GetCachedDuration();
+    AutoLock lock(mapMutex_);
+    auto sqIt = sampleQueueMap_.find(videoTrackId_);
+    FALSE_RETURN_V_MSG_E(sqIt != sampleQueueMap_.end() && sqIt->second, false,
+        "sampleQueue is nullptr");
+    int64_t demuxerCacheDuration = sqIt->second->GetCacheDuration() / US_TO_MS;
+    return source_->GetCachedDuration() + static_cast<uint64_t>(demuxerCacheDuration);
 }
 
 void MediaDemuxer::RestartAndClearBuffer()

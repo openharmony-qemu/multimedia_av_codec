@@ -904,6 +904,17 @@ void DemuxerFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
     demuxer_->SetSyncCenter(syncCenter);
 }
 
+bool DemuxerFilter::IsFlvLiveStream()
+{
+    return demuxer_->IsFlvLiveStream();
+}
+
+Status DemuxerFilter::RebootPlugin()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    return demuxer_->RebootPlugin();
+}
+
 uint64_t DemuxerFilter::GetCachedDuration()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, 0, "demuxer_ is nullptr");

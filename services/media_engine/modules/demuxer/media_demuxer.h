@@ -157,6 +157,8 @@ public:
     bool IsLocalFd();
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
+    bool IsFlvLiveStream();
+    Status RebootPlugin();
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
 private:
