@@ -81,8 +81,8 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
         bufferDesc.dataLength = isCopySucess ? bufferDesc.dataLength : 0;
     }
     ret = sink->EnqueueBufferDesc(bufferDesc);
-    FALSE_RETURN_MSG(ret == Status::OK, "enqueue failed, ret=" PUBLIC_LOG_D32, ret);
     sink->HandleAudioRenderRequestPost();
+    FALSE_RETURN_MSG(ret == Status::OK, "enqueue failed, ret=" PUBLIC_LOG_D32, ret);
 }
 
 bool AudioSink::HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
@@ -617,7 +617,7 @@ bool AudioSink::CopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::share
     bufferDesc.dataLength += availableSize;
     availDataSize_.fetch_sub(availableSize);
     if (cacheBufferSize > size) {
-        currentQueuedBufferOffset_ += size;
+        currentQueuedBufferOffset_ += static_cast<int32_t>(size);
         size = 0;
         return false;
     }
