@@ -33,6 +33,7 @@ const std::pair<AudioStandard::AudioSamplingRate, int32_t> g_auSampleRateMap[] =
     {AudioStandard::SAMPLE_RATE_44100, 44100},
     {AudioStandard::SAMPLE_RATE_48000, 48000},
     {AudioStandard::SAMPLE_RATE_64000, 64000},
+    {AudioStandard::SAMPLE_RATE_88200, 88200},
     {AudioStandard::SAMPLE_RATE_96000, 96000},
 };
 const std::pair<AudioStandard::AudioSampleFormat, Media::Plugins::AudioSampleFormat> g_aduFmtMap[] = {
