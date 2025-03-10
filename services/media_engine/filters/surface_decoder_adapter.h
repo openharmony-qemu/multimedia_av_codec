@@ -71,8 +71,6 @@ public:
     int64_t GetLastBufferPts();
 
     std::shared_ptr<DecoderAdapterCallback> decoderAdapterCallback_;
-    std::atomic<int64_t> frameNum_ = 0;
-    std::atomic<int64_t> lastBufferPts_ = INT64_MIN;
 
 private:
     void ReleaseBuffer();
@@ -87,6 +85,8 @@ private:
     std::condition_variable releaseBufferCondition_;
     std::vector<uint32_t> indexs_;
     std::vector<uint32_t> dropIndexs_;
+    std::atomic<int64_t> frameNum_ = 0;
+    std::atomic<int64_t> lastBufferPts_ = INT64_MIN;
     std::atomic<bool> isThreadExit_ = true;
 };
 } // namespace MediaAVCodec
