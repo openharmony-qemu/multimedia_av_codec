@@ -1101,7 +1101,6 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GET_PLAYBACK_INFO_002, TestSize.Level1)
     std::shared_ptr<HlsMediaDownloader::RecordData> recordBuff = std::make_shared<HlsMediaDownloader::RecordData>();
     recordBuff->downloadRate = 1000;
     recordBuff->bufferDuring = 1;
-    recordBuff->next = downloader->recordData_;
     downloader->recordData_ = recordBuff;
 
     PlaybackInfo playbackInfo;
