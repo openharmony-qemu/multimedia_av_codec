@@ -333,6 +333,7 @@ Status SurfaceEncoderAdapter::Start()
         return Status::OK;
     } else {
         SetFaultEvent("SurfaceEncoderAdapter::Start error", ret);
+        curState_ = ProcessStateCode::ERROR;
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -346,13 +347,12 @@ Status SurfaceEncoderAdapter::Stop()
     }
     isStopKeyFramePts_ = true;
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
-
     // operate stop when it is paused state.
     if (curState_ == ProcessStateCode::PAUSED && !isTransCoderMode) {
+        stopTime_ = pauseTime_;
         // current frame is not the last frame before the pasue time, wait for stop
         if (currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / videoFrameRate_)) {
             MEDIA_LOG_D("paused state -> stop, wait for stop.");
-            stopTime_ = pauseTime_;
             HandleWaitforStop();
         }
         // else stop directly
@@ -362,9 +362,8 @@ Status SurfaceEncoderAdapter::Stop()
         MEDIA_LOG_D("recording state -> stop, wait for stop.");
         HandleWaitforStop();
     }
-    
     AddStopPts();
-        
+
     if (releaseBufferTask_) {
         isThreadExit_ = true;
         releaseBufferCondition_.notify_all();
@@ -382,6 +381,7 @@ Status SurfaceEncoderAdapter::Stop()
         return Status::OK;
     } else {
         SetFaultEvent("SurfaceEncoderAdapter::Stop error", ret);
+        curState_ = ProcessStateCode::ERROR;
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -446,6 +446,7 @@ Status SurfaceEncoderAdapter::Flush()
         return Status::OK;
     } else {
         SetFaultEvent("SurfaceEncoderAdapter::Flush error", ret);
+        curState_ = ProcessStateCode::ERROR;
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -469,9 +470,11 @@ Status SurfaceEncoderAdapter::Reset()
     pauseResumeQueue_.clear();
     pauseResumePts_.clear();
     if (ret == 0) {
+        curState_ = ProcessStateCode::IDLE;
         return Status::OK;
     } else {
         SetFaultEvent("SurfaceEncoderAdapter::Reset error", ret);
+        curState_ = ProcessStateCode::ERROR;
         return Status::ERROR_UNKNOWN;
     }
 }
