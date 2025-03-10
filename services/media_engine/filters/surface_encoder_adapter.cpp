@@ -355,7 +355,7 @@ Status SurfaceEncoderAdapter::Stop()
             stopTime_ = pauseTime_;
             HandleWaitforStop();
         }
-        // else stop directly  
+        // else stop directly
     }
     // operate stop when it is recording state.
     if (curState_ == ProcessStateCode::RECORDING && !isTransCoderMode) {
