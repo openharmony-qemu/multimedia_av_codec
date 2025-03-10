@@ -294,7 +294,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_maxwidth, TestSize.Le
     ASSERT_TRUE(err == AVCS_ERR_OK);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 10000);//beyond the scope(8192)
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 10000); // beyond the scope(8192)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
     int32_t ret = testObj->Configure(format);
     ASSERT_NE(AVCS_ERR_OK, ret);
@@ -326,7 +326,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_maxheight, TestSize.L
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 10000);//beyond the scope(8192)
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 10000); // beyond the scope(8192)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_UNKNOWN,ret);
