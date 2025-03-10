@@ -27,6 +27,7 @@
 #include "buffer/avbuffer_queue_consumer.h"
 #include "common/status.h"
 #include "common/log.h"
+#include "avcodec_common.h"
 
 namespace OHOS {
 namespace Media {
