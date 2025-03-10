@@ -58,6 +58,7 @@ public:
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
 
 protected:
