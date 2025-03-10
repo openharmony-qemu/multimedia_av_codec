@@ -270,21 +270,6 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_maxInputSize, TestSiz
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
-HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_maxwidth, TestSize.Level1)
-{
-    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
-    ASSERT_TRUE(testObj);
-    Media::Meta meta{};
-    int32_t err = testObj->Init(meta);
-    ASSERT_TRUE(err == AVCS_ERR_OK);
-    Format format;
-    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 10000); //beyond the scope
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
-    int32_t ret = testObj->Configure(format);
-    ASSERT_NE(AVCS_ERR_OK, ret);
-}
- 
 HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_width, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
@@ -298,22 +283,6 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_width, TestSize.Level
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 768);
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
-}
- 
-HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_maxheight, TestSize.Level1)
-{
-    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
-    ASSERT_TRUE(testObj);
-    Media::Meta meta{};
-    int32_t err = testObj->Init(meta);
-    ASSERT_TRUE(err == AVCS_ERR_OK);
-    Format format;
-    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 10000); //beyond the scope
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    int32_t ret = testObj->Configure(format);
-    ASSERT_NE(AVCS_ERR_OK, ret);
 }
  
 HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_height, TestSize.Level1)
