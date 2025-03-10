@@ -377,7 +377,7 @@ Status SurfaceEncoderAdapter::Stop()
     MEDIA_LOG_I("codecServer_ Stop");
     isStart_ = false;
     if (ret == 0) {
-        curState_ = ProcessStateCode::STOPED;
+        curState_ = ProcessStateCode::STOPPED;
         return Status::OK;
     } else {
         SetFaultEvent("SurfaceEncoderAdapter::Stop error", ret);

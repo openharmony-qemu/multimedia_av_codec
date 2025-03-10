@@ -51,7 +51,7 @@ enum class ProcessStateCode {
     // operate pause
     PAUSED,
     // operate stop
-    STOPED,
+    STOPPED,
     ERROR,
 };
 
