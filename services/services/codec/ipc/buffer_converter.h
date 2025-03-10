@@ -17,6 +17,7 @@
 #define BUFFER_CONVERTER_H
 #include <functional>
 #include <shared_mutex>
+#include "avcodec_dfx_component.h"
 #include "avcodec_info.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avsharedmemorybase.h"
@@ -27,11 +28,12 @@ namespace MediaAVCodec {
 using AVBuffer = OHOS::Media::AVBuffer;
 class CodecClient;
 
-class BufferConverter {
+class BufferConverter : public AVCodecDfxComponent {
 public:
-    explicit BufferConverter(bool isEncoder);
+    BufferConverter();
     ~BufferConverter() = default;
     static std::shared_ptr<BufferConverter> Create(AVCodecType type);
+    bool Init(AVCodecType type);
     int32_t ReadFromBuffer(std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory);
     int32_t WriteToBuffer(std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory);
 
@@ -53,8 +55,7 @@ private:
     void SetHeightStride(const int32_t hStride);
 
     bool SetBufferFormat(std::shared_ptr<AVBuffer> &buffer);
-    bool SetRectValue(const int32_t width, const int32_t height, const int32_t wStride,
-                                   const int32_t hStride);
+    bool SetRectValue(const int32_t width, const int32_t height, const int32_t wStride, const int32_t hStride);
     int32_t GetSliceHeightFromSurfaceBuffer(sptr<SurfaceBuffer> &surfaceBuffer) const;
 
     static int32_t CalculateUserStride(const int32_t widthHeight);
@@ -62,9 +63,9 @@ private:
     AVCodecRect rect_;
     AVCodecRect hwRect_;
     AVCodecRect usrRect_;
-    bool isEncoder_;
-    bool isSharedMemory_;
-    bool needResetFormat_;
+    bool isEncoder_ = false;
+    bool isSharedMemory_ = false;
+    bool needResetFormat_ = true;
     std::shared_mutex mutex_;
 };
 } // namespace MediaAVCodec

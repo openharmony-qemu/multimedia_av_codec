@@ -204,6 +204,7 @@ Status MediaSyncManager::Stop()
     seekingMediaTime_ = HST_TIME_NONE;
     minRangeStartOfMediaTime_ = HST_TIME_NONE;
     maxRangeEndOfMediaTime_ = HST_TIME_NONE;
+    lastVideoBufferAbsPts_ = HST_TIME_NONE;
     
     return Status::OK;
 }
@@ -318,7 +319,7 @@ int64_t MediaSyncManager::GetMaxMediaProgress()
         currentAnchorMediaTime_ + lastAudioBufferDuration_);
     FALSE_RETURN_V_NOLOG(currentSyncerPriority_ != IMediaSynchronizer::VIDEO_SINK,
         lastVideoBufferPts_);
-    return currentAnchorMediaTime_;
+    return std::max(currentAnchorMediaTime_, lastReportMediaTime_.load());
 }
 
 int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
@@ -460,6 +461,17 @@ void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
             seekCond_.notify_all();
         }
     }
+}
+void MediaSyncManager::SetLastVideoBufferAbsPts(int64_t lastVideoBufferAbsPts)
+{
+    MEDIA_LOG_I("SetLastVideoBufferAbsPts " PUBLIC_LOG_D64, lastVideoBufferAbsPts);
+    lastVideoBufferAbsPts_ = lastVideoBufferAbsPts;
+}
+ 
+int64_t MediaSyncManager::GetLastVideoBufferAbsPts() const
+{
+    MEDIA_LOG_I("GetLastVideoBufferAbsPts" PUBLIC_LOG_D64, lastVideoBufferAbsPts_);
+    return lastVideoBufferAbsPts_;
 }
 } // namespace Pipeline
 } // namespace Media

@@ -160,6 +160,17 @@ sptr<Media::AVBufferQueueConsumer> AudioDecoderAdapter::GetInputBufferQueueConsu
     return audiocodec_ != nullptr ? audiocodec_->GetInputBufferQueueConsumer() : nullptr;
 }
 
+sptr<Media::AVBufferQueueProducer> AudioDecoderAdapter::GetOutputBufferQueueProducer()
+{
+    return audiocodec_ != nullptr ? audiocodec_->GetOutputBufferQueueProducer() : nullptr;
+}
+
+void AudioDecoderAdapter::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
+{
+    FALSE_RETURN_MSG(audiocodec_ != nullptr, "ProcessInputBufferInner audiocodec_ is nullptr");
+    audiocodec_->ProcessInputBufferInner(isTriggeredByOutPort, isFlushed);
+}
+
 int32_t AudioDecoderAdapter::GetOutputFormat(std::shared_ptr<Meta> &parameter)
 {
     FALSE_RETURN_V(parameter != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER);

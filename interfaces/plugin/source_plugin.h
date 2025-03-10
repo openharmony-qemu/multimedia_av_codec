@@ -174,6 +174,11 @@ public:
         return Status::OK;
     }
 
+    virtual Status SetStartPts(int64_t startPts)
+    {
+        return Status::OK;
+    }
+
     virtual Status SelectBitRate(uint32_t bitRate)
     {
         return Status::OK;
@@ -259,6 +264,16 @@ public:
     }
 
     virtual void NotifyInitSuccess() {}
+
+    virtual bool IsLocalFd()
+    {
+        return false;
+    }
+    virtual uint64_t GetCachedDuration()
+    {
+        return 0;
+    }
+    virtual void RestartAndClearBuffer() {}
 };
 
 /// Source plugin api major number.

@@ -121,6 +121,7 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "hilog:libhilog",
+    "hisysevent:libhisysevent",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

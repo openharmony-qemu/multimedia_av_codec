@@ -61,7 +61,7 @@ OH_AVErrCode OH_AVMuxer_SetRotation(OH_AVMuxer *muxer, int32_t rotation)
     return AV_ERR_OK;
 }
 
-void CopyMetaData(const TagType &tag, std::shared_ptr<Meta> &fromMeta, std::shared_ptr<Meta> &toMeta)
+static void CopyMetaData(const TagType &tag, std::shared_ptr<Meta> &fromMeta, std::shared_ptr<Meta> &toMeta)
 {
     AnyValueType type = fromMeta->GetValueType(tag);
     if (type == AnyValueType::INVALID_TYPE || type == AnyValueType::STRING) {
@@ -107,7 +107,8 @@ void CopyMetaData(const TagType &tag, std::shared_ptr<Meta> &fromMeta, std::shar
     }
 }
 
-void SeparateMeta(std::shared_ptr<Meta> meta, std::shared_ptr<Meta> &definedMeta, std::shared_ptr<Meta> &userMeta)
+static void SeparateMeta(std::shared_ptr<Meta> meta, std::shared_ptr<Meta> &definedMeta,
+    std::shared_ptr<Meta> &userMeta)
 {
     for (auto iter = meta->begin(); iter != meta->end(); ++iter) {
         TagType tag = iter->first;
@@ -119,7 +120,7 @@ void SeparateMeta(std::shared_ptr<Meta> meta, std::shared_ptr<Meta> &definedMeta
     }
 }
 
-OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMuxerObject *object)
+static OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMuxerObject *object)
 {
     std::shared_ptr<Meta> param = std::make_shared<Meta>();
     if (definedMeta->Find(Tag::MEDIA_CREATION_TIME) != definedMeta->end()) {
@@ -139,7 +140,7 @@ OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMuxerObjec
     return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
 }
 
-OH_AVErrCode SetUserMetaParam(std::shared_ptr<Meta> userMeta, AVMuxerObject *object)
+static OH_AVErrCode SetUserMetaParam(std::shared_ptr<Meta> userMeta, AVMuxerObject *object)
 {
     int32_t ret = object->muxer_->SetUserMeta(userMeta);
     return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));

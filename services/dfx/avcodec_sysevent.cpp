@@ -78,13 +78,6 @@ void CodecStopEventWrite(pid_t clientPid, uid_t clientUid, int32_t codecInstance
                     "CLIENT_PID", clientPid, "CLIENT_UID", clientUid, "CODEC_INSTANCE_ID", codecInstanceId);
 }
 
-void DemuxerInitEventWrite(uint32_t downloadSize, std::string sourceType)
-{
-    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "DEMUXER_INIT_INFO",
-                    OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
-                    "DOWNLOAD_SIZE", downloadSize, "SOURCE_TYPE", sourceType);
-}
-
 void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo)
 {
     HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, "DEMUXER_FAILURE",

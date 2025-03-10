@@ -205,6 +205,9 @@ class __attribute__((visibility("default"))) AVCodecInfo {
 public:
     explicit AVCodecInfo(CapabilityData *capabilityData);
     ~AVCodecInfo();
+    static bool isEncoder(int32_t codecType);
+    static bool isAudio(int32_t codecType);
+    static bool isVideo(int32_t codecType);
 
     /**
      * @brief Get name of this codec, used to create the codec instance.
@@ -476,8 +479,6 @@ private:
     CapabilityData *data_;
     int32_t blockWidth_ = 0;
     int32_t blockHeight_ = 0;
-    Range horizontalBlockRange_;
-    Range verticalBlockRange_;
     Range blockPerFrameRange_;
     Range blockPerSecondRange_;
     Range widthRange_;
@@ -494,6 +495,7 @@ private:
     Range DivRange(const Range &range, const int32_t &divisor);
     void UpdateBlockParams(const int32_t &blockWidth, const int32_t &blockHeight, Range &blockPerFrameRange,
                            Range &blockPerSecondRange);
+    Range GetRangeForOtherSide(int32_t side);
 };
 
 constexpr uint32_t MAX_MAP_SIZE = 20;

@@ -28,12 +28,13 @@
 #include "network/network_typs.h"
 #include <chrono>
 #include "securec.h"
+#include "common/media_source.h"
+#include "media_source_loading_request.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
 
 enum struct DownloadStatus {
     PARTTAL_DOWNLOAD,
@@ -71,12 +72,18 @@ struct HeaderInfo {
 
 // uint8_t* : the data should save
 // uint32_t : length
-using DataSaveFunc = std::function<bool(uint8_t*, uint32_t)>;
+using DataSaveFunc = std::function<uint32_t(uint8_t*, uint32_t, bool)>;
 class Downloader;
 class DownloadRequest;
 using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Downloader>&,
     std::shared_ptr<DownloadRequest>&)>;
 using DownloadDoneCbFunc = std::function<void(const std::string&, const std::string&)>;
+
+enum  class RequestProtocolType : int32_t {
+    HTTP = 0,
+    HLS = 1,
+    DASH = 2,
+};
 
 class DownloadRequest {
 public:
@@ -105,6 +112,14 @@ public:
     {
         return url_;
     }
+    const std::map<std::string, std::string>& GetHttpHeader() const
+    {
+        return httpHeader_;
+    }
+    void SetUrl(const std::string& url)
+    {
+        url_ = url;
+    }
     bool IsClosed() const;
     void Close();
     double GetDuration() const;
@@ -117,6 +132,7 @@ public:
     bool IsM3u8Request() const;
     bool IsServerAcceptRange() const;
     void GetLocation(std::string& location) const;
+    void SetRequestProtocolType(RequestProtocolType protocolType);
     void SetIsM3u8Request(bool isM3u8Request);
     std::atomic<bool> isHeaderUpdated_ {false};
 private:
@@ -152,11 +168,13 @@ private:
     int64_t dropedDataLen_ {0};
     std::atomic<bool> isFirstRangeRequestReady_ {false};
     bool isM3u8Request_ {false};
+    RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
 };
 
 class Downloader {
 public:
     explicit Downloader(const std::string& name) noexcept;
+    explicit Downloader(const std::string& name, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader) noexcept;
     virtual ~Downloader();
 
     bool Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs);
@@ -177,7 +195,6 @@ public:
 
 private:
     bool BeginDownload();
-
     void HttpDownloadLoop();
     void RequestData();
     void HandlePlayingFinish();
@@ -193,11 +210,14 @@ private:
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
     static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
+    static void HandleFileContentLen(HeaderInfo* header);
     void PauseLoop(bool isAsync = false);
     void WaitLoopPause();
     void NotifyLoopPause();
     void ResetContentType();
     void HandleRetErrorCode();
+    void DonwloaderInit(const std::string& name);
+    void OpenAppUri();
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;
@@ -221,6 +241,13 @@ private:
     FairMutex loopPauseMutex_ {};
     ConditionVariable loopPauseCond_;
     std::atomic<bool> isAppBackground_ {false};
+
+    int64_t uuid_ {0};
+    FairMutex closeMutex_ {};
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
+    std::shared_ptr<IMediaSourceLoadingRequest> loadingReques_;
+    bool isNotBlock_ {false};
+    std::string appPreviousRequestUrl_ {};
 };
 }
 }

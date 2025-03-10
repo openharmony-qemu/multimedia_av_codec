@@ -19,9 +19,7 @@
 #include "gmock/gmock.h"
 #include "avcodec_info.h"
 #include "avcodec_common.h"
-#ifdef SUPPORT_DRM
-#include "i_keysession_service.h"
-#endif
+#include "drm_i_keysession_service.h"
 
 namespace OHOS {
 namespace Media {

@@ -73,7 +73,7 @@ public:
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
-    bool GetReadTimeOut() override;
+    bool GetReadTimeOut(bool isDelay) override;
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
@@ -81,6 +81,10 @@ public:
     void WaitForBufferingEnd() override;
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void NotifyInitSuccess() override;
+    void SetStartPts(int64_t startPts) override;
+    void SetMediaStreams(const MediaStreamList& mediaStreams) override;
+    uint64_t GetCachedDuration() override;
+    void RestartAndClearBuffer() override;
 
 private:
     int64_t HttpMonitorLoop();
@@ -119,6 +123,12 @@ private:
     };
 
     std::map<int32_t, MediaServiceErrCode> clientErrorCodeMap_ = {
+        {-6, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},
+        {-5, MediaServiceErrCode::MSERR_IO_CONNECTION_TIMEOUT},
+        {-4, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
+        {-3, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
+        {-2, MediaServiceErrCode::MSERR_IO_RESOURE_NOT_FOUND},
+        {-1, MediaServiceErrCode::MSERR_IO_NETWORK_ACCESS_DENIED},
         {1, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},
         {2, MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR},
         {4, MediaServiceErrCode::MSERR_IO_UNSUPPORTTED_REQUEST},

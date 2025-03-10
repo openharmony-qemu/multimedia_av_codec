@@ -736,9 +736,11 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, SetVideoSurface_001, TestSize.Level1)
  */
 HWTEST_F(DecoderSurfaceFilterUnitTest, SetDecryptConfig_001, TestSize.Level1)
 {
+#ifdef SUPPORT_DRM
     sptr<DrmStandard::IMediaKeySessionService> keySessionProxy = nullptr;
     Status ret = decoderSurfaceFilter_->SetDecryptConfig(keySessionProxy, true);
     EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+#endif
 }
 
 /**

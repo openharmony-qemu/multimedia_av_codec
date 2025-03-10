@@ -54,6 +54,8 @@ constexpr uint8_t SEI_SHIFT_BACKWARD_BYTES = 0x03;
 
 constexpr uint32_t NALU_START_BIG_ENDIAN = 0x00000001;
 constexpr uint32_t NALU_START_LITTLE_ENDIAN = 0x01000000;
+
+constexpr int64_t SHIFT_THREE_BYTES = 0x03;
 }  // namespace
  
 namespace OHOS {
@@ -80,8 +82,8 @@ Status SeiParserHelper::ParseSeiPayload(
  
     auto bufferParseRes = Status::ERROR_UNSUPPORTED_FORMAT;
     uint8_t seiNaluPrefixLen = ANNEX_B_PREFIX_LEN + 1 + 1 + SEI_UUID_LEN;
-    uint8_t *naluStartPtr = buffer->memory_->GetAddr();
-    uint8_t *maxPointer = naluStartPtr + buffer->memory_->GetSize();
+    uint8_t *naluStartPtr = buffer->memory_->GetAddr() + SHIFT_THREE_BYTES;
+    uint8_t *maxPointer = naluStartPtr + buffer->memory_->GetSize() - SHIFT_THREE_BYTES;
     uint8_t *maxSeiPointer = maxPointer - seiNaluPrefixLen - 1;
     while (FindNextSeiNaluPos(naluStartPtr, maxSeiPointer)) {
         if (!group) {

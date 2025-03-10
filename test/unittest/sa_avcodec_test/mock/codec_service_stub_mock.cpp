@@ -83,5 +83,23 @@ int32_t CodecServiceStub::Dump(int32_t fd, const std::vector<std::u16string>& ar
     return mock->Dump(fd, args);
 }
 
+void CodecServiceStub::NotifyMemoryRecycle()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_LOG(mock != nullptr, "mock object is nullptr");
+    mock->NotifyMemoryRecycle();
+}
+
+void CodecServiceStub::NotifyMemoryWriteBack()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_LOG(mock != nullptr, "mock object is nullptr");
+    mock->NotifyMemoryWriteBack();
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS

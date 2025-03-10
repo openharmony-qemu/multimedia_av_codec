@@ -60,8 +60,8 @@ constexpr int32_t FDPOS                         = 2;
 constexpr int32_t READ_TIME                     = 3;
 constexpr size_t CACHE_SIZE                     = 40 * 1024 * 1024;
 constexpr size_t PER_CACHE_SIZE                 = 48 * 10 * 1024;;
-constexpr int32_t TEN_MILLISECOUNDS             = 10 * 1000;
-constexpr int32_t ONE_SECONDS                   = 1 * 1000 * 1000;
+constexpr int32_t TEN_MILLISECOUNDS             = 10;
+constexpr int32_t ONE_SECONDS                   = 1 * 1000;
 constexpr int32_t CACHE_TIME_DEFAULT            = 5;
 constexpr int32_t SEEK_TIME_LOWER               = 20;
 constexpr int32_t SEEK_TIME_UPPER               = 1000;
@@ -191,9 +191,9 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
     MEDIA_LOG_D("ReadLocal buffer pos: " PUBLIC_LOG_U64 " , len:" PUBLIC_LOG_ZU, position_.load(), expectedLen);
 
-    int32_t offsetCur = lseek(fd_, 0, SEEK_CUR);
-    if (static_cast<uint64_t>(offsetCur) != position_) {
-        MEDIA_LOG_E("Fd offsetCur has changed. offsetCur " PUBLIC_LOG_D32 ", offsetOld " PUBLIC_LOG_U64,
+    uint64_t offsetCur = lseek(fd_, 0, SEEK_CUR);
+    if (offsetCur != position_) {
+        MEDIA_LOG_E("Fd offsetCur has changed. offsetCur " PUBLIC_LOG_U64 ", offsetOld " PUBLIC_LOG_U64,
             offsetCur, position_.load());
     }
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
@@ -372,7 +372,7 @@ void FileFdSourcePlugin::CacheDataLoop()
 {
     if (isInterrupted_) {
         MEDIA_LOG_E("CacheData break");
-        usleep(TEN_MILLISECOUNDS);
+        WaitForInterrupt(TEN_MILLISECOUNDS);
         return;
     }
 
@@ -382,14 +382,14 @@ void FileFdSourcePlugin::CacheDataLoop()
     size_t bufferSize = std::min(PER_CACHE_SIZE, static_cast<size_t>(GetLastSize(cachePosition_.load())));
     if (bufferSize < 0) {
         MEDIA_LOG_E("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
-        usleep(TEN_MILLISECOUNDS);
+        WaitForInterrupt(TEN_MILLISECOUNDS);
         return;
     }
 
     char* cacheBuffer = new char[bufferSize];
     if (cacheBuffer == nullptr) {
         MEDIA_LOG_E("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
-        usleep(TEN_MILLISECOUNDS);
+        WaitForInterrupt(TEN_MILLISECOUNDS);
         return;
     }
     int size = read(fd_, cacheBuffer, bufferSize);
@@ -406,7 +406,7 @@ void FileFdSourcePlugin::CacheDataLoop()
             DeleteCacheBuffer(cacheBuffer, bufferSize);
             return;
         }
-        usleep(TEN_MILLISECOUNDS);
+        WaitForInterrupt(TEN_MILLISECOUNDS);
     }
     cachePosition_ += static_cast<uint64_t>(size);
     downloadSize_ += static_cast<uint64_t>(size);
@@ -486,7 +486,7 @@ bool FileFdSourcePlugin::HandleBuffering()
             break;
         }
         MEDIA_LOG_I("isBuffering.");
-        usleep(TEN_MILLISECOUNDS);
+        WaitForInterrupt(TEN_MILLISECOUNDS);
         sleepTime += TEN_MILLISECOUNDS;
     }
     MEDIA_LOG_I("HandleBuffering out.");
@@ -504,11 +504,11 @@ void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
 
         // read fail with errno, retry 3 * 10ms
         retryTimes_++;
-        if (retryTimes_ >= RETRY_TIMES) {
+        if (retryTimes_ >= RETRY_TIMES || isInterrupted_.load()) {
             NotifyReadFail();
             SetInterruptState(true);
         }
-        usleep(TEN_MILLISECOUNDS);
+        WaitForInterrupt(TEN_MILLISECOUNDS);
     } else {
         cachePosition_ = 0;
         PauseDownloadTask(false);
@@ -607,6 +607,7 @@ void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
     {
         std::lock_guard<std::mutex> lock(interruptMutex_);
         isInterrupted_ = isInterruptNeeded;
+        bufferCond_.notify_all();
     }
     if (ringBuffer_ != nullptr) {
         if (isInterrupted_) {
@@ -761,6 +762,17 @@ bool FileFdSourcePlugin::IsValidTime(int64_t curTime, int64_t lastTime)
 void FileFdSourcePlugin::SetEnableOnlineFdCache(bool isEnableFdCache)
 {
     isEnableFdCache_ = isEnableFdCache;
+}
+
+void FileFdSourcePlugin::WaitForInterrupt(int32_t waitTimeMS)
+{
+    std::unique_lock<std::mutex> lock(interruptMutex_);
+    bufferCond_.wait_for(lock, std::chrono::milliseconds(waitTimeMS), [&] { return isInterrupted_.load(); });
+}
+
+bool FileFdSourcePlugin::IsLocalFd()
+{
+    return !isCloudFile_;
 }
 } // namespace FileFdSource
 } // namespace Plugin

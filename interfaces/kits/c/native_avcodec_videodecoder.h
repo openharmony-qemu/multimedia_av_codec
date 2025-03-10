@@ -129,7 +129,8 @@ OH_AVErrCode OH_VideoDecoder_RegisterCallback(OH_AVCodec *codec, OH_AVCodecCallb
 
 /**
  * @brief Specify the output surface to provide video decoding output,
- * this interface must be called before Prepare is called
+ * this interface must be called before Prepare is called.
+ * This interface can be directly called in the Executing state.
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param window A pointer to a OHNativeWindow instance, see {@link OHNativeWindow}
@@ -253,7 +254,6 @@ OH_AVErrCode OH_VideoDecoder_Flush(OH_AVCodec *codec);
  * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or NULL.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
- * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 9
  * @version 1.0
  */
@@ -378,8 +378,6 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputData(OH_AVCodec *codec, uint32_t index);
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
- * {@link AV_ERR_DRM_DECRYPT_FAILED}, the drm-protected video buffer is decrypted failed,
- * it is recommended to check the logs.
  * @since 11
  */
 OH_AVErrCode OH_VideoDecoder_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
@@ -472,7 +470,7 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index)
 OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid);
 
 /**
- * @brief Set decryption info.
+ * @brief Set decryption configuration. Call this interface before calling the Prepare interface.
  *
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
  * @param codec Pointer to an OH_AVCodec instance

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,7 +34,6 @@
 #include "plugin/plugin_definition.h"
 #include "common/log.h"
 #include "meta/video_types.h"
-#include "avcodec_sysevent.h"
 #include "demuxer_log_compressor.h"
 #include "ffmpeg_demuxer_plugin.h"
 #include "meta/format.h"
@@ -220,6 +219,18 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int6
     FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "AVStream is nullptr");
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE && ffTime == 0) {
         return AVSEEK_FLAG_FRAME;
+    }
+    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && seekTime != 0) {
+        int64_t streamDuration = avStream->duration;
+        if (streamDuration == AV_NOPTS_VALUE || streamDuration <= 0) {
+            streamDuration = GetStreamDuration(*avStream);
+        }
+        // When the seekTime is within the last 0.5s, still use BACKWARD mode to ensure consistent func behavior.
+        int64_t buffering = ConvertTimeToFFmpeg(500 * MS_TO_NS, avStream->time_base); // 0.5s
+        if (streamDuration > 0  && (streamDuration < buffering || ffTime >= streamDuration - buffering)) {
+            return AVSEEK_FLAG_BACKWARD;
+        }
+        return g_seekModeToFFmpegSeekFlags.at(mode);
     }
     if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO || seekTime == 0) {
         return AVSEEK_FLAG_BACKWARD;
@@ -708,6 +719,13 @@ void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(const AVPacket *pkt)
     }
 }
 
+void FFmpegDemuxerPlugin::ResetContext()
+{
+    formatContext_->pb->eof_reached = 0;
+    formatContext_->pb->error = 0;
+    ioContext_.retry = false;
+}
+
 Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -715,6 +733,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
     bool continueRead = true;
     Status ret = Status::OK;
     while (continueRead) {
+        FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE);
         if (pkt == nullptr) {
             pkt = av_packet_alloc();
             FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
@@ -734,9 +753,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
                 AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
             if (ioContext_.retry) {
-                formatContext_->pb->eof_reached = 0;
-                formatContext_->pb->error = 0;
-                ioContext_.retry = false;
+                ResetContext();
                 return Status::ERROR_AGAIN;
             }
             return Status::ERROR_UNKNOWN;
@@ -1030,7 +1047,6 @@ void FFmpegDemuxerPlugin::NotifyInitializationCompleted()
     ioContext_.initCompleted = true;
     if (ioContext_.initDownloadDataSize >= INIT_DOWNLOADS_DATA_SIZE_THRESHOLD) {
         MEDIA_LOG_I("Large init size %{public}u", ioContext_.initDownloadDataSize);
-        MediaAVCodec::DemuxerInitEventWrite(ioContext_.initDownloadDataSize, pluginName_);
     }
 }
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
@@ -1084,7 +1100,7 @@ bool FFmpegDemuxerPlugin::HasCodecParameters()
         "mediaInfo is error");
     for (uint32_t i = 0; i < formatContext_->nb_streams; i++) {
         auto avStream = formatContext_->streams[i];
-        FALSE_RETURN_V_MSG_E(avStream != nullptr, false, "AVStream is nullptr");
+        FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, false, "AVStream is nullptr");
         Meta &format = mediaInfo_.tracks[i];
         bool flag = !HaveValidParser(avStream->codecpar->codec_id) ||
             (HaveValidParser(avStream->codecpar->codec_id) && streamParser_);
@@ -1303,6 +1319,7 @@ Status FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
     AVPacket *pkt = nullptr;
     Status ret = Status::OK;
     while (1) {
+        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, " GetVideoFirstKeyFrame interrupt");
         if (pkt == nullptr) {
             pkt = av_packet_alloc();
             FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
@@ -1490,6 +1507,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ret = ReadPacketToCacheQueue(trackId);
     }
     while (!cacheQueue_.HasCache(trackId)) {
+        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, " ReadSample interrupt");
         ret = ReadPacketToCacheQueue(trackId);
         if (ret == Status::END_OF_STREAM) {
             MEDIA_LOG_D("Read to end");
@@ -1497,6 +1515,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, ret, "Read from ffmpeg faild");
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, ret, "Read from ffmpeg faild, retry");
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, ret, "Cache size out of limit");
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WRONG_STATE, ret, "Read from ffmpeg faild interrupt");
     }
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
     auto samplePacket = cacheQueue_.Front(trackId);
@@ -1541,6 +1560,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, ret, "Read from ffmpeg faild");
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, ret, "Read from ffmpeg faild, retry");
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, ret, "Cache size out of limit");
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WRONG_STATE, ret, " GetNextSampleSize interrupt");
     }
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_UNKNOWN, "Cache sample is nullptr");
@@ -1828,6 +1848,12 @@ void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
 {
     setLimitByUser = true;
     cachelimitSize_ = limitSize;
+}
+
+void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
+{
+    MEDIA_LOG_I("SetInterruptState %{public}d", isInterruptNeeded);
+    isInterruptNeeded_ = isInterruptNeeded;
 }
 
 namespace { // plugin set

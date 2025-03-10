@@ -41,6 +41,7 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
     }
     int len = write(fd, data, size - 7);
     if (len <= 0) {
+        close(fd);
         return false;
     }
     close(fd);

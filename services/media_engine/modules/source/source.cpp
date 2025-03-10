@@ -40,6 +40,9 @@ static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"fd", ProtocolType::FD}
 };
 
+const int32_t MAX_RETRY = 20;
+const int32_t WAIT_TIME = 10;
+
 Source::Source()
     : protocol_(),
       uri_(),
@@ -78,6 +81,10 @@ void Source::ClearData()
     seekToTimeFlag_ = false;
 }
 
+bool Source::IsFlvLiveStream() const
+{
+    return isFlvLiveStream_;
+}
 Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::SetSource");
@@ -98,6 +105,16 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 
     MEDIA_LOG_I("SetSource exit.");
     return Status::OK;
+}
+
+Status Source::SetStartPts(int64_t startPts)
+{
+    MEDIA_LOG_D("startPts=" PUBLIC_LOG_D64, startPts);
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("SetStartPts failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->SetStartPts(startPts);
 }
 
 void Source::SetBundleName(const std::string& bundleName)
@@ -171,7 +188,7 @@ Status Source::GetBitRates(std::vector<uint32_t>& bitRates)
 
 Status Source::SelectBitRate(uint32_t bitRate)
 {
-    MEDIA_LOG_I("SelectBitRate");
+    MEDIA_LOG_I("SelectBitRate" PUBLIC_LOG_U32, bitRate);
     if (plugin_ == nullptr) {
         MEDIA_LOG_E("SelectBitRate failed, plugin_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
@@ -333,10 +350,12 @@ bool Source::CanAutoSelectBitRate()
 void Source::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("Source OnInterrupted %{public}d", isInterruptNeeded);
+    std::unique_lock<std::mutex> lock(mutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     if (plugin_) {
         plugin_->SetInterruptState(isInterruptNeeded_);
     }
+    seekCond_.notify_all();
 }
 
 Plugins::Seekable Source::GetSeekable()
@@ -348,12 +367,13 @@ Plugins::Seekable Source::GetSeekable()
         seekable_ = plugin_->GetSeekable();
         retry++;
         if (seekable_ == Seekable::INVALID) {
-            if (retry >= 20) { // 20 means retry times
+            if (retry >= MAX_RETRY) {
                 break;
             }
-            OSAL::SleepFor(10); // 10 means sleep time pre retry
+            std::unique_lock<std::mutex> lock(mutex_);
+            seekCond_.wait_for(lock, std::chrono::milliseconds(WAIT_TIME), [&] { return isInterruptNeeded_.load(); });
         }
-    } while (seekable_ == Seekable::INVALID);
+    } while (seekable_ == Seekable::INVALID && !isInterruptNeeded_.load());
     return seekable_;
 }
 
@@ -457,6 +477,7 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
     MEDIA_LOG_D("sourceType = " PUBLIC_LOG_D32, CppExt::to_underlying(srcType));
     if (srcType == SourceType::SOURCE_TYPE_URI) {
         uri_ = source->GetSourceUri();
+        isFlvLiveStream_ = source->GetMediaStreamList().size() > 0;
         std::string mimeType = source->GetMimeType();
         if (mimeType == AVMimeTypes::APPLICATION_M3U8) {
             protocol_ = "http";
@@ -548,6 +569,24 @@ void Source::NotifyInitSuccess()
 {
     FALSE_RETURN_MSG(plugin_ != nullptr, "NotifyInitSuccess source plugin is nullptr");
     plugin_->NotifyInitSuccess();
+}
+
+bool Source::IsLocalFd()
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "IsLocalFd source plugin is nullptr");
+    return plugin_->IsLocalFd();
+}
+
+uint64_t Source::GetCachedDuration()
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, 0, "source_ is nullptr");
+    return plugin_->GetCachedDuration();
+}
+
+void Source::RestartAndClearBuffer()
+{
+    FALSE_RETURN_MSG(plugin_ != nullptr, "source_ is nullptr");
+    return plugin_->RestartAndClearBuffer();
 }
 } // namespace Media
 } // namespace OHOS

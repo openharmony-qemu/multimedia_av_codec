@@ -110,6 +110,7 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
     MEDIA_LOG_I("media playlist");
     std::list<std::shared_ptr<Tag>> tags = ParseEntries(playList);
     UpdateFromTags(tags);
+    MEDIA_LOG_I("UpdateFromTags done, isInterruptNeed " PUBLIC_LOG_D32, isInterruptNeeded_.load());
     tags.clear();
     playList_ = playList;
     return true;
@@ -185,6 +186,9 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
         duration += static_cast<size_t>(frag->duration_ * SECOND_TO_MICROSECOND);
     }
     for (auto& tag : tags) {
+        if (isInterruptNeeded_.load()) {
+            break;
+        }
         HlsTag hlsTag = tag->GetType();
         if (hlsTag == HlsTag::EXTXENDLIST && !isPlayTypeFound_) {
             info.bVod = true;
@@ -294,8 +298,8 @@ void M3U8::DownloadKey()
     }
 
     downloader_ = std::make_shared<Downloader>("hlsSourceKey");
-    dataSave_ = [this](uint8_t *&&data, uint32_t &&len) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
+    dataSave_ = [this](uint8_t *&&data, uint32_t &&len, bool &&notBlock) {
+        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len), notBlock);
     };
     // this is default callback
     statusCallback_ = [this](DownloadStatus &&status, std::shared_ptr<Downloader> d,
@@ -315,17 +319,17 @@ void M3U8::DownloadKey()
     downloader_->Start();
 }
 
-bool M3U8::SaveData(uint8_t *data, uint32_t len)
+uint32_t M3U8::SaveData(uint8_t *data, uint32_t len, bool notBlock)
 {
     // 16 is a magic number
     if (len <= MAX_LOOP && len != 0) {
-        NZERO_RETURN_V(memcpy_s(key_, MAX_LOOP, data, len), false);
+        NZERO_RETURN_V(memcpy_s(key_, MAX_LOOP, data, len), 0);
         keyLen_ = len;
         isDecryptKeyReady_ = true;
         MEDIA_LOG_I("DownloadKey hlsSourceKey end.\n");
-        return true;
+        return len;
     }
-    return false;
+    return 0;
 }
 
 void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,
@@ -466,7 +470,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();
     isSimple_ = true;
-    MEDIA_LOG_D("UpdateMediaPlaylist called, duration_ = " PUBLIC_LOG_F, duration_);
+    MEDIA_LOG_I("UpdateMediaPlaylist called, duration_ = " PUBLIC_LOG_F, duration_);
 }
 
 void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
@@ -477,7 +481,7 @@ void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
     m3u8->ParseKey(std::static_pointer_cast<AttributesTag>(tag));
     m3u8->DownloadKey();
     uint32_t downloadTime = 0;
-    while (!m3u8->isDecryptKeyReady_ && downloadTime < MAX_DOWNLOAD_TIME) {
+    while (!m3u8->isDecryptKeyReady_ && downloadTime < MAX_DOWNLOAD_TIME && !isInterruptNeeded_) {
         Task::SleepInTask(WAIT_KEY_SLEEP_TIME);
         downloadTime++;
     }
@@ -537,6 +541,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
 
 void M3U8MasterPlaylist::ChooseStreamByResolution()
 {
+    FALSE_RETURN_MSG(defaultVariant_ != nullptr, "defaultVariant is nullptr.");
     if (initResolution_ == 0) {
         return;
     }
@@ -574,6 +579,13 @@ uint32_t M3U8MasterPlaylist::GetResolutionDelta(uint32_t width, uint32_t height)
         return initResolution_ - resolution;
     }
 }
+
+void M3U8MasterPlaylist::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+    MEDIA_LOG_I("M3U8MasterPlaylist SetInterruptState %{public}d.", isInterruptNeeded);
+}
+
 }
 }
 }

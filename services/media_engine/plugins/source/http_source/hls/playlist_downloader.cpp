@@ -39,8 +39,9 @@ static bool isNumber(const std::string& str)
 
 void PlayListDownloader::PlayListDownloaderInit()
 {
-    dataSave_ = [this] (uint8_t*&& data, uint32_t&& len) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
+    dataSave_ = [this] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) {
+        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
+            std::forward<decltype(notBlock)>(notBlock));
     };
     // this is default callback
     statusCallback_ = [this] (DownloadStatus&& status, std::shared_ptr<Downloader> d,
@@ -59,9 +60,14 @@ void PlayListDownloader::PlayListDownloaderInit()
     });
 }
 
-PlayListDownloader::PlayListDownloader(const std::map<std::string, std::string>& httpHeader) noexcept
+PlayListDownloader::PlayListDownloader(const std::map<std::string, std::string>& httpHeader,
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
-    downloader_ = std::make_shared<Downloader>("hlsPlayList");
+    if (sourceLoader != nullptr) {
+        downloader_ = std::make_shared<Downloader>("hlsPlayList", sourceLoader);
+    } else {
+        downloader_ = std::make_shared<Downloader>("hlsPlayList");
+    }
     httpHeader_ = httpHeader;
     PlayListDownloaderInit();
 }
@@ -110,7 +116,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
     auto downloadDoneCallback = [this] (const std::string& url, const std::string& location) {
         UpdateDownloadFinished(url, location);
     };
-    downloadRequest_->SetIsM3u8Request(true);
+    downloadRequest_->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     if (downloader_ != nullptr) {
         downloader_->Download(downloadRequest_, -1); // -1
@@ -207,10 +213,10 @@ bool PlayListDownloader::GetPlayListDownloadStatus()
     return startedDownloadStatus_;
 }
 
-bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
+uint32_t PlayListDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     if (data == nullptr || len == 0) {
-        return false;
+        return 0;
     }
     playList_.reserve(playList_.size() + len);
     playList_.append(reinterpret_cast<const char*>(data), len);
@@ -222,7 +228,7 @@ bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
     if (contentlen > MIN_PRE_PARSE_CONTENT_LEN) {
         PreParseManifest(location);
     }
-    return true;
+    return len;
 }
 
 void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const std::string& location)
@@ -330,6 +336,7 @@ void PlayListDownloader::SetInterruptState(bool isInterruptNeeded)
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded);
     }
+    InterruptM3U8Parse(isInterruptNeeded);
 }
 
 void PlayListDownloader::SetAppUid(int32_t appUid)

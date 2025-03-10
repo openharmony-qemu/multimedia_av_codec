@@ -725,6 +725,17 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_PauseDownloadTask_0100, TestSize.Lev
     fileFdSourcePlugin_->PauseDownloadTask(false);
     ASSERT_TRUE(fileFdSourcePlugin_->downloadSize_ == 0);
 }
+
+/**
+ * @tc.name: FileFdSource_IsLocalFd_0100
+ * @tc.desc: FileFdSource_IsLocalFd_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_IsLocalFd_0100, TestSize.Level1)
+{
+    fileFdSourcePlugin_->isCloudFile_ = false;
+    ASSERT_TRUE(fileFdSourcePlugin_->IsLocalFd());
+}
 } // namespace FileSource
 } // namespace Plugins
 } // namespace Media

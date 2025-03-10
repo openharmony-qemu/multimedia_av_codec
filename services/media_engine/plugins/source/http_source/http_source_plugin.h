@@ -19,6 +19,7 @@
 #include "media_downloader.h"
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
+#include "download/media_source_loading_request.h"
 
 namespace OHOS {
 namespace Media {
@@ -50,6 +51,7 @@ public:
     bool IsSeekToTimeSupported() override;
     Status GetBitRates(std::vector<uint32_t>& bitRates) override;
     Status SelectBitRate(uint32_t bitRate) override;
+    Status SetStartPts(int64_t startPts) override;
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     Status SelectStream(int32_t streamID) override;
@@ -65,11 +67,14 @@ public:
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
     void NotifyInitSuccess() override;
+    uint64_t GetCachedDuration() override;
+    void RestartAndClearBuffer() override;
 
 private:
     void CloseUri(bool isAsync = false);
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
     bool CheckIsM3U8Uri();
+    void InitHttpSource(const std::shared_ptr<MediaSource>& source);
 
     uint32_t bufferSize_;
     uint32_t waterline_;
@@ -82,6 +87,7 @@ private:
     std::map<std::string, std::string> httpHeader_ {};
     std::string mimeType_ {};
     std::atomic<bool> isInterruptNeeded_{false};
+    std::shared_ptr<MediaSourceLoaderCombinations> loaderCombinations_ {nullptr};
 };
 } // namespace HttpPluginLite
 } // namespace Plugin

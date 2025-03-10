@@ -67,6 +67,8 @@ public:
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void AcquireAvailableInputBuffer();
+    int64_t GetFrameNum();
+    int64_t GetLastBufferPts();
 
     std::shared_ptr<DecoderAdapterCallback> decoderAdapterCallback_;
     std::atomic<int64_t> frameNum_ = 0;

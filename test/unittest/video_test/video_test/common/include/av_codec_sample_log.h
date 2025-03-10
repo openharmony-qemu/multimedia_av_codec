@@ -23,6 +23,25 @@ namespace MediaAVCodec {
 namespace Sample {
 extern const bool VERBOSE_LOG;
 
+#ifdef AVCODEC_LOG_USE_NO_DICT_LOG
+#undef AVCODEC_LOG
+#undef AVCODEC_LOGF
+#undef AVCODEC_LOGE
+#undef AVCODEC_LOGW
+#undef AVCODEC_LOGI
+#undef AVCODEC_LOGD
+#define AVCODEC_LOG(func, fmt, args...)                                                                                \
+    do {                                                                                                               \
+        (void)func(LABEL, "{%{public}s():%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);                           \
+    } while (0)
+
+#define AVCODEC_LOGF(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Fatal, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGE(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Error, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGW(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Warn, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGI(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Info, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGD(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Debug, fmt, ##__VA_ARGS__)
+#endif
+
 #define AVCODEC_LOGV(fmt, ...)              \
     if (VERBOSE_LOG) {                      \
         AVCODEC_LOGI(fmt, ##__VA_ARGS__);   \

@@ -1181,6 +1181,65 @@ HWTEST_F(CodecServerUnitTest, DrmVideoCencDecrypt_Test_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: NotifyBackGround_Valid_Test_001
+ * @tc.desc: NotifyBackGround valid progress
+ */
+HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isModeConfirmed_ = true;
+
+    std::vector<CodecServer::CodecStatus> testList = {
+        CodecServer::CodecStatus::RUNNING,
+        CodecServer::CodecStatus::END_OF_STREAM,
+        CodecServer::CodecStatus::FLUSHED,
+    };
+
+    for (auto &val : testList) {
+        server_->status_ = val;
+        server_->isFreezedFlag_ = false;
+        server_->NotifyBackGround();
+        EXPECT_TRUE(server_->isFreezedFlag_);
+    }
+}
+
+/**
+ * @tc.name: NotifyBackGround_Invalid_Test_001
+ * @tc.desc: NotifyBackGround invalid progress - wrong status of codec
+ */
+HWTEST_F(CodecServerUnitTest, NotifyBackGround_Invalid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isModeConfirmed_ = true;
+
+    std::vector<CodecServer::CodecStatus> testList = {
+        CodecServer::CodecStatus::INITIALIZED,
+        CodecServer::CodecStatus::UNINITIALIZED,
+        CodecServer::CodecStatus::ERROR,
+    };
+
+    for (auto &val : testList) {
+        server_->status_ = val;
+        server_->isFreezedFlag_ = false;
+        server_->NotifyBackGround();
+        EXPECT_FALSE(server_->isFreezedFlag_);
+    }
+}
+
+/**
+ * @tc.name: NotifyForeGround_Valid_Test_001
+ * @tc.desc: NotifyForeGround valid progress
+ */
+HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isModeConfirmed_ = true;
+    server_->isFreezedFlag_ = true;
+    server_->NotifyForeGround();
+    EXPECT_FALSE(server_->isFreezedFlag_);
+}
+
+/**
  * @tc.name: MergeFormat_Valid_Test_001
  * @tc.desc: MergeFormat format key type FORMAT_TYPE_INT32
  */

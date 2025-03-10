@@ -527,7 +527,7 @@ void CapsUnitTest::CheckAVDecVorbis(const std::shared_ptr<AudioCaps> &audioCaps)
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
-    EXPECT_EQ(0, audioCaps->GetSupportedSampleRates().size());
+    EXPECT_EQ(12, audioCaps->GetSupportedSampleRates().size()); // 12: supported samplerate count
     EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
 }
@@ -1297,6 +1297,48 @@ HWTEST_F(CapsUnitTest, AVCaps_Levels_005, TestSize.Level1)
             EXPECT_LE(level, AVC_LEVEL_62);
         }
     }
+}
+
+/**
+ * @tc.name: AVCaps_MixedUse_001
+ * @tc.desc: AVCaps mixed use cap, video cap to get audio info
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_MixedUse_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVRange range = {-1, -1};
+    EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &range), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVCaps_MixedUse_002
+ * @tc.desc: AVCaps mixed use cap, audio cap to get video info
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_MixedUse_002, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_AUDIO_AAC, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVRange range = {-1, -1};
+    EXPECT_EQ(OH_AVCapability_GetVideoWidthRange(cap, &range), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVCaps_MixedUse_003
+ * @tc.desc: AVCaps mixed use cap, decoder cap to get encoder info
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_MixedUse_003, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVRange range = {-1, -1};
+    EXPECT_EQ(OH_AVCapability_GetEncoderQualityRange(cap, &range), AV_ERR_OK);
 }
 
 #endif

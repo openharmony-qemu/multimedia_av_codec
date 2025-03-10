@@ -24,15 +24,17 @@ namespace HttpPlugin {
 namespace {
     constexpr int RETRY_TIMES_TO_REPORT_ERROR = 10;
     constexpr int RETRY_THRESHOLD = 1;
+    constexpr int APP_DOWNLOAD_RETRY_TIMES = 60;
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
     constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
     constexpr int64_t RETRY_SEG = 50;
     const std::set<int32_t> CLIENT_NOT_RETRY_ERROR_CODES = {
-        23,
         992,
     };
     const std::set<int32_t> CLIENT_RETRY_ERROR_CODES = {
+        -1, // Application resource not ready for access
+        23, // notBlock
         25, // Upload faild.
         26, // Faild to open/read local data from file/application.
         28, // Timeout was reached.
@@ -249,7 +251,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     if (CLIENT_NOT_RETRY_ERROR_CODES.find(clientError) != CLIENT_NOT_RETRY_ERROR_CODES.end()) {
         return false;
     }
-    if (retryTimes <= RETRY_THRESHOLD || (GetPlayable() && !GetReadTimeOut())) {
+    if (retryTimes <= RETRY_THRESHOLD || (GetPlayable() && !GetReadTimeOut(clientError == -1))) { // -1: NOT_READY
         return true;
     }
 
@@ -264,7 +266,9 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         request->Close();
         return false;
     }
-    if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR) { // Report error to upper layer
+
+    int retryTimesTmp = clientError == -1 ? APP_DOWNLOAD_RETRY_TIMES : RETRY_TIMES_TO_REPORT_ERROR;
+    if (retryTimes > retryTimesTmp) { // Report error to upper layer
         MEDIA_LOG_I("Retry times readches the upper limit.");
         NotifyError(clientError, serverError);
         if (downloader_ != nullptr) {
@@ -396,10 +400,10 @@ bool DownloadMonitor::GetBufferingTimeOut()
     }
 }
 
-bool DownloadMonitor::GetReadTimeOut()
+bool DownloadMonitor::GetReadTimeOut(bool isDelay)
 {
     if (downloader_) {
-        return downloader_->GetReadTimeOut();
+        return downloader_->GetReadTimeOut(isDelay);
     }
     return false;
 }
@@ -465,6 +469,32 @@ void DownloadMonitor::NotifyInitSuccess()
 {
     FALSE_RETURN_MSG(downloader_ != nullptr, "NotifyInitSuccess downloader is nullptr");
     downloader_->NotifyInitSuccess();
+}
+
+void DownloadMonitor::SetStartPts(int64_t startPts)
+{
+    if (downloader_) {
+        downloader_->SetStartPts(startPts);
+    }
+}
+
+void DownloadMonitor::SetMediaStreams(const MediaStreamList& mediaStreams)
+{
+    if (downloader_) {
+        downloader_->SetMediaStreams(mediaStreams);
+    }
+}
+
+uint64_t DownloadMonitor::GetCachedDuration()
+{
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
+    return downloader_->GetCachedDuration();
+}
+
+void DownloadMonitor::RestartAndClearBuffer()
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
+    return downloader_->RestartAndClearBuffer();
 }
 }
 }

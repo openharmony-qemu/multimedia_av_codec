@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,10 +21,16 @@
 #include "plugin/plugin_caps.h"
 #include "plugin/plugin_base.h"
 #include "plugin/plugin_definition.h"
+#include "audio_info.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
+class AudioSinkDataCallback {
+public:
+    virtual ~AudioSinkDataCallback() = default;
+    virtual void OnWriteData(int32_t size, bool isAudioVivid) = 0;
+};
 /**
  * @brief Audio Sink Plugin.
  *
@@ -82,7 +88,7 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
      * @retval ERROR_INVALID_DATA: The value is not in the valid range.
      */
     virtual Status SetVolume(float volume) = 0;
-
+    virtual Status SetVolumeMode(int32_t mode) = 0;
     /**
      * @brief Get the current audio rendering speed.
      *
@@ -236,6 +242,9 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
     virtual int32_t SetVolumeWithRamp(float targetVolume, int32_t duration) = 0;
 
     virtual Status SetMuted(bool isMuted) = 0;
+
+    virtual void SetInterruptState(bool isInterruptNeeded) {}
+
     virtual AudioSampleFormat GetSampleFormat()
     {
         return INVALID_WIDTH;
@@ -249,6 +258,16 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
      * @return Time consuming of writing buffer, unit is ms
      */
     virtual int64_t GetWriteDurationMs() { return 0; };
+
+    virtual Status SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback) = 0;
+
+    virtual bool GetAudioPosition(timespec &time, uint32_t &framePosition) = 0;
+
+    virtual Status GetBufferDesc(AudioStandard::BufferDesc &bufDesc) = 0;
+
+    virtual Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufDesc) = 0;
+
+    virtual bool IsOffloading() { return false; }
 };
 
 /// Audio sink plugin api major number.

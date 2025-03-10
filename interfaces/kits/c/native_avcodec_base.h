@@ -64,9 +64,10 @@ typedef struct OH_AVCodec OH_AVCodec;
 typedef void (*OH_AVCodecOnError)(OH_AVCodec *codec, int32_t errorCode, void *userData);
 
 /**
- * @brief When the output stream changes, the function pointer will be called to report the new stream description
- * information. It should be noted that the life cycle of the OH_AVFormat pointer
- * is only valid when the function pointer is called, and it is forbidden to continue to access after the call ends.
+ * @brief When the resolution of the decoding input stream or the resolution of the encoding output stream changes,
+ * the function pointer will be called to report the new stream description information.
+ * It should be noted that the life cycle of the OH_AVFormat pointer is only valid when the function pointer is called,
+ * and it is forbidden to continue to access after the call ends.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @param codec OH_AVCodec instance
  * @param format New output stream description information
@@ -101,7 +102,7 @@ typedef void (*OH_AVCodecOnNeedInputData)(OH_AVCodec *codec, uint32_t index, OH_
  * @param index The index corresponding to the new output buffer.
  * @param data Buffer containing the new output data
  * @param attr The description of the new output buffer, please refer to {@link OH_AVCodecBufferAttr}
- * @param userData specified data
+ * @param userData The data that the user rely on to execute the callback.
  * @deprecated since 11
  * @useinstead OH_AVCodecOnNewOutputBuffer
  * @since 9
@@ -129,7 +130,7 @@ typedef void (*OH_AVCodecOnNeedInputBuffer)(OH_AVCodec *codec, uint32_t index, O
  * @param codec OH_AVCodec instance
  * @param index The index corresponding to the new output buffer.
  * @param buffer Buffer containing the new output buffer.
- * @param userData specified data
+ * @param userData The data that the user rely on to execute the callback.
  * @since 11
  */
 typedef void (*OH_AVCodecOnNewOutputBuffer)(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
@@ -213,7 +214,7 @@ typedef struct OH_AVDataSource {
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG2;
 
 /**
- * @brief Enumerates the MIME types of audio and video codecs
+ * @brief Enumerates the mime types of video avc codec.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
  * @version 1.0
@@ -229,6 +230,13 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_FLAC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_VORBIS;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_MPEG;
+
+/**
+ * @brief Enumerates the mime types of video hevc codec.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ * @version 1.0
+ */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
 
 /**
@@ -272,7 +280,6 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU;
-extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;
 
 /**
  * @brief Enumerates the MIME type of audio low bitrate voice codec.
@@ -323,14 +330,17 @@ extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW;
 
 /**
- * @brief The extra data's key of surface Buffer
+ * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
  * @version 1.0
+ * @deprecated since 14
  */
- /* Key for timeStamp in surfacebuffer, value type is int64_t. */
 extern const char *OH_ED_KEY_TIME_STAMP;
-/* Key for endOfStream in surfacebuffer, value type is int32_t. */
+
+/* Key for endOfStream in surfacebuffer, value type is int32_t.
+ * @deprecated since 14
+ */
 extern const char *OH_ED_KEY_EOS;
 
 /**
@@ -357,7 +367,7 @@ extern const char *OH_MD_KEY_HEIGHT;
 extern const char *OH_MD_KEY_PIXEL_FORMAT;
 /* key for audio raw format, value type is int32_t , see @OH_BitsPerSample */
 extern const char *OH_MD_KEY_AUDIO_SAMPLE_FORMAT;
-/* Key for video frame rate, value type is double. */
+/* Key for video frame rate, value type is double. The value must be greater than 0. */
 extern const char *OH_MD_KEY_FRAME_RATE;
 /* Video encode bitrate mode, the value type is int32_t, see @OH_VideoEncodeBitrateMode */
 extern const char *OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE;
@@ -368,14 +378,17 @@ extern const char *OH_MD_KEY_AUD_CHANNEL_COUNT;
 /* Key for audio sample rate, value type is int32_t */
 extern const char *OH_MD_KEY_AUD_SAMPLE_RATE;
 /**
- * @brief Key for the interval of key frame, value type is int32_t, the unit is milliseconds. A negative value means no
- * key frames are requested after the first frame. A zero value means a stream containing all key frames is requested.
+ * @brief Key for the interval of key frame, value type is int32_t, the unit is milliseconds.
+ * This key is optional and only used for video encoding. A negative value means no key frames
+ * are requested after the first frame. A zero value means a stream containing all key frames is requested.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
  */
 extern const char *OH_MD_KEY_I_FRAME_INTERVAL;
-/* Key of the surface rotation angle, value type is int32_t: should be {0, 90, 180, 270}, default is 0. */
+/* Key of the surface rotation angle, value type is int32_t: should be {0, 90, 180, 270}, default is 0.
+ * This key is only used in video decoding Surface mode.
+ */
 extern const char *OH_MD_KEY_ROTATION;
 
 /**
@@ -385,16 +398,19 @@ extern const char *OH_MD_KEY_ROTATION;
  */
 /* Key for video YUV value range flag, value type is int32_t, 1 for full range, 0 for limited range. */
 extern const char *OH_MD_KEY_RANGE_FLAG;
-/* Key for video color primaries, value type is int32_t, see @OH_ColorPrimary */
+/* Key for video color primaries, value type is int32_t, see @OH_ColorPrimary. */
 extern const char *OH_MD_KEY_COLOR_PRIMARIES;
-/* Key for video transfer characteristics, value type is int32_t, see @OH_TransferCharacteristic */
+/* Key for video transfer characteristics, value type is int32_t, see @OH_TransferCharacteristic.
+ */
 extern const char *OH_MD_KEY_TRANSFER_CHARACTERISTICS;
-/* Key for video matrix coefficients, value type is int32_t, see @OH_MatrixCoefficient */
+/* Key for video matrix coefficients, value type is int32_t, see @OH_MatrixCoefficient.
+ */
 extern const char *OH_MD_KEY_MATRIX_COEFFICIENTS;
 /* Key for the request an I-Frame immediately, value type is int32_t.
  * It is used when OH_VideoEncoder_SetParameter is called or takes effect immediately with the frame. */
 extern const char *OH_MD_KEY_REQUEST_I_FRAME;
-/* Key for the desired encoding quality, value type is int32_t, this key is only
+/* Key for the desired encoding quality, value type is int32_t, the range of encoding scene values in H264 and H265
+ * can be obtained based on the capability query interface @OH_AVCapability_GetEncoderQualityRange, this key is only
  * supported for encoders that are configured in constant quality mode */
 extern const char *OH_MD_KEY_QUALITY;
 /* Key of the codec specific data, value type is a uint8_t pointer.
@@ -440,7 +456,15 @@ extern const char *OH_MD_KEY_COMPLIANCE_LEVEL;
 extern const char *OH_MD_KEY_IDENTIFICATION_HEADER;
 /* Key for vorbis setup header, value type is a uint8_t pointer, supported only for vorbis decoder */
 extern const char *OH_MD_KEY_SETUP_HEADER;
-/* Key for video scale type, value type is int32_t, see @OH_ScalingMode */
+/**
+ * @brief Key for video scale type, value type is int32_t, see @OH_ScalingMode.
+ * It is recommended to directly call the @OH_NativeIndow_NativeIndowSettcalingModeV2 interface for setting.
+ * This key is optional and only used for video decoding in Surface mode.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ * @deprecated 14
+ * @useinstead OH_NativeIndow_NativeIndowSettcalingModeV2
+ */
 extern const char *OH_MD_KEY_SCALING_MODE;
 /* Key for max input buffer count, value type is int32_t. */
 extern const char *OH_MD_MAX_INPUT_BUFFER_COUNT;
@@ -545,7 +569,7 @@ extern const char *OH_MD_KEY_VIDEO_PER_FRAME_IS_LTR;
 extern const char *OH_MD_KEY_VIDEO_PER_FRAME_POC;
 /**
  * @brief Key for describing the top-coordinate (y) of the crop rectangle, value type is int32_t. This is the top-most
- * row included in the crop frame, where row indices start at 0.
+ * row included in the crop frame, where row indices start at 0. This key is only used for video decoding.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
@@ -553,7 +577,7 @@ extern const char *OH_MD_KEY_VIDEO_PER_FRAME_POC;
 extern const char *OH_MD_KEY_VIDEO_CROP_TOP;
 /**
  * @brief Key for describing the bottom-coordinate (y) of the crop rectangle, value type is int32_t. This is the
- * bottom-most row included in the crop frame, where row indices start at 0.
+ * bottom-most row included in the crop frame, where row indices start at 0. This key is only used for video decoding.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
@@ -562,6 +586,7 @@ extern const char *OH_MD_KEY_VIDEO_CROP_BOTTOM;
 /**
  * @brief Key for describing the left-coordinate (x) of the crop rectangle, value type is int32_t.
  * This is the left-most column included in the crop frame, where column indices start at 0.
+ * This key is only used for video decoding.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
@@ -570,6 +595,7 @@ extern const char *OH_MD_KEY_VIDEO_CROP_LEFT;
 /**
  * @brief Key for describing the right-coordinate (x) of the crop rectangle, value type is int32_t. This is the
  * right-most column included in the crop frame, where column indices start at 0.
+ * This key is only used for video decoding.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
@@ -765,8 +791,15 @@ typedef enum OH_MediaType {
  * @version 1.0
  */
 typedef enum OH_AACProfile {
+    /** AAC encoding level is Low Complexity levele. */
     AAC_PROFILE_LC = 0,
+    /** AAC encoding level is High Efficiency levele.
+     * @since 14
+     */
     AAC_PROFILE_HE = 3,
+    /** AAC encoding level is High Efficiency v2 levele.
+     * @since 14
+     */
     AAC_PROFILE_HE_V2 = 4,
 } OH_AACProfile;
 
@@ -856,15 +889,24 @@ typedef enum OH_H263Profile {
 } OH_H263Profile;
 
 /**
- * @brief HEVC Profile
+ * @brief HEVC Profile.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */
 typedef enum OH_HEVCProfile {
+    /** HEVC encoding level is the main level. */
     HEVC_PROFILE_MAIN = 0,
+    /** HEVC encoding level is 10 bit main level. */
     HEVC_PROFILE_MAIN_10 = 1,
+    /** HEVC encoding level is the main level for still images. */
     HEVC_PROFILE_MAIN_STILL = 2,
+    /** HEVC encoding level is HDR10 main level.
+     * @deprecated since 14
+    */
     HEVC_PROFILE_MAIN_10_HDR10 = 3,
+    /** HEVC encoding level is HDR10+ main level.
+     * @deprecated since 14
+    */
     HEVC_PROFILE_MAIN_10_HDR10_PLUS = 4,
 } OH_HEVCProfile;
 
@@ -907,13 +949,16 @@ typedef enum OH_VVCProfile {
 } OH_VVCProfile;
 
 /**
- * @brief Enumerates the muxer output file format
+ * @brief Enumerates the muxer output file format.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */
 typedef enum OH_AVOutputFormat {
+    /** Default output file format, default to MP4 format. */
     AV_OUTPUT_FORMAT_DEFAULT = 0,
+    /** The muxer output MP4 file format. */
     AV_OUTPUT_FORMAT_MPEG_4 = 2,
+    /** The muxer output M4A file format.*/
     AV_OUTPUT_FORMAT_M4A = 6,
     /**
      * The muxer output amr file format.
@@ -938,50 +983,71 @@ typedef enum OH_AVOutputFormat {
 } OH_AVOutputFormat;
 
 /**
- * @brief Seek Mode
+ * @brief Seek Mode.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */
 typedef enum OH_AVSeekMode {
-    /* seek to sync sample after the time. If there is no I-frame after the time point, the mode may fail to seek */
+    /* Seek to sync sample after the time. If there is no I-frame after the time point, the mode may fail to seek. */
     SEEK_MODE_NEXT_SYNC = 0,
-    /* seek to sync sample before the time */
+    /* Seek to sync sample before the time. */
     SEEK_MODE_PREVIOUS_SYNC,
-    /* seek to sync sample closest to time */
+    /* Seek to sync sample closest to time. */
     SEEK_MODE_CLOSEST_SYNC,
 } OH_AVSeekMode;
 
 /**
- * @brief Scaling Mode
+ * @brief Scaling Mode, only used in Surface mode.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
+ * @deprecated since 14
+ * @useinstead OHScalingModeV2
  */
 typedef enum OH_ScalingMode {
+    /* Adaptively adjust the image size based on the window size.
+     * @deprecated since 14
+     * @useinstead OH_SCALING_MODE_SCALE_TO_WINDOW_V2
+    */
     SCALING_MODE_SCALE_TO_WINDOW = 1,
+    /* Crop the image size based on the window size.
+     * @deprecated since 14
+     * @useinstead OH_SCALING_MODE_SCALE_CROP_V2
+     */
     SCALING_MODE_SCALE_CROP = 2,
 } OH_ScalingMode;
 
 /**
- * @brief enum Audio Bits Per Coded Sample
+ * @brief enum Audio Bits Per Coded Sample.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */
 typedef enum OH_BitsPerSample {
+    /* 8-bit unsigned integer sampling. */
     SAMPLE_U8 = 0,
+    /* 16-bit signed integer sampling. */
     SAMPLE_S16LE = 1,
+    /* 24-bit signed integer sampling. */
     SAMPLE_S24LE = 2,
+    /* 32-bit signed integer sampling. */
     SAMPLE_S32LE = 3,
+    /* 32-bit float sampling. */
     SAMPLE_F32LE = 4,
+    /* 8-bit unsigned integer plane sampling. */
     SAMPLE_U8P = 5,
+    /* 16-bit unsigned integer plane sampling. */
     SAMPLE_S16P = 6,
+    /* 24-bit unsigned integer plane sampling. */
     SAMPLE_S24P = 7,
+    /* 32-bit unsigned integer plane sampling. */
     SAMPLE_S32P = 8,
+    /* 32-bit float plane sampling. */
     SAMPLE_F32P = 9,
+    /* Invalid sampling format. */
     INVALID_WIDTH = -1
 } OH_BitsPerSample;
 
 /**
- * @brief Color Primary
+ * @brief Color Primary.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */
@@ -1000,49 +1066,80 @@ typedef enum OH_ColorPrimary {
 } OH_ColorPrimary;
 
 /**
- * @brief Transfer Characteristic
+ * @brief Transfer Characteristic, both encoding and decoding are supported.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */
 typedef enum OH_TransferCharacteristic {
+    /* BT709 transfer function. */
     TRANSFER_CHARACTERISTIC_BT709 = 1,
+    /* transfer function not specified. */
     TRANSFER_CHARACTERISTIC_UNSPECIFIED = 2,
+    /* GAMMA_2_2 transfer function. */
     TRANSFER_CHARACTERISTIC_GAMMA_2_2 = 4,
+    /* GAMMA_2_8 transfer function. */
     TRANSFER_CHARACTERISTIC_GAMMA_2_8 = 5,
+    /* BT601 transfer function. */
     TRANSFER_CHARACTERISTIC_BT601 = 6,
+    /* SMPTE_ST240 transfer function. */
     TRANSFER_CHARACTERISTIC_SMPTE_ST240 = 7,
+    /* LINEAR transfer function. */
     TRANSFER_CHARACTERISTIC_LINEAR = 8,
+    /* LOG transfer function. */
     TRANSFER_CHARACTERISTIC_LOG = 9,
+    /* LOG_SQRT transfer function. */
     TRANSFER_CHARACTERISTIC_LOG_SQRT = 10,
+    /* IEC_61966_2_4 transfer function. */
     TRANSFER_CHARACTERISTIC_IEC_61966_2_4 = 11,
+    /* BT1361 transfer function. */
     TRANSFER_CHARACTERISTIC_BT1361 = 12,
+    /* IEC_61966_2_1 transfer function. */
     TRANSFER_CHARACTERISTIC_IEC_61966_2_1 = 13,
+    /* BT2020_10BIT transfer function. */
     TRANSFER_CHARACTERISTIC_BT2020_10BIT = 14,
+    /* BT2020_12BIT transfer function. */
     TRANSFER_CHARACTERISTIC_BT2020_12BIT = 15,
+    /* PQ transfer function. */
     TRANSFER_CHARACTERISTIC_PQ = 16,
+    /* SMPTE_ST428 transfer function. */
     TRANSFER_CHARACTERISTIC_SMPTE_ST428 = 17,
+    /* HLG transfer function. */
     TRANSFER_CHARACTERISTIC_HLG = 18,
 } OH_TransferCharacteristic;
 
 /**
- * @brief Matrix Coefficient
+ * @brief Matrix Coefficient, both encoding and decoding are supported.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */
 typedef enum OH_MatrixCoefficient {
+    /* Unit matrix. */
     MATRIX_COEFFICIENT_IDENTITY = 0,
+    /* BT709 conversion matrix. */
     MATRIX_COEFFICIENT_BT709 = 1,
+    /* Conversion matrix not specified. */
     MATRIX_COEFFICIENT_UNSPECIFIED = 2,
+    /* FCC conversion matrix. */
     MATRIX_COEFFICIENT_FCC = 4,
+    /* BT601_625 conversion matrix. */
     MATRIX_COEFFICIENT_BT601_625 = 5,
+    /* BT601_525 conversion matrix. */
     MATRIX_COEFFICIENT_BT601_525 = 6,
+    /* SMPTE_ST240  conversion matrix. */
     MATRIX_COEFFICIENT_SMPTE_ST240 = 7,
+    /* YCGCO conversion matrix. */
     MATRIX_COEFFICIENT_YCGCO = 8,
+    /* BT2020_NCL conversion matrix. */
     MATRIX_COEFFICIENT_BT2020_NCL = 9,
+    /* BT2020_CL conversion matrix. */
     MATRIX_COEFFICIENT_BT2020_CL = 10,
+    /* SMPTE_ST2085 conversion matrix. */
     MATRIX_COEFFICIENT_SMPTE_ST2085 = 11,
+    /* CHROMATICITY_NCL conversion matrix. */
     MATRIX_COEFFICIENT_CHROMATICITY_NCL = 12,
+    /* CHROMATICITY_CL conversion matrix. */
     MATRIX_COEFFICIENT_CHROMATICITY_CL = 13,
+    /* ICTCP conversion matrix. */
     MATRIX_COEFFICIENT_ICTCP = 14,
 } OH_MatrixCoefficient;
 
@@ -1207,6 +1304,20 @@ typedef enum OH_VVCLevel {
     /** VVC level 15.5 */
     VVC_LEVEL_155 = 255,
 } OH_VVCLevel;
+
+/**
+ * @brief The bitrate mode of encoder.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ */
+typedef enum OH_BitrateMode {
+    /* Constant Bit rate mode. */
+    BITRATE_MODE_CBR = 0,
+    /* Variable Bit rate mode. */
+    BITRATE_MODE_VBR = 1,
+    /* Constant Quality mode. */
+    BITRATE_MODE_CQ = 2
+} OH_BitrateMode;
 
 /**
  * @brief The reference mode in temporal group of picture.

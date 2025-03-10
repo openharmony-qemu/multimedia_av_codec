@@ -21,6 +21,7 @@
 #include <shared_mutex>
 #include <functional>
 #include <ctime>
+#include <memory>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -37,13 +38,16 @@ private:
         std::string name;
         std::time_t startTime;
         uint32_t timeout;
+
+        TimerInfo(std::string argName, std::time_t argStartTime, uint32_t argTimeOut)
+            : name(argName), startTime(argStartTime), timeout(argTimeOut) {}
     };
 
     AVCodecXCollie() = default;
     ~AVCodecXCollie() = default;
 
     std::shared_mutex mutex_;
-    std::map<int32_t, TimerInfo> dfxDumper_;
+    std::map<int32_t, std::shared_ptr<TimerInfo>> dfxDumper_;
 
 // For interfacec timer
 private:

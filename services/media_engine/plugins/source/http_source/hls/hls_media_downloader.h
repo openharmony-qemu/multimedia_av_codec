@@ -26,7 +26,6 @@
 #include "openssl/aes.h"
 #include "osal/task/task.h"
 #include "common/media_source.h"
-#include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
 #include "utils/media_cached_buffer.h"
@@ -55,12 +54,11 @@ constexpr size_t MIN_BUFFER_SIZE = 5 * 1024 * 1024;
 
 class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback {
 public:
-    explicit HlsMediaDownloader(
-        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
     explicit HlsMediaDownloader(int expectBufferDuration,
-        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>(),
+        std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     explicit HlsMediaDownloader(std::string mimeType,
-        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>()) noexcept;
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>());
     ~HlsMediaDownloader() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
@@ -100,7 +98,7 @@ public:
     size_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
-    bool GetReadTimeOut() override;
+    bool GetReadTimeOut(bool isDelay) override;
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
@@ -110,15 +108,16 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     void NotifyInitSuccess() override;
+    uint64_t GetCachedDuration() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
     void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
-    bool SaveData(uint8_t* data, uint32_t len);
+    uint32_t SaveData(uint8_t *data, uint32_t len, bool notBlock);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     void ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
-    bool SaveEncryptData(uint8_t* data, uint32_t len);
+    uint32_t SaveEncryptData(uint8_t* data, uint32_t len, bool notBlock);
     void InitMediaDownloader();
     void DownloadRecordHistory(int64_t nowTime);
     void OnWriteCacheBuffer(uint32_t len);
@@ -156,8 +155,9 @@ private:
     void PushPlayInfo(PlayInfo playInfo);
     void PrepareToSeek();
     bool CheckDataIntegrity();
-    void HlsInit();
-    bool SaveCacheBufferData(uint8_t* data, uint32_t len);
+    void HlsInit(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
+    uint32_t SaveCacheBufferData(uint8_t* data, uint32_t len, bool notBlock);
+    uint32_t SaveCacheBufferDataNotblock(uint8_t* data, uint32_t len);
     bool ClearChunksOfFragment();
     size_t GetCrossTsBuffersize();
     bool IsCachedInitSizeReady(int32_t wantInitSize);
@@ -299,6 +299,12 @@ private:
     double bufferDurationForPlaying_ {0};
     uint64_t waterlineForPlaying_ {0};
     std::atomic<bool> isDemuxerInitSuccess_ {false};
+	
+    size_t timeoutInterval_ = 0;
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
+    std::atomic<bool> isTimeoutErrorNotified_ {false};
+    std::atomic<bool> isNeedResume_ {false};
+    uint64_t cachedDuration_ {0};
 };
 }
 }

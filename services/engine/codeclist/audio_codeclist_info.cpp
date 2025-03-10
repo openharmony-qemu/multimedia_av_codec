@@ -21,6 +21,8 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+const std::vector<int32_t> AUDIO_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000,
+                                                32000, 44100, 48000, 64000, 88200, 96000};
 constexpr int MAX_AUDIO_CHANNEL_COUNT = 8;
 constexpr int MAX_SUPPORT_AUDIO_INSTANCE = 16;
 
@@ -172,6 +174,7 @@ CapabilityData AudioCodeclistInfo::GetVorbisDecoderCapability()
     audioVorbisCapability.isVendor = false;
     audioVorbisCapability.bitrate = Range(MIN_BIT_RATE_VORBIS, MAX_BIT_RATE_VORBIS);
     audioVorbisCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    audioVorbisCapability.sampleRate = AUDIO_VORBIS_SAMPLE_RATE;
     audioVorbisCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioVorbisCapability;
 }
@@ -213,6 +216,7 @@ CapabilityData AudioCodeclistInfo::GetAPEDecoderCapability()
     audioApeCapability.isVendor = false;
     audioApeCapability.bitrate = Range(0, MAX_BIT_RATE_APE);
     audioApeCapability.channels = Range(1, MAX_CHANNEL_COUNT_APE);
+    audioApeCapability.sampleRate = AUDIO_SAMPLE_RATE;
     audioApeCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioApeCapability;
 }

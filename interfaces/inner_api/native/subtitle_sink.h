@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 #ifndef HISTREAMER_SUBTITLE_SINK_H
 #define HISTREAMER_SUBTITLE_SINK_H
 #include <mutex>
+#include <deque>
 #include "common/status.h"
 #include "meta/meta.h"
 #include "sink/media_synchronous_sink.h"
@@ -51,6 +52,7 @@ public:
     void ResetSyncInfo() override;
     Status SetIsTransitent(bool isTransitent);
     void NotifySeek();
+    virtual void OnInterrupted(bool isInterruptNeeded) override;
     Status SetSpeed(float speed);
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -94,7 +96,7 @@ private:
         SHOW,
         DROP,
     };
-    std::vector<SubtitleInfo> subtitleInfoVec_;
+    std::deque<SubtitleInfo> subtitleInfoVec_;
     uint32_t currentInfoIndex_ = 0;
     std::atomic<bool> isFlush_ = false;
     std::vector<std::shared_ptr<AVBuffer>> inputBufferVector_;

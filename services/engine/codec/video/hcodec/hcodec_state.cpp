@@ -163,11 +163,13 @@ void HCodec::UninitializedState::OnStateEntered()
     codec_->outRecord_.totalCnt = 0;
     codec_->outRecord_.totalCostUs = 0;
     codec_->inTimeMap_.clear();
+    codec_->lastInPts_ = -1;
+    codec_->lastOutPts_ = -1;
     codec_->inputWaitFenceCostUs_ = 0;
     codec_->outputWaitFenceCostUs_ = 0;
     codec_->inputDiscardCnt_ = 0;
     codec_->outputDiscardCnt_ = 0;
-    codec_->circulateWarnPrintedTimes_ = 0;
+    codec_->circulateHasStopped_ = false;
     codec_->OnEnterUninitializedState();
     codec_->ReleaseComponent();
 }
@@ -519,6 +521,10 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             return;
         case MsgWhat::CHECK_IF_STUCK:
             return;
+        case MsgWhat::FREEZE: {
+            OnFreeze(info);
+            break;
+        }
         default:
             BaseState::OnMsgReceived(info);
             break;
@@ -863,18 +869,25 @@ bool HCodec::FlushingState::IsFlushCompleteOnAllPorts()
 
 void HCodec::FlushingState::ChangeStateIfWeOwnAllBuffers()
 {
-    if (!IsFlushCompleteOnAllPorts() || !codec_->IsAllBufferOwnedByUsOrSurface()) {
+    if (!IsFlushCompleteOnAllPorts()) {
         return;
+    }
+    int32_t ret = AVCS_ERR_OK;
+    if (!codec_->IsAllBufferOwnedByUsOrSurface()) {
+        ret = AVCS_ERR_UNKNOWN;
+        codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, nullptr);
     }
     MsgInfo msg {MsgWhat::FLUSH, 0, nullptr};
     if (codec_->GetFirstSyncMsgToReply(msg)) {
-        ReplyErrorCode(msg.id, AVCS_ERR_OK);
+        ReplyErrorCode(msg.id, ret);
     }
-    codec_->inputPortEos_ = false;
-    codec_->outputPortEos_ = false;
-    codec_->gotFirstInput_ = false;
-    codec_->gotFirstOutput_ = false;
-    codec_->ChangeStateTo(codec_->runningState_);
+    if (ret == AVCS_ERR_OK) {
+        codec_->inputPortEos_ = false;
+        codec_->outputPortEos_ = false;
+        codec_->gotFirstInput_ = false;
+        codec_->gotFirstOutput_ = false;
+        codec_->ChangeStateTo(codec_->runningState_);
+    }
 }
 
 void HCodec::FlushingState::OnShutDown(const MsgInfo &info)

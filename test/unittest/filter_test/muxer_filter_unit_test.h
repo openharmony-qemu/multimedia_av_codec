@@ -125,6 +125,10 @@ public:
     {
         return  Status::OK;
     }
+    Status ClearBufferIf(std::function<bool(const std::shared_ptr<AVBuffer> &)> pred)
+    {
+        return  Status::OK;
+    }
     DECLARE_INTERFACE_DESCRIPTOR(u"Media.MyAVBufferQueueProducer");
 
 protected:

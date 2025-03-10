@@ -135,6 +135,7 @@ public:
     uint32_t GetCurrentBitRate();
     size_t GetStreamCount() const;
     void SetResetEosStatus(bool flag);
+    void SetInterruptState(bool isInterruptNeeded);
     bool CheckTrackIsActive(int32_t trackId);
     int32_t AddExternalSubtitle();
     Status localSubtitleSeekTo(int64_t seekTime);

@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <string>
 #include "avcodec_log.h"
+#include "avcodec_info.h"
 #include "meta.h"
 #include "meta/meta_key.h"
 
@@ -54,14 +55,15 @@ struct InstanceInfo {
     int32_t instanceId = INVALID_INSTANCE_ID;
     CallerInfo caller;
     CallerInfo forwardCaller;
+    AVCodecType codecType;
     uint32_t memoryUsage = 0;
 
     void Print()
     {
         constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceInfo"};
         AVCODEC_LOGI("InstanceId: %{public}d, Caller: [%{public}d, %{public}s], ForwardCaller: [%{public}d, %{public}s]"
-            ", MemoryUsage: %{public}u", instanceId, caller.pid, caller.processName.c_str(), forwardCaller.pid,
-            forwardCaller.processName.c_str(), memoryUsage);
+            ", CodecType: %{public}d, MemoryUsage: %{public}u", instanceId, caller.pid, caller.processName.c_str(),
+            forwardCaller.pid, forwardCaller.processName.c_str(), codecType, memoryUsage);
     }
 };
 } // namespace MediaAVCodec

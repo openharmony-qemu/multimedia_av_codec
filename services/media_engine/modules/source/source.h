@@ -103,6 +103,7 @@ public:
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
     Status StopBufferring(bool flag);
+    Status SetStartPts(int64_t startPts);
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID);
     void SetCallback(Callback* callback);
     bool IsNeedPreDownload();
@@ -121,6 +122,10 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size);
     Status SetPerfRecEnabled(bool perfRecEnabled);
     void NotifyInitSuccess();
+    bool IsLocalFd();
+    bool IsFlvLiveStream() const;
+    uint64_t GetCachedDuration();
+    void RestartAndClearBuffer();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
@@ -144,9 +149,12 @@ private:
 
     std::shared_ptr<CallbackImpl> mediaDemuxerCallback_;
     std::atomic<bool> isInterruptNeeded_{false};
+    std::mutex mutex_;
+    std::condition_variable seekCond_;
     bool isEnableFdCache_{ true };
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
+    bool isFlvLiveStream_ {false};
 };
 } // namespace Media
 } // namespace OHOS

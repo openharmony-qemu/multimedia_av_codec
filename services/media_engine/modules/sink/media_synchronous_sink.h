@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,7 +28,7 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-class MediaSynchronousSink : public IMediaSynchronizer {
+class MediaSynchronousSink : public IMediaSynchronizer, public InterruptListener {
 public:
     MediaSynchronousSink() {};
     ~MediaSynchronousSink();
@@ -36,6 +36,8 @@ public:
     int8_t GetPriority() final;
 
     void NotifyAllPrerolled() final;
+
+    void OnInterrupted(bool isInterruptNeeded) override;
 
 protected:
     virtual int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) = 0;
@@ -50,6 +52,7 @@ protected:
     int8_t syncerPriority_ {IMediaSynchronizer::NONE};
     bool hasReportedPreroll_ {false};
     std::atomic<bool> waitForPrerolled_ {false};
+    std::atomic<bool> isInterruptNeeded_ {false};
     OHOS::Media::Mutex prerollMutex_ {};
     OHOS::Media::ConditionVariable prerollCond_ {};
     std::weak_ptr<IMediaSyncCenter> syncCenter_;

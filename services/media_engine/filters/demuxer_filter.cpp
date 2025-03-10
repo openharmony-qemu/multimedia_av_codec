@@ -35,6 +35,7 @@ namespace Media {
 namespace Pipeline {
 using namespace MediaAVCodec;
 using MediaType = OHOS::Media::Plugins::MediaType;
+using FileType = OHOS::Media::Plugins::FileType;
 namespace {
     const std::string MIME_IMAGE = "image";
     const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
@@ -258,8 +259,7 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
         }
         if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO && hasVideoFilter) {
             continue;
-        } else if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO &&
-            isEnableReselectVideoTrack_ && demuxer_->IsHasMultiVideoTrack()) {
+        } else if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO && isEnableReselectVideoTrack_) {
             hasVideoFilter = true;
         }
         ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
@@ -600,12 +600,12 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
         MEDIA_LOG_E_SHORT("FindTrackId failed.");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
-    if (outType == StreamType::STREAMTYPE_ENCODED_VIDEO && isEnableReselectVideoTrack_
-        && demuxer_->IsHasMultiVideoTrack()) {
-        trackId = static_cast<int32_t>(demuxer_->GetTargetVideoTrackId(trackInfos));
+    std::shared_ptr<Meta> globalInfo = demuxer_->GetGlobalMetaInfo();
+    FileType fileType = FileType::UNKNOW;
+    if (globalInfo == nullptr || !globalInfo->GetData(Tag::MEDIA_FILE_TYPE, fileType)) {
+        MEDIA_LOG_W("Get file type failed");
     }
-    MEDIA_LOG_I_SHORT("LinkNext track id: %{public}d", trackId);
+    std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     std::shared_ptr<Meta> meta = trackInfos[trackId];
     for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
         MEDIA_LOG_D_SHORT("Link " PUBLIC_LOG_S, iter->first.c_str());
@@ -618,6 +618,10 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     nextFiltersMap_[outType].push_back(nextFilter_);
     MEDIA_LOG_I_SHORT("LinkNext NextFilter FilterType " PUBLIC_LOG_D32, nextFilter_->GetFilterType());
     meta->SetData(Tag::REGULAR_TRACK_ID, trackId);
+    if (fileType == FileType::AVI) {
+        MEDIA_LOG_I("File type is AVI " PUBLIC_LOG_D32, static_cast<int32_t>(FileType::AVI));
+        meta->SetData(Tag::MEDIA_FILE_TYPE, FileType::AVI);
+    }
     std::shared_ptr<FilterLinkCallback> filterLinkCallback
         = std::make_shared<DemuxerFilterLinkCallback>(shared_from_this());
     return nextFilter->OnLinked(outType, meta, filterLinkCallback);
@@ -886,6 +890,42 @@ void DemuxerFilter::SetApiVersion(int32_t apiVersion)
 {
     apiVersion_ = apiVersion;
     demuxer_->SetApiVersion(apiVersion);
+}
+
+bool DemuxerFilter::IsLocalFd()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->IsLocalFd();
+}
+
+void DemuxerFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
+{
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    demuxer_->SetSyncCenter(syncCenter);
+}
+
+bool DemuxerFilter::IsFlvLiveStream()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->IsFlvLiveStream();
+}
+
+Status DemuxerFilter::RebootPlugin()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    return demuxer_->RebootPlugin();
+}
+
+uint64_t DemuxerFilter::GetCachedDuration()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, 0, "demuxer_ is nullptr");
+    return demuxer_->GetCachedDuration();
+}
+
+void DemuxerFilter::RestartAndClearBuffer()
+{
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    return demuxer_->RestartAndClearBuffer();
 }
 } // namespace Pipeline
 } // namespace Media

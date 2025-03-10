@@ -106,13 +106,17 @@ private:
     void GetColorAspects(const Format &format);
     void CheckIfEnableCb(const Format &format);
     int32_t SetupPort(const Format &format);
-    void SetAvcInfoToMeta(std::shared_ptr<Media::Meta> &meta);
+
+    void CheckBitRateSupport(int32_t &bitrate);
+    void CheckFrameRateSupport(double &framerate);
+    void CheckIFrameIntervalTimeSupport(int32_t &interval);
 
     void AvcFuncMatch();
     void ReleaseHandle();
 
     void ReleaseSurfaceBuffer();
     void ClearDirtyList();
+    void WaitForInBuffer();
     void FillEncodedBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
 
     void NotifyUserToProcessBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer);
@@ -127,6 +131,7 @@ private:
         int32_t height = 0;
         int32_t stride = 0;
         int32_t size = 0;
+        int32_t uvOffset = 0;
         VideoPixelFormat format = VideoPixelFormat::UNKNOWN;
         int64_t pts = 0;
     };
@@ -144,6 +149,7 @@ private:
     int32_t FillAvcEncoderInArgs(std::shared_ptr<AVBuffer> &buffer, AVC_ENC_INARGS &inArgs);
 
     void FillNV21ToAvcEncInArgs(AVC_ENC_INARGS &inArgs, NVFrame &nvFrame, int64_t pts);
+    int32_t GetSurfaceBufferUvOffset(sptr<SurfaceBuffer> &surfaceBuffer, VideoPixelFormat format);
     int32_t GetInputFrameFromAVBuffer(std::shared_ptr<AVBuffer> &buffer, InputFrame &inFrame);
     int32_t Yuv420ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &inArgs);
     int32_t RgbaToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &inArgs);
@@ -204,7 +210,7 @@ private:
     static std::mutex encoderCountMutex_;
     static std::vector<uint32_t> encInstanceIDSet_;
     static std::vector<uint32_t> freeIDSet_;
-    static constexpr uint32_t SURFACE_MODE_CONSUMER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_ENCODER;
+    static constexpr uint32_t SURFACE_MODE_CONSUMER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_CPU_READ;
     Format format_;
     int32_t encWidth_;
     int32_t encHeight_;
@@ -245,6 +251,7 @@ private:
     // 存放可用的 buffers 索引
     std::mutex freeListMutex_;
     std::list<uint32_t> freeList_;
+    std::condition_variable surfaceRecvCv_;
 
     std::condition_variable sendCv_;
     sptr<Surface> inputSurface_ = nullptr;

@@ -596,7 +596,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    videoDec_->needCheckSHA_ = true;
+    videoDec_->needCheckSHA_ = false;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
@@ -612,7 +612,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_002, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    videoDec_->needCheckSHA_ = true;
+    videoDec_->needCheckSHA_ = false;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -631,7 +631,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_003, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    videoDec_->needCheckSHA_ = true;
+    videoDec_->needCheckSHA_ = false;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());

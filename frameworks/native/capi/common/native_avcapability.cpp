@@ -212,7 +212,11 @@ OH_AVErrCode OH_AVCapability_GetEncoderBitrateRange(OH_AVCapability *capability,
     bitrateRange->maxVal = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<AudioCaps> codecInfo = std::make_shared<AudioCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isEncoder(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the encoder capability");
+    }
+    std::shared_ptr<AudioCaps> codecInfo = std::make_shared<AudioCaps>(capData);
     const auto &bitrate = codecInfo->GetSupportedBitrate();
     bitrateRange->minVal = bitrate.minVal;
     bitrateRange->maxVal = bitrate.maxVal;
@@ -226,7 +230,11 @@ OH_AVErrCode OH_AVCapability_GetEncoderQualityRange(OH_AVCapability *capability,
     qualityRange->maxVal = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isEncoder(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the encoder capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     const auto &quality = codecInfo->GetSupportedEncodeQuality();
     qualityRange->minVal = quality.minVal;
     qualityRange->maxVal = quality.maxVal;
@@ -241,7 +249,11 @@ OH_AVErrCode OH_AVCapability_GetEncoderComplexityRange(OH_AVCapability *capabili
     complexityRange->maxVal = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isEncoder(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the encoder capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     const auto &complexity = codecInfo->GetSupportedComplexity();
     complexityRange->minVal = complexity.minVal;
     complexityRange->maxVal = complexity.maxVal;
@@ -252,7 +264,11 @@ bool OH_AVCapability_IsEncoderBitrateModeSupported(OH_AVCapability *capability, 
 {
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         false, "Invalid parameter");
-    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isEncoder(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the encoder capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     const auto &bitrateModeVec = codecInfo->GetSupportedBitrateMode();
     return find(bitrateModeVec.begin(), bitrateModeVec.end(), bitrateMode) != bitrateModeVec.end();
 }
@@ -266,7 +282,11 @@ OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRates(OH_AVCapability *capab
     *sampleRateNum = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<AudioCaps> codecInfo = std::make_shared<AudioCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isAudio(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the audio capability");
+    }
+    std::shared_ptr<AudioCaps> codecInfo = std::make_shared<AudioCaps>(capData);
     const auto &vec = codecInfo->GetSupportedSampleRates();
     if (vec.size() == 0) {
         return AV_ERR_OK;
@@ -299,7 +319,11 @@ OH_AVErrCode OH_AVCapability_GetAudioChannelCountRange(OH_AVCapability *capabili
     channelCountRange->maxVal = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<AudioCaps> codecInfo = std::make_shared<AudioCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isAudio(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the audio capability");
+    }
+    std::shared_ptr<AudioCaps> codecInfo = std::make_shared<AudioCaps>(capData);
     const auto &channels = codecInfo->GetSupportedChannel();
     channelCountRange->minVal = channels.minVal;
     channelCountRange->maxVal = channels.maxVal;
@@ -315,7 +339,11 @@ OH_AVErrCode OH_AVCapability_GetVideoSupportedPixelFormats(OH_AVCapability *capa
     *pixFormatNum = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     const auto &vec = codecInfo->GetSupportedFormats();
     if (vec.size() == 0) {
         return AV_ERR_OK;
@@ -344,7 +372,11 @@ OH_AVErrCode OH_AVCapability_GetVideoWidthAlignment(OH_AVCapability *capability,
     *widthAlignment = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     *widthAlignment = codecInfo->GetSupportedWidthAlignment();
     return AV_ERR_OK;
 }
@@ -356,7 +388,11 @@ OH_AVErrCode OH_AVCapability_GetVideoHeightAlignment(OH_AVCapability *capability
     *heightAlignment = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     *heightAlignment = codecInfo->GetSupportedHeightAlignment();
     return AV_ERR_OK;
 }
@@ -370,13 +406,17 @@ OH_AVErrCode OH_AVCapability_GetVideoWidthRangeForHeight(OH_AVCapability *capabi
     widthRange->maxVal = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     const auto &width = codecInfo->GetVideoWidthRangeForHeight(height);
     widthRange->minVal = width.minVal;
     widthRange->maxVal = width.maxVal;
-    if (width.minVal == 0 && width.maxVal == 0) {
-        return AV_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(width.minVal != 0 || width.maxVal != 0, AV_ERR_INVALID_VAL, "width range is [0, 0]");
+    AVCODEC_LOGD("Success to get width range [%{public}d, %{public}d], by height %{public}d",
+        width.minVal, width.maxVal, height);
     return AV_ERR_OK;
 }
 
@@ -389,13 +429,17 @@ OH_AVErrCode OH_AVCapability_GetVideoHeightRangeForWidth(OH_AVCapability *capabi
     heightRange->maxVal = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     const auto &height = codecInfo->GetVideoHeightRangeForWidth(width);
     heightRange->minVal = height.minVal;
     heightRange->maxVal = height.maxVal;
-    if (height.minVal == 0 && height.maxVal == 0) {
-        return AV_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(height.minVal != 0 || height.maxVal != 0, AV_ERR_INVALID_VAL, "height range is [0, 0]");
+    AVCODEC_LOGD("Success to get height range [%{public}d, %{public}d], by width %{public}d",
+        height.minVal, height.maxVal, width);
     return AV_ERR_OK;
 }
 
@@ -406,7 +450,11 @@ OH_AVErrCode OH_AVCapability_GetVideoWidthRange(OH_AVCapability *capability, OH_
     widthRange->maxVal = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     const auto &width = codecInfo->GetSupportedWidth();
     widthRange->minVal = width.minVal;
     widthRange->maxVal = width.maxVal;
@@ -420,7 +468,11 @@ OH_AVErrCode OH_AVCapability_GetVideoHeightRange(OH_AVCapability *capability, OH
     heightRange->maxVal = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     const auto &height = codecInfo->GetSupportedHeight();
     heightRange->minVal = height.minVal;
     heightRange->maxVal = height.maxVal;
@@ -431,7 +483,11 @@ bool OH_AVCapability_IsVideoSizeSupported(OH_AVCapability *capability, int32_t w
 {
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         false, "Invalid parameter");
-    std::shared_ptr<VideoCaps> videoCap = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> videoCap = std::make_shared<VideoCaps>(capData);
     return videoCap->IsSizeSupported(width, height);
 }
 
@@ -443,7 +499,11 @@ OH_AVErrCode OH_AVCapability_GetVideoFrameRateRange(OH_AVCapability *capability,
     frameRateRange->maxVal = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<VideoCaps> videoCap = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> videoCap = std::make_shared<VideoCaps>(capData);
     const auto &frameRate = videoCap->GetSupportedFrameRate();
     frameRateRange->minVal = frameRate.minVal;
     frameRateRange->maxVal = frameRate.maxVal;
@@ -459,13 +519,18 @@ OH_AVErrCode OH_AVCapability_GetVideoFrameRateRangeForSize(OH_AVCapability *capa
     frameRateRange->maxVal = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
-    std::shared_ptr<VideoCaps> videoCap = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> videoCap = std::make_shared<VideoCaps>(capData);
     const auto &frameRate = videoCap->GetSupportedFrameRatesFor(width, height);
     frameRateRange->minVal = frameRate.minVal;
     frameRateRange->maxVal = frameRate.maxVal;
-    if (frameRate.minVal == 0 && frameRate.maxVal == 0) {
-        return AV_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(frameRate.minVal != 0 || frameRate.maxVal != 0, AV_ERR_INVALID_VAL,
+        "frameRate range is [0, 0]");
+    AVCODEC_LOGD("Success to get frameRate range [%{public}d, %{public}d], by width %{public}d and height %{public}d",
+        frameRate.minVal, frameRate.maxVal, width, height);
     return AV_ERR_OK;
 }
 
@@ -474,7 +539,11 @@ bool OH_AVCapability_AreVideoSizeAndFrameRateSupported(OH_AVCapability *capabili
 {
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         false, "Invalid parameter");
-    std::shared_ptr<VideoCaps> videoCap = std::make_shared<VideoCaps>(capability->capabilityData_);
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> videoCap = std::make_shared<VideoCaps>(capData);
     return videoCap->IsSizeAndRateSupported(width, height, frameRate);
 }
 

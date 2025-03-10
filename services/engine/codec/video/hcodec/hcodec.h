@@ -58,6 +58,8 @@ public:
     int32_t Flush() override;
     int32_t Reset() override;
     int32_t Release() override;
+    int32_t NotifyMemoryRecycle() override;
+    int32_t NotifyMemoryWriteBack() override;
     virtual GSError OnBufferReleasedByConsumer(uint64_t surfaceId) { return GSERROR_OK; }
 
 protected:
@@ -81,6 +83,8 @@ protected:
         RENDER_OUTPUT_BUFFER,
         STOP,
         RELEASE,
+        FREEZE,
+        ACTIVE,
         GET_HIDUMPER_INFO,
         PRINT_ALL_BUFFER_OWNER,
 
@@ -130,6 +134,7 @@ protected:
         BufferInfo() : lastOwnerChangeTime(std::chrono::steady_clock::now()) {}
         bool isInput = true;
         BufferOwner owner = OWNED_BY_US;
+        BufferOwner nextStepOwner = OWNER_CNT;
         std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
         int64_t lastFlushTime = 0;
         uint32_t bufferId = 0;
@@ -137,6 +142,7 @@ protected:
         std::shared_ptr<AVBuffer> avBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
         bool needDealWithCache = false;
+        bool hasSwapedOut = false;
 
         void CleanUpUnusedInfo();
         void BeginCpuAccess();
@@ -237,9 +243,12 @@ protected:
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
     void NotifyUserOutBufferAvaliable(BufferInfo &info);
     void OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
+    void OnReleaseOutputBuffer(uint32_t bufferId, BufferOperationMode mode);
     virtual void OnReleaseOutputBuffer(const BufferInfo &info) {}
     virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     virtual void BeforeCbOutToUser(BufferInfo &info) {}
+    void RecordBufferStatus(OMX_DIRTYPE portIndex, uint32_t bufferId, BufferOwner nextOwner);
+    virtual void SubmitBuffersToNextOwner() {}
 
     // stop/release
     void ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner, bool erase = false);
@@ -251,6 +260,10 @@ protected:
     virtual void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) = 0;
     void FreeOmxBuffer(OMX_DIRTYPE portIndex, const BufferInfo& info);
     virtual void OnEnterUninitializedState() {}
+
+    // freeze
+    virtual int32_t FreezeBuffers() { return AVCS_ERR_UNSUPPORT; }
+    virtual int32_t ActiveBuffers() { return AVCS_ERR_UNSUPPORT; }
 
     // template
     template <typename T>
@@ -333,6 +346,7 @@ protected:
     static std::unordered_map<std::string, HCodec::Caller> g_callers;
 
     bool debugMode_ = false;
+    bool disableDmaSwap_ = false;
     DumpMode dumpMode_ = DUMP_NONE;
     sptr<CodecHDI::ICodecCallback> compCb_ = nullptr;
     sptr<CodecHDI::ICodecComponent> compNode_ = nullptr;
@@ -353,6 +367,7 @@ protected:
     bool gotFirstInput_ = false;
     bool gotFirstOutput_ = false;
     bool outPortHasChanged_ = false;
+    int pid_ = -1;
 
     // VRR
 #ifdef USE_VIDEO_PROCESSING_ENGINE
@@ -369,6 +384,8 @@ protected:
     uint64_t inTotalCnt_ = 0;
     TotalCntAndCost outRecord_;
     std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
+    int64_t lastInPts_ = -1;
+    int64_t lastOutPts_ = -1;
 
     // normal: every 400 frames, debug: whole life time
     static constexpr uint64_t PRINT_PER_FRAME = 400;
@@ -384,8 +401,7 @@ protected:
     // used when buffer circulation stoped
     static constexpr char KEY_LAST_OWNER_CHANGE_TIME[] = "lastOwnerChangeTime";
     std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime_;
-    uint32_t circulateWarnPrintedTimes_ = 0;
-    static constexpr uint32_t MAX_CIRCULATE_WARN_TIMES = 3;
+    bool circulateHasStopped_ = false;
 
     std::array<int, HCodec::OWNER_CNT> inputOwner_ {};
     std::array<std::string, HCodec::OWNER_CNT> inputOwnerStr_ {};
@@ -461,6 +477,7 @@ private:
         void OnCodecEvent(CodecHDI::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void OnFlush(const MsgInfo &info);
+        void OnFreeze(const MsgInfo &info);
     };
 
     struct OutputPortChangedState : BaseState {
@@ -503,6 +520,14 @@ private:
         void ChangeOmxNodeToLoadedState(bool forceToFreeBuffer);
         bool omxNodeInIdleState_;
         bool omxNodeIsChangingToLoadedState_;
+    };
+
+    struct FrozenState : BaseState {
+        explicit FrozenState(HCodec *codec) : BaseState(codec, "Freeze") {}
+    private:
+        void OnMsgReceived(const MsgInfo &info) override;
+        void OnShutDown(const MsgInfo &info) override;
+        void OnActive(const MsgInfo &info);
     };
 
     class HdiCallback : public CodecHDI::ICodecCallback {
@@ -551,6 +576,7 @@ private:
     std::shared_ptr<OutputPortChangedState> outputPortChangedState_;
     std::shared_ptr<FlushingState> flushingState_;
     std::shared_ptr<StoppingState> stoppingState_;
+    std::shared_ptr<FrozenState> frozenState_;
 
     int32_t stateGeneration_ = 0;
     bool isShutDownFromRunning_ = false;

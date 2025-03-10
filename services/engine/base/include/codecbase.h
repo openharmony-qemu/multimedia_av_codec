@@ -54,6 +54,8 @@ public:
     virtual int32_t SignalRequestIDRFrame();
     virtual int32_t GetInputFormat(Format& format);
     virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer);
+    virtual int32_t NotifyMemoryRecycle();
+    virtual int32_t NotifyMemoryWriteBack();
     virtual int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
     {
         (void)mime;
@@ -136,6 +138,17 @@ public:
     virtual sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer()
     {
         return nullptr;
+    }
+
+    virtual sptr<Media::AVBufferQueueProducer> GetOutputBufferQueueProducer()
+    {
+        return nullptr;
+    }
+
+    virtual void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
+    {
+        (void)isTriggeredByOutPort;
+        (void)isFlushed;
     }
 };
 } // namespace MediaAVCodec

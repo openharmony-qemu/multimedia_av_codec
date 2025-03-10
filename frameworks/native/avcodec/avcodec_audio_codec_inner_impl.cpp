@@ -125,8 +125,22 @@ sptr<Media::AVBufferQueueProducer> AVCodecAudioCodecInnerImpl::GetInputBufferQue
 sptr<Media::AVBufferQueueConsumer> AVCodecAudioCodecInnerImpl::GetInputBufferQueueConsumer()
 {
     AVCODEC_LOGD("AVCodecAudioCodecInnerImpl GetInputBufferQueueConsumer");
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, nullptr, "service died");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, nullptr, "GetInputBufferQueueConsumer service died");
     return codecService_->GetInputBufferQueueConsumer();
+}
+
+sptr<Media::AVBufferQueueProducer> AVCodecAudioCodecInnerImpl::GetOutputBufferQueueProducer()
+{
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl GetOutputBufferQueueProducer");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, nullptr, "GetOutputBufferQueueProducer service died");
+    return codecService_->GetOutputBufferQueueProducer();
+}
+
+void AVCodecAudioCodecInnerImpl::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
+{
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl ProcessInputBufferInner");
+    CHECK_AND_RETURN_LOG(codecService_ != nullptr, "ProcessInputBufferInner service died");
+    codecService_->ProcessInputBufferInner(isTriggeredByOutPort, isFlushed);
 }
 
 int32_t AVCodecAudioCodecInnerImpl::Start()

@@ -800,7 +800,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         GSError err = currSurface_.surface_->RequestBuffer(surfaceBuffer, fence, requestCfg_);
         if (err != GSERROR_OK || surfaceBuffer == nullptr) {
             HLOGE("RequestBuffer %u failed, GSError=%d", i, err);
-            return AVCS_ERR_UNKNOWN;
+            return err == GSERROR_NO_MEM ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN;
         }
         shared_ptr<OmxCodecBuffer> omxBuffer = SurfaceBufferToOmxBuffer(surfaceBuffer);
         if (omxBuffer == nullptr) {
@@ -1027,7 +1027,6 @@ void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
         return;
     }
     ChangeOwner(*info, BufferOwner::OWNED_BY_US);
-
     switch (mode) {
         case KEEP_BUFFER:
             return;
@@ -1079,7 +1078,9 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     info.omxBuffer->pts = info.avBuffer->pts_;
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
-
+    if (mode == KEEP_BUFFER) {
+        return;
+    }
     if (info.omxBuffer->filledLen != 0) {
         NotifySurfaceToRenderOutputBuffer(info);
     }

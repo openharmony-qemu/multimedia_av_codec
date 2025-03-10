@@ -33,7 +33,9 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class CodecServer : public std::enable_shared_from_this<CodecServer>, public ICodecService, public NoCopyable {
+class CodecServer : public std::enable_shared_from_this<CodecServer>,
+                    public ICodecService,
+                    public NoCopyable {
 public:
     static std::shared_ptr<ICodecService> Create(int32_t instanceId = INVALID_INSTANCE_ID);
     CodecServer();
@@ -107,6 +109,8 @@ public:
     int32_t Prepare() override;
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
     sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer() override;
+    sptr<Media::AVBufferQueueProducer> GetOutputBufferQueueProducer() override;
+    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed) override;
     void ProcessInputBuffer() override;
     bool CheckRunning() override;
 
@@ -119,6 +123,10 @@ public:
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag) override;
 #endif
+
+    // PurgeableMemory
+    void NotifyBackGround();
+    void NotifyForeGround();
 
 private:
     int32_t InitByName(Meta &callerInfo, API_VERSION apiVersion);
@@ -200,6 +208,7 @@ private:
     std::atomic<bool> decoderIsEOS_{false};
     std::shared_ptr<AVCodecCallback> shareBufCallback_ = nullptr;
     std::shared_ptr<MediaCodecCallback> avBufCallback_ = nullptr;
+    bool isFreezedFlag_{false};
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

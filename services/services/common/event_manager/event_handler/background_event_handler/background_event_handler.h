@@ -1,0 +1,51 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef BACKGROUND_EVENT_HANDLER_H
+#define BACKGROUND_EVENT_HANDLER_H
+
+#include "refbase.h"
+#ifdef USE_EFFICIENCY_MANAGER
+#include "suspend_state_observer_stub.h"
+#endif //USE_EFFICIENCY_MANAGER
+
+namespace OHOS {
+namespace MediaAVCodec {
+#ifdef USE_EFFICIENCY_MANAGER
+class SuspendStateObserverStubObj : public SuspendManager::SuspendStateObserverStub {
+public:
+    ErrCode OnActive(const std::vector<int32_t> &pidList, const int32_t uid) override;
+    ErrCode OnDoze(const int32_t uid) override;
+    ErrCode OnFrozen(const std::vector<int32_t> &pidList, const int32_t uid) override;
+    ErrCode OnFrozenUid(const int32_t uid, const uint32_t reasonId) override;
+};
+#endif //USE_EFFICIENCY_MANAGER
+
+class BackGroundEventHandler {
+public:
+    static BackGroundEventHandler &GetInstance();
+    BackGroundEventHandler();
+    ~BackGroundEventHandler() = default;
+    void RegisterSuspendObserver();
+    void UnregisterSuspendObserver();
+
+private:
+#ifdef USE_EFFICIENCY_MANAGER
+    sptr<SuspendStateObserverStubObj> suspendObservers_ = nullptr;
+#endif //USE_EFFICIENCY_MANAGER
+};
+} // namespace MediaAVCodec
+} // namespace OHOS
+#endif //BACKGROUND_EVENT_HANDLER_H

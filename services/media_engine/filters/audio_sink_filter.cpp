@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -48,11 +48,7 @@ void AudioSinkFilter::AVBufferAvailableListener::OnBufferAvailable()
 {
     auto sink = audioSinkFilter_.lock();
     FALSE_RETURN_MSG(sink != nullptr, "invalid audioSink");
-    if (sink->NeedImmediateRender()) {
-        sink->DoProcessInputBuffer(0, 0);
-    } else {
-        sink->ProcessInputBuffer();
-    }
+    sink->ProcessInputBuffer();
 }
 
 AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
@@ -69,12 +65,22 @@ AudioSinkFilter::~AudioSinkFilter()
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
-                           const std::shared_ptr<FilterCallback> &callback)
+    const std::shared_ptr<FilterCallback> &callback)
+{
+    Init(receiver, callback, nullptr);
+}
+ 
+void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
+    const std::shared_ptr<FilterCallback> &callback, const std::shared_ptr<InterruptMonitor>& monitor)
 {
     Filter::Init(receiver, callback);
     eventReceiver_ = receiver;
     filterCallback_ = callback;
     MEDIA_LOG_D("audio sink Init called");
+    interruptMonitor_ = monitor;
+    if (interruptMonitor_) {
+        interruptMonitor_->RegisterListener(audioSink_);
+    }
 }
 
 Status AudioSinkFilter::DoInitAfterLink()
@@ -202,7 +208,8 @@ Status AudioSinkFilter::DoSetPlayRange(int64_t start, int64_t end)
 
 Status AudioSinkFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
-    audioSink_->DrainOutputBuffer();
+    (void)recvArg;
+    audioSink_->DrainOutputBuffer(dropFrame);
     return Status::OK;
 }
 
@@ -247,6 +254,14 @@ Status AudioSinkFilter::DoSetPerfRecEnabled(bool isPerfRecEnabled)
     FALSE_RETURN_V(audioSink_ != nullptr, Status::OK);
     audioSink_->SetPerfRecEnabled(isPerfRecEnabled);
     return Status::OK;
+}
+
+Status AudioSinkFilter::SetVolumeMode(int32_t mode)
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    auto err = audioSink_->SetVolumeMode(mode);
+    MEDIA_LOG_I("set volume mode = %{public}d", mode);
+    return err;
 }
 
 Status AudioSinkFilter::SetVolume(float volume)

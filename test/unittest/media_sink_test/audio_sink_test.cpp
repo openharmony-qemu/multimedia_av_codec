@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -120,6 +120,11 @@ public:
         (void)volume;
         return Status::ERROR_UNKNOWN;
     }
+    Status SetVolumeMode(int32_t mode) override
+    {
+        (void)mode;
+        return Status::ERROR_UNKNOWN;
+    }
     Status GetSpeed(float& speed) override
     {
         (void)speed;
@@ -170,6 +175,27 @@ public:
     }
     Status SetMuted(bool isMuted) override
     {
+        return Status::OK;
+    }
+    Status SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback) override
+    {
+        (void)callback;
+        return Status::OK;
+    }
+    bool GetAudioPosition(timespec &time, uint32_t &framePosition) override
+    {
+        (void)time;
+        (void)framePosition;
+        return true;
+    }
+    Status GetBufferDesc(AudioStandard::BufferDesc &bufDesc) override
+    {
+        (void)bufDesc;
+        return Status::OK;
+    }
+    Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufDesc) override
+    {
+        (void)bufDesc;
         return Status::OK;
     }
 };
@@ -863,7 +889,7 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_001, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->plugin_ = nullptr;
     audioSink->inputBufferQueueConsumer_ = nullptr;
-    audioSink->DrainOutputBuffer();
+    audioSink->DrainOutputBuffer(true);
     ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
 }
 
@@ -873,7 +899,7 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_002, TestSize.Level1)
     auto audioSink = std::make_shared<AudioSink>();
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->inputBufferQueueConsumer_ = nullptr;
-    audioSink->DrainOutputBuffer();
+    audioSink->DrainOutputBuffer(true);
     ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
 }
 
@@ -884,7 +910,7 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_003, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->inputBufferQueue_ = AVBufferQueue::Create(5, MemoryType::SHARED_MEMORY, "test");
     audioSink->inputBufferQueueConsumer_ = audioSink->inputBufferQueue_->GetConsumer();
-    audioSink->DrainOutputBuffer();
+    audioSink->DrainOutputBuffer(true);
     ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
 }
 
@@ -1061,6 +1087,7 @@ HWTEST(TestAudioSink, audio_sink_CheckUpdateState_001, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     int8_t frame[] = {0, 127};
     audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 0);
+    audioSink->UpdateAmplitude();
     float amplitude = 0.0f;
     amplitude = audioSink->GetMaxAmplitude();
     ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
@@ -1072,6 +1099,7 @@ HWTEST(TestAudioSink, audio_sink_CheckUpdateState_002, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     int8_t frame[] = {0, -127};
     audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 0);
+    audioSink->UpdateAmplitude();
     float amplitude = 0.0f;
     amplitude = audioSink->GetMaxAmplitude();
     ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
@@ -1083,6 +1111,7 @@ HWTEST(TestAudioSink, audio_sink_CheckUpdateState_003, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     int16_t frame[] = {0, -32767};
     audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 1);
+    audioSink->UpdateAmplitude();
     float amplitude = 0.0f;
     amplitude = audioSink->GetMaxAmplitude();
     ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
@@ -1094,6 +1123,7 @@ HWTEST(TestAudioSink, audio_sink_CheckUpdateState_004, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     int16_t frame[] = {0, 32767};
     audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 1);
+    audioSink->UpdateAmplitude();
     float amplitude = 0.0f;
     amplitude = audioSink->GetMaxAmplitude();
     ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
@@ -1105,6 +1135,7 @@ HWTEST(TestAudioSink, audio_sink_CheckUpdateState_005, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     int8_t frame[] = {0, 0, 0, 1, 0, 0x80};
     audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 2);
+    audioSink->UpdateAmplitude();
     float amplitude = 0.0f;
     amplitude = audioSink->GetMaxAmplitude();
     ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
@@ -1116,6 +1147,7 @@ HWTEST(TestAudioSink, audio_sink_CheckUpdateState_006, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     int8_t frame[] = {0, 0, 0, 0xff, 0xff, 0x7f};
     audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 2);
+    audioSink->UpdateAmplitude();
     float amplitude = 0.0f;
     amplitude = audioSink->GetMaxAmplitude();
     ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
@@ -1127,6 +1159,7 @@ HWTEST(TestAudioSink, audio_sink_CheckUpdateState_007, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     int32_t frame[] = {0, -2147483647};
     audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 3);
+    audioSink->UpdateAmplitude();
     float amplitude = 0.0f;
     amplitude = audioSink->GetMaxAmplitude();
     ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
@@ -1138,6 +1171,7 @@ HWTEST(TestAudioSink, audio_sink_CheckUpdateState_008, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     int32_t frame[] = {0, 2147483647};
     audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), 3);
+    audioSink->UpdateAmplitude();
     float amplitude = 0.0f;
     amplitude = audioSink->GetMaxAmplitude();
     ASSERT_EQ(true, fabs(amplitude - 1.0) <= 1e-6);
@@ -1149,6 +1183,7 @@ HWTEST(TestAudioSink, audio_sink_CheckUpdateState_009, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     int32_t frame[] = {0, 2147483647};
     audioSink->CheckUpdateState(reinterpret_cast<char*>(frame), sizeof(frame), -1);
+    audioSink->UpdateAmplitude();
     float amplitude = 0.0f;
     amplitude = audioSink->GetMaxAmplitude();
     ASSERT_EQ(true, fabs(amplitude) <= 1e-6);

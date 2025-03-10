@@ -35,9 +35,13 @@ constexpr unsigned int SLEEP_TIME = 1;
 constexpr uint32_t AUDIO_BUFFERING_FLAG = 1;
 constexpr uint32_t VIDEO_BUFFERING_FLAG = 2;
 
-DashMediaDownloader::DashMediaDownloader() noexcept
+DashMediaDownloader::DashMediaDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
-    mpdDownloader_ = std::make_shared<DashMpdDownloader>();
+    if (sourceLoader != nullptr) {
+        MEDIA_LOG_I("DashMediaDownloader app download.");
+        sourceLoader_ = sourceLoader;
+    }
+    mpdDownloader_ = std::make_shared<DashMpdDownloader>(sourceLoader);
     mpdDownloader_->SetMpdCallback(this);
 }
 
@@ -452,7 +456,7 @@ void DashMediaDownloader::OpenInitSegment(
     const std::shared_ptr<DashStreamDescription> &streamDesc, const std::shared_ptr<DashSegment> &seg)
 {
     std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
-        callback_, streamDesc->streamId_, streamDesc->type_, expectDuration_);
+        callback_, streamDesc->streamId_, streamDesc->type_, expectDuration_, sourceLoader_);
     if (statusCallback_ != nullptr) {
         downloader->SetStatusCallback(statusCallback_);
     }

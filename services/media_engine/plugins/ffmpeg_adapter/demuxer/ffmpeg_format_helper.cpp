@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <regex>
 #include <iconv.h>
+#include <sstream>
 #include "ffmpeg_converter.h"
 #include "meta/meta_key.h"
 #include "meta/media_types.h"
@@ -83,8 +84,10 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AMR_WB, MimeType::AUDIO_AMR_WB},
     {AV_CODEC_ID_H264, MimeType::VIDEO_AVC},
     {AV_CODEC_ID_MPEG4, MimeType::VIDEO_MPEG4},
+#ifdef SUPPORT_CODEC_RV
     {AV_CODEC_ID_RV30, MimeType::VIDEO_RV30},
     {AV_CODEC_ID_RV40, MimeType::VIDEO_RV40},
+#endif
     {AV_CODEC_ID_MJPEG, MimeType::IMAGE_JPG},
     {AV_CODEC_ID_PNG, MimeType::IMAGE_PNG},
     {AV_CODEC_ID_BMP, MimeType::IMAGE_BMP},
@@ -98,8 +101,12 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
+#ifdef SUPPORT_CODEC_COOK
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
+#endif
+#ifdef SUPPORT_CODEC_AC3
     {AV_CODEC_ID_AC3, MimeType::AUDIO_AC3},
+#endif
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
     {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
     {AV_CODEC_ID_FFMETADATA, MimeType::TIMED_METADATA}
@@ -160,16 +167,51 @@ std::vector<TagType> g_supportSourceFormat = {
     Tag::MEDIA_CREATION_TIME
 };
 
-std::string ToLower(const std::string& str)
+std::vector<std::string> SplitByChar(const char* str, const char* pattern)
 {
-    std::string res;
-    for (char c : str) {
-        if (c == '_') {
-            res += c;
-        } else {
-            res += std::tolower(c);
+    FALSE_RETURN_V_NOLOG(str != nullptr && pattern != nullptr, {});
+    std::string tempStr(str);
+    std::stringstream strStream(tempStr);
+    std::vector<std::string> resultVec;
+    std::string item;
+    while (std::getline(strStream, item, *pattern)) {
+        if (!item.empty()) {
+            resultVec.push_back(item);
         }
     }
+    MEDIA_LOG_D("Split by [" PUBLIC_LOG_S "], get " PUBLIC_LOG_ZU " string", pattern, resultVec.size());
+    return resultVec;
+}
+
+std::string RemoveDuplication(const std::string origin)
+{
+    FALSE_RETURN_V_NOLOG(origin.find(";") != std::string::npos, origin);
+    std::vector<std::string> subStrings = SplitByChar(origin.c_str(), ";");
+    FALSE_RETURN_V_NOLOG(subStrings.size() > 1, origin);
+
+    std::string outString;
+    std::vector<std::string> uniqueSubStrings;
+    for (auto str : subStrings) {
+        if (std::count(uniqueSubStrings.begin(), uniqueSubStrings.end(), str) == 0) {
+            uniqueSubStrings.push_back(str);
+        }
+    }
+    for (size_t idx = 0; idx < uniqueSubStrings.size(); idx++) {
+        outString += uniqueSubStrings[idx];
+        if (idx < uniqueSubStrings.size() - 1) {
+            outString += ";";
+        }
+    }
+    MEDIA_LOG_D("[%{public}s]->[%{public}s]", origin.c_str(), outString.c_str());
+    return outString;
+}
+
+std::string ToLower(const std::string& str)
+{
+    std::string res = str;
+    std::transform(res.begin(), res.end(), res.begin(), [](unsigned char c) {
+        return (c == '_') ? c : std::tolower(c);
+    });
     MEDIA_LOG_D("[" PUBLIC_LOG_S "] -> [" PUBLIC_LOG_S "]", str.c_str(), res.c_str());
     return res;
 }
@@ -202,7 +244,7 @@ bool IsUTF8(const std::string &data)
 {
     int32_t nBytes = 0;
     for (size_t i = 0; i < data.size(); ++i) {
-        if (!IsUTF8Char(static_cast<char>(data[i]), nBytes)) {
+        if (!IsUTF8Char(data[i], nBytes)) {
             MEDIA_LOG_D("Detect char not in uft8");
             return false;
         }
@@ -219,7 +261,7 @@ std::string ConvertGBKToUTF8(const std::string &strGbk)
     const std::string fromCharset = "gb18030";
     const std::string toCharset = "utf-8";
     iconv_t cd = iconv_open(toCharset.c_str(), fromCharset.c_str());
-    if (cd == reinterpret_cast<iconv_t>(-1)) {
+    if (cd == reinterpret_cast<iconv_t>(-1)) { // iconv_t is a void* type
         MEDIA_LOG_D("Call iconv_open failed");
         return "";
     }
@@ -238,7 +280,7 @@ std::string ConvertGBKToUTF8(const std::string &strGbk)
         return "";
     }
     char* outBufBack = outBuf;
-    if (iconv(cd, &inBuf, &inLen, &outBuf, &outLen) == static_cast<size_t>(-1)) {
+    if (iconv(cd, &inBuf, &inLen, &outBuf, &outLen) == static_cast<size_t>(-1)) { // iconv return SIZE_MAX when failed
         MEDIA_LOG_D("Call iconv failed");
         delete[] outBufBack;
         outBufBack = nullptr;
@@ -980,7 +1022,7 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
 void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Meta &format)
 {
     AVDictionaryEntry *valPtr = nullptr;
-    while ((valPtr = av_dict_get(metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)))  {
+    while ((valPtr = av_dict_get(metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)) != nullptr) {
         std::string tempKey = ToLower(std::string(valPtr->key));
         if (tempKey.find("moov_level_meta_key_") == 0) {
             MEDIA_LOG_D("UserMeta:" PUBLIC_LOG_S, valPtr->key);
@@ -990,14 +1032,17 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Met
                                    std::string(valPtr->value + VALUE_PREFIX_LEN));
                 }
             continue;
-        } else if (g_formatToString.count(tempKey) <= 0) {
+        }
+        if (g_formatToString.count(tempKey) <= 0) {
             MEDIA_LOG_D("UnsupportMeta:" PUBLIC_LOG_S, valPtr->key);
             continue;
         }
         MEDIA_LOG_D("SupportMeta:" PUBLIC_LOG_S, valPtr->key);
-        format.SetData(g_formatToString[tempKey], std::string(valPtr->value));
-        if (!IsUTF8(valPtr->value) && IsGBK(valPtr->value)) {
-            std::string resultStr = ConvertGBKToUTF8(std::string(valPtr->value));
+        // ffmpeg use ';' to contact all single value in vorbis-comment, need to remove duplicates
+        std::string value = RemoveDuplication(std::string(valPtr->value));
+        format.SetData(g_formatToString[tempKey], value);
+        if (!IsUTF8(value.c_str()) && IsGBK(value.c_str())) {
+            std::string resultStr = ConvertGBKToUTF8(value);
             if (resultStr.length() > 0) {
                 format.SetData(g_formatToString[tempKey], resultStr);
             } else {

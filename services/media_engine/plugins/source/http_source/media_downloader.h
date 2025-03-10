@@ -22,6 +22,7 @@
 #include "plugin/source_plugin.h"
 #include "download/downloader.h"
 #include "common/media_source.h"
+#include "download/media_source_loading_request.h"
 
 namespace OHOS {
 namespace Media {
@@ -152,7 +153,7 @@ public:
      
     virtual void SetIsReportedErrorCode() {}
     
-    virtual bool GetReadTimeOut()
+    virtual bool GetReadTimeOut(bool isDelay)
     {
         return false;
     }
@@ -163,6 +164,21 @@ public:
     }
 
     virtual void NotifyInitSuccess() {}
+
+    virtual void SetStartPts(int64_t startPts)
+    {
+        MEDIA_LOG_W("SetStartPts is unimplemented.");
+    }
+
+    virtual void SetMediaStreams(const MediaStreamList& mediaStreams)
+    {
+        MEDIA_LOG_W("SetMediaStreams is unimplemented.");
+    }
+    virtual uint64_t GetCachedDuration()
+    {
+        return 0;
+    }
+    virtual void RestartAndClearBuffer() {}
 };
 }
 }
