@@ -375,7 +375,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_invalid_maxwidth, TestSize.Lev
     ASSERT_TRUE(err == AVCS_ERR_OK);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 10001); // outof the width
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 10001); // out of the width
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
@@ -427,7 +427,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_with_invalid_maxheight, TestSize.L
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 10001); // outof the height
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 10001); // out of the height
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
     int32_t ret = testObj->Configure(format);
