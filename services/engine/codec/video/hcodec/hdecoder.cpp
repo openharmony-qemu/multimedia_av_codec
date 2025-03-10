@@ -984,13 +984,9 @@ void HDecoder::DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator n
 int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
 {
     info.lastFlushTime = GetNowUs();
-    if (std::abs(lastFlushRate_ - codecRate_) > std::numeric_limits<float>::epsilon()) {
-        sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
-        extraData->ExtraSet("VIDEO_RATE", codecRate_);
-        info.surfaceBuffer->SetExtraData(extraData);
-        lastFlushRate_ = codecRate_;
-        HLOGI("flush video rate(%d)", static_cast<int32_t>(codecRate_));
-    }
+    sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
+    extraData->ExtraSet("VIDEO_RATE", codecRate_);
+    info.surfaceBuffer->SetExtraData(extraData);
     BufferFlushConfig cfg {
         .damage = {.x = 0, .y = 0, .w = info.surfaceBuffer->GetWidth(), .h = info.surfaceBuffer->GetHeight() },
         .timestamp = info.omxBuffer->pts,
