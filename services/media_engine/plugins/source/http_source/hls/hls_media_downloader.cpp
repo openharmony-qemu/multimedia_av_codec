@@ -1082,7 +1082,6 @@ void HlsMediaDownloader::DownloadReport()
                 bufferDuration = bufferedDuration_ / CURRENT_BIT_RATE;
             }
             recordBuff->bufferDuring = bufferDuration;
-            recordBuff->next = recordData_;
             recordData_ = recordBuff;
             recordCount_++;
         }
