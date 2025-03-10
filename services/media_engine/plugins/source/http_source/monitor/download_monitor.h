@@ -85,6 +85,7 @@ public:
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
     uint64_t GetCachedDuration() override;
     void RestartAndClearBuffer() override;
+    bool IsFlvLive() override;
 
 private:
     int64_t HttpMonitorLoop();

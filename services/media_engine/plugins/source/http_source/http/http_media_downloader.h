@@ -91,6 +91,7 @@ public:
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
     uint64_t GetCachedDuration() override;
     void RestartAndClearBuffer() override;
+    bool IsFlvLive() override;
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     uint32_t SaveCacheBufferData(uint8_t* data, uint32_t len, bool notBlock);

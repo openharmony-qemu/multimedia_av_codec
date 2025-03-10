@@ -161,6 +161,7 @@ public:
     Status RebootPlugin();
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
+    bool IsFlvLive();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

@@ -179,6 +179,10 @@ public:
         return 0;
     }
     virtual void RestartAndClearBuffer() {}
+    virtual bool IsFlvLive()
+    {
+        return false;
+    }
 };
 }
 }
