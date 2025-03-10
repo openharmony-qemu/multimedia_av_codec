@@ -528,6 +528,12 @@ void HttpSourcePlugin::RestartAndClearBuffer()
     FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
     return downloader_->RestartAndClearBuffer();
 }
+
+bool HttpSourcePlugin::IsFlvLive()
+{
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
+    return downloader_->IsFlvLive();
+}
 }
 }
 }

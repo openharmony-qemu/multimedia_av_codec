@@ -579,14 +579,20 @@ bool Source::IsLocalFd()
 
 uint64_t Source::GetCachedDuration()
 {
-    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, 0, "source_ is nullptr");
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, 0, "plugin_ is nullptr");
     return plugin_->GetCachedDuration();
 }
 
 void Source::RestartAndClearBuffer()
 {
-    FALSE_RETURN_MSG(plugin_ != nullptr, "source_ is nullptr");
+    FALSE_RETURN_MSG(plugin_ != nullptr, "plugin_ is nullptr");
     return plugin_->RestartAndClearBuffer();
+}
+
+bool Source::IsFlvLive()
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
+    return plugin_->IsFlvLive();
 }
 } // namespace Media
 } // namespace OHOS

@@ -1761,18 +1761,27 @@ void HttpMediaDownloader::RestartAndClearBuffer()
     FALSE_RETURN_MSG(ringBuffer_ != nullptr || cacheMediaBuffer_ != nullptr, "buffer is nullptr");
     MEDIA_LOG_I("HTTP RestartAndClearBuffer in.");
     isAllowResume_.store(true);
-    downloader_->Pause();
     if (isRingBuffer_) {
         ringBuffer_->SetActive(false);
+        downloader_->Pause();
         ringBuffer_->SetActive(true);
         MEDIA_LOG_I("HTTP clear ringbuffer done.");
     } else {
+        downloader_->Pause();
         cacheMediaBuffer_->Clear();
         MEDIA_LOG_I("HTTP clear cachebuffer done.");
     }
     downloader_->Resume();
     isAllowResume_.store(true);
     MEDIA_LOG_I("HTTP RestartAndClearBuffer out.");
+}
+
+bool HttpMediaDownloader::IsFlvLive()
+{
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
+    FALSE_RETURN_V_MSG_E(downloadRequest_ != nullptr, false, "downloadRequest_ is nullptr");
+    size_t fileContenLen = downloadRequest_->GetFileContentLength();
+    return fileContenLen == 0 && isRingBuffer_;
 }
 }
 }

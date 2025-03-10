@@ -124,6 +124,7 @@ public:
     Status RebootPlugin();
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
+    bool IsFlvLive();
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

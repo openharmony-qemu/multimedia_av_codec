@@ -927,6 +927,12 @@ void DemuxerFilter::RestartAndClearBuffer()
     FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
     return demuxer_->RestartAndClearBuffer();
 }
+
+bool DemuxerFilter::IsFlvLive()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->IsFlvLive();
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

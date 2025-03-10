@@ -2988,5 +2988,11 @@ void MediaDemuxer::RestartAndClearBuffer()
     FALSE_RETURN_MSG(source_ != nullptr, "source_ is nullptr");
     return source_->RestartAndClearBuffer();
 }
+
+bool MediaDemuxer::IsFlvLive()
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
+    return source_->IsFlvLive();
+}
 } // namespace Media
 } // namespace OHOS
