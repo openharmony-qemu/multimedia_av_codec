@@ -399,7 +399,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_invalid_pixelfmt, TestSize.Lev
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::UNKNOWN));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
     int32_t ret = testObj->Configure(format);
-   ASSERT_NE(AVCS_ERR_OK, ret);
+    ASSERT_NE(AVCS_ERR_OK, ret);
 }
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_invalid_height, TestSize.Level1)
