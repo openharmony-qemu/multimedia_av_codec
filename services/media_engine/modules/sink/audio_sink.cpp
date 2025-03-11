@@ -75,7 +75,7 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
     FALSE_RETURN_MSG(ret == Status::OK, "GetBufferDesc fail, ret=" PUBLIC_LOG_D32, ret);
     bufferDesc.dataLength = 0;
 
-    if (sink->IsInputBufferDataEnough(size)) {
+    if (sink->IsInputBufferDataEnough(size, isAudioVivid)) {
         bool isCopySucess = sink->HandleAudioRenderRequest(static_cast<size_t>(size),
             isAudioVivid, bufferDesc);
         bufferDesc.dataLength = isCopySucess ? bufferDesc.dataLength : 0;
@@ -126,9 +126,19 @@ Status AudioSink::EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc)
     return plugin_->EnqueueBufferDesc(bufferDesc);
 }
 
-bool AudioSink::IsInputBufferDataEnough(int32_t size)
+bool AudioSink::IsInputBufferDataEnough(int32_t size, bool isAudioVivid)
 {
     std::lock_guard<std::mutex> lock(availBufferMutex_);
+    if (!isAudioVivid) {
+        maxCbDataSize_ = std::max(maxCbDataSize_, size);
+    } else {
+        // audioVivid use min(size, availDataSize) as maxDataSize to ensure that audioVivid dont use swapBuffers
+        size_t availDataSize = availDataSize_.load();
+        int32_t availDataSizeInt32 = availDataSize <= static_cast<size_t>(INT32_MAX) ?
+            static_cast<int32_t>(availDataSize): INT32_MAX;
+        maxCbDataSize_ = std::min(size, availDataSizeInt32);
+    }
+    DriveBufferCircle();
     return availDataSize_.load() >= static_cast<size_t>(size) || isEosBuffer_;
 }
 
@@ -405,6 +415,7 @@ Status AudioSink::PrepareInputBufferQueue()
 #ifndef MEDIA_OHOS
     memoryType = MemoryType::VIRTUAL_MEMORY;
 #endif
+    bufferMemoryType_ = memoryType;
     MEDIA_LOG_I("PrepareInputBufferQueue ");
     inputBufferQueue_ = AVBufferQueue::Create(inputBufferSize, memoryType, INPUT_BUFFER_QUEUE_NAME);
     inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
@@ -589,6 +600,7 @@ int32_t AudioSink::GetSampleFormatBytes()
             format = AUDIO_SAMPLE_24_BIT;
             break;
         case AudioSampleFormat::SAMPLE_S32LE:
+        case AudioSampleFormat::SAMPLE_F32LE:
             format = AUDIO_SAMPLE_32_BIT;
             break;
         default:
@@ -664,8 +676,15 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
     std::lock_guard<std::mutex> lock(availBufferMutex_);
     int64_t bufferPts = HST_TIME_NONE;
     do {
-        FALSE_RETURN_V_MSG(!availOutputBuffers_.empty(), false, "buffer queue is empty");
-        auto cacheBuffer = availOutputBuffers_.front();
+        bool isSwapBuffer = false;
+        FALSE_RETURN_V_MSG(!swapOutputBuffers_.empty() || !availOutputBuffers_.empty(), false, "buffer queue is empty");
+        std::shared_ptr<AVBuffer> cacheBuffer;
+        if (!swapOutputBuffers_.empty()) {
+            cacheBuffer = swapOutputBuffers_.front();
+            isSwapBuffer = true;
+        } else {
+            cacheBuffer = availOutputBuffers_.front();
+        }
         if (IsEosBuffer(cacheBuffer)) {
             MEDIA_LOG_I("AudioSink Recv EOS");
             break;
@@ -677,7 +696,7 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
             }
             CalcMaxAmplitude(cacheBuffer);
         }
-        ReleaseChacheBuffer();
+        ReleaseChacheBuffer(isSwapBuffer);
     } while (size > 0 && !isAudioVivid);
     if (bufferPts >= 0) {
         int64_t bufferDuration = CalculateBufferDuration(bufferDesc.dataLength);
@@ -834,8 +853,13 @@ void AudioSink::SyncWriteByRenderInfo()
     }
 }
 
-void AudioSink::ReleaseChacheBuffer()
+void AudioSink::ReleaseChacheBuffer(bool isSwapBuffer)
 {
+    if (isSwapBuffer) {
+        FALSE_RETURN_MSG(!swapOutputBuffers_.empty(), "swapOutputBuffers_ has no buffer");
+        swapOutputBuffers_.pop();
+        return;
+    }
     auto buffer = availOutputBuffers_.front();
     availOutputBuffers_.pop();
     FALSE_RETURN_MSG(buffer != nullptr, "release buffer, but buffer is null");
@@ -867,6 +891,9 @@ void AudioSink::ClearAvailableOutputBuffers()
 {
     FALSE_RETURN(inputBufferQueueConsumer_ != nullptr);
     std::lock_guard<std::mutex> lock(availBufferMutex_);
+    while (!swapOutputBuffers_.empty()) {
+        swapOutputBuffers_.pop();
+    }
     while (!availOutputBuffers_.empty()) {
         ReleaseChacheBuffer();
     }
@@ -895,7 +922,53 @@ void AudioSink::GetAvailableOutputBuffers()
         MEDIA_LOG_D("the pts is " PUBLIC_LOG_D64 " buffer is push", filledInputBuffer->pts_);
         availDataSize_.fetch_add(filledInputBuffer->memory_->GetSize());
     }
+    DriveBufferCircle();
     return;
+}
+
+void AudioSink::DriveBufferCircle()
+{
+    FALSE_RETURN_NOLOG(!isEosBuffer_);
+    FALSE_RETURN_NOLOG(!availOutputBuffers_.empty() && inputBufferQueue_ != nullptr);
+    FALSE_RETURN_NOLOG(availOutputBuffers_.size() >= inputBufferQueue_->GetQueueSize());
+    size_t availDataSize = availDataSize_.load();
+    int32_t availDataSizeInt32 = availDataSize <= static_cast<size_t>(INT32_MAX) ?
+        static_cast<int32_t>(availDataSize): INT32_MAX;
+    FALSE_RETURN_NOLOG(availDataSizeInt32 < maxCbDataSize_);
+    std::shared_ptr<AVBuffer> oldestBuffer = availOutputBuffers_.front();
+    FALSE_RETURN_MSG(oldestBuffer != nullptr && oldestBuffer->memory_->GetSize() > 0, "buffer or memory is nullptr");
+    std::shared_ptr<AVBuffer> swapBuffer = CopyBuffer(oldestBuffer);
+    FALSE_RETURN_MSG(swapBuffer != nullptr, "CopyBuffer failed, swapBuffer is nullptr");
+    availOutputBuffers_.pop();
+    swapOutputBuffers_.push(swapBuffer);
+    FALSE_RETURN_MSG(inputBufferQueueConsumer_ != nullptr, "bufferQueue consumer is nullptr");
+    inputBufferQueueConsumer_->ReleaseBuffer(oldestBuffer);
+}
+
+std::shared_ptr<AVBuffer> AudioSink::CopyBuffer(const std::shared_ptr<AVBuffer> buffer)
+{
+    FALSE_RETURN_V_MSG_E(buffer != nullptr && buffer->memory_->GetSize() > 0, nullptr, "buffer or memory is nullptr");
+    std::shared_ptr<Meta> meta = buffer->meta_;
+    std::vector<uint8_t> metaData;
+    FALSE_RETURN_V_MSG_W(!meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData), nullptr,
+        "copy buffer not support for audiovivid");
+    AVBufferConfig avBufferConfig;
+    avBufferConfig.capacity = static_cast<int32_t>(buffer->memory_->GetSize());
+    avBufferConfig.memoryType = bufferMemoryType_;
+    std::shared_ptr<AVBuffer> swapBuffer = AVBuffer::CreateAVBuffer(avBufferConfig);
+    FALSE_RETURN_V_MSG_E(swapBuffer != nullptr && swapBuffer->memory_ != nullptr, nullptr, "create swapBuffer failed");
+    swapBuffer->pts_ = buffer->pts_;
+    swapBuffer->dts_ = buffer->dts_;
+    swapBuffer->duration_ = buffer->duration_;
+    swapBuffer->flag_ = buffer->flag_;
+    FALSE_RETURN_V_MSG_E(swapBuffer->memory_->GetCapacity() >= buffer->memory_->GetSize(), nullptr, "no enough memory");
+    errno_t res = memcpy_s(swapBuffer->memory_->GetAddr(),
+        swapBuffer->memory_->GetCapacity(),
+        buffer->memory_->GetAddr(),
+        buffer->memory_->GetSize());
+    FALSE_RETURN_V_MSG_E(res == EOK, nullptr, "copy data failed");
+    swapBuffer->memory_->SetSize(buffer->memory_->GetSize());
+    return swapBuffer;
 }
 
 void AudioSink::WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer)
