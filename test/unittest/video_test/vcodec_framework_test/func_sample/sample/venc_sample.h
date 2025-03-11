@@ -23,7 +23,7 @@
 #include <string>
 #include <thread>
 #include "securec.h"
-#include "surface/window.h"
+#include "window.h"
 #include "vcodec_mock.h"
 
 namespace OHOS {

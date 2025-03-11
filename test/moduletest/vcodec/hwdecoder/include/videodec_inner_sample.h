@@ -35,7 +35,7 @@
 #include "media_description.h"
 #include "av_common.h"
 #include "avcodec_common.h"
-#include "surface/window.h"
+#include "window.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

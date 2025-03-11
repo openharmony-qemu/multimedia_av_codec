@@ -13,18 +13,18 @@
  * limitations under the License.
  */
 
+#include "codec_server_coverage_unit_test.h"
 #include <fcntl.h>
 #include <iostream>
 #include <memory>
 #include <vector>
 #include "avcodec_errors.h"
 #include "codeclist_core.h"
-#include "codec_server_coverage_unit_test.h"
+#include "media_description.h"
 #include "meta/meta_key.h"
 #include "ui/rs_surface_node.h"
+#include "window_manager.h"
 #include "window_option.h"
-#include "wm/window.h"
-#include "media_description.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif

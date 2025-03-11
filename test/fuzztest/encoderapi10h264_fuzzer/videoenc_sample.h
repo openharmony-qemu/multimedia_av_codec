@@ -32,7 +32,7 @@
 #include "native_avmemory.h"
 #include "native_avformat.h"
 #include "native_averrors.h"
-#include "surface/window.h"
+#include "window.h"
 #include "media_description.h"
 #include "av_common.h"
 #include "external_window.h"

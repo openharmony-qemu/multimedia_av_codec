@@ -32,7 +32,7 @@
 #include "buffer/avsharedmemory.h"
 #include "meta/format.h"
 #include "avcodec_errors.h"
-#include "surface/window.h"
+#include "window.h"
 #include "media_description.h"
 #include "av_common.h"
 #include "avcodec_common.h"

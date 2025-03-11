@@ -15,11 +15,11 @@
 
 #include "vdec_sample.h"
 #include <gtest/gtest.h>
-#include "../../../../../../window/window_manager/interfaces/innerkits/wm/window.h"
+#include "window_manager.h"
 #include "common/native_mfmagic.h"
 #include "native_avcapability.h"
 #include "native_avmagic.h"
-#include "surface/window.h"
+#include "window.h"
 #include "surface_buffer.h"
 #include "ui/rs_surface_node.h"
 #include "window_option.h"

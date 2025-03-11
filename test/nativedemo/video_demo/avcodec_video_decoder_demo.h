@@ -23,7 +23,7 @@
 #include <thread>
 #include <string>
 
-#include "surface/window.h"
+#include "window.h"
 #include "nocopyable.h"
 #include "native_avcodec_videodecoder.h"
 #include "avcodec_video_decoder_inner_demo.h"

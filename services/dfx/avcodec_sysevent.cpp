@@ -19,6 +19,7 @@
 #include "securec.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include "hisysevent.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecDFX"};

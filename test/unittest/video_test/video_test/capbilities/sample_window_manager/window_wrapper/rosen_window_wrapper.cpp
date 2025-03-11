@@ -14,7 +14,7 @@
  */
 
 #include "rosen_window_wrapper.h"
-#include "surface/window.h"
+#include "window.h"
 #include "surface.h"
 #include "ui/rs_surface_node.h"
 #include "window_option.h"

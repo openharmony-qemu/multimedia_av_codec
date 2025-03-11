@@ -20,8 +20,8 @@
 #include "securec.h"
 
 #include "ui/rs_surface_node.h"
+#include "window_manager.h"
 #include "window_option.h"
-#include "wm/window.h"
 
 #include "av_common.h"
 #include "avcodec_codec_name.h"

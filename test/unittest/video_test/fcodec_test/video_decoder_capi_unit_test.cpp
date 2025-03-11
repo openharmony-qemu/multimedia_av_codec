@@ -32,7 +32,7 @@
 #include "native_avcodec_videodecoder.h"
 #include "native_avformat.h"
 #include "securec.h"
-#include "surface/window.h"
+#include "window.h"
 #include "unittest_log.h"
 
 using namespace std;

@@ -30,7 +30,7 @@
 #include "media_description.h"
 #include "native_avcodec_base.h"
 #include "nocopyable.h"
-#include "surface/window.h"
+#include "window.h"
 #include "unittest_log.h"
 
 namespace OHOS {

@@ -20,7 +20,6 @@ module_output_path = "av_codec/moduletest"
 hevcswdecoder_moduletest_native_include_dirs = [
   "./include",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
-  "$MEDIA_ROOT_DIR/../../../third_party/json/include",
 ]
 
 hevcswdecoder_moduletest_cflags = [
@@ -76,6 +75,7 @@ ohos_unittest("hevcswdecoder_native_module_test") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "json:nlohmann_json_static",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "openssl:libcrypto_shared",

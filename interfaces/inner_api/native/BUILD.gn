@@ -291,7 +291,6 @@ ohos_shared_library("av_codec_client") {
     "drivers_interface_codec:libcodec_proxy_3.0",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "hisysevent:libhisysevent",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "qos_manager:qos",

@@ -33,7 +33,7 @@
 #include "buffer/avsharedmemory.h"
 #include "nocopyable.h"
 #include "securec.h"
-#include "surface/window.h"
+#include "window.h"
 #include "media_description.h"
 #include "av_common.h"
 #include "avcodec_common.h"
