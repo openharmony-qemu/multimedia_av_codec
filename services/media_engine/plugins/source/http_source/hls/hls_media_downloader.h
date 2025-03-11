@@ -253,7 +253,6 @@ private:
     struct RecordData {
         double downloadRate {0};
         uint64_t bufferDuring {0};
-        std::shared_ptr<RecordData> next {nullptr};
     };
     std::shared_ptr<RecordData> recordData_ {nullptr};
     std::map<std::string, std::string> httpHeader_ {};
