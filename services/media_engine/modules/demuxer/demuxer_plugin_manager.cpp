@@ -174,7 +174,7 @@ void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
         if (apiVersion_ >= API_VERSION_16) {
             format.Set<Tag::VIDEO_IS_HDR_VIVID>(
                 static_cast<uint32_t>(info.videoType == VideoType::VIDEO_TYPE_HDR_VIVID));
-                format.Set<Tag::MIME_TYPE>("video/unknown");
+            format.Set<Tag::MIME_TYPE>("video/unknown");
         } else {
             format.Set<Tag::MIME_TYPE>("video/xxx");
         }
