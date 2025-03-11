@@ -950,7 +950,7 @@ std::shared_ptr<AVBuffer> AudioSink::CopyBuffer(const std::shared_ptr<AVBuffer> 
     FALSE_RETURN_V_MSG_E(buffer != nullptr && buffer->memory_->GetSize() > 0, nullptr, "buffer or memory is nullptr");
     std::shared_ptr<Meta> meta = buffer->meta_;
     std::vector<uint8_t> metaData;
-    FALSE_RETURN_V_MSG_W(!meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData), nullptr,
+    FALSE_RETURN_V_MSG_W(meta == nullptr || !meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData), nullptr,
         "copy buffer not support for audiovivid");
     AVBufferConfig avBufferConfig;
     avBufferConfig.capacity = static_cast<int32_t>(buffer->memory_->GetSize());
