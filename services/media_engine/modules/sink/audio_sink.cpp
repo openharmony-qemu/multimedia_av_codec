@@ -696,7 +696,7 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
             }
             CalcMaxAmplitude(cacheBuffer);
         }
-        ReleaseChacheBuffer(isSwapBuffer);
+        ReleaseCacheBuffer(isSwapBuffer);
     } while (size > 0 && !isAudioVivid);
     if (bufferPts >= 0) {
         int64_t bufferDuration = CalculateBufferDuration(bufferDesc.dataLength);
@@ -853,7 +853,7 @@ void AudioSink::SyncWriteByRenderInfo()
     }
 }
 
-void AudioSink::ReleaseChacheBuffer(bool isSwapBuffer)
+void AudioSink::ReleaseCacheBuffer(bool isSwapBuffer)
 {
     if (isSwapBuffer) {
         FALSE_RETURN_MSG(!swapOutputBuffers_.empty(), "swapOutputBuffers_ has no buffer");
@@ -895,7 +895,7 @@ void AudioSink::ClearAvailableOutputBuffers()
         swapOutputBuffers_.pop();
     }
     while (!availOutputBuffers_.empty()) {
-        ReleaseChacheBuffer();
+        ReleaseCacheBuffer();
     }
 }
 

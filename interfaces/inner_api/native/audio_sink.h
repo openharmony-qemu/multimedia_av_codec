@@ -101,7 +101,7 @@ public:
     bool IsBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize);
     bool IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
         size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts);
-    void ReleaseChacheBuffer(bool isSwapBuffer = false);
+    void ReleaseCacheBuffer(bool isSwapBuffer = false);
     int64_t CalculateBufferDuration(int64_t writeDataSize);
     void WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     void ResetInfo();
