@@ -147,8 +147,10 @@ void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
         format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(info.bitRate));
         if (apiVersion_ >= API_VERSION_16) {
             format.Set<Tag::MEDIA_LANGUAGE>(info.lang);
+            format.Set<Tag::MIME_TYPE>("audio/unknown");
+        } else {
+            format.Set<Tag::MIME_TYPE>("audio/xxx");
         }
-        format.Set<Tag::MIME_TYPE>("audio/xxx");
         streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_AUDIO>(true);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
@@ -172,8 +174,10 @@ void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
         if (apiVersion_ >= API_VERSION_16) {
             format.Set<Tag::VIDEO_IS_HDR_VIVID>(
                 static_cast<uint32_t>(info.videoType == VideoType::VIDEO_TYPE_HDR_VIVID));
+                format.Set<Tag::MIME_TYPE>("video/unknown");
+        } else {
+            format.Set<Tag::MIME_TYPE>("video/xxx");
         }
-        format.Set<Tag::MIME_TYPE>("video/xxx");
         streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_VIDEO>(true);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
