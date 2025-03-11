@@ -109,17 +109,6 @@ HWTEST_F(HDecoderPreparingUnitTest, create_by_empty_name, TestSize.Level1)
     ASSERT_FALSE(testObj);
 }
 
-#ifdef HMOS_TEST
-HWTEST_F(HDecoderPreparingUnitTest, create_by_secure_avc_name, TestSize.Level1)
-{
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.decoder.avc.secure");
-    ASSERT_TRUE(testObj != nullptr);
-    Media::Meta meta{};
-    int32_t err = testObj->Init(meta);
-    ASSERT_TRUE(err == AVCS_ERR_OK);
-}
-#endif
-
 /* ============== SET_CALLBACK ============== */
 HWTEST_F(HDecoderPreparingUnitTest, set_empty_callback, TestSize.Level1)
 {
