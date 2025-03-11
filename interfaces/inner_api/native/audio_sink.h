@@ -90,7 +90,7 @@ public:
     bool GetSyncCenterClockTime(int64_t &clockTime);
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
-    bool IsInputBufferDataEnough(int32_t size);
+    bool IsInputBufferDataEnough(int32_t size, bool isAudioVivid);
     bool CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
     Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc);
     Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc);
@@ -101,7 +101,7 @@ public:
     bool IsBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cacheBufferSize);
     bool IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
         size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts);
-    void ReleaseChacheBuffer();
+    void ReleaseCacheBuffer(bool isSwapBuffer = false);
     int64_t CalculateBufferDuration(int64_t writeDataSize);
     void WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     void ResetInfo();
@@ -138,6 +138,8 @@ private:
     Status SetAudioSinkPluginParameters();
     void GetAvailableOutputBuffers();
     void ClearAvailableOutputBuffers();
+    void DriveBufferCircle();
+    std::shared_ptr<AVBuffer> CopyBuffer(const std::shared_ptr<AVBuffer> buffer);
 
     class UnderrunDetector {
     public:
@@ -286,6 +288,9 @@ private:
             int64_t compensatePTS_ {0};
     };
     std::unique_ptr<AudioDataSynchroizer> innerSynchroizer_ = std::make_unique<AudioDataSynchroizer>();
+    MemoryType bufferMemoryType_ {MemoryType::UNKNOWN_MEMORY};
+    int32_t maxCbDataSize_ {0};
+    std::queue<std::shared_ptr<AVBuffer>> swapOutputBuffers_ {};
 };
 }
 }
