@@ -1121,6 +1121,14 @@ int64_t AudioServerSinkPlugin::GetWriteDurationMs()
     writeDuration_ = 0;
     return writeDuration;
 }
+ 
+bool AudioServerSinkPlugin::IsOffloading()
+{
+    FALSE_RETURN_V(audioRenderer_ != nullptr, false);
+    bool ret = audioRenderer_->IsOffloadEnable();
+    MEDIA_LOG_I("IsOffloading %{public}d", ret);
+    return ret;
+}
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS
