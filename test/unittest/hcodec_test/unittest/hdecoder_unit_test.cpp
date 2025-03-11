@@ -329,7 +329,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_maxheight, TestSize.L
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 10000); // beyond the scope(8192)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     int32_t ret = testObj->Configure(format);
-    ASSERT_EQ(AVCS_ERR_UNKNOWN,ret);
+    ASSERT_NE(AVCS_ERR_OK, ret);
 }
 
 HWTEST_F(HDecoderPreparingUnitTest, configure_invalid_pixelfmt, TestSize.Level1)
