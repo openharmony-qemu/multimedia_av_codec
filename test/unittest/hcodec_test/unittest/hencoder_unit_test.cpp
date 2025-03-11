@@ -366,7 +366,6 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_invalid_width, TestSize.Level1
     ASSERT_NE(AVCS_ERR_OK, ret);
 }
 
-#ifdef HMOS_TEST
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_invalid_maxwidth, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
@@ -383,7 +382,6 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_invalid_maxwidth, TestSize.Lev
     int32_t ret = testObj->Configure(format);
     ASSERT_NE(AVCS_ERR_OK, ret);
 }
-#endif
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_invalid_pixelfmt, TestSize.Level1)
 {
@@ -419,7 +417,6 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_invalid_height, TestSize.Level
     ASSERT_NE(AVCS_ERR_OK, ret);
 }
 
-#ifdef HMOS_TEST
 HWTEST_F(HEncoderPreparingUnitTest, configure_with_invalid_maxheight, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
@@ -436,7 +433,6 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_with_invalid_maxheight, TestSize.L
     int32_t ret = testObj->Configure(format);
     ASSERT_NE(AVCS_ERR_OK, ret);
 }
-#endif
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_invalid_color_primaries1, TestSize.Level1)
 {
