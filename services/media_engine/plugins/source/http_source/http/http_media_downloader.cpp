@@ -1630,7 +1630,9 @@ bool HttpMediaDownloader::IsNeedBufferForPlaying()
         callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
                             "buffer for playing"});
         isTimeoutErrorNotified_.store(true);
+        AutoLock lk(bufferingEndMutex_);
         isBuffering_.store(false);
+        bufferingEndCond_.NotifyAll();
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;
         return false;
@@ -1638,7 +1640,9 @@ bool HttpMediaDownloader::IsNeedBufferForPlaying()
     if (GetCurrentBufferSize() >= waterlineForPlaying_ || HandleBreak()) {
         MEDIA_LOG_I("HTTP buffer duration for playing is enough, buffersize: " PUBLIC_LOG_ZU " waterLineAbove: "
                     PUBLIC_LOG_U64, GetCurrentBufferSize(), waterlineForPlaying_);
+        AutoLock lk(bufferingEndMutex_);
         isBuffering_.store(false);
+        bufferingEndCond_.NotifyAll();
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;
         if (isRingBuffer_ && callback_) {
@@ -1687,6 +1691,11 @@ void HttpMediaDownloader::RestartAndClearBuffer()
     FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
     FALSE_RETURN_MSG(ringBuffer_ != nullptr || cacheMediaBuffer_ != nullptr, "buffer is nullptr");
     MEDIA_LOG_I("HTTP RestartAndClearBuffer in.");
+    {
+        AutoLock lk(bufferingEndMutex_);
+        isBuffering_.store(false);
+        bufferingEndCond_.NotifyAll();
+    }
     isAllowResume_.store(true);
     if (isRingBuffer_) {
         ringBuffer_->SetActive(false);
