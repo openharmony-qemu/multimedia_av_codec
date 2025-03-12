@@ -16,7 +16,6 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 module_output_path = "av_codec/moduletest"
-AUDIO_ROOT_DIR = "//foundation/multimedia/audio_framework/"
 
 ohos_unittest("audio_decoder_module_test") {
   sanitize = av_codec_test_sanitize
@@ -55,12 +54,6 @@ ohos_unittest("audio_decoder_module_test") {
     "$MEDIA_ROOT_DIR/services/services/factory",
     "$MEDIA_ROOT_DIR/services/utils/include",
     "$MEDIA_ROOT_DIR/test/nativedemo/include",
-    "$AUDIO_ROOT_DIR/frameworks/native/audiorenderer/include",
-    "$AUDIO_ROOT_DIR/frameworks/native/audiostream/include",
-    "$AUDIO_ROOT_DIR/interfaces/inner_api/native/audiorenderer/include",
-    "$AUDIO_ROOT_DIR/interfaces/inner_api/native/audiocommon/include",
-    "$AUDIO_ROOT_DIR/interfaces/inner_api/native/audiomanager/include",
-    "$AUDIO_ROOT_DIR/services/audio_service/clinet/include",
   ]
 
   cflags = [
@@ -94,6 +87,9 @@ ohos_unittest("audio_decoder_module_test") {
 
   external_deps = [
     "audio_framework:audio_client",
+    "audio_framework:audio_foundation",
+    "audio_framework:audio_manager_client",
+    "audio_framework:audio_policy_common",
     "audio_framework:audio_renderer",
     "bounds_checking_function:libsec_static",
     "c_utils:utils",
