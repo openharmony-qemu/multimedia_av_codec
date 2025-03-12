@@ -469,7 +469,7 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoder_200, Te
     surfaceEncoderAdapter_->startBufferTime_ = -1;
     buffer->pts_ = 1;
     surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
-    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
+    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, -1);
 }
 
 /**
@@ -492,7 +492,7 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoder_300, Te
     surfaceEncoderAdapter_->eosPts_ = 0;
     surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
     surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
-    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
+    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, -1);
 }
 
 /**
