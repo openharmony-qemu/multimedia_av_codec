@@ -141,6 +141,7 @@ protected:
         std::shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
+        bool attached = false;
         bool needDealWithCache = false;
         bool hasSwapedOut = false;
 
