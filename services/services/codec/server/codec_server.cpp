@@ -1273,9 +1273,7 @@ int32_t CodecServer::CreatePostProcessing(const Format& format)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_, AVCS_ERR_UNKNOWN, "Decoder is not found");
     int32_t ret;
     postProcessing_ = PostProcessingType::Create(codecBase_, format, ret);
-    if (postProcessing_) {
-        AVCODEC_LOGI_WITH_TAG("Post processing is configured");
-    }
+    EXPECT_AND_LOGI_WITH_TAG(postProcessing_, "Post processing is configured");
     return ret;
 }
 
@@ -1371,10 +1369,10 @@ int32_t CodecServer::StopPostProcessing()
     if (postProcessingTask_) {
         postProcessingTask_->Stop();
     }
-    AVCODEC_LOGD_WITH_TAG("Post processing task stopped");
     if (postProcessing_) {
         int32_t ret = postProcessing_->Stop();
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "Stop post processing failed");
+        AVCODEC_LOGI_WITH_TAG("Post processing is stopped");
     }
     if (decodedBufferInfoQueue_) {
         decodedBufferInfoQueue_->Clear();
@@ -1386,12 +1384,9 @@ int32_t CodecServer::StopPostProcessing()
         postProcessingOutputBufferInfoQueue_->Clear();
     }
 
-    AVCODEC_LOGD_WITH_TAG("reset frame count");
     decodedFrameCount_.store(0);
     processedFrameCount_.store(0);
     decoderIsEOS_.store(false);
-
-    AVCODEC_LOGI_WITH_TAG("Post processing is stopped");
     return AVCS_ERR_OK;
 }
 
@@ -1435,8 +1430,8 @@ int32_t CodecServer::ResetPostProcessing()
         postProcessing_->Reset();
         CleanPostProcessingResource();
         postProcessing_.reset();
+        AVCODEC_LOGI_WITH_TAG("Post processing is reset");
     }
-    AVCODEC_LOGI_WITH_TAG("Post processing is reset");
     return AVCS_ERR_OK;
 }
 
