@@ -17,7 +17,7 @@
 #define SURFACE_INNER_MOCK_H
 
 #include "common_mock.h"
-#include "wm/window.h"
+#include "window.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -30,7 +30,6 @@ public:
 
 private:
     sptr<Surface> surface_ = nullptr;
-    sptr<Rosen::Window> window_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

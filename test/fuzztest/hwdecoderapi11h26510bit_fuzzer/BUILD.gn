@@ -25,8 +25,6 @@ ohos_fuzztest("HwdecoderAPI11H26510BitFuzzTest") {
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
     "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi11h26510bit_fuzzer/include",
-
-    #"$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
   ]
   cflags = [
     "-g",

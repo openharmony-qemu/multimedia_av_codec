@@ -66,10 +66,6 @@ codec_server_coverage_include_dirs = [
 
   # av_codec_engine_codeclist_mock
   "$av_codec_root_dir/services/engine/codeclist",
-  "$av_codec_root_dir/../../graphic/graphic_2d/utils/sync_fence/export",
-  "$av_codec_root_dir/../../graphic/graphic_surface/surface/include",
-  "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
-  "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/",
 ]
 
@@ -110,11 +106,11 @@ ohos_unittest("codec_server_coverage_unit_test") {
     ":av_codec_engine_codeclist_mock",  # av_codec_engine_codeclist_mock
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
-    "//third_party/googletest:gmock_main",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
     "graphic_2d:libgraphic_utils",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
@@ -166,12 +162,12 @@ ohos_static_library("av_codec_engine_codeclist_mock") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
-    "//third_party/googletest:gmock_main",
   ]
 
   external_deps = [
     "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_3.0",
+    "googletest:gmock_main",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",

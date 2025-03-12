@@ -33,7 +33,7 @@
 #include "native_avmemory.h"
 #include "native_avformat.h"
 #include "native_averrors.h"
-#include "surface/window.h"
+#include "window.h"
 
 namespace OHOS {
 namespace Media {

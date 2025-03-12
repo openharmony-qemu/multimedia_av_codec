@@ -166,7 +166,6 @@ ohos_shared_library("av_codec_service") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "hisysevent:libhisysevent",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

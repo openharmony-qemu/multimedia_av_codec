@@ -23,7 +23,7 @@
 #include "media_description.h"
 #include "securec.h"
 #include "ui/rs_surface_node.h"
-#include "wm/window.h"
+#include "window_manager.h"
 #include "window_option.h"
 #include "avcodec_video_decoder_inner_demo.h"
 

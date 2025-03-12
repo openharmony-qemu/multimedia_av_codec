@@ -45,7 +45,6 @@ config("av_codec_demo_muxer_config") {
     "$av_codec_root_dir/interfaces/plugin",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/media_engine/modules/muxer",
-    "$c_utils_root_dir/base/include",
   ]
 }
 

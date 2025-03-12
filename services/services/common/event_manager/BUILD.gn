@@ -34,8 +34,8 @@ ohos_source_set("event_manager") {
   sources = [ "./event_manager.cpp" ]
 
   deps = [
-    "../../../dfx:av_codec_service_dfx",
-    "../../sa_avcodec:sa_manager",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/services/sa_avcodec:sa_manager",
     "./event_handler/instance_memory_update_event_handler:instance_memory_update_event_handler",
   ]
 

@@ -21,7 +21,6 @@
 #include <thread>
 #include <queue>
 #include <string>
-#include "surface/window.h"
 #include "avcodec_common.h"
 #include "avcodec_video_decoder.h"
 #include "nocopyable.h"

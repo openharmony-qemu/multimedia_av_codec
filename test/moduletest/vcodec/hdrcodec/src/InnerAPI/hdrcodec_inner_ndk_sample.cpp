@@ -18,7 +18,7 @@
 #include <utility>
 #include <memory>
 #include "native_avcodec_base.h"
-#include "surface/window.h"
+#include "window.h"
 #include "native_window.h"
 #include "avcodec_errors.h"
 #include "avcodec_common.h"

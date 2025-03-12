@@ -16,8 +16,8 @@
 #ifndef AVCODEC_SAMPLE_ROSEN_WINDOW_WRAPPER_H
 #define AVCODEC_SAMPLE_ROSEN_WINDOW_WRAPPER_H
 
+#include "window_manager.h"
 #include "window_wrapper.h"
-#include "../../window/window_manager/interfaces/innerkits/wm/window.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

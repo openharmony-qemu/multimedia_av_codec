@@ -32,7 +32,7 @@
 #include "native_avmemory.h"
 #include "nocopyable.h"
 #include "securec.h"
-#include "surface/window.h"
+#include "window.h"
 #include "iconsumer_surface.h"
 namespace OHOS {
 namespace Media {

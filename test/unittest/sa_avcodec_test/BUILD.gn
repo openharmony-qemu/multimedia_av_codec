@@ -75,13 +75,11 @@ ohos_unittest("sa_avcodec_unit_test") {
 
   cflags_cc = cflags
 
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/googletest:gmock_main",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "init:libbegetutil",

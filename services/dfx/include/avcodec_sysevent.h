@@ -19,7 +19,6 @@
 #include <string>
 #include <sys/types.h>
 #include "nocopyable.h"
-#include "hisysevent.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

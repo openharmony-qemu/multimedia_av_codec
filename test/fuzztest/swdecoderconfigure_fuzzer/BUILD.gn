@@ -24,7 +24,6 @@ ohos_fuzztest("SwdecoderConfigureFuzzTest") {
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
     "$MEDIA_ROOT_DIR/test/fuzztest/swdecoderconfigure_fuzzer/include",
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
   ]
   cflags = [
     "-g",

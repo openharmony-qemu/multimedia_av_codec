@@ -22,7 +22,7 @@
 #include "native_buffer.h"
 #include "native_buffer_inner.h"
 #include "native_window.h"
-#include "surface/window.h"
+#include "window.h"
 
 #define PRINT_HILOG
 #define TEST_ID sampleId_
