@@ -42,6 +42,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 constexpr int WAIT_INITIAL_BUFFERING_END_TIME_MS = 3000;
 constexpr int32_t API_VERSION_16 = 16;
+constexpr int32_t API_VERSION_18 = 18;
 }
 
 namespace OHOS {
@@ -148,7 +149,11 @@ void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
         if (apiVersion_ >= API_VERSION_16) {
             format.Set<Tag::MEDIA_LANGUAGE>(info.lang);
         }
-        format.Set<Tag::MIME_TYPE>("audio/xxx");
+        if (apiVersion_ >= API_VERSION_18) {
+            format.Set<Tag::MIME_TYPE>("audio/unknown");
+        } else {
+            format.Set<Tag::MIME_TYPE>("audio/xxx");
+        }
         streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_AUDIO>(true);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
@@ -173,7 +178,11 @@ void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
             format.Set<Tag::VIDEO_IS_HDR_VIVID>(
                 static_cast<uint32_t>(info.videoType == VideoType::VIDEO_TYPE_HDR_VIVID));
         }
-        format.Set<Tag::MIME_TYPE>("video/xxx");
+        if (apiVersion_ >= API_VERSION_18) {
+            format.Set<Tag::MIME_TYPE>("video/unknown");
+        } else {
+            format.Set<Tag::MIME_TYPE>("video/xxx");
+        }
         streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_VIDEO>(true);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
