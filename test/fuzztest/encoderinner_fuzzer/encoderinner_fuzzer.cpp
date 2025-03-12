@@ -37,14 +37,17 @@ bool EncoderInnerFuzzTest(const uint8_t *data, size_t size)
     string gCodecName = "";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(gCodecMime.c_str(), true, HARDWARE);
     if (cap == nullptr) {
+        delete vEncSample;
         return false;
     }
     const char *tmpCodecName = OH_AVCapability_GetName(cap);
     if (strcmp(tmpCodecName, "") == 0) {
+        delete vEncSample;
         return false;
     }
     gCodecName = tmpCodecName;
     if (!vEncSample->GetWaterMarkCapability(gCodecMime)) {
+        delete vEncSample;
         return false;
     }
     BufferRequestConfig bufferConfig = {
