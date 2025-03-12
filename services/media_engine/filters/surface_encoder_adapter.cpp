@@ -548,12 +548,6 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
         MEDIA_LOG_I("Notify encoder eos");
         codecServer_->NotifyEos();
     }
-    if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
-        MEDIA_LOG_I("buffer->pts > stopTime, ready to stop");
-        std::unique_lock<std::mutex> lock(stopMutex_);
-        stopCondition_.notify_all();
-    }
-
     int32_t size = buffer->memory_->GetSize();
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
