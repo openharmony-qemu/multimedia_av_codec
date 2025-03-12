@@ -553,9 +553,6 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.notify_all();
     }
-    if (startBufferTime_ == -1 && buffer->pts_ != 0) {
-        startBufferTime_ = buffer->pts_;
-    }
 
     int32_t size = buffer->memory_->GetSize();
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
@@ -575,16 +572,7 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
     }
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
-    if (isResume_) {
-        const int64_t MS_TO_NS = 1000000;
-        totalPauseTime_ = totalPauseTime_ + buffer->pts_ - lastBufferTime_ - MS_TO_NS;
-        isResume_ = false;
-    }
-    lastBufferTime_ = buffer->pts_;
-    emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_ - totalPauseTime_;
-    if (!isTransCoderMode) {
-        emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / NS_PER_US;
-    }
+    emptyOutputBuffer->pts_ = buffer->pts_;
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     {
