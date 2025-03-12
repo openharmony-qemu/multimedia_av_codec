@@ -757,7 +757,7 @@ int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, int64_t renderTime
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     if (postProcessing_) {
-        return postProcessing_->ReleaseOutputBuffer(index, true);
+        return ReleaseOutputBufferOfPostProcessing(index, true);
     } else {
         return codecBase_->RenderOutputBuffer(index);
     }
