@@ -137,6 +137,11 @@ private:
     bool IsNearToInitResolution(const std::shared_ptr<PlayMediaStream> &choosedStream,
         const std::shared_ptr<PlayMediaStream> &currentStream);
     uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
+    void WaitUntilInterrupt(int64_t timeoutMs, std::function<bool()> pred)
+    {
+        AutoLock lock(sleepMutex_);
+        sleepCond_.WaitFor(lock, timeoutMs, pred);
+    }
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -235,6 +240,9 @@ private:
     FairMutex savedataMutex_ {};
     uint64_t cachedDuration_ {0};
     std::atomic<bool> isAllowResume_ {false};
+    bool isCacheBufferInited_ {false};
+    ConditionVariable sleepCond_;
+    FairMutex sleepMutex_;
 };
 }
 }

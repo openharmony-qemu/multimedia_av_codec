@@ -605,7 +605,17 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
         return HandleRingBuffer(buff, readDataInfo);
     } else {
-        FALSE_RETURN_V_MSG(cacheMediaBuffer_ != nullptr, Status::END_OF_STREAM, "cacheMediaBuffer_ = nullptr");
+        {
+            AutoLock lock(sleepMutex_);
+            if (cacheMediaBuffer_ == nullptr) {
+                WaitUntilInterrupt(TEN_MILLISECONDS, [this]() {
+                    return isInterruptNeeded_.load() || !isCacheBufferInited_;
+                });
+                if (!isCacheBufferInited_) {
+                    return Status::END_OF_STREAM;
+                }
+            }
+        }
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
         return HandleCacheBuffer(buff, readDataInfo);
@@ -932,8 +942,14 @@ uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len, bo
 uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     if (!isRingBuffer_ && cacheMediaBuffer_ == nullptr && downloadRequest_ != nullptr) {
+        AutoLock lock(sleepMutex_);
         cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
-
+        if (cacheMediaBuffer_ == nullptr) {
+            isCacheBufferInited_ = false;
+            sleepCond_.NotifyAll();
+            MEDIA_LOG_I("HTTP create cachebuffer error");
+            return false;
+        }
         size_t fileContenLen = downloadRequest_->GetFileContentLength();
         if (fileContenLen > 0) {
             uint64_t bufferSize = static_cast<uint64_t>(fileContenLen + BUFFER_REDUNDANCY);
@@ -941,9 +957,13 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
         } else {
             totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
         }
-        cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
+        isCacheBufferInited_ = cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
         MEDIA_LOG_I("HTTP setting buffer size: " PUBLIC_LOG_D32 " fileContenLen: " PUBLIC_LOG_ZU,
             totalBufferSize_, fileContenLen);
+        if (!isCacheBufferInited_) {
+            MEDIA_LOG_I("HTTP init cachebuffer error");
+        }
+        sleepCond_.NotifyAll();
     }
 
     if (cacheMediaBuffer_ == nullptr && ringBuffer_ == nullptr) {
@@ -1168,6 +1188,7 @@ void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
         if (isInterruptNeeded_) {
             MEDIA_LOG_I("SetInterruptState, bufferingEndCond NotifyAll.");
             bufferingEndCond_.NotifyAll();
+            sleepCond_.NotifyAll();
         }
     }
     if (ringBuffer_ != nullptr && isInterruptNeeded) {
