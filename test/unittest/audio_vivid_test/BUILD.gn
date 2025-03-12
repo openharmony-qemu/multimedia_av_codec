@@ -49,7 +49,6 @@ ohos_unittest("audio_vivid_capi_unit_test") {
   include_dirs = av_codec_unittest_include_dirs
   include_dirs += [
     "./",
-    "//third_party/ffmpeg",
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/engine/base/include",
@@ -77,6 +76,7 @@ ohos_unittest("audio_vivid_capi_unit_test") {
   ]
 
   external_deps = [
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -92,7 +92,6 @@ ohos_unittest("audio_vivid_inner_unit_test") {
   include_dirs = av_codec_unittest_include_dirs
   include_dirs += [
     "./",
-    "//third_party/ffmpeg",
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/engine/base/include",
@@ -120,6 +119,7 @@ ohos_unittest("audio_vivid_inner_unit_test") {
   ]
 
   external_deps = [
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -135,7 +135,6 @@ ohos_unittest("audio_vivid_ability_unit_test") {
   include_dirs = av_codec_unittest_include_dirs
   include_dirs += [
     "./",
-    "//third_party/ffmpeg",
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/engine/base/include",
@@ -163,6 +162,7 @@ ohos_unittest("audio_vivid_ability_unit_test") {
   ]
 
   external_deps = [
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
