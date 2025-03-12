@@ -74,6 +74,7 @@ constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
 constexpr int32_t US_TO_S = 1000000;
 constexpr int32_t US_TO_MS = 1000;
+constexpr int32_t SAMPLE_BUFFER_SIZE_EXTRA = 128;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
@@ -1841,7 +1842,8 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
         "sampleQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
 
     AVBufferConfig avBufferConfig;
-    avBufferConfig.capacity = static_cast<int32_t>(size);
+    avBufferConfig.capacity = static_cast<int32_t>(size) + SAMPLE_BUFFER_SIZE_EXTRA;
+    avBufferConfig.size = size;
     Status ret = sampleQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
     if (ret != Status::OK) {
