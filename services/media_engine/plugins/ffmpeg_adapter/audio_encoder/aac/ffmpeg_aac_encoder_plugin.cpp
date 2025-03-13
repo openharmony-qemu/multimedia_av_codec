@@ -685,6 +685,10 @@ Status FFmpegAACEncoderPlugin::PushInFifo(const std::shared_ptr<AVBuffer> &input
 
 Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
 {
+    if (fifo_ == nullptr) {
+        MEDIA_LOG_E("fifo_ is nullptr.");
+        return Status::ERROR_UNKNOWN;
+    }
     int32_t fifoSize = av_audio_fifo_size(fifo_);
     if (fifoSize < avCodecContext_->frame_size) {
         MEDIA_LOG_D("fifoSize:%{public}d not enough", fifoSize);
