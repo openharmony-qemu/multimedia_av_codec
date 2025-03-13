@@ -585,7 +585,7 @@ void HDecoder::SetCallerToBuffer(int fd)
     string pid = std::to_string(caller_.app.pid);
     int ret = ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
     if (ret != 0) {
-        HLOGW("set pid %s to fd %d failed", pid.c_str(), fd);
+        HLOGD("set pid %s to fd %d failed", pid.c_str(), fd);
         return;
     }
     HLOGD("set pid %s to fd %d succ", pid.c_str(), fd);
@@ -746,6 +746,9 @@ int32_t HDecoder::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, uint
               surface->GetUniqueId(), targetSize, err);
         return AVCS_ERR_UNKNOWN;
     }
+    for (BufferInfo& info : outputBufferPool_) {
+        info.attached = false;
+    }
     HLOGI("surface(%" PRIu64 "), SetQueueSize to %u succ", surface->GetUniqueId(), targetSize);
     return AVCS_ERR_OK;
 }
@@ -823,6 +826,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         info.avBuffer = AVBuffer::CreateAVBuffer();
         info.omxBuffer = outBuffer;
         info.bufferId = outBuffer->bufferId;
+        info.attached = true;
         outputBufferPool_.push_back(info);
         HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, info.bufferId, surfaceBuffer->GetSeqNum());
     }
@@ -945,6 +949,14 @@ bool HDecoder::SurfaceModeSubmitOneItem(SurfaceBufferItem& item)
     }
     auto iter = FindBelongTo(item.buffer);
     if (iter == outputBufferPool_.end()) {
+        auto nullSlot = FindNullSlotIfDynamicMode();
+        if (nullSlot != outputBufferPool_.end()) {
+            HLOGI("seq=%u dont belong to output set, bind as dynamic", item.buffer->GetSeqNum());
+            WaitFence(item.fence);
+            DynamicModeSubmitBufferToSlot(item.buffer, nullSlot);
+            nullSlot->attached = true;
+            return true;
+        }
         HLOGI("seq=%u dont belong to output set, ignore", item.buffer->GetSeqNum());
         return false;
     }
@@ -961,9 +973,12 @@ void HDecoder::DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator n
     IF_TRUE_RETURN_VOID_WITH_MSG(buffer == nullptr, "CreateSurfaceBuffer failed");
     GSError err = buffer->Alloc(requestCfg_);
     IF_TRUE_RETURN_VOID_WITH_MSG(err != GSERROR_OK, "AllocSurfaceBuffer failed");
+    DynamicModeSubmitBufferToSlot(buffer, nullSlot);
+}
+
+void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::vector<BufferInfo>::iterator nullSlot)
+{
     if (currSurface_.surface_) {
-        err = currSurface_.surface_->AttachBufferToQueue(buffer);
-        IF_TRUE_RETURN_VOID_WITH_MSG(err != GSERROR_OK, "AttachBufferToQueue failed");
         HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, nullSlot->bufferId, buffer->GetSeqNum());
     } else {
         std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(buffer);
@@ -979,6 +994,21 @@ void HDecoder::DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator n
     }
     NotifyOmxToFillThisOutBuffer(*nullSlot);
     nullSlot->omxBuffer->bufferhandle = nullptr;
+}
+
+int32_t HDecoder::Attach(BufferInfo &info)
+{
+    if (info.attached) {
+        return AVCS_ERR_OK;
+    }
+    GSError err = currSurface_.surface_->AttachBufferToQueue(info.surfaceBuffer);
+    if (err != GSERROR_OK) {
+        HLOGW("surface(%" PRIu64 "), AttachBufferToQueue(seq=%u) failed, GSError=%d",
+            currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), err);
+        return AVCS_ERR_UNKNOWN;
+    }
+    info.attached = true;
+    return AVCS_ERR_OK;
 }
 
 int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
@@ -1000,10 +1030,28 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
     }
     SCOPED_TRACE_FMT("id: %u, pts: %" PRId64 ", desiredPts: %" PRId64,
         info.bufferId, cfg.timestamp, cfg.desiredPresentTimestamp);
-    GSError ret = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, cfg);
-    if (ret != GSERROR_OK) {
+
+    int32_t ret = Attach(info);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    GSError err = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, cfg);
+    if (err == GSERROR_BUFFER_NOT_INCACHE) {
+        HLOGW("surface(%" PRIu64 "), FlushBuffer(seq=%u) failed, BUFFER_NOT_INCACHE, try to recover",
+              currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), err);
+        ret = ClearSurfaceAndSetQueueSize(currSurface_.surface_, outputBufferPool_.size());
+        if (ret != AVCS_ERR_OK) {
+            return ret;
+        }
+        ret = Attach(info);
+        if (ret != AVCS_ERR_OK) {
+            return ret;
+        }
+        err = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, cfg);
+    }
+    if (err != GSERROR_OK) {
         HLOGW("surface(%" PRIu64 "), FlushBuffer(seq=%u) failed, GSError=%d",
-              currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), ret);
+              currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), err);
         return AVCS_ERR_UNKNOWN;
     }
     ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
@@ -1189,6 +1237,7 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
             ReplyErrorCode(msg.id, AVCS_ERR_UNKNOWN);
             return;
         }
+        info.attached = true;
     }
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
 

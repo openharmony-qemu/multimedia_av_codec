@@ -77,6 +77,7 @@ private:
     void OnReleaseOutputBuffer(const BufferInfo &info) override;
     void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
+    int32_t Attach(BufferInfo &info);
     GSError OnBufferReleasedByConsumer(uint64_t surfaceId) override;
     void OnGetBufferFromSurface(const ParamSP& param) override;
     SurfaceBufferItem RequestBuffer();
@@ -87,6 +88,7 @@ private:
     bool SurfaceModeSubmitOneItem(SurfaceBufferItem& item);
     void DynamicModeSubmitBuffer() override;
     void DynamicModeSubmitIfEos() override;
+    void DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::vector<BufferInfo>::iterator nullSlot);
     void DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator nullSlot);
     void SubmitBuffersToNextOwner() override;
 
