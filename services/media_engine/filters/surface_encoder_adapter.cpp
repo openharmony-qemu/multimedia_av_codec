@@ -50,6 +50,10 @@ public:
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
         if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
+            FALSE_RETURN(!surfaceEncoderAdapter->isTransCoderMode || !transCoderErrorCbOnce_);
+            if (surfaceEncoderAdapter->isTransCoderMode && !transCoderErrorCbOnce_) {
+                transCoderErrorCbOnce_ = true;
+            }
             surfaceEncoderAdapter->encoderAdapterCallback_->OnError(errorType, errorCode);
         } else {
             MEDIA_LOG_I("invalid surfaceEncoderAdapter");
@@ -75,6 +79,7 @@ public:
 
 private:
     std::weak_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter_;
+    bool transCoderErrorCbOnce_ = false;
 };
 
 class DroppedFramesCallback : public MediaAVCodec::MediaCodecParameterWithAttrCallback {

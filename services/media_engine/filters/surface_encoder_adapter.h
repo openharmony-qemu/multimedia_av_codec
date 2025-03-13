@@ -36,6 +36,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 class ICodecService;
+class SurfaceEncoderAdapterCallback;
 }
 
 namespace Media {
@@ -73,6 +74,7 @@ public:
     explicit SurfaceEncoderAdapter();
     ~SurfaceEncoderAdapter();
 public:
+    friend class SurfaceEncoderAdapterCallback;
     Status Init(const std::string &mime, bool isEncoder);
     Status Configure(const std::shared_ptr<Meta> &meta);
     Status SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer);
