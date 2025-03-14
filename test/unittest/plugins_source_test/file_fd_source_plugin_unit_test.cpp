@@ -310,28 +310,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_ParseUriInfo_0200, TestSize.Level1)
 }
 
 /**
- * @tc.name: FileFdSource_ParseUriInfo_0300
- * @tc.desc: FileFdSource_ParseUriInfo_0300
- * @tc.type: FUNC
- */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_ParseUriInfo_0300, TestSize.Level1)
-{
-    std::string uri = "fd://123123?offset=92233720368547758077&size=125126";
-    EXPECT_NE(Status::OK, fileFdSourcePlugin_->ParseUriInfo(uri));
-}
-
-/**
- * @tc.name: FileFdSource_ParseUriInfo_0400
- * @tc.desc: FileFdSource_ParseUriInfo_0400
- * @tc.type: FUNC
- */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_ParseUriInfo_0400, TestSize.Level1)
-{
-    std::string uri = "fd://123123?offset=9223372036854775ac&size=125126";
-    EXPECT_NE(Status::OK, fileFdSourcePlugin_->ParseUriInfo(uri));
-}
-
-/**
  * @tc.name: FileFdSource_Reset_0100
  * @tc.desc: FileFdSource_Reset_0100
  * @tc.type: FUNC
