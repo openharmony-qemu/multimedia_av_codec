@@ -190,6 +190,12 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.quality.has_value()) {
         fmt.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, opt_.quality.value());
     }
+    if (opt_.sqrFactor.has_value()) {
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_SQR_FACTOR, opt_.sqrFactor.value());
+    }
+    if (opt_.maxBitrate.has_value()) {
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_MAX_BITRATE, opt_.maxBitrate.value());
+    }        
     if (opt_.layerCnt.has_value()) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
         int32_t temporalGopSize = 0;

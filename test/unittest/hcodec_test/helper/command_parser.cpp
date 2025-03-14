@@ -60,6 +60,8 @@ enum ShortOption {
     OPT_LAYER_COUNT,
     OPT_WATERMARK,
     OPT_ENABLE_PARAMS_FEEDBACK,
+    OPT_SQR_FACTOR,
+    OPT_MAX_BITRATE,
     // decoder only
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
@@ -96,6 +98,8 @@ static struct option g_longOptions[] = {
     {"bitRateMode",     required_argument,  nullptr, OPT_BITRATE_MODE},
     {"bitRate",         required_argument,  nullptr, OPT_BITRATE},
     {"quality",         required_argument,  nullptr, OPT_QUALITY},
+    {"sqrFactor",       required_argument,  nullptr, OPT_SQR_FACTOR},
+    {"maxBitrate",      required_argument,  nullptr, OPT_MAX_BITRATE},
     {"qpRange",         required_argument,  nullptr, OPT_QP_RANGE},
     {"ltrFrameCount",   required_argument,  nullptr, OPT_LTR_FRAME_COUNT},
     {"repeatAfter",     required_argument,  nullptr, OPT_REPEAT_AFTER},
@@ -143,10 +147,12 @@ void ShowUsage()
     std::cout << " --profile            video profile, for 264: 0(baseline), 1(constrained baseline), " << std::endl;
     std::cout << "                      2(constrained high), 3(extended), 4(high), 8(main)" << std::endl;
     std::cout << "                      for 265: 0(main), 1(main 10)" << std::endl;
-    std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ), 3(CBR_VIDEOCALL)"
+    std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ), 3(CBR_VIDEOCALL), 4(SQR)"
               << std::endl;
     std::cout << " --bitRate            target encode bit rate (bps)" << std::endl;
     std::cout << " --quality            target encode quality" << std::endl;
+    std::cout << " --sqrFactor           target encode QP" << std::endl;
+    std::cout << " --maxBitrate         sqr mode max bitrate" << std::endl;
     std::cout << " --qpRange            target encode qpRange, eg. 13,42" << std::endl;
     std::cout << " --ltrFrameCount      The number of long-term reference frames." << std::endl;
     std::cout << " --repeatAfter        repeat previous frame after target ms" << std::endl;
@@ -249,6 +255,12 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_QUALITY:
                 opt.quality = stol(optarg);
                 break;
+            case OPT_SQR_FACTOR:
+                opt.sqrFactor = stol(optarg);
+                break;
+            case OPT_MAX_BITRATE:
+                opt.maxBitrate = stol(optarg);
+                break;    
             case OPT_QP_RANGE: {
                 istringstream is(optarg);
                 QPRange range;
@@ -462,6 +474,12 @@ void CommandOpt::Print() const
     }
     if (quality.has_value()) {
         TLOGI("quality %u", quality.value());
+    }
+    if (sqrFactor.has_value()) {
+        TLOGI("sqrFactor %u", sqrFactor.value());
+    }
+    if (maxBitrate.has_value()) {
+        TLOGI("maxBitrate %u", maxBitrate.value());
     }
     if (qpRange.has_value()) {
         TLOGI("qpRange %u~%u", qpRange->qpMin, qpRange->qpMax);
