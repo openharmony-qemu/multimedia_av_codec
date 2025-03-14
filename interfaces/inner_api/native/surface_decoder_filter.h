@@ -27,6 +27,7 @@
 #include "buffer/avbuffer_queue_consumer.h"
 #include "common/status.h"
 #include "common/log.h"
+#include "avcodec_common.h"
 
 namespace OHOS {
 namespace Media {
@@ -58,6 +59,7 @@ public:
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
 
 protected:
