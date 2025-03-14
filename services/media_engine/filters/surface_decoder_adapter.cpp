@@ -43,9 +43,10 @@ public:
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
         if (auto surfaceDecoderAdapter = surfaceDecoderAdapter_.lock()) {
-            FALSE_RETURN(!transCoderErrorCbOnce_);
-            transCoderErrorCbOnce_ = true;
-            surfaceDecoderAdapter->decoderAdapterCallback_->OnError(errorType, errorCode);
+            if (!transCoderErrorCbOnce_) {
+                transCoderErrorCbOnce_ = true;
+                surfaceDecoderAdapter->decoderAdapterCallback_->OnError(errorType, errorCode);
+            }
         } else {
             MEDIA_LOG_I("invalid surfaceEncoderAdapter");
         }

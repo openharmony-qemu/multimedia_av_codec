@@ -50,8 +50,10 @@ public:
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
         if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
-            FALSE_RETURN(!surfaceEncoderAdapter->isTransCoderMode || !transCoderErrorCbOnce_);
-            if (surfaceEncoderAdapter->isTransCoderMode && !transCoderErrorCbOnce_) {
+            if (surfaceEncoderAdapter->GetIsTransCoderMode() && transCoderErrorCbOnce_) {
+                return;
+            }
+            if (surfaceEncoderAdapter->GetIsTransCoderMode()) {
                 transCoderErrorCbOnce_ = true;
             }
             surfaceEncoderAdapter->encoderAdapterCallback_->OnError(errorType, errorCode);
@@ -860,6 +862,11 @@ void SurfaceEncoderAdapter::HandleWaitforStop()
         encoderAdapterCallback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL,
                                          AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED);
     }
+}
+
+bool SurfaceEncoderAdapter::GetIsTransCoderMode()
+{
+    return isTransCoderMode;
 }
 } // namespace MEDIA
 } // namespace OHOS
