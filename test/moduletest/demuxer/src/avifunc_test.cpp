@@ -291,6 +291,53 @@ static void DemuxerResult(const char *fileName)
     g_fd = -1;
 }
 
+static void DemuxerResultRaw(const char *fileName)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    const char* mimeType = nullptr;
+    g_fd = open(fileName, O_RDONLY);
+    int64_t size = GetFileSize(fileName);
+    cout << fileName << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, TWO);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+                ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_RAW));
+                SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+            }
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+        }
+    }
+    close(g_fd);
+    g_fd = -1;
+}
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_0100
  * @tc.name      : demuxer AVI ,GetVideoTrackFormat,MD_KEY_HEIGHT
@@ -754,7 +801,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2600, TestSize.Level3)
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_2700, TestSize.Level3)
 {
-    DemuxerResult(INP_DIR_12);
+    DemuxerResultRaw(INP_DIR_12);
 }
 
 /**
@@ -794,7 +841,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_3000, TestSize.Level3)
  */
 HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_3100, TestSize.Level3)
 {
-    DemuxerResult(INP_DIR_16);
+    DemuxerResultRaw(INP_DIR_16);
 }
 
 /**
