@@ -1857,7 +1857,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
         }
     } else {
         requestBufferErrorCountMap_[queueIndex] = 0;
-        MEDIA_LOG_I("RequestBuffer from samplequeue trackId=" PUBLIC_LOG_U32 ",size=" PUBLIC_LOG_U32, queueIndex, size);
+        MEDIA_LOG_D("RequestBuffer from samplequeue trackId=" PUBLIC_LOG_U32 ",size=" PUBLIC_LOG_U32, queueIndex, size);
     }
     return ret == Status::OK;
 }
@@ -2871,14 +2871,14 @@ Status MediaDemuxer::OnSelectBitrateOk(int64_t startPts, uint32_t bitRate)
 
 Status MediaDemuxer::OnSampleQueueBufferAvailable(uint32_t queueId)
 {
-    MEDIA_LOG_I("OnSampleQueueBufferAvailable queueId=" PUBLIC_LOG_U32, queueId);
+    MEDIA_LOG_D("OnSampleQueueBufferAvailable queueId=" PUBLIC_LOG_U32, queueId);
     AccelerateTrackTask(queueId);
     return Status::OK;
 }
 
 Status MediaDemuxer::OnSampleQueueBufferConsume(uint32_t queueId)
 {
-    MEDIA_LOG_I("OnSampleQueueBufferConsume queueId=" PUBLIC_LOG_U32, queueId);
+    MEDIA_LOG_D("OnSampleQueueBufferConsume queueId=" PUBLIC_LOG_U32, queueId);
     uint32_t trackId = queueId;
     {
         std::unique_lock<std::mutex> stopLock(stopMutex_);

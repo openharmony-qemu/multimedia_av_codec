@@ -930,8 +930,11 @@ uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len, bo
     if (writeBitrateCaculator_ != nullptr) {
         writeBitrateCaculator_->UpdateWriteBytes(len);
         writeBitrateCaculator_->StartClock();
-        uint64_t writeTime  = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLISECONDS;
+        uint64_t writeBitrate = writeBitrateCaculator_->GetWriteBitrate();
+        uint64_t writeTime  = writeBitrateCaculator_->GetWriteTime();
         if (writeTime > ONE_SECONDS) {
+            MEDIA_LOG_I("waterLineAbove: " PUBLIC_LOG_ZU " writeBitrate: " PUBLIC_LOG_U64 " readBitrate: "
+                PUBLIC_LOG_D32, waterLineAbove_, writeBitrate, currentBitRate_);
             writeBitrateCaculator_->ResetClock();
         }
     }
