@@ -1590,7 +1590,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     AVStream* avStream = formatContext_->streams[trackId];
     FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr,
         Status::ERROR_UNKNOWN, "AVStream is nullptr");
-    if ((std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), avStream->codecpar->codec_id) > 0) && 
+    if ((std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), avStream->codecpar->codec_id) > 0) &&
         static_cast<uint32_t>(samplePacket->pkts[0]->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY)) {
         totalSize += avStream->codecpar->extradata_size;
     }
