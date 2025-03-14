@@ -20,23 +20,22 @@
 #include "format.h"
 #include "media_description.h"
 #include "avcodec_errors.h"
+#include "av_common.h"
 using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
-
-uint32_t DEFAULT_QUALITY = 30;
-uint32_t DEFAULT_WIDTH = 1280;
-uint32_t DEFAULT_HEIGHT = 720;
-uint32_t DEFAULT_BITRATE = 10000000;
-uint32_t DEFAULT_MAX_BITRATE = 20000000;
-uint32_t DEFAULT_SQR_FACTOR = 30;
-uint32_t ENCODER_PIXEL_FORMAT = AV_PIXEL_FORMAT_SURFACE_FORMAT;
+namespace {
+uint32_t DEFAULT_QUALITY = 30; // 30 默认值
+uint32_t DEFAULT_BITRATE = 10000000; // 10000000 默认值
+uint32_t DEFAULT_MAX_BITRATE = 20000000; // 20000000 默认值
+uint32_t DEFAULT_SQR_FACTOR = 30; // 30 默认值
 
 void SetFormatBasicParam(Format &format)
 {
     format = Format();
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1280); // 1280 w默认值
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 720); // 720 h默认值
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+            static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT));
 }
 
 bool IsEncoderBitrateModeSupported(CapabilityData *capData, VideoEncodeBitrateMode bitrateMode)
@@ -49,7 +48,6 @@ bool IsEncoderBitrateModeSupported(CapabilityData *capData, VideoEncodeBitrateMo
     return find(bitrateModeVec.begin(), bitrateModeVec.end(), bitrateMode) != bitrateModeVec.end();
 }
 
-namespace {
 /**
  * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1519
  * @tc.desc: codec video configure sqr_factor and quality exist value
