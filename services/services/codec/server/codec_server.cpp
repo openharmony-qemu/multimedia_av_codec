@@ -1018,8 +1018,6 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
         temporalScalability_->SetDisposableFlag(buffer);
     }
 
-    std::shared_lock<std::shared_mutex> lock(cbMutex_);
-    CHECK_AND_RETURN_LOG_WITH_TAG(videoCb_ != nullptr, "videoCb_ is nullptr!");
     if (postProcessing_) {
         /*
             If post processing is configured, this callback flow is intercepted here. Just push the decoded buffer info
@@ -1033,6 +1031,8 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
         */
         (void)PushDecodedBufferInfo(index, buffer);
     } else {
+        std::shared_lock<std::shared_mutex> lock(cbMutex_);
+        CHECK_AND_RETURN_LOG_WITH_TAG(videoCb_ != nullptr, "videoCb_ is nullptr!");
         videoCb_->OnOutputBufferAvailable(index, buffer);
     }
 }
@@ -1326,13 +1326,15 @@ int32_t CodecServer::PreparePostProcessing()
     }
 
     if (postProcessingInputBufferInfoQueue_ == nullptr) {
-        postProcessingInputBufferInfoQueue_ = DecodedBufferInfoQueue::Create("PostProcessingInputBufferInfoQueue");
+        postProcessingInputBufferInfoQueue_ =
+            PostProcessingBufferInfoQueue::Create("PostProcessingInputBufferInfoQueue");
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(postProcessingInputBufferInfoQueue_, AVCS_ERR_NO_MEMORY,
                                           "Create post processing input buffer info queue failed");
     }
 
     if (postProcessingOutputBufferInfoQueue_ == nullptr) {
-        postProcessingOutputBufferInfoQueue_ = DecodedBufferInfoQueue::Create("PostProcessingOutputBufferInfoQueue");
+        postProcessingOutputBufferInfoQueue_ =
+            PostProcessingBufferInfoQueue::Create("PostProcessingOutputBufferInfoQueue");
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(postProcessingOutputBufferInfoQueue_, AVCS_ERR_NO_MEMORY,
                                           "Create post processing output buffer info queue failed");
     }
