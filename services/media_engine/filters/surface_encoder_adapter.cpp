@@ -810,7 +810,9 @@ void SurfaceEncoderAdapter::AddStopPts()
             MEDIA_LOG_I("AddStopPts currentKeyFramePts_ %{public}s end", keyFramePts_.c_str());
         }
         isStopKeyFramePts_ = false;
-        encoderAdapterKeyFramePtsCallback_->OnReportKeyFramePts(keyFramePts_);
+        if (encoderAdapterKeyFramePtsCallback_) {
+            encoderAdapterKeyFramePtsCallback_->OnReportKeyFramePts(keyFramePts_);
+        }
         keyFramePts_.clear();
     }
 }

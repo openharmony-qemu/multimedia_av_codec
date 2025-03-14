@@ -161,6 +161,59 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Stop_0100, TestSiz
 }
 
 /**
+ * @tc.name: SurfaceEncoderAdapter_Stop_0200
+ * @tc.desc: recording -> stop, wait for stop and stop directly
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Stop_0200, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->encoderAdapterCallback_ = std::make_shared<MyEncoderAdapterCallback>();
+    surfaceEncoderAdapter_->releaseBufferTask_ = std::make_shared<Task>("test");
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->isStart_ = true;
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    surfaceEncoderAdapter_->curState_ = ProcessStateCode::RECORDING;
+    surfaceEncoderAdapter_->encoderAdapterKeyFramePtsCallback_ =
+        std::make_shared<MockEncoderAdapterKeyFramePtsCallback>();
+    Status ret = surfaceEncoderAdapter_->Stop();
+    EXPECT_EQ(ret, Status::OK);
+    surfaceEncoderAdapter_->isStart_ = true;
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    surfaceEncoderAdapter_->curState_ = ProcessStateCode::STOPPED;
+    ret = surfaceEncoderAdapter_->Stop();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_Stop_0300
+ * @tc.desc: paused -> stop, wait for stop and stop directly
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Stop_0300, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->encoderAdapterCallback_ = std::make_shared<MyEncoderAdapterCallback>();
+    surfaceEncoderAdapter_->releaseBufferTask_ = std::make_shared<Task>("test");
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->isStart_ = true;
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    surfaceEncoderAdapter_->curState_ = ProcessStateCode::PAUSED;
+    // current frame is not the last frame before the pasue time, wait for stop
+    surfaceEncoderAdapter_->currentKeyFramePts_ = 5000000000000;
+    surfaceEncoderAdapter_->pauseTime_ = 6000000000000;
+    surfaceEncoderAdapter_->encoderAdapterKeyFramePtsCallback_ =
+        std::make_shared<MockEncoderAdapterKeyFramePtsCallback>();
+    Status ret = surfaceEncoderAdapter_->Stop();
+    EXPECT_EQ(ret, Status::OK);
+    surfaceEncoderAdapter_->isStart_ = true;
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    surfaceEncoderAdapter_->curState_ = ProcessStateCode::PAUSED;
+    surfaceEncoderAdapter_->currentKeyFramePts_ = 5000000000000;
+    surfaceEncoderAdapter_->pauseTime_ = 4000000000000;
+    ret = surfaceEncoderAdapter_->Stop();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
  * @tc.name: SurfaceEncoderAdapter_Pause_0100
  * @tc.desc: Pause
  * @tc.type: FUNC
