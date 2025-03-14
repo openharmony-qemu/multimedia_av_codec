@@ -281,7 +281,6 @@ bool CheckBitrateAndQualityParamRange(CapabilityData &capData, Format &format)
     int32_t sqrFactor;
     if (format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate)) {
         bool bitrateValid = capData.bitrate.InRange(bitrate);
-        printf("capData.bitrate.minVal %d capData.bitrate.maxVal %d\n",capData.bitrate.minVal, capData.bitrate.maxVal);
         CHECK_AND_RETURN_RET_LOG(bitrateValid, false,
             "Param invalid, %{public}s: %{public}d, range: %{public}d-%{public}d",
             MediaDescriptionKey::MD_KEY_BITRATE.data(), static_cast<int32_t>(bitrate),
@@ -289,7 +288,6 @@ bool CheckBitrateAndQualityParamRange(CapabilityData &capData, Format &format)
     }
 
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality)) {
-        printf("capData.encodeQuality.minVal %d capData.encodeQuality.maxVal %d\n",capData.encodeQuality.minVal, capData.encodeQuality.maxVal);
         bool qualityValid = capData.encodeQuality.InRange(quality);
         CHECK_AND_RETURN_RET_LOG(qualityValid, false,
             "Param invalid, %{public}s: %{public}d, range: %{public}d-%{public}d",

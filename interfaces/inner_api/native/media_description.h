@@ -294,7 +294,7 @@ public:
      * key for the desired encoding quality, the value type is uint32_t, this key is only supported for encoders that
      * are configured in stable quality rate control mode.
      */
-     static constexpr std::string_view MD_KEY_VIDEO_ENCODER_SQR_FACTOR = "sqr_factor";
+    static constexpr std::string_view MD_KEY_VIDEO_ENCODER_SQR_FACTOR = "sqr_factor";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;

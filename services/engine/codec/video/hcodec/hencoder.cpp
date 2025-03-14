@@ -477,7 +477,7 @@ std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
 std::optional<uint32_t> HEncoder::GetSQRFactorFromUser(const Format &format)
 {
     int32_t sqrFactor;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_SQR_FACTOR, sqrFactor) && sqrFactor > 0) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor) && sqrFactor > 0) {
         LOGI("user set SQR factor is  %d", sqrFactor);
         return static_cast<uint32_t>(sqrFactor);
     }
@@ -487,13 +487,13 @@ std::optional<uint32_t> HEncoder::GetSQRFactorFromUser(const Format &format)
 std::optional<uint32_t> HEncoder::GetSQRMaxBitrateFromUser(const Format &format)
 {
     int64_t maxBitRateLong;
-    if (format.GetLongValue(MediaDescriptionKey::MD_KEY_MAX_BITRATE, maxBitRateLong) && maxBitRateLong > 0 &&
+    if (format.GetLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitRateLong) && maxBitRateLong > 0 &&
         maxBitRateLong <= UINT32_MAX) {
         LOGI("user set max bit rate %" PRId64 "", maxBitRateLong);
         return static_cast<uint32_t>(maxBitRateLong);
     }
     int32_t maxBitRateInt;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_BITRATE, maxBitRateInt) && maxBitRateInt > 0) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitRateInt) && maxBitRateInt > 0) {
         LOGI("user set max bit rate %d", maxBitRateInt);
         return static_cast<uint32_t>(maxBitRateInt);
     }
@@ -555,8 +555,8 @@ int32_t HEncoder::SetSQRMode(const Format &format)
     }
     HLOGI("set SQR mode succ");
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
-    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_SQR_FACTOR, bitrateType.sqrFactor);
-    outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_MAX_BITRATE,
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, bitrateType.sqrFactor);
+    outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
         static_cast<int64_t>(bitrateType.sMaxBitrate));
     outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE,
         static_cast<int64_t>(bitrateType.sTargetBitrate));

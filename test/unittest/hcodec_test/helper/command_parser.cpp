@@ -260,7 +260,7 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_MAX_BITRATE:
                 opt.maxBitrate = stol(optarg);
-                break;    
+                break;
             case OPT_QP_RANGE: {
                 istringstream is(optarg);
                 QPRange range;

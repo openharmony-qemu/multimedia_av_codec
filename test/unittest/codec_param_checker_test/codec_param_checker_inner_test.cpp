@@ -23,13 +23,12 @@
 using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 
-extern uint32_t DEFAULT_QUALITY;
-extern uint32_t DEFAULT_WIDTH;
-extern uint32_t DEFAULT_HEIGHT;
-extern uint32_t ENCODER_PIXEL_FORMAT;
-extern uint32_t DEFAULT_MAX_BITRATE;
-extern uint32_t DEFAULT_SQR_FACTOR;
-extern uint32_t DEFAULT_BITRATE;
+uint32_t DEFAULT_QUALITY = 30;
+uint32_t DEFAULT_WIDTH = 1280;
+uint32_t DEFAULT_HEIGHT = 720;
+uint32_t DEFAULT_BITRATE = 10000000;
+uint32_t DEFAULT_MAX_BITRATE = 20000000;
+uint32_t DEFAULT_SQR_FACTOR = 30;
 
 void SetFormatBasicParam(Format &format)
 {

@@ -104,7 +104,7 @@ void AVCodecParamCheckerTest::SetUp(void)
     ASSERT_NE(nullptr, codeclist_);
 
     capabilityDataHevc_ = codeclist_->GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, 1,
-            MediaAVCodec::AVCodecCategory::AVCODEC_NONE);
+        MediaAVCodec::AVCodecCategory::AVCODEC_NONE);
     ASSERT_NE(nullptr, capabilityDataHevc_);
 
     videoEncHevcInner_ = MediaAVCodec::VideoEncoderFactory::CreateByMime("video/hevc");
