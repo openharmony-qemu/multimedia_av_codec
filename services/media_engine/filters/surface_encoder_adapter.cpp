@@ -357,13 +357,14 @@ Status SurfaceEncoderAdapter::Stop()
             HandleWaitforStop();
         }
         // else stop directly
+        AddStopPts();
     }
     // operate stop when it is recording state.
     if (curState_ == ProcessStateCode::RECORDING && !isTransCoderMode) {
         MEDIA_LOG_D("recording state -> stop, wait for stop.");
         HandleWaitforStop();
+        AddStopPts();
     }
-    AddStopPts();
 
     if (releaseBufferTask_) {
         isThreadExit_ = true;
