@@ -516,6 +516,18 @@ bool VideoCaps::IsSupportDynamicIframe()
     return false;
 }
 
+Range VideoCaps::GetSupportedMaxBitrate()
+{
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
+    return data_->maxBitrate;
+}
+
+Range VideoCaps::GetSupportedSqrFactor()
+{
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
+    return data_->sqrFactor;
+}
+
 AudioCaps::AudioCaps(CapabilityData *capabilityData) : data_(capabilityData)
 {
     AVCODEC_LOGD("AudioCaps:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));

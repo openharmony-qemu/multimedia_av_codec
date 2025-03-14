@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include "codec_param_checker_test.h"
 #include <gtest/gtest.h>
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
@@ -21,12 +21,16 @@
 #include "native_avcodec_videodecoder.h"
 #include "native_avcapability.h"
 
+#include "avcodec_info.h"
+#include "avcodec_list.h"
+#include "avcodec_video_encoder.h"
+#include "format.h"
 using namespace testing::ext;
+using namespace OHOS;
 using namespace OHOS::Media;
 
-namespace {
 constexpr double DEFAULT_FRAME_RATE = 30.0;
-constexpr uint32_t DEFAULT_QUALITY = 30;
+uint32_t DEFAULT_QUALITY = 30;
 constexpr uint32_t VALID_ROTATION_ANGLE[] = {0, 90, 180, 270};
 constexpr uint32_t DIVISOR = 2;
 std::vector<uint32_t> PIXEL_FORMATS = {
@@ -38,19 +42,14 @@ std::vector<uint32_t> PIXEL_FORMATS = {
 uint32_t DEFAULT_WIDTH = 1280;
 uint32_t DEFAULT_HEIGHT = 720;
 uint32_t DEFAULT_BITRATE = 10000000;
+uint32_t DEFAULT_MAX_BITRATE = 20000000;
+uint32_t DEFAULT_SQR_FACTOR = 30;
 uint32_t ENCODER_PIXEL_FORMAT = AV_PIXEL_FORMAT_SURFACE_FORMAT;
 uint32_t DECODER_PIXEL_FORMAT = AV_PIXEL_FORMAT_SURFACE_FORMAT;
 OH_AVFormat *g_format;
 OH_AVCodec *g_videoEnc;
 OH_AVCodec *g_videoDec;
-
-class AVCodecParamCheckerTest : public testing::Test {
-public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void){};
-    void SetUp(void);
-    void TearDown(void);
-};
+OH_AVCodec *g_videoEncHevc;
 
 void AVCodecParamCheckerTest::SetUpTestCase(void)
 {
@@ -97,12 +96,28 @@ void AVCodecParamCheckerTest::SetUp(void)
     ASSERT_NE(nullptr, g_videoDec);
     g_format = OH_AVFormat_Create();
     ASSERT_NE(nullptr, g_format);
+    g_videoEncHevc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    ASSERT_NE(nullptr, g_videoEncHevc);
+
+    // inner
+    codeclist_ = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
+    ASSERT_NE(nullptr, codeclist_);
+
+    capabilityDataHevc_ = codeclist_->GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, 1,
+            MediaAVCodec::AVCodecCategory::AVCODEC_NONE);
+    ASSERT_NE(nullptr, capabilityDataHevc_);
+
+    videoEncHevcInner_ = MediaAVCodec::VideoEncoderFactory::CreateByMime("video/hevc");
+    ASSERT_NE(nullptr, videoEncHevcInner_);
+
+    formatInner_ = Format();
 }
 
 void AVCodecParamCheckerTest::TearDown(void)
 {
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(g_videoEnc));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(g_videoDec));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(g_videoEncHevc));
     OH_AVFormat_Destroy(g_format);
 }
 
@@ -114,7 +129,7 @@ void SetFormatBasicParam(bool isDecoder)
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
     }
 }
-
+namespace {
 /**
  * @tc.name: ENCODE_KEY_WIDTH_INVALID_TEST_0101
  * @tc.desc: codec video configure not exsit width

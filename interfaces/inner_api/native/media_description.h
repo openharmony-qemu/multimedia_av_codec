@@ -284,6 +284,17 @@ public:
      * value, and only OH_COLORSPACE_BT709_LIMIT is valid.
      */
     static constexpr std::string_view MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE = "video_decoder_output_colorspace";
+
+    /**
+     * Key for max bitrate, value type is int64_t
+     */
+    static constexpr std::string_view MD_KEY_VIDEO_ENCODER_MAX_BITRATE = "max_bitrate";
+
+    /**
+     * key for the desired encoding quality, the value type is uint32_t, this key is only supported for encoders that
+     * are configured in stable quality rate control mode.
+     */
+     static constexpr std::string_view MD_KEY_VIDEO_ENCODER_SQR_FACTOR = "sqr_factor";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;

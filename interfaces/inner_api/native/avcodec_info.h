@@ -177,6 +177,8 @@ struct CapabilityData {
     bool supportSwapWidthHeight = false;
     std::map<int32_t, Format> featuresMap;
     int32_t rank = 0;
+    Range maxBitrate;
+    Range sqrFactor;
 };
 
 struct LevelParams {
@@ -474,6 +476,8 @@ public:
 
     Range GetVideoHeightRangeForWidth(int32_t width);
     Range GetVideoWidthRangeForHeight(int32_t height);
+    Range GetSupportedMaxBitrate();
+    Range GetSupportedSqrFactor();
 
 private:
     CapabilityData *data_;
@@ -893,6 +897,10 @@ enum VideoEncodeBitrateMode : int32_t {
      * constant bit rate mode for video call or meeting scene
      */
     CBR_VIDEOCALL = 3,
+    /**
+     * stable quality rate control mode.
+     */
+    SQR = 4,
 };
 
 /**
