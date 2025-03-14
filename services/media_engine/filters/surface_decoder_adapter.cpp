@@ -43,7 +43,10 @@ public:
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
         if (auto surfaceDecoderAdapter = surfaceDecoderAdapter_.lock()) {
-            surfaceDecoderAdapter->decoderAdapterCallback_->OnError(errorType, errorCode);
+            if (!transCoderErrorCbOnce_) {
+                transCoderErrorCbOnce_ = true;
+                surfaceDecoderAdapter->decoderAdapterCallback_->OnError(errorType, errorCode);
+            }
         } else {
             MEDIA_LOG_I("invalid surfaceEncoderAdapter");
         }
@@ -81,6 +84,7 @@ public:
 
 private:
     std::weak_ptr<SurfaceDecoderAdapter> surfaceDecoderAdapter_;
+    bool transCoderErrorCbOnce_ = false;
 };
 
 class AVBufferAvailableListener : public OHOS::Media::IConsumerListener {

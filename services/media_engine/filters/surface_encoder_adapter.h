@@ -104,6 +104,7 @@ public:
 
     std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback_;
     std::shared_ptr<EncoderAdapterKeyFramePtsCallback> encoderAdapterKeyFramePtsCallback_;
+    bool GetIsTransCoderMode();
 
 private:
     void ReleaseBuffer();
