@@ -916,15 +916,79 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Dts2FrameId_012, TestSize.Level1)
     uint32_t frameId = 0;
     std::vector<uint32_t> IFramePos = { 100 };
 
-    EXPECT_EQ(demuxer->Dts2FrameId(100, frameId, 0), Status::OK);
+    EXPECT_EQ(demuxer->Dts2FrameId(100, frameId), Status::OK);
     demuxer->GetIFramePos(IFramePos);
 
     demuxer->source_  = nullptr;
-    EXPECT_EQ(demuxer->Dts2FrameId(100, frameId, 0), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(demuxer->Dts2FrameId(100, frameId), Status::ERROR_NULL_POINTER);
     demuxer->GetIFramePos(IFramePos);
 
     demuxer->demuxerPluginManager_  = nullptr;
-    EXPECT_EQ(demuxer->Dts2FrameId(100, frameId, 0), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(demuxer->Dts2FrameId(100, frameId), Status::ERROR_NULL_POINTER);
+    demuxer->GetIFramePos(IFramePos);
+
+    EXPECT_EQ(demuxer->SetFrameRate(-1.0, 0), Status::OK);
+    EXPECT_EQ(demuxer->SetFrameRate(1.0, 0), Status::OK);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekMs2FrameId_012, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginMock = std::make_shared<DemuxerPluginMock>("StatusOK");
+    demuxer->audioTrackId_ = 1;
+    demuxer->demuxerPluginManager_->temp2TrackInfoMap_[0].streamID = 0;
+    demuxer->demuxerPluginManager_->temp2TrackInfoMap_[1].streamID = 1;
+    demuxer->demuxerPluginManager_->temp2TrackInfoMap_[2].streamID = 2;
+
+    demuxer->demuxerPluginManager_->streamInfoMap_[0].plugin = pluginMock;
+    demuxer->demuxerPluginManager_->streamInfoMap_[1].plugin = pluginMock;
+    demuxer->demuxerPluginManager_->streamInfoMap_[2].plugin = pluginMock;
+
+    demuxer->isParserTaskEnd_ = false;
+    uint32_t frameId = 0;
+    std::vector<uint32_t> IFramePos = { 100 };
+
+    EXPECT_EQ(demuxer->SeekMs2FrameId(100, frameId), Status::OK);
+    demuxer->GetIFramePos(IFramePos);
+
+    demuxer->source_  = nullptr;
+    EXPECT_EQ(demuxer->SeekMs2FrameId(100, frameId), Status::ERROR_NULL_POINTER);
+    demuxer->GetIFramePos(IFramePos);
+
+    demuxer->demuxerPluginManager_  = nullptr;
+    EXPECT_EQ(demuxer->SeekMs2FrameId(100, frameId), Status::ERROR_NULL_POINTER);
+    demuxer->GetIFramePos(IFramePos);
+
+    EXPECT_EQ(demuxer->SetFrameRate(-1.0, 0), Status::OK);
+    EXPECT_EQ(demuxer->SetFrameRate(1.0, 0), Status::OK);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_FrameId2SeekMs_012, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginMock = std::make_shared<DemuxerPluginMock>("StatusOK");
+    demuxer->audioTrackId_ = 1;
+    demuxer->demuxerPluginManager_->temp2TrackInfoMap_[0].streamID = 0;
+    demuxer->demuxerPluginManager_->temp2TrackInfoMap_[1].streamID = 1;
+    demuxer->demuxerPluginManager_->temp2TrackInfoMap_[2].streamID = 2;
+
+    demuxer->demuxerPluginManager_->streamInfoMap_[0].plugin = pluginMock;
+    demuxer->demuxerPluginManager_->streamInfoMap_[1].plugin = pluginMock;
+    demuxer->demuxerPluginManager_->streamInfoMap_[2].plugin = pluginMock;
+
+    demuxer->isParserTaskEnd_ = false;
+    int64_t seekMs = 0;
+    std::vector<uint32_t> IFramePos = { 100 };
+
+    EXPECT_EQ(demuxer->FrameId2SeekMs(100, seekMs), Status::OK);
+    demuxer->GetIFramePos(IFramePos);
+
+    demuxer->source_  = nullptr;
+    EXPECT_EQ(demuxer->FrameId2SeekMs(100, seekMs), Status::ERROR_NULL_POINTER);
+    demuxer->GetIFramePos(IFramePos);
+
+    demuxer->demuxerPluginManager_  = nullptr;
+    EXPECT_EQ(demuxer->FrameId2SeekMs(100, seekMs), Status::ERROR_NULL_POINTER);
     demuxer->GetIFramePos(IFramePos);
 
     EXPECT_EQ(demuxer->SetFrameRate(-1.0, 0), Status::OK);

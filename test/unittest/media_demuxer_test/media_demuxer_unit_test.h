@@ -139,7 +139,15 @@ public:
     {
         return mapStatus_[name_];
     }
-    Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) override
+    Status Dts2FrameId(int64_t dts, uint32_t &frameId) override
+    {
+        return mapStatus_[name_];
+    }
+    Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId) override
+    {
+        return mapStatus_[name_];
+    }
+    Status FrameId2SeekMs(uint32_t frameId, int64_t &seekMs) override
     {
         return mapStatus_[name_];
     }
