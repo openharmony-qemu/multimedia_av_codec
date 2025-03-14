@@ -36,6 +36,7 @@ struct SamplePacket {
     uint32_t offset = 0;
     std::vector<AVPacket*> pkts {};
     bool isEOS = false;
+    bool isAnnexb = false;
     ~SamplePacket()
     {
         for (auto pkt : pkts) {

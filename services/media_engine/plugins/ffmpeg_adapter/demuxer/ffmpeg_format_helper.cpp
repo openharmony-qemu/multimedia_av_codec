@@ -779,16 +779,16 @@ void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &for
 void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &format,
                                              const AVFormatContext& avFormatContext)
 {
-    int sampelRate = avStream.codecpar->sample_rate;
+    int sampleRate = avStream.codecpar->sample_rate;
     int channels = avStream.codecpar->channels;
     if (channels <= 0) {
         channels = avStream.codecpar->ch_layout.nb_channels;
     }
     int frameSize = avStream.codecpar->frame_size;
-    if (sampelRate > 0) {
-        format.Set<Tag::AUDIO_SAMPLE_RATE>(static_cast<uint32_t>(sampelRate));
+    if (sampleRate > 0) {
+        format.Set<Tag::AUDIO_SAMPLE_RATE>(static_cast<uint32_t>(sampleRate));
     } else {
-        MEDIA_LOG_D("Parse sample rate failed: " PUBLIC_LOG_D32, sampelRate);
+        MEDIA_LOG_D("Parse sample rate failed: " PUBLIC_LOG_D32, sampleRate);
     }
     if (channels > 0) {
         format.Set<Tag::AUDIO_OUTPUT_CHANNELS>(static_cast<uint32_t>(channels));

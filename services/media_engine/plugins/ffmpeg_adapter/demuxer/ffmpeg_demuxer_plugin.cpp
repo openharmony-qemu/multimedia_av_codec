@@ -111,6 +111,12 @@ static const std::vector<AVMediaType> g_streamMediaTypeVec = {
     AVMEDIA_TYPE_TIMEDMETA
 };
 
+static const std::vector<AVCodecID> g_streamContainedXPS = {
+    AV_CODEC_ID_H264,
+    AV_CODEC_ID_HEVC,
+    AV_CODEC_ID_VVC
+};
+
 static std::vector<AVCodecID> g_imageCodecID = {
     AV_CODEC_ID_MJPEG,
     AV_CODEC_ID_PNG,
@@ -561,6 +567,10 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
     std::shared_ptr<SamplePacket> dstSamplePacket)
 {
     Status ret = Status::OK;
+    if (dstSamplePacket->isAnnexb) {
+        MEDIA_LOG_D("Has converted");
+        return ret;
+    }
     auto codecId = formatContext_->streams[srcAVPacket->stream_index]->codecpar->codec_id;
     if (codecId == AV_CODEC_ID_HEVC && streamParser_ != nullptr && streamParserInited_) {
         ret = ConvertHevcToAnnexb(*srcAVPacket, dstSamplePacket);
@@ -578,6 +588,7 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
         cacheQueue_.Pop(dstSamplePacket->pkts[0]->stream_index);
         return Status::ERROR_AGAIN;
     }
+    dstSamplePacket->isAnnexb = true;
     return ret;
 }
 
@@ -1573,6 +1584,15 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     for (auto pkt : samplePacket->pkts) {
         FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet in sample is nullptr");
         totalSize += pkt->size;
+    }
+
+    FALSE_RETURN_V_MSG_E(trackId < formatContext_->nb_streams, Status::ERROR_UNKNOWN, "Track is out of range");
+    AVStream* avStream = formatContext_->streams[trackId];
+    FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr,
+        Status::ERROR_UNKNOWN, "AVStream is nullptr");
+    if ((std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), avStream->codecpar->codec_id) > 0) && 
+        static_cast<uint32_t>(samplePacket->pkts[0]->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY)) {
+        totalSize += avStream->codecpar->extradata_size;
     }
     size = totalSize;
     return Status::OK;
