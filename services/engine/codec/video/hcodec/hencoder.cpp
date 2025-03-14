@@ -487,8 +487,8 @@ std::optional<uint32_t> HEncoder::GetSQRFactorFromUser(const Format &format)
 std::optional<uint32_t> HEncoder::GetSQRMaxBitrateFromUser(const Format &format)
 {
     int64_t maxBitRateLong;
-    if (format.GetLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitRateLong) && maxBitRateLong > 0 &&
-        maxBitRateLong <= UINT32_MAX) {
+    if (format.GetLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitRateLong) &&
+        maxBitRateLong > 0 && maxBitRateLong <= UINT32_MAX) {
         LOGI("user set max bit rate %" PRId64 "", maxBitRateLong);
         return static_cast<uint32_t>(maxBitRateLong);
     }
