@@ -63,6 +63,8 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
+    int32_t NotifyMemoryRecycle() override;
+    int32_t NotifyMemoryWriteBack() override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
 
     struct HBuffer {
@@ -83,6 +85,7 @@ public:
         int32_t width = 0;
         int32_t height = 0;
         int32_t bitDepth = BIT_DEPTH8BIT;
+        bool hasSwapedOut_ = false;
     };
 
 private:
@@ -104,6 +107,7 @@ private:
         FLUSHING,
         EOS,
         ERROR,
+        FREEZE,
     };
 
     enum PixelBitDepth : int32_t {
@@ -156,6 +160,15 @@ private:
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     GSError RegisterListenerToSurface(const sptr<Surface> &surface);
     int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
+
+    // for memory recycle
+    int32_t FreezeBuffers();
+    int32_t ActiveBuffers();
+    bool CanSwapOut(uint32_t index, std::shared_ptr<HBuffer> &HBuffer);
+    int32_t SwapOutBufferByIndex(uint32_t index);
+    int32_t SwapInBufferByIndex(uint32_t index);
+    bool disableDmaSwap_ = false;
+    int pid_ = -1;
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;

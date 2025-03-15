@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "fcodec.h"
 #include <iostream>
 #include <set>
 #include <thread>
@@ -23,7 +24,6 @@
 #include "avcodec_log.h"
 #include "utils.h"
 #include "avcodec_codec_name.h"
-#include "fcodec.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -137,6 +137,7 @@ int32_t FCodec::Initialize()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(!codecName_.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed:  empty name");
+    pid_ = getpid();
     std::string fcodecName;
     std::string_view mime;
     for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
@@ -1124,9 +1125,8 @@ void FCodec::DumpOutputBuffer()
 
 void FCodec::ReceiveFrame()
 {
-    if (state_ == State::STOPPING || state_ == State::FLUSHING) {
-        return;
-    } else if (state_ != State::RUNNING) {
+    CHECK_AND_RETURN_LOG(state_ != State::STOPPING && state_ != State::FLUSHING, "Invalid state");
+    if (state_ != State::RUNNING) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
@@ -1492,6 +1492,120 @@ int32_t FCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "Set callback failed: callback is NULL");
     callback_ = callback;
+    return AVCS_ERR_OK;
+}
+
+// for memory recycle
+bool FCodec::CanSwapOut(uint32_t index, std::shared_ptr<FBuffer> &fBuffer)
+{
+    if (index == INDEX_INPUT) {
+        AVCODEC_LOGD("Current buffers unsupport.");
+        return false;
+    }
+    if (index == INDEX_OUTPUT) {
+        FBuffer::Owner ownerValue = fBuffer->owner_.load();
+        AVCODEC_LOGD("Buffer type: [%{public}u], fBuffer->owner_: [%{public}d], fBuffer->hasSwapedOut_: [%{public}d].",
+                     index, ownerValue, fBuffer->hasSwapedOut_);
+        std::shared_ptr<FSurfaceMemory> surfaceMemory = fBuffer->sMemory_;
+        CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
+        sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+        if (surfaceBuffer) {
+            return !(ownerValue == FBuffer::Owner::OWNED_BY_SURFACE || fBuffer->hasSwapedOut_ ||
+                     surfaceBuffer == nullptr);
+        } else {
+            return !(ownerValue == FBuffer::Owner::OWNED_BY_SURFACE || ownerValue == FBuffer::Owner::OWNED_BY_USER ||
+                     fBuffer->hasSwapedOut_ || surfaceBuffer == nullptr);
+        }
+    }
+    return true;
+}
+
+int32_t FCodec::SwapOutBufferByIndex(uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOGD(index == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped out!");
+    for (size_t i = 0u; i < buffers_[index].size(); i++) {
+        std::shared_ptr<FBuffer> fBuffer = buffers_[index][i];
+        if (!CanSwapOut(index, fBuffer)) {
+            AVCODEC_LOGE("Buf: [%{public}u] can't freeze, owner: [%{public}d] swaped out: [%{public}d]!", i,
+                         fBuffer->owner_.load(), fBuffer->hasSwapedOut_);
+            continue;
+        }
+        std::shared_ptr<FSurfaceMemory> surfaceMemory = fBuffer->sMemory_;
+        CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Buf[%{public}u]->sMemory error!", i);
+        sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+        CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Buf[%{public}u]->surfaceBuf error!", i);
+        int32_t fd = surfaceBuffer->GetFileDescriptor();
+        int32_t ret = DmaSwaper::GetInstance().SwapOutDma(pid_, fd);
+        if (ret != AVCS_ERR_OK) {
+            AVCODEC_LOGE("Buffer type[%{public}u] bufferId[%{public}u], fd[%{public}d], pid[%{public}d] freeze failed!",
+                         index, i, fd, pid_);
+            int32_t errCode = ActiveBuffers();
+            CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Active buffers failed!");
+            return ret;
+        }
+        AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap out success!", i ,fd);
+        fBuffer->hasSwapedOut_ = true;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t FCodec::SwapInBufferByIndex(uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOGD(index == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped in!");
+    for (size_t i = 0u; i < buffers_[index].size(); i++) {
+        std::shared_ptr<FBuffer> fBuffer = buffers_[index][i];
+        if (!fBuffer->hasSwapedOut_) {
+            continue;
+        }
+        std::shared_ptr<FSurfaceMemory> surfaceMemory = fBuffer->sMemory_;
+        CHECK_AND_CONTINUE_LOG(surfaceMemory != nullptr, "Buf[%{public}u]->sMemory error!", i);
+        sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+        CHECK_AND_CONTINUE_LOG(surfaceBuffer != nullptr, "Buf[%{public}u]->surfaceBuf error!", i);
+        int32_t fd = surfaceBuffer->GetFileDescriptor();
+        int32_t ret = DmaSwaper::GetInstance().SwapInDma(pid_, fd);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Buf[%{public}u] fd[%{public}u] swap in error!", i ,fd);
+        AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap in success!", i ,fd);
+        fBuffer->hasSwapedOut_ = false;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t FCodec::FreezeBuffers()
+{
+    CHECK_AND_RETURN_RET_LOGD(state_ != State::FREEZE, AVCS_ERR_OK, "FCodec had been frozen!");
+    int32_t ret = SwapOutBufferByIndex(INDEX_INPUT);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Input buffers swap out failed!");
+    ret = SwapOutBufferByIndex(INDEX_OUTPUT);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Output buffers swap out failed!");
+    return AVCS_ERR_OK;
+}
+
+int32_t FCodec::ActiveBuffers()
+{
+    CHECK_AND_RETURN_RET_LOGD(state_ == State::FREEZE, AVCS_ERR_INVALID_STATE, "Invalid state!");
+    int32_t ret = SwapInBufferByIndex(INDEX_INPUT);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Input buffers swap in failed!");
+    ret = SwapInBufferByIndex(INDEX_OUTPUT);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Output buffers swap in failed!");
+    return AVCS_ERR_OK;
+}
+
+int32_t FCodec::NotifyMemoryRecycle()
+{
+    CHECK_AND_RETURN_RET_LOG(!disableDmaSwap_, 0, "FCodec dma swap has been diabled!");
+    AVCODEC_LOGI("Begin to freeze this codec!");
+    int32_t errCode = FreezeBuffers();
+    CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Fcodec freeze buffers failed!");
+    state_ = State::FREEZE;
+    return AVCS_ERR_OK;
+}
+
+int32_t FCodec::NotifyMemoryWriteBack()
+{
+    AVCODEC_LOGI("Begin to active this codec!");
+    int32_t errCode = ActiveBuffers();
+    CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Fcodec active buffers failed!");
+    state_ = State::RUNNING;
     return AVCS_ERR_OK;
 }
 

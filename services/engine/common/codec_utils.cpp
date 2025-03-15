@@ -14,13 +14,16 @@
  */
 
 #include "codec_utils.h"
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include "fcntl.h"
 #include "avcodec_log.h"
 #include "media_description.h"
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodec"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CODEC_UTILS"};
 constexpr uint32_t INDEX_ARRAY = 2;
 std::map<VideoPixelFormat, AVPixelFormat> g_pixelFormatMap = {
     {VideoPixelFormat::YUVI420, AV_PIX_FMT_YUV420P},
@@ -340,6 +343,51 @@ int32_t Scale::Convert(uint8_t **srcData, const int32_t *srcLineSize, uint8_t **
         return AVCS_ERR_UNKNOWN;
     }
     return AVCS_ERR_OK;
+}
+
+// for memroy recycle
+DmaSwaper::DmaSwaper()
+{
+    CHECK_AND_RETURN_LOG(reclaimDriverFd_ <= 0, "Already initialized!");
+    reclaimDriverFd_ = open(DMA_DEVICE_FILE, O_RDWR | O_CLOEXEC | O_NONBLOCK);
+    CHECK_AND_RETURN_LOG(reclaimDriverFd_ > 0, "Fail to open device!");
+}
+
+DmaSwaper::~DmaSwaper()
+{
+    CHECK_AND_RETURN_LOG(reclaimDriverFd_ > 0, "Invalid fd!");
+    close(reclaimDriverFd_);
+    reclaimDriverFd_ = -1;
+}
+
+int32_t DmaSwaper::SwapOutDma(pid_t pid, int bufFd)
+{
+    CHECK_AND_RETURN_RET_LOG(reclaimDriverFd_ > 0, AVCS_ERR_UNKNOWN, "reclaimDriverFd_ <= 0!");
+    DmaBufIoctlSwPara param {
+        .pid = pid,
+        .ino = 0,
+        .fd = bufFd
+    };
+    AVCODEC_LOGI("SwapOutDma do ioctl!");
+    return ioctl(reclaimDriverFd_, DMA_BUF_RECLAIM_FD, &param);
+}
+
+int32_t DmaSwaper::SwapInDma(pid_t pid, int bufFd)
+{
+    CHECK_AND_RETURN_RET_LOG(reclaimDriverFd_ > 0, AVCS_ERR_UNKNOWN, "reclaimDriverFd_ <= 0!");
+    DmaBufIoctlSwPara param {
+        .pid = pid,
+        .ino = 0,
+        .fd = bufFd
+    };
+    AVCODEC_LOGI("SwapInDma do ioctl!");
+    return ioctl(reclaimDriverFd_, DMA_BUF_RESUME_FD, &param);
+}
+
+DmaSwaper &DmaSwaper::GetInstance()
+{
+    static DmaSwaper swaper;
+    return swaper;
 }
 } // namespace Codec
 } // namespace MediaAVCodec
