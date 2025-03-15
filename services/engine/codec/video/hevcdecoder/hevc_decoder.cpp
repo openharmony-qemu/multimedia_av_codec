@@ -1617,7 +1617,7 @@ int32_t HevcDecoder::ActiveBuffers()
 int32_t HevcDecoder::SwapOutBufferByIndex(uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOGD(index == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped out!");
-    for (size_t i = 0u; i < buffers_[index].size(); i++) {
+    for (uint32_t i = 0u; i < buffers_[index].size(); i++) {
         std::shared_ptr<HBuffer> hBuffer = buffers_[index][i];
         if (!CanSwapOut(index, hBuffer)) {
             AVCODEC_LOGE("Buf: [%{public}u] can't freeze, owner: [%{public}d] swaped out: [%{public}d]!", i,
@@ -1670,7 +1670,7 @@ bool HevcDecoder::CanSwapOut(uint32_t index, std::shared_ptr<HBuffer> &hBuffer)
 int32_t HevcDecoder::SwapInBufferByIndex(uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOGD(index == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped in!");
-    for (size_t i = 0u; i < buffers_[index].size(); i++) {
+    for (uint32_t i = 0u; i < buffers_[index].size(); i++) {
         std::shared_ptr<HBuffer> hBuffer = buffers_[index][i];
         if (!hBuffer->hasSwapedOut_) {
             continue;
