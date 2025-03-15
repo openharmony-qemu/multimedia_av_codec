@@ -1526,7 +1526,7 @@ int32_t FCodec::SwapOutBufferByIndex(uint32_t index)
     for (uint32_t i = 0u; i < buffers_[index].size(); i++) {
         std::shared_ptr<FBuffer> fBuffer = buffers_[index][i];
         if (!CanSwapOut(index, fBuffer)) {
-            AVCODEC_LOGE("Buf: [%{public}u] can't freeze, owner: [%{public}d] swaped out: [%{public}d]!", i,
+            AVCODEC_LOGW("Buf: [%{public}u] can't freeze, owner: [%{public}d] swaped out: [%{public}d]!", i,
                          fBuffer->owner_.load(), fBuffer->hasSwapedOut_);
             continue;
         }
