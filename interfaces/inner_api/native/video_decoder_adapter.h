@@ -54,8 +54,8 @@ public:
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
     void OnOutputFormatChanged(const MediaAVCodec::Format &format);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
-    int32_t ReleaseOutputBuffer(uint32_t index, bool render);
-    int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs);
+    int32_t ReleaseOutputBuffer(uint32_t index, bool render, int64_t pts = 0);
+    int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs, int64_t pts = 0);
     void AquireAvailableInputBuffer();
     int32_t SetOutputSurface(sptr<Surface> videoSurface);
     int32_t GetOutputFormat(Format &format);

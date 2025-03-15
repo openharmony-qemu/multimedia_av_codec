@@ -838,14 +838,14 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         MEDIA_LOG_D("ReleaseOutputBuffer index " PUBLIC_LOG_U32 " renderTime " PUBLIC_LOG_D64 " curTime " PUBLIC_LOG_D64
             " lastRenderTimeNs " PUBLIC_LOG_D64, index, renderTime, currentSysTimeNs, lastRenderTimeNs);
         RenderAtTimeDfx(renderTime, currentSysTimeNs, lastRenderTimeNs);
-        DoRenderOutputBufferAtTime(index, renderTime);
+        DoRenderOutputBufferAtTime(index, renderTime, outBuffer->pts_);
         if (!isInSeekContinous_) {
             lastRenderTimeNs_ = renderTime;
         }
     } else {
         MEDIA_LOG_D("ReleaseOutputBuffer index= " PUBLIC_LOG_D32" isRender= " PUBLIC_LOG_U32" pts= " PUBLIC_LOG_D64,
                     index, static_cast<uint32_t>(render), outBuffer->pts_);
-        DoReleaseOutputBuffer(index, render);
+        DoReleaseOutputBuffer(index, render, outBuffer->pts_);
     }
     if (!isInSeekContinous_) {
         int64_t renderDelay = renderTime > 0L && render ?
@@ -855,21 +855,21 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
     return Status::OK;
 }
 
-void DecoderSurfaceFilter::DoReleaseOutputBuffer(uint32_t index, bool render)
+void DecoderSurfaceFilter::DoReleaseOutputBuffer(uint32_t index, bool render, int64_t pts)
 {
     if (postProcessor_) {
         postProcessor_->ReleaseOutputBuffer(index, render);
     } else if (videoDecoder_) {
-        videoDecoder_->ReleaseOutputBuffer(index, render);
+        videoDecoder_->ReleaseOutputBuffer(index, render, pts);
     }
 }
 
-void DecoderSurfaceFilter::DoRenderOutputBufferAtTime(uint32_t index, int64_t renderTime)
+void DecoderSurfaceFilter::DoRenderOutputBufferAtTime(uint32_t index, int64_t renderTime, int64_t pts)
 {
     if (postProcessor_) {
         postProcessor_->RenderOutputBufferAtTime(index, renderTime);
     } else if (videoDecoder_) {
-        videoDecoder_->RenderOutputBufferAtTime(index, renderTime);
+        videoDecoder_->RenderOutputBufferAtTime(index, renderTime, pts);
     }
 }
 
@@ -948,7 +948,7 @@ void DecoderSurfaceFilter::DecoderDrainOutputBuffer(uint32_t index, std::shared_
     }
     prevDecoderPts_ = outputBuffer->pts_;
     FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
-    videoDecoder_->ReleaseOutputBuffer(index, true);
+    videoDecoder_->ReleaseOutputBuffer(index, true, outputBuffer->pts_);
 }
 
 void DecoderSurfaceFilter::RenderLoop()
@@ -1021,7 +1021,7 @@ bool DecoderSurfaceFilter::DrainSeekClosest(uint32_t index, std::shared_ptr<AVBu
     FALSE_RETURN_V_NOLOG(isSeek_, false);
     bool isEOS = outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     if (outputBuffer->pts_ < seekTimeUs_ && !isEOS) {
-        videoDecoder_->ReleaseOutputBuffer(index, false);
+        videoDecoder_->ReleaseOutputBuffer(index, false, outputBuffer->pts_);
         return true;
     }
     MEDIA_LOG_I("Seek arrive target video pts: " PUBLIC_LOG_D64, seekTimeUs_);
