@@ -183,6 +183,20 @@ std::vector<std::string> SplitByChar(const char* str, const char* pattern)
     return resultVec;
 }
 
+void DumpFileInfo(const AVFormatContext& avFormatContext)
+{
+    FALSE_LOG_MSG_W(avFormatContext.iformat != nullptr, "Iformat is nullptr");
+    MEDIA_LOG_D("File name [" PUBLIC_LOG_S "]", avFormatContext.iformat->name);
+    if (StartWith(avFormatContext.iformat->name, "mov,mp4,m4a")) {
+        const AVDictionaryEntry *type = av_dict_get(avFormatContext.metadata, "major_brand", NULL, 0);
+        if (type == nullptr) {
+            MEDIA_LOG_D("Not found ftyp");
+        } else {
+            MEDIA_LOG_D("Major brand: " PUBLIC_LOG_S, type->value);
+        }
+    }
+}
+
 std::string RemoveDuplication(const std::string origin)
 {
     FALSE_RETURN_V_NOLOG(origin.find(";") != std::string::npos, origin);
@@ -468,6 +482,7 @@ void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, 
 void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, Meta& format)
 {
     ParseTrackType(avFormatContext, format);
+    DumpFileInfo(avFormatContext);
     format.Set<Tag::MEDIA_FILE_TYPE>(GetFileTypeByName(avFormatContext));
     int64_t duration = avFormatContext.duration;
     if (duration == AV_NOPTS_VALUE) {
@@ -606,7 +621,6 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
     if (StartWith(fileName, "mov,mp4,m4a")) {
         const AVDictionaryEntry *type = av_dict_get(avFormatContext.metadata, "major_brand", NULL, 0);
         if (type == nullptr) {
-            MEDIA_LOG_D("Not found ftyp");
             return FileType::MP4;
         }
         if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A") ||
@@ -622,8 +636,6 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
             fileType = g_convertFfmpegFileType[fileName];
         }
     }
-    MEDIA_LOG_D("File name [" PUBLIC_LOG_S "] file type [" PUBLIC_LOG_D32 "]",
-        fileName, static_cast<int32_t>(fileType));
     return fileType;
 }
 
