@@ -1543,7 +1543,7 @@ int32_t FCodec::SwapOutBufferByIndex(uint32_t index)
             CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Active buffers failed!");
             return ret;
         }
-        AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap out success!", i ,fd);
+        AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap out success!", i, fd);
         fBuffer->hasSwapedOut_ = true;
     }
     return AVCS_ERR_OK;
@@ -1563,8 +1563,8 @@ int32_t FCodec::SwapInBufferByIndex(uint32_t index)
         CHECK_AND_CONTINUE_LOG(surfaceBuffer != nullptr, "Buf[%{public}u]->surfaceBuf error!", i);
         int32_t fd = surfaceBuffer->GetFileDescriptor();
         int32_t ret = DmaSwaper::GetInstance().SwapInDma(pid_, fd);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Buf[%{public}u] fd[%{public}u] swap in error!", i ,fd);
-        AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap in success!", i ,fd);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Buf[%{public}u] fd[%{public}u] swap in error!", i, fd);
+        AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap in success!", i, fd);
         fBuffer->hasSwapedOut_ = false;
     }
     return AVCS_ERR_OK;

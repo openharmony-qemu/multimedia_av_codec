@@ -164,7 +164,7 @@ private:
     // for memory recycle
     int32_t FreezeBuffers();
     int32_t ActiveBuffers();
-    bool CanSwapOut(uint32_t index, std::shared_ptr<HBuffer> &HBuffer);
+    bool CanSwapOut(uint32_t index, std::shared_ptr<HBuffer> &hBuffer);
     int32_t SwapOutBufferByIndex(uint32_t index);
     int32_t SwapInBufferByIndex(uint32_t index);
     bool disableDmaSwap_ = false;
