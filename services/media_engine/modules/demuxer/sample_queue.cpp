@@ -150,13 +150,18 @@ Status SampleQueue::AcquireBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
     if (!rollbackBufferQueue_.empty()) {
         sampleBuffer = rollbackBufferQueue_.front();
         rollbackBufferQueue_.pop_front();
-        MEDIA_LOG_I(PUBLIC_LOG_S " AcquireBuffer from rollbackBufferQueue_", config_.queueName_.c_str());
+        MEDIA_LOG_D(PUBLIC_LOG_S " AcquireBuffer from rollbackBufferQueue_", config_.queueName_.c_str());
     } else {
         FALSE_RETURN_V(sampleBufferQueueConsumer_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
         Status ret = sampleBufferQueueConsumer_->AcquireBuffer(sampleBuffer);
         FALSE_RETURN_V(ret == Status::OK, ret);
-        MEDIA_LOG_D(PUBLIC_LOG_S" bufferId: " PUBLIC_LOG_U64
-        ", pts: " PUBLIC_LOG_D64, config_.queueName_.c_str(), sampleBuffer->GetUniqueId(), sampleBuffer->pts_);
+        MEDIA_LOG_D(PUBLIC_LOG_S " bufferId: " PUBLIC_LOG_U64 ", pts: " PUBLIC_LOG_D64
+                                 " GetCacheDuration= " PUBLIC_LOG_U64 " GetFilledBufferSize= " PUBLIC_LOG_U32,
+            config_.queueName_.c_str(),
+            sampleBuffer->GetUniqueId(),
+            sampleBuffer->pts_,
+            GetCacheDuration(),
+            sampleBufferQueueConsumer_->GetFilledBufferSize());
     }
 
     if (!config_.isSupportBitrateSwitch_) {
@@ -226,7 +231,7 @@ void SampleQueue::CopyMeta(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr
 
     uint32_t trackId = INVALID_TRACK_ID;
     if (!dstBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, trackId)) {
-        MEDIA_LOG_W("trackId not found");
+        MEDIA_LOG_I("trackId not found");
     }
 
     dstBuffer->meta_ = std::make_shared<Meta>(*(srcBuffer->meta_));
