@@ -83,6 +83,11 @@ public:
 
     void OnError(MediaAVCodec::AVCodecErrorType type, int32_t errorCode) override
     {
+        if (auto surfaceDecoderFilter = surfaceDecoderFilter_.lock()) {
+            surfaceDecoderFilter->OnError(type, errorCode);
+        } else {
+            MEDIA_LOG_W("invalid surfaceDecoderFilter");
+        }
     }
 
     void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) override
@@ -109,6 +114,15 @@ SurfaceDecoderFilter::SurfaceDecoderFilter(const std::string& name, FilterType t
 SurfaceDecoderFilter::~SurfaceDecoderFilter()
 {
     MEDIA_LOG_I("surface decoder filter destroy");
+}
+
+void SurfaceDecoderFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
+{
+    MEDIA_LOG_E("AVCodec decoder error happened. ErrorType: %{public}d, errorCode: %{public}d",
+        static_cast<int32_t>(errorType), errorCode);
+    if (eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
+    }
 }
 
 void SurfaceDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,

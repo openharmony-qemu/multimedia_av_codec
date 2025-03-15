@@ -297,6 +297,7 @@ Status SurfaceEncoderAdapter::SetTransCoderMode()
 
 sptr<Surface> SurfaceEncoderAdapter::GetInputSurface()
 {
+    FALSE_RETURN_V_MSG(codecServer_ != nullptr, nullptr, "codecServer_ is nullptr");
     return codecServer_->CreateInputSurface();
 }
 
