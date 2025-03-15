@@ -63,7 +63,6 @@ public:
     static std::optional<CodecVvcProfile> InnerVvcProfileToOmxProfile(VVCProfile profile);
     static std::optional<std::vector<int32_t>> InnerVvcMaxLevelToAllLevels(VVCLevel maxLevel);
     // bitrate mode
-    static std::optional<VideoEncodeBitrateMode> HdiBitrateModeToInnerMode(CodecHDI::BitRateMode mode);
     static std::optional<OMX_VIDEO_CONTROLRATETYPE> InnerModeToOmxBitrateMode(VideoEncodeBitrateMode mode);
     static std::optional<VideoEncodeBitrateMode> OmxBitrateModeToInnerMode(OMX_VIDEO_CONTROLRATETYPE mode);
 };

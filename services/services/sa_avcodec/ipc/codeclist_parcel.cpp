@@ -63,6 +63,10 @@ bool CodecListParcel::Marshalling(MessageParcel &parcel, CapabilityData &capabil
     (void)parcel.WriteBool(capabilityData.supportSwapWidthHeight);
     (void)Marshalling(parcel, capabilityData.featuresMap);
     (void)parcel.WriteInt32(capabilityData.rank);
+    (void)parcel.WriteInt32(capabilityData.maxBitrate.minVal);
+    (void)parcel.WriteInt32(capabilityData.maxBitrate.maxVal);
+    (void)parcel.WriteInt32(capabilityData.sqrFactor.minVal);
+    (void)parcel.WriteInt32(capabilityData.sqrFactor.maxVal);
     AVCODEC_LOGD("success to Marshalling capabilityDataArray");
 
     return true;
@@ -143,6 +147,10 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, CapabilityData &capab
     CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.featuresMap), false,
                              "failed to Unmarshalling features map");
     capabilityData.rank = parcel.ReadInt32();
+    capabilityData.maxBitrate.minVal = parcel.ReadInt32();
+    capabilityData.maxBitrate.maxVal = parcel.ReadInt32();
+    capabilityData.sqrFactor.minVal = parcel.ReadInt32();
+    capabilityData.sqrFactor.maxVal = parcel.ReadInt32();
     AVCODEC_LOGD("success to Unmarshalling capabilityDataArray");
     return true;
 }
