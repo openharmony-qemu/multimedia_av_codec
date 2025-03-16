@@ -478,6 +478,13 @@ void DownloadMonitor::SetStartPts(int64_t startPts)
     }
 }
 
+void DownloadMonitor::SetExtraCache(uint64_t cacheDuration)
+{
+    if (downloader_) {
+        downloader_->SetExtraCache(cacheDuration);
+    }
+}
+
 void DownloadMonitor::SetMediaStreams(const MediaStreamList& mediaStreams)
 {
     if (downloader_) {

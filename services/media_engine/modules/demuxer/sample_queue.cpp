@@ -120,10 +120,12 @@ Status SampleQueue::PushBuffer(std::shared_ptr<AVBuffer>& sampleBuffer, bool ava
     Status status = sampleBufferQueueProducer_->PushBuffer(sampleBuffer, available);
     FALSE_RETURN_V(available && status == Status::OK, status);
 
+    lastEnterSamplePts_ = sampleBuffer->pts_;
+    MEDIA_LOG_D(PUBLIC_LOG_S " PushBuffer pts=" PUBLIC_LOG_D64 " dts=" PUBLIC_LOG_D64 " duration=" PUBLIC_LOG_D64,
+        config_.queueName_.c_str(), sampleBuffer->pts_, sampleBuffer->dts_, sampleBuffer->duration_);
     if (!config_.isSupportBitrateSwitch_) {
         return Status::OK;
     }
-    lastEnterSamplePts_ = sampleBuffer->pts_;
 
     if (!IsKeyFrame(sampleBuffer)) {
         return Status::OK;
@@ -190,6 +192,7 @@ Status SampleQueue::AcquireCopyToDstBuffer(std::shared_ptr<AVBuffer>& dstBuffer)
         RollbackBuffer(srcBuffer);
         return ret;
     }
+    UpdateLastOutSamplePts(dstBuffer->pts_);
 
     ret = ReleaseBuffer(srcBuffer);
     if (ret == Status::OK) {
@@ -226,7 +229,7 @@ void SampleQueue::CopyMeta(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr
 
     uint32_t trackId = INVALID_TRACK_ID;
     if (!dstBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, trackId)) {
-        MEDIA_LOG_W("trackId not found");
+        MEDIA_LOG_D("trackId not found");
     }
 
     dstBuffer->meta_ = std::make_shared<Meta>(*(srcBuffer->meta_));
@@ -237,9 +240,6 @@ void SampleQueue::CopyMeta(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr
     if (trackId != INVALID_TRACK_ID) {
         dstBuffer->meta_->SetData(Tag::REGULAR_TRACK_ID, trackId);
     }
-    MEDIA_LOG_D(PUBLIC_LOG_S " after copy dstBuffer  meta=" PUBLIC_LOG_S,
-        config_.queueName_.c_str(),
-        StringifyMeta(dstBuffer->meta_).c_str());
 }
 
 Status SampleQueue::CopyAVMemory(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer)
@@ -299,7 +299,7 @@ Status SampleQueue::QuerySizeForNextAcquireBuffer(size_t& size)
         sampleBuffer = rollbackBufferQueue_.front();
     } else {
         Status ret = AcquireBuffer(sampleBuffer);
-        FALSE_RETURN_V_MSG_W(
+        FALSE_RETURN_V_MSG_D(
             ret == Status::OK, ret, PUBLIC_LOG_S " failed ret=" PUBLIC_LOG_D32, config_.queueName_.c_str(), ret);
         SampleQueue::RollbackBuffer(sampleBuffer);
     }
@@ -397,6 +397,13 @@ Status SampleQueue::UpdateLastEndSamplePts(int64_t lastEndSamplePts)
     return Status::OK;
 }
 
+Status SampleQueue::UpdateLastOutSamplePts(int64_t lastOutSamplePts)
+{
+    MEDIA_LOG_D("UpdateLastOutSamplePts lastOutSamplePts=" PUBLIC_LOG_D64, lastOutSamplePts);
+    lastOutSamplePts_ = lastOutSamplePts;
+    return Status::OK;
+}
+
 Status SampleQueue::ResponseForSwitchDone(int64_t startPtsOnSwitch)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S " ResponseForSwitchDone startPtsOnSwitch=" PUBLIC_LOG_D64,
@@ -404,7 +411,7 @@ Status SampleQueue::ResponseForSwitchDone(int64_t startPtsOnSwitch)
         startPtsOnSwitch);
 
     Status ret = DiscardSampleAfter(startPtsOnSwitch);
-    FALSE_RETURN_V(ret == Status::OK, ret);
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     {
         std::lock_guard<std::mutex> statusLock(statusMutex_);
         if (switchStatus_ == SelectBitrateStatus::SWITCHING) {
@@ -519,16 +526,15 @@ void SampleQueue::UpdateQueueId(uint32_t queueId)
     config_.queueId_ = queueId;
 }
 
-int64_t SampleQueue::GetCacheDuration() const
+uint64_t SampleQueue::GetCacheDuration() const
 {
-    if (lastEnterSamplePts_ == Plugins::HST_TIME_NONE || lastEndSamplePts_ == Plugins::HST_TIME_NONE) {
+    if (lastEnterSamplePts_ == Plugins::HST_TIME_NONE || lastOutSamplePts_ == Plugins::HST_TIME_NONE) {
         return 0;
     }
-    MEDIA_LOG_D("samplequeue lastEnterSamplePts_=" PUBLIC_LOG_D64 " lastEndSamplePts_=" PUBLIC_LOG_D64,
-        lastEnterSamplePts_,
-        lastEndSamplePts_);
-    int64_t diff = lastEnterSamplePts_ - lastEndSamplePts_;
-    return (diff > 0) ? diff : 0;
+    int64_t diff = lastEnterSamplePts_ - lastOutSamplePts_;
+    MEDIA_LOG_D(PUBLIC_LOG_S " lastEnterSamplePts_=" PUBLIC_LOG_D64 " lastEndSamplePts_=" PUBLIC_LOG_D64
+        " diff=" PUBLIC_LOG_D64, config_.queueName_.c_str(), lastEnterSamplePts_, lastOutSamplePts_, diff);
+    return (diff > 0) ? static_cast<uint64_t>(diff) : 0;
 }
 
 std::string SampleQueue::StringifyMeta(std::shared_ptr<Meta> &meta)

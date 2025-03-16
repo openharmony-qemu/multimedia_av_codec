@@ -52,6 +52,7 @@ public:
     Status GetBitRates(std::vector<uint32_t>& bitRates) override;
     Status SelectBitRate(uint32_t bitRate) override;
     Status SetStartPts(int64_t startPts) override;
+    Status SetExtraCache(uint64_t cacheDuration) override;
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     Status SelectStream(int32_t streamID) override;
