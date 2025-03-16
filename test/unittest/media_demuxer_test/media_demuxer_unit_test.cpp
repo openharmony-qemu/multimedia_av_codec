@@ -615,6 +615,18 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectBitRate_002, TestSize.Level1)
     EXPECT_EQ(Status::OK, demuxer->SelectBitRate(0));
 }
 
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsRightMediaTrack, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = 1;
+    demuxer->subtitleTrackId_ = 2;
+    EXPECT_FALSE(demuxer->IsRightMediaTrack(MediaDemuxer::TRACK_ID_DUMMY, DemuxerTrackType::VIDEO));
+    EXPECT_TRUE(demuxer->IsRightMediaTrack(0, DemuxerTrackType::VIDEO));
+    EXPECT_TRUE(demuxer->IsRightMediaTrack(1, DemuxerTrackType::AUDIO));
+    EXPECT_TRUE(demuxer->IsRightMediaTrack(2, DemuxerTrackType::SUBTITLE));
+}
+
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Flush_002, TestSize.Level1)
 {
     string srtPath = "/data/test/media/drm/sm4c.ts";
@@ -1953,6 +1965,23 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckTrackEnabledById_0200, TestSize
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     demuxer->taskMap_[trackId] = nullptr;
     demuxer->sampleConsumerTaskMap_[trackId] = nullptr;
+    bool result = demuxer->CheckTrackEnabledById(trackId);
+    EXPECT_EQ(result, false);
+}
+
+/**
+ * @tc.name: MediaDemuxer_CheckTrackEnabledById_0300
+ * @tc.desc: test CheckTrackEnabledById
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckTrackEnabledById_300, TestSize.Level1)
+{
+    uint32_t trackId = 1;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    demuxer->taskMap_[trackId] = std::make_unique<Task>("dem", "0", TaskType::DEMUXER);
+    demuxer->sampleConsumerTaskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    demuxer->sampleConsumerTaskMap_[trackId] = std::make_unique<Task>("sqConsumer", "0", TaskType::DECODER);
     bool result = demuxer->CheckTrackEnabledById(trackId);
     EXPECT_EQ(result, false);
 }
