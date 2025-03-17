@@ -221,6 +221,7 @@ Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 Status SurfaceEncoderFilter::SetTransCoderMode()
 {
     MEDIA_LOG_I("SetTransCoderMode");
+    isTranscoderMode_ = true;
     mediaCodec_->SetTransCoderMode();
     return Status::OK;
 }
@@ -240,6 +241,11 @@ sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
 Status SurfaceEncoderFilter::DoPrepare()
 {
     MEDIA_LOG_I("Prepare");
+    if (isTranscoderMode_) {
+        MEDIA_LOG_I("TranscoderMode");
+        return filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+            StreamType::STREAMTYPE_ENCODED_VIDEO);
+    }
     filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
         StreamType::STREAMTYPE_ENCODED_VIDEO);
     return Status::OK;
