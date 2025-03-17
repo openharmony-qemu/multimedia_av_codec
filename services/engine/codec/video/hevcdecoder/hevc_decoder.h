@@ -86,7 +86,7 @@ public:
         int32_t width = 0;
         int32_t height = 0;
         int32_t bitDepth = BIT_DEPTH8BIT;
-        bool hasSwapedOut_ = false;
+        bool hasSwapedOut = false;
     };
 
 private:
