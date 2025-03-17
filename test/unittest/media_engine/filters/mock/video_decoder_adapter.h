@@ -43,7 +43,9 @@ public:
     MOCK_METHOD(void, OnOutputFormatChanged, (const MediaAVCodec::Format &format), ());
     MOCK_METHOD(void, OnOutputBufferAvailable, (uint32_t index, std::shared_ptr<AVBuffer> buffer), ());
     MOCK_METHOD(int32_t, ReleaseOutputBuffer, (uint32_t index, bool render), ());
+    MOCK_METHOD(int32_t, ReleaseOutputBuffer, (uint32_t index, bool render, int64_t pts), ());
     MOCK_METHOD(int32_t, RenderOutputBufferAtTime, (uint32_t index, int64_t renderTimestampNs), ());
+    MOCK_METHOD(int32_t, RenderOutputBufferAtTime, (uint32_t index, int64_t renderTimestampNs, int64_t pts), ());
     MOCK_METHOD(void, AquireAvailableInputBuffer, (), ());
     MOCK_METHOD(int32_t, SetOutputSurface, (sptr<Surface> videoSurface), ());
     MOCK_METHOD(int32_t, GetOutputFormat, (Format & format), ());

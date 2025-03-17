@@ -129,8 +129,8 @@ private:
     void ParseDecodeRateLimit();
     void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer, int64_t renderTime);
-    void DoReleaseOutputBuffer(uint32_t index, bool render);
-    void DoRenderOutputBufferAtTime(uint32_t index, int64_t renderTime);
+    void DoReleaseOutputBuffer(uint32_t index, bool render, int64_t pts = 0);
+    void DoRenderOutputBufferAtTime(uint32_t index, int64_t renderTime, int64_t pts = 0);
     bool AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer,
         int64_t renderTime = 0);
     bool DrainSeekContinuous(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);

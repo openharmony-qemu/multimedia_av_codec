@@ -398,9 +398,10 @@ int32_t VideoDecoderAdapter::GetOutputFormat(Format &format)
     return mediaCodec_->GetOutputFormat(format);
 }
 
-int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
+int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render, int64_t pts)
 {
-    AVCodecTrace trace("VideoDecoderAdapter::ReleaseOutputBuffer");
+    AVCodecTrace trace("VideoDecoderAdapter::ReleaseOutputBuffer pts " + std::to_string(pts) + " " +
+                       std::to_string(render));
     FALSE_RETURN_V_NOLOG(!isPerfRecEnabled_, ReleaseOutputBufferWithPerfRecord(index, render));
     mediaCodec_->ReleaseOutputBuffer(index, render);
     return 0;
@@ -423,9 +424,10 @@ int32_t VideoDecoderAdapter::ReleaseOutputBufferWithPerfRecord(uint32_t index, b
     return 0;
 }
 
-int32_t VideoDecoderAdapter::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+int32_t VideoDecoderAdapter::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs, int64_t pts)
 {
-    AVCodecTrace trace("VideoDecoderAdapter::RenderOutputBufferAtTime");
+    AVCodecTrace trace("RenderOutputBufferAtTime pts " + std::to_string(pts) + " time " +
+                       std::to_string(renderTimestampNs));
     MEDIA_LOG_D_SHORT("VideoDecoderAdapter::RenderOutputBufferAtTime");
     mediaCodec_->RenderOutputBufferAtTime(index, renderTimestampNs);
     return 0;
