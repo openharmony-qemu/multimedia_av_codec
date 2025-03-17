@@ -770,11 +770,9 @@ int32_t HevcDecoder::AllocateBuffers()
     if (sInfo_.surface != nullptr) {
         renderAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("renderAvailQue", outputBufferCnt);
     }
-    if (AllocateInputBuffer(inputBufferCnt, inputBufferSize_) == AVCS_ERR_NO_MEMORY ||
-        AllocateOutputBuffer(outputBufferCnt) == AVCS_ERR_NO_MEMORY) {
-        return AVCS_ERR_NO_MEMORY;
-    }
-    AVCODEC_LOGI("Allocate buffers successful");
+    CHECK_AND_RETURN_RET_LOG(AllocateInputBuffer(inputBufferCnt, inputBufferSize_) == AVCS_ERR_OK &&
+                             AllocateOutputBuffer(outputBufferCnt) == AVCS_ERR_OK,
+                             AVCS_ERR_UNKNOWN, "Allocate buffers failed!");
     return AVCS_ERR_OK;
 }
 
