@@ -29,7 +29,7 @@ namespace MediaAVCodec {
 using namespace Media;
 class AVDemuxer {
 public:
-    ~AVDemuxer() = default;
+    virtual ~AVDemuxer() = default;
 
     /**
      * @brief Select the sourceTrack by track index.
