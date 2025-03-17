@@ -14,7 +14,7 @@
  */
 #include "common/log.h"
 #include "calc_max_amplitude.h"
-#include <stdint.h>
+#include <cstdint>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "CalcMaxAmplitude" };
