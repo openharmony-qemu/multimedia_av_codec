@@ -757,7 +757,7 @@ int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, int64_t renderTime
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     if (postProcessing_) {
-        return postProcessing_->ReleaseOutputBuffer(index, true);
+        return ReleaseOutputBufferOfPostProcessing(index, true);
     } else {
         return codecBase_->RenderOutputBuffer(index);
     }
@@ -1018,8 +1018,6 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
         temporalScalability_->SetDisposableFlag(buffer);
     }
 
-    std::shared_lock<std::shared_mutex> lock(cbMutex_);
-    CHECK_AND_RETURN_LOG_WITH_TAG(videoCb_ != nullptr, "videoCb_ is nullptr!");
     if (postProcessing_) {
         /*
             If post processing is configured, this callback flow is intercepted here. Just push the decoded buffer info
@@ -1033,6 +1031,8 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
         */
         (void)PushDecodedBufferInfo(index, buffer);
     } else {
+        std::shared_lock<std::shared_mutex> lock(cbMutex_);
+        CHECK_AND_RETURN_LOG_WITH_TAG(videoCb_ != nullptr, "videoCb_ is nullptr!");
         videoCb_->OnOutputBufferAvailable(index, buffer);
     }
 }
@@ -1273,9 +1273,7 @@ int32_t CodecServer::CreatePostProcessing(const Format& format)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_, AVCS_ERR_UNKNOWN, "Decoder is not found");
     int32_t ret;
     postProcessing_ = PostProcessingType::Create(codecBase_, format, ret);
-    if (postProcessing_) {
-        AVCODEC_LOGI_WITH_TAG("Post processing is configured");
-    }
+    EXPECT_AND_LOGI_WITH_TAG(postProcessing_, "Post processing is configured");
     return ret;
 }
 
@@ -1328,13 +1326,15 @@ int32_t CodecServer::PreparePostProcessing()
     }
 
     if (postProcessingInputBufferInfoQueue_ == nullptr) {
-        postProcessingInputBufferInfoQueue_ = DecodedBufferInfoQueue::Create("PostProcessingInputBufferInfoQueue");
+        postProcessingInputBufferInfoQueue_ =
+            PostProcessingBufferInfoQueue::Create("PostProcessingInputBufferInfoQueue");
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(postProcessingInputBufferInfoQueue_, AVCS_ERR_NO_MEMORY,
                                           "Create post processing input buffer info queue failed");
     }
 
     if (postProcessingOutputBufferInfoQueue_ == nullptr) {
-        postProcessingOutputBufferInfoQueue_ = DecodedBufferInfoQueue::Create("PostProcessingOutputBufferInfoQueue");
+        postProcessingOutputBufferInfoQueue_ =
+            PostProcessingBufferInfoQueue::Create("PostProcessingOutputBufferInfoQueue");
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(postProcessingOutputBufferInfoQueue_, AVCS_ERR_NO_MEMORY,
                                           "Create post processing output buffer info queue failed");
     }
@@ -1371,10 +1371,10 @@ int32_t CodecServer::StopPostProcessing()
     if (postProcessingTask_) {
         postProcessingTask_->Stop();
     }
-    AVCODEC_LOGD_WITH_TAG("Post processing task stopped");
     if (postProcessing_) {
         int32_t ret = postProcessing_->Stop();
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "Stop post processing failed");
+        AVCODEC_LOGI_WITH_TAG("Post processing is stopped");
     }
     if (decodedBufferInfoQueue_) {
         decodedBufferInfoQueue_->Clear();
@@ -1386,12 +1386,9 @@ int32_t CodecServer::StopPostProcessing()
         postProcessingOutputBufferInfoQueue_->Clear();
     }
 
-    AVCODEC_LOGD_WITH_TAG("reset frame count");
     decodedFrameCount_.store(0);
     processedFrameCount_.store(0);
     decoderIsEOS_.store(false);
-
-    AVCODEC_LOGI_WITH_TAG("Post processing is stopped");
     return AVCS_ERR_OK;
 }
 
@@ -1435,8 +1432,8 @@ int32_t CodecServer::ResetPostProcessing()
         postProcessing_->Reset();
         CleanPostProcessingResource();
         postProcessing_.reset();
+        AVCODEC_LOGI_WITH_TAG("Post processing is reset");
     }
-    AVCODEC_LOGI_WITH_TAG("Post processing is reset");
     return AVCS_ERR_OK;
 }
 
@@ -1490,7 +1487,7 @@ int32_t CodecServer::PushDecodedBufferInfo(uint32_t index, std::shared_ptr<AVBuf
     auto info = std::make_shared<DecodedBufferInfo>();
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(info, AVCS_ERR_NO_MEMORY, "Failed to allocate info");
     info->index = index;
-    info->buffer = buffer;
+    info->buffer = std::make_shared<AVBuffer>(*buffer);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(decodedBufferInfoQueue_, AVCS_ERR_UNKNOWN, "Queue is null");
     auto ret = decodedBufferInfoQueue_->PushWait(info);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == QueueResult::OK, AVCS_ERR_UNKNOWN, "Push data failed, %{public}s",
