@@ -236,6 +236,7 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
             MEDIA_LOG_E_SHORT("mimeType not found, index: %zu", index);
             continue;
         }
+        MEDIA_LOG_D("mimeType: " PUBLIC_LOG_S ", index: " PUBLIC_LOG_U32, mime.c_str(), static_cast<uint32_t>(index));
         if (mime.find("invalid") == 0) {
             MEDIA_LOG_E_SHORT("mimeType is invalid, index: %zu", index);
             continue;
