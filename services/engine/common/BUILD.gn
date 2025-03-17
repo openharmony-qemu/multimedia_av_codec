@@ -28,6 +28,7 @@ ohos_static_library("av_codec_engine_common") {
 
   sources = [
     "$av_codec_root_dir/services/engine/common/codec_utils.cpp",
+    "$av_codec_root_dir/services/engine/common/dma_swap.cpp",
     "$av_codec_root_dir/services/engine/common/ffmpeg_converter.cpp",
     "$av_codec_root_dir/services/engine/common/fsurface_memory.cpp",
   ]

@@ -32,6 +32,7 @@
 #include "block_queue.h"
 #include "codec_utils.h"
 #include "codecbase.h"
+#include "dma_swap.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
 #include "task_thread.h"
@@ -98,7 +99,8 @@ private:
         FLUSHING,
         EOS,
         ERROR,
-        FREEZE,
+        FREEZING,
+        FROZEN,
     };
     void DumpOutputBuffer();
     bool IsActive() const;
@@ -150,9 +152,9 @@ private:
     // for memory recycle
     int32_t FreezeBuffers();
     int32_t ActiveBuffers();
-    bool CanSwapOut(uint32_t index, std::shared_ptr<FBuffer> &fBuffer);
-    int32_t SwapOutBufferByIndex(uint32_t index);
-    int32_t SwapInBufferByIndex(uint32_t index);
+    bool CanSwapOut(bool isInputBuffer, std::shared_ptr<FBuffer> &fBuffer);
+    int32_t SwapOutBufferByIndex(bool isInputBuffer);
+    int32_t SwapInBufferByIndex(bool isInputBuffer);
     bool disableDmaSwap_ = false;
     int32_t pid_ = -1;
 

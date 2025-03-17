@@ -77,32 +77,6 @@ int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scale
 std::string AVStrError(int errnum);
 bool IsYuvFormat(VideoPixelFormat &format);
 bool IsRgbFormat(VideoPixelFormat &format);
-
-// for memory recycle
-#define DMA_DEVICE_FILE "/dev/dma_reclaim"
-#define DMA_BUF_RECLAIM_IOC_MAGIC 'd'
-#define DMA_BUF_RECLAIM_FD _IOWR(DMA_BUF_RECLAIM_IOC_MAGIC, 0x07, int)
-#define DMA_BUF_RESUME_FD _IOWR(DMA_BUF_RECLAIM_IOC_MAGIC, 0x08, int)
-
-struct DmaBufIoctlSwPara {
-    pid_t pid;
-    unsigned long ino;
-    unsigned int fd;
-};
-
-class DmaSwaper {
-public:
-    int32_t SwapOutDma(pid_t pid, int bufFd);
-    int32_t SwapInDma(pid_t pid, int bufFd);
-    static DmaSwaper &GetInstance();
-
-private:
-    DmaSwaper();
-    ~DmaSwaper();
-    DmaSwaper(const DmaSwaper &dmaSwaper) = delete;
-    const DmaSwaper &operator=(const DmaSwaper &dmaSwaper) = delete;
-    int reclaimDriverFd_ = -1;
-};
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS
