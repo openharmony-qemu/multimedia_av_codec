@@ -45,12 +45,13 @@ constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 std::string g_codecMime = "video/avc";
 std::string g_codecName = "";
+OH_AVCapability *cap = nullptr;
 std::shared_ptr<AVCodecVideoEncoder> venc_ = nullptr;
 std::shared_ptr<VEncInnerSignal> signal_ = nullptr;
 
 void HwEncInnerApiNdkTest::SetUpTestCase()
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), true, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), true, HARDWARE);
     const char *tmpCodecName = OH_AVCapability_GetName(cap);
     g_codecName = tmpCodecName;
     cout << "g_codecName: " << g_codecName << endl;
@@ -459,19 +460,21 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_1300, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_REPEAT_0100, TestSize.Level0)
 {
-    auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
-    vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncInnerSample->DEFAULT_WIDTH = 1280;
-    vEncInnerSample->DEFAULT_HEIGHT = 720;
-    vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncInnerSample->surfaceInput = true;
-    vEncInnerSample->enableRepeat = true;
-    vEncInnerSample->setMaxCount = true;
-    vEncInnerSample->DEFAULT_FRAME_AFTER = 0;
-    vEncInnerSample->DEFAULT_MAX_COUNT = -1;
-    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
-    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->SetCallback());
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncInnerSample->Configure());
+    if (cap != nullptr) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncInnerSample->DEFAULT_WIDTH = 1280;
+        vEncInnerSample->DEFAULT_HEIGHT = 720;
+        vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->enableRepeat = true;
+        vEncInnerSample->setMaxCount = true;
+        vEncInnerSample->DEFAULT_FRAME_AFTER = 0;
+        vEncInnerSample->DEFAULT_MAX_COUNT = -1;
+        ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
+        ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncInnerSample->Configure());
+    }
 }
 
 /**
@@ -481,19 +484,21 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_REPEAT_0100, TestSize.Level0)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_REPEAT_0200, TestSize.Level1)
 {
-    auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
-    vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncInnerSample->DEFAULT_WIDTH = 1280;
-    vEncInnerSample->DEFAULT_HEIGHT = 720;
-    vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncInnerSample->surfaceInput = true;
-    vEncInnerSample->enableRepeat = true;
-    vEncInnerSample->setMaxCount = true;
-    vEncInnerSample->DEFAULT_FRAME_AFTER = -1;
-    vEncInnerSample->DEFAULT_MAX_COUNT = -1;
-    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
-    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->SetCallback());
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncInnerSample->Configure());
+    if (cap != nullptr) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncInnerSample->DEFAULT_WIDTH = 1280;
+        vEncInnerSample->DEFAULT_HEIGHT = 720;
+        vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->enableRepeat = true;
+        vEncInnerSample->setMaxCount = true;
+        vEncInnerSample->DEFAULT_FRAME_AFTER = -1;
+        vEncInnerSample->DEFAULT_MAX_COUNT = -1;
+        ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
+        ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncInnerSample->Configure());
+    }
 }
 
 /**
@@ -503,19 +508,21 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_REPEAT_0200, TestSize.Level1)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_REPEAT_0300, TestSize.Level1)
 {
-    auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
-    vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncInnerSample->DEFAULT_WIDTH = 1280;
-    vEncInnerSample->DEFAULT_HEIGHT = 720;
-    vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncInnerSample->surfaceInput = true;
-    vEncInnerSample->enableRepeat = true;
-    vEncInnerSample->setMaxCount = true;
-    vEncInnerSample->DEFAULT_FRAME_AFTER = 1;
-    vEncInnerSample->DEFAULT_MAX_COUNT = 0;
-    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
-    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->SetCallback());
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncInnerSample->Configure());
+    if (cap != nullptr) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncInnerSample->DEFAULT_WIDTH = 1280;
+        vEncInnerSample->DEFAULT_HEIGHT = 720;
+        vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->enableRepeat = true;
+        vEncInnerSample->setMaxCount = true;
+        vEncInnerSample->DEFAULT_FRAME_AFTER = 1;
+        vEncInnerSample->DEFAULT_MAX_COUNT = 0;
+        ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
+        ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncInnerSample->Configure());
+    }
 }
 
 /**
