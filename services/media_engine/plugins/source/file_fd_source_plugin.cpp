@@ -201,7 +201,8 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
     if (size <= 0) {
         HandleReadResult(expectedLen, size);
-        FALSE_RETURN((isEnableFdCache_ || (errno != READ_ERROR_NO_12 && errno != READ_ERROR_NO_5)), Status::ERROR_INVALID_DATA);
+        FALSE_RETURN_V((isEnableFdCache_ || (errno != READ_ERROR_NO_12 && errno != READ_ERROR_NO_5)),
+            Status::ERROR_INVALID_DATA);
         MEDIA_LOG_D("ReadLocal END_OF_STREAM");
         return Status::END_OF_STREAM;
     }
