@@ -41,6 +41,7 @@ public:
     Status DoFlush() override;
     Status DoRelease() override;
     Status NotifyEos();
+    Status SetTransCoderMode();
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -77,6 +78,7 @@ private:
 
     std::shared_ptr<Filter> nextFilter_;
     std::string bundleName_;
+    bool isTranscoderMode_ {false};
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
     int32_t appPid_ {0};
