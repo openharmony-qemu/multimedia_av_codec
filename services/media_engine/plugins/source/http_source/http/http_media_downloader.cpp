@@ -1618,8 +1618,8 @@ void HttpMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& p
     }
     if (playStrategy->bufferDurationForPlaying > 0) {
         bufferDurationForPlaying_ = playStrategy->bufferDurationForPlaying;
-        waterlineForPlaying_ = static_cast<uint64_t>(CURRENT_BIT_RATE / static_cast<uint64_t>(BYTES_TO_BIT) *
-                           bufferDurationForPlaying_);
+        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(CURRENT_BIT_RATE) /
+            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
         MEDIA_LOG_I("HTTP buffer duration for playing : " PUBLIC_LOG ".3f", bufferDurationForPlaying_);
     }
     if (playStrategy->width > 0 && playStrategy->height > 0) {
@@ -1665,8 +1665,8 @@ void HttpMediaDownloader::NotifyInitSuccess()
         return;
     }
     if (currentBitRate_ > 0) {
-        waterlineForPlaying_ = static_cast<uint64_t>(currentBitRate_ / static_cast<uint64_t>(BYTES_TO_BIT) *
-                        bufferDurationForPlaying_);
+        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(currentBitRate_) /
+            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
     }
     isBuffering_.store(true);
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
