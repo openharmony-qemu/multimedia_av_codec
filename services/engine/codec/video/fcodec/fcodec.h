@@ -86,7 +86,7 @@ private:
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width_ = 0;
         int32_t height_ = 0;
-        bool hasSwapedOut = false;
+        bool hasSwapedOut_ = false;
     };
 
     enum struct State : int32_t {
@@ -153,8 +153,8 @@ private:
     int32_t FreezeBuffers();
     int32_t ActiveBuffers();
     bool CanSwapOut(bool isInputBuffer, std::shared_ptr<FBuffer> &fBuffer);
-    int32_t SwapOutBufferByIndex(bool isInputBuffer);
-    int32_t SwapInBufferByIndex(bool isInputBuffer);
+    int32_t SwapOutBuffers(bool isInputBuffer);
+    int32_t SwapInBuffers(bool isInputBuffer);
     bool disableDmaSwap_ = false;
     int32_t pid_ = -1;
 

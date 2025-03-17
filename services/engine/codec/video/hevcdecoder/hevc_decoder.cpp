@@ -1575,6 +1575,7 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 
 int32_t HevcDecoder::NotifyMemoryRecycle()
 {
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode unsupport");
     CHECK_AND_RETURN_RET_LOG(!disableDmaSwap_, 0, "HevcCodec dma swap has been disabled!");
     CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING, AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
     AVCODEC_LOGI("Begin to freeze this codec");
@@ -1587,6 +1588,7 @@ int32_t HevcDecoder::NotifyMemoryRecycle()
 
 int32_t HevcDecoder::NotifyMemoryWriteBack()
 {
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode unsupport");
     AVCODEC_LOGI("Begin to active this codec");
     int32_t errCode = ActiveBuffers();
     CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "HevcCodec active buffers failed!");
@@ -1598,9 +1600,9 @@ int32_t HevcDecoder::FreezeBuffers()
 {
     CHECK_AND_RETURN_RET_LOGD(state_ != State::FROZEN, AVCS_ERR_OK, "HevcCodec had been frozen!");
     std::lock_guard<std::mutex> sLock(surfaceMutex_);
-    int32_t ret = SwapOutBufferByIndex(INDEX_INPUT);
+    int32_t ret = SwapOutBuffers(INDEX_INPUT);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Input buffers swap out failed!");
-    ret = SwapOutBufferByIndex(INDEX_OUTPUT);
+    ret = SwapOutBuffers(INDEX_OUTPUT);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Output buffers swap out failed!");
     AVCODEC_LOGI("Freeze buffers success");
     return AVCS_ERR_OK;
@@ -1608,16 +1610,17 @@ int32_t HevcDecoder::FreezeBuffers()
 
 int32_t HevcDecoder::ActiveBuffers()
 {
-    CHECK_AND_RETURN_RET_LOG(state_ == State::FROZEN, AVCS_ERR_INVALID_STATE, "Invalid state!");
-    int32_t ret = SwapInBufferByIndex(INDEX_INPUT);
+    CHECK_AND_RETURN_RET_LOGD(state_ == State::FREEZING || state_ == State::FROZEN, AVCS_ERR_INVALID_STATE,
+                              "Only freezing or frozen state can swap in dma buffer!");
+    int32_t ret = SwapInBuffers(INDEX_INPUT);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Input buffers swap in failed!");
-    ret = SwapInBufferByIndex(INDEX_OUTPUT);
+    ret = SwapInBuffers(INDEX_OUTPUT);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Output buffers swap in failed!");
     AVCODEC_LOGI("Active buffers success");
     return AVCS_ERR_OK;
 }
 
-int32_t HevcDecoder::SwapOutBufferByIndex(bool isInputBuffer)
+int32_t HevcDecoder::SwapOutBuffers(bool isInputBuffer)
 {
     uint32_t bufferType = isInputBuffer ? INDEX_INPUT : INDEX_OUTPUT;
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped out!");
@@ -1637,6 +1640,7 @@ int32_t HevcDecoder::SwapOutBufferByIndex(bool isInputBuffer)
         if (ret != AVCS_ERR_OK) {
             AVCODEC_LOGE("Buffer type[%{public}u] bufferId[%{public}u], fd[%{public}d], pid[%{public}d] freeze failed!",
                          bufferType, i, fd, pid_);
+            state_ = State::RUNNING;
             int32_t errCode = ActiveBuffers();
             CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Active buffers failed!");
             return ret;
@@ -1649,30 +1653,25 @@ int32_t HevcDecoder::SwapOutBufferByIndex(bool isInputBuffer)
 
 bool HevcDecoder::CanSwapOut(bool isInputBuffer, std::shared_ptr<HBuffer> &hBuffer)
 {
-    uint32_t bufferType = isInputBuffer ? INDEX_INPUT : INDEX_OUTPUT;
-    if (bufferType == INDEX_INPUT) {
+    if (isInputBuffer) {
         AVCODEC_LOGE("Current buffers unsupport.");
         return false;
     }
-    if (bufferType == INDEX_OUTPUT) {
-        HBuffer::Owner ownerValue = hBuffer->owner_.load();
-        AVCODEC_LOGD("Buffer type: [%{public}u], hBuffer->owner_: [%{public}d], hBuffer->hasSwapedOut: [%{public}d].",
-                     bufferType, ownerValue, hBuffer->hasSwapedOut);
-        std::shared_ptr<FSurfaceMemory> surfaceMemory = hBuffer->sMemory;
-        CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
-        sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
-        if (surfaceBuffer) {
-            return !(ownerValue == HBuffer::Owner::OWNED_BY_SURFACE || hBuffer->hasSwapedOut ||
-                     surfaceBuffer == nullptr);
-        } else {
-            return !(ownerValue == HBuffer::Owner::OWNED_BY_SURFACE || ownerValue == HBuffer::Owner::OWNED_BY_USER ||
-                     hBuffer->hasSwapedOut || surfaceBuffer == nullptr);
-        }
+    HBuffer::Owner ownerValue = hBuffer->owner_.load();
+    AVCODEC_LOGD("Buffer type: [%{public}u], hBuffer->owner_: [%{public}d], hBuffer->hasSwapedOut: [%{public}d].",
+                 isInputBuffer, ownerValue, hBuffer->hasSwapedOut);
+    std::shared_ptr<FSurfaceMemory> surfaceMemory = hBuffer->sMemory;
+    CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
+    sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+    if (surfaceBuffer) {
+        return !(ownerValue == HBuffer::Owner::OWNED_BY_SURFACE || hBuffer->hasSwapedOut || surfaceBuffer == nullptr);
+    } else {
+        return !(ownerValue == HBuffer::Owner::OWNED_BY_SURFACE || ownerValue == HBuffer::Owner::OWNED_BY_USER ||
+                 hBuffer->hasSwapedOut || surfaceBuffer == nullptr);
     }
-    return false;
 }
 
-int32_t HevcDecoder::SwapInBufferByIndex(bool isInputBuffer)
+int32_t HevcDecoder::SwapInBuffers(bool isInputBuffer)
 {
     uint32_t bufferType = isInputBuffer ? INDEX_INPUT : INDEX_OUTPUT;
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped in!");
