@@ -130,6 +130,7 @@ ohos_unittest("avsource_inner_unit_test") {
       "./inner/avsource_inner_mock_factory.cpp",
     ]
   }
+  deps = [ "$av_codec_root_dir/interfaces/kits/c:capi_packages" ]
   public_deps =
       [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
   external_deps = [

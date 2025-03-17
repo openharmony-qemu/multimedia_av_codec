@@ -29,6 +29,7 @@
 #include "avsource_unit_test.h"
 #include "media_data_source.h"
 #include "native_avsource.h"
+#include "native_avcodec_base.h"
 
 #define LOCAL true
 #define URI false
@@ -495,7 +496,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2229, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 1411200);
-    ASSERT_EQ(formatVal_.codecMime, "audio/raw");
+    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_AUDIO_RAW);
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16LE);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
@@ -542,7 +543,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2239, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 1411200);
-    ASSERT_EQ(formatVal_.codecMime, "audio/raw");
+    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_AUDIO_RAW);
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16LE);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
