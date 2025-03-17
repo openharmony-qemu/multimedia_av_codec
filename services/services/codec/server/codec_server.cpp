@@ -1487,7 +1487,7 @@ int32_t CodecServer::PushDecodedBufferInfo(uint32_t index, std::shared_ptr<AVBuf
     auto info = std::make_shared<DecodedBufferInfo>();
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(info, AVCS_ERR_NO_MEMORY, "Failed to allocate info");
     info->index = index;
-    info->buffer = buffer;
+    info->buffer = std::make_shared<AVBuffer>(*buffer);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(decodedBufferInfoQueue_, AVCS_ERR_UNKNOWN, "Queue is null");
     auto ret = decodedBufferInfoQueue_->PushWait(info);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == QueueResult::OK, AVCS_ERR_UNKNOWN, "Push data failed, %{public}s",
