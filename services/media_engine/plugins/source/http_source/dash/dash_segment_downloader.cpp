@@ -1198,8 +1198,8 @@ void DashSegmentDownloader::NotifyInitSuccess()
     if (bufferDurationForPlaying_ <= 0 || realTimeBitBate_ <= 0) {
         return;
     }
-    waterlineForPlaying_ = static_cast<uint64_t>(realTimeBitBate_ / static_cast<int64_t>(BYTES_TO_BIT) *
-                           bufferDurationForPlaying_);
+    waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(realTimeBitBate_) /
+        static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
     isBuffering_.store(true);
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
 }

@@ -1624,8 +1624,8 @@ Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
             playlistBitrate, currentBitRate_);
     }
     if (bufferDurationForPlaying_ > 0 && currentBitRate_ > 0) {
-        waterlineForPlaying_ = static_cast<uint64_t>(currentBitRate_ / static_cast<uint32_t>(BYTES_TO_BIT) *
-                bufferDurationForPlaying_);
+        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(currentBitRate_) /
+            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
     }
     return Status::OK;
 }
@@ -1941,8 +1941,8 @@ void HlsMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& pl
     }
     if (playStrategy->bufferDurationForPlaying > 0) {
         bufferDurationForPlaying_ = playStrategy->bufferDurationForPlaying;
-        waterlineForPlaying_ = static_cast<uint64_t>(CURRENT_BIT_RATE / static_cast<uint64_t>(BYTES_TO_BIT) *
-                           bufferDurationForPlaying_);
+        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(CURRENT_BIT_RATE) /
+            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
         MEDIA_LOG_I("HLS buffer duration for playing : " PUBLIC_LOG ".3f", bufferDurationForPlaying_);
     }
 }
@@ -1986,8 +1986,8 @@ void HlsMediaDownloader::NotifyInitSuccess()
         playlistBitrate = static_cast<uint32_t>(playlistDownloader_->GetCurBitrate());
     }
     if (playlistBitrate > 0) {
-        waterlineForPlaying_ = static_cast<uint64_t>(playlistBitrate / static_cast<uint32_t>(BYTES_TO_BIT) *
-                        bufferDurationForPlaying_);
+        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(playlistBitrate) /
+            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
     }
     isBuffering_.store(true);
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
