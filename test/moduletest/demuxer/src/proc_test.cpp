@@ -528,10 +528,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1900, TestSize.Level2)
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-    string mimeTypeString = mimeType;
-    string apeString = OH_AVCODEC_MIMETYPE_AUDIO_APE;
-    cout << "------mimeType-------" << mimeTypeString << endl;
-    ASSERT_EQ(mimeTypeString, apeString);
+    ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_APE));
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -664,6 +661,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2200, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool videoIsEnd = false;
     int videoFrame = 0;
+    const char* mimeType = nullptr;
     const char *file = "/data/test/media/audiovivid_hdrvivid_1s_fmp4.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -687,8 +685,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2200, TestSize.Level0)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            OH_AVFormat_Destroy(trackFormat);
-            trackFormat = nullptr;
             if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
@@ -697,7 +693,11 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2200, TestSize.Level0)
                 SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
             } else if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+                ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+                ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_VIVID));
             }
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
         }
     }
     ASSERT_EQ(videoFrame, 26);
