@@ -167,7 +167,6 @@ bool StartWith(const char* name, const char* chars)
     if (name == nullptr || chars == nullptr) {
         return false;
     }
-    MEDIA_LOG_D("[" PUBLIC_LOG_S "] start with [" PUBLIC_LOG_S "].", name, chars);
     return !strncmp(name, chars, strlen(chars));
 }
 
