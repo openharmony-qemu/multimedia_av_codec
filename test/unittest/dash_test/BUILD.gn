@@ -98,9 +98,7 @@ ohos_unittest("dash_xml_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = dash_test_sources + [ "dash_xml_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
@@ -125,9 +123,7 @@ ohos_unittest("dash_mpd_parser_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = dash_test_sources + [ "dash_mpd_parser_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
@@ -152,9 +148,7 @@ ohos_unittest("dash_media_downloader_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = dash_test_sources + [ "dash_media_downloader_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
@@ -182,9 +176,7 @@ ohos_unittest("dash_mpd_downloader_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = dash_test_sources + [ "dash_mpd_downloader_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
@@ -212,9 +204,7 @@ ohos_unittest("dash_segment_downloader_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = dash_test_sources + [ "dash_segment_downloader_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",

@@ -87,9 +87,7 @@ ohos_unittest("hls_media_downloader_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = hls_test_sources + [ "hls_media_downloader_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
@@ -116,9 +114,7 @@ ohos_unittest("hls_playlist_downloader_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = hls_test_sources + [ "hls_playlist_downloader_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
@@ -145,9 +141,7 @@ ohos_unittest("hls_tags_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = hls_test_sources + [ "hls_tags_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
@@ -174,9 +168,7 @@ ohos_unittest("m3u8_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = hls_test_sources + [ "m3u8_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
