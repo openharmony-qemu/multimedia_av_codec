@@ -55,13 +55,9 @@ public:
 private:
     std::string SniffMediaType();
 
-    std::string GuessMediaType() const;
-
     bool IsOffsetValid(int64_t offset) const;
 
     bool IsSniffNeeded(std::string uri);
-
-    void SortPlugins(const std::string& uriSuffix);
 
     bool sniffNeeded_;
     std::string uri_;
