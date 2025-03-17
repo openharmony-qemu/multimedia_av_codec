@@ -18,6 +18,7 @@
 #include "common/log.h"
 #include "filter/filter_factory.h"
 #include "media_codec/media_codec.h"
+#include "common/media_core.h"
 #include "avcodec_sysevent.h"
 
 namespace {
@@ -98,7 +99,12 @@ void AudioEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     eventReceiver_ = receiver;
     filterCallback_ = callback;
     mediaCodec_ = std::make_shared<MediaCodec>();
-    mediaCodec_->Init(codecMimeType_, true);
+    int32_t ret = mediaCodec_->Init(codecMimeType_, true);
+    if (ret != 0 && isTranscoderMode_) {
+        MEDIA_LOG_I("TranscoderMode");
+        FALSE_RETURN(eventReceiver_ != nullptr);
+        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_ENC_TYPE});
+    }
 }
 
 Status AudioEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
@@ -124,6 +130,11 @@ Status AudioEncoderFilter::DoPrepare()
     MEDIA_LOG_I("Prepare");
     switch (filterType_) {
         case FilterType::FILTERTYPE_AENC:
+            if (isTranscoderMode_) {
+                MEDIA_LOG_I("TranscoderMode");
+                return filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+                    StreamType::STREAMTYPE_ENCODED_AUDIO);
+            }
             filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                 StreamType::STREAMTYPE_ENCODED_AUDIO);
             break;
@@ -197,6 +208,13 @@ Status AudioEncoderFilter::NotifyEos()
         SetFaultEvent("AudioEncoderFilter::NotifyEos error", ret);
         return Status::ERROR_UNKNOWN;
     }
+    return Status::OK;
+}
+
+Status AudioEncoderFilter::SetTranscoderMode()
+{
+    MEDIA_LOG_I("SetTranscoderMode");
+    isTranscoderMode_ = true;
     return Status::OK;
 }
 
