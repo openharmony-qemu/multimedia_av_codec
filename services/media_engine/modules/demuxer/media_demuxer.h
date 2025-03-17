@@ -137,7 +137,9 @@ public:
     bool IsVideoEos();
     bool HasEosTrack();
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
-    Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
+    Status Dts2FrameId(int64_t dts, uint32_t &frameId);
+    Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId);
+    Status FrameId2SeekMs(uint32_t frameId, int64_t &seekMs);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
     void DeregisterVideoStreamReadyCallback();
 

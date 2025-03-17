@@ -70,7 +70,9 @@ public:
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
-    Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
+    Status Dts2FrameId(int64_t dts, uint32_t &frameId);
+    Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId);
+    Status FrameId2SeekMs(uint32_t frameId, int64_t &seekMs);
 
     Status StartTask(int32_t trackId);
     Status SelectTrack(int32_t trackId);
