@@ -426,7 +426,7 @@ Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
     int32_t tmpFrameId = av_index_search_timestamp(avStream, ffTimeDts, AVSEEK_FLAG_ANY);
     FALSE_RETURN_V_MSG_E(tmpFrameId >= 0, Status::ERROR_OUT_OF_RANGE, "find nearest frame failed");
     frameId = static_cast<uint32_t>(tmpFrameId);
-    MEDIA_LOG_I("dts " PUBLIC_LOG_D64 ", frameId " PUBLIC_LOG_U32, dts, frameId);
+    MEDIA_LOG_D("dts " PUBLIC_LOG_D64 ", frameId " PUBLIC_LOG_U32, dts, frameId);
     return Status::OK;
 }
 
@@ -444,7 +444,7 @@ Status FFmpegDemuxerPlugin::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
         --iter;
     }
     int64_t dts = iter->second;
-    MEDIA_LOG_I("seekMs " PUBLIC_LOG_D64 ", pts " PUBLIC_LOG_D64 ", mapSize " PUBLIC_LOG_ZU ", dts " PUBLIC_LOG_D64,
+    MEDIA_LOG_D("seekMs " PUBLIC_LOG_D64 ", pts " PUBLIC_LOG_D64 ", mapSize " PUBLIC_LOG_ZU ", dts " PUBLIC_LOG_D64,
         seekMs, pts, pts2DtsMap_.size(), dts);
     return Dts2FrameId(dts, frameId);
 }
@@ -460,7 +460,7 @@ Status FFmpegDemuxerPlugin::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
     FALSE_RETURN_V_MSG_E(it != pts2DtsMap_.end(), Status::ERROR_UNKNOWN, "find pts failed, frameId "
         PUBLIC_LOG_U32 ", dts " PUBLIC_LOG_D64, frameId, dts);
     seekMs = it->first / 1000; // 1000 for ms to us
-    MEDIA_LOG_I("frameId " PUBLIC_LOG_U32 ", dts " PUBLIC_LOG_D64 ", seekMs " PUBLIC_LOG_D64, frameId, dts, seekMs);
+    MEDIA_LOG_D("frameId " PUBLIC_LOG_U32 ", dts " PUBLIC_LOG_D64 ", seekMs " PUBLIC_LOG_D64, frameId, dts, seekMs);
     return Status::OK;
 }
 
