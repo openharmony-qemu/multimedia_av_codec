@@ -104,6 +104,7 @@ public:
     Status SelectBitRate(uint32_t bitRate);
     Status StopBufferring(bool flag);
     Status SetStartPts(int64_t startPts);
+    Status SetExtraCache(int64_t cacheDuration);
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID);
     void SetCallback(Callback* callback);
     bool IsNeedPreDownload();

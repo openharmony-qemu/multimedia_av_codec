@@ -170,6 +170,11 @@ public:
         MEDIA_LOG_W("SetStartPts is unimplemented.");
     }
 
+    virtual void SetExtraCache(int64_t cacheDuration)
+    {
+        MEDIA_LOG_W("SetExtraCache is unimplemented.");
+    }
+
     virtual void SetMediaStreams(const MediaStreamList& mediaStreams)
     {
         MEDIA_LOG_W("SetMediaStreams is unimplemented.");

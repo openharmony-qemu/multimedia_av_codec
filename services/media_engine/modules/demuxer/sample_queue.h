@@ -105,6 +105,8 @@ private:
     std::string SetToString(std::set<int64_t> localSet);
     std::string StringifyMeta(std::shared_ptr<Meta> &meta);
 
+    Status UpdateLastOutSamplePts(int64_t lastOutSamplePts);
+
     Config config_{};
     std::weak_ptr<SampleQueueCallback> sampleQueueCb_;
 
@@ -113,6 +115,7 @@ private:
     sptr<AVBufferQueueConsumer> sampleBufferQueueConsumer_;
 
     int64_t lastEnterSamplePts_{Plugins::HST_TIME_NONE};
+    int64_t lastOutSamplePts_{Plugins::HST_TIME_NONE};
     int64_t lastEndSamplePts_{Plugins::HST_TIME_NONE};
     int64_t startPtsToSwitch_{Plugins::HST_TIME_NONE};
     SelectBitrateStatus switchStatus_{SelectBitrateStatus::NORMAL};
