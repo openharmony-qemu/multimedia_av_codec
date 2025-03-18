@@ -683,9 +683,23 @@ Status MediaDemuxer::AddDemuxerCopyTaskByTrack(uint32_t trackId, DemuxerTrackTyp
     sampleConsumerTaskMap_[trackId] = std::move(sampleConsumerTask);
     sampleConsumerTaskMap_[trackId]->RegisterJob([this, trackId] { return SampleConsumerLoop(trackId); });
 
+    if (notifySampleConsumeTask_ == nullptr) {
+        notifySampleConsumeTask_
+            = std::make_unique<Task>("SAM_CON", playerId_, TaskType::DECODER, TaskPriority::HIGH, false);
+        FALSE_RETURN_V_MSG_W(notifySampleConsumeTask_ != nullptr, Status::ERROR_NULL_POINTER,
+            "Create notifyConsume task failed, track:" PUBLIC_LOG_U32 ",TrackType:" PUBLIC_LOG_D32, trackId, trackType);
+    }
+
+    if (notifySampleProduceTask_ == nullptr) {
+        notifySampleProduceTask_
+            = std::make_unique<Task>("SAM_PRO", playerId_, TaskType::DEMUXER, TaskPriority::HIGH, false);
+        FALSE_RETURN_V_MSG_W(notifySampleProduceTask_ != nullptr, Status::ERROR_NULL_POINTER,
+            "Create notifyProduce task failed, track:" PUBLIC_LOG_U32 ",TrackType:" PUBLIC_LOG_D32, trackId, trackType);
+    }
+
     // To wake up DEMUXER TRACK WORKING TASK immediately on input buffer available.
     std::unique_ptr<Task> notifyTask =
-        std::make_unique<Task>(taskName + "N", playerId_, TaskType::GLOBAL, TaskPriority::HIGH, false);
+        std::make_unique<Task>(taskName + "N", playerId_, TaskType::DECODER, TaskPriority::HIGH, false);
     FALSE_RETURN_V_MSG_W(notifyTask != nullptr, Status::ERROR_NULL_POINTER,
         "Create notify task failed, track:" PUBLIC_LOG_U32 ", TrackType:" PUBLIC_LOG_D32, trackId, trackType);
 
@@ -2895,13 +2909,33 @@ Status MediaDemuxer::OnSelectBitrateOk(int64_t startPts, uint32_t bitRate)
 Status MediaDemuxer::OnSampleQueueBufferAvailable(uint32_t queueId)
 {
     MEDIA_LOG_D("OnSampleQueueBufferAvailable queueId=" PUBLIC_LOG_U32, queueId);
-    AccelerateTrackTask(queueId);
+    FALSE_RETURN_V_MSG_E(notifySampleProduceTask_ != nullptr, Status::ERROR_NULL_POINTER,
+        "notifySampleProduceTask_ is nullptr");
+    notifySampleProduceTask_->SubmitJobOnce([demuxerWptr = weak_from_this(), queueId] {
+        std::shared_ptr<MediaDemuxer> demuxer = demuxerWptr.lock();
+        if (demuxer != nullptr) {
+            demuxer->AccelerateTrackTask(queueId);
+        }
+    });
     return Status::OK;
 }
 
 Status MediaDemuxer::OnSampleQueueBufferConsume(uint32_t queueId)
 {
-    MEDIA_LOG_D("OnSampleQueueBufferConsume queueId=" PUBLIC_LOG_U32, queueId);
+    FALSE_RETURN_V_MSG_E(notifySampleConsumeTask_ != nullptr, Status::ERROR_NULL_POINTER,
+        "notifySampleConsumeTask_ is nullptr");
+    notifySampleConsumeTask_->SubmitJobOnce([demuxerWptr = weak_from_this(), queueId] {
+        std::shared_ptr<MediaDemuxer> demuxer = demuxerWptr.lock();
+        if (demuxer != nullptr) {
+            demuxer->NotifySampleQueueBufferConsume(queueId);
+        }
+    });
+    return Status::OK;
+}
+
+Status MediaDemuxer::NotifySampleQueueBufferConsume(uint32_t queueId)
+{
+    MEDIA_LOG_D("NotifySampleQueueBufferConsume queueId=" PUBLIC_LOG_U32, queueId);
     uint32_t trackId = queueId;
     {
         std::unique_lock<std::mutex> stopLock(stopMutex_);

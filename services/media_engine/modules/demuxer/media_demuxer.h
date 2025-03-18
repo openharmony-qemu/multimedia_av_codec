@@ -279,6 +279,7 @@ private:
     Status OnSelectBitrateOk(int64_t startPts, uint32_t bitRate) override;
     Status OnSampleQueueBufferAvailable(uint32_t queueId) override;
     Status OnSampleQueueBufferConsume(uint32_t queueId) override;
+    Status NotifySampleQueueBufferConsume(uint32_t queueId);
     Status HandleSelectBitrateBySampleQueue(int64_t startPts, uint32_t bitrate);
     bool IsIgonreBuffering();
 
@@ -307,6 +308,8 @@ private:
     bool isFlvLiveStream_ = false;
     bool isHandlingSelectBitrateBySampleQueue_ = false;
     std::unique_ptr<Task> notifyBitrateTask_;
+    std::unique_ptr<Task> notifySampleConsumeTask_;
+    std::unique_ptr<Task> notifySampleProduceTask_;
 
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_;
     int64_t lastSeekTime_{Plugins::HST_TIME_NONE};
