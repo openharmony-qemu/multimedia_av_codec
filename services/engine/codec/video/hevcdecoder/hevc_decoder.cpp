@@ -1601,9 +1601,10 @@ int32_t HevcDecoder::FreezeBuffers()
 {
     CHECK_AND_RETURN_RET_LOGD(state_ != State::FROZEN, AVCS_ERR_OK, "HevcCodec had been frozen!");
     std::lock_guard<std::mutex> sLock(surfaceMutex_);
-    int32_t ret = SwapOutBuffers(INDEX_INPUT);
+    State currentState = state_;
+    int32_t ret = SwapOutBuffers(INDEX_INPUT, currentState);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Input buffers swap out failed!");
-    ret = SwapOutBuffers(INDEX_OUTPUT);
+    ret = SwapOutBuffers(INDEX_OUTPUT, currentState);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Output buffers swap out failed!");
     AVCODEC_LOGI("Freeze buffers success");
     return AVCS_ERR_OK;
@@ -1621,7 +1622,7 @@ int32_t HevcDecoder::ActiveBuffers()
     return AVCS_ERR_OK;
 }
 
-int32_t HevcDecoder::SwapOutBuffers(bool isInputBuffer)
+int32_t HevcDecoder::SwapOutBuffers(bool isInputBuffer, State curState)
 {
     uint32_t bufferType = isInputBuffer ? INDEX_INPUT : INDEX_OUTPUT;
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped out!");

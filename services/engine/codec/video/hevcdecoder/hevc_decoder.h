@@ -167,7 +167,7 @@ private:
     int32_t FreezeBuffers();
     int32_t ActiveBuffers();
     bool CanSwapOut(bool isInputBuffer, std::shared_ptr<HBuffer> &hBuffer);
-    int32_t SwapOutBuffers(bool isInputBuffer);
+    int32_t SwapOutBuffers(bool isInputBuffer, State curState);
     int32_t SwapInBuffers(bool isInputBuffer);
     bool disableDmaSwap_ = false;
     int pid_ = -1;

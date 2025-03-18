@@ -1516,7 +1516,7 @@ bool FCodec::CanSwapOut(bool isInputBuffer, std::shared_ptr<FBuffer> &fBuffer)
     }
 }
 
-int32_t FCodec::SwapOutBuffers(bool isInputBuffer)
+int32_t FCodec::SwapOutBuffers(bool isInputBuffer, State curState)
 {
     uint32_t bufferType = isInputBuffer ? INDEX_INPUT : INDEX_OUTPUT;
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped out!");
@@ -1537,7 +1537,7 @@ int32_t FCodec::SwapOutBuffers(bool isInputBuffer)
             AVCODEC_LOGE("Buffer type[%{public}u] bufferId[%{public}u], fd[%{public}d], pid[%{public}d] freeze failed!",
                          bufferType, i, fd, pid_);
             int32_t errCode = ActiveBuffers();
-            state_ = State::RUNNING;
+            state_ = curState;
             CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Active buffers failed!");
             return ret;
         }
@@ -1573,9 +1573,10 @@ int32_t FCodec::FreezeBuffers()
 {
     CHECK_AND_RETURN_RET_LOGD(state_ != State::FROZEN, AVCS_ERR_OK, "FCodec had been frozen!");
     std::lock_guard<std::mutex> sLock(surfaceMutex_);
-    int32_t ret = SwapOutBuffers(INDEX_INPUT);
+    State currentState = state_;
+    int32_t ret = SwapOutBuffers(INDEX_INPUT, currentState);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Input buffers swap out failed!");
-    ret = SwapOutBuffers(INDEX_OUTPUT);
+    ret = SwapOutBuffers(INDEX_OUTPUT, currentState);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Output buffers swap out failed!");
     return AVCS_ERR_OK;
 }
