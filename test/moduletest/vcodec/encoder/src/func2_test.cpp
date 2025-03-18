@@ -485,19 +485,21 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0150, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_0100, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->setMaxCount = true;
-    vEncSample->DEFAULT_FRAME_AFTER = 0;
-    vEncSample->DEFAULT_MAX_COUNT = -1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->setMaxCount = true;
+        vEncSample->DEFAULT_FRAME_AFTER = 0;
+        vEncSample->DEFAULT_MAX_COUNT = -1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    }
 }
 
 /**
@@ -507,19 +509,21 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_0100, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_0200, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->setMaxCount = true;
-    vEncSample->DEFAULT_FRAME_AFTER = -1;
-    vEncSample->DEFAULT_MAX_COUNT = -1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->setMaxCount = true;
+        vEncSample->DEFAULT_FRAME_AFTER = -1;
+        vEncSample->DEFAULT_MAX_COUNT = -1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    }
 }
 
 /**
@@ -529,19 +533,21 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_0200, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_0300, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->setMaxCount = true;
-    vEncSample->DEFAULT_FRAME_AFTER = 1;
-    vEncSample->DEFAULT_MAX_COUNT = 0;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->setMaxCount = true;
+        vEncSample->DEFAULT_FRAME_AFTER = 1;
+        vEncSample->DEFAULT_MAX_COUNT = 0;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    }
 }
 
 /**
@@ -551,27 +557,29 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_0300, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0100, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0100.h264";
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->enableSeekEos = true;
-    vEncSample->setMaxCount = true;
-    vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
-    vEncSample->DEFAULT_MAX_COUNT = -1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-    cout << "outCount: " << vEncSample->outCount << endl;
-    EXPECT_LE(vEncSample->outCount, COUNT_TWENTY_SEVEN);
-    EXPECT_GE(vEncSample->outCount, COUNT_TWENTY_THREE);
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0100.h264";
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->enableSeekEos = true;
+        vEncSample->setMaxCount = true;
+        vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
+        vEncSample->DEFAULT_MAX_COUNT = -1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        cout << "outCount: " << vEncSample->outCount << endl;
+        EXPECT_LE(vEncSample->outCount, COUNT_TWENTY_SEVEN);
+        EXPECT_GE(vEncSample->outCount, COUNT_TWENTY_THREE);
+    }
 }
 
 /**
@@ -581,26 +589,28 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0100, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0200, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0200.h264";
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableSeekEos = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->setMaxCount = true;
-    vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
-    vEncSample->DEFAULT_MAX_COUNT = MAX_COUNT;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-    cout << "outCount: " << vEncSample->outCount << endl;
-    ASSERT_EQ(COUNT_SEVENTEEN, vEncSample->outCount);
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0200.h264";
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableSeekEos = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->setMaxCount = true;
+        vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
+        vEncSample->DEFAULT_MAX_COUNT = MAX_COUNT;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        cout << "outCount: " << vEncSample->outCount << endl;
+        ASSERT_EQ(COUNT_SEVENTEEN, vEncSample->outCount);
+    }
 }
 
 /**
@@ -610,26 +620,28 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0200, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0300, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0300.h264";
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->setMaxCount = true;
-    vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
-    vEncSample->DEFAULT_MAX_COUNT = -1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-    cout << "outCount: " << vEncSample->outCount << endl;
-    EXPECT_LE(vEncSample->outCount, COUNT_THIRTY_SEVEN);
-    EXPECT_GE(vEncSample->outCount, COUNT_THIRTY_THREE);
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0300.h264";
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->setMaxCount = true;
+        vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
+        vEncSample->DEFAULT_MAX_COUNT = -1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        cout << "outCount: " << vEncSample->outCount << endl;
+        EXPECT_LE(vEncSample->outCount, COUNT_THIRTY_SEVEN);
+        EXPECT_GE(vEncSample->outCount, COUNT_THIRTY_THREE);
+    }
 }
 
 /**
@@ -639,25 +651,27 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0300, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0400, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0400.h264";
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->setMaxCount = true;
-    vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
-    vEncSample->DEFAULT_MAX_COUNT = 1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-    cout << "outCount: " << vEncSample->outCount << endl;
-    ASSERT_EQ(COUNT_TWENTY_SIX, vEncSample->outCount);
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0400.h264";
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->setMaxCount = true;
+        vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
+        vEncSample->DEFAULT_MAX_COUNT = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        cout << "outCount: " << vEncSample->outCount << endl;
+        ASSERT_EQ(COUNT_TWENTY_SIX, vEncSample->outCount);
+    }
 }
 
 /**
@@ -667,27 +681,29 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0400, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0500, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0500.h264";
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->enableSeekEos = true;
-    vEncSample->setMaxCount = true;
-    vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
-    vEncSample->DEFAULT_MAX_COUNT = -1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-    cout << "outCount: " << vEncSample->outCount << endl;
-    EXPECT_LE(vEncSample->outCount, COUNT_TWENTY_SEVEN);
-    EXPECT_GE(vEncSample->outCount, COUNT_TWENTY_THREE);
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0500.h264";
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->enableSeekEos = true;
+        vEncSample->setMaxCount = true;
+        vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
+        vEncSample->DEFAULT_MAX_COUNT = -1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        cout << "outCount: " << vEncSample->outCount << endl;
+        EXPECT_LE(vEncSample->outCount, COUNT_TWENTY_SEVEN);
+        EXPECT_GE(vEncSample->outCount, COUNT_TWENTY_THREE);
+    }
 }
 
 /**
@@ -697,26 +713,28 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0500, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0600, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0600.h264";
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableSeekEos = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->setMaxCount = true;
-    vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
-    vEncSample->DEFAULT_MAX_COUNT = MAX_COUNT;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-    cout << "outCount: " << vEncSample->outCount << endl;
-    ASSERT_EQ(COUNT_SEVENTEEN, vEncSample->outCount);
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0600.h264";
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableSeekEos = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->setMaxCount = true;
+        vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
+        vEncSample->DEFAULT_MAX_COUNT = MAX_COUNT;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        cout << "outCount: " << vEncSample->outCount << endl;
+        ASSERT_EQ(COUNT_SEVENTEEN, vEncSample->outCount);
+    }
 }
 
 /**
@@ -726,26 +744,28 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0600, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0700, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0700.h264";
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->setMaxCount = true;
-    vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
-    vEncSample->DEFAULT_MAX_COUNT = -1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-    cout << "outCount: " << vEncSample->outCount << endl;
-    EXPECT_LE(vEncSample->outCount, COUNT_THIRTY_SEVEN);
-    EXPECT_GE(vEncSample->outCount, COUNT_THIRTY_THREE);
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0700.h264";
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->setMaxCount = true;
+        vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
+        vEncSample->DEFAULT_MAX_COUNT = -1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        cout << "outCount: " << vEncSample->outCount << endl;
+        EXPECT_LE(vEncSample->outCount, COUNT_THIRTY_SEVEN);
+        EXPECT_GE(vEncSample->outCount, COUNT_THIRTY_THREE);
+    }
 }
 
 /**
@@ -755,25 +775,27 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0700, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0800, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0800.h264";
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->setMaxCount = true;
-    vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
-    vEncSample->DEFAULT_MAX_COUNT = 1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-    cout << "outCount: " << vEncSample->outCount << endl;
-    ASSERT_EQ(COUNT_TWENTY_SIX, vEncSample->outCount);
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0800.h264";
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->setMaxCount = true;
+        vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
+        vEncSample->DEFAULT_MAX_COUNT = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        cout << "outCount: " << vEncSample->outCount << endl;
+        ASSERT_EQ(COUNT_TWENTY_SIX, vEncSample->outCount);
+    }
 }
 
 /**
@@ -783,23 +805,25 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0800, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0900, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0900.h264";
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-    cout << "outCount: " << vEncSample->outCount << endl;
-    ASSERT_EQ(COUNT_THIRTY_FIVE, vEncSample->outCount);
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_0900.h264";
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        cout << "outCount: " << vEncSample->outCount << endl;
+        ASSERT_EQ(COUNT_THIRTY_FIVE, vEncSample->outCount);
+    }
 }
 
 /**
@@ -809,22 +833,24 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_0900, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_REPEAT_FUNC_1000, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_BITRATE_MODE = CBR;
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_1000.h264";
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableRepeat = true;
-    vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-    cout << "outCount: " << vEncSample->outCount << endl;
-    ASSERT_EQ(COUNT_THIRTY_FIVE, vEncSample->outCount);
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_REPEAT_FUNC_1000.h264";
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableRepeat = true;
+        vEncSample->DEFAULT_FRAME_AFTER = FRAME_AFTER;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        cout << "outCount: " << vEncSample->outCount << endl;
+        ASSERT_EQ(COUNT_THIRTY_FIVE, vEncSample->outCount);
+    }
 }
 } // namespace
