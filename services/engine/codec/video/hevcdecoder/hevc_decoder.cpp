@@ -1622,13 +1622,13 @@ int32_t HevcDecoder::ActiveBuffers()
     return AVCS_ERR_OK;
 }
 
-int32_t HevcDecoder::SwapOutBuffers(bool isInputBuffer, State curState)
+int32_t HevcDecoder::SwapOutBuffers(bool isOutputBuffer, State curState)
 {
-    uint32_t bufferType = isInputBuffer ? INDEX_INPUT : INDEX_OUTPUT;
+    uint32_t bufferType = isOutputBuffer ? INDEX_OUTPUT : INDEX_INPUT;
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped out!");
     for (uint32_t i = 0u; i < buffers_[bufferType].size(); i++) {
         std::shared_ptr<HBuffer> hBuffer = buffers_[bufferType][i];
-        if (!CanSwapOut(isInputBuffer, hBuffer)) {
+        if (!CanSwapOut(isOutputBuffer, hBuffer)) {
             AVCODEC_LOGW("Buf: [%{public}u] can't freeze, owner: [%{public}d] swaped out: [%{public}d]!", i,
                          hBuffer->owner_.load(), hBuffer->hasSwapedOut);
             continue;
@@ -1653,15 +1653,15 @@ int32_t HevcDecoder::SwapOutBuffers(bool isInputBuffer, State curState)
     return AVCS_ERR_OK;
 }
 
-bool HevcDecoder::CanSwapOut(bool isInputBuffer, std::shared_ptr<HBuffer> &hBuffer)
+bool HevcDecoder::CanSwapOut(bool isOutputBuffer, std::shared_ptr<HBuffer> &hBuffer)
 {
-    if (isInputBuffer) {
+    if (!isOutputBuffer) {
         AVCODEC_LOGE("Current buffers unsupport.");
         return false;
     }
     HBuffer::Owner ownerValue = hBuffer->owner_.load();
     AVCODEC_LOGD("Buffer type: [%{public}u], hBuffer->owner_: [%{public}d], hBuffer->hasSwapedOut: [%{public}d].",
-                 isInputBuffer, ownerValue, hBuffer->hasSwapedOut);
+                 isOutputBuffer, ownerValue, hBuffer->hasSwapedOut);
     std::shared_ptr<FSurfaceMemory> surfaceMemory = hBuffer->sMemory;
     CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
     sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
@@ -1673,9 +1673,9 @@ bool HevcDecoder::CanSwapOut(bool isInputBuffer, std::shared_ptr<HBuffer> &hBuff
     }
 }
 
-int32_t HevcDecoder::SwapInBuffers(bool isInputBuffer)
+int32_t HevcDecoder::SwapInBuffers(bool isOutputBuffer)
 {
-    uint32_t bufferType = isInputBuffer ? INDEX_INPUT : INDEX_OUTPUT;
+    uint32_t bufferType = isOutputBuffer ? INDEX_OUTPUT : INDEX_INPUT;
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped in!");
     for (uint32_t i = 0u; i < buffers_[bufferType].size(); i++) {
         std::shared_ptr<HBuffer> hBuffer = buffers_[bufferType][i];

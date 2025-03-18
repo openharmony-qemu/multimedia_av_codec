@@ -1496,15 +1496,15 @@ int32_t FCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 }
 
 // for memory recycle
-bool FCodec::CanSwapOut(bool isInputBuffer, std::shared_ptr<FBuffer> &fBuffer)
+bool FCodec::CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer)
 {
-    if (isInputBuffer) {
+    if (!isOutputBuffer) {
         AVCODEC_LOGD("Current buffers unsupport.");
         return false;
     }
     FBuffer::Owner ownerValue = fBuffer->owner_.load();
     AVCODEC_LOGD("Buffer type: [%{public}u], fBuffer->owner_: [%{public}d], fBuffer->hasSwapedOut_: [%{public}d].",
-                 isInputBuffer, ownerValue, fBuffer->hasSwapedOut_);
+                 isOutputBuffer, ownerValue, fBuffer->hasSwapedOut_);
     std::shared_ptr<FSurfaceMemory> surfaceMemory = fBuffer->sMemory_;
     CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
     sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
@@ -1516,13 +1516,13 @@ bool FCodec::CanSwapOut(bool isInputBuffer, std::shared_ptr<FBuffer> &fBuffer)
     }
 }
 
-int32_t FCodec::SwapOutBuffers(bool isInputBuffer, State curState)
+int32_t FCodec::SwapOutBuffers(bool isOutputBuffer, State curState)
 {
-    uint32_t bufferType = isInputBuffer ? INDEX_INPUT : INDEX_OUTPUT;
+    uint32_t bufferType = isOutputBuffer ? INDEX_OUTPUT : INDEX_INPUT;
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped out!");
     for (uint32_t i = 0u; i < buffers_[bufferType].size(); i++) {
         std::shared_ptr<FBuffer> fBuffer = buffers_[bufferType][i];
-        if (!CanSwapOut(isInputBuffer, fBuffer)) {
+        if (!CanSwapOut(isOutputBuffer, fBuffer)) {
             AVCODEC_LOGW("Buf: [%{public}u] can't freeze, owner: [%{public}d] swaped out: [%{public}d]!", i,
                          fBuffer->owner_.load(), fBuffer->hasSwapedOut_);
             continue;
@@ -1547,9 +1547,9 @@ int32_t FCodec::SwapOutBuffers(bool isInputBuffer, State curState)
     return AVCS_ERR_OK;
 }
 
-int32_t FCodec::SwapInBuffers(bool isInputBuffer)
+int32_t FCodec::SwapInBuffers(bool isOutputBuffer)
 {
-    uint32_t bufferType = isInputBuffer ? INDEX_INPUT : INDEX_OUTPUT;
+    uint32_t bufferType = isOutputBuffer ? INDEX_OUTPUT : INDEX_INPUT;
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped in!");
     for (uint32_t i = 0u; i < buffers_[bufferType].size(); i++) {
         std::shared_ptr<FBuffer> fBuffer = buffers_[bufferType][i];
