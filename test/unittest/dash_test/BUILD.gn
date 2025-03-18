@@ -87,9 +87,6 @@ config("dash_unittest_cfg") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
     "$av_codec_root_dir/test/unittest/common",
-    "$media_foundation_root_dir/interface/inner_api",
-    "$media_foundation_root_dir/src",
-    "//third_party/curl/include",
   ]
 }
 
@@ -101,14 +98,11 @@ ohos_unittest("dash_xml_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = dash_test_sources + [ "dash_xml_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/curl:curl_shared",
-    "//third_party/openssl:libcrypto_shared",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
+    "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
     "init:libbegetutil",
@@ -116,6 +110,7 @@ ohos_unittest("dash_xml_unit_test") {
     "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
   ]
 }
@@ -128,14 +123,11 @@ ohos_unittest("dash_mpd_parser_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = dash_test_sources + [ "dash_mpd_parser_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/curl:curl_shared",
-    "//third_party/openssl:libcrypto_shared",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
+    "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
     "init:libbegetutil",
@@ -143,6 +135,7 @@ ohos_unittest("dash_mpd_parser_unit_test") {
     "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
   ]
 }
@@ -155,14 +148,11 @@ ohos_unittest("dash_media_downloader_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = dash_test_sources + [ "dash_media_downloader_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/curl:curl_shared",
-    "//third_party/openssl:libcrypto_shared",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
+    "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
     "init:libbegetutil",
@@ -170,6 +160,7 @@ ohos_unittest("dash_media_downloader_unit_test") {
     "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
   ]
 
@@ -185,14 +176,11 @@ ohos_unittest("dash_mpd_downloader_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = dash_test_sources + [ "dash_mpd_downloader_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/curl:curl_shared",
-    "//third_party/openssl:libcrypto_shared",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
+    "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
     "init:libbegetutil",
@@ -200,6 +188,7 @@ ohos_unittest("dash_mpd_downloader_unit_test") {
     "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
   ]
 
@@ -215,14 +204,11 @@ ohos_unittest("dash_segment_downloader_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = dash_test_sources + [ "dash_segment_downloader_unit_test.cpp" ]
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/curl:curl_shared",
-    "//third_party/openssl:libcrypto_shared",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
+    "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
     "init:libbegetutil",
@@ -230,6 +216,7 @@ ohos_unittest("dash_segment_downloader_unit_test") {
     "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
   ]
 
