@@ -183,7 +183,7 @@ HWTEST_F(AudioServerSinkPluginUnitTest, stop_renderer, TestSize.Level1)
         .WillOnce(Return(RendererState::RENDERER_RUNNING))
         .WillOnce(Return(RendererState::RENDERER_STOPPED))
         .WillOnce(Return(RendererState::RENDERER_STOPPED));
-    EXPECT_CALL(*audioRenderer, Stop()).WillOnce(Return(false));
+    EXPECT_CALL(*audioRenderer, Pause()).WillOnce(Return(false));
 
     plugin_->audioRenderer_ = std::move(audioRenderer);
 
