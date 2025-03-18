@@ -1640,8 +1640,8 @@ int32_t HevcDecoder::SwapOutBuffers(bool isInputBuffer)
         if (ret != AVCS_ERR_OK) {
             AVCODEC_LOGE("Buffer type[%{public}u] bufferId[%{public}u], fd[%{public}d], pid[%{public}d] freeze failed!",
                          bufferType, i, fd, pid_);
-            state_ = State::RUNNING;
             int32_t errCode = ActiveBuffers();
+            state_ = State::RUNNING;
             CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Active buffers failed!");
             return ret;
         }

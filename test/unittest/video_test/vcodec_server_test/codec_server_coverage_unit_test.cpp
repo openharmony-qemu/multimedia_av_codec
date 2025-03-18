@@ -32,6 +32,8 @@
     EXPECT_CALL(*codecBaseMock_, GetHCapabilityList).Times(AtLeast(1)).WillRepeatedly
 #define EXPECT_CALL_GET_FCODEC_CAPS_MOCK                                                                               \
     EXPECT_CALL(*codecBaseMock_, GetFCapabilityList).Times(AtLeast(1)).WillRepeatedly
+#define EXPECT_CALL_GET_HEVCDECODER_CAPS_MOCK                                                                          \
+    EXPECT_CALL(*codecBaseMock_, GetHevcDecoderCapabilityList).Times(AtLeast(1)).WillRepeatedly
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
@@ -83,6 +85,52 @@ void CodecServerUnitTest::CreateFCodecByMime()
 
     int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime,
         *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+void CodecServerUnitTest::CreateHevcDecoderByName()
+{
+    std::string codecName = "video.Hevc.Decoder.Name.00";
+
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_HEVCDECODER_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HEVC_DECODER_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateHevcDecoderByName(codecName))
+        .Times(1)
+        .WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
+        .Times(1)
+        .WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1)
+        .WillOnce(Return(AVCS_ERR_OK));
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_DECODER, false, codecName, *validFormat_.GetMeta(),
+        API_VERSION::API_VERSION_11);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+void CodecServerUnitTest::CreateHevcDecoderByMine()
+{
+    std::string codecName = "video.Hevc.Decoder.Name.00";
+    std::string codecMime = CODEC_MIME_MOCK_00;
+
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_HEVCDECODER_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HEVC_DECODER_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateHevcDecoderByName(codecName))
+        .Times(1)
+        .WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
+        .Times(1)
+        .WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1)
+        .WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_DECODER, true, codecMime, *validFormat_.GetMeta(),
+        API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 
@@ -1204,6 +1252,90 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: NotifyBackGround_Valid_Test_002
+ * @tc.desc: NotifyBackGround valid progress
+ */
+HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_002, TestSize.Level1)
+{
+    CreateFCodecByMime();
+    server_->isModeConfirmed_ = true;
+    std::vector<CodecServer::CodecStatus> testList = {
+        CodecServer::CodecStatus::RUNNING,
+        CodecServer::CodecStatus::END_OF_STREAM,
+        CodecServer::CodecStatus::FLUSHED,
+    };
+    for (auto &val : testList) {
+        server_->status_ = val;
+        server_->isFreezedFlag_ = false;
+        server_->NotifyBackGround();
+        EXPECT_TRUE(server_->isFreezedFlag_);
+    }
+}
+
+/**
+ * @tc.name: NotifyBackGround_Valid_Test_003
+ * @tc.desc: NotifyBackGround valid progress - buffer mode
+ */
+HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_003, TestSize.Level1)
+{
+    CreateFCodecByMime();
+    server_->isModeConfirmed_ = true;
+    std::vector<CodecServer::CodecStatus> testList = {
+        CodecServer::CodecStatus::RUNNING,
+        CodecServer::CodecStatus::END_OF_STREAM,
+        CodecServer::CodecStatus::FLUSHED,
+    };
+    for (auto &val : testList) {
+        server_->status_ = val;
+        server_->isFreezedFlag_ = false;
+        server_->NotifyBackGround();
+        EXPECT_TRUE(server_->isFreezedFlag_);
+    }
+}
+
+/**
+ * @tc.name: NotifyBackGround_Valid_Test_004
+ * @tc.desc: NotifyBackGround valid progress - buffer mode
+ */
+HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_004, TestSize.Level1)
+{
+    CreateHevcDecoderByMine();
+    server_->isModeConfirmed_ = true;
+    std::vector<CodecServer::CodecStatus> testList = {
+        CodecServer::CodecStatus::RUNNING,
+        CodecServer::CodecStatus::END_OF_STREAM,
+        CodecServer::CodecStatus::FLUSHED,
+    };
+    for (auto &val : testList) {
+        server_->status_ = val;
+        server_->isFreezedFlag_ = false;
+        server_->NotifyBackGround();
+        EXPECT_TRUE(server_->isFreezedFlag_);
+    }
+}
+
+/**
+ * @tc.name: NotifyBackGround_Valid_Test_005
+ * @tc.desc: NotifyBackGround valid progress - buffer mode
+ */
+HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_005, TestSize.Level1)
+{
+    CreateHevcDecoderByMine();
+    server_->isModeConfirmed_ = true;
+    std::vector<CodecServer::CodecStatus> testList = {
+        CodecServer::CodecStatus::RUNNING,
+        CodecServer::CodecStatus::END_OF_STREAM,
+        CodecServer::CodecStatus::FLUSHED,
+    };
+    for (auto &val : testList) {
+        server_->status_ = val;
+        server_->isFreezedFlag_ = false;
+        server_->NotifyBackGround();
+        EXPECT_TRUE(server_->isFreezedFlag_);
+    }
+}
+
+/**
  * @tc.name: NotifyBackGround_Invalid_Test_001
  * @tc.desc: NotifyBackGround invalid progress - wrong status of codec
  */
@@ -1227,12 +1359,80 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Invalid_Test_001, TestSize.Level1
 }
 
 /**
+ * @tc.name: NotifyBackGround_Invalid_Test_002
+ * @tc.desc: NotifyBackGround invalid progress - wrong status of codec
+ */
+HWTEST_F(CodecServerUnitTest, NotifyBackGround_Invalid_Test_002, TestSize.Level1)
+{
+    CreateFCodecByMime();
+    server_->isModeConfirmed_ = true;
+    std::vector<CodecServer::CodecStatus> testList = {
+        CodecServer::CodecStatus::INITIALIZED,
+        CodecServer::CodecStatus::UNINITIALIZED,
+        CodecServer::CodecStatus::ERROR,
+    };
+    for (auto &val : testList) {
+        server_->status_ = val;
+        server_->isFreezedFlag_ = false;
+        server_->NotifyBackGround();
+        EXPECT_FALSE(server_->isFreezedFlag_);
+    }
+}
+
+/**
+ * @tc.name: NotifyBackGround_Invalid_Test_003
+ * @tc.desc: NotifyBackGround invalid progress - wrong status of codec
+ */
+HWTEST_F(CodecServerUnitTest, NotifyBackGround_Invalid_Test_003, TestSize.Level1)
+{
+    CreateHevcDecoderByMine();
+    server_->isModeConfirmed_ = true;
+    std::vector<CodecServer::CodecStatus> testList = {
+        CodecServer::CodecStatus::INITIALIZED,
+        CodecServer::CodecStatus::UNINITIALIZED,
+        CodecServer::CodecStatus::ERROR,
+    };
+    for (auto &val : testList) {
+        server_->status_ = val;
+        server_->isFreezedFlag_ = false;
+        server_->NotifyBackGround();
+        EXPECT_FALSE(server_->isFreezedFlag_);
+    }
+}
+
+/**
  * @tc.name: NotifyForeGround_Valid_Test_001
  * @tc.desc: NotifyForeGround valid progress
  */
 HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_001, TestSize.Level1)
 {
     CreateHCodecByMime();
+    server_->isModeConfirmed_ = true;
+    server_->isFreezedFlag_ = true;
+    server_->NotifyForeGround();
+    EXPECT_FALSE(server_->isFreezedFlag_);
+}
+
+/**
+ * @tc.name: NotifyForeGround_Valid_Test_002
+ * @tc.desc: NotifyForeGround valid progress
+ */
+HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_002, TestSize.Level1)
+{
+    CreateFCodecByMime();
+    server_->isModeConfirmed_ = true;
+    server_->isFreezedFlag_ = true;
+    server_->NotifyForeGround();
+    EXPECT_FALSE(server_->isFreezedFlag_);
+}
+
+/**
+ * @tc.name: NotifyForeGround_Valid_Test_003
+ * @tc.desc: NotifyForeGround valid progress
+ */
+HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_003, TestSize.Level1)
+{
+    CreateHevcDecoderByMine();
     server_->isModeConfirmed_ = true;
     server_->isFreezedFlag_ = true;
     server_->NotifyForeGround();

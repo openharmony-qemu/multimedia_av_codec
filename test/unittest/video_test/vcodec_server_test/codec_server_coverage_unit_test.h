@@ -34,6 +34,8 @@ public:
     void CreateCodecByMime();
     void CreateFCodecByName();
     void CreateFCodecByMime();
+    void CreateHevcDecoderByName();
+    void CreateHevcDecoderByMine();
     void CreateHCodecByName();
     void CreateHCodecByMime();
     std::shared_ptr<CodecBaseMock> codecBaseMock_ = nullptr;

@@ -1536,8 +1536,8 @@ int32_t FCodec::SwapOutBuffers(bool isInputBuffer)
         if (ret != AVCS_ERR_OK) {
             AVCODEC_LOGE("Buffer type[%{public}u] bufferId[%{public}u], fd[%{public}d], pid[%{public}d] freeze failed!",
                          bufferType, i, fd, pid_);
-            state_ = State::RUNNING;
             int32_t errCode = ActiveBuffers();
+            state_ = State::RUNNING;
             CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Active buffers failed!");
             return ret;
         }
@@ -1593,7 +1593,7 @@ int32_t FCodec::ActiveBuffers()
 
 int32_t FCodec::NotifyMemoryRecycle()
 {
-    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode unsupport");
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
     CHECK_AND_RETURN_RET_LOG(!disableDmaSwap_, 0, "FCodec dma swap has been diabled!");
     CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING, AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
     AVCODEC_LOGI("Begin to freeze this codec!");
@@ -1606,7 +1606,7 @@ int32_t FCodec::NotifyMemoryRecycle()
 
 int32_t FCodec::NotifyMemoryWriteBack()
 {
-    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode unsupport");
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
     AVCODEC_LOGI("Begin to active this codec!");
     int32_t errCode = ActiveBuffers();
     CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Fcodec active buffers failed!");
