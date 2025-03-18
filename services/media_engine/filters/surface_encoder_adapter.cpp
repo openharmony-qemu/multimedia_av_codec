@@ -374,7 +374,10 @@ Status SurfaceEncoderAdapter::Stop()
     }
 
     if (releaseBufferTask_) {
-        isThreadExit_ = true;
+        {
+            std::lock_guard<std::mutex> lock(releaseBufferMutex_);
+            isThreadExit_ = true;
+        }
         releaseBufferCondition_.notify_all();
         releaseBufferTask_->Stop();
         MEDIA_LOG_I("releaseBufferTask_ Stop");
