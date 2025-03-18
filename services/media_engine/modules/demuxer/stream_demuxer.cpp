@@ -167,6 +167,7 @@ Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_
         MEDIA_LOG_I("PullDataWithCache, offset: " PUBLIC_LOG_U64 ", cache offset: " PUBLIC_LOG_U64
             ", cache size: " PUBLIC_LOG_ZU, offset, cacheDataMap_[streamID].GetOffset(), memory->GetSize());
     }
+    FALSE_RETURN_V_MSG_E(ret != Status::END_OF_STREAM, Status::OK, "eos&data return data");
     return ret;
 }
 
