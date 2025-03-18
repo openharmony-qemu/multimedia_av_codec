@@ -1575,7 +1575,7 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 
 int32_t HevcDecoder::NotifyMemoryRecycle()
 {
-    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode unsupport");
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
     CHECK_AND_RETURN_RET_LOG(!disableDmaSwap_, 0, "HevcCodec dma swap has been disabled!");
     CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING, AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
     AVCODEC_LOGI("Begin to freeze this codec");
@@ -1588,7 +1588,7 @@ int32_t HevcDecoder::NotifyMemoryRecycle()
 
 int32_t HevcDecoder::NotifyMemoryWriteBack()
 {
-    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode unsupport");
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
     AVCODEC_LOGI("Begin to active this codec");
     int32_t errCode = ActiveBuffers();
     CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "HevcCodec active buffers failed!");
