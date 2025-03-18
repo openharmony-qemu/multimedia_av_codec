@@ -21,6 +21,7 @@
 #include "meta/format.h"
 #include "media_description.h"
 #include "avcodec_trace.h"
+#include "codec_capability_adapter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER,
@@ -128,6 +129,34 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime)
         MEDIA_LOG_I("Create codecServer failed");
         return Status::ERROR_UNKNOWN;
     }
+    if (!releaseBufferTask_) {
+        releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
+        releaseBufferTask_->RegisterJob([this] {
+            ReleaseBuffer();
+            return 0;
+        });
+    }
+    return Status::OK;
+}
+
+Status SurfaceDecoderAdapter::Init(const std::string &mime, bool isHdr)
+{
+    FALSE_RETURN_V_NOLOG(isHdr, Init(mime));
+    MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S " for hdr", mime.c_str());
+    std::shared_ptr<MediaAVCodec::AVCodecList> avCodecList = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
+    FALSE_RETURN_V_MSG(avCodecList != nullptr, Status::ERROR_UNKNOWN, "get codec list failed");
+    MediaAVCodec::CapabilityData *capabilityData = avCodecList->GetCapability(mime, false,
+        MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE);
+    FALSE_RETURN_V_MSG(capabilityData != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
+    FALSE_RETURN_V_MSG(capabilityData->isVendor, Status::ERROR_UNKNOWN, "not hw decoder");
+    FALSE_RETURN_V_MSG(
+        capabilityData->codecType == static_cast<int32_t>(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER),
+        Status::ERROR_UNKNOWN,
+        "not video decoder");
+    FALSE_RETURN_V_MSG(capabilityData->mimeType == mime, Status::ERROR_UNKNOWN, "not correct mime");
+    FALSE_RETURN_V_MSG(capabilityData->codecName != "", Status::ERROR_UNKNOWN, "empty codec name");
+    codecServer_ = MediaAVCodec::VideoDecoderFactory::CreateByName(capabilityData->codecName);
+    FALSE_RETURN_V_MSG(codecServer_ != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
         releaseBufferTask_->RegisterJob([this] {
