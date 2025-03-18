@@ -36,34 +36,6 @@ namespace {
 
 const int32_t WAIT_TIME = 5;
 
-std::string GetUriSuffix(const std::string& uri)
-{
-    std::string suffix {""};
-    auto const pos = uri.find_last_of('.');
-    if (pos != std::string::npos) {
-        suffix = uri.substr(pos + 1);
-    }
-    return suffix;
-}
-
-bool IsPluginSupportedExtension(Plugins::PluginInfo& pluginInfo, const std::string& extension)
-{
-    if (pluginInfo.pluginType != Plugins::PluginType::DEMUXER) {
-        return false;
-    }
-    bool rtv = false;
-    auto info = pluginInfo.extra[PLUGIN_INFO_EXTRA_EXTENSIONS];
-    if (info.HasValue() && Any::IsSameTypeWith<std::vector<std::string>>(info)) {
-        for (const auto& ext : AnyCast<std::vector<std::string>&>(info)) {
-            if (ext == extension) {
-                rtv = true;
-                break;
-            }
-        }
-    }
-    return rtv;
-}
-
 void ToLower(std::string& str)
 {
     std::transform(str.begin(), str.end(), str.begin(), [](unsigned char ch) { return std::tolower(ch); });
@@ -180,43 +152,10 @@ std::string TypeFinder::SniffMediaType()
     return pluginName;
 }
 
-std::string TypeFinder::GuessMediaType() const
-{
-    std::string pluginName;
-    std::string uriSuffix = GetUriSuffix(uri_);
-    if (uriSuffix.empty()) {
-        return "";
-    }
-    for (const auto& pluginInfo : plugins_) {
-        if (IsPluginSupportedExtension(*pluginInfo, uriSuffix)) {
-            pluginName = pluginInfo->name;
-            break;
-        }
-    }
-    return pluginName;
-}
-
 bool TypeFinder::IsOffsetValid(int64_t offset) const
 {
     return (mediaDataSize_ == 0) || (static_cast<int64_t>(mediaDataSize_) == -1) ||
         offset < static_cast<int64_t>(mediaDataSize_);
-}
-
-void TypeFinder::SortPlugins(const std::string& uriSuffix)
-{
-    if (uriSuffix.empty()) {
-        return;
-    }
-    std::stable_sort(
-        plugins_.begin(), plugins_.end(),
-        [&uriSuffix](const std::shared_ptr<Plugins::PluginInfo>& lhs,
-            const std::shared_ptr<Plugins::PluginInfo>& rhs) {
-            if (IsPluginSupportedExtension(*lhs, uriSuffix)) {
-                return (lhs->rank >= rhs->rank) || !IsPluginSupportedExtension(*rhs, uriSuffix);
-            } else {
-                return (lhs->rank >= rhs->rank) && !IsPluginSupportedExtension(*rhs, uriSuffix);
-            }
-        });
 }
 
 int32_t TypeFinder::GetStreamID()
