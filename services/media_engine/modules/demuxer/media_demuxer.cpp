@@ -685,14 +685,14 @@ Status MediaDemuxer::AddDemuxerCopyTaskByTrack(uint32_t trackId, DemuxerTrackTyp
 
     if (notifySampleConsumeTask_ == nullptr) {
         notifySampleConsumeTask_
-            = std::make_unique<Task>(taskName + "S_C", playerId_, TaskType::DECODER, TaskPriority::HIGH, false);
+            = std::make_unique<Task>("SAM_CON", playerId_, TaskType::DECODER, TaskPriority::HIGH, false);
         FALSE_RETURN_V_MSG_W(notifySampleConsumeTask_ != nullptr, Status::ERROR_NULL_POINTER,
             "Create notifyConsume task failed, track:" PUBLIC_LOG_U32 ",TrackType:" PUBLIC_LOG_D32, trackId, trackType);
     }
 
     if (notifySampleProduceTask_ == nullptr) {
         notifySampleProduceTask_
-            = std::make_unique<Task>(taskName + "S_P", playerId_, TaskType::DEMUXER, TaskPriority::HIGH, false);
+            = std::make_unique<Task>("SAM_PRO", playerId_, TaskType::DEMUXER, TaskPriority::HIGH, false);
         FALSE_RETURN_V_MSG_W(notifySampleProduceTask_ != nullptr, Status::ERROR_NULL_POINTER,
             "Create notifyProduce task failed, track:" PUBLIC_LOG_U32 ",TrackType:" PUBLIC_LOG_D32, trackId, trackType);
     }
