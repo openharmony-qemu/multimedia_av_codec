@@ -143,10 +143,10 @@ Status SampleQueue::PushBuffer(std::shared_ptr<AVBuffer>& sampleBuffer, bool ava
     Status status = sampleBufferQueueProducer_->PushBuffer(sampleBuffer, available);
     FALSE_RETURN_V(available && status == Status::OK, status);
 
+    lastEnterSamplePts_ = sampleBuffer->pts_;
     if (!config_.isSupportBitrateSwitch_) {
         return Status::OK;
     }
-    lastEnterSamplePts_ = sampleBuffer->pts_;
 
     if (!IsKeyFrame(sampleBuffer)) {
         return Status::OK;
@@ -218,6 +218,7 @@ Status SampleQueue::AcquireCopyToDstBuffer(std::shared_ptr<AVBuffer>& dstBuffer)
         RollbackBuffer(srcBuffer);
         return ret;
     }
+    UpdateLastOutSamplePts(dstBuffer->pts_);
 
     ret = ReleaseBuffer(srcBuffer);
     MEDIA_LOG_D(PUBLIC_LOG_S " AcquireCopyToDstBuffer out", config_.queueName_.c_str());
@@ -422,6 +423,13 @@ Status SampleQueue::UpdateLastEndSamplePts(int64_t lastEndSamplePts)
     return Status::OK;
 }
 
+Status SampleQueue::UpdateLastOutSamplePts(int64_t lastOutSamplePts)
+{
+    MEDIA_LOG_D("UpdateLastOutSamplePts lastOutSamplePts=" PUBLIC_LOG_D64, lastOutSamplePts);
+    lastOutSamplePts_ = lastOutSamplePts;
+    return Status::OK;
+}
+
 Status SampleQueue::ResponseForSwitchDone(int64_t startPtsOnSwitch)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S " ResponseForSwitchDone startPtsOnSwitch=" PUBLIC_LOG_D64,
@@ -546,13 +554,13 @@ void SampleQueue::UpdateQueueId(uint32_t queueId)
 
 int64_t SampleQueue::GetCacheDuration() const
 {
-    if (lastEnterSamplePts_ == Plugins::HST_TIME_NONE || lastEndSamplePts_ == Plugins::HST_TIME_NONE) {
+    if (lastEnterSamplePts_ == Plugins::HST_TIME_NONE || lastOutSamplePts_ == Plugins::HST_TIME_NONE) {
         return 0;
     }
     MEDIA_LOG_D("samplequeue lastEnterSamplePts_=" PUBLIC_LOG_D64 " lastEndSamplePts_=" PUBLIC_LOG_D64,
         lastEnterSamplePts_,
-        lastEndSamplePts_);
-    int64_t diff = lastEnterSamplePts_ - lastEndSamplePts_;
+        lastOutSamplePts_);
+    int64_t diff = lastEnterSamplePts_ - lastOutSamplePts_;
     return (diff > 0) ? diff : 0;
 }
 

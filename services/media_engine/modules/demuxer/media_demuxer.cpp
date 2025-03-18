@@ -66,9 +66,9 @@ constexpr int32_t PAUSE = 2;
 constexpr int32_t SEEK_TO_EOS = 1;
 constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY if no buffer in avbufferqueue producer.
 constexpr uint32_t NEXT_DELAY_TIME_US = 10; // 10us is ok
-constexpr uint32_t SAMPLE_LOOP_RETRY_TIME_US = 100000;
+constexpr uint32_t SAMPLE_LOOP_RETRY_TIME_US = 20000;
 constexpr uint32_t SAMPLE_LOOP_DELAY_TIME_US = 100000;
-constexpr uint32_t SAMPLE_LOOP_SELECTING_BITRATE_DELAY_TIME_US = 30000;
+
 constexpr uint32_t BUFFERING_WAVELINE_FOR_SAMPLE_QUEUE = 1000000;
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
@@ -2840,9 +2840,6 @@ int64_t MediaDemuxer::SampleConsumerLoop(uint32_t trackId)
         CHECK_AND_BREAK_LOG(status == Status::OK, "PushBuffer to bufferQueue failed " PUBLIC_LOG_U32, trackId);
     } while (0);
 
-    if (isHandlingSelectBitrateBySampleQueue_) {
-        return SAMPLE_LOOP_SELECTING_BITRATE_DELAY_TIME_US;
-    }
     return status == Status::OK ? SAMPLE_LOOP_RETRY_TIME_US : SAMPLE_LOOP_DELAY_TIME_US;
 }
 
@@ -3034,12 +3031,25 @@ bool MediaDemuxer::IsFlvLiveStream()
 uint64_t MediaDemuxer::GetCachedDuration()
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, 0, "source_ is nullptr");
-    AutoLock lock(mapMutex_);
-    auto sqIt = sampleQueueMap_.find(videoTrackId_);
-    FALSE_RETURN_V_MSG_E(sqIt != sampleQueueMap_.end() && sqIt->second, false,
-        "sampleQueue is nullptr");
-    int64_t demuxerCacheDuration = sqIt->second->GetCacheDuration() / US_TO_MS;
-    return source_->GetCachedDuration() + static_cast<uint64_t>(demuxerCacheDuration);
+    int64_t sampleQueueDration = std::numeric_limits<int64_t>::max();
+    {
+        AutoLock lock(mapMutex_);
+        for (auto sqIt = sampleQueueMap_.begin(); sqIt != sampleQueueMap_.end(); sqIt++) {
+            if (sqIt->second == nullptr) {
+                continue;
+            }
+            sampleQueueDration = std::min(sqIt->second->GetCacheDuration() / US_TO_MS, sampleQueueDration);
+        }
+    }
+    demuxerCacheDuration_ = sampleQueueDration;
+    sourceCacheDuration_ = source_->GetCachedDuration();
+    MEDIA_LOG_I("samplequeue cacheDuration=" PUBLIC_LOG_D64 ", sourceCache=" PUBLIC_LOG_D64,
+        demuxerCacheDuration_,
+        sourceCacheDuration_);
+    if (source_) {
+        source_->SetExtraCache(demuxerCacheDuration_);
+    }
+    return sourceCacheDuration_ + static_cast<uint64_t>(demuxerCacheDuration_);
 }
 
 void MediaDemuxer::RestartAndClearBuffer()
