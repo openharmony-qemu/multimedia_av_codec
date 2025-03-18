@@ -14,6 +14,7 @@
  */
 #include "common/log.h"
 #include "calc_max_amplitude.h"
+#include <cstdint>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "CalcMaxAmplitude" };
@@ -36,6 +37,9 @@ float CalculateMaxAmplitudeForPCM8Bit(int8_t *frame, uint64_t nSamples)
     int curMaxAmplitude = 0;
     for (uint32_t i = nSamples; i > 0; --i) {
         int8_t value = *frame++;
+        if (value == INT8_MIN) {
+            value = INT8_MAX;
+        }
         if (value < 0) {
             value = -value;
         }
@@ -52,6 +56,9 @@ float CalculateMaxAmplitudeForPCM16Bit(int16_t *frame, uint64_t nSamples)
     int curMaxAmplitude = 0;
     for (uint32_t i = nSamples; i > 0; --i) {
         int16_t value = *frame++;
+        if (value == INT16_MIN) {
+            value = INT16_MAX;
+        }
         if (value < 0) {
             value = -value;
         }
@@ -72,6 +79,9 @@ float CalculateMaxAmplitudeForPCM24Bit(char *frame, uint64_t nSamples)
         for (uint32_t j = 0; j < SAMPLE_S24_BYTE_NUM; ++j) {
             curValue += (*(curPos + j) << (ONE_BYTE_BITS * j));
         }
+        if (curValue == INT32_MIN) {
+            curValue = INT32_MAX;
+        }
         if (curValue < 0) {
             curValue = -curValue;
         }
@@ -88,6 +98,9 @@ float CalculateMaxAmplitudeForPCM32Bit(int32_t *frame, uint64_t nSamples)
     int curMaxAmplitude = 0;
     for (uint32_t i = nSamples; i > 0; --i) {
         int32_t value = *frame++;
+        if (value == INT32_MIN) {
+            value = INT32_MAX;
+        }
         if (value < 0) {
             value = -value;
         }
