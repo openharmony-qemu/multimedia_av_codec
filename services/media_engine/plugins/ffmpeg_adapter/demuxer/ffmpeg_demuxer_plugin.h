@@ -80,6 +80,7 @@ public:
     Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
         const uint32_t index, uint64_t &relativePresentationTimeUs) override;
     void SetCacheLimit(uint32_t limitSize) override;
+    Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size) override;
     bool GetProbeSize(int32_t &offset, int32_t &size) override;
     void SetInterruptState(bool isInterruptNeeded) override;
 private:

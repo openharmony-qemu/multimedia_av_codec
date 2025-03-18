@@ -1872,6 +1872,17 @@ void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
     cachelimitSize_ = limitSize;
 }
 
+Status FFmpegDemuxerPlugin::GetCurrentCacheSize(uint32_t trackId, uint32_t& size)
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
+    uint32_t dataSize = cacheQueue_.GetCacheDataSize(trackId);
+    FALSE_RETURN_V_MSG_E(dataSize < UINT32_MAX, Status::ERROR_WRONG_STATE, "CacheSize is invalid");
+    size = dataSize;
+    return Status::OK;
+}
+
 void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("SetInterruptState %{public}d", isInterruptNeeded);
