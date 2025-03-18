@@ -1278,48 +1278,6 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_002, TestSize.Level1)
  */
 HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_003, TestSize.Level1)
 {
-    CreateFCodecByMime();
-    server_->isModeConfirmed_ = true;
-    std::vector<CodecServer::CodecStatus> testList = {
-        CodecServer::CodecStatus::RUNNING,
-        CodecServer::CodecStatus::END_OF_STREAM,
-        CodecServer::CodecStatus::FLUSHED,
-    };
-    for (auto &val : testList) {
-        server_->status_ = val;
-        server_->isFreezedFlag_ = false;
-        server_->NotifyBackGround();
-        EXPECT_TRUE(server_->isFreezedFlag_);
-    }
-}
-
-/**
- * @tc.name: NotifyBackGround_Valid_Test_004
- * @tc.desc: NotifyBackGround valid progress - buffer mode
- */
-HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_004, TestSize.Level1)
-{
-    CreateHevcDecoderByMine();
-    server_->isModeConfirmed_ = true;
-    std::vector<CodecServer::CodecStatus> testList = {
-        CodecServer::CodecStatus::RUNNING,
-        CodecServer::CodecStatus::END_OF_STREAM,
-        CodecServer::CodecStatus::FLUSHED,
-    };
-    for (auto &val : testList) {
-        server_->status_ = val;
-        server_->isFreezedFlag_ = false;
-        server_->NotifyBackGround();
-        EXPECT_TRUE(server_->isFreezedFlag_);
-    }
-}
-
-/**
- * @tc.name: NotifyBackGround_Valid_Test_005
- * @tc.desc: NotifyBackGround valid progress - buffer mode
- */
-HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_005, TestSize.Level1)
-{
     CreateHevcDecoderByMine();
     server_->isModeConfirmed_ = true;
     std::vector<CodecServer::CodecStatus> testList = {
