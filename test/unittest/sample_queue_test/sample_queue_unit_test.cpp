@@ -605,10 +605,10 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_GetCacheDuration, TestSize.Level1)
     sampleQueue_->lastEnterSamplePts_ = Plugins::HST_TIME_NONE;
     EXPECT_EQ(sampleQueue_->GetCacheDuration(), 0);
 
-    sampleQueue_->lastEndSamplePts_ = Plugins::HST_TIME_NONE;
+    sampleQueue_->lastOutSamplePts_ = Plugins::HST_TIME_NONE;
     EXPECT_EQ(sampleQueue_->GetCacheDuration(), 0);
 
-    sampleQueue_->lastEndSamplePts_ = 1000;
+    sampleQueue_->lastOutSamplePts_ = 1000;
     sampleQueue_->lastEnterSamplePts_ = 3000;
     EXPECT_EQ(sampleQueue_->GetCacheDuration(), 2000);
 }
