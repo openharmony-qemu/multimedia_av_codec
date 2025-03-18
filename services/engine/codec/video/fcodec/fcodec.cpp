@@ -1595,7 +1595,8 @@ int32_t FCodec::NotifyMemoryRecycle()
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
     CHECK_AND_RETURN_RET_LOG(!disableDmaSwap_, 0, "FCodec dma swap has been diabled!");
-    CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING, AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
+    CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS,
+                              AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
     AVCODEC_LOGI("Begin to freeze this codec!");
     state_ = State::FREEZING;
     int32_t errCode = FreezeBuffers();
