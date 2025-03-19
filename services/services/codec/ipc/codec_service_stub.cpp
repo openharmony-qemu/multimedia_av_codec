@@ -237,6 +237,8 @@ int32_t CodecServiceStub::Init(AVCodecType type, bool isMimeType, const std::str
         lock.unlock();
         DestroyStub();
     }
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "server is nullptr");
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "listener is nullptr");
     const std::string tag = CreateVideoLogTag(callerInfo);
     this->SetTag(tag);
     codecServer_->SetTag(tag);
