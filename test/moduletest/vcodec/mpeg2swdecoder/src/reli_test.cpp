@@ -21,7 +21,7 @@
 #include <mutex>
 #include <queue>
 #include <string>
-
+#include "native_avcapability.h"
 #include "gtest/gtest.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avcodec_base.h"
@@ -52,7 +52,17 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-void Mpeg2SwdecReliNdkTest::SetUpTestCase() {}
+namespace {
+    static OH_AVCapability *cap_mpeg2 = nullptr;
+    static string g_codecNameMpeg2 = "";
+} // namespace
+
+void Mpeg2SwdecReliNdkTest::SetUpTestCase()
+{
+    cap_mpeg2 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG2, false, SOFTWARE);
+    g_codecNameMpeg2 = OH_AVCapability_GetName(cap_mpeg2);
+    cout << "g_codecNameMpeg2: " << g_codecNameMpeg2 << endl;
+}
 void Mpeg2SwdecReliNdkTest::TearDownTestCase() {}
 void Mpeg2SwdecReliNdkTest::SetUp() {}
 void Mpeg2SwdecReliNdkTest::TearDown() {}
@@ -65,16 +75,18 @@ namespace {
  */
 HWTEST_F(Mpeg2SwdecReliNdkTest, VIDEO_MPEG2SWDEC_RELI_0100, TestSize.Level3)
 {
-    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-    const char *INP_DIR_1 = "/data/test/media/main@high14_level_1280_720_60.m2v";
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->INP_DIR = INP_DIR_1;
-    vDecSample->DEFAULT_WIDTH = 1280;
-    vDecSample->DEFAULT_HEIGHT = 720;
-    vDecSample->DEFAULT_FRAME_RATE = 60;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface("OH.Media.Codec.Decoder.Video.MPEG2"));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg2 != nullptr) {
+        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        const char *INP_DIR_1 = "/data/test/media/main@high14_level_1280_720_60.m2v";
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->INP_DIR = INP_DIR_1;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 60;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface("OH.Media.Codec.Decoder.Video.MPEG2"));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
 }
 
 /**
@@ -84,19 +96,21 @@ HWTEST_F(Mpeg2SwdecReliNdkTest, VIDEO_MPEG2SWDEC_RELI_0100, TestSize.Level3)
  */
 HWTEST_F(Mpeg2SwdecReliNdkTest, VIDEO_MPEG2SWDEC_RELI_0200, TestSize.Level3)
 {
-    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-    const char *INP_DIR_1 = "/data/test/media/main@high14_level_1280_720_60.m2v";
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->INP_DIR = INP_DIR_1;
-    vDecSample->DEFAULT_WIDTH = 1280;
-    vDecSample->DEFAULT_HEIGHT = 720;
-    vDecSample->DEFAULT_FRAME_RATE = 60;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG2"));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg2 != nullptr) {
+        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        const char *INP_DIR_1 = "/data/test/media/main@high14_level_1280_720_60.m2v";
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->INP_DIR = INP_DIR_1;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 60;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG2"));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
 }
 
 /**
@@ -106,17 +120,19 @@ HWTEST_F(Mpeg2SwdecReliNdkTest, VIDEO_MPEG2SWDEC_RELI_0200, TestSize.Level3)
  */
 HWTEST_F(Mpeg2SwdecReliNdkTest, VIDEO_MPEG2SWDEC_RELI_0300, TestSize.Level3)
 {
-    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-    const char *INP_DIR_1 = "/data/test/media/main@high14_level_1280_720_60.m2v";
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->INP_DIR = INP_DIR_1;
-    vDecSample->DEFAULT_WIDTH = 1280;
-    vDecSample->DEFAULT_HEIGHT = 720;
-    vDecSample->DEFAULT_FRAME_RATE = 60;
-    vDecSample->repeatRun = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface("OH.Media.Codec.Decoder.Video.MPEG2"));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg2 != nullptr) {
+        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        const char *INP_DIR_1 = "/data/test/media/main@high14_level_1280_720_60.m2v";
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->INP_DIR = INP_DIR_1;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 60;
+        vDecSample->repeatRun = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface("OH.Media.Codec.Decoder.Video.MPEG2"));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
 }
 
 /**
@@ -126,19 +142,21 @@ HWTEST_F(Mpeg2SwdecReliNdkTest, VIDEO_MPEG2SWDEC_RELI_0300, TestSize.Level3)
  */
 HWTEST_F(Mpeg2SwdecReliNdkTest, VIDEO_MPEG2SWDEC_RELI_0400, TestSize.Level3)
 {
-    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-    const char *INP_DIR_1 = "/data/test/media/main@high14_level_1280_720_60.m2v";
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->INP_DIR = INP_DIR_1;
-    vDecSample->DEFAULT_WIDTH = 1280;
-    vDecSample->DEFAULT_HEIGHT = 720;
-    vDecSample->DEFAULT_FRAME_RATE = 60;
-    vDecSample->repeatRun = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG2"));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg2 != nullptr) {
+        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        const char *INP_DIR_1 = "/data/test/media/main@high14_level_1280_720_60.m2v";
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->INP_DIR = INP_DIR_1;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 60;
+        vDecSample->repeatRun = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG2"));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
 }
 } // namespace

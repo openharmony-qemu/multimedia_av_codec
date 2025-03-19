@@ -80,17 +80,19 @@ namespace {
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0100, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = true;
-    vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV12;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = true;
+        vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV12;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -100,17 +102,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0200, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = true;
-    vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV21;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = true;
+        vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -120,17 +124,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0300, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = true;
-    vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_YUVI420;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = true;
+        vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_YUVI420;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -140,17 +146,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0400, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = false;
-    vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_RGBA;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = false;
+        vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_RGBA;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -160,17 +168,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0500, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->checkOutPut = true;
-    vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV12;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->checkOutPut = true;
+        vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV12;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -180,17 +190,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0500, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0600, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->checkOutPut = true;
-    vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV21;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->checkOutPut = true;
+        vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -200,17 +212,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0700, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->checkOutPut = true;
-    vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_YUVI420;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->checkOutPut = true;
+        vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_YUVI420;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -220,17 +234,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0700, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0800, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->checkOutPut = false;
-    vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_RGBA;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->checkOutPut = false;
+        vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_RGBA;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -240,19 +256,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0800, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0900, TestSize.Level0)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_simple@level6_1280x720_30.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_simple@level6_1280x720_30.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -262,19 +280,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0900, TestSize.Level0)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1000, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_simple_scalable@level2_352x288_60.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_simple_scalable@level2_352x288_60.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -284,19 +304,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1000, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1100, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_core@level1_176x144_30.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_core@level1_176x144_30.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -306,19 +328,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1200, TestSize.Level0)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_main@level4_1920x1080_30.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_main@level4_1920x1080_30.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -328,19 +352,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1200, TestSize.Level0)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1300, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_N_bit@level2_640x480_60.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_N_bit@level2_640x480_60.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -350,19 +376,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1400, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_Hybrid@level2_720x480_30.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_Hybrid@level2_720x480_30.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -372,19 +400,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1500, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_Basic_Animated_Texture@level2_720x576_30.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_Basic_Animated_Texture@level2_720x576_30.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -394,19 +424,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1500, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1600, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_Scalable_Texture@level1_1600x900_60.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_Scalable_Texture@level1_1600x900_60.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -416,19 +448,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1700, TestSize.Level0)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_Simple_FA@level2_1024x768_30.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_Simple_FA@level2_1024x768_30.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -438,19 +472,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1700, TestSize.Level0)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1800, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_Advanced_Real_Time_Simple@level4_1440x1080_60.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_Advanced_Real_Time_Simple@level4_1440x1080_60.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -460,19 +496,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1800, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1900, TestSize.Level0)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_Core_Scalable@level3_320x240_30.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_Core_Scalable@level3_320x240_30.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -482,19 +520,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1900, TestSize.Level0)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2000, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_Advanced_Coding_Efficiency@level6_1600x1200_60.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_Advanced_Coding_Efficiency@level6_1600x1200_60.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -504,19 +544,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2000, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2100, TestSize.Level0)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_Advanced_Core@level2_800x600_30.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_Advanced_Core@level2_800x600_30.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -526,19 +568,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2100, TestSize.Level0)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2200, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_Advanced_Scalable_Texture@level3_1024x576_60.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_Advanced_Scalable_Texture@level3_1024x576_60.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -548,19 +592,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2300, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_Advanced_Simple@level5_320x240_30.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_Advanced_Simple@level5_320x240_30.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -570,19 +616,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2400, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_odd_res_1281x721.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_odd_res_1281x721.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -592,19 +640,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2500, TestSize.Level3)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_res_change.m4v";
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_res_change.m4v";
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -614,19 +664,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2500, TestSize.Level3)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2600, TestSize.Level3)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_err_res.m4v";
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_err_res.m4v";
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -636,17 +688,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2600, TestSize.Level3)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2700, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_simple@level6_1280x720_30.m4v";
-    vDecSample->DEFAULT_WIDTH = 1280;
-    vDecSample->DEFAULT_HEIGHT = 720;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->checkOutPut = false;
-    vDecSample->DEFAULT_ROTATION = 90;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_simple@level6_1280x720_30.m4v";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->checkOutPut = false;
+        vDecSample->DEFAULT_ROTATION = 90;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -656,17 +710,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2700, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2800, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_simple@level6_1280x720_30.m4v";
-    vDecSample->DEFAULT_WIDTH = 1280;
-    vDecSample->DEFAULT_HEIGHT = 720;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->checkOutPut = false;
-    vDecSample->DEFAULT_ROTATION = 180;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_simple@level6_1280x720_30.m4v";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->checkOutPut = false;
+        vDecSample->DEFAULT_ROTATION = 180;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -676,17 +732,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2800, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2900, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_simple@level6_1280x720_30.m4v";
-    vDecSample->DEFAULT_WIDTH = 1280;
-    vDecSample->DEFAULT_HEIGHT = 720;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->checkOutPut = false;
-    vDecSample->DEFAULT_ROTATION = 270;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_simple@level6_1280x720_30.m4v";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->checkOutPut = false;
+        vDecSample->DEFAULT_ROTATION = 270;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -696,19 +754,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2900, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_3000, TestSize.Level3)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg2.m2v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg2.m2v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -718,19 +778,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_3000, TestSize.Level3)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_SWDEC_MPEG4_IPB_0100, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_1280x720_I.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_1280x720_I.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -740,19 +802,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_SWDEC_MPEG4_IPB_0100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_IPB_0200, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_1280x720_IP.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_1280x720_IP.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -762,19 +826,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_IPB_0200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_IPB_0300, TestSize.Level2)
 {
-    VDecNdkSample *vDecSample = new VDecNdkSample();
+    if (cap_mpeg4 != nullptr) {
+        VDecNdkSample *vDecSample = new VDecNdkSample();
 
-    int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_1280x720_IPB.m4v";
-    ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
+        int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_1280x720_IPB.m4v";
+        ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 
 /**
@@ -784,15 +850,17 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_IPB_0300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0100, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = -1;
-    vDecSample->DEFAULT_HEIGHT = -1;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
-    ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = -1;
+        vDecSample->DEFAULT_HEIGHT = -1;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
+    }
 }
 
 /**
@@ -802,15 +870,17 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0200, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 0;
-    vDecSample->DEFAULT_HEIGHT = 0;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
-    ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 0;
+        vDecSample->DEFAULT_HEIGHT = 0;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
+    }
 }
 
 /**
@@ -820,15 +890,17 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0300, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1;
-    vDecSample->DEFAULT_HEIGHT = 1;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
-    ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1;
+        vDecSample->DEFAULT_HEIGHT = 1;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
+    }
 }
 
 /**
@@ -838,15 +910,17 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0400, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 4097;
-    vDecSample->DEFAULT_HEIGHT = 4097;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
-    ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 4097;
+        vDecSample->DEFAULT_HEIGHT = 4097;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
+    }
 }
 
 /**
@@ -856,15 +930,17 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0500, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 10000;
-    vDecSample->DEFAULT_HEIGHT = 10000;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
-    ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 10000;
+        vDecSample->DEFAULT_HEIGHT = 10000;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
+    }
 }
 
 /**
@@ -874,19 +950,21 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0500, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0600, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 64;
-    vDecSample->DEFAULT_HEIGHT = 64;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->checkOutPut = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 64;
+        vDecSample->DEFAULT_HEIGHT = 64;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->checkOutPut = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
 }
 
 /**
@@ -896,17 +974,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
-        auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = -1;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
-        vDecSample->SF_OUTPUT = false;
-        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->RunVideoDec(g_codecNameMpeg4));
-        vDecSample->WaitForEOS();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        if (!access("/system/lib64/media/", 0)) {
+            auto vDecSample = make_shared<VDecAPI11Sample>();
+            vDecSample->INP_DIR = INP_DIR_1080_30;
+            vDecSample->DEFAULT_WIDTH = 1920;
+            vDecSample->DEFAULT_HEIGHT = 1080;
+            vDecSample->DEFAULT_FRAME_RATE = -1;
+            vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+            vDecSample->SF_OUTPUT = false;
+            ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->RunVideoDec(g_codecNameMpeg4));
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        }
     }
 }
 
@@ -917,17 +997,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0700, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
-        auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 0;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
-        vDecSample->SF_OUTPUT = false;
-        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->RunVideoDec(g_codecNameMpeg4));
-        vDecSample->WaitForEOS();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        if (!access("/system/lib64/media/", 0)) {
+            auto vDecSample = make_shared<VDecAPI11Sample>();
+            vDecSample->INP_DIR = INP_DIR_1080_30;
+            vDecSample->DEFAULT_WIDTH = 1920;
+            vDecSample->DEFAULT_HEIGHT = 1080;
+            vDecSample->DEFAULT_FRAME_RATE = 0;
+            vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+            vDecSample->SF_OUTPUT = false;
+            ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->RunVideoDec(g_codecNameMpeg4));
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        }
     }
 }
 
@@ -938,17 +1020,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0800, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
-        auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 0.1;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
-        vDecSample->SF_OUTPUT = false;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
-        vDecSample->WaitForEOS();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        if (!access("/system/lib64/media/", 0)) {
+            auto vDecSample = make_shared<VDecAPI11Sample>();
+            vDecSample->INP_DIR = INP_DIR_1080_30;
+            vDecSample->DEFAULT_WIDTH = 1920;
+            vDecSample->DEFAULT_HEIGHT = 1080;
+            vDecSample->DEFAULT_FRAME_RATE = 0.1;
+            vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+            vDecSample->SF_OUTPUT = false;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        }
     }
 }
 
@@ -959,17 +1043,19 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0900, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_1000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
-        auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 10000;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
-        vDecSample->SF_OUTPUT = false;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
-        vDecSample->WaitForEOS();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        if (!access("/system/lib64/media/", 0)) {
+            auto vDecSample = make_shared<VDecAPI11Sample>();
+            vDecSample->INP_DIR = INP_DIR_1080_30;
+            vDecSample->DEFAULT_WIDTH = 1920;
+            vDecSample->DEFAULT_HEIGHT = 1080;
+            vDecSample->DEFAULT_FRAME_RATE = 10000;
+            vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+            vDecSample->SF_OUTPUT = false;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        }
     }
 }
 
@@ -980,20 +1066,22 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_1000, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0100, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->autoSwitchSurface = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->sleepOnFPS = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
-    ASSERT_EQ(AV_ERR_INVALID_STATE, vDecSample->SwitchSurface());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        ASSERT_EQ(AV_ERR_INVALID_STATE, vDecSample->SwitchSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
+    }
 }
 
 /**
@@ -1003,18 +1091,20 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0100, TestSize.Leve
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0200, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->autoSwitchSurface = true;
-    vDecSample->sleepOnFPS = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
+    }
 }
 
 /**
@@ -1024,18 +1114,20 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0200, TestSize.Leve
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0300, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->autoSwitchSurface = false;
-    vDecSample->CreateSurface();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
-    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->autoSwitchSurface = false;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
 }
 
 /**
@@ -1045,16 +1137,18 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0300, TestSize.Leve
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0400, TestSize.Level2)
 {
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->autoSwitchSurface = true;
-    vDecSample->sleepOnFPS = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
-    vDecSample->WaitForEOS();
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
+        vDecSample->WaitForEOS();
+    }
 }
 } // namespace
