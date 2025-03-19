@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Copyright (c) 2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,7 +19,11 @@ module_output_path = "av_codec/moduletest"
 
 hevcswdecoder_moduletest_native_include_dirs = [
   "./include",
+  "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
+  "$MEDIA_ROOT_DIR/../../../third_party/json/include",
+  "$drm_framework_root_dir/interfaces/kits/c/drm_capi/common",
+  "$drm_framework_root_dir/interfaces/kits/c/drm_capi/include",
 ]
 
 hevcswdecoder_moduletest_cflags = [
@@ -55,6 +59,8 @@ ohos_unittest("hevcswdecoder_native_module_test") {
 
   if (av_codec_support_codec) {
     sources = [
+      "./src/InnerAPI/api_test.cpp",
+      "./src/InnerAPI/videodec_ndk_inner_sample.cpp",
       "./src/api_test.cpp",
       "./src/func_test.cpp",
       "./src/state_test.cpp",
@@ -64,6 +70,7 @@ ohos_unittest("hevcswdecoder_native_module_test") {
   }
 
   deps = [
+    "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
   ]
@@ -75,7 +82,6 @@ ohos_unittest("hevcswdecoder_native_module_test") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_single",
-    "json:nlohmann_json_static",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "openssl:libcrypto_shared",
