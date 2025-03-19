@@ -68,6 +68,7 @@ public:
     static void ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format);
     static void ParseHevcInfo(const AVFormatContext& avFormatContext, HevcParseFormat parse, Meta &format);
     static FileType GetFileTypeByName(const AVFormatContext& avFormatContext);
+    static bool IsVideoCodecId(const AVCodecID &codecId);
 private:
     FFmpegFormatHelper() = delete;
     ~FFmpegFormatHelper() = delete;

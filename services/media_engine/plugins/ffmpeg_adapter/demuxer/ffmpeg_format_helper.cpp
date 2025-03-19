@@ -1063,6 +1063,14 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Met
         }
     }
 }
+
+bool FFmpegFormatHelper::IsVideoCodecId(const AVCodecID &codecId)
+{
+    if (g_codecIdToMime.count(codecId) == 0) {
+        return false;
+    }
+    return StartWith(std::string(g_codecIdToMime[codecId]).c_str(), "video/");
+}
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

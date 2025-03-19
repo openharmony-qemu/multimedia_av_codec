@@ -112,7 +112,8 @@ bool FFmpegDemuxerPlugin::IsMultiVideoTrack()
             MEDIA_LOG_W("Track " PUBLIC_LOG_D32 " info is nullptr", trackIndex);
             continue;
         }
-        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+            FFmpegFormatHelper::IsVideoCodecId(avStream->codecpar->codec_id)) {
             if (hasVideo) {
                 return true;
             }
