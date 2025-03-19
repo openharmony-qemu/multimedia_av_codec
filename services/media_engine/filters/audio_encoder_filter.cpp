@@ -276,6 +276,9 @@ Status AudioEncoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
 {
     MEDIA_LOG_I("OnLinked");
     onLinkedResultCallback_ = callback;
+    if (isTranscoderMode_) {
+        meta_ = meta;
+    }
     return Status::OK;
 }
 
@@ -298,6 +301,10 @@ void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     MEDIA_LOG_I("OnLinkedResult");
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     mediaCodec_->Prepare();
+    if (isTranscoderMode_) {
+        onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta_);
+        return;
+    }
     onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta);
 }
 

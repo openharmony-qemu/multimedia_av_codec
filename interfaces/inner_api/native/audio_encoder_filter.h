@@ -78,6 +78,7 @@ private:
 
     std::shared_ptr<Filter> nextFilter_;
     std::string bundleName_;
+    std::shared_ptr<Meta> meta_;
     bool isTranscoderMode_ {false};
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
