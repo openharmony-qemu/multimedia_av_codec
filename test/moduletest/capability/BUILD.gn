@@ -15,7 +15,6 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
-THIRD_ROOT_DIR = "//third_party/"
 module_output_path = "av_codec/moduletest"
 
 ohos_unittest("capability_module_test") {
@@ -36,7 +35,6 @@ ohos_unittest("capability_module_test") {
     "$MEDIA_ROOT_DIR/services/engine/plugin/common",
     "$MEDIA_ROOT_DIR/services/engine/plugin/core",
     "$MEDIA_ROOT_DIR/services/engine/plugin/interface",
-    "$THIRD_ROOT_DIR/ffmpeg",
     "$MEDIA_ROOT_DIR/frameworks/native/capi/common",
     "$MEDIA_ROOT_DIR/services/dfx/include",
     "$MEDIA_ROOT_DIR/services/engine/base/include",
@@ -69,6 +67,8 @@ ohos_unittest("capability_module_test") {
     "-Wsign-compare",
     "-Wunused-parameter",
   ]
+
+  public_external_deps = [ "ffmpeg:libohosffmpeg" ]
 
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
