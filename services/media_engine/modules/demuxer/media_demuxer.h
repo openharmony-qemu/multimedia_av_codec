@@ -347,7 +347,7 @@ private:
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
-    std::mutex ParserTaskMutex_{};
+    std::mutex parserTaskMutex_ {};
     int64_t duration_ {0};
     FileType fileType_ = FileType::UNKNOW;
 

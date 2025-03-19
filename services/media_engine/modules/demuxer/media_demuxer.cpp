@@ -258,7 +258,7 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
 
 void MediaDemuxer::TryReclaimParserTask()
 {
-    std::lock_guard<std::mutex> lock(isSelectTrackMutex_);
+    std::lock_guard<std::mutex> lock(parserTaskMutex_);
     if (isParserTaskEnd_ && parserRefInfoTask_ != nullptr) {
         parserRefInfoTask_->Stop();
         parserRefInfoTask_ = nullptr;
@@ -272,7 +272,7 @@ int64_t MediaDemuxer::ParserRefInfo()
     std::shared_ptr<Plugins::DemuxerPlugin> plugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_D(plugin != nullptr, 0, "Demuxer plugin is nullptr");
     Status ret = plugin->ParserRefInfo();
-    std::lock_guard<std::mutex> lock(isSelectTrackMutex_);
+    std::lock_guard<std::mutex> lock(parserTaskMutex_);
     if ((ret == Status::OK || ret == Status::ERROR_UNKNOWN) && parserRefInfoTask_ != nullptr) {
         parserRefInfoTask_->Stop();
         isParserTaskEnd_ = true;
