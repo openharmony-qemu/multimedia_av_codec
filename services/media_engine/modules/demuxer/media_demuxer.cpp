@@ -1282,7 +1282,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     return ret;
 }
 
-Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
+Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_INVALID_PARAMETER, "Source is nullptr");
     MEDIA_LOG_I("In");
@@ -1291,6 +1291,10 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
         auto sqIt = sampleQueueMap_.find(videoTrackId_);
         FALSE_RETURN_V_MSG_E(sqIt != sampleQueueMap_.end() && sqIt->second, Status::ERROR_WRONG_STATE,
             "sampleQueue is nullptr");
+        FALSE_RETURN_V_NOLOG(!isManualBitRateSetting_.load() || !isAutoSelect, Status::ERROR_UNKNOWN);
+        if (!isManualBitRateSetting_.load() && !isAutoSelect) {
+            isManualBitRateSetting_.store(true);
+        }
         return sqIt->second->ReadySwitchBitrate(bitRate);
     }
     if (demuxerPluginManager_->IsDash()) {
@@ -2388,6 +2392,11 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_BITRATE_START, event.param});
             break;
         }
+        case PluginEventType::FLV_AUTO_SELECT_BITRATE: {
+            MEDIA_LOG_D("OnEvent flv auto select bitrate.");
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_FLV_AUTO_SELECT_BITRATE, event.param});
+            break;
+        }
         default:
             break;
     }
@@ -2967,7 +2976,11 @@ Status MediaDemuxer::HandleSelectBitrateBySampleQueue(int64_t startPts, uint32_t
 
     Status ret = Status::OK;
     source_->SetStartPts(startPts / US_TO_MS);
-    source_->SelectBitRate(bitrate);
+    if (isManualBitRateSetting_.load()) {
+        source_->SelectBitRate(bitrate);
+    } else {
+        source_->AutoSelectBitRate(bitrate);
+    }
     MEDIA_LOG_I("source SelectBitrate bitrate=" PUBLIC_LOG_U32 " startPts=" PUBLIC_LOG_D64, bitrate, startPts);
 
     {

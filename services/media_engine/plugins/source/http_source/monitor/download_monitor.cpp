@@ -188,6 +188,11 @@ bool DownloadMonitor::SelectBitRate(uint32_t bitRate)
     return downloader_->SelectBitRate(bitRate);
 }
 
+bool DownloadMonitor::AutoSelectBitRate(uint32_t bitRate)
+{
+    return downloader_->AutoSelectBitRate(bitRate);
+}
+
 void DownloadMonitor::SetCallback(Callback* cb)
 {
     callback_ = cb;
