@@ -250,7 +250,7 @@ private:
     Status InnerSelectTrack(int32_t trackId);
     Status HandleRead(uint32_t trackId);
     int64_t ParserRefInfo();
-    void TryRecvParserTask();
+    void TryReclaimParserTask();
 
     Status HandleSelectTrack(int32_t trackId);
     Status HandleDashSelectTrack(int32_t trackId);
@@ -347,6 +347,7 @@ private:
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
+    std::mutex ParserTaskMutex_{};
     int64_t duration_ {0};
     FileType fileType_ = FileType::UNKNOW;
 
