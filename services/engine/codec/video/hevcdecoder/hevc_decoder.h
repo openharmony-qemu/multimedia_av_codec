@@ -32,6 +32,7 @@
 #include "block_queue.h"
 #include "codec_utils.h"
 #include "codecbase.h"
+#include "dma_swap.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
 #include "task_thread.h"
@@ -63,6 +64,8 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
+    int32_t NotifyMemoryRecycle() override;
+    int32_t NotifyMemoryWriteBack() override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
 
     struct HBuffer {
@@ -83,6 +86,7 @@ public:
         int32_t width = 0;
         int32_t height = 0;
         int32_t bitDepth = BIT_DEPTH8BIT;
+        bool hasSwapedOut = false;
     };
 
 private:
@@ -104,6 +108,8 @@ private:
         FLUSHING,
         EOS,
         ERROR,
+        FREEZING,
+        FROZEN,
     };
 
     enum PixelBitDepth : int32_t {
@@ -156,6 +162,15 @@ private:
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     GSError RegisterListenerToSurface(const sptr<Surface> &surface);
     int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
+
+    // for memory recycle
+    int32_t FreezeBuffers();
+    int32_t ActiveBuffers();
+    bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<HBuffer> &hBuffer);
+    int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
+    int32_t SwapInBuffers(bool isOutputBuffer);
+    bool disableDmaSwap_ = false;
+    int pid_ = -1;
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;

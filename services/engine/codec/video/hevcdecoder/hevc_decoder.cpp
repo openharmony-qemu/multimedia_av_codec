@@ -77,6 +77,7 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
 {
     AVCODEC_SYNC_TRACE;
     std::unique_lock<std::mutex> lock(decoderCountMutex_);
+    pid_ = getpid();
     if (!freeIDSet_.empty()) {
         decInstanceID_ = freeIDSet_[0];
         freeIDSet_.erase(freeIDSet_.begin());
@@ -1568,6 +1569,128 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(HEVC_PROFILE_MAIN), levels));
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(HEVC_PROFILE_MAIN_10), levels));
         capaArray.emplace_back(capsData);
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t HevcDecoder::NotifyMemoryRecycle()
+{
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
+    CHECK_AND_RETURN_RET_LOG(!disableDmaSwap_, 0, "HevcCodec dma swap has been disabled!");
+    CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS,
+                              AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
+    AVCODEC_LOGI("Begin to freeze this codec");
+    state_ = State::FREEZING;
+    int32_t errCode = FreezeBuffers();
+    CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "HevcCodec freeze buffers failed!");
+    state_ = State::FROZEN;
+    return AVCS_ERR_OK;
+}
+
+int32_t HevcDecoder::NotifyMemoryWriteBack()
+{
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
+    AVCODEC_LOGI("Begin to active this codec");
+    int32_t errCode = ActiveBuffers();
+    CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "HevcCodec active buffers failed!");
+    state_ = State::RUNNING;
+    return AVCS_ERR_OK;
+}
+
+int32_t HevcDecoder::FreezeBuffers()
+{
+    CHECK_AND_RETURN_RET_LOGD(state_ != State::FROZEN, AVCS_ERR_OK, "HevcCodec had been frozen!");
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
+    State currentState = state_;
+    int32_t ret = SwapOutBuffers(INDEX_INPUT, currentState);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Input buffers swap out failed!");
+    ret = SwapOutBuffers(INDEX_OUTPUT, currentState);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Output buffers swap out failed!");
+    AVCODEC_LOGI("Freeze buffers success");
+    return AVCS_ERR_OK;
+}
+
+int32_t HevcDecoder::ActiveBuffers()
+{
+    CHECK_AND_RETURN_RET_LOGD(state_ == State::FREEZING || state_ == State::FROZEN, AVCS_ERR_INVALID_STATE,
+                              "Only freezing or frozen state can swap in dma buffer!");
+    int32_t ret = SwapInBuffers(INDEX_INPUT);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Input buffers swap in failed!");
+    ret = SwapInBuffers(INDEX_OUTPUT);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Output buffers swap in failed!");
+    AVCODEC_LOGI("Active buffers success");
+    return AVCS_ERR_OK;
+}
+
+int32_t HevcDecoder::SwapOutBuffers(bool isOutputBuffer, State curState)
+{
+    uint32_t bufferType = isOutputBuffer ? INDEX_OUTPUT : INDEX_INPUT;
+    CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped out!");
+    for (uint32_t i = 0u; i < buffers_[bufferType].size(); i++) {
+        std::shared_ptr<HBuffer> hBuffer = buffers_[bufferType][i];
+        if (!CanSwapOut(isOutputBuffer, hBuffer)) {
+            AVCODEC_LOGW("Buf: [%{public}u] can't freeze, owner: [%{public}d] swaped out: [%{public}d]!", i,
+                         hBuffer->owner_.load(), hBuffer->hasSwapedOut);
+            continue;
+        }
+        std::shared_ptr<FSurfaceMemory> surfaceMemory = hBuffer->sMemory;
+        CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Buf[%{public}u]->sMemory error!", i);
+        sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+        CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Buf[%{public}u]->surfaceBuf error!", i);
+        int32_t fd = surfaceBuffer->GetFileDescriptor();
+        int32_t ret = DmaSwaper::GetInstance().SwapOutDma(pid_, fd);
+        if (ret != AVCS_ERR_OK) {
+            AVCODEC_LOGE("Buffer type[%{public}u] bufferId[%{public}u], fd[%{public}d], pid[%{public}d] freeze failed!",
+                         bufferType, i, fd, pid_);
+            int32_t errCode = ActiveBuffers();
+            state_ = State::RUNNING;
+            CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Active buffers failed!");
+            return ret;
+        }
+        AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap out success!", i, fd);
+        hBuffer->hasSwapedOut = true;
+    }
+    return AVCS_ERR_OK;
+}
+
+bool HevcDecoder::CanSwapOut(bool isOutputBuffer, std::shared_ptr<HBuffer> &hBuffer)
+{
+    if (!isOutputBuffer) {
+        AVCODEC_LOGE("Current buffers unsupport.");
+        return false;
+    }
+    HBuffer::Owner ownerValue = hBuffer->owner_.load();
+    AVCODEC_LOGD("Buffer type: [%{public}u], hBuffer->owner_: [%{public}d], hBuffer->hasSwapedOut: [%{public}d].",
+                 isOutputBuffer, ownerValue, hBuffer->hasSwapedOut);
+    std::shared_ptr<FSurfaceMemory> surfaceMemory = hBuffer->sMemory;
+    CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
+    sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+    if (surfaceBuffer) {
+        return !(ownerValue == HBuffer::Owner::OWNED_BY_SURFACE || hBuffer->hasSwapedOut || surfaceBuffer == nullptr);
+    } else {
+        return !(ownerValue == HBuffer::Owner::OWNED_BY_SURFACE || ownerValue == HBuffer::Owner::OWNED_BY_USER ||
+                 hBuffer->hasSwapedOut || surfaceBuffer == nullptr);
+    }
+}
+
+int32_t HevcDecoder::SwapInBuffers(bool isOutputBuffer)
+{
+    uint32_t bufferType = isOutputBuffer ? INDEX_OUTPUT : INDEX_INPUT;
+    CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped in!");
+    for (uint32_t i = 0u; i < buffers_[bufferType].size(); i++) {
+        std::shared_ptr<HBuffer> hBuffer = buffers_[bufferType][i];
+        if (!hBuffer->hasSwapedOut) {
+            continue;
+        }
+        std::shared_ptr<FSurfaceMemory> surfaceMemory = hBuffer->sMemory;
+        CHECK_AND_CONTINUE_LOG(surfaceMemory != nullptr, "Buf[%{public}u]->sMemory error!", i);
+        sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+        CHECK_AND_CONTINUE_LOG(surfaceBuffer != nullptr, "Buf[%{public}u]->surfaceBuf error!", i);
+        int32_t fd = surfaceBuffer->GetFileDescriptor();
+        int32_t ret = DmaSwaper::GetInstance().SwapInDma(pid_, fd);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Buf[%{public}u] fd[%{public}u] swap in error!", i, fd);
+        AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap in success!", i, fd);
+        hBuffer->hasSwapedOut = false;
     }
     return AVCS_ERR_OK;
 }

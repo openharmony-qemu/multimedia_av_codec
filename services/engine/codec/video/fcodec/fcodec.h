@@ -32,6 +32,7 @@
 #include "block_queue.h"
 #include "codec_utils.h"
 #include "codecbase.h"
+#include "dma_swap.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
 #include "task_thread.h"
@@ -62,7 +63,12 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
+    int32_t NotifyMemoryRecycle() override;
+    int32_t NotifyMemoryWriteBack() override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
+
+private:
+    int32_t Initialize();
     struct FBuffer {
     public:
         FBuffer() = default;
@@ -80,10 +86,8 @@ public:
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width_ = 0;
         int32_t height_ = 0;
+        bool hasSwapedOut_ = false;
     };
-
-private:
-    int32_t Initialize();
 
     enum struct State : int32_t {
         UNINITIALIZED,
@@ -95,6 +99,8 @@ private:
         FLUSHING,
         EOS,
         ERROR,
+        FREEZING,
+        FROZEN,
     };
     void DumpOutputBuffer();
     bool IsActive() const;
@@ -143,6 +149,14 @@ private:
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     GSError RegisterListenerToSurface(const sptr<Surface> &surface);
     int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
+    // for memory recycle
+    int32_t FreezeBuffers();
+    int32_t ActiveBuffers();
+    bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
+    int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
+    int32_t SwapInBuffers(bool isOutputBuffer);
+    bool disableDmaSwap_ = false;
+    int32_t pid_ = -1;
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
