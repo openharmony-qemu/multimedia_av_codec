@@ -262,7 +262,7 @@ void MediaDemuxer::TryReclaimParserTask()
     if (isParserTaskEnd_ && parserRefInfoTask_ != nullptr) {
         parserRefInfoTask_->Stop();
         parserRefInfoTask_ = nullptr;
-        MEDIA_LOG_I("Success to recovery");
+        MEDIA_LOG_I("Success to reclaim parser task");
     }
 }
 
