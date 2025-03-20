@@ -774,8 +774,8 @@ bool FCodec::RequestSurfaceBufferOnce()
         }
         if (outputBuffer->avBuffer_ == nullptr) {
             outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
-            outputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(outputBuffer->sMemory_->GetBase(), 
-                                                              outputBuffer->sMemory_->GetSize());
+            outputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(outputBuffer->sMemory_->GetBase(),
+                                                               outputBuffer->sMemory_->GetSize());
             AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}u, size=%{public}d, "
                          "stride=%{public}d", index, outputBuffer->sMemory_->GetSize(),
                          outputBuffer->sMemory_->GetSurfaceBufferStride());
