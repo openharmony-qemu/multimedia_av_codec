@@ -760,7 +760,7 @@ bool HevcDecoder::RequestSurfaceBufferOnce()
         }
         if (outputBuffer->avBuffer == nullptr) {
             outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
-            outputBuffer->avBuffer = AVBuffer::CreateAVBuffer(outputBuffer->sMemory->GetBase(), 
+            outputBuffer->avBuffer = AVBuffer::CreateAVBuffer(outputBuffer->sMemory->GetBase(),
                                                               outputBuffer->sMemory->GetSize());
             AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}u, size=%{public}d, "
                          "stride=%{public}d", index, outputBuffer->sMemory->GetSize(),
