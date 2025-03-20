@@ -98,6 +98,7 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType,
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
     cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
     totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
+    memorySize_ = MAX_CACHE_BUFFER_SIZE;
     MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
     HlsInit(nullptr);
 }
@@ -225,6 +226,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
             cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
             cacheMediaBuffer_->Init(MIN_BUFFER_SIZE, CHUNK_SIZE);
             totalBufferSize_ = MIN_BUFFER_SIZE;
+            memorySize_ = MIN_BUFFER_SIZE;
         } else if (totalBufferSize_ > MAX_CACHE_BUFFER_SIZE) {
             MEDIA_LOG_I("HLS Failed setting buffer size: " PUBLIC_LOG_ZU ". already exceed the max buffer size: "
             PUBLIC_LOG_U64 ", setting buffer size: " PUBLIC_LOG_U64 ". ",
@@ -232,9 +234,11 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
             cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
             cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
             totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
+            memorySize_ = MAX_CACHE_BUFFER_SIZE;
         } else {
             cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
             cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
+            memorySize_ = totalBufferSize_;
             MEDIA_LOG_I("HLS Success setted buffer size: " PUBLIC_LOG_ZU ". ", totalBufferSize_);
         }
     }
@@ -644,6 +648,7 @@ void HlsMediaDownloader::PrepareToSeek()
     cacheMediaBuffer_.reset();
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
+    memorySize_ = totalBufferSize_;
     canWrite_ = true;
 
     AutoLock lock(tsStorageInfoMutex_);
@@ -1997,6 +2002,11 @@ uint64_t HlsMediaDownloader::GetCachedDuration()
 {
     MEDIA_LOG_I("HLS GetCachedDuration: " PUBLIC_LOG_U64, cachedDuration_);
     return cachedDuration_;
+}
+
+uint64_t HlsMediaDownloader::GetMemorySize()
+{
+    return memorySize_;
 }
 }
 }

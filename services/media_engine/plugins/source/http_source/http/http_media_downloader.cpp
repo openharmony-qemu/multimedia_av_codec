@@ -1835,6 +1835,14 @@ bool HttpMediaDownloader::IsFlvLive()
     size_t fileContenLen = downloadRequest_->GetFileContentLength();
     return fileContenLen == 0 && isRingBuffer_;
 }
+
+uint64_t HttpMediaDownloader::GetMemorySize()
+{
+    if (totalBufferSize_ <= 0) {
+        return 0;
+    }
+    return static_cast<uint64_t>(totalBufferSize_);
+}
 }
 }
 }

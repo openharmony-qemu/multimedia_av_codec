@@ -509,6 +509,12 @@ bool DownloadMonitor::IsFlvLive()
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     return downloader_->IsFlvLive();
 }
+
+uint64_t DownloadMonitor::GetMemorySize()
+{
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
+    return downloader_->GetMemorySize();
+}
 }
 }
 }

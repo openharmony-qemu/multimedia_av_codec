@@ -175,6 +175,7 @@ public:
     bool IsAllSegmentFinished() const;
     void SetDurationForPlaying(double duration);
     void NotifyInitSuccess();
+    size_t GetRingBufferInitSize(MediaAVCodec::MediaType streamType) const;
 
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
@@ -195,7 +196,6 @@ private:
                             const std::atomic<bool> &isInterruptNeeded);
     uint32_t GetMaxReadLength(uint32_t wantReadLength, const std::shared_ptr<DashBufferSegment> &currentSegment,
                               int32_t currentStreamId) const;
-    size_t GetRingBufferInitSize(MediaAVCodec::MediaType streamType) const;
     void OnWriteRingBuffer(uint32_t len);
     bool HandleBuffering(const std::atomic<bool> &isInterruptNeeded);
     void SaveDataHandleBuffering();

@@ -603,5 +603,11 @@ bool Source::IsFlvLive()
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
     return plugin_->IsFlvLive();
 }
+
+uint64_t Source::GetMemorySize()
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, 0, "plugin_ is nullptr");
+    return plugin_->GetMemorySize();
+}
 } // namespace Media
 } // namespace OHOS

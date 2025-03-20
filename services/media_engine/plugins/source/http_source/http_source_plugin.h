@@ -71,6 +71,7 @@ public:
     uint64_t GetCachedDuration() override;
     void RestartAndClearBuffer() override;
     bool IsFlvLive() override;
+    uint64_t GetMemorySize() override;
 
 private:
     void CloseUri(bool isAsync = false);

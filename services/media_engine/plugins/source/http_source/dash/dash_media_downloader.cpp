@@ -1220,6 +1220,18 @@ void DashMediaDownloader::NotifyInitSuccess()
         }
     }
 }
+
+uint64_t DashMediaDownloader::GetMemorySize()
+{
+    uint64_t memorySize = 0;
+    for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
+        if (segmentDownloaders_[i] != nullptr) {
+            auto streamType = segmentDownloaders_[i]->GetStreamType();
+            memorySize += static_cast<uint64_t>(segmentDownloaders_[i]->GetRingBufferInitSize(streamType));
+        }
+    }
+    return memorySize;
+}
 }
 }
 }

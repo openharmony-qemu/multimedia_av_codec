@@ -188,6 +188,10 @@ public:
     {
         return false;
     }
+    virtual uint64_t GetMemorySize()
+    {
+        return 0;
+    }
 };
 }
 }
