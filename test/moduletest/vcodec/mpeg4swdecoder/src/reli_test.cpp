@@ -21,7 +21,7 @@
 #include <mutex>
 #include <queue>
 #include <string>
-
+#include "native_avcapability.h"
 #include "gtest/gtest.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avcodec_base.h"
@@ -58,6 +58,9 @@ protected:
 void Mpeg4SwdecReliNdkTest::SetUpTestCase()
 {
     gCodecNameMpeg4 = "OH.Media.Codec.Decoder.Video.MPEG4";
+    cap_mpeg4 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    g_codecNameMpeg4 = OH_ AVCapability_GetName(cap_mpeg4);
+    cout << "g_codecNameMpeg4: " << g_codecNameMpeg4 << endl;
 }
 void Mpeg4SwdecReliNdkTest::TearDownTestCase() {}
 void Mpeg4SwdecReliNdkTest::SetUp() {}
@@ -71,19 +74,21 @@ namespace {
  */
 HWTEST_F(Mpeg4SwdecReliNdkTest, VIDEO_MPEG4SWDEC_RELI_0100, TestSize.Level3)
 {
-    for (int i = 0; i < 50; i++) {
-        VDecNdkSample *vDecSample = new VDecNdkSample();
-        vDecSample->SURFACE_OUTPUT = false;
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(gCodecNameMpeg4));
-        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-        vDecSample->WaitForEOS();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        for (int i = 0; i < 50; i++) {
+            VDecNdkSample *vDecSample = new VDecNdkSample();
+            vDecSample->SURFACE_OUTPUT = false;
+            vDecSample->INP_DIR = INP_DIR_1080_30;
+            vDecSample->DEFAULT_WIDTH = 1920;
+            vDecSample->DEFAULT_HEIGHT = 1080;
+            vDecSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(gCodecNameMpeg4));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        }
     }
 }
 
@@ -94,16 +99,18 @@ HWTEST_F(Mpeg4SwdecReliNdkTest, VIDEO_MPEG4SWDEC_RELI_0100, TestSize.Level3)
  */
 HWTEST_F(Mpeg4SwdecReliNdkTest, VIDEO_MPEG4SWDEC_RELI_0200, TestSize.Level3)
 {
-    for (int i = 0; i < 50; i++) {
-        VDecNdkSample *vDecSample = new VDecNdkSample();
-        vDecSample->SURFACE_OUTPUT = true;
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(gCodecNameMpeg4));
-        vDecSample->WaitForEOS();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        for (int i = 0; i < 50; i++) {
+            VDecNdkSample *vDecSample = new VDecNdkSample();
+            vDecSample->SURFACE_OUTPUT = true;
+            vDecSample->INP_DIR = INP_DIR_1080_30;
+            vDecSample->DEFAULT_WIDTH = 1920;
+            vDecSample->DEFAULT_HEIGHT = 1080;
+            vDecSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(gCodecNameMpeg4));
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        }
     }
 }
 
@@ -114,19 +121,21 @@ HWTEST_F(Mpeg4SwdecReliNdkTest, VIDEO_MPEG4SWDEC_RELI_0200, TestSize.Level3)
  */
 HWTEST_F(Mpeg4SwdecReliNdkTest, VIDEO_MPEG4SWDEC_RELI_0300, TestSize.Level3)
 {
-    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->INP_DIR = INP_DIR_720_30;
-    vDecSample->DEFAULT_WIDTH = 1280;
-    vDecSample->DEFAULT_HEIGHT = 720;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->repeatRun = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(gCodecNameMpeg4));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->INP_DIR = INP_DIR_720_30;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->repeatRun = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(gCodecNameMpeg4));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
 }
 
 /**
@@ -136,16 +145,18 @@ HWTEST_F(Mpeg4SwdecReliNdkTest, VIDEO_MPEG4SWDEC_RELI_0300, TestSize.Level3)
  */
 HWTEST_F(Mpeg4SwdecReliNdkTest, VIDEO_MPEG4SWDEC_RELI_0400, TestSize.Level3)
 {
-    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->SURFACE_OUTPUT = true;
-    vDecSample->INP_DIR = INP_DIR_720_30;
-    vDecSample->DEFAULT_WIDTH = 1280;
-    vDecSample->DEFAULT_HEIGHT = 720;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->repeatRun = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(gCodecNameMpeg4));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (cap_mpeg4 != nullptr) {
+        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->INP_DIR = INP_DIR_720_30;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->repeatRun = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(gCodecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
 }
 
 
