@@ -1618,7 +1618,7 @@ HWTEST_F(Mpeg2SwdecApiNdkTest, VIDEO_MPEG2SWDEC_CAP_5100, TestSize.Level2)
  */
 HWTEST_F(Mpeg2SwdecApiNdkTest, VIDEO_MPEG2SWDEC_CAP_5200, TestSize.Level2)
 {
-        if (cap_mpeg2 != nullptr) {
+    if (cap_mpeg2 != nullptr) {
         OH_AVErrCode ret = AV_ERR_OK;
         const int32_t *profiles = nullptr;
         uint32_t profileNum = 0;
