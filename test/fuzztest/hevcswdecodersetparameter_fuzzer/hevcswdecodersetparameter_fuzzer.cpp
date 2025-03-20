@@ -21,7 +21,7 @@
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
-static VDecFuzzSample *vDecSample = nullptr;
+static VDecFuzzSample *g_vDecSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
@@ -31,15 +31,15 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    if (!vDecSample) {
-        vDecSample = new VDecFuzzSample();
-        vDecSample->defaultWidth = DEFAULT_WIDTH;
-        vDecSample->defaultHeight = DEFAULT_HEIGHT;
-        vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-        vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.HEVC");
-        vDecSample->ConfigureVideoDecoder();
-        vDecSample->SetVideoDecoderCallback();
-        vDecSample->Start();
+    if (!g_vDecSample) {
+        g_vDecSample = new VDecFuzzSample();
+        g_vDecSample->defaultWidth = DEFAULT_WIDTH;
+        g_vDecSample->defaultHeight = DEFAULT_HEIGHT;
+        g_vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
+        g_vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.HEVC");
+        g_vDecSample->ConfigureVideoDecoder();
+        g_vDecSample->SetVideoDecoderCallback();
+        g_vDecSample->Start();
     }
     OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/hevc", DEFAULT_WIDTH, DEFAULT_HEIGHT);
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
@@ -57,7 +57,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, longData);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, doubleData);
 
-    vDecSample->SetParameter(format);
+    g_vDecSample->SetParameter(format);
 
     OH_AVFormat_Destroy(format);
     return true;

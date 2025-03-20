@@ -78,8 +78,10 @@ void DemuxerInnerApiNdkTest::SetUp()
 
 void DemuxerInnerApiNdkTest::TearDown()
 {
-    close(fd1);
-    fd1 = 0;
+    if (fd1 > 0) {
+        close(fd1);
+        fd1 = 0;
+    }
 
     if (source != nullptr) {
         source = nullptr;

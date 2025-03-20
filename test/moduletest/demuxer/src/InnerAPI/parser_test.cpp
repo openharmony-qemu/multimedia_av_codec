@@ -51,8 +51,8 @@ string g_file_3_layer_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_3_lay
 string g_file_4_layer_frame_hevc = TEST_FILE_PATH + string("demuxer_parser_4_layer_frame_hevc.mp4");
 string g_file_hdr_1_hevc = TEST_FILE_PATH + string("demuxer_parser_hdr_1_hevc.mp4");
 string g_file_hdr_2_hevc = TEST_FILE_PATH + string("demuxer_parser_hdr_2_hevc.mp4");
-string g_file_hdr_vivid = TEST_FILE_PATH + string("demuxer_parser_hdr_vivid.mp4");
-string g_file_recording = TEST_FILE_PATH + string("demuxer_parser_recording.mp4");
+string g_fileHdrVivid = TEST_FILE_PATH + string("demuxer_parser_hdr_vivid.mp4");
+string g_fileRecording = TEST_FILE_PATH + string("demuxer_parser_recording.mp4");
 } // namespace
 
 namespace {
@@ -1034,7 +1034,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_HDR_VIVID_FUNC_0260, TestSize.Le
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_hdr_vivid);
+    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_fileHdrVivid);
     parserSample->InitParameter(MP4Scene::HDR_VIVID);
     ASSERT_TRUE(parserSample->RunSpeedScene(WorkPts::RANDOM_PTS));
 }
@@ -1050,7 +1050,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_HDR_VIVID_FUNC_0270, TestSize.Le
         return;
     }
     shared_ptr<InnerDemuxerParserSample> parserSample = nullptr;
-    parserSample = make_shared<InnerDemuxerParserSample>(g_file_hdr_vivid);
+    parserSample = make_shared<InnerDemuxerParserSample>(g_fileHdrVivid);
     parserSample->InitParameter(MP4Scene::HDR_VIVID);
     ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::RANDOM_PTS));
 }
@@ -1065,7 +1065,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_RECORDING_FUNC_0280, TestSize.Le
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_recording);
+    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_fileRecording);
     parserSample->InitParameter(MP4Scene::RECORDING);
     ASSERT_TRUE(parserSample->RunSpeedScene(WorkPts::RANDOM_PTS));
 }
@@ -1081,7 +1081,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_RECORDING_FUNC_0290, TestSize.Le
         return;
     }
     shared_ptr<InnerDemuxerParserSample> parserSample = nullptr;
-    parserSample = make_shared<InnerDemuxerParserSample>(g_file_recording);
+    parserSample = make_shared<InnerDemuxerParserSample>(g_fileRecording);
     parserSample->InitParameter(MP4Scene::RECORDING);
     ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::RANDOM_PTS));
 }
