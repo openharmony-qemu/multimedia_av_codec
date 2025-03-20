@@ -802,11 +802,12 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
         if (sInfo_.surface == nullptr) {
             std::shared_ptr<AVAllocator> allocator =
                 AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+            CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
             buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outBufferSize);
             CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_ != nullptr,
-                                    "Allocate output buffer failed, index=%{public}d", i);
+                                   "Allocate output buffer failed, index=%{public}d", i);
             AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d",
-                            i, buf->avBuffer_->memory_->GetCapacity());
+                         i, buf->avBuffer_->memory_->GetCapacity());
             CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr, "Allocate output buffer failed, index=%{public}d", i);
             buffers_[INDEX_OUTPUT].emplace_back(buf);
         } else {
