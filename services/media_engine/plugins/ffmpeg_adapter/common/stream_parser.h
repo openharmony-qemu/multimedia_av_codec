@@ -43,6 +43,7 @@ public:
     virtual uint32_t GetChromaLocation() = 0;
     virtual uint32_t GetPicWidInLumaSamples() = 0;
     virtual uint32_t GetPicHetInLumaSamples() = 0;
+    virtual std::vector<uint8_t> GetLogInfo() = 0;
 };
 } // Plugins
 } // Media

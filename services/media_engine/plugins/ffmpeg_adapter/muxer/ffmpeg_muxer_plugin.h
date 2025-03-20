@@ -18,6 +18,9 @@
 
 #include <mutex>
 #include <unordered_map>
+#include <string>
+#include <sstream>
+#include <iomanip>
 #include "plugin/muxer_plugin.h"
 #include "stream_parser_manager.h"
 
@@ -62,6 +65,7 @@ private:
     Status SetCodecParameterColorByParser(AVStream* stream);
     Status SetCodecParameterCuva(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
     Status SetCodecParameterCuvaByParser(AVStream *stream);
+    Status SetSeiLogInfo();
     Status SetDisplayMatrix(AVStream* stream);
     Status SetCodecParameterTimedMeta(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
     Status AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
