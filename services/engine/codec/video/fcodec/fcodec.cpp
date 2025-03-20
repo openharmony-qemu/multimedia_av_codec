@@ -83,7 +83,7 @@ using namespace OHOS::Media;
 FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::UNINITIALIZED)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGD("FCodec entered, state: Uninitialized");
+    AVCODEC_LOGD("Fcodec entered, state: Uninitialized");
 }
 
 FCodec::~FCodec()
@@ -802,13 +802,12 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
         buf->height_ = height_;
         if (sInfo_.surface == nullptr) {
             std::shared_ptr<AVAllocator> allocator =
-                AVAllocatorFactory::CreateSurfaceAllocator(sInfo_.requestConfig);
-            CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
-            buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, 0);
-            if (buf->avBuffer_ != nullptr) {
-                AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d", i,
-                             buf->avBuffer_->memory_->GetCapacity());
-            }
+                AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+            buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outBufferSize);
+            CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_ != nullptr,
+                                    "Allocate output buffer failed, index=%{public}d", i);
+            AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d",
+                            i, buf->avBuffer_->memory_->GetCapacity());
             CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr, "Allocate output buffer failed, index=%{public}d", i);
             buffers_[INDEX_OUTPUT].emplace_back(buf);
         } else {
@@ -1690,7 +1689,7 @@ int32_t FCodec::NotifyMemoryRecycle()
     AVCODEC_LOGI("Begin to freeze this codec!");
     state_ = State::FREEZING;
     int32_t errCode = FreezeBuffers();
-    CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "FCodec freeze buffers failed!");
+    CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Fcodec freeze buffers failed!");
     state_ = State::FROZEN;
     return AVCS_ERR_OK;
 }
@@ -1700,7 +1699,7 @@ int32_t FCodec::NotifyMemoryWriteBack()
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
     AVCODEC_LOGI("Begin to active this codec!");
     int32_t errCode = ActiveBuffers();
-    CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "FCodec active buffers failed!");
+    CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Fcodec active buffers failed!");
     state_ = State::RUNNING;
     return AVCS_ERR_OK;
 }
