@@ -134,6 +134,7 @@ private:
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     GSError RegisterListenerToSurface(const sptr<Surface> &surface);
     int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
+    void RequestSurfaceBufferThread();
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
@@ -174,12 +175,18 @@ private:
     std::mutex syncMutex_;
     std::mutex surfaceMutex_;
     std::mutex formatMutex_;
+    std::mutex requestBufferMutex_;
+    std::condition_variable requestBufferCV_;
+    std::condition_variable requestBufferOnceDoneCV_;
     std::condition_variable sendCv_;
     std::condition_variable recvCv_;
     std::shared_ptr<MediaCodecCallback> callback_;
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
+    std::atomic<bool> requestBufferFinished_ = true;
+    std::atomic<bool> requestBufferThreadExit_ = false;
+    std::thread mRequestSurfaceBufferThread_;
     uint32_t decNum_ = 0;
     // dump
 #ifdef BUILD_ENG_VERSION
