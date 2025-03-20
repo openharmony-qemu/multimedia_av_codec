@@ -71,7 +71,7 @@ using namespace OHOS::Media;
 FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::UNINITIALIZED)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGD("FCodec entered, state: Uninitialized");
+    AVCODEC_LOGD("Fcodec entered, state: Uninitialized");
 }
 
 FCodec::~FCodec()
@@ -755,13 +755,12 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
         buf->height_ = height_;
         if (sInfo_.surface == nullptr) {
             std::shared_ptr<AVAllocator> allocator =
-                AVAllocatorFactory::CreateSurfaceAllocator(sInfo_.requestConfig);
-            CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
-            buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, 0);
-            if (buf->avBuffer_ != nullptr) {
-                AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d", i,
-                             buf->avBuffer_->memory_->GetCapacity());
-            }
+                AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+            buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outBufferSize);
+            CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_ != nullptr,
+                                    "Allocate output buffer failed, index=%{public}d", i);
+            AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d",
+                            i, buf->avBuffer_->memory_->GetCapacity());
             CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr, "Allocate output buffer failed, index=%{public}d", i);
             buffers_[INDEX_OUTPUT].emplace_back(buf);
         } else {
