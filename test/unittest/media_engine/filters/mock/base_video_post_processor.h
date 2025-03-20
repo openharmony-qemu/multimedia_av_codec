@@ -50,6 +50,7 @@ public:
     MOCK_METHOD(Status, Stop, (), ());
     MOCK_METHOD(Status, Start, (), ());
     MOCK_METHOD(Status, Release, (), ());
+    MOCK_METHOD(Status, NotifyEos, (), ());
 
     MOCK_METHOD(sptr<Surface>, GetInputSurface, (), ());
     MOCK_METHOD(Status, SetOutputSurface, (sptr<Surface> surface), ());
