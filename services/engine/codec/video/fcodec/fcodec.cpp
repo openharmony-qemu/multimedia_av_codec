@@ -83,7 +83,7 @@ using namespace OHOS::Media;
 FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::UNINITIALIZED)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGD("Fcodec entered, state: Uninitialized");
+    AVCODEC_LOGD("FCodec entered, state: Uninitialized");
 }
 
 FCodec::~FCodec()
@@ -720,7 +720,7 @@ int32_t FCodec::SetSurfaceCfg(int32_t bufferCnt)
     return AVCS_ERR_OK;
 }
 
-void Fcodec::RequestSurfaceBufferThread()
+void FCodec::RequestSurfaceBufferThread()
 {
     while (!requestBufferThreadExit_.load()) {
         std::unique_lock<std::mutex> lck(requestBufferMutex_);
@@ -733,14 +733,14 @@ void Fcodec::RequestSurfaceBufferThread()
             break;
         }
         auto index = renderAvailQue_->Front();
-        std::shared_ptr<FBuffer> outputBuffer = buffer_[INDEX_OUTPUT][index];
+        std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
         if (outputBuffer->sMemory_ == nullptr) {
             outputBuffer->sMemory_ = std::make_shared<FSurfaceMemory>(&sInfo_);
         }
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
         sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         if (surfaceBuffer == nullptr) {
-            AVCODEC_LOGE("GetSurfaceBuffer failed,");
+            AVCODEC_LOGE("GetSurfaceBuffer failed.");
         }
         requestBufferFinished_ = true;
         requestBufferOnceDoneCV_.notify_one();
@@ -748,17 +748,17 @@ void Fcodec::RequestSurfaceBufferThread()
     AVCODEC_LOGI("RequestSurfaceBufferThread exit.");
 }
 
-void Fcodec::StartRequestSurfaceBufferThread()
+void FCodec::StartRequestSurfaceBufferThread()
 {
     if (!mRequestSurfaceBufferThread_.joinable()) {
         requestBufferThreadExit_ = false;
         requestBufferFinished_ = true;
-        mRequestSurfaceBufferThread_ = std::thread(&Fcodec::RequestSurfaceBufferThread, this);
+        mRequestSurfaceBufferThread_ = std::thread(&FCodec::RequestSurfaceBufferThread, this);
         mRequestSurfaceBufferThread_.detach();
     }
 }
 
-bool Fcodec::RequestSurfaceBufferOnce()
+bool FCodec::RequestSurfaceBufferOnce()
 {
     if (!requestBufferThreadExit_.load()) {
         std::unique_lock<std::mutex> lck(requestBufferMutex_);
@@ -766,6 +766,7 @@ bool Fcodec::RequestSurfaceBufferOnce()
         requestBufferCV_.notify_one();
         requestBufferOnceDoneCV_.wait(lck, [this]() { return requestBufferFinished_.load(); });
         auto index = renderAvailQue_->Front();
+        std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
         if (surfaceMemory == nullptr || surfaceMemory->GetBase() == nullptr) {
             AVCODEC_LOGE("output surface memory %{public}u allocate fail", index);
@@ -775,7 +776,7 @@ bool Fcodec::RequestSurfaceBufferOnce()
             outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
             outputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(outputBuffer->sMemory_->GetBase(), 
                                                               outputBuffer->sMemory_->GetSize());
-            AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}d, size=%{public}d, "
+            AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}u, size=%{public}d, "
                          "stride=%{public}d", index, outputBuffer->sMemory_->GetSize(),
                          outputBuffer->sMemory_->GetSurfaceBufferStride());
             return outputBuffer->avBuffer_ != nullptr;
@@ -981,9 +982,9 @@ void FCodec::ReleaseBuffers()
         if (mRequestSurfaceBufferThread_.joinable()) {
             requestBufferThreadExit_ = true;
             requestBufferFinished_ = false;
-            RequestSurfaceCV_.notify_all();
+            requestBufferCV_.notify_all();
             requestBufferFinished_ = true;
-            RequestSurfaceOnceDoneCV_.notify_all();
+            requestBufferOnceDoneCV_.notify_all();
         }
         renderAvailQue_->Clear();
         renderSurfaceBufferMap_.clear();

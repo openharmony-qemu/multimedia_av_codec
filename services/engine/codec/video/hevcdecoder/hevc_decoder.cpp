@@ -719,14 +719,14 @@ void HevcDecoder::RequestSurfaceBufferThread()
             break;
         }
         auto index = renderAvailQue_->Front();
-        std::shared_ptr<HBuffer> outputBuffer = buffer_[INDEX_OUTPUT][index];
+        std::shared_ptr<HBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
         if (outputBuffer->sMemory == nullptr) {
             outputBuffer->sMemory = std::make_shared<FSurfaceMemory>(&sInfo_);
         }
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
         sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         if (surfaceBuffer == nullptr) {
-            AVCODEC_LOGE("GetSurfaceBuffer failed,");
+            AVCODEC_LOGE("GetSurfaceBuffer failed.");
         }
         requestBufferFinished_ = true;
         requestBufferOnceDoneCV_.notify_one();
@@ -752,6 +752,7 @@ bool HevcDecoder::RequestSurfaceBufferOnce()
         requestBufferCV_.notify_one();
         requestBufferOnceDoneCV_.wait(lck, [this]() { return requestBufferFinished_.load(); });
         auto index = renderAvailQue_->Front();
+        std::shared_ptr<HBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
         if (surfaceMemory == nullptr || surfaceMemory->GetBase() == nullptr) {
             AVCODEC_LOGE("output surface memory %{public}u allocate fail", index);
@@ -761,7 +762,7 @@ bool HevcDecoder::RequestSurfaceBufferOnce()
             outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
             outputBuffer->avBuffer = AVBuffer::CreateAVBuffer(outputBuffer->sMemory->GetBase(), 
                                                               outputBuffer->sMemory->GetSize());
-            AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}d, size=%{public}d, "
+            AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}u, size=%{public}d, "
                          "stride=%{public}d", index, outputBuffer->sMemory->GetSize(),
                          outputBuffer->sMemory->GetSurfaceBufferStride());
             return outputBuffer->avBuffer != nullptr;
@@ -988,9 +989,9 @@ void HevcDecoder::ReleaseBuffers()
         if (mRequestSurfaceBufferThread_.joinable()) {
             requestBufferThreadExit_ = true;
             requestBufferFinished_ = false;
-            RequestSurfaceCV_.notify_all();
+            requestBufferCV_.notify_all();
             requestBufferFinished_ = true;
-            RequestSurfaceOnceDoneCV_.notify_all();
+            requestBufferOnceDoneCV_.notify_all();
         }
         renderAvailQue_->Clear();
         renderSurfaceBufferMap_.clear();
