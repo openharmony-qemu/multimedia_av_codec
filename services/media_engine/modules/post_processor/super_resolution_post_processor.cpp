@@ -176,6 +176,13 @@ Status SuperResolutionPostProcessor::Release()
     return Status::OK;
 }
 
+Status SuperResolutionPostProcessor::NotifyEos()
+{
+    MEDIA_LOG_D("Notify eos");
+    auto ret = postProcessor_->NotifyEos();
+    return ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK ? Status::OK : Status::ERROR_INVALID_OPERATION;
+}
+
 sptr<Surface> SuperResolutionPostProcessor::GetInputSurface()
 {
     return postProcessor_->GetInputSurface();
