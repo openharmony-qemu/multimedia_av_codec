@@ -16,7 +16,6 @@
 #define HDR_MUXER_H
 
 #include <thread>
-
 #include "native_avcodec_base.h"
 #include "native_avdemuxer.h"
 #include "native_avmuxer.h"
