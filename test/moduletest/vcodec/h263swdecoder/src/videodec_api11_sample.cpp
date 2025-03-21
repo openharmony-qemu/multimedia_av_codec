@@ -569,17 +569,26 @@ int32_t VDecAPI11Sample::CheckAndReturnBufferSize(OH_AVBuffer *buffer)
     return size;
 }
 
+void VDecAPI11Sample::SetAttr(OH_AVCodecBufferAttr &attr, uint32_t bufferSize)
+{
+    int64_t startPts = GetSystemTimeUs();
+    attr.pts = startPts;
+    attr.size = bufferSize;
+    attr.offset = 0;
+}
 uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer)
 {
     OH_AVCodecBufferAttr attr;
-    uint8_t *fileBuffer = new uint8_t[bufferSize];
-    if (fileBuffer == nullptr) {
+    uint8_t *fileBuffer = nullptr;
+    if (bufferSize > 0) {
+        fileBuffer = new uint8_t[bufferSize];
+    } else {
         delete[] fileBuffer;
         return 0;
     }
     (void)inFile_->read(reinterpret_cast<char *>(fileBuffer), bufferSize);
     if (bufferSize != 0) {
-        attr.flags = 10;
+        attr.flags = AVCODEC_BUFFER_FLAGS_SYNC_FRAME + AVCODEC_BUFFER_FLAGS_CODEC_DATA;
     } else {
         if (!isH263Change) {
             SetEOS(index, buffer);
@@ -604,10 +613,7 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
         delete[] fileBuffer;
         return 0;
     }
-    int64_t startPts = GetSystemTimeUs();
-    attr.pts = startPts;
-    attr.size = bufferSize;
-    attr.offset = 0;
+    SetAttr(attr, bufferSize);
     if (isRunning_.load()) {
         OH_AVBuffer_SetBufferAttr(buffer, &attr);
         OH_VideoDecoder_PushInputBuffer(vdec_, index) == AV_ERR_OK ? (0) : (errCount++);

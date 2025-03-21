@@ -347,9 +347,16 @@ int32_t VDecFuzzSample::ReadData(uint32_t index, OH_AVMemory *buffer)
 uint32_t VDecFuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer)
 {
     OH_AVCodecBufferAttr attr;
-    uint8_t *frameBuffer = new uint8_t[bufferSize];
+    uint8_t *frameBuffer = nullptr;
+    if (bufferSize > 0) {
+        frameBuffer = new uint8_t[bufferSize];
+    } else {
+        delete[] frameBuffer;
+        return 0;
+    }
     (void)inFile_->read(reinterpret_cast<char *>(frameBuffer), bufferSize);
-    attr.flags = (bufferSize != 0) ? 10 : AVCODEC_BUFFER_FLAGS_EOS;
+    attr.flags = (bufferSize != 0) ?
+     (AVCODEC_BUFFER_FLAGS_SYNC_FRAME + AVCODEC_BUFFER_FLAGS_CODEC_DATA) : AVCODEC_BUFFER_FLAGS_EOS;
     int32_t size = OH_AVMemory_GetSize(buffer);
     if (size < attr.size) {
         delete[] frameBuffer;

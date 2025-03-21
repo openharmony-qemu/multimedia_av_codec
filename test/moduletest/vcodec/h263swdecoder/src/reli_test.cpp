@@ -25,7 +25,6 @@
 #include "gtest/gtest.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avcodec_base.h"
-#include "videodec_sample.h"
 #include "videodec_api11_sample.h"
 using namespace std;
 using namespace OHOS;
@@ -46,15 +45,23 @@ public:
     int32_t Stop();
 
 protected:
-    const char *INP_DIR_1920x1080_30_ARRAY[16] = {
-        "/data/test/media/profile2_level60_gop60_1920x1080.h263",    "/data/test/media/profile2_level60_gop60_1920x1080_1.h263",
-        "/data/test/media/profile2_level60_gop60_1920x1080_2.h263",  "/data/test/media/profile2_level60_gop60_1920x1080_3.h263",
-        "/data/test/media/profile2_level60_gop60_1920x1080_8.h263",  "/data/test/media/profile2_level60_gop60_1920x1080_12.h263",
-        "/data/test/media/profile2_level60_gop60_1920x1080_4.h263",  "/data/test/media/profile2_level60_gop60_1920x1080_9.h263",
-        "/data/test/media/profile2_level60_gop60_1920x1080_13.h263", "/data/test/media/profile2_level60_gop60_1920x1080_5.h263",
-        "/data/test/media/profile2_level60_gop60_1920x1080_10.h263", "/data/test/media/profile2_level60_gop60_1920x1080_14.h263",
-        "/data/test/media/profile2_level60_gop60_1920x1080_6.h263",  "/data/test/media/profile2_level60_gop60_1920x1080_11.h263",
-        "/data/test/media/profile2_level60_gop60_1920x1080_15.h263", "/data/test/media/profile2_level60_gop60_1920x1080_7.h263"};
+    const char *inpDir1920x1080Array[16] = {
+        "/data/test/media/profile2_level60_gop60_1920x1080.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_1.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_2.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_3.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_8.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_12.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_4.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_9.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_13.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_5.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_10.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_14.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_6.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_11.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_15.h263",
+        "/data/test/media/profile2_level60_gop60_1920x1080_7.h263"};
 };
 } // namespace Media
 } // namespace OHOS
@@ -75,7 +82,7 @@ HWTEST_F(H263SwdecReliNdkTest, VIDEO_H263SWDEC_RELI_WHILE_0100, TestSize.Level3)
     for (int i = 0; i < 16; i++) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->SURFACE_OUTPUT = false;
-        vDecSample->INP_DIR = INP_DIR_1920x1080_30_ARRAY[i];
+        vDecSample->INP_DIR = inpDir1920x1080Array[i];
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
