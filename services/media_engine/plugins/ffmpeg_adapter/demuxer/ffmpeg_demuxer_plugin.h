@@ -72,7 +72,9 @@ public:
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo) override;
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
     Status GetIFramePos(std::vector<uint32_t> &IFramePos) override;
-    Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) override;
+    Status Dts2FrameId(int64_t dts, uint32_t &frameId) override;
+    Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId) override;
+    Status FrameId2SeekMs(uint32_t frameId, int64_t &seekMs) override;
 
     Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index) override;
@@ -157,7 +159,7 @@ private:
     void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
     void RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS);
     void PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
-        int64_t pts, int64_t absolutePTS, uint32_t index);
+        int64_t pts, int64_t absolutePTS, uint32_t index, int64_t dts);
     int64_t absolutePTSIndexZero_ = INT64_MAX;
     std::priority_queue<int64_t> indexToRelativePTSMaxHeap_;
     uint32_t indexToRelativePTSFrameCount_ = 0;
@@ -167,7 +169,6 @@ private:
     int64_t relativePTSToIndexRightDiff_ = INT64_MAX;
     int64_t relativePTSToIndexLeftDiff_ = INT64_MAX;
     int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
-    void ParserFirstDts();
     Status InitIoContext();
     Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
@@ -204,8 +205,7 @@ private:
     std::list<uint32_t> processingIFrame_;
     std::vector<uint32_t> IFramePos_;
     double fps_{0};
-    int64_t firstDts_ = 0;
-    uint32_t dtsOffset_ = 0;
+    int64_t minPts_ = 0;
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
     bool updatePosIsForward_ = true;
@@ -238,12 +238,20 @@ private:
 
     static void Dump(const DumpParam &dumpParam);
 
-    std::vector<int64_t> ptsListOrg_;
-    std::vector<int64_t> ptsListFromZero_;
+    std::map<int64_t, int64_t> pts2DtsMap_;
     std::unordered_map<int32_t, int64_t> iFramePtsMap_;
     Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
     Status ParserRefCheckVideoValid(const AVStream *videoStream);
 };
+
+typedef struct DtsFinder {
+    explicit DtsFinder(int64_t dts) : dts_(dts) { }
+    bool operator ()(const std::map<int64_t, int64_t>::value_type &item)
+    {
+        return dts_ == item.second || dts_ == item.second - 1;
+    }
+    int64_t dts_;
+} DtsFinder;
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

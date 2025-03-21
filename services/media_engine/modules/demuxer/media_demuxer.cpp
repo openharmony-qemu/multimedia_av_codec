@@ -330,14 +330,34 @@ Status MediaDemuxer::GetIFramePos(std::vector<uint32_t> &IFramePos)
     return videoPlugin->GetIFramePos(IFramePos);
 }
 
-Status MediaDemuxer::Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset)
+Status MediaDemuxer::Dts2FrameId(int64_t dts, uint32_t &frameId)
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER, "Source is nullptr");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
     TryRecvParserTask();
-    return videoPlugin->Dts2FrameId(dts, frameId, offset);
+    return videoPlugin->Dts2FrameId(dts, frameId);
+}
+
+Status MediaDemuxer::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER, "Source is nullptr");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
+    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
+    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
+    TryRecvParserTask();
+    return videoPlugin->SeekMs2FrameId(seekMs, frameId);
+}
+
+Status MediaDemuxer::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER, "Source is nullptr");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
+    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
+    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
+    TryRecvParserTask();
+    return videoPlugin->FrameId2SeekMs(frameId, seekMs);
 }
 
 void MediaDemuxer::OnBufferAvailable(uint32_t trackId)
