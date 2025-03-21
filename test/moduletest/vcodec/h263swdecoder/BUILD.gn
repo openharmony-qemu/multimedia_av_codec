@@ -58,7 +58,6 @@ ohos_unittest("h263swdecoder_native_module_test") {
     sources = [
       "./src/api_test.cpp",
       "./src/func_test.cpp",
-
       "./src/reli_test.cpp",
       "./src/state_test.cpp",
       "./src/videodec_api11_sample.cpp",
@@ -80,8 +79,8 @@ ohos_unittest("h263swdecoder_native_module_test") {
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
-    "window_manager:libwm",
     "openssl:libcrypto_shared",
+    "window_manager:libwm",
   ]
 
   if (av_codec_support_drm) {

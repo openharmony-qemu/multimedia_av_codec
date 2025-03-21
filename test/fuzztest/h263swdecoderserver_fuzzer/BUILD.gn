@@ -34,8 +34,8 @@ ohos_fuzztest("H263SwdecoderServerFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "serverdec_sample.cpp",
     "h263swdecoderserver_fuzzer.cpp",
+    "serverdec_sample.cpp",
   ]
   external_deps = [
     "c_utils:utils",
