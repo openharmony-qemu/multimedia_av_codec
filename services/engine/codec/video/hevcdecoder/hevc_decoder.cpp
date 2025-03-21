@@ -741,7 +741,6 @@ void HevcDecoder::StartRequestSurfaceBufferThread()
         requestBufferThreadExit_ = false;
         requestBufferFinished_ = true;
         mRequestSurfaceBufferThread_ = std::thread(&HevcDecoder::RequestSurfaceBufferThread, this);
-        mRequestSurfaceBufferThread_.detach();
     }
 }
 
@@ -782,7 +781,6 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
         sInfo_.surface->CleanCache();
         renderAvailQue_->Clear();
         renderAvailQue_->SetActive(true);
-        StartRequestSurfaceBufferThread();
     }
     for (int i = 0; i < bufferCnt; i++) {
         std::shared_ptr<HBuffer> buf = std::make_shared<HBuffer>();
@@ -991,6 +989,7 @@ void HevcDecoder::ReleaseBuffers()
             requestBufferCV_.notify_all();
             requestBufferFinished_ = true;
             requestBufferOnceDoneCV_.notify_all();
+            mRequestSurfaceBufferThread_.join();
         }
         renderAvailQue_->Clear();
         renderSurfaceBufferMap_.clear();
