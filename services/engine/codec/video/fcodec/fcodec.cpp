@@ -755,7 +755,6 @@ void FCodec::StartRequestSurfaceBufferThread()
         requestBufferThreadExit_ = false;
         requestBufferFinished_ = true;
         mRequestSurfaceBufferThread_ = std::thread(&FCodec::RequestSurfaceBufferThread, this);
-        mRequestSurfaceBufferThread_.detach();
     }
 }
 
@@ -794,7 +793,6 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
         sInfo_.surface->CleanCache();
         renderAvailQue_->Clear();
         renderAvailQue_->SetActive(true);
-        StartRequestSurfaceBufferThread();
     }
     for (int i = 0; i < bufferCnt; i++) {
         std::shared_ptr<FBuffer> buf = std::make_shared<FBuffer>();
@@ -986,6 +984,7 @@ void FCodec::ReleaseBuffers()
             requestBufferCV_.notify_all();
             requestBufferFinished_ = true;
             requestBufferOnceDoneCV_.notify_all();
+            mRequestSurfaceBufferThread_.join();
         }
         renderAvailQue_->Clear();
         renderSurfaceBufferMap_.clear();
