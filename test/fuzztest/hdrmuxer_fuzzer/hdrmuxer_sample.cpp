@@ -126,38 +126,35 @@ void MuxerSample::WriteAudioTrack()
 {
     OH_AVBuffer *buffer = nullptr;
     buffer = OH_AVBuffer_Create(AUDIO_BUFFER_SIZE);
-    while (!isAudioFinish.load()) {
-        OH_AVDemuxer_ReadSampleBuffer(demuxer, audioTrackID, buffer);
+    while (AV_ERR_OK == OH_AVDemuxer_ReadSampleBuffer(demuxer, audioTrackID, buffer)) {
         OH_AVCodecBufferAttr attr;
         OH_AVBuffer_GetBufferAttr(buffer, &attr);
         if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
             break;
         }
-        OH_AVMuxer_WriteSampleBuffer(muxer, audioTrackID, buffer);
-        isAudioFinish.store(true);
-        waitCond.notify_all();
+        OH_AvErrCode ret = OH_AVMuxer_WriteSampleBuffer(muxer, audioTrackID, buffer);
+        if (ret != AV_ERR_OK) {
+            break;
+        }
     }
     OH_AVBuffer_Destroy(buffer);
 }
 
 void MuxerSample::WriteVideoTrack()
 {
-    OH_AVBuffer *buffer = nullptr;
-    buffer = OH_AVBuffer_Create(fuzzSize);
-    while (!isVideoFinish.load()) {
-        uint8_t *bufferAddr = OH_AVBuffer_GetAddr(buffer);
-        if (bufferAddr == nullptr) {
-            return;
-        }
+    OH_AVBuffer *buffer = OH_AVBuffer_Create(fuzzSize);
+    uint8_t *bufferAddr = nullptr;
+    while ((bufferAddr = OH_AVBuffer_GetAddr(buffer)) != nullptr) {
         memcpy_s(bufferAddr, fuzzSize, fuzzData, fuzzSize);
         OH_AVCodecBufferAttr attr;
         OH_AVBuffer_GetBufferAttr(buffer, &attr);
         if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
             break;
         }
-        OH_AVMuxer_WriteSampleBuffer(muxer, videoTrackID, buffer);
-        isVideoFinish.store(true);
-        waitCond.notify_all();
+        OH_AvErrCode ret = OH_AVMuxer_WriteSampleBuffer(muxer, videoTrackID, buffer);
+        if (ret != AV_ERR_OK) {
+            break;
+        }
     }
     OH_AVBuffer_Destroy(buffer);
 }
@@ -165,7 +162,6 @@ void MuxerSample::WriteVideoTrack()
 void MuxerSample::Start()
 {
     OH_AVMuxer_Start(muxer);
-    cout << "hdr muxer start" << endl;
     if (audioTrackID != INVALID_TRACK_ID) {
         audioThread = make_unique<thread>(&MuxerSample::WriteAudioTrack, this);
     }
@@ -176,20 +172,6 @@ void MuxerSample::Start()
 
 void MuxerSample::WaitForEOS()
 {
-    std::mutex audioWaitMtx;
-    std::mutex videoWaitMtx;
-    unique_lock<mutex> audioLock(audioWaitMtx);
-    unique_lock<mutex> videoLock(videoWaitMtx);
-    if (audioThread != nullptr) {
-        waitCond.wait(audioLock, [this]() {
-            return isAudioFinish.load();
-        });
-    }
-    if (videoThread != nullptr) {
-        waitCond.wait(videoLock, [this]() {
-            return isVideoFinish.load();
-        });
-    }
     if (audioThread != nullptr) {
         audioThread->join();
     }
