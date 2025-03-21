@@ -126,7 +126,7 @@ void MuxerSample::WriteAudioTrack()
 {
     OH_AVBuffer *buffer = nullptr;
     buffer = OH_AVBuffer_Create(AUDIO_BUFFER_SIZE);
-    while (OH_AVDemuxer_ReadSampleBuffer(demuxer, audioTrackID, buffer) == AV_ERR_OK) {
+    while (AV_ERR_OK == OH_AVDemuxer_ReadSampleBuffer(demuxer, audioTrackID, buffer)) {
         OH_AVCodecBufferAttr attr;
         OH_AVBuffer_GetBufferAttr(buffer, &attr);
         if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
