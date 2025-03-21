@@ -612,15 +612,15 @@ Status FFmpegMuxerPlugin::SetCodecParameterCuvaByParser(AVStream *stream)
 Status FFmpegMuxerPlugin::SetSeiLogInfo()
 {
     uint8_t colorTransfer = hevcParser_->GetColorTransfer();
-    if (colorTransfer == 2) {
+    if (colorTransfer == static_cast<uint8_t>(TransferCharacteristic::UNSPECIFIED)) { // UNSPECIFIED is 2
         std::vector<uint8_t> logInfo = hevcParser_->GetLogInfo();
         std::ostringstream oss;
         if (logInfo.empty() || logInfo.size() > LOG_INFO_STRING_SIZE) {
-            MEDIA_LOG_E("invalid logInfo, logInfo.size: %{public}ld", logInfo.size());
+            MEDIA_LOG_E("invalid logInfo, logInfo.size: %{public}lu", logInfo.size());
             return Status::ERROR_INVALID_DATA;
         }
         for (uint8_t info : logInfo) {
-            oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(info);
+            oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(info); // 2 characters indicate
         }
         std::string logInfoKey = "moov_level_meta_key_" + LOG_INFO_KEY_STRING;
         std::string logInfoValue = "00000001" + oss.str();
