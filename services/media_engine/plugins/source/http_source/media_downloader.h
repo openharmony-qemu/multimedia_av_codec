@@ -158,7 +158,7 @@ public:
         return false;
     }
 
-    virtual bool isNotRetry(const std::shared_ptr<DownloadRequest>& request)
+    virtual bool IsNotRetry(const std::shared_ptr<DownloadRequest>& request)
     {
         return false;
     }
