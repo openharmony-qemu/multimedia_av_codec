@@ -1375,9 +1375,7 @@ Status MediaDemuxer::Flush()
         auto sqIt = sampleQueueMap_.begin();
         while (sqIt != sampleQueueMap_.end()) {
             uint32_t trackId = sqIt->first;
-            if (trackId != videoTrackId_) {
-                sampleQueueMap_[trackId]->Clear();
-            }
+            sampleQueueMap_[trackId]->Clear();
             sqIt++;
         }
     }
