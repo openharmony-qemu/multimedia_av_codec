@@ -126,13 +126,13 @@ void MuxerSample::WriteAudioTrack()
 {
     OH_AVBuffer *buffer = nullptr;
     buffer = OH_AVBuffer_Create(AUDIO_BUFFER_SIZE);
-    while (AV_ERR_OK == OH_AVDemuxer_ReadSampleBuffer(demuxer, audioTrackID, buffer)) {
+    while (OH_AVDemuxer_ReadSampleBuffer(demuxer, audioTrackID, buffer) == AV_ERR_OK) {
         OH_AVCodecBufferAttr attr;
         OH_AVBuffer_GetBufferAttr(buffer, &attr);
         if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
             break;
         }
-        OH_AvErrCode ret = OH_AVMuxer_WriteSampleBuffer(muxer, audioTrackID, buffer);
+        OH_AVErrCode ret = OH_AVMuxer_WriteSampleBuffer(muxer, audioTrackID, buffer);
         if (ret != AV_ERR_OK) {
             break;
         }
@@ -151,7 +151,7 @@ void MuxerSample::WriteVideoTrack()
         if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
             break;
         }
-        OH_AvErrCode ret = OH_AVMuxer_WriteSampleBuffer(muxer, videoTrackID, buffer);
+        OH_AVErrCode ret = OH_AVMuxer_WriteSampleBuffer(muxer, videoTrackID, buffer);
         if (ret != AV_ERR_OK) {
             break;
         }
