@@ -49,6 +49,7 @@ const std::vector<int32_t> DEFALUT_SAMPLE_RATE = {1, 2, 3, 4, 5};
 constexpr int32_t DEFALUT_MAX_INSTANCE = 16;
 
 const std::string DEFAULT_LOCK_FREE_QUEUE_NAME = "decodedBufferInfoQueue";
+const std::string POST_PROCESSING_LOCK_FREE_QUEUE_NAME = "postProcessingBufferInfoQueue";
 const std::string DEFAULT_TASK_NAME = "PostProcessing";
 const std::string CODEC_MIME_MOCK_00 = "video/codec_mime_00";
 const std::string CODEC_MIME_MOCK_01 = "video/codec_mime_01";

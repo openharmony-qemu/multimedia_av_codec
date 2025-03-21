@@ -181,15 +181,15 @@ private:
     std::unique_ptr<PostProcessingType> postProcessing_{nullptr};
     void* postProcessingUserData_{nullptr};
     PostProcessing::Callback postProcessingCallback_;
-    static constexpr size_t decodedBufferInfoQueueSize_{8};
     struct DecodedBufferInfo {
         uint32_t index;
         std::shared_ptr<AVBuffer> buffer;
     };
-    using DecodedBufferInfoQueue = LockFreeQueue<std::shared_ptr<DecodedBufferInfo>, decodedBufferInfoQueueSize_>;
+    using DecodedBufferInfoQueue = LockFreeQueue<std::shared_ptr<DecodedBufferInfo>, 20>;       // 20: QueueSize
+    using PostProcessingBufferInfoQueue = LockFreeQueue<std::shared_ptr<DecodedBufferInfo>, 8>; // 8: QueueSize
     std::shared_ptr<DecodedBufferInfoQueue> decodedBufferInfoQueue_{nullptr};
-    std::shared_ptr<DecodedBufferInfoQueue> postProcessingInputBufferInfoQueue_{nullptr};
-    std::shared_ptr<DecodedBufferInfoQueue> postProcessingOutputBufferInfoQueue_{nullptr};
+    std::shared_ptr<PostProcessingBufferInfoQueue> postProcessingInputBufferInfoQueue_{nullptr};
+    std::shared_ptr<PostProcessingBufferInfoQueue> postProcessingOutputBufferInfoQueue_{nullptr};
     std::unique_ptr<TaskThread> postProcessingTask_{nullptr};
     Format outputFormatChanged_;
     std::atomic<uint64_t> decodedFrameCount_{0};
