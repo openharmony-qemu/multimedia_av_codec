@@ -198,6 +198,7 @@ private:
     void SetUpAudioRenderInfoSetter();
     void SetUpAudioInterruptModeSetter();
     void SetUpAudioRenderSetFlagSetter();
+    void SetUpAudioRenderSourceDurationSetter();
     void SetAudioDumpBySysParam();
     void DumpEntireAudioBuffer(uint8_t* buffer, const size_t& bytesSingle);
     void DumpSliceAudioBuffer(uint8_t* buffer, const size_t& bytesSingle);
@@ -218,6 +219,7 @@ private:
     std::shared_ptr<OHOS::AudioStandard::AudioRendererFirstFrameWritingCallback> audioFirstFrameCallback_{nullptr};
     std::shared_ptr<OHOS::AudioStandard::AudioRendererPolicyServiceDiedCallback> audioServiceDiedCallback_{nullptr};
     AudioStandard::AudioRendererParams rendererParams_{};
+    int64_t sourceDuraionMs_{-1};
 
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     bool fmtSupported_{false};
