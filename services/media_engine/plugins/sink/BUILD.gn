@@ -36,7 +36,6 @@ config("audio_server_sink_plugin_config") {
     "$av_codec_root_dir/interfaces/inner_api/native",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
     "$av_codec_root_dir/services/media_engine/plugins/sink",
-    "$audio_framework_root_dir/interfaces/inner_api/native/audiocommon/include",
   ]
 }
 
@@ -61,6 +60,7 @@ ohos_shared_library("media_plugin_AudioServerSink") {
 
   external_deps = [
     "audio_framework:audio_client",
+    "audio_framework:audio_foundation",
     "audio_framework:audio_renderer",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",

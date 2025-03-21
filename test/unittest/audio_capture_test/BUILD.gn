@@ -80,8 +80,6 @@ ohos_unittest("audio_capture_module_unit_test") {
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
 
-  public_configs = [ "$audio_framework_root_dir/frameworks/native/audiocapturer:audio_capturer_config" ]
-
   external_deps = [
     "ability_base:base",
     "ability_base:want",

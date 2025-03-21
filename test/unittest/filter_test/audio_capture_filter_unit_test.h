@@ -17,7 +17,7 @@
 
 #include "gtest/gtest.h"
 #include "audio_capture_filter.h"
-#include "filter.h"
+#include "filter/filter.h"
 #include "audio_capture_module.h"
 #include "avbuffer_queue_producer.h"
 
