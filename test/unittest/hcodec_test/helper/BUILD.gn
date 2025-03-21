@@ -26,8 +26,6 @@ ohos_static_library("hcodec_test_helper") {
     "tester_common.cpp",
   ]
   include_dirs = [
-    "//third_party/openmax/api/1.1.2",
-    "//drivers/peripheral/codec/interfaces/include/",
     "$av_codec_root_dir/services/engine/codec/video/hcodec/",
     "$av_codec_root_dir/services/engine/base/include/",
     "$av_codec_root_dir/interfaces/inner_api/native/",
@@ -48,5 +46,7 @@ ohos_static_library("hcodec_test_helper") {
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
+    "openmax:libopenmax_static",
+    "drivers_peripheral_codec:libcodec_hdi_omx_client",
   ]
 }
