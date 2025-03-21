@@ -732,12 +732,13 @@ void AudioSink::AudioDataSynchroizer::UpdateCurrentBufferInfo(int64_t bufferPts,
 void AudioSink::AudioDataSynchroizer::UpdateLastBufferPTS(int64_t bufferOffset, float speed)
 {
     MEDIA_LOG_D("lastBuffer Info: lastBufferPTS_ is " PUBLIC_LOG_D64 " lastBufferOffset_ is " PUBLIC_LOG_D64
-        " and compensatePTS_ is " PUBLIC_LOG_D64, lastBufferPTS_, lastBufferOffset_, compensatePTS_);
+        " and compensateDuration_ is " PUBLIC_LOG_D64, lastBufferPTS_, lastBufferOffset_, compensateDuration_);
     curBufferPTS_ = curBufferPTS_ == HST_TIME_NONE ? 0 : curBufferPTS_;
     lastBufferPTS_ = curBufferPTS_ + lastBufferOffset_ + bufferDuration_;
     lastBufferOffset_ = bufferOffset;
+    sumDuration_ += bufferDuration_;
     FALSE_RETURN_MSG(speed != 0, "speed is 0");
-    compensatePTS_ += bufferDuration_ - bufferDuration_ / speed;
+    compensateDuration_ += bufferDuration_ - bufferDuration_ / speed;
 }
 
 void AudioSink::UpdateRenderInfo()
@@ -765,9 +766,9 @@ int64_t AudioSink::AudioDataSynchroizer::CalculateAudioLatency()
         return latency;
     }
     int64_t nowClockTime = Plugins::HstTime2Us(SteadyClock::GetCurrentTimeNanoSec());
-    MEDIA_LOG_D("PTS diff is " PUBLIC_LOG_D64, (lastBufferPTS_ - compensatePTS_) -
-        (currentRenderPTS_ + startPTS_));
-    latency = (lastBufferPTS_ - compensatePTS_) - (currentRenderPTS_ + startPTS_) -
+    MEDIA_LOG_D("PTS diff is " PUBLIC_LOG_D64, ((sumDuration_ - compensateDuration_) -
+        currentRenderPTS_));
+    latency = ((sumDuration_ - compensateDuration_) - currentRenderPTS_) -
         (nowClockTime - currentRenderClockTime_);
     FALSE_RETURN_V_MSG(latency >= 0, 0, "calculate latency failed");
     return latency;
@@ -803,7 +804,8 @@ void AudioSink::AudioDataSynchroizer::Reset()
     startPTS_ = HST_TIME_NONE;
     curBufferPTS_ = HST_TIME_NONE;
     lastBufferOffset_ = 0;
-    compensatePTS_ = 0;
+    compensateDuration_ = 0;
+    sumDuration_ = 0;
 }
 
 bool AudioSink::IsTimeAnchorNeedUpdate()
