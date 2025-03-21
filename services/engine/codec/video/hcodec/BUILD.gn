@@ -82,7 +82,6 @@ ohos_shared_library("hcodec") {
     "media_foundation:media_foundation",
     "qos_manager:qos",
     "drivers_peripheral_codec:libcodec_hdi_omx_client",
-    "openmax:libopenmax_static",
     "memory_utils:libdmabufheap",
     "hdf_core:libhdf_utils"
   ]
