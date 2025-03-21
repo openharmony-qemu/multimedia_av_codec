@@ -3045,7 +3045,7 @@ uint64_t MediaDemuxer::GetCachedDuration()
     }
     demuxerCacheDuration_ = sampleQueueDration;
     sourceCacheDuration_ = source_->GetCachedDuration();
-    MEDIA_LOG_I("samplequeue cacheDuration=" PUBLIC_LOG_D64 ", sourceCache=" PUBLIC_LOG_D64,
+    MEDIA_LOG_I("samplequeue cacheDuration=" PUBLIC_LOG_D64 ", sourceCache=" PUBLIC_LOG_U64,
         demuxerCacheDuration_,
         sourceCacheDuration_);
     if (source_) {
