@@ -20,7 +20,7 @@
 #include <thread>
 #include "syspara/parameters.h" // base/startup/init/interfaces/innerkits/include/
 #include "qos.h"
-#include "utils/hdf_base.h"
+#include "hdf_base.h"
 #include "codec_omx_ext.h"
 #include "hcodec_list.h"
 #include "hencoder.h"
@@ -29,12 +29,6 @@
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "hcodec_utils.h"
-#include "av_hardware_memory.h"
-#include "av_hardware_allocator.h"
-#include "av_shared_memory_ext.h"
-#include "av_shared_allocator.h"
-#include "av_surface_memory.h"
-#include "av_surface_allocator.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
