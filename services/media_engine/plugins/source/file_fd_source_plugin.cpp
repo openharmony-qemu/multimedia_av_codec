@@ -352,10 +352,10 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
         FALSE_RETURN_V_MSG_E(StrToLong(offsetStr, offset_), Status::ERROR_INVALID_PARAMETER,
             "Failed to read offset.");
         if (static_cast<uint64_t>(offset_) > fileSize_) {
-            offset_ = fileSize_;
+            offset_ = static_cast<int64_t>(fileSize_);
         }
         size_ = static_cast<uint64_t>(std::stoll(fdUriMatch[3].str())); // 3: sub match size subscript
-        uint64_t remainingSize = fileSize_ - offset_;
+        uint64_t remainingSize = fileSize_ - static_cast<uint64_t>(offset_);
         if (size_ > remainingSize) {
             size_ = remainingSize;
         }
