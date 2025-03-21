@@ -114,6 +114,7 @@ group("av_codec_module_test") {
       "moduletest/vcodec/hwdecoder:hwdecoder_native_module_test",
       "moduletest/vcodec/mpeg2swdecoder:mpeg2swdecoder_native_module_test",
       "moduletest/vcodec/mpeg4swdecoder:mpeg4swdecoder_native_module_test",
+      "moduletest/vcodec/h263swdecoder:h263swdecoder_native_module_test",
       "moduletest/vcodec/swdecoder:swdecoder_native_module_test",
     ]
   }
@@ -253,6 +254,10 @@ group("av_codec_fuzz_test") {
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
       "fuzztest/swdecoderserver_fuzzer:SwdecoderServerFuzzTest",
       "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
+      "fuzztest/h263swdecoderconfigure_fuzzer:H263SwdecoderConfigureFuzzTest",
+      "fuzztest/h263swdecoderresource_fuzzer:H263SwdecoderResourceFuzzTest",
+      "fuzztest/h263swdecoderserver_fuzzer:H263SwdecoderServerFuzzTest",
+      "fuzztest/h263swdecodersetparameter_fuzzer:H263SwdecoderSetParameterFuzzTest",
     ]
   }
 }
