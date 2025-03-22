@@ -145,7 +145,7 @@ private:
     int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
     void RequestSurfaceBufferThread();
     void StartRequestSurfaceBufferThread();
-    bool RequestSurfaceBufferOnce();
+    bool RequestSurfaceBufferOnce(uint32_t index);
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
@@ -174,6 +174,7 @@ private:
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
+    std::shared_ptr<BlockQueue<uint32_t>> requestSurfaceBufferQue_;
     std::map<uint32_t, std::pair<sptr<SurfaceBuffer>, OHOS::BufferFlushConfig>> renderSurfaceBufferMap_;
     std::optional<uint32_t> synIndex_ = std::nullopt;
     SurfaceControl sInfo_;
