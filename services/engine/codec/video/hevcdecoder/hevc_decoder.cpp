@@ -533,6 +533,7 @@ void HevcDecoder::ReleaseResource()
             callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
             state_ = State::ERROR;
         }
+        StopRequestSurfaceBufferThread();
     }
     sInfo_.surface = nullptr;
     std::unique_lock<std::mutex> runLock(decRunMutex_);
@@ -753,6 +754,18 @@ void HevcDecoder::StartRequestSurfaceBufferThread()
     }
 }
 
+void HevcDecoder::StopRequestSurfaceBufferThread()
+{
+    if (mRequestSurfaceBufferThread_.joinable()) {
+        requestBufferThreadExit_ = true;
+        requestBufferFinished_ = false;
+        requestBufferCV_.notify_all();
+        requestBufferFinished_ = true;
+        requestBufferOnceDoneCV_.notify_all();
+        mRequestSurfaceBufferThread_.join();
+    }
+}
+
 bool HevcDecoder::RequestSurfaceBufferOnce(uint32_t index)
 {
     if (!requestBufferThreadExit_.load()) {
@@ -790,6 +803,7 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
         sInfo_.surface->CleanCache();
         requestSurfaceBufferQue_->Clear();
         requestSurfaceBufferQue_->SetActive(true);
+        StartRequestSurfaceBufferThread();
     }
     for (int i = 0; i < bufferCnt; i++) {
         std::shared_ptr<HBuffer> buf = std::make_shared<HBuffer>();
@@ -983,14 +997,7 @@ void HevcDecoder::ReleaseBuffers()
     std::unique_lock<std::mutex> oLock(outputMutex_);
     codecAvailQue_->Clear();
     if (sInfo_.surface != nullptr) {
-        if (mRequestSurfaceBufferThread_.joinable()) {
-            requestBufferThreadExit_ = true;
-            requestBufferFinished_ = false;
-            requestBufferCV_.notify_all();
-            requestBufferFinished_ = true;
-            requestBufferOnceDoneCV_.notify_all();
-            mRequestSurfaceBufferThread_.join();
-        }
+        StopRequestSurfaceBufferThread();
         renderAvailQue_->Clear();
         requestSurfaceBufferQue_->Clear();
         renderSurfaceBufferMap_.clear();
