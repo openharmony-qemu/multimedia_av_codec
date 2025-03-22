@@ -339,6 +339,7 @@ void FCodec::InitBuffers()
     codecAvailQue_->SetActive(true);
     if (sInfo_.surface != nullptr) {
         renderAvailQue_->SetActive(true);
+        requestSurfaceBufferQue_->SetActive(true);
     }
     if (buffers_[INDEX_INPUT].size() > 0) {
         for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
