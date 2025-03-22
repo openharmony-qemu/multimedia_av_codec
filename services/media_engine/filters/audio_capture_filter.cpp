@@ -345,6 +345,7 @@ void AudioCaptureFilter::ReadLoop()
         RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
         return;
     }
+
     if ((firstVideoFramePts_.load() == -1 || firstAudioFramePts_.load() == -1) && withVideo_) {
         if (cachedAudioData_.size() > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
             MEDIA_LOG_E("audioCapture cached frame over maxnum");
@@ -366,7 +367,6 @@ void AudioCaptureFilter::ReadLoop()
         }
         cachedAudioData_.push_back(cacheAudioData);
     } else {
-
         if (!cachedAudioData_.empty()) {
             RecordCachedData();
         } else {
