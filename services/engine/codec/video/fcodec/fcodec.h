@@ -135,6 +135,19 @@ private:
     GSError RegisterListenerToSurface(const sptr<Surface> &surface);
     int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
     void RequestSurfaceBufferThread();
+<<<<<<< HEAD
+=======
+    void StartRequestSurfaceBufferThread();
+    bool RequestSurfaceBufferOnce(uint32_t index);
+    // for memory recycle
+    int32_t FreezeBuffers();
+    int32_t ActiveBuffers();
+    bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
+    int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
+    int32_t SwapInBuffers(bool isOutputBuffer);
+    bool disableDmaSwap_ = false;
+    int32_t pid_ = -1;
+>>>>>>> a6f221a81 (软解surface切换bug修复)
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
@@ -163,6 +176,7 @@ private:
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
+    std::shared_ptr<BlockQueue<uint32_t>> requestSurfaceBufferQue_;
     std::map<uint32_t, std::pair<sptr<SurfaceBuffer>, OHOS::BufferFlushConfig>> renderSurfaceBufferMap_;
     std::optional<uint32_t> synIndex_ = std::nullopt;
     SurfaceControl sInfo_;
