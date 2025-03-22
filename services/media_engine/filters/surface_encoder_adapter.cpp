@@ -852,7 +852,7 @@ bool SurfaceEncoderAdapter::AddPauseResumePts(int64_t currentPts)
     if (stateCode == StateCode::RESUME) {
         MEDIA_LOG_D("AddResumePts %{public}s start", keyFramePts_.c_str());
         keyFramePts_ += std::to_string(currentKeyFramePts_ / NS_PER_US) + ",";
-        ncoderAdapterKeyFramePtsCallback_->OnReportFirstFramePts(currentKeyFramePts_);
+        encoderAdapterKeyFramePtsCallback_->OnReportFirstFramePts(currentKeyFramePts_);
         MEDIA_LOG_D("AddResumePts %{public}s end", keyFramePts_.c_str());
     }
     pauseResumePts_.pop_front();
