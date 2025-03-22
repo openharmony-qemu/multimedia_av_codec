@@ -72,19 +72,19 @@ ohos_shared_library("hcodec") {
     "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_3.0",
     "drivers_interface_display:libdisplay_commontype_proxy_1.0",
+    "drivers_peripheral_codec:libcodec_hdi_omx_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
+    "hdf_core:libhdf_utils",
     "hdf_core:libhdi",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
-    "qos_manager:qos",
-    "drivers_peripheral_codec:libcodec_hdi_omx_client",
-    "openmax:libopenmax_static",
     "memory_utils:libdmabufheap",
-    "hdf_core:libhdf_utils"
+    "openmax:libopenmax_static",
+    "qos_manager:qos"
   ]
 
   if (defined(av_codec_support_video_processing_engine) &&
