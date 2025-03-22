@@ -47,6 +47,12 @@ public:
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
         if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
+            if (surfaceEncoderAdapter->GetIsTransCoderMode() && transCoderErrorCbOnce_) {
+                return;
+            }
+            if (surfaceEncoderAdapter->GetIsTransCoderMode()) {
+                transCoderErrorCbOnce_ = true;
+            }
             surfaceEncoderAdapter->encoderAdapterCallback_->OnError(errorType, errorCode);
         } else {
             MEDIA_LOG_I("invalid surfaceEncoderAdapter");
@@ -72,6 +78,7 @@ public:
 
 private:
     std::weak_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter_;
+    bool transCoderErrorCbOnce_ = false;
 };
 
 class DroppedFramesCallback : public MediaAVCodec::MediaCodecParameterWithAttrCallback {
@@ -339,7 +346,10 @@ Status SurfaceEncoderAdapter::Stop()
         AddStopPts();
     }
     if (releaseBufferTask_) {
-        isThreadExit_ = true;
+        {
+            std::lock_guard<std::mutex> lock(releaseBufferMutex_);
+            isThreadExit_ = true;
+        }
         releaseBufferCondition_.notify_all();
         releaseBufferTask_->Stop();
         MEDIA_LOG_I("releaseBufferTask_ Stop");
@@ -802,6 +812,10 @@ bool SurfaceEncoderAdapter::AddPauseResumePts(int64_t currentPts)
     }
     pauseResumePts_.pop_front();
     return AddPauseResumePts(currentPts);
+}
+bool SurfaceEncoderAdapter::GetIsTransCoderMode()
+{
+    return isTransCoderMode;
 }
 } // namespace MEDIA
 } // namespace OHOS
