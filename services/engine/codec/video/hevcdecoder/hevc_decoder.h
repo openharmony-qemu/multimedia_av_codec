@@ -164,6 +164,7 @@ private:
     int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
     void RequestSurfaceBufferThread();
     void StartRequestSurfaceBufferThread();
+    void StopRequestSurfaceBufferThread();
     bool RequestSurfaceBufferOnce(uint32_t index);
 
     // for memory recycle
