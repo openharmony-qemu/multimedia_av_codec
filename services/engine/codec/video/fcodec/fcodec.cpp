@@ -516,6 +516,7 @@ void FCodec::ReleaseResource()
             callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
             state_ = State::ERROR;
         }
+        StopRequestSurfaceBufferThread();
     }
     sInfo_.surface = nullptr;
 }
@@ -721,6 +722,19 @@ void FCodec::StartRequestSurfaceBufferThread()
     }
 }
 
+void FCodec::StopRequestSurfaceBufferThread()
+{
+    if (mRequestSurfaceBufferThread_.joinable()) {
+        requestBufferThreadExit_ = true;
+        requestBufferFinished_ = false;
+        requestBufferCV_.notify_all();
+        requestBufferFinished_ = true;
+        requestBufferOnceDoneCV_.notify_all();
+        mRequestSurfaceBufferThread_.join();
+    }
+}
+
+
 bool FCodec::RequestSurfaceBufferOnce(uint32_t index)
 {
     if (!requestBufferThreadExit_.load()) {
@@ -756,6 +770,7 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
         sInfo_.surface->CleanCache();
         requestSurfaceBufferQue_->Clear();
         requestSurfaceBufferQue_->SetActive(true);
+        StartRequestSurfaceBufferThread();
     }
     for (int i = 0; i < bufferCnt; i++) {
         std::shared_ptr<FBuffer> buf = std::make_shared<FBuffer>();
@@ -929,14 +944,7 @@ void FCodec::ReleaseBuffers()
     std::unique_lock<std::mutex> oLock(outputMutex_);
     codecAvailQue_->Clear();
     if (sInfo_.surface != nullptr) {
-        if (mRequestSurfaceBufferThread_.joinable()) {
-            requestBufferThreadExit_ = true;
-            requestBufferFinished_ = false;
-            requestBufferCV_.notify_all();
-            requestBufferFinished_ = true;
-            requestBufferOnceDoneCV_.notify_all();
-            mRequestSurfaceBufferThread_.join();
-        }
+        StopRequestSurfaceBufferThread();
         renderAvailQue_->Clear();
         requestSurfaceBufferQue_->Clear();
         renderSurfaceBufferMap_.clear();
