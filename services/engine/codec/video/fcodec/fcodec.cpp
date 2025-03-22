@@ -1386,15 +1386,11 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
 
     for (uint32_t index: ownedBySurfaceBufferIndex) {
         int32_t ret = RenderNewSurfaceWithOldBuffer(newSurface, index);
-        if (ret != AVCS_ERR_OK) {
-            return ret;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Old surface buffer render failed!");
     }
 
     int32_t ret = UnRegisterListenerToSurface(curSurface);
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Unregister old surface listener failed!");
 
     curSurface->CleanCache(true); // make sure old surface is empty and go black
     return AVCS_ERR_OK;
