@@ -52,6 +52,7 @@ private:
     int64_t SmoothDeltaTime(int64_t accumulatedDeltaTime, int64_t currentDeltaTime);
     void UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
         const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+    void RenderAtTimeLog(int64_t waitTime);
     void PerfRecord(int64_t waitTime);
 
     class VideoLagDetector : public LagDetector {
@@ -92,6 +93,8 @@ private:
     int64_t lastClockTime_ = -1;
     std::atomic<bool> isRenderStarted_{false};
     VideoLagDetector lagDetector_ {};
+    int64_t renderAdvanceThreshold_ {80000};
+    bool enableRenderAtTime_ {true};
     PerfRecorder perfRecorder_ {};
 };
 } // namespace Pipeline
