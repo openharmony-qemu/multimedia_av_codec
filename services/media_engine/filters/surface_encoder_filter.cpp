@@ -117,6 +117,17 @@ public:
         }
     }
 
+    void OnReportFirstFramePts(int64_t firstFramePts) override
+    {
+        if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
+            MEDIA_LOG_D("SurfaceEncoderAdapterKeyFramePtsCallback OnReportFirstFramePts start");
+            surfaceEncoderFilter->OnReportFirstFramePts(firstFramePts);
+            MEDIA_LOG_D("SurfaceEncoderAdapterKeyFramePtsCallback OnReportFirstFramePts end");
+        } else {
+            MEDIA_LOG_I("invalid surfaceEncoderFilter");
+        }
+    }
+
 private:
     std::weak_ptr<SurfaceEncoderFilter> surfaceEncoderFilter_;
 };
@@ -437,6 +448,12 @@ void SurfaceEncoderFilter::OnReportKeyFramePts(std::string KeyFramePts)
     } else {
         MEDIA_LOG_E("muxerFilter is null");
     }
+}
+
+void SurfaceEncoderFilter::OnReportFirstFramePts(int64_t firstFramePts)
+{
+    MEDIA_LOG_I("OnReportFirstFramePts: " PUBLIC_LOG_D64, firstFramePts);
+    eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_VIDEO_FIRST_FRAME, firstFramePts});
 }
 } // namespace Pipeline
 } // namespace MEDIA
