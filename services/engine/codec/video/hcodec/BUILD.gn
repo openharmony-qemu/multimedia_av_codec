@@ -82,7 +82,7 @@ ohos_shared_library("hcodec") {
     "media_foundation:media_foundation",
     "memory_utils:libdmabufheap",
     "openmax:libopenmax_static",
-    "qos_manager:qos"
+    "qos_manager:qos",
   ]
 
   if (defined(av_codec_support_video_processing_engine) &&
