@@ -76,6 +76,7 @@ public:
         dataCallback_ = dataCallback;
         return Status::OK;
     }
+    Status SetTranscoderMode() override;
 
 private:
     Status AllocateContext(const std::string &name);
@@ -91,6 +92,7 @@ private:
     Status SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer);
     Status GetAdtsHeader(std::string &adtsHeader, int32_t &headerSize, std::shared_ptr<AVCodecContext> ctx,
                          int aacLength);
+    Status CheckInputSampleNum(const std::shared_ptr<AVBuffer> &inputBuffer);
     Status InitFrame();
     Status InitContext();
     Status ReAllocateContext();
@@ -135,6 +137,8 @@ private:
     AudioChannelLayout srcLayout_;
     uint32_t fullInputFrameSize_{0};
     uint32_t srcBytesPerSample_{0};
+    uint16_t notSupportInputCnt_{0};
+    bool isTranscoderMode_{false};
 
     std::string aacName_;
     int32_t channels_;
