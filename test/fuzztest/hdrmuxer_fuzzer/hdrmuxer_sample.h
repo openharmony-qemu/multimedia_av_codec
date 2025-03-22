@@ -15,10 +15,7 @@
 #ifndef HDR_MUXER_H
 #define HDR_MUXER_H
 
-#include <condition_variable>
-#include <atomic>
 #include <thread>
-
 #include "native_avcodec_base.h"
 #include "native_avdemuxer.h"
 #include "native_avmuxer.h"
@@ -45,9 +42,6 @@ public:
     size_t fuzzSize;
     uint32_t videoTrackID = -1;
     uint32_t audioTrackID = -1;
-    std::condition_variable waitCond;
-    std::atomic<bool> isAudioFinish;
-    std::atomic<bool> isVideoFinish;
     uint32_t frameDuration = 0;
     std::unique_ptr<std::thread> audioThread;
     std::unique_ptr<std::thread> videoThread;
