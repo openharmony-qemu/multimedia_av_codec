@@ -22,6 +22,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "HiStreamer" };
+static constexpr uint64_t AUDIO_NS_PER_SECOND = 1000000000;
 }
 
 namespace OHOS {
@@ -331,10 +332,49 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
     FALSE_RETURN_V_MSG_E(size >= 0, Status::ERROR_NOT_ENOUGH_DATA, "audioCapturer Read() fail");
 
     if (isTrackMaxAmplitude) {
-        TrackMaxAmplitude((int16_t *)bufData->GetAddr(),
+        TrackMaxAmplitude(reinterpret_cast<int16_t *>(bufData->GetAddr()),
             static_cast<int32_t>(static_cast<uint32_t>(bufData->GetSize()) >> 1));
     }
     return ret;
+}
+
+Status AudioCaptureModule::Read(uint8_t *cacheAudioData, size_t expectedLen)
+{
+    MEDIA_LOG_D("AudioCaptureModule Read");
+    auto size = 0;
+    {
+        AutoLock lock(captureMutex_);
+        FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "Audio capture is null");
+        FALSE_RETURN_V_MSG_E(audioCapturer_->GetStatus() != AudioStandard::CAPTURER_RUNNING,
+            Status::ERROR_AGAIN, "Audio capture Status error");
+
+        size = audioCapturer_->Read(*cacheAudioData, expectedLen, true);
+    }
+    FALSE_RETURN_V_MSG_E(size >= 0, Status::ERROR_NOT_ENOUGH_DATA, "audioCapturer Read() fail");
+
+    if (isTrackMaxAmplitude) {
+        TrackMaxAmplitude(reinterpret_cast<int16_t *>(cacheAudioData),
+            static_cast<int32_t>(static_cast<uint32_t>(size) >> 1));
+    }
+    return Status::OK;
+}
+
+void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime)
+{
+    MEDIA_LOG_I("AudioCaptureModule GetAudioTime");
+    bool ret = true;
+    {
+        AutoLock lock(captureMutex_);
+        FALSE_RETURN_MSG(audioCapturer_ != nullptr, "Audio capture is null");
+        FALSE_RETURN_MSG(audioCapturer_->GetStatus() != AudioStandard::CAPTURER_RUNNING,
+            "Audio capture Status error");
+
+        AudioStandard::Timestamp timestamp;
+        ret = audioCapturer_->GetAudioTimestampInfo(timestamp, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
+        FALSE_RETURN_MSG(ret == true, "audioCapturer GetAudioTime fail");
+        audioDataTime = static_cast<int64_t>(timestamp.time.tv_sec) * AUDIO_NS_PER_SECOND
+            + static_cast<int64_t>(timestamp.time.tv_nsec);
+    }
 }
 
 Status AudioCaptureModule::GetSize(uint64_t& size)

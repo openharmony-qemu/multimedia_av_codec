@@ -66,6 +66,8 @@ class EncoderAdapterKeyFramePtsCallback {
 public:
     virtual ~EncoderAdapterKeyFramePtsCallback() = default;
     virtual void OnReportKeyFramePts(std::string KeyFramePts) = 0;
+    // report the first video frame pts when start() or resume().
+    virtual void OnReportFirstFramePts(int64_t firstFramePts) = 0;
 };
 
 class SurfaceEncoderAdapter : public std::enable_shared_from_this<SurfaceEncoderAdapter>  {
