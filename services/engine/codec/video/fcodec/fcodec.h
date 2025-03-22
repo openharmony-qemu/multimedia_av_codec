@@ -135,19 +135,8 @@ private:
     GSError RegisterListenerToSurface(const sptr<Surface> &surface);
     int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
     void RequestSurfaceBufferThread();
-<<<<<<< HEAD
-=======
     void StartRequestSurfaceBufferThread();
     bool RequestSurfaceBufferOnce(uint32_t index);
-    // for memory recycle
-    int32_t FreezeBuffers();
-    int32_t ActiveBuffers();
-    bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
-    int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
-    int32_t SwapInBuffers(bool isOutputBuffer);
-    bool disableDmaSwap_ = false;
-    int32_t pid_ = -1;
->>>>>>> a6f221a81 (软解surface切换bug修复)
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
