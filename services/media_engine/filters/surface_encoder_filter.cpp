@@ -183,7 +183,7 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             std::shared_ptr<EncoderAdapterKeyFramePtsCallback> encoderAdapterKeyFramePtsCallback =
                 std::make_shared<SurfaceEncoderAdapterKeyFramePtsCallback>(shared_from_this());
             mediaCodec_->SetEncoderAdapterKeyFramePtsCallback(encoderAdapterKeyFramePtsCallback);
-        } else {
+        } else if (eventReceiver_ != nullptr) {
             MEDIA_LOG_I("Init mediaCodec fail");
             eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
         }
@@ -251,6 +251,7 @@ sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
 
 Status SurfaceEncoderFilter::DoPrepare()
 {
+    FALSE_RETURN_V(filterCallback_ != nullptr, Status::ERROR_NULL_POINTER);
     MEDIA_LOG_I("Prepare");
     if (isTranscoderMode_) {
         MEDIA_LOG_I("TranscoderMode");
