@@ -168,7 +168,7 @@ private:
     bool RequestSurfaceBufferOnce(uint32_t index);
 
     // for memory recycle
-    int32_t FreezeBuffers();
+    int32_t FreezeBuffers(State curState);
     int32_t ActiveBuffers();
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<HBuffer> &hBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
