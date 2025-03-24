@@ -616,7 +616,7 @@ Status FFmpegMuxerPlugin::SetSeiLogInfo()
         std::vector<uint8_t> logInfo = hevcParser_->GetLogInfo();
         std::ostringstream oss;
         if (logInfo.empty() || logInfo.size() > LOG_INFO_STRING_SIZE) {
-            MEDIA_LOG_E("invalid logInfo, logInfo.size: %{public}lu", logInfo.size());
+            MEDIA_LOG_E("invalid logInfo, logInfo.size: %{public}zu", logInfo.size());
             return Status::ERROR_INVALID_DATA;
         }
         for (uint8_t info : logInfo) {
