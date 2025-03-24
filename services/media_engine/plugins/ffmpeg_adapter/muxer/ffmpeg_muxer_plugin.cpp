@@ -609,7 +609,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterCuvaByParser(AVStream *stream)
     return Status::NO_ERROR;
 }
 
-Status FFmpegMuxerPlugin::SetSeiLogInfo()
+void FFmpegMuxerPlugin::SetSeiLogInfo()
 {
     uint8_t colorTransfer = hevcParser_->GetColorTransfer();
     if (colorTransfer == static_cast<uint8_t>(TransferCharacteristic::UNSPECIFIED)) { // UNSPECIFIED is 2
@@ -617,7 +617,7 @@ Status FFmpegMuxerPlugin::SetSeiLogInfo()
         std::ostringstream oss;
         if (logInfo.empty() || logInfo.size() > LOG_INFO_STRING_SIZE) {
             MEDIA_LOG_E("invalid logInfo, logInfo.size: %{public}zu", logInfo.size());
-            return Status::ERROR_INVALID_DATA;
+            return;
         }
         for (uint8_t info : logInfo) {
             oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(info); // 2 characters indicate
@@ -627,7 +627,6 @@ Status FFmpegMuxerPlugin::SetSeiLogInfo()
         av_dict_set(&formatContext_->metadata, "moov_level_meta_flag", "1", 0);
         av_dict_set(&formatContext_->metadata, logInfoKey.c_str(), logInfoValue.c_str(), 0);
     }
-    return Status::NO_ERROR;
 }
 
 Status FFmpegMuxerPlugin::SetDisplayMatrix(AVStream* stream)
