@@ -272,7 +272,8 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_005, Test
     EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_)).WillOnce(Return((int32_t) 0));
     EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
         .WillOnce(Return(Status::OK));
-    EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_)).WillOnce(Return((int32_t) 1));
+    EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_))
+        .WillOnce(Return(OHOS::Media::AudioDataSourceReadAtActionState::SKIP_WITHOUT_LOG));
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(1);
     audioDataSourceFilter_->ReadLoop();
 }
@@ -295,7 +296,9 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_006, Test
     EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_)).WillOnce(Return((int32_t) 0));
     EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
         .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), Return(Status::OK)));
-    EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_)).WillOnce(Return((int32_t) 0));
+    EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_))
+        .WillOnce(Return(OHOS::Media::AudioDataSourceReadAtActionState::OK));
+    EXPECT_CALL(*mockAudioDataSource, SetVideoFirstFramePts(testing::_)).Times(0);
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(1);
     audioDataSourceFilter_->ReadLoop();
 }
