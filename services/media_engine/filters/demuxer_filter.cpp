@@ -497,11 +497,25 @@ Status DemuxerFilter::GetIFramePos(std::vector<uint32_t> &IFramePos)
     return demuxer_->GetIFramePos(IFramePos);
 }
 
-Status DemuxerFilter::Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset)
+Status DemuxerFilter::Dts2FrameId(int64_t dts, uint32_t &frameId)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Dts2FrameId");
     MEDIA_LOG_D("Dts2FrameId entered");
-    return demuxer_->Dts2FrameId(dts, frameId, offset);
+    return demuxer_->Dts2FrameId(dts, frameId);
+}
+
+Status DemuxerFilter::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SeekMs2FrameId");
+    MEDIA_LOG_D("SeekMs2FrameId entered");
+    return demuxer_->SeekMs2FrameId(seekMs, frameId);
+}
+
+Status DemuxerFilter::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::FrameId2SeekMs");
+    MEDIA_LOG_D("FrameId2SeekMs entered");
+    return demuxer_->FrameId2SeekMs(frameId, seekMs);
 }
 
 void DemuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
