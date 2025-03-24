@@ -417,6 +417,15 @@ Status HttpSourcePlugin::SelectBitRate(uint32_t bitRate)
     return Status::ERROR_UNKNOWN;
 }
 
+Status HttpSourcePlugin::AutoSelectBitRate(uint32_t bitRate)
+{
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    if (downloader_->AutoSelectBitRate(bitRate)) {
+        return Status::OK;
+    }
+    return Status::ERROR_UNKNOWN;
+}
+
 Status HttpSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     MEDIA_LOG_I("HttpSourcePlugin::GetDownloadInfo");

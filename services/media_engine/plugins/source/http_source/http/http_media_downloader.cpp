@@ -71,6 +71,8 @@ constexpr size_t LARGE_VIDEO_THRESHOLD = 18 * 1024 * 1024;
 constexpr size_t BUFFER_REDUNDANCY = 4 * 1024 * 1024;
 constexpr size_t IGNORE_BUFFERING_WITH_START_TIME_MS = 5000;
 constexpr size_t IGNORE_BUFFERING_EXTRA_CACHE_BEYOND_MS = 300;
+constexpr float FLV_AUTO_SELECT_SMOOTH_FACTOR = 0.8;
+constexpr size_t FLV_AUTO_SELECT_TIME_GAP = 3;
 
 }
 void HttpMediaDownloader::InitRingBuffer(uint32_t expectBufferDuration)
@@ -946,6 +948,13 @@ uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len, bo
             MEDIA_LOG_I("waterLineAbove: " PUBLIC_LOG_ZU " writeBitrate: " PUBLIC_LOG_U64 " readBitrate: "
                 PUBLIC_LOG_D32, waterLineAbove_, writeBitrate, currentBitRate_);
             writeBitrateCaculator_->ResetClock();
+            if (downloadSpeeds_.size() >= FLV_AUTO_SELECT_TIME_GAP) { // 3s
+                downloadSpeeds_.pop_front();
+                downloadSpeeds_.push_back(writeBitrate);
+                CheckAutoSelectBitrate();
+            } else {
+                downloadSpeeds_.push_back(writeBitrate);
+            }
         }
     }
     HandleCachedDuration();
@@ -1726,6 +1735,7 @@ bool HttpMediaDownloader::SelectBitRate(uint32_t bitRate)
     openTime_ = steadyClock_.ElapsedMilliseconds();
     isSelectingBitrate_.store(true);
     ringBuffer_->SetActive(false, true);
+    downloadSpeeds_.clear();
     downloader_->Pause(false);
     ringBuffer_->SetActive(true, true);
     isSelectingBitrate_.store(false);
@@ -1842,6 +1852,76 @@ uint64_t HttpMediaDownloader::GetMemorySize()
         return 0;
     }
     return static_cast<uint64_t>(totalBufferSize_);
+void HttpMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
+{
+    isAutoSelectBitrate_.store(isAuto);
+}
+
+bool HttpMediaDownloader::AutoSelectBitRate(uint32_t bitRate)
+{
+    SelectBitRate(bitRate);
+    return true;
+}
+
+bool HttpMediaDownloader::CheckAutoSelectBitrate()
+{
+    if (!IsAutoSelectConditionOk()) {
+        return false;
+    }
+    uint64_t sumSpeed = 0;
+    for (const auto &speed : downloadSpeeds_) {
+        sumSpeed += speed;
+    }
+    uint64_t aveSpeed = sumSpeed / downloadSpeeds_.size();
+    uint32_t desBitRate = 0;
+    for (const auto &item : playMediaStreams_) {
+        if (defaultStream_->bitrate == item->bitrate) {
+            continue;
+        }
+        if (item->bitrate > 0 && item->bitrate == desBitRate) {
+            break;
+        }
+        uint32_t smoothSpeed = static_cast<uint32_t>(aveSpeed * FLV_AUTO_SELECT_SMOOTH_FACTOR);
+        if (defaultStream_->bitrate < item->bitrate && item->bitrate <= smoothSpeed) {
+            desBitRate = item->bitrate;
+        }
+        if (defaultStream_->bitrate > item->bitrate && aveSpeed < defaultStream_->bitrate &&
+            item->bitrate <= smoothSpeed) {
+            desBitRate = item->bitrate;
+        }
+    }
+    if (desBitRate <= 0 || desBitRate == defaultStream_->bitrate) {
+        return false;
+    }
+    MEDIA_LOG_I("HTTP CheckAutoSelectBitrate aveRate " PUBLIC_LOG_U64 " desRate " PUBLIC_LOG_U32, aveSpeed, desBitRate);
+    if (isAutoSelectBitrate_.load() && callback_) {
+        callback_->OnEvent({PluginEventType::FLV_AUTO_SELECT_BITRATE, {desBitRate},
+            "auto select bitrate"});
+    }
+    return true;
+}
+
+bool HttpMediaDownloader::IsAutoSelectConditionOk()
+{
+    if (!isAutoSelectBitrate_.load()) {
+        return false;
+    }
+    if (!isRingBuffer_) {
+        return false;
+    }
+    if (playMediaStreams_.size() <= 1) {
+        return false;
+    }
+    if (defaultStream_ == nullptr) {
+        return false;
+    }
+    if (isSelectingBitrate_.load()) {
+        return false;
+    }
+    if (downloadSpeeds_.size() <= 0) {
+        return false;
+    }
+    return true;
 }
 }
 }

@@ -102,6 +102,7 @@ public:
     Status SeekToTime(int64_t seekTime, SeekMode mode);
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
+    Status AutoSelectBitRate(uint32_t bitRate);
     Status StopBufferring(bool flag);
     Status SetStartPts(int64_t startPts);
     Status SetExtraCache(int64_t cacheDuration);

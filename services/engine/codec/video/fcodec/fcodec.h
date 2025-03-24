@@ -149,6 +149,10 @@ private:
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     GSError RegisterListenerToSurface(const sptr<Surface> &surface);
     int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
+    void RequestSurfaceBufferThread();
+    void StartRequestSurfaceBufferThread();
+    void StopRequestSurfaceBufferThread();
+    bool RequestSurfaceBufferOnce(uint32_t index);
     // for memory recycle
     int32_t FreezeBuffers();
     int32_t ActiveBuffers();
@@ -185,6 +189,7 @@ private:
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
+    std::shared_ptr<BlockQueue<uint32_t>> requestSurfaceBufferQue_;
     std::map<uint32_t, std::pair<sptr<SurfaceBuffer>, OHOS::BufferFlushConfig>> renderSurfaceBufferMap_;
     std::optional<uint32_t> synIndex_ = std::nullopt;
     SurfaceControl sInfo_;
@@ -197,12 +202,18 @@ private:
     std::mutex syncMutex_;
     std::mutex surfaceMutex_;
     std::mutex formatMutex_;
+    std::mutex requestBufferMutex_;
+    std::condition_variable requestBufferCV_;
+    std::condition_variable requestBufferOnceDoneCV_;
     std::condition_variable sendCv_;
     std::condition_variable recvCv_;
     std::shared_ptr<MediaCodecCallback> callback_;
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
+    std::atomic<bool> requestBufferFinished_ = true;
+    std::atomic<bool> requestBufferThreadExit_ = false;
+    std::thread mRequestSurfaceBufferThread_;
     uint32_t decNum_ = 0;
     // dump
 #ifdef BUILD_ENG_VERSION

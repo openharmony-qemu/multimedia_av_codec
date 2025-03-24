@@ -672,11 +672,11 @@ Status DemuxerFilter::StopBufferring(bool flag)
     return demuxer_->StopBufferring(flag);
 }
 
-Status DemuxerFilter::SelectBitRate(uint32_t bitRate)
+Status DemuxerFilter::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION,
         "SelectBitRate failed, demuxer_ = nullptr.");
-    return demuxer_->SelectBitRate(bitRate);
+    return demuxer_->SelectBitRate(bitRate, isAutoSelect);
 }
 
 bool DemuxerFilter::FindTrackId(StreamType outType, int32_t &trackId)

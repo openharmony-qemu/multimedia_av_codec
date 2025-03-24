@@ -77,7 +77,7 @@ public:
     virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
 };
 
-class MediaCodec : public Plugins::DataCallback {
+class MediaCodec : public std::enable_shared_from_this<MediaCodec>, public Plugins::DataCallback {
 public:
     MediaCodec();
 
@@ -89,8 +89,7 @@ public:
 
     int32_t Configure(const std::shared_ptr<Meta> &meta);
 
-    __attribute__((no_sanitize("cfi"))) int32_t SetOutputBufferQueue(
-        const sptr<AVBufferQueueProducer> &bufferQueueProducer);
+    int32_t SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
 
     int32_t SetCodecCallback(const std::shared_ptr<CodecCallback> &codecCallback);
 
@@ -137,6 +136,8 @@ public:
 
     void OnDumpInfo(int32_t fd);
 
+    void SetTranscoderMode();
+
 private:
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);
@@ -144,7 +145,7 @@ private:
     Status AttachDrmBufffer(std::shared_ptr<AVBuffer> &drmInbuf, std::shared_ptr<AVBuffer> &drmOutbuf,
         uint32_t size);
     Status DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuffer);
-    __attribute__((no_sanitize("cfi"))) Status HandleOutputBuffer(uint32_t eosStatus);
+    Status HandleOutputBuffer(uint32_t eosStatus);
 
     int32_t PrepareInputBufferQueue();
 
@@ -171,6 +172,7 @@ private:
     Status HandleOutputBufferOnce(bool &isOutputBufferAvailable, uint32_t eosStatus, bool isSync);
 
     void HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingNeeded, Status &ret);
+    bool HandleOtherErrorEvent(const std::shared_ptr<Plugins::PluginEvent> event);
 
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
@@ -187,6 +189,7 @@ private:
     bool isBufferMode_;
     bool isDump_ = false;
     bool isSupportAudioFormatChanged_ = true;
+    bool isTranscoderMode_ = false;
     std::string dumpPrefix_ = "";
     int32_t outputBufferCapacity_;
     std::string codecPluginName_;

@@ -172,6 +172,7 @@ struct DemuxerPlugin : public PluginBase {
         const uint32_t index, uint64_t &relativePresentationTimeUs) = 0;
 
     virtual void SetCacheLimit(uint32_t limitSize) = 0;
+    virtual Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size) { return Status::OK; };
     virtual bool GetProbeSize(int32_t &offset, int32_t &size) { return false; };
 };
 

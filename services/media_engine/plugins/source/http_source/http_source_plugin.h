@@ -51,6 +51,7 @@ public:
     bool IsSeekToTimeSupported() override;
     Status GetBitRates(std::vector<uint32_t>& bitRates) override;
     Status SelectBitRate(uint32_t bitRate) override;
+    Status AutoSelectBitRate(uint32_t bitRate) override;
     Status SetStartPts(int64_t startPts) override;
     Status SetExtraCache(int64_t cacheDuration) override;
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;

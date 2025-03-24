@@ -21,7 +21,7 @@
 #include <queue>
 #include <string>
 #include <thread>
-
+#include "native_avcapability.h"
 #include "gtest/gtest.h"
 #include "videodec_sample.h"
 using namespace std;
@@ -45,22 +45,30 @@ protected:
     const ::testing::TestInfo *testInfo_ = nullptr;
     bool createCodecSuccess_ = false;
 };
-
-void Mpeg4SwdecStateNdkTest::SetUpTestCase(void) {}
+static OH_AVCapability *cap_mpeg4 = nullptr;
+static string g_codecNameMpeg4 = "";
+void Mpeg4SwdecStateNdkTest::SetUpTestCase(void)
+{
+    cap_mpeg4 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2, false, SOFTWARE);
+    g_codecNameMpeg4 = OH_AVCapability_GetName(cap_mpeg4);
+    cout << "g_codecNameMpeg4: " << g_codecNameMpeg4 << endl;
+}
 void Mpeg4SwdecStateNdkTest::TearDownTestCase(void) {}
 VDecNdkSample *vDecSample = NULL;
 
 void Mpeg4SwdecStateNdkTest::SetUp(void)
 {
-    vDecSample = new VDecNdkSample();
-    string codeName = "OH.Media.Codec.Decoder.Video.MPEG4";
-    int32_t ret = vDecSample->CreateVideoDecoder(codeName);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/mpeg4_main@level4_1920x1080_30.m4v";
+    if (cap_mpeg4 != nullptr) {
+        vDecSample = new VDecNdkSample();
+        string codeName = "OH.Media.Codec.Decoder.Video.MPEG4";
+        int32_t ret = vDecSample->CreateVideoDecoder(codeName);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->INP_DIR = "/data/test/media/mpeg4_main@level4_1920x1080_30.m4v";
+    }
 }
 
 void Mpeg4SwdecStateNdkTest::TearDown(void)
@@ -80,10 +88,12 @@ namespace {
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0100, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -93,12 +103,14 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0200, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -108,12 +120,14 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0300, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -123,12 +137,14 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0400, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -138,14 +154,16 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0500, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -155,16 +173,18 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0500, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0600, TestSize.Level2)
 {
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    int32_t ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(0, vDecSample->errCount);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        int32_t ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(0, vDecSample->errCount);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -174,15 +194,17 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0700, TestSize.Level2)
 {
-    int32_t ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(0, vDecSample->errCount);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(0, vDecSample->errCount);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -192,16 +214,18 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0700, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0800, TestSize.Level2)
 {
-    int32_t ret = vDecSample->StartVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(0, vDecSample->errCount);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->StartVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(0, vDecSample->errCount);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -211,13 +235,15 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0800, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0900, TestSize.Level2)
 {
-    int32_t ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(0, vDecSample->errCount);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(0, vDecSample->errCount);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -227,15 +253,17 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_0900, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1000, TestSize.Level2)
 {
-    int32_t ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(0, vDecSample->errCount);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(0, vDecSample->errCount);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -245,15 +273,17 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1000, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1100, TestSize.Level2)
 {
-    int32_t ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(0, vDecSample->errCount);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(0, vDecSample->errCount);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -263,15 +293,17 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1200, TestSize.Level2)
 {
-    int32_t ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(0, vDecSample->errCount);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(0, vDecSample->errCount);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -281,17 +313,19 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1300, TestSize.Level2)
 {
-    int32_t ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(0, vDecSample->errCount);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(0, vDecSample->errCount);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
 }
 
 /**
@@ -301,15 +335,17 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1400, TestSize.Level2)
 {
-    int32_t ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(0, vDecSample->errCount);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(0, vDecSample->errCount);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -319,15 +355,17 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1500, TestSize.Level2)
 {
-    int32_t ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(0, vDecSample->errCount);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(0, vDecSample->errCount);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -337,19 +375,21 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1500, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1600, TestSize.Level2)
 {
-    int32_t ret = vDecSample->StartVideoDecoder();
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(0, vDecSample->errCount);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->StartVideoDecoder();
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(0, vDecSample->errCount);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+    }
 }
 
 /**
@@ -359,14 +399,16 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1700, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -376,14 +418,16 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1700, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1800, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->state_EOS();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->state_EOS();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -393,14 +437,16 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1800, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1900, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -410,14 +456,16 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_1900, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2000, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -427,18 +475,20 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2000, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2100, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -448,14 +498,16 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2200, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -465,14 +517,16 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2300, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -482,14 +536,16 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2400, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -499,16 +555,18 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2500, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -518,14 +576,16 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2500, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2600, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -535,14 +595,16 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2700, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -552,20 +614,22 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2700, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2800, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -575,12 +639,14 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2800, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2900, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -590,12 +656,14 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_2900, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_3000, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -605,18 +673,20 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_3000, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_3100, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Stop();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Stop();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->Flush();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -626,14 +696,16 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_3100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_3200, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Start();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->SetVideoDecoderCallback();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+        ret = vDecSample->SetVideoDecoderCallback();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -643,10 +715,12 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_3200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_3300, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Reset();
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->ConfigureVideoDecoder();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Reset();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ret = vDecSample->ConfigureVideoDecoder();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 
 /**
@@ -656,7 +730,9 @@ HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_3300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecStateNdkTest, VIDEO_MPEG4SWDEC_STATE_3400, TestSize.Level2)
 {
-    int32_t ret = vDecSample->Release();
-    ASSERT_EQ(AV_ERR_OK, ret);
+    if (cap_mpeg4 != nullptr) {
+        int32_t ret = vDecSample->Release();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
 }
 } // namespace

@@ -80,6 +80,7 @@ public:
     Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
         const uint32_t index, uint64_t &relativePresentationTimeUs) override;
     void SetCacheLimit(uint32_t limitSize) override;
+    Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size) override;
     bool GetProbeSize(int32_t &offset, int32_t &size) override;
     void SetInterruptState(bool isInterruptNeeded) override;
 private:
@@ -143,12 +144,6 @@ private:
     Status GetMediaInfo();
     void ResetParam();
 
-    Status InitIoContext();
-    Status ParserRefInit();
-    Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
-    Status SelectProGopId();
-    void ParserBoxInfo();
-    AVStream *GetVideoStream();
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
     bool IsLessMaxReferenceParserFrames(uint32_t trackIndex);
@@ -176,6 +171,12 @@ private:
     int64_t relativePTSToIndexRightDiff_ = INT64_MAX;
     int64_t relativePTSToIndexLeftDiff_ = INT64_MAX;
     int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
+    Status InitIoContext();
+    Status ParserRefInit();
+    Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
+    Status SelectProGopId();
+    void ParserBoxInfo();
+    AVStream *GetVideoStream();
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;

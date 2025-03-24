@@ -189,6 +189,11 @@ public:
         return Status::OK;
     }
 
+    virtual Status AutoSelectBitRate(uint32_t bitRate)
+    {
+        return Status::OK;
+    }
+
     virtual bool IsSeekToTimeSupported()
     {
         return false;

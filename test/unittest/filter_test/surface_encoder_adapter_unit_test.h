@@ -59,6 +59,11 @@ public:
     {
         (void)KeyFramePts;
     }
+
+    void OnReportFirstFramePts(int64_t firstFramePts)
+    {
+        (void)firstFramePts;
+    }
 };
 
 class MyAVCodecVideoEncoder : public MediaAVCodec::AVCodecVideoEncoder {
@@ -236,6 +241,11 @@ class MyEncoderAdapterKeyFramePtsCallback : public EncoderAdapterKeyFramePtsCall
 public:
     ~MyEncoderAdapterKeyFramePtsCallback() = default;
     void OnReportKeyFramePts(std::string KeyFramePts)
+    {
+        return;
+    }
+
+    void OnReportFirstFramePts(int64_t firstFramePts)
     {
         return;
     }

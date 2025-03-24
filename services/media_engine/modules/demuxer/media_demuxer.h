@@ -93,7 +93,7 @@ public:
     Status UnselectTrack(int32_t trackId);
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status GetBitRates(std::vector<uint32_t> &bitRates);
-    Status SelectBitRate(uint32_t bitRate);
+    Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false);
     Status StopBufferring(bool flag);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
@@ -250,7 +250,7 @@ private:
     Status InnerSelectTrack(int32_t trackId);
     Status HandleRead(uint32_t trackId);
     int64_t ParserRefInfo();
-    void TryRecvParserTask();
+    void TryReclaimParserTask();
 
     Status HandleSelectTrack(int32_t trackId);
     Status HandleDashSelectTrack(int32_t trackId);
@@ -340,6 +340,7 @@ private:
     bool isDump_ = false;
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
     std::atomic<bool> isSelectBitRate_ = false;
+    std::atomic<bool> isManualBitRateSetting_ = false;
     uint32_t targetBitRate_ = 0;
     std::string dumpPrefix_ = "";
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
@@ -347,6 +348,7 @@ private:
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
+    std::mutex parserTaskMutex_ {};
     int64_t duration_ {0};
     FileType fileType_ = FileType::UNKNOW;
 

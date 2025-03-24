@@ -74,6 +74,29 @@ private:
     std::weak_ptr<AudioEncoderFilter> audioEncoderFilter_;
 };
 
+class AudioEncoderCallback : public AudioBaseCodecCallback {
+public:
+    explicit AudioEncoderCallback(std::weak_ptr<AudioEncoderFilter> audioEncoderFilter)
+    {
+        audioEncoderFilter_ = audioEncoderFilter;
+    }
+ 
+    ~AudioEncoderCallback() = default;
+ 
+    void OnError(CodecErrorType errorType, int32_t errorCode) override
+    {
+        std::shared_ptr<AudioEncoderFilter> audioEncoderFilter = audioEncoderFilter_.lock();
+        if (audioEncoderFilter != nullptr) {
+            audioEncoderFilter->OnError();
+        }
+    }
+    void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override {}
+    void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) override {}
+ 
+private:
+    std::weak_ptr<AudioEncoderFilter> audioEncoderFilter_;
+};
+
 AudioEncoderFilter::AudioEncoderFilter(std::string name, FilterType type): Filter(name, type)
 {
     filterType_ = type;
@@ -115,6 +138,16 @@ Status AudioEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     if (ret != 0) {
         SetFaultEvent("AudioEncoderFilter::Configure error", ret);
         return Status::ERROR_UNKNOWN;
+    }
+    if (isTranscoderMode_ && mediaCodec_ != nullptr) {
+        MEDIA_LOG_I("SetTranscoderMode");
+        mediaCodec_->SetTranscoderMode();
+        cb_ = std::make_shared<AudioEncoderCallback>(weak_from_this());
+        if (cb_ == nullptr) {
+            MEDIA_LOG_E("create cb error");
+            return Status::ERROR_UNKNOWN;
+        }
+        mediaCodec_->SetCodecCallback(cb_);
     }
     return Status::OK;
 }
@@ -318,6 +351,13 @@ void AudioEncoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnUnlinkedResult");
     (void) meta;
+}
+
+void AudioEncoderFilter::OnError()
+{
+    MEDIA_LOG_E("receive plugin error");
+    FALSE_RETURN(isTranscoderMode_ && eventReceiver_ != nullptr);
+    eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_ENC_TYPE});
 }
 
 void AudioEncoderFilter::SetFaultEvent(const std::string &errMsg, int32_t ret)

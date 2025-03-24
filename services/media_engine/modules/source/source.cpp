@@ -205,6 +205,16 @@ Status Source::SelectBitRate(uint32_t bitRate)
     return plugin_->SelectBitRate(bitRate);
 }
 
+Status Source::AutoSelectBitRate(uint32_t bitRate)
+{
+    MEDIA_LOG_I("AutoSelectBitRate" PUBLIC_LOG_U32, bitRate);
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("AutoSelectBitRate failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->AutoSelectBitRate(bitRate);
+}
+
 Status Source::StopBufferring(bool flag)
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION,
@@ -337,6 +347,9 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::DASH_SEEK_READY) {
         MEDIA_LOG_D("Onevent dash seek ready.");
+        mediaDemuxerCallback_->OnEvent(event);
+    } else if (event.type == PluginEventType::FLV_AUTO_SELECT_BITRATE) {
+        MEDIA_LOG_D("Onevent flv select bitrate.");
         mediaDemuxerCallback_->OnEvent(event);
     } else {
         MEDIA_LOG_I("on event type undefined.");
