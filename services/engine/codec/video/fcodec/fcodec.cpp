@@ -1668,14 +1668,13 @@ int32_t FCodec::SwapInBuffers(bool isOutputBuffer)
     return AVCS_ERR_OK;
 }
 
-int32_t FCodec::FreezeBuffers()
+int32_t FCodec::FreezeBuffers(State curState)
 {
     CHECK_AND_RETURN_RET_LOGD(state_ != State::FROZEN, AVCS_ERR_OK, "FCodec had been frozen!");
     std::lock_guard<std::mutex> sLock(surfaceMutex_);
-    State currentState = state_;
-    int32_t ret = SwapOutBuffers(INDEX_INPUT, currentState);
+    int32_t ret = SwapOutBuffers(INDEX_INPUT, curState);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Input buffers swap out failed!");
-    ret = SwapOutBuffers(INDEX_OUTPUT, currentState);
+    ret = SwapOutBuffers(INDEX_OUTPUT, curState);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Output buffers swap out failed!");
     return AVCS_ERR_OK;
 }
@@ -1698,8 +1697,9 @@ int32_t FCodec::NotifyMemoryRecycle()
     CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS,
                               AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
     AVCODEC_LOGI("Begin to freeze this codec!");
+    State currentState = state_;
     state_ = State::FREEZING;
-    int32_t errCode = FreezeBuffers();
+    int32_t errCode = FreezeBuffers(currentState);
     CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Fcodec freeze buffers failed!");
     state_ = State::FROZEN;
     return AVCS_ERR_OK;
