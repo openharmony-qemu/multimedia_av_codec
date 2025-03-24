@@ -200,10 +200,6 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
         "Fd offsetCur has changed. offsetCur " PUBLIC_LOG_D64 ", offsetOld " PUBLIC_LOG_U64,
         offsetCur,
         position_.load());
-    if (static_cast<uint64_t>(offsetCur) != position_) {
-        MEDIA_LOG_E("Fd offsetCur has changed. offsetCur " PUBLIC_LOG_D64 ", offsetOld " PUBLIC_LOG_U64,
-            offsetCur, position_.load());
-    }
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
     if (size <= 0) {
         HandleReadResult(expectedLen, size);
