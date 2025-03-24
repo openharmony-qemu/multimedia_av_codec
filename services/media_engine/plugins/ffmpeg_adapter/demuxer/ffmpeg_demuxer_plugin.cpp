@@ -1695,7 +1695,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
     uint32_t cttsIndex = 0;
     int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
-    frameCnt_  = 0;
+    ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
     int32_t cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
     while (sttsIndex < avStream->stts_count && cttsIndex < avStream->ctts_count &&
@@ -1718,11 +1718,11 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
         double ptsTemp = static_cast<double>(dts) + static_cast<double>(avStream->ctts_data[cttsIndex].duration);
         pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
         if (mode == GET_ALL_FRAME_PTS) {
-            if (frameCnt_ >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
-                MEDIA_LOG_I("PTS list has reached the maximum limit");
+            if (ptsCnt_ >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
+                MEDIA_LOG_I("PTS cnt has reached the maximum limit");
                 break;
             }
-            frameCnt_++;
+            ptsCnt_++;
         }
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index, static_cast<int64_t>(dts * timeScaleRate));
         sttsCurNum--;
@@ -1746,7 +1746,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
     uint32_t sttsIndex = 0;
     int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
-    frameCnt_  = 0;
+    ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
     while (sttsIndex < avStream->stts_count && sttsCurNum >= 0) {
         if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
@@ -1758,11 +1758,11 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
         double ptsTemp = static_cast<double>(dts);
         pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
         if (mode == GET_ALL_FRAME_PTS) {
-            if (frameCnt_ >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
-                MEDIA_LOG_I("PTS list has reached the maximum limit");
+            if (ptsCnt_ >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
+                MEDIA_LOG_I("PTS cnt has reached the maximum limit");
                 break;
             }
-            frameCnt_++;
+            ptsCnt_++;
         }
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index, pts);
         sttsCurNum--;
