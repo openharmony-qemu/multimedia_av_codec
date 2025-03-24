@@ -345,7 +345,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_API_1200, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability param correct
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0100, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0100, TestSize.Level1)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(cap, nullptr);
@@ -357,7 +357,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetMaxSupportedInstances param correct
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0200, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0200, TestSize.Level1)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(cap, nullptr);
@@ -369,7 +369,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetName param correct
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0300, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0300, TestSize.Level1)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(cap, nullptr);
@@ -381,7 +381,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0400, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0400, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
@@ -395,7 +395,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthAlignment param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0500, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0500, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
@@ -412,7 +412,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0600, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0600, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
@@ -426,7 +426,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightAlignment param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0700, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0700, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
@@ -443,7 +443,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0800, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0800, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -459,7 +459,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0900, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0900, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
@@ -473,7 +473,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_0900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1000, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1000, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -489,7 +489,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1100, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1100, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -523,7 +523,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1200, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1200, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -539,7 +539,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1300, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1300, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
@@ -553,7 +553,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1400, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1400, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -569,7 +569,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1500, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1500, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -603,7 +603,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1600, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1600, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
@@ -617,7 +617,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1700, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1700, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -636,7 +636,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1800, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1800, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
@@ -650,7 +650,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1900, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1900, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange widthRange;
@@ -688,7 +688,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_1900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2000, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2000, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -700,7 +700,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2100, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2100, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -712,7 +712,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2200, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2200, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -727,7 +727,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2300, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2300, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -739,7 +739,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2400, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2400, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
@@ -753,7 +753,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2500, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2500, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -771,7 +771,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2600, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2600, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
@@ -785,7 +785,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2700, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2700, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -801,7 +801,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2800, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2800, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -817,7 +817,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2900, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2900, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     int32_t width = 1280;
@@ -851,7 +851,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_2900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3000, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3000, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -863,7 +863,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3100, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3100, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -875,7 +875,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3200, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3200, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -887,7 +887,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3300, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3300, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -899,7 +899,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3400, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3400, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t pixelFormatNum = 0;
@@ -914,7 +914,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3500, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3500, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
@@ -929,7 +929,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3600, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3600, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
@@ -968,7 +968,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedProfiles param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3700, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3700, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *profiles = nullptr;
@@ -989,7 +989,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3800, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3800, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
@@ -1019,7 +1019,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3900, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3900, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -1032,7 +1032,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_3900, TestSize.Level2)
  * @tc.desc      : api test
  */
 
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_4000, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_4000, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -1044,7 +1044,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_4000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetFeatureProperties param error
  * @tc.desc      : api test
  */
-HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_4100, TestSize.Level2)
+HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_4100, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_H263, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);

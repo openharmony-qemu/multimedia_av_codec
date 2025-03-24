@@ -77,7 +77,7 @@ namespace {
  * @tc.name      : 16 instances
  * @tc.desc      : reliable test
  */
-HWTEST_F(H263SwdecReliNdkTest, VIDEO_H263SWDEC_RELI_WHILE_0100, TestSize.Level3)
+HWTEST_F(H263SwdecReliNdkTest, VIDEO_H263SWDEC_RELI_WHILE_0100, TestSize.Level2)
 {
     for (int i = 0; i < 16; i++) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -103,7 +103,7 @@ HWTEST_F(H263SwdecReliNdkTest, VIDEO_H263SWDEC_RELI_WHILE_0100, TestSize.Level3)
  * @tc.name      : create Destroy
  * @tc.desc      : reliable test
  */
-HWTEST_F(H263SwdecReliNdkTest, VIDEO_H263SWDEC_RELI_WHILE_0200, TestSize.Level4)
+HWTEST_F(H263SwdecReliNdkTest, VIDEO_H263SWDEC_RELI_WHILE_0200, TestSize.Level2)
 {
     for (int i = 0; i < 1000; i++) {
         OH_AVCodec *vdec_ = OH_VideoDecoder_CreateByName("OH.Media.Codec.Decoder.Video.H263");

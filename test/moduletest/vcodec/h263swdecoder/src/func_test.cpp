@@ -174,7 +174,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0040, TestSize.Level0)
  * @tc.name      : decode H263 buffer,profile0_level40
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0050, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0050, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile0_level40_I_352x288.h263";
@@ -196,7 +196,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0050, TestSize.Level0)
  * @tc.name      : decode H263 buffer,profile0_level50
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0060, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0060, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile0_level50_352x288.h263";
@@ -218,7 +218,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0060, TestSize.Level0)
  * @tc.name      : decode H263 buffer,profile0_level60
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0070, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0070, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile0_level60_704x576.h263";
@@ -240,7 +240,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0070, TestSize.Level0)
  * @tc.name      : decode H263 buffer,profile0_level70
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0080, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0080, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile0_level70_1408x1152.h263";
@@ -262,7 +262,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0080, TestSize.Level0)
  * @tc.name      : decode H263 buffer,profile2_level10
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0090, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0090, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile2_level10_128x96.h263";
@@ -284,7 +284,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0090, TestSize.Level0)
  * @tc.name      : decode H263 buffer,profile2_level20
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0100, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0100, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile2_level20_176x144.h263";
@@ -306,7 +306,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0100, TestSize.Level0)
  * @tc.name      : decode H263 buffer,profile2_level30
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0110, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0110, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile2_level30_I_352x288.h263";
@@ -328,7 +328,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0110, TestSize.Level0)
  * @tc.name      : decode H263 buffer,profile2_level40
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0120, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0120, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile2_level40_352x288.h263";
@@ -350,7 +350,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0120, TestSize.Level0)
  * @tc.name      : decode H263 buffer,profile2_level50
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0130, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0130, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile2_level50_gop60_1280x720.h263";
@@ -372,7 +372,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0130, TestSize.Level0)
  * @tc.name      : decode H263 buffer,profile2_level60
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0140, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0140, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile2_level60_gop60_1920x1080.h263";
@@ -394,7 +394,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0140, TestSize.Level0)
  * @tc.name      : decode H263 buffer,profile2_level70
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0150, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0150, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile2_level70_gop60_2048x1152.h263";
@@ -416,7 +416,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0150, TestSize.Level0)
  * @tc.name      : decode H263 buffer,input h264
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0160, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0160, TestSize.Level3)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/1920x1080.h264";
@@ -436,7 +436,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0160, TestSize.Level0)
  * @tc.name      : decode H263 surface,profile2_level70
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0170, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0170, TestSize.Level3)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile2_level70_gop60_2048x1152.h263";
@@ -457,7 +457,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0170, TestSize.Level0)
  * @tc.name      : decode H263 surface,profile0_level10
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0180, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0180, TestSize.Level3)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile0_level10_I_128x96.h263";
@@ -478,7 +478,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0180, TestSize.Level0)
  * @tc.name      : decode H263 surface,profile0_level30
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0190, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0190, TestSize.Level3)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
@@ -499,11 +499,11 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_H263SWDEC_FUNCTION_0190, TestSize.Level0)
  * @tc.name      : h263变分辨率，buffer, nv12
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0010, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0010, TestSize.Level3)
 {
     if (g_codecName263.find("H263") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = "/data/test/media/reso.h263";
+        vDecSample->INP_DIR = "/data/test/media/profile0_0_0.h263";
         vDecSample->DEFAULT_WIDTH = 1280;
         vDecSample->DEFAULT_HEIGHT = 720;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -526,11 +526,11 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0010, TestSize.Level
  * @tc.name      : h263变分辨率，buffer, nv21
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0020, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0020, TestSize.Level3)
 {
     if (g_codecName263.find("H263") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = "/data/test/media/reso_2.h263";
+        vDecSample->INP_DIR = "/data/test/media/profile2_2_2.h263";
         vDecSample->DEFAULT_WIDTH = 20;
         vDecSample->DEFAULT_HEIGHT = 20;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -553,11 +553,11 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0020, TestSize.Level
  * @tc.name      : h263变分辨率，surface, nv21
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0030, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0030, TestSize.Level3)
 {
     if (g_codecName263.find("H263") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = "/data/test/media/reso_2.h263";
+        vDecSample->INP_DIR = "/data/test/media/profile2_2_2.h263";
         vDecSample->DEFAULT_WIDTH = 1280;
         vDecSample->DEFAULT_HEIGHT = 720;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -576,7 +576,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0030, TestSize.Level
  * @tc.name      : surf model change in normal state
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -601,7 +601,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level0)
  * @tc.name      : surf model change in flushed state
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -624,7 +624,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level0)
  * @tc.name      : surf model change in runing state
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -647,7 +647,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level0)
  * @tc.name      : repeat call setSurface fastly
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -669,7 +669,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level0)
  * @tc.name      : surf model change in flush to runnig state
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -693,7 +693,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level0)
  * @tc.name      : surf model change in decoder finish to End-of-Stream state
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -716,7 +716,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level0)
  * @tc.name      : buffer model change in decoder finish to End-of-Stream state
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -739,7 +739,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level0)
  * @tc.name      : buffer model change in runing to flushed state
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -762,7 +762,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level0)
  * @tc.name      : buffer model change in flushed to runing state
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -782,11 +782,11 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level0)
 }
 
 /**
- * @tc.number    : API11_SURF_CHANGE_FUNC_012
+ * @tc.number    : API11_SURF_CHANGE_FUNC_010
  * @tc.name      : buffer model change in normal state
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_010, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -807,11 +807,11 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level0)
 }
 
 /**
- * @tc.number    : API11_SURF_CHANGE_FUNC_013
+ * @tc.number    : API11_SURF_CHANGE_FUNC_011
  * @tc.name      : surf model change in config state
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level1)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_011, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -831,11 +831,11 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level1)
 }
 
 /**
- * @tc.number    : API11_SURF_CHANGE_FUNC_014
+ * @tc.number    : API11_SURF_CHANGE_FUNC_012
  * @tc.name      : surf model change in config state
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level1)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -854,11 +854,11 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level1)
 }
 
 /**
- * @tc.number    : API11_SURF_CHANGE_FUNC_015
+ * @tc.number    : API11_SURF_CHANGE_FUNC_013
  * @tc.name      : Two object repeat call setSurface fastly
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_015, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -888,11 +888,11 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_015, TestSize.Level0)
 }
 
 /**
- * @tc.number    : API11_SURF_CHANGE_FUNC_016
+ * @tc.number    : API11_SURF_CHANGE_FUNC_014
  * @tc.name      : repeat call setSurface fastly 2 time
  * @tc.desc      : function test
  */
-HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_016, TestSize.Level0)
+HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < 2; i++) {
