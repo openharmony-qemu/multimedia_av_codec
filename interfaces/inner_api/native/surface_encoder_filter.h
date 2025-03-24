@@ -92,6 +92,7 @@ private:
     std::atomic<bool> isUpdateCodecNeeded_ = false;
     sptr<Surface> surface_{nullptr};
     std::string bundleName_;
+    bool isTranscoderMode_ {false};
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
     int32_t appPid_ {0};

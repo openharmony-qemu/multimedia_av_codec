@@ -95,6 +95,7 @@ private:
  
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
+    std::mutex eosMutex_;
 };
 } // namespace Pipeline
 } // namespace MEDIA
