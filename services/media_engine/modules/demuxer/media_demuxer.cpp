@@ -3031,9 +3031,11 @@ Status MediaDemuxer::RebootPlugin()
     demuxerPluginManager_->StopPlugin(videoStreamID, streamDemuxer_);
     ret = demuxerPluginManager_->StartPlugin(videoStreamID, streamDemuxer_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Start plugin failed" PUBLIC_LOG_D32, videoStreamID);
-    InnerSelectTrack(static_cast<int32_t>(videoTrackId_));
-    InnerSelectTrack(static_cast<int32_t>(audioTrackId_));
-    return ret;
+    ret = InnerSelectTrack(static_cast<int32_t>(videoTrackId_));
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "inner select video track failed");
+    ret = InnerSelectTrack(static_cast<int32_t>(audioTrackId_));
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "inner select video audio failed");
+    return Status::OK;
 }
 
 bool MediaDemuxer::IsFlvLiveStream()
