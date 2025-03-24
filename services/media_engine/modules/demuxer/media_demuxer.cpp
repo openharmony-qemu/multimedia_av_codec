@@ -3034,7 +3034,7 @@ Status MediaDemuxer::RebootPlugin()
     ret = InnerSelectTrack(static_cast<int32_t>(videoTrackId_));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "inner select video track failed");
     ret = InnerSelectTrack(static_cast<int32_t>(audioTrackId_));
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "inner select video audio failed");
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "inner select audio track failed");
     return Status::OK;
 }
 
