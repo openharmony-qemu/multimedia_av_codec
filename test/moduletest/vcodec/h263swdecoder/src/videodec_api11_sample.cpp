@@ -91,6 +91,7 @@ private:
 
 VDecAPI11Sample::~VDecAPI11Sample()
 {
+    g_yuvSurface = false;
     for (int i = 0; i < MAX_SURF_NUM; i++) {
         if (nativeWindow[i]) {
             OH_NativeWindow_DestroyNativeWindow(nativeWindow[i]);
