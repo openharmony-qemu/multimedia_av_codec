@@ -228,6 +228,9 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
 {
     Status ret = Status::OK;
     bool hasVideoFilter = false;
+    bool hasInvalidVideo = false;
+    bool hasInvalidAudio = false;
+    FALSE_RETURN_V_MSG(callback_ != nullptr, Status::OK, "callback is nullptr");
     for (size_t index = 0; index < trackInfos.size(); index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
         FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_INVALID_PARAMETER, "meta is invalid, index: %zu", index);
@@ -237,43 +240,37 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
             continue;
         }
         MEDIA_LOG_D("mimeType: " PUBLIC_LOG_S ", index: " PUBLIC_LOG_U32, mime.c_str(), static_cast<uint32_t>(index));
-        if (mime.find("invalid") == 0) {
-            MEDIA_LOG_E_SHORT("mimeType is invalid, index: %zu", index);
-            continue;
-        }
         MediaType mediaType;
         if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
             MEDIA_LOG_E_SHORT("mediaType not found, index: %zu", index);
             continue;
         }
-        if (ShouldTrackSkipped(mediaType, mime, index)) {
-            continue;
-        }
+        FALSE_CONTINUE_NOLOG(!ShouldTrackSkipped(mediaType, mime, index));
+
         StreamType streamType;
-        if (!FindStreamType(streamType, mediaType, mime, index)) {
-            return Status::ERROR_INVALID_PARAMETER;
-        }
+        FALSE_RETURN_V_NOLOG(FindStreamType(streamType, mediaType, mime, index), Status::ERROR_INVALID_PARAMETER);
+        bool isTrackInvalid = mime.find("invalid") == 0;
+        hasInvalidVideo |= (isTrackInvalid && streamType == StreamType::STREAMTYPE_ENCODED_VIDEO);
+        hasInvalidAudio |= (isTrackInvalid && streamType == StreamType::STREAMTYPE_ENCODED_AUDIO);
+        FALSE_CONTINUE_NOLOG(!isTrackInvalid);
         UpdateTrackIdMap(streamType, static_cast<int32_t>(index));
-        if (callback_ == nullptr) {
-            MEDIA_LOG_W_SHORT("callback is nullptr");
-            continue;
-        }
-        if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO && hasVideoFilter) {
-            continue;
-        } else if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO && isEnableReselectVideoTrack_) {
-            hasVideoFilter = true;
-        }
+        FALSE_CONTINUE_NOLOG(streamType != StreamType::STREAMTYPE_ENCODED_VIDEO || !hasVideoFilter);
+        hasVideoFilter |= (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO && isEnableReselectVideoTrack_);
         ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
-        if (ret != Status::OK) {
-            FaultDemuxerEventInfoWrite(streamType);
-        }
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnCallback Link Filter Fail.");
+        FALSE_RETURN_V_MSG_E(ret == Status::OK || FaultDemuxerEventInfoWrite(streamType) != Status::OK, ret,
+            "OnCallback Link Filter Fail.");
         successNodeCount++;
+    }
+    bool isOnlyInvalidAVTrack = (hasInvalidVideo && !demuxer_->HasVideo())
+                                 || (hasInvalidAudio && !demuxer_->HasAudio());
+    if (isOnlyInvalidAVTrack) {
+        MEDIA_LOG_E("Only has invalid video or invalid audio track");
+        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
     }
     return ret;
 }
 
-void DemuxerFilter::FaultDemuxerEventInfoWrite(StreamType& streamType)
+Status DemuxerFilter::FaultDemuxerEventInfoWrite(StreamType& streamType)
 {
     MEDIA_LOG_I_SHORT("FaultDemuxerEventInfoWrite enter.");
     struct DemuxerFaultInfo demuxerInfo;
@@ -285,6 +282,7 @@ void DemuxerFilter::FaultDemuxerEventInfoWrite(StreamType& streamType)
     demuxerInfo.streamType = std::to_string(static_cast<int32_t>(streamType));
     demuxerInfo.errMsg = "OnCallback Link Filter Fail.";
     FaultDemuxerEventWrite(demuxerInfo);
+    return Status::OK;
 }
 
 std::string DemuxerFilter::CollectVideoAndAudioMime()
