@@ -68,6 +68,8 @@ private:
 
     std::shared_ptr<PostProcessorCallback> filterCallback_;
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_ {nullptr};
+
+    std::shared_mutex mutex_ {};
 };
 
 // } // namespace Pipeline
