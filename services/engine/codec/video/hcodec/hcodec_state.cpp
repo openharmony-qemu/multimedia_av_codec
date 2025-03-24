@@ -14,7 +14,7 @@
  */
 
 #include "hcodec.h"
-#include "utils/hdf_base.h"
+#include "hdf_base.h"
 #include "hitrace_meter.h"
 #include "hcodec_list.h"
 #include "hcodec_log.h"

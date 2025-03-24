@@ -84,7 +84,10 @@
           "hiview",
           "cJSON",
           "bundle_framework",
-          "efficiency_manager"
+          "efficiency_manager",
+          "drivers_peripheral_codec",
+          "openmax",
+          "memory_utils"
         ],
         "third_party": []
       },

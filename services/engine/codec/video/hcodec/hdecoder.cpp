@@ -17,7 +17,7 @@
 #include <cassert>
 #include <sys/ioctl.h>
 #include <linux/dma-buf.h>
-#include "utils/hdf_base.h"
+#include "hdf_base.h"
 #include "codec_omx_ext.h"
 #include "media_description.h"  // foundation/multimedia/av_codec/interfaces/inner_api/native/
 #include "sync_fence.h"  // foundation/graphic/graphic_2d/utils/sync_fence/export/
