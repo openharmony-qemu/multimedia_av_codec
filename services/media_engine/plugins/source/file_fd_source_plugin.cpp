@@ -194,12 +194,9 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     MEDIA_LOG_D("ReadLocal buffer pos: " PUBLIC_LOG_U64 " , len:" PUBLIC_LOG_ZU, position_.load(), expectedLen);
 
     int64_t offsetCur = lseek(fd_, 0, SEEK_CUR);
-    FALSE_RETURN_V_MSG_E(offsetCur >= 0, Status::ERROR_UNKNOWN, "Fd get offset failed");
-    FALSE_RETURN_V_MSG_E(static_cast<uint64_t>(offsetCur) == position_,
-        Status::ERROR_INVALID_DATA,
-        "Fd offsetCur has changed. offsetCur " PUBLIC_LOG_D64 ", offsetOld " PUBLIC_LOG_U64,
-        offsetCur,
-        position_.load());
+    if (offsetCur < 0) {
+        MEDIA_LOG_E("Fd get offset failed ");
+    }
     if (static_cast<uint64_t>(offsetCur) != position_) {
         MEDIA_LOG_E("Fd offsetCur has changed. offsetCur " PUBLIC_LOG_D64 ", offsetOld " PUBLIC_LOG_U64,
             offsetCur, position_.load());
