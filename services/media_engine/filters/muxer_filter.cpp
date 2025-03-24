@@ -266,7 +266,7 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
         }
     }
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
-    if (ret != Status::OK) {
+    if (ret != Status::OK && eventReceiver_ != nullptr) {
         eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, ret});
         SetFaultEvent("MuxerFilter::OnLinked error", (int32_t)ret);
         return ret;
@@ -337,16 +337,20 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
 {
     MEDIA_LOG_D("OnTransCoderBufferFilled");
     if ((inputBuffer->flag_ & BUFFER_IS_EOS) == 1) {
-        std::unique_lock<std::mutex> lock(eosMutex_);
-        eosCount_++;
-        if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {
-            MEDIA_LOG_I("video is eos");
-            videoIsEos = true;
-        } else if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
-            MEDIA_LOG_I("audio is eos");
-            audioIsEos = true;
+        bool isCompleted = false;
+        {
+            std::unique_lock<std::mutex> lock(eosMutex_);
+            eosCount_++;
+            if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {
+                MEDIA_LOG_I("video is eos");
+                videoIsEos = true;
+            } else if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
+                MEDIA_LOG_I("audio is eos");
+                audioIsEos = true;
+            }
+            isCompleted = (eosCount_ == preFilterCount_) || (videoIsEos && audioIsEos);
         }
-        if ((eosCount_ == preFilterCount_) || (videoIsEos && audioIsEos)) {
+        if (eventReceiver_ != nullptr && isCompleted) {
             eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
         }
     }
