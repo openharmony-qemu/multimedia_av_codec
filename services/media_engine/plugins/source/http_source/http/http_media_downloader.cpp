@@ -1852,6 +1852,8 @@ uint64_t HttpMediaDownloader::GetMemorySize()
         return 0;
     }
     return static_cast<uint64_t>(totalBufferSize_);
+}
+
 void HttpMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
 {
     isAutoSelectBitrate_.store(isAuto);
