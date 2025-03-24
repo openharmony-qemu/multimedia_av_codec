@@ -345,7 +345,7 @@ Status AudioCaptureModule::Read(uint8_t *cacheAudioData, size_t expectedLen)
     {
         AutoLock lock(captureMutex_);
         FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "Audio capture is null");
-        FALSE_RETURN_V_MSG_E(audioCapturer_->GetStatus() != AudioStandard::CAPTURER_RUNNING,
+        FALSE_RETURN_V_MSG_E(audioCapturer_->GetStatus() == AudioStandard::CAPTURER_RUNNING,
             Status::ERROR_AGAIN, "Audio capture Status error");
 
         size = audioCapturer_->Read(*cacheAudioData, expectedLen, true);
@@ -362,16 +362,16 @@ Status AudioCaptureModule::Read(uint8_t *cacheAudioData, size_t expectedLen)
 void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime)
 {
     MEDIA_LOG_I("AudioCaptureModule GetAudioTime");
-    bool ret = true;
+    int32_t ret = true;
     {
         AutoLock lock(captureMutex_);
         FALSE_RETURN_MSG(audioCapturer_ != nullptr, "Audio capture is null");
-        FALSE_RETURN_MSG(audioCapturer_->GetStatus() != AudioStandard::CAPTURER_RUNNING,
+        FALSE_RETURN_MSG(audioCapturer_->GetStatus() == AudioStandard::CAPTURER_RUNNING,
             "Audio capture Status error");
 
         AudioStandard::Timestamp timestamp;
         ret = audioCapturer_->GetAudioTimestampInfo(timestamp, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
-        FALSE_RETURN_MSG(ret == true, "audioCapturer GetAudioTime fail");
+        FALSE_RETURN_MSG(ret == 0, "audioCapturer GetAudioTime fail");
         audioDataTime = static_cast<int64_t>(timestamp.time.tv_sec) * AUDIO_NS_PER_SECOND
             + static_cast<int64_t>(timestamp.time.tv_nsec);
     }
