@@ -550,10 +550,37 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0020, TestSize.Level
 
 /**
  * @tc.number    : VIDEO_DECODE_H263_RESOLUTION_0030
- * @tc.name      : h263变分辨率，surface, nv21
+ * @tc.name      : h263变分辨率，buffer, nv12
  * @tc.desc      : function test
  */
 HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0030, TestSize.Level3)
+{
+    if (g_codecName263.find("H263") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profile0_0_2.h263";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        vDecSample->isH263Change = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName263));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(FRAMESIZE360, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_H263_RESOLUTION_0040
+ * @tc.name      : h263变分辨率，surface, nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0040, TestSize.Level3)
 {
     if (g_codecName263.find("H263") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -571,6 +598,51 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0030, TestSize.Level
     }
 }
 
+/**
+ * @tc.number    : VIDEO_DECODE_H263_RESOLUTION_0050
+ * @tc.name      : h263变分辨率，surface, nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0050, TestSize.Level3)
+{
+    if (g_codecName263.find("H263") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profile0_0_2.h263";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->isH263Change = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName263));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(FRAMESIZE360, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_H263_RESOLUTION_0060
+ * @tc.name      : h263变分辨率，surface, nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0060, TestSize.Level3)
+{
+    if (g_codecName263.find("H263") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profile0_0_0.h263";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->isH263Change = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName263));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(FRAMESIZE360, vDecSample->outFrameCount);
+    }
+}
 /**
  * @tc.number    : API11_SURF_CHANGE_FUNC_001
  * @tc.name      : surf model change in normal state
