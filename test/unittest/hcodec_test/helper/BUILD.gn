@@ -40,6 +40,7 @@ ohos_static_library("hcodec_test_helper") {
   external_deps = [
     "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_3.0",
+    "drivers_peripheral_codec:libcodec_hdi_omx_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
@@ -47,6 +48,5 @@ ohos_static_library("hcodec_test_helper") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "openmax:libopenmax_static",
-    "drivers_peripheral_codec:libcodec_hdi_omx_client",
   ]
 }
