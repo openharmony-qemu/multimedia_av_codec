@@ -31,6 +31,8 @@ private:
     std::vector<int32_t> GetSupportedFormat(const CodecHDI::CodecVideoPortCap& hdiVideoCap);
     std::map<ImgSize, Range> GetMeasuredFrameRate(const CodecHDI::CodecVideoPortCap& hdiVideoCap);
     void GetCodecProfileLevels(const CodecHDI::CodecCompCapability& hdiCap, CapabilityData& userCap);
+    void GetCodecVvcProfileLevels(const CodecHDI::CodecCompCapability& hdiCap, CapabilityData& userCap,
+                                  int32_t profile, int32_t maxLevel);
     bool IsSupportedVideoCodec(const CodecHDI::CodecCompCapability& hdiCap);
     void GetSupportedFeatureParam(const CodecHDI::CodecVideoPortCap& hdiVideoCap,
                                   CapabilityData& userCap);
