@@ -153,7 +153,9 @@ struct DemuxerPlugin : public PluginBase {
     virtual Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo) = 0;
     virtual Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) = 0;
     virtual Status GetIFramePos(std::vector<uint32_t> &IFramePos) = 0;
-    virtual Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) = 0;
+    virtual Status Dts2FrameId(int64_t dts, uint32_t &frameId) = 0;
+    virtual Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId) = 0;
+    virtual Status FrameId2SeekMs(uint32_t frameId, int64_t &seekMs) = 0;
 
     virtual Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
     {
