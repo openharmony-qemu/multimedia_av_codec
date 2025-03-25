@@ -229,6 +229,36 @@ Status FFmpegAACEncoderPlugin::Start()
     return Status::OK;
 }
 
+Status FFmpegAACEncoderPlugin::CheckInputSampleNum(const std::shared_ptr<AVBuffer> &inputBuffer)
+{
+    if (!isTranscoderMode_ || channels_ == 0) {
+        return Status::OK;
+    }
+ 
+    auto memory = inputBuffer->memory_;
+    int32_t bitCnt = sizeof(int16_t); // SAMPLE_S16LE bit count
+    if (audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
+        bitCnt = sizeof(int32_t); // SAMPLE_S32LE, SAMPLE_F32LE bit count
+    }
+    int32_t sampleNum = memory->GetSize() / bitCnt / channels_;
+    MEDIA_LOG_D("input sample number:%{public}d", sampleNum);
+    if (sampleNum > AAC_FRAME_SIZE) {
+        notSupportInputCnt_++;
+    } else {
+        notSupportInputCnt_ = 0;
+    }
+ 
+    if (notSupportInputCnt_ > 1) { // More than 1024 samples are input for two consecutive times.
+        MEDIA_LOG_E("too many samples input, report error");
+        std::shared_ptr<Plugins::PluginEvent> errorEvent = std::make_shared<Plugins::PluginEvent>();
+        errorEvent->type = PluginEventType::OTHER_ERROR;
+        errorEvent->description = "audio_other_error";
+        dataCallback_->OnEvent(errorEvent);
+        return Status::ERROR_INVALID_DATA;
+    }
+    return Status::OK;
+}
+
 Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     auto memory = inputBuffer->memory_;
@@ -237,6 +267,9 @@ Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
     }
     if (memory->GetSize() == 0 && !(inputBuffer->flag_ & BUFFER_FLAG_EOS)) {
         MEDIA_LOG_E("size is 0, but flag is not 1");
+        return Status::ERROR_INVALID_DATA;
+    }
+    if (CheckInputSampleNum(inputBuffer) != Status::OK) {
         return Status::ERROR_INVALID_DATA;
     }
     Status ret;
@@ -378,6 +411,8 @@ Status FFmpegAACEncoderPlugin::Reset()
 {
     MEDIA_LOG_I("Reset enter");
     std::lock_guard<std::mutex> lock(avMutex_);
+    notSupportInputCnt_ = 0;
+    isTranscoderMode_ = false;
     auto ret = CloseCtxLocked();
     prevPts_ = 0;
     return ret;
@@ -387,6 +422,8 @@ Status FFmpegAACEncoderPlugin::Release()
 {
     MEDIA_LOG_I("Release enter");
     std::lock_guard<std::mutex> lock(avMutex_);
+    notSupportInputCnt_ = 0;
+    isTranscoderMode_ = false;
     auto ret = CloseCtxLocked();
     return ret;
 }
@@ -399,6 +436,7 @@ Status FFmpegAACEncoderPlugin::Flush()
         avcodec_flush_buffers(avCodecContext_.get());
     }
     prevPts_ = 0;
+    notSupportInputCnt_ = 0;
     if (fifo_) {
         av_audio_fifo_reset(fifo_);
     }
@@ -775,6 +813,13 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
 
 Status FFmpegAACEncoderPlugin::Prepare()
 {
+    return Status::OK;
+}
+
+Status FFmpegAACEncoderPlugin::SetTranscoderMode()
+{
+    isTranscoderMode_ = true;
+    MEDIA_LOG_I("SetTranscodeMode done");
     return Status::OK;
 }
 

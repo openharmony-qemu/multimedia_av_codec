@@ -18,6 +18,7 @@
 
 #include <cstring>
 #include "filter/filter.h"
+#include "media_codec/media_codec.h"
 
 namespace OHOS {
 namespace Media {
@@ -54,6 +55,7 @@ public:
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
+    void OnError();
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -70,6 +72,7 @@ private:
     std::shared_ptr<FilterCallback> filterCallback_;
 
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
+    std::shared_ptr<AudioBaseCodecCallback> cb_;
 
     std::shared_ptr<MediaCodec> mediaCodec_;
 
@@ -78,7 +81,7 @@ private:
 
     std::shared_ptr<Filter> nextFilter_;
     std::string bundleName_;
-    std::shared_ptr<Meta> meta_;
+    std::shared_ptr<Meta> transcoderMeta_ {nullptr};
     bool isTranscoderMode_ {false};
     uint64_t instanceId_{0};
     int32_t appUid_ {0};

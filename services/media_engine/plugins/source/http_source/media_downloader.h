@@ -91,6 +91,11 @@ public:
         MEDIA_LOG_E("SelectBitRate is unimplemented.");
         return false;
     }
+    virtual bool AutoSelectBitRate(uint32_t bitRate)
+    {
+        MEDIA_LOG_E("AutoSelectBitRate is unimplemented.");
+        return false;
+    }
     virtual void SetIsTriggerAutoMode(bool isAuto)
     {
         MEDIA_LOG_E("SetIsTriggerAutoMode is unimplemented.");
@@ -158,7 +163,7 @@ public:
         return false;
     }
 
-    virtual bool isNotRetry(const std::shared_ptr<DownloadRequest>& request)
+    virtual bool IsNotRetry(const std::shared_ptr<DownloadRequest>& request)
     {
         return false;
     }

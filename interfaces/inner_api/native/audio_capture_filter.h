@@ -15,6 +15,7 @@
 #ifndef FILTERS_AUDIO_CAPTURE_FILTER_H
 #define FILTERS_AUDIO_CAPTURE_FILTER_H
 
+#include <deque>
 #include "filter/filter.h"
 #include "common/status.h"
 #include "osal/task/task.h"
@@ -60,12 +61,17 @@ public:
         const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback);
     Status GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo);
     int32_t GetMaxAmplitude();
+    void SetVideoFirstFramePts(int64_t firstFramePts);
+    void SetWithVideo(bool withVideo);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
 private:
     void ReadLoop();
     Status PrepareAudioCapture();
     std::shared_ptr<Task> taskPtr_{nullptr};
     int32_t RelativeSleep(int64_t nanoTime);
+    void GetCurrentTime(int64_t &currentTime);
+    void RecordCachedData();
+    void RecordAudioFrame();
     std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_{nullptr};
     sptr<AVBufferQueueProducer> outputBufferQueue_;
     AudioStandard::SourceType sourceType_ = AudioStandard::SourceType::SOURCE_TYPE_INVALID;
@@ -80,6 +86,10 @@ private:
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
     int32_t appPid_ {0};
+    bool withVideo_ {true};
+    std::atomic<int64_t> firstAudioFramePts_{-1};
+    std::atomic<int64_t> firstVideoFramePts_{-1};
+    std::deque<std::shared_ptr<uint8_t>> cachedAudioData_;
 };
 } // namespace Pipeline
 } // namespace Media

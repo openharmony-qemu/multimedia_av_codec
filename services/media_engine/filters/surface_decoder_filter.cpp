@@ -349,6 +349,7 @@ Status SurfaceDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<M
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
     MEDIA_LOG_I("OnLinked enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
     mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
+    FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     bool isHdr = false;
     meta->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdr);
     Status ret = mediaCodec_->Init(codecMimeType_, isHdr);
@@ -387,6 +388,7 @@ Status SurfaceDecoderFilter::OnUnLinked(StreamType inType, const std::shared_ptr
 void SurfaceDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
     std::shared_ptr<Meta> &meta)
 {
+    FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec is nullptr");
     MEDIA_LOG_I("OnLinkedResult");
     (void) meta;
     if (onLinkedResultCallback_) {

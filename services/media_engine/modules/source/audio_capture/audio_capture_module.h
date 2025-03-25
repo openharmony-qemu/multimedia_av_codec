@@ -49,6 +49,8 @@ public:
     Status GetParameter(std::shared_ptr<Meta> &meta);
     Status SetParameter(const std::shared_ptr<Meta> &meta);
     Status Read(std::shared_ptr<AVBuffer> &buffer, size_t expectedLen);
+    Status Read(uint8_t *cacheAudioData, size_t expectedLen);
+    void GetAudioTime(int64_t &audioDataTime);
     Status GetSize(uint64_t &size);
     Status SetAudioInterruptListener(const std::shared_ptr<AudioCaptureModuleCallback> &callback);
     Status SetAudioCapturerInfoChangeCallback(

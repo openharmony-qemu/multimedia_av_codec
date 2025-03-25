@@ -20,7 +20,7 @@
 #include <thread>
 #include "syspara/parameters.h" // base/startup/init/interfaces/innerkits/include/
 #include "qos.h"
-#include "utils/hdf_base.h"
+#include "hdf_base.h"
 #include "codec_omx_ext.h"
 #include "hcodec_list.h"
 #include "hencoder.h"
@@ -29,12 +29,6 @@
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "hcodec_utils.h"
-#include "av_hardware_memory.h"
-#include "av_hardware_allocator.h"
-#include "av_shared_memory_ext.h"
-#include "av_shared_allocator.h"
-#include "av_surface_memory.h"
-#include "av_surface_allocator.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -979,7 +973,8 @@ int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
 {
     SCOPED_TRACE_FMT("id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
     if (!gotFirstInput_) {
-        HLOGI("got first input, id: %d, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
+        HLOGI("got first input, pts = %" PRId64 ", len = %u, flags = 0x%x",
+            info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
         gotFirstInput_ = true;
     }
 #ifdef BUILD_ENG_VERSION
@@ -1069,7 +1064,8 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     SCOPED_TRACE_FMT("id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
     if (!gotFirstOutput_) {
-        HLOGI("got first output id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
+        HLOGI("got first output, pts = %" PRId64 ", len = %u, flags = 0x%x",
+            info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
 #ifndef AV_CODEC_HCODEC_ENABLE_QOS_THE_WHOLE_TIME
         OHOS::QOS::ResetThreadQos();
 #endif

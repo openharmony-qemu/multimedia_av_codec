@@ -48,7 +48,8 @@ public:
     HdiCodecInner() = default;
     ~HdiCodecInner() = default;
 
-    std::shared_ptr<HdiCodecInner> GetSharedPtr() {
+    std::shared_ptr<HdiCodecInner> GetSharedPtr()
+    {
         return std::static_pointer_cast<HdiCodecInner>(shared_from_this());
     }
 

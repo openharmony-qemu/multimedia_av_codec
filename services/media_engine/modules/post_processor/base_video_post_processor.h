@@ -51,6 +51,10 @@ public:
     virtual Status Stop() = 0;
     virtual Status Start() = 0;
     virtual Status Release() = 0;
+    virtual Status NotifyEos()
+    {
+        return Status::OK;
+    }
 
     virtual sptr<Surface> GetInputSurface() = 0;
     virtual Status SetOutputSurface(sptr<Surface> surface) = 0;

@@ -36,7 +36,7 @@ using namespace OHOS::HDI::Codec::V3_0;
 
 const std::string LBVC_DECODER_COMPONENT_NAME = "OMX.audio.decoder.lbvc";
 constexpr uint32_t OMX_AUDIO_CODEC_PARAM_INDEX = 0x6F000000 + 0x00A0000B;
-uint32_t bufferSize = 8192;
+uint32_t g_bufferSize = 8192;
 CapabilityData audioLbvcCapability;
 
 class AudioHdiCodecInnerUnitTest : public testing::Test {
@@ -46,7 +46,7 @@ public:
     void SetUp();
     void TearDown();
     std::shared_ptr<Hdi::HdiCodec> hdiCodec_;
-    std::shared_ptr<HdiCodecInner> hdiCodecInner_; 
+    std::shared_ptr<HdiCodecInner> hdiCodecInner_;
 };
 
 void AudioHdiCodecInnerUnitTest::SetUpTestCase(void)
@@ -162,7 +162,7 @@ HWTEST_F(AudioHdiCodecInnerUnitTest, IsSupportCodecType_002, TestSize.Level1)
 HWTEST_F(AudioHdiCodecInnerUnitTest, InitBuffersByPort_001, TestSize.Level1)
 {
     hdiCodecInner_->InitComponent(LBVC_DECODER_COMPONENT_NAME);
-    Status ret = hdiCodecInner_->InitBuffers(bufferSize);
+    Status ret = hdiCodecInner_->InitBuffers(g_bufferSize);
     EXPECT_EQ(Status::OK, ret);
 }
 
@@ -174,7 +174,7 @@ HWTEST_F(AudioHdiCodecInnerUnitTest, InitBuffersByPort_001, TestSize.Level1)
 HWTEST_F(AudioHdiCodecInnerUnitTest, FreeBuffer_001, TestSize.Level1)
 {
     hdiCodecInner_->InitComponent(LBVC_DECODER_COMPONENT_NAME);
-    Status ret = hdiCodecInner_->InitBuffers(bufferSize);
+    Status ret = hdiCodecInner_->InitBuffers(g_bufferSize);
     EXPECT_EQ(Status::OK, ret);
     ret = hdiCodecInner_->Reset();
     EXPECT_EQ(Status::OK, ret);
@@ -223,7 +223,6 @@ HWTEST_F(AudioHdiCodecInnerUnitTest, Release_002, TestSize.Level1)
     EXPECT_GT(componentId, 0);
     hdiCodecInner_->Release();
     EXPECT_EQ(compMgr, nullptr);
-    
 }
 
 /**

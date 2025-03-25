@@ -252,7 +252,7 @@ void SampleQueue::CopyMeta(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr
 
     uint32_t trackId = INVALID_TRACK_ID;
     if (!dstBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, trackId)) {
-        MEDIA_LOG_I("trackId not found");
+        MEDIA_LOG_D("trackId not found");
     }
 
     dstBuffer->meta_ = std::make_shared<Meta>(*(srcBuffer->meta_));
@@ -263,9 +263,6 @@ void SampleQueue::CopyMeta(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr
     if (trackId != INVALID_TRACK_ID) {
         dstBuffer->meta_->SetData(Tag::REGULAR_TRACK_ID, trackId);
     }
-    MEDIA_LOG_D(PUBLIC_LOG_S " after copy dstBuffer  meta=" PUBLIC_LOG_S,
-        config_.queueName_.c_str(),
-        StringifyMeta(dstBuffer->meta_).c_str());
 }
 
 Status SampleQueue::CopyAVMemory(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer)

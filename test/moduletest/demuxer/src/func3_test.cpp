@@ -410,6 +410,96 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0050, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : DEMUXER_FUNCTION_FLV_0060
+ * @tc.name      : create source with fd, aac_h264.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0060, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/aac_h264.flv";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 528);
+    ASSERT_EQ(vKeyCount, 2);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_FLV_0070
+ * @tc.name      : create source with fd, aac_h265.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_FLV_0070, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/aac_h265.flv";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 526);
+    ASSERT_EQ(vKeyCount, 2);
+    close(fd);
+}
+
+/**
  * @tc.number    : DEMUXER_META_0010
  * @tc.name      : demuxer meta info, get value with right key
  * @tc.desc      : function test
@@ -679,5 +769,727 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_META_0100, TestSize.Level2)
     int32_t intValue = 2147483647;
     ASSERT_TRUE(OH_AVFormat_GetIntValue(metaFormat, "com.openharmony.intval.aaaa", &metaIntValue));
     ASSERT_EQ(metaIntValue, intValue);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MKV_0010
+ * @tc.name      : create source with fd, aac_h265.mkv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_MKV_0010, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/aac_h265.mkv";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 526);
+    ASSERT_EQ(vKeyCount, 2);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MKV_0020
+ * @tc.name      : create source with fd, mp3_h264.mkv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_MKV_0020, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/mp3_h264.mkv";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 468);
+    ASSERT_EQ(vKeyCount, 2);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MKV_0030
+ * @tc.name      : create source with fd, mp3_h265.mkv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_MKV_0030, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/mp3_h265.mkv";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 468);
+    ASSERT_EQ(vKeyCount, 2);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MKV_0040
+ * @tc.name      : create source with fd, opus_h264.mkv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_MKV_0040, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/opus_h264.mkv";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 610);
+    ASSERT_EQ(vKeyCount, 2);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MKV_0050
+ * @tc.name      : create source with fd, opus_h265.mkv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_MKV_0050, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/opus_h265.mkv";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 610);
+    ASSERT_EQ(vKeyCount, 2);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MP4_0010
+ * @tc.name      : create source with fd, aac_mpeg4.mp4
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_MP4_0010, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/aac_mpeg4.mp4";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 528);
+    ASSERT_EQ(vKeyCount, 31);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MP4_0020
+ * @tc.name      : create source with fd, mp3_h264.mp4
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_MP4_0020, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/mp3_h264.mp4";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 468);
+    ASSERT_EQ(vKeyCount, 2);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MP4_0030
+ * @tc.name      : create source with fd, mp3_h265.mp4
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_MP4_0030, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/mp3_h265.mp4";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 468);
+    ASSERT_EQ(vKeyCount, 2);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MP4_0040
+ * @tc.name      : create source with fd, aac_mpeg4_subtitle.mp4
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_MP4_0040, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/aac_mpeg4_subtitle.mp4";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 3, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 528);
+    ASSERT_EQ(vKeyCount, 31);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MP4_0050
+ * @tc.name      : create source with fd, mp3_h265_fmp4.mp4
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_MP4_0050, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/mp3_h265_fmp4.mp4";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 468);
+    ASSERT_EQ(vKeyCount, 2);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_TS_0010
+ * @tc.name      : create source with fd, aac_h265.ts
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_TS_0010, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/aac_h265.ts";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 526);
+    if (!access("/system/lib64/media/", 0)) {
+        ASSERT_EQ(vKeyCount, 2);
+    }
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_TS_0020
+ * @tc.name      : create source with fd, aac_mpeg2.ts
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_TS_0020, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/aac_mpeg2.ts";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 528);
+    ASSERT_EQ(vKeyCount, 31);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_TS_0030
+ * @tc.name      : create source with fd, aac_mpeg4.ts
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_TS_0030, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/aac_mpeg4.ts";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 528);
+    ASSERT_EQ(vKeyCount, 31);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_TS_0040
+ * @tc.name      : create source with fd, mp3_h264.ts
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_TS_0040, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/mp3_h264.ts";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 468);
+    ASSERT_EQ(vKeyCount, 2);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_TS_0050
+ * @tc.name      : create source with fd, mp3_mpeg2.ts
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_TS_0050, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/mp3_mpeg2.ts";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 468);
+    ASSERT_EQ(vKeyCount, 31);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_TS_0060
+ * @tc.name      : create source with fd, mp3_mpeg4.ts
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_TS_0060, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/mp3_mpeg4.ts";
+    int fd = 0;
+    bool initResult = false;
+    InitFile(file, 2, fd, initResult);
+    ASSERT_TRUE(initResult);
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(aKeyCount, 468);
+    ASSERT_EQ(vKeyCount, 31);
     close(fd);
 }

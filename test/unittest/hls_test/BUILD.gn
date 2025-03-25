@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-module_output_path = "av_codec/unittest"
+module_output_path = "av_codec/av_codec/unittest"
 
 hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
@@ -96,6 +96,7 @@ ohos_unittest("hls_media_downloader_unit_test") {
     "hilog:libhilog",
     "init:libbegetutil",
     "ipc:ipc_single",
+    "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
@@ -123,6 +124,7 @@ ohos_unittest("hls_playlist_downloader_unit_test") {
     "hilog:libhilog",
     "init:libbegetutil",
     "ipc:ipc_single",
+    "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
@@ -150,6 +152,7 @@ ohos_unittest("hls_tags_unit_test") {
     "hilog:libhilog",
     "init:libbegetutil",
     "ipc:ipc_single",
+    "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
@@ -177,6 +180,7 @@ ohos_unittest("m3u8_unit_test") {
     "hilog:libhilog",
     "init:libbegetutil",
     "ipc:ipc_single",
+    "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
