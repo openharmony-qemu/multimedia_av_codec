@@ -214,6 +214,12 @@ bool StreamParserManager::CheckSymbol(void *handler, StreamType streamType)
     }
     return false;
 }
+
+std::vector<uint8_t> StreamParserManager::GetLogInfo()
+{
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, {}, "Stream parser is nullptr");
+    return streamParser_->GetLogInfo();
+}
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS

@@ -38,6 +38,7 @@ constexpr int32_t TEST_ROTATION = 90;
 constexpr int32_t INVALID_FORMAT = -99;
 const std::string TEST_FILE_PATH = "/data/test/media/";
 const std::string INPUT_FILE_PATH = "/data/test/media/h264_720_480.dat";
+const std::string LOGINFO_INPUT_FILE_PATH = "/data/test/media/h265_logInfo.dat";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 constexpr uint32_t AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT_TEST = 1 << 6;
 const std::string TIMED_METADATA_TRACK_MIMETYPE = "meta/timed-metadata";
@@ -1509,6 +1510,53 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_004, TestSize.Level0)
     ASSERT_EQ(ret, 0);
 
     OH_AVBuffer_Destroy(buffer);
+}
+
+/**
+ * @tc.name: Muxer_Hevc_WriteSample_005
+ * @tc.desc: Muxer Hevc Write Sample include sei logInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_005, TestSize.Level0)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_H265_logInfo.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
+
+    int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    inputFile_ = std::make_shared<std::ifstream>(LOGINFO_INPUT_FILE_PATH, std::ios::binary);
+
+    int32_t extSize = 0;
+    inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+    std::cout << "extSize :" << extSize << std::endl;
+    if (extSize > 0) {
+        std::vector<uint8_t> buffer(extSize);
+        inputFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+    }
+
+    bool eosFlag = false;
+    uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
+    ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+    std::cout << "ret :" << ret << ",eosFlag:" << eosFlag << ",flag:"<< flag << std::endl;
+    while (!eosFlag && (ret == 0)) {
+        ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+    }
+    ASSERT_EQ(ret, 0);
 }
 
 /**
