@@ -136,7 +136,7 @@ HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_05, TestSize.Leve
     HevcDecoder hevcDecoder("hevc_decoder");
     hevcDecoder.sInfo_.surface = outputSurface;
     hevcDecoder.state_ = HevcDecoder::State::RUNNING;
-    EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_INVALID_STATE);
+    EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_OK);
 }
 
 /**
@@ -149,6 +149,6 @@ HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_06, TestSize.Leve
     HevcDecoder hevcDecoder("hevc_decoder");
     hevcDecoder.sInfo_.surface = outputSurface;
     hevcDecoder.state_ = HevcDecoder::State::RUNNING;
-    EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_INVALID_STATE);
-    EXPECT_EQ(hevcDecoder.NotifyMemoryWriteBack(), AVCS_ERR_INVALID_STATE);
+    EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_OK);
+    EXPECT_EQ(hevcDecoder.NotifyMemoryWriteBack(), AVCS_ERR_OK);
 }

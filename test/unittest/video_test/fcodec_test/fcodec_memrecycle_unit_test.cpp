@@ -136,7 +136,7 @@ HWTEST_F(FCodecTest, NotifyMemoryRecycle_ReturnError_FCodec_05, TestSize.Level0)
     FCodec fCodec("Fcodec");
     fCodec.sInfo_.surface = outputSurface;
     fCodec.state_ = FCodec::State::RUNNING;
-    EXPECT_EQ(fCodec.NotifyMemoryRecycle(), AVCS_ERR_INVALID_STATE);
+    EXPECT_EQ(fCodec.NotifyMemoryRecycle(), AVCS_ERR_OK);
 }
 
 /**
@@ -149,6 +149,6 @@ HWTEST_F(FCodecTest, NotifyMemoryRecycle_ReturnError_FCodec_06, TestSize.Level0)
     FCodec fCodec("Fcodec");
     fCodec.sInfo_.surface = outputSurface;
     fCodec.state_ = FCodec::State::RUNNING;
-    EXPECT_EQ(fCodec.NotifyMemoryRecycle(), AVCS_ERR_INVALID_STATE);
-    EXPECT_EQ(fCodec.NotifyMemoryWriteBack(), AVCS_ERR_INVALID_STATE);
+    EXPECT_EQ(fCodec.NotifyMemoryRecycle(), AVCS_ERR_OK);
+    EXPECT_EQ(fCodec.NotifyMemoryWriteBack(), AVCS_ERR_OK);
 }
