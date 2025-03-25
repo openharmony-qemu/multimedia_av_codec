@@ -59,7 +59,7 @@ static sptr<Surface> GetSurface()
 
 class HevcDecoderTest : public ::testing::Test {
 protected:
-    void SetUUp()
+    void SetUp()
     {
         std::cout << "[SetUp]: SetUp!!!" << std::endl;
         outputSurface = GetSurface();
