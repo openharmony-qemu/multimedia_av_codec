@@ -83,7 +83,7 @@ HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_01, TestSize.Leve
     Format format;
     EXPECT_EQ(hevcDecoder.Configure(format), AVCS_ERR_OK);
     hevcDecoder.state_ = HevcDecoder::State::RUNNING;
-    EXPECT_EQ(hevcDecoder.Start(), AVCS_ERR_OK);
+    EXPECT_EQ(hevcDecoder.AllocateBuffers(), AVCS_ERR_OK);
     EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_UNKNOWN);
     hevcDecoder.Release();
 }

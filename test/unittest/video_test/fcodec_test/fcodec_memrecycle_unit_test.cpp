@@ -84,7 +84,7 @@ HWTEST_F(FCodecTest, NotifyMemoryRecycle_ReturnError_FCodec_01, TestSize.Level0)
     Format format;
     EXPECT_EQ(fCodec.Configure(format), AVCS_ERR_OK);
     fCodec.state_ = FCodec::State::RUNNING;
-    EXPECT_EQ(fCodec.Start(), AVCS_ERR_OK);
+    EXPECT_EQ(fCodec.AllocateBuffers(), AVCS_ERR_OK);
     EXPECT_EQ(fCodec.NotifyMemoryRecycle(), AVCS_ERR_UNKNOWN);
     fCodec.Release();
 }
