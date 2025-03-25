@@ -260,7 +260,7 @@ void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, Capabi
             optional<int32_t> innerLevelVvc;
             innerProfileVvc = TypeConverter::OmxVvcProfileToInnerProfile(static_cast<CodecVvcProfile>(profile));
             innerLevelVvc = TypeConverter::OmxVvcLevelToInnerLevel(static_cast<CodecVvcLevel>(maxLevel));
-            if (!innerProfileVvc.has_value() || !innerLevelVvc.has_value() || innerLevelVvc.value() < 0) {
+            if ((!innerProfileVvc.has_value()) || (!innerLevelVvc.has_value()) || innerLevelVvc.value() < 0) {
                 return;
             }
             userCap.profiles.emplace_back(innerProfileVvc.value());
