@@ -590,7 +590,7 @@ ohos_unittest("videodec_memrecycle_unit_test") {
   ]
   deps = [
       "$av_codec_root_dir/services/engine/codec/video/hevcdecoder:hevc_decoder"
-    ]
+  ]
   sources = [ "./videodec_memrecycle_unit_test.cpp" ]
   public_deps = [ "./stable_sample:video_sample" ]
   resource_config_file =
