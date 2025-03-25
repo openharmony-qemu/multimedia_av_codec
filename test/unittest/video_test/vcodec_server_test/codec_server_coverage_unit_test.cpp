@@ -1132,7 +1132,6 @@ HWTEST_F(CodecServerUnitTest, OnError_Valid_Test_001, TestSize.Level1)
     AVCodecErrorType errorType = AVCODEC_ERROR_INTERNAL;
     int32_t errorCode = AVCS_ERR_OK;
     codecBaseCallback->OnError(errorType, errorCode);
-    EXPECT_EQ(errorCode, AVCS_ERR_OK);
 }
 
 /**
