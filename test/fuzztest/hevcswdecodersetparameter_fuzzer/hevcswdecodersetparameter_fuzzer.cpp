@@ -46,7 +46,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     int32_t intData = fdp.ConsumeIntegral<int32_t>();
     int64_t longData = fdp.ConsumeIntegral<int64_t>();
-    double doubleData = fdp.ConsumeFloatingPoint();
+    double doubleData = fdp.ConsumeFloatingPoint<double>();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, intData);
