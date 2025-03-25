@@ -234,7 +234,7 @@ map<ImgSize, Range> HCodecList::GetMeasuredFrameRate(const CodecVideoPortCap& hd
 }
 
 void HCodecList::GetCodecVvcProfileLevels(const CodecHDI::CodecCompCapability& hdiCap, CapabilityData& userCap,
-                                          int32_t profile, int32_t maxLevel)    
+                                          int32_t profile, int32_t maxLevel)
 {
     optional<int32_t> innerProfileVvc;
     optional<int32_t> innerLevelVvc;
