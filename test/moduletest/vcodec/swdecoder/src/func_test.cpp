@@ -58,14 +58,14 @@ protected:
 
 namespace {
 static OH_AVCapability *cap_avc = nullptr;
-static string g_codecName_avc = "";
+static string g_codecNameAvc = "";
 } // namespace
 
 void SwdecFuncNdkTest::SetUpTestCase()
 {
     cap_avc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
-    g_codecName_avc = OH_AVCapability_GetName(cap_avc);
-    cout << "g_codecName_avc: " << g_codecName_avc << endl;
+    g_codecNameAvc = OH_AVCapability_GetName(cap_avc);
+    cout << "g_codecNameAvc: " << g_codecNameAvc << endl;
 }
 
 void SwdecFuncNdkTest::TearDownTestCase() {}
@@ -90,7 +90,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level0)
         vDecSample->autoSwitchSurface = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->sleepOnFPS = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
         ASSERT_EQ(AV_ERR_INVALID_STATE, vDecSample->SwitchSurface());
@@ -114,7 +114,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level0)
         vDecSample->SURFACE_OUTPUT = true;
         vDecSample->autoSwitchSurface = true;
         vDecSample->sleepOnFPS = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
         ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
@@ -137,7 +137,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level0)
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
@@ -160,7 +160,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level0)
         vDecSample->SURFACE_OUTPUT = true;
         vDecSample->autoSwitchSurface = true;
         vDecSample->sleepOnFPS = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
         vDecSample->WaitForEOS();
     }
@@ -183,7 +183,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level0)
         vDecSample->autoSwitchSurface = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->sleepOnFPS = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
         ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
@@ -207,7 +207,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level0)
         vDecSample->autoSwitchSurface = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->sleepOnFPS = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
     }
@@ -229,7 +229,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level0)
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
@@ -252,7 +252,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level0)
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
@@ -275,7 +275,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level0)
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
         ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
@@ -299,7 +299,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level0)
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
         ASSERT_EQ(AV_ERR_INVALID_STATE, vDecSample->SwitchSurface());
@@ -324,7 +324,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level1)
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
         vDecSample->WaitForEOS();
@@ -348,7 +348,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level1)
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_avc));;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));;
         ASSERT_EQ(AV_ERR_INVALID_STATE, vDecSample->SwitchSurface());
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
@@ -371,7 +371,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_015, TestSize.Level0)
         vDecSample->SURFACE_OUTPUT = true;
         vDecSample->autoSwitchSurface = true;
         vDecSample->sleepOnFPS = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
         vDecSample->WaitForEOS();
 
@@ -383,7 +383,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_015, TestSize.Level0)
         vDecSample_1->SURFACE_OUTPUT = true;
         vDecSample_1->autoSwitchSurface = true;
         vDecSample_1->sleepOnFPS = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample_1->RunVideoDec_Surface(g_codecName_avc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample_1->RunVideoDec_Surface(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vDecSample_1->SwitchSurface());
         vDecSample_1->WaitForEOS();
     }
@@ -406,7 +406,7 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_016, TestSize.Level0)
             vDecSample->SURFACE_OUTPUT = true;
             vDecSample->autoSwitchSurface = true;
             vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_avc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
             ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
             vDecSample->WaitForEOS();
         }
