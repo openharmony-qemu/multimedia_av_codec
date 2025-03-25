@@ -233,25 +233,6 @@ map<ImgSize, Range> HCodecList::GetMeasuredFrameRate(const CodecVideoPortCap& hd
     return userRateMap;
 }
 
-void HCodecList::GetCodecVvcProfileLevels(const CodecHDI::CodecCompCapability& hdiCap, CapabilityData& userCap,
-                                          int32_t profile, int32_t maxLevel)
-{
-    optional<int32_t> innerProfileVvc;
-    optional<int32_t> innerLevelVvc;
-    innerProfileVvc = TypeConverter::OmxVvcProfileToInnerProfile(static_cast<CodecVvcProfile>(profile));
-    innerLevelVvc = TypeConverter::OmxVvcLevelToInnerLevel(static_cast<CodecVvcLevel>(maxLevel));
-    if (innerProfileVvc.has_value() && innerLevelVvc.has_value() && innerLevelVvc.value() >= 0) {
-        userCap.profiles.emplace_back(innerProfileVvc.value());
-        optional<vector<int32_t>> allLevel =
-            TypeConverter::InnerVvcMaxLevelToAllLevels(static_cast<VVCLevel>(innerLevelVvc.value()));
-        if (allLevel.has_value()) {
-            userCap.profileLevelsMap[innerProfileVvc.value()] = allLevel.value();
-        }
-        LOGI("role %d support (inner) profile %d and level up to %d",
-            hdiCap.role, innerProfileVvc.value(), innerLevelVvc.value());
-    }
-}
-
 void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, CapabilityData& userCap)
 {
     for (size_t i = 0; i + 1 < hdiCap.supportProfiles.size(); i += 2) { // 2 means profile & level pair
@@ -275,7 +256,21 @@ void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, Capabi
                 hdiCap.role, innerProfile.value(), innerLevel.value());
         }
         if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_VVC) {
-            GetCodecVvcProfileLevels(hdiCap, userCap, profile, maxLevel);
+            optional<int32_t> innerProfileVvc;
+            optional<int32_t> innerLevelVvc;
+            innerProfileVvc = TypeConverter::OmxVvcProfileToInnerProfile(static_cast<CodecVvcProfile>(profile));
+            innerLevelVvc = TypeConverter::OmxVvcLevelToInnerLevel(static_cast<CodecVvcLevel>(maxLevel));
+            if (!innerProfileVvc.has_value() || !innerLevelVvc.has_value() || innerLevelVvc.value() < 0) {
+                return;
+            }
+            userCap.profiles.emplace_back(innerProfileVvc.value());
+            optional<vector<int32_t>> allLevel =
+                TypeConverter::InnerVvcMaxLevelToAllLevels(static_cast<VVCLevel>(innerLevelVvc.value()));
+            if (allLevel.has_value()) {
+                userCap.profileLevelsMap[innerProfileVvc.value()] = allLevel.value();;
+            }
+            LOGI("role %d support (inner) profile %d and level up to %d",
+                hdiCap.role, innerProfileVvc.value(), innerLevelVvc.value());
         }
     }
 }
