@@ -15,8 +15,8 @@ using namespace OHOS::MediaAVCodec::Codec;
 class TestConsumerListener:public IBufferConsumerListener
 {
 public:
-    IBufferConsumerListener(sptr<Surface> cs, std::string_view name);
-    ~IBufferConsumerListener();
+    TestConsumerListener(sptr<Surface> cs, std::string_view name);
+    ~TestConsumerListener();
     void OnBufferAvailable() override;
 
 private:
@@ -29,7 +29,7 @@ private:
 TestConsumerListener::TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs_(cs)
 {
     outFile_ = std::make_unique<std::ofstream>();
-    outFile_->open(name.data(), std::ios::out | std::ios::binary)；
+    outFile_->open(name.data(), std::ios::out | std::ios::binary);
 }
 
 TestConsumerListener::~TestConsumerListener()
@@ -39,14 +39,14 @@ TestConsumerListener::~TestConsumerListener()
     }
 }
 
-TestConsumerListener::OnBufferAvailable()
+void TestConsumerListener::OnBufferAvailable()
 {
     sptr<SurfaceBuffer> buffer;
     int32_t flushFence;
 
     cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
-    (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr(), buffer->GetSize()));
+    (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
     cs_->ReleaseBuffer(buffer, -1);
 }
 
@@ -65,17 +65,17 @@ protected:
     void Setup()
     {
         std::cout << "[SetUp]: SetUp!!!" << std::endl;
-        SetOutputSurface = GetSurface();
+        outputSurface = GetSurface();
     }
 
     void TearDown()
     {
         std::cout << "[TearDown]: over!!!" << std::endl;
-        SetOutputSurface = nullptr;
+        outputSurface = nullptr;
     }
 
     sptr<Surface> outputSurface;
-}
+};
 
 /**
  * @tc.name  : MemoryRecycleTest
@@ -84,7 +84,7 @@ protected:
  */
 HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_01, TestSize.Level0)
 {
-    HevcDecoder hevcDecoder(hevc_decoder);
+    HevcDecoder hevcDecoder("hevc_decoder");
     Format format;
     EXPECT_EQ(hevcDecoder.Configure(format), AVCS_ERR_OK);
     hevcDecoder.state_ = HevcDecoder::State::RUNNING;
@@ -100,7 +100,7 @@ HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_01, TestSize.Leve
  */
 HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_02, TestSize.Level0)
 {
-    HevcDecoder hevcDecoder(hevc_decoder);
+    HevcDecoder hevcDecoder("hevc_decoder");
     EXPECT_EQ(hevcDecoder.NotifyMemoryWriteBack(), AVCS_ERR_UNKNOWN);
 }
 
@@ -111,7 +111,7 @@ HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_02, TestSize.Leve
  */
 HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_03, TestSize.Level0)
 {
-    HevcDecoder hevcDecoder(hevc_decoder);
+    HevcDecoder hevcDecoder("hevc_decoder");
     hevcDecoder.sInfo_.surface = outputSurface;
     EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_INVALID_STATE);
 }
@@ -123,7 +123,7 @@ HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_03, TestSize.Leve
  */
 HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_04, TestSize.Level0)
 {
-    HevcDecoder hevcDecoder(hevc_decoder);
+    HevcDecoder hevcDecoder("hevc_decoder");
     hevcDecoder.sInfo_.surface = outputSurface;
     hevcDecoder.state_ = HevcDecoder::State::RUNNING;
     EXPECT_EQ(hevcDecoder.NotifyMemoryWriteBack(), AVCS_ERR_INVALID_STATE);
@@ -136,7 +136,7 @@ HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_04, TestSize.Leve
  */
 HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_05, TestSize.Level0)
 {
-    HevcDecoder hevcDecoder(hevc_decoder);
+    HevcDecoder hevcDecoder("hevc_decoder");
     hevcDecoder.sInfo_.surface = outputSurface;
     hevcDecoder.state_ = HevcDecoder::State::RUNNING;
     EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_INVALID_STATE);
@@ -149,7 +149,7 @@ HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_05, TestSize.Leve
  */
 HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_06, TestSize.Level0)
 {
-    HevcDecoder hevcDecoder(hevc_decoder);
+    HevcDecoder hevcDecoder("hevc_decoder");
     hevcDecoder.sInfo_.surface = outputSurface;
     hevcDecoder.state_ = HevcDecoder::State::RUNNING;
     EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_INVALID_STATE);

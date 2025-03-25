@@ -15,8 +15,8 @@ using namespace OHOS::MediaAVCodec::Codec;
 class TestConsumerListener:public IBufferConsumerListener
 {
 public:
-    IBufferConsumerListener(sptr<Surface> cs, std::string_view name);
-    ~IBufferConsumerListener();
+    TestConsumerListener(sptr<Surface> cs, std::string_view name);
+    ~TestConsumerListener();
     void OnBufferAvailable() override;
 
 private:
@@ -29,7 +29,7 @@ private:
 TestConsumerListener::TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs_(cs)
 {
     outFile_ = std::make_unique<std::ofstream>();
-    outFile_->open(name.data(), std::ios::out | std::ios::binary)；
+    outFile_->open(name.data(), std::ios::out | std::ios::binary);
 }
 
 TestConsumerListener::~TestConsumerListener()
@@ -39,14 +39,14 @@ TestConsumerListener::~TestConsumerListener()
     }
 }
 
-TestConsumerListener::OnBufferAvailable()
+void TestConsumerListener::OnBufferAvailable()
 {
     sptr<SurfaceBuffer> buffer;
     int32_t flushFence;
 
     cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
-    (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr(), buffer->GetSize()));
+    (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
     cs_->ReleaseBuffer(buffer, -1);
 }
 
@@ -65,17 +65,17 @@ protected:
     void Setup()
     {
         std::cout << "[SetUp]: SetUp!!!" << std::endl;
-        SetOutputSurface = GetSurface();
+        outputSurface = GetSurface();
     }
 
     void TearDown()
     {
         std::cout << "[TearDown]: over!!!" << std::endl;
-        SetOutputSurface = nullptr;
+        outputSurface = nullptr;
     }
 
     sptr<Surface> outputSurface;
-}
+};
 
 /**
  * @tc.name  : MemoryRecycleTest
