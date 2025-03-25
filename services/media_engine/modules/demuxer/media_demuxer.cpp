@@ -1807,6 +1807,11 @@ bool MediaDemuxer::HasVideo()
     return videoTrackId_ != TRACK_ID_DUMMY;
 }
 
+bool MediaDemuxer::HasAudio()
+{
+    return audioTrackId_ != TRACK_ID_DUMMY;
+}
+
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
 {
     AutoLock lock(mapMutex_);

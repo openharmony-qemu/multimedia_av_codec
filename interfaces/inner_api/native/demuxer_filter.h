@@ -141,7 +141,7 @@ private:
     bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime, size_t index);
     bool ShouldTrackSkipped(Plugins::MediaType mediaType, std::string mime, size_t index);
     void UpdateTrackIdMap(StreamType streamType, int32_t index);
-    void FaultDemuxerEventInfoWrite(StreamType& streamType);
+    Status FaultDemuxerEventInfoWrite(StreamType& streamType);
     bool IsVideoMime(const std::string& mime);
     bool IsAudioMime(const std::string& mime);
     Status HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount);

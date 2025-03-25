@@ -164,6 +164,8 @@ public:
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
     bool IsFlvLive();
+    bool HasVideo();
+    bool HasAudio();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -216,7 +218,6 @@ private:
     void HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info);
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
 
-    bool HasVideo();
     void DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer);
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     bool CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
