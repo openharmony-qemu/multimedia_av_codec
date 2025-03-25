@@ -615,8 +615,8 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         samplePacket->pkts[0] != nullptr && samplePacket->pkts[0]->size >= 0,
         Status::ERROR_INVALID_OPERATION, "Input packet is nullptr or empty");
     MEDIA_LOG_D("Convert packet info for track " PUBLIC_LOG_D32, samplePacket->pkts[0]->stream_index);
-    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_OPERATION,
-        "Input sample is nullptr");
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr && sample->meta_ != nullptr,
+        Status::ERROR_INVALID_OPERATION, "Input sample is nullptr");
 
     WriteBufferAttr(sample, samplePacket);
 
