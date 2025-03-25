@@ -1,10 +1,8 @@
 #include "gtest/gtest.h"
-#define private public
 #include "meta/format.h"
 #include "avcodec_errors.h"
 #include "surface.h"
 #include "fcodec.h"
-#undef private
 
 using namespace testing;
 using namespace testing::ext;
@@ -12,8 +10,7 @@ using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::Codec;
 
-class TestConsumerListener:public IBufferConsumerListener
-{
+class TestConsumerListener : public IBufferConsumerListener {
 public:
     TestConsumerListener(sptr<Surface> cs, std::string_view name);
     ~TestConsumerListener();
@@ -26,8 +23,7 @@ private:
     std::unique_ptr<std::ofstream> outFile_;
 };
 
-TestConsumerListener::TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs_(cs)
-{
+TestConsumerListener::TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs_(cs) {
     outFile_ = std::make_unique<std::ofstream>();
     outFile_->open(name.data(), std::ios::out | std::ios::binary);
 }
@@ -62,7 +58,7 @@ static sptr<Surface> GetSurface()
 
 class FCodecTest : public ::testing::Test {
 protected:
-    void Setup()
+    void SetUp()
     {
         std::cout << "[SetUp]: SetUp!!!" << std::endl;
         outputSurface = GetSurface();
