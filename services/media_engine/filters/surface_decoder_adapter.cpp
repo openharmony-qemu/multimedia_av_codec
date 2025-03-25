@@ -131,6 +131,7 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime)
     }
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
+        FALSE_RETURN_V(releaseBufferTask_ != nullptr, Status::ERROR_NULL_POINTER);
         releaseBufferTask_->RegisterJob([this] {
             ReleaseBuffer();
             return 0;
@@ -159,6 +160,7 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime, bool isHdr)
     FALSE_RETURN_V_MSG(codecServer_ != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
+        FALSE_RETURN_V(releaseBufferTask_ != nullptr, Status::ERROR_NULL_POINTER);
         releaseBufferTask_->RegisterJob([this] {
             ReleaseBuffer();
             return 0;

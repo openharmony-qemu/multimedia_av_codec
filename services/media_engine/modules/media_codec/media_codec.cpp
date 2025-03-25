@@ -125,6 +125,7 @@ int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
         state_ = CodecState::INITIALIZED;
     } else {
         MEDIA_LOG_I("createPlugin failed");
+        state_ = CodecState::UNINITIALIZED;
         return (int32_t)Status::ERROR_INVALID_PARAMETER;
     }
     return (int32_t)Status::OK;
@@ -142,10 +143,17 @@ int32_t MediaCodec::Init(const std::string &name)
     MEDIA_LOG_I("state from %{public}s to INITIALIZING", StateToString(state_).data());
     state_ = CodecState::INITIALIZING;
     auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(name);
-    FALSE_RETURN_V_MSG_E(plugin != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER, "create pluign failed");
+    if (plugin == nullptr) {
+        MEDIA_LOG_E("create pluign failed");
+        state_ = CodecState::UNINITIALIZED;
+        return (int32_t)Status::ERROR_INVALID_PARAMETER;
+    }
     codecPlugin_ = std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
-    Status ret = codecPlugin_->Init();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)Status::ERROR_INVALID_PARAMETER, "pluign init failed");
+    if (codecPlugin_->Init() != Status::OK) {
+        MEDIA_LOG_E("pluign init failed");
+        state_ = CodecState::UNINITIALIZED;
+        return (int32_t)Status::ERROR_INVALID_PARAMETER;
+    }
     state_ = CodecState::INITIALIZED;
     return (int32_t)Status::OK;
 }
@@ -927,6 +935,9 @@ void MediaCodec::ClearInputBuffer()
 
 void MediaCodec::OnEvent(const std::shared_ptr<Plugins::PluginEvent> event)
 {
+    if (HandleOtherErrorEvent(event)) {
+        return;
+    }
     if (event->type != Plugins::PluginEventType::AUDIO_OUTPUT_FORMAT_CHANGED) {
         return;
     }
@@ -943,6 +954,22 @@ void MediaCodec::OnEvent(const std::shared_ptr<Plugins::PluginEvent> event)
     } else {
         MEDIA_LOG_E("receive AUDIO_OUTPUT_FORMAT_CHANGED, but lock callback fail");
     }
+}
+
+bool MediaCodec::HandleOtherErrorEvent(const std::shared_ptr<Plugins::PluginEvent> event)
+{
+    if (!isTranscoderMode_ || event->type != Plugins::PluginEventType::OTHER_ERROR) {
+        return false;
+    }
+    auto realPtr = mediaCodecCallback_.lock();
+    if (realPtr != nullptr) {
+        CodecErrorType errorType = CodecErrorType::CODEC_ERROR_INTERNAL;
+        int32_t errorCode = 0;
+        realPtr->OnError(errorType, errorCode);
+    } else {
+        MEDIA_LOG_E("receive OTHER_ERROR, but lock callback fail");
+    }
+    return true;
 }
 
 std::string MediaCodec::StateToString(CodecState state)
@@ -977,6 +1004,13 @@ void MediaCodec::OnDumpInfo(int32_t fd)
         MEDIA_LOG_E("MediaCodec::OnDumpInfo write failed.");
         return;
     }
+}
+
+void MediaCodec::SetTranscoderMode()
+{
+    FALSE_RETURN_MSG(codecPlugin_ != nullptr, "not inited!");
+    isTranscoderMode_ = true;
+    codecPlugin_->SetTranscoderMode();
 }
 
 uint32_t MediaCodec::GetApiVersion()

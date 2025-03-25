@@ -1141,8 +1141,10 @@ void DashSegmentDownloader::SetAppUid(int32_t appUid)
 
 void DashSegmentDownloader::SetInterruptState(bool isInterruptNeeded)
 {
-    if (downloader_ != nullptr) {
-        downloader_->SetInterruptState(isInterruptNeeded);
+    FALSE_RETURN(downloader_ != nullptr && buffer_ != nullptr);
+    downloader_->SetInterruptState(isInterruptNeeded);
+    if (isInterruptNeeded) {
+        buffer_->SetActive(false);
     }
 }
 

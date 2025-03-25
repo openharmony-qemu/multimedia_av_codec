@@ -16,7 +16,7 @@
 #include "hencoder.h"
 #include <map>
 #include <utility>
-#include "utils/hdf_base.h"
+#include "hdf_base.h"
 #include "OMX_VideoExt.h"
 #include "media_description.h"  // foundation/multimedia/av_codec/interfaces/inner_api/native/
 #include "type_converter.h"

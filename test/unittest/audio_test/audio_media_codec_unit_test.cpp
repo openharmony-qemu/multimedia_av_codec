@@ -380,6 +380,15 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_Release_01, TestSize.Level1)
     EXPECT_EQ((int32_t) Status::OK, mediaCodec->Release());
 }
 
+HWTEST_F(AudioMediaCodecUnitTest, Test_Release_02, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ((int32_t) Status::ERROR_INVALID_PARAMETER, mediaCodec->Init(std::string("not_exist_mimetype"), false));
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Release());
+    EXPECT_EQ((int32_t) Status::ERROR_INVALID_PARAMETER, mediaCodec->Init(std::string("not_exist_codec_name")));
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Release());
+}
+
 HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseEncoderPlugin_01, TestSize.Level1)
 {
     // AudioSampleFormat2AVSampleFormat fail branch

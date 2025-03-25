@@ -76,7 +76,7 @@ public:
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
     void SetIsReportedErrorCode() override;
-    bool isNotRetry(const std::shared_ptr<DownloadRequest>& request) override
+    bool IsNotRetry(const std::shared_ptr<DownloadRequest>& request) override
     {
         if (isRingBuffer_ && isSelectingBitrate_.load()) {
             return false;
@@ -89,10 +89,12 @@ public:
     void SetStartPts(int64_t startPts) override;
     void SetExtraCache(int64_t cacheDuration) override;
     bool SelectBitRate(uint32_t bitRate) override;
+    bool AutoSelectBitRate(uint32_t bitRate) override;
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
     uint64_t GetCachedDuration() override;
     void RestartAndClearBuffer() override;
     bool IsFlvLive() override;
+    void SetIsTriggerAutoMode(bool isAuto) override;
 
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
@@ -144,6 +146,8 @@ private:
         AutoLock lock(sleepMutex_);
         sleepCond_.WaitFor(lock, timeoutMs, pred);
     }
+    bool CheckAutoSelectBitrate();
+    bool IsAutoSelectConditionOk();
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -246,6 +250,8 @@ private:
     bool isCacheBufferInited_ {false};
     ConditionVariable sleepCond_;
     FairMutex sleepMutex_;
+    std::atomic<bool> isAutoSelectBitrate_ {true};
+    std::deque<uint32_t> downloadSpeeds_;
 };
 }
 }

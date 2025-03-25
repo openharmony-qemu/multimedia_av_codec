@@ -961,7 +961,8 @@ bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, siz
     return true;
 }
 
-bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size_t headerSize,
+                                   Downloader* mediaDownloader)
 {
     if (!strncmp(key, "Content-Type", strlen("Content-Type"))) {
         char* token = strtok_s(nullptr, ":", &next);
@@ -972,7 +973,8 @@ bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size
         NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, strlen(type)));
         info->isValidContentType = true;
         for (const auto &contentType : INVALID_CONTENT_TYPES) {
-            if (!tokenStr.empty() && tokenStr.find(contentType) != std::string::npos) {
+            if (!tokenStr.empty() && tokenStr.find(contentType) != std::string::npos &&
+                !mediaDownloader->currentRequest_->IsAuthRequest()) {
                 info->isValidContentType = false;
                 MEDIA_LOG_E("invalid content type.");
                 break;
@@ -1072,7 +1074,8 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         mediaDownloader->currentRequest_->location_ = location;
     }
 
-    if (!HandleContentRange(info, key, next, size, nitems) || !HandleContentType(info, key, next, size, nitems) ||
+    if (!HandleContentRange(info, key, next, size, nitems) ||
+        !HandleContentType(info, key, next, size * nitems, mediaDownloader) ||
         !HandleContentEncode(info, key, next, size, nitems) ||
         !HandleContentLength(info, key, next, mediaDownloader) ||
         !HandleRange(info, key, next, size, nitems)) {

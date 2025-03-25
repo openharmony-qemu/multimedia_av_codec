@@ -17,8 +17,8 @@
 #include <map>
 #include <numeric>
 #include "syspara/parameters.h"
-#include "utils/hdf_base.h"
-#include "hdi/iservmgr_hdi.h"
+#include "hdf_base.h"
+#include "iservmgr_hdi.h"
 #include "hcodec_log.h"
 #include "type_converter.h"
 #include "avcodec_info.h"

@@ -104,10 +104,8 @@ ohos_shared_library("av_codec_media_engine_modules") {
 
   deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
 
-  public_configs = [
-    "$audio_framework_root_dir/frameworks/native/audiocapturer:audio_capturer_config",
-    ":av_codec_media_engine_modules_pts_and_index_convert_config",
-  ]
+  public_configs =
+      [ ":av_codec_media_engine_modules_pts_and_index_convert_config" ]
 
   external_deps = [
     "audio_framework:audio_capturer",

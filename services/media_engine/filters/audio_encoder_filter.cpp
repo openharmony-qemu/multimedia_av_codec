@@ -74,6 +74,29 @@ private:
     std::weak_ptr<AudioEncoderFilter> audioEncoderFilter_;
 };
 
+class AudioEncoderCallback : public AudioBaseCodecCallback {
+public:
+    explicit AudioEncoderCallback(std::weak_ptr<AudioEncoderFilter> audioEncoderFilter)
+    {
+        audioEncoderFilter_ = audioEncoderFilter;
+    }
+ 
+    ~AudioEncoderCallback() = default;
+ 
+    void OnError(CodecErrorType errorType, int32_t errorCode) override
+    {
+        std::shared_ptr<AudioEncoderFilter> audioEncoderFilter = audioEncoderFilter_.lock();
+        if (audioEncoderFilter != nullptr) {
+            audioEncoderFilter->OnError();
+        }
+    }
+    void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override {}
+    void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) override {}
+ 
+private:
+    std::weak_ptr<AudioEncoderFilter> audioEncoderFilter_;
+};
+
 AudioEncoderFilter::AudioEncoderFilter(std::string name, FilterType type): Filter(name, type)
 {
     filterType_ = type;
@@ -99,6 +122,7 @@ void AudioEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     eventReceiver_ = receiver;
     filterCallback_ = callback;
     mediaCodec_ = std::make_shared<MediaCodec>();
+    FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec is nullptr");
     int32_t ret = mediaCodec_->Init(codecMimeType_, true);
     if (ret != 0 && isTranscoderMode_) {
         MEDIA_LOG_I("TranscoderMode");
@@ -111,22 +135,35 @@ Status AudioEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("Configure");
     configureParameter_ = parameter;
+    FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     int32_t ret = mediaCodec_->Configure(parameter);
     if (ret != 0) {
         SetFaultEvent("AudioEncoderFilter::Configure error", ret);
         return Status::ERROR_UNKNOWN;
+    }
+    if (isTranscoderMode_ && mediaCodec_ != nullptr) {
+        MEDIA_LOG_I("SetTranscoderMode");
+        mediaCodec_->SetTranscoderMode();
+        cb_ = std::make_shared<AudioEncoderCallback>(weak_from_this());
+        if (cb_ == nullptr) {
+            MEDIA_LOG_E("create cb error");
+            return Status::ERROR_UNKNOWN;
+        }
+        mediaCodec_->SetCodecCallback(cb_);
     }
     return Status::OK;
 }
 
 sptr<Surface> AudioEncoderFilter::GetInputSurface()
 {
+    FALSE_RETURN_V(mediaCodec_ != nullptr, nullptr);
     MEDIA_LOG_I("GetInputSurface");
     return mediaCodec_->GetInputSurface();
 }
 
 Status AudioEncoderFilter::DoPrepare()
 {
+    FALSE_RETURN_V(filterCallback_ != nullptr, Status::ERROR_NULL_POINTER);
     MEDIA_LOG_I("Prepare");
     switch (filterType_) {
         case FilterType::FILTERTYPE_AENC:
@@ -146,6 +183,7 @@ Status AudioEncoderFilter::DoPrepare()
 
 Status AudioEncoderFilter::DoStart()
 {
+    FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     MEDIA_LOG_I("Start");
     int32_t ret = mediaCodec_->Start();
     if (ret != 0) {
@@ -169,6 +207,7 @@ Status AudioEncoderFilter::DoResume()
 
 Status AudioEncoderFilter::DoStop()
 {
+    FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     MEDIA_LOG_I("Stop");
     int32_t ret = mediaCodec_->Stop();
     if (ret != 0) {
@@ -180,6 +219,7 @@ Status AudioEncoderFilter::DoStop()
 
 Status AudioEncoderFilter::DoFlush()
 {
+    FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     MEDIA_LOG_I("Flush");
     int32_t ret = mediaCodec_->Flush();
     if (ret != 0) {
@@ -191,6 +231,7 @@ Status AudioEncoderFilter::DoFlush()
 
 Status AudioEncoderFilter::DoRelease()
 {
+    FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     MEDIA_LOG_I("Release");
     int32_t ret = mediaCodec_->Release();
     if (ret != 0) {
@@ -202,6 +243,7 @@ Status AudioEncoderFilter::DoRelease()
 
 Status AudioEncoderFilter::NotifyEos()
 {
+    FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     MEDIA_LOG_I("NotifyEos");
     int32_t ret = mediaCodec_->NotifyEos();
     if (ret != 0) {
@@ -220,6 +262,7 @@ Status AudioEncoderFilter::SetTranscoderMode()
 
 void AudioEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
+    FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec is nullptr");
     MEDIA_LOG_I("SetParameter");
     mediaCodec_->SetParameter(parameter);
 }
@@ -277,7 +320,7 @@ Status AudioEncoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     MEDIA_LOG_I("OnLinked");
     onLinkedResultCallback_ = callback;
     if (isTranscoderMode_) {
-        meta_ = meta;
+        transcoderMeta_ = meta;
     }
     return Status::OK;
 }
@@ -298,11 +341,13 @@ Status AudioEncoderFilter::OnUnLinked(StreamType inType, const std::shared_ptr<F
 void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
     std::shared_ptr<Meta> &meta)
 {
+    FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec is nullptr");
+    FALSE_RETURN_MSG(onLinkedResultCallback_ != nullptr, "onLinkedResultCallback is nullptr");
     MEDIA_LOG_I("OnLinkedResult");
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     mediaCodec_->Prepare();
     if (isTranscoderMode_) {
-        onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta_);
+        onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), transcoderMeta_);
         return;
     }
     onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta);
@@ -318,6 +363,13 @@ void AudioEncoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnUnlinkedResult");
     (void) meta;
+}
+
+void AudioEncoderFilter::OnError()
+{
+    MEDIA_LOG_E("receive plugin error");
+    FALSE_RETURN(isTranscoderMode_ && eventReceiver_ != nullptr);
+    eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_ENC_TYPE});
 }
 
 void AudioEncoderFilter::SetFaultEvent(const std::string &errMsg, int32_t ret)

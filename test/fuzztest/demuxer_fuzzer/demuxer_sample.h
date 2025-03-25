@@ -62,9 +62,9 @@ private:
     OH_AVDemuxer *demuxer;
     OH_AVMemory *memory;
     OH_AVBuffer *buffer;
-    const uint8_t *g_baseFuzzData = nullptr;
-    size_t g_baseFuzzSize = 0;
-    size_t g_baseFuzzPos;
+    const uint8_t *gBaseFuzzData = nullptr;
+    size_t gBaseFuzzSize = 0;
+    size_t gBaseFuzzPos;
 };
 } // namespace Media
 } // namespace OHOS

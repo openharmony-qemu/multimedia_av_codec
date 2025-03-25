@@ -63,21 +63,21 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-static string g_codecName_hevc = "";
-static string g_codecName_hisi = "";
-int32_t reli_count = 16;
-int32_t reli_count_1000 = 1000;
+static string g_codecNameHevc = "";
+static string g_codecNameHisi = "";
+int32_t g_reliCount = 16;
+int32_t g_reliCount1000 = 1000;
 void HevcSwdecReliNdkTest::SetUpTestCase()
 {
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(
         OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
-    g_codecName_hevc = OH_AVCapability_GetName(cap);
-    cout << "g_codecName_hevc: " << g_codecName_hevc << endl;
+    g_codecNameHevc = OH_AVCapability_GetName(cap);
+    cout << "g_codecNameHevc: " << g_codecNameHevc << endl;
 
     OH_AVCapability *cap2 = OH_AVCodec_GetCapabilityByCategory(
         OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
-    g_codecName_hisi = OH_AVCapability_GetName(cap2);
-    cout << "g_codecName_hisi: " << g_codecName_hisi  << endl;
+    g_codecNameHisi = OH_AVCapability_GetName(cap2);
+    cout << "g_codecNameHisi: " << g_codecNameHisi  << endl;
 }
 
 void HevcSwdecReliNdkTest::TearDownTestCase() {}
@@ -93,7 +93,7 @@ namespace {
 HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0010, TestSize.Level3)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecNdkSample>();
             vDecSample->SF_OUTPUT = false;
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -101,7 +101,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0010, TestSize.Level3)
             vDecSample->DEFAULT_HEIGHT = 1080;
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc.c_str()));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc.c_str()));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -119,7 +119,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0010, TestSize.Level3)
 HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0020, TestSize.Level3)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecNdkSample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             vDecSample->DEFAULT_WIDTH = 1920;
@@ -128,7 +128,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0020, TestSize.Level3)
             vDecSample->sleepOnFPS = true;
             vDecSample->autoSwitchSurface = true;
             vDecSample->SF_OUTPUT = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
             vDecSample->WaitForEOS();
         }
@@ -144,7 +144,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0030, TestSize.Level3)
 {
     if (!access("/system/lib64/media/", 0)) {
         vector<shared_ptr<VDecNdkSample>> decVec;
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecNdkSample>();
             decVec.push_back(vDecSample);
             vDecSample->INP_DIR = inpDir1080Array[i];
@@ -153,7 +153,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0030, TestSize.Level3)
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->autoSwitchSurface = false;
             vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHevc));
         }
         uint32_t errorCount = 0;
         for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
@@ -173,7 +173,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0040, TestSize.Level3)
 {
     if (!access("/system/lib64/media/", 0)) {
         vector<shared_ptr<VDecNdkSample>> decVec;
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecNdkSample>();
             decVec.push_back(vDecSample);
             vDecSample->INP_DIR = inpDir1080Array[i];
@@ -182,7 +182,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0040, TestSize.Level3)
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->autoSwitchSurface = false;
             vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_hevc.c_str()));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc.c_str()));
         }
         uint32_t errorCount = 0;
         for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
@@ -208,7 +208,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0050, TestSize.Level3)
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SF_OUTPUT = false;
         vDecSample->REPEAT_START_STOP_BEFORE_EOS = 1000;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc.c_str()));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc.c_str()));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -232,7 +232,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0060, TestSize.Level3)
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SF_OUTPUT = false;
         vDecSample->REPEAT_START_FLUSH_BEFORE_EOS = 1000;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -248,7 +248,7 @@ HWTEST_F(HevcSwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0060, TestSize.Level3)
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0010, TestSize.Level3)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->SF_OUTPUT = false;
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -256,7 +256,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0010, TestSize.Level3
             vDecSample->DEFAULT_HEIGHT = 1080;
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -274,7 +274,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0010, TestSize.Level3
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0020, TestSize.Level3)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             vDecSample->DEFAULT_WIDTH = 1920;
@@ -283,7 +283,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0020, TestSize.Level3
             vDecSample->SF_OUTPUT = true;
             vDecSample->autoSwitchSurface = true;
             vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
             vDecSample->WaitForEOS();
         }
@@ -298,7 +298,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0030, TestSize.Level3
 {
     if (!access("/system/lib64/media/", 0)) {
         vector<shared_ptr<VDecAPI11Sample>> decVec;
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             decVec.push_back(vDecSample);
             vDecSample->INP_DIR = inpDir1080Array[i];
@@ -308,7 +308,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0030, TestSize.Level3
             vDecSample->SF_OUTPUT = true;
             vDecSample->autoSwitchSurface = false;
             vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHevc));
         }
         uint32_t errorCount = 0;
         for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
@@ -328,7 +328,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0040, TestSize.Level3
 {
     if (!access("/system/lib64/media/", 0)) {
         vector<shared_ptr<VDecAPI11Sample>> decVec;
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             decVec.push_back(vDecSample);
             vDecSample->SF_OUTPUT = false;
@@ -337,7 +337,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0040, TestSize.Level3
             vDecSample->DEFAULT_HEIGHT = 1080;
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -361,7 +361,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0050, TestSize.Level3
     if (!access("/system/lib64/media/", 0)) {
         for (int j = 0; j < 5; j++) {
             vector<shared_ptr<VDecAPI11Sample>> decVec;
-            for (int i = 0; i < reli_count; i++) {
+            for (int i = 0; i < g_reliCount; i++) {
                 auto vDecSample = make_shared<VDecAPI11Sample>();
                 decVec.push_back(vDecSample);
                 vDecSample->SF_OUTPUT = false;
@@ -370,7 +370,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0050, TestSize.Level3
                 vDecSample->DEFAULT_HEIGHT = 1080;
                 vDecSample->DEFAULT_FRAME_RATE = 30;
                 vDecSample->sleepOnFPS = true;
-                ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc));
+                ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
                 ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
                 ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
                 ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -400,7 +400,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0070, TestSize.Level2
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SF_OUTPUT = false;
         vDecSample->REPEAT_START_STOP_BEFORE_EOS = 1000;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -424,7 +424,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0080, TestSize.Level2
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SF_OUTPUT = false;
         vDecSample->REPEAT_START_FLUSH_BEFORE_EOS = 1000;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -440,14 +440,14 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0080, TestSize.Level2
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0090, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             vDecSample->DEFAULT_WIDTH = 1920;
             vDecSample->DEFAULT_HEIGHT = 1080;
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
             vDecSample->WaitForEOS();
             ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 
@@ -457,7 +457,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0090, TestSize.Level0
             vDecSample1->DEFAULT_HEIGHT = 720;
             vDecSample1->DEFAULT_FRAME_RATE = 30;
             vDecSample1->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample1->RunVideoDec(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample1->RunVideoDec(g_codecNameHevc));
             vDecSample1->WaitForEOS();
             ASSERT_EQ(AV_ERR_OK, vDecSample1->errCount);
         }
@@ -472,14 +472,14 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0090, TestSize.Level0
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0100, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_144;
             vDecSample->DEFAULT_WIDTH = 176;
             vDecSample->DEFAULT_HEIGHT = 144;
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->SF_OUTPUT = false;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
             vDecSample->WaitForEOS();
 
             shared_ptr<VDecAPI11Sample> vDecSample1 = make_shared<VDecAPI11Sample>();
@@ -488,7 +488,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0100, TestSize.Level0
             vDecSample1->DEFAULT_HEIGHT = 1080;
             vDecSample1->DEFAULT_FRAME_RATE = 30;
             vDecSample1->SF_OUTPUT = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample1->RunVideoDec_Surface(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample1->RunVideoDec_Surface(g_codecNameHevc));
             vDecSample1->WaitForEOS();
         }
     }
@@ -502,7 +502,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0100, TestSize.Level0
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_0110, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             vDecSample->DEFAULT_WIDTH = WidthRand();
@@ -511,7 +511,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_0110, TestSize.Level0)
             cout << "rand high is" << vDecSample->DEFAULT_HEIGHT << endl;
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->SF_OUTPUT = false;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -529,7 +529,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_0110, TestSize.Level0)
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_0120, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_64;
             vDecSample->DEFAULT_WIDTH = WidthRand();
@@ -538,7 +538,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_0120, TestSize.Level0)
             cout << "rand high is" << vDecSample->DEFAULT_HEIGHT << endl;
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->SF_OUTPUT = false;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -556,7 +556,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_0120, TestSize.Level0)
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0130, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_144;
             vDecSample->DEFAULT_WIDTH = WidthRand();
@@ -565,7 +565,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0130, TestSize.Le
             cout << "rand high is" << vDecSample->DEFAULT_HEIGHT << endl;
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->SF_OUTPUT = false;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -582,14 +582,14 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0130, TestSize.Le
 HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0060, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for (int i = 0; i < reli_count; i++) {
+        for (int i = 0; i < g_reliCount; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             vDecSample->DEFAULT_WIDTH = 1920;
             vDecSample->DEFAULT_HEIGHT = 1080;
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->SF_OUTPUT = false;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
             vDecSample->WaitForEOS();
 
             shared_ptr<VDecAPI11Sample> vDecSample1 = make_shared<VDecAPI11Sample>();
@@ -598,7 +598,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0060, TestSize.Level0
             vDecSample1->DEFAULT_HEIGHT = 1080;
             vDecSample1->DEFAULT_FRAME_RATE = 30;
             vDecSample1->SF_OUTPUT = false;
-            ASSERT_EQ(AV_ERR_OK, vDecSample1->RunVideoDec(g_codecName_hisi));
+            ASSERT_EQ(AV_ERR_OK, vDecSample1->RunVideoDec(g_codecNameHisi));
             vDecSample1->WaitForEOS();
 
             shared_ptr<VDecAPI11Sample> vDecSample2 = make_shared<VDecAPI11Sample>();
@@ -607,7 +607,7 @@ HWTEST_F(HevcSwdecReliNdkTest, API11_VIDEO_SWDEC_STABILITY_0060, TestSize.Level0
             vDecSample2->DEFAULT_HEIGHT = 1080;
             vDecSample2->DEFAULT_FRAME_RATE = 30;
             vDecSample2->SF_OUTPUT = false;
-            ASSERT_EQ(AV_ERR_OK, vDecSample2->RunVideoDec_Surface(g_codecName_hevc));
+            ASSERT_EQ(AV_ERR_OK, vDecSample2->RunVideoDec_Surface(g_codecNameHevc));
             vDecSample2->WaitForEOS();
         }
     }

@@ -193,9 +193,11 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
     MEDIA_LOG_D("ReadLocal buffer pos: " PUBLIC_LOG_U64 " , len:" PUBLIC_LOG_ZU, position_.load(), expectedLen);
 
-    uint64_t offsetCur = lseek(fd_, 0, SEEK_CUR);
-    if (offsetCur != position_) {
-        MEDIA_LOG_E("Fd offsetCur has changed. offsetCur " PUBLIC_LOG_U64 ", offsetOld " PUBLIC_LOG_U64,
+    int64_t offsetCur = lseek(fd_, 0, SEEK_CUR);
+    if (offsetCur < 0) {
+        MEDIA_LOG_E("Fd get offset failed ");
+    } else if (static_cast<uint64_t>(offsetCur) != position_.load()) {
+        MEDIA_LOG_E("Fd offsetCur has changed. offsetCur " PUBLIC_LOG_D64 ", offsetOld " PUBLIC_LOG_U64,
             offsetCur, position_.load());
     }
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
@@ -352,10 +354,10 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
         FALSE_RETURN_V_MSG_E(StrToLong(offsetStr, offset_), Status::ERROR_INVALID_PARAMETER,
             "Failed to read offset.");
         if (static_cast<uint64_t>(offset_) > fileSize_) {
-            offset_ = fileSize_;
+            offset_ = static_cast<int64_t>(fileSize_);
         }
         size_ = static_cast<uint64_t>(std::stoll(fdUriMatch[3].str())); // 3: sub match size subscript
-        uint64_t remainingSize = fileSize_ - offset_;
+        uint64_t remainingSize = fileSize_ - static_cast<uint64_t>(offset_);
         if (size_ > remainingSize) {
             size_ = remainingSize;
         }

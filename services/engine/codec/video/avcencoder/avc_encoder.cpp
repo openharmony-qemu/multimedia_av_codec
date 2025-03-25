@@ -285,6 +285,7 @@ void AvcEncoder::GetBufferFromSurface()
     }
     AVCODEC_LOGD("timestamp: %{public}" PRId64 ", dataSize: %{public}d", pts, buffer->GetSize());
 
+    CHECK_AND_RETURN_LOG(!freeList_.empty(), "freeList_ is empty!");
     std::unique_lock<std::mutex> listLock(freeListMutex_);
     uint32_t index = freeList_.front();
     freeList_.pop_front();
@@ -295,11 +296,13 @@ void AvcEncoder::GetBufferFromSurface()
     if (enableSurfaceModeInputCb_) {
         inputBuffer->surfaceBuffer_ = buffer;
         inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer();
+        CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
         inputBuffer->avBuffer_->pts_ = pts;
         callback_->OnInputBufferAvailable(index, inputBuffer->avBuffer_);
     } else {
         inputBuffer->surfaceBuffer_ = nullptr;
         inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(buffer);
+        CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
         inputBuffer->avBuffer_->pts_ = pts;
         inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
         inputAvailQue_->Push(index);
@@ -1152,6 +1155,8 @@ int32_t AvcEncoder::QueueInputBuffer(uint32_t index)
         bool discard = GetDiscardFlagFromAVBuffer(inputBuffer->avBuffer_);
         inputBuffer->avBuffer_->meta_->Clear();
         inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(inputBuffer->surfaceBuffer_);
+        CHECK_AND_RETURN_RET_LOG(inputBuffer->avBuffer_ != nullptr && inputBuffer->avBuffer_->memory_ != nullptr,
+            AVCS_ERR_INVALID_VAL, "Allocate input buffer failed, index=%{public}u", index);
         inputBuffer->avBuffer_->pts_ = pts;
         if (discard) {
             inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
@@ -1200,6 +1205,8 @@ int32_t AvcEncoder::NotifyEos()
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     if (inputSurface_ != nullptr) {
         inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer();
+        CHECK_AND_RETURN_RET_LOG(inputBuffer->avBuffer_ != nullptr, AVCS_ERR_INVALID_VAL,
+            "Allocate input buffer failed, index=%{public}u", index);
     }
     inputBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_EOS;
     inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
