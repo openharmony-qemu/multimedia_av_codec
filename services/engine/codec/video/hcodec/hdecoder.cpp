@@ -552,6 +552,7 @@ bool HDecoder::ReadyToStart()
     }
     if (currSurface_.surface_) {
         HLOGI("surface mode");
+        cfgedConsumerUsage = currSurface_.surface_->GetDefaultUsage();
         SetTransform();
         SetScaleMode();
     } else {
@@ -730,9 +731,9 @@ uint64_t HDecoder::GetProducerUsage()
 void HDecoder::CombineConsumerUsage()
 {
     uint32_t consumerUsage = currSurface_.surface_->GetDefaultUsage();
-    uint64_t finalUsage = requestCfg_.usage | consumerUsage;
-    HLOGI("producer usage 0x%" PRIx64 " | consumer usage 0x%x -> 0x%" PRIx64 "",
-        requestCfg_.usage, consumerUsage, finalUsage);
+    uint64_t finalUsage = requestCfg_.usage | consumerUsage | cfgedConsumerUsage;
+    HLOGI("producer 0x%" PRIx64 " | consumer 0x%" PRIx64 " | cfg 0x%" PRIx64 " -> 0x%" PRIx64 "",
+        requestCfg_.usage, consumerUsage, cfgedConsumerUsage, finalUsage);
     requestCfg_.usage = finalUsage;
 }
 
@@ -798,22 +799,22 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     outputBufferPool_.clear();
     CombineConsumerUsage();
     for (uint32_t i = 0; i < outBufferCnt_; ++i) {
-        sptr<SurfaceBuffer> surfaceBuffer;
-        sptr<SyncFence> fence;
-        GSError err = currSurface_.surface_->RequestBuffer(surfaceBuffer, fence, requestCfg_);
-        if (err != GSERROR_OK || surfaceBuffer == nullptr) {
-            HLOGE("RequestBuffer %u failed, GSError=%d", i, err);
+        sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+        if (surfaceBuffer == nullptr) {
+            return AVCS_ERR_UNKNOWN;
+        }
+        GSError err = surfaceBuffer->Alloc(requestCfg_);
+        if (err != GSERROR_OK) {
+            HLOGE("Alloc surfacebuffer %u failed, GSError=%d", i, err);
             return err == GSERROR_NO_MEM ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN;
         }
         shared_ptr<OmxCodecBuffer> omxBuffer = SurfaceBufferToOmxBuffer(surfaceBuffer);
         if (omxBuffer == nullptr) {
-            currSurface_.surface_->CancelBuffer(surfaceBuffer);
             return AVCS_ERR_UNKNOWN;
         }
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
         int32_t hdfRet = compNode_->UseBuffer(OMX_DirOutput, *omxBuffer, *outBuffer);
         if (hdfRet != HDF_SUCCESS) {
-            currSurface_.surface_->CancelBuffer(surfaceBuffer);
             HLOGE("Failed to UseBuffer with output port");
             return AVCS_ERR_NO_MEMORY;
         }
@@ -826,7 +827,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         info.avBuffer = AVBuffer::CreateAVBuffer();
         info.omxBuffer = outBuffer;
         info.bufferId = outBuffer->bufferId;
-        info.attached = true;
+        info.attached = false;
         outputBufferPool_.push_back(info);
         HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, info.bufferId, surfaceBuffer->GetSeqNum());
     }
@@ -1140,6 +1141,7 @@ void HDecoder::OnEnterUninitializedState()
     freeList_.clear();
     currSurface_.Release();
     crop_ = {0};
+    cfgedConsumerUsage = 0;
 }
 
 HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface)

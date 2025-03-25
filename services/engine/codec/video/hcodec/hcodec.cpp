@@ -973,7 +973,8 @@ int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
 {
     SCOPED_TRACE_FMT("id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
     if (!gotFirstInput_) {
-        HLOGI("got first input, id: %d, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
+        HLOGI("got first input, pts = %" PRId64 ", len = %u, flags = 0x%x",
+            info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
         gotFirstInput_ = true;
     }
 #ifdef BUILD_ENG_VERSION
@@ -1063,7 +1064,8 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     SCOPED_TRACE_FMT("id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
     if (!gotFirstOutput_) {
-        HLOGI("got first output id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
+        HLOGI("got first output, pts = %" PRId64 ", len = %u, flags = 0x%x",
+            info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
 #ifndef AV_CODEC_HCODEC_ENABLE_QOS_THE_WHOLE_TIME
         OHOS::QOS::ResetThreadQos();
 #endif
