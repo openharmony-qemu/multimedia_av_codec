@@ -255,19 +255,20 @@ void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, Capabi
             LOGI("role %d support (inner) profile %d and level up to %d",
                 hdiCap.role, innerProfile.value(), innerLevel.value());
         }
-        if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_VVC) {
-            optional<int32_t> innerProfileVvc;
-            optional<int32_t> innerLevelVvc;
-            innerProfileVvc = TypeConverter::OmxVvcProfileToInnerProfile(static_cast<CodecVvcProfile>(profile));
-            innerLevelVvc = TypeConverter::OmxVvcLevelToInnerLevel(static_cast<CodecVvcLevel>(maxLevel));
-            if ((!innerProfileVvc.has_value()) || (!innerLevelVvc.has_value()) || innerLevelVvc.value() < 0) {
-                return;
-            }
+
+        if (hdiCap.role != MEDIA_ROLETYPE_VIDEO_VVC) {
+            continue;
+        }
+        optional<int32_t> innerProfileVvc;
+        optional<int32_t> innerLevelVvc;
+        innerProfileVvc = TypeConverter::OmxVvcProfileToInnerProfile(static_cast<CodecVvcProfile>(profile));
+        innerLevelVvc = TypeConverter::OmxVvcLevelToInnerLevel(static_cast<CodecVvcLevel>(maxLevel));
+        if (innerProfileVvc.has_value() && innerLevelVvc.has_value() && innerLevelVvc.value() >= 0) {
             userCap.profiles.emplace_back(innerProfileVvc.value());
             optional<vector<int32_t>> allLevel =
                 TypeConverter::InnerVvcMaxLevelToAllLevels(static_cast<VVCLevel>(innerLevelVvc.value()));
             if (allLevel.has_value()) {
-                userCap.profileLevelsMap[innerProfileVvc.value()] = allLevel.value();;
+                userCap.profileLevelsMap[innerProfileVvc.value()] = allLevel.value();
             }
             LOGI("role %d support (inner) profile %d and level up to %d",
                 hdiCap.role, innerProfileVvc.value(), innerLevelVvc.value());
