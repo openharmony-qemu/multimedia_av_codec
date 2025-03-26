@@ -602,7 +602,7 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
     if (innerMode.has_value()) {
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE,
             static_cast<int32_t>(innerMode.value()));
-        HLOGI("set %d mode and target bitrate %u bps succ", bitRateMode.value(), bitrateType.nTargetBitrate);
+        HLOGI("set %d mode and target bitrate %u bps succ", innerMode.value(), bitrateType.nTargetBitrate);
     } else {
         HLOGI("set default bitratemode and target bitrate %u bps succ", bitrateType.nTargetBitrate);
     }
