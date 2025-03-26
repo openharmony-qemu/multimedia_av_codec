@@ -288,6 +288,10 @@ public:
     {
         return false;
     }
+    virtual uint64_t GetMemorySize()
+    {
+        return 0;
+    }
 };
 
 /// Source plugin api major number.

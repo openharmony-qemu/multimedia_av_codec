@@ -109,6 +109,7 @@ public:
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     void NotifyInitSuccess() override;
     uint64_t GetCachedDuration() override;
+    uint64_t GetMemorySize() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -304,6 +305,7 @@ private:
     std::atomic<bool> isTimeoutErrorNotified_ {false};
     std::atomic<bool> isNeedResume_ {false};
     uint64_t cachedDuration_ {0};
+    uint64_t memorySize_ {0};
 };
 }
 }

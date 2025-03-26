@@ -1846,6 +1846,14 @@ bool HttpMediaDownloader::IsFlvLive()
     return fileContenLen == 0 && isRingBuffer_;
 }
 
+uint64_t HttpMediaDownloader::GetMemorySize()
+{
+    if (totalBufferSize_ <= 0) {
+        return 0;
+    }
+    return static_cast<uint64_t>(totalBufferSize_);
+}
+
 void HttpMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
 {
     isAutoSelectBitrate_.store(isAuto);
