@@ -103,6 +103,25 @@ AVStream *FFmpegDemuxerPlugin::GetVideoStream()
     return formatContext_->streams[static_cast<uint32_t>(parserRefVideoStreamIdx_)];
 }
 
+bool FFmpegDemuxerPlugin::IsMultiVideoTrack()
+{
+    bool hasVideo = false;
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        auto avStream = formatContext_->streams[trackIndex];
+        if (avStream == nullptr || avStream->codecpar == nullptr) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_D32 " info is nullptr", trackIndex);
+            continue;
+        }
+        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            if (hasVideo) {
+                return true;
+            }
+            hasVideo = true;
+        }
+    }
+    return false;
+}
+
 bool FFmpegDemuxerPlugin::IsRefParserSupported()
 {
     std::shared_ptr<AVFormatContext> formatContext = parserRefFormatContext_ != nullptr ?
