@@ -250,8 +250,7 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
         }
         if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO && hasVideoFilter) {
             continue;
-        } else if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO &&
-            isEnableReselectVideoTrack_ && demuxer_->IsHasMultiVideoTrack()) {
+        } else if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO && isEnableReselectVideoTrack_) {
             hasVideoFilter = true;
         }
         ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
@@ -588,11 +587,6 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
         MEDIA_LOG_W("Get file type failed");
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
-    if (outType == StreamType::STREAMTYPE_ENCODED_VIDEO && isEnableReselectVideoTrack_
-        && demuxer_->IsHasMultiVideoTrack()) {
-        trackId = static_cast<int32_t>(demuxer_->GetTargetVideoTrackId(trackInfos));
-    }
-    MEDIA_LOG_I_SHORT("LinkNext track id: %{public}d", trackId);
     std::shared_ptr<Meta> meta = trackInfos[trackId];
     for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
         MEDIA_LOG_D("Link " PUBLIC_LOG_S, iter->first.c_str());

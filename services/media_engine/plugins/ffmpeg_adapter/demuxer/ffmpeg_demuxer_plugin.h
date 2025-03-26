@@ -242,6 +242,7 @@ private:
     std::unordered_map<int32_t, int64_t> iFramePtsMap_;
     Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
     Status ParserRefCheckVideoValid(const AVStream *videoStream);
+    bool IsMultiVideoTrack();
 };
 
 typedef struct DtsFinder {
