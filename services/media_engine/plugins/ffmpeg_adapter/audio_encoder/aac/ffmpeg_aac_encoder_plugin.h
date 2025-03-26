@@ -135,6 +135,9 @@ private:
     AudioChannelLayout srcLayout_;
     uint32_t fullInputFrameSize_{0};
     uint32_t srcBytesPerSample_{0};
+    AudioEncodePtsMode ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    bool isFirstInputPts_ = true;
+    bool isFirstOutputPts_ = true;
 
     std::string aacName_;
     int32_t channels_;
