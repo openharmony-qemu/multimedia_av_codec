@@ -1381,6 +1381,7 @@ void HttpMediaDownloader::ClearCacheBuffer()
     cacheMediaBuffer_->Clear();
     isNeedDropData_ = false;
     downloader_->Seek(readOffset_);
+    writeOffset_ = readOffset_;
     downloader_->Resume();
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
     MEDIA_LOG_I("HTTP ClearCacheBuffer end, freeSize: " PUBLIC_LOG_U64, freeSize);
