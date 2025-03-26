@@ -130,6 +130,7 @@ bool FFmpegDemuxerPlugin::IsRefParserSupported()
     FileType type = FFmpegFormatHelper::GetFileTypeByName(*formatContext);
     FALSE_RETURN_V_MSG_W(type == FileType::MP4 || type == FileType::MOV, false,
         "RefParser unsupported file type " PUBLIC_LOG_U32, type);
+    FALSE_RETURN_V_MSG_W(!IsMultiVideoTrack(), false, "multi-video-tracks video is unsupported!");
     FALSE_RETURN_V_MSG_W(ParserRefCheckVideoValid(GetVideoStream()) == Status::OK, false,
         "RefParser unsupported stream type");
     return true;
