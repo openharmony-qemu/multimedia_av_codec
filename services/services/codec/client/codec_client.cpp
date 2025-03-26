@@ -114,6 +114,7 @@ int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &
 
     converter_->Init(type);
     listenerStub_->Init();
+    type_ = type;
     AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;
 }
