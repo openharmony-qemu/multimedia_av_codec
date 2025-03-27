@@ -44,7 +44,6 @@ constexpr float LONGITUDE_MAX = 180.0f;
 constexpr int32_t MIN_HE_AAC_SAMPLE_RATE = 16000;
 const std::string TIMED_METADATA_HANDLER_NAME = "timed_metadata";
 constexpr int32_t MAX_USERMETA_STRING_LENGTH = 256;
-constexpr uint8_t LOG_INFO_STRING_SIZE = 34;  // (uuidSize + valueSize) * 2
 const std::string LOG_INFO_KEY_STRING = "com.openharmony.video.sei.h_log";
 
 bool IsMuxerSupported(const char *name)
@@ -615,7 +614,7 @@ void FFmpegMuxerPlugin::SetSeiLogInfo()
     if (colorTransfer == static_cast<uint8_t>(TransferCharacteristic::UNSPECIFIED)) { // UNSPECIFIED is 2
         std::vector<uint8_t> logInfo = hevcParser_->GetLogInfo();
         std::ostringstream oss;
-        if (logInfo.empty() || logInfo.size() > LOG_INFO_STRING_SIZE) {
+        if (logInfo.empty() || logInfo.size() > MAX_USERMETA_STRING_LENGTH / 2) { // 2 characters indicate
             MEDIA_LOG_E("invalid logInfo, logInfo.size: %{public}zu", logInfo.size());
             return;
         }

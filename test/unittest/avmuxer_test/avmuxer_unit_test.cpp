@@ -1543,7 +1543,6 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_005, TestSize.Level0)
 
     int32_t extSize = 0;
     inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
-    std::cout << "extSize :" << extSize << std::endl;
     if (extSize > 0) {
         std::vector<uint8_t> buffer(extSize);
         inputFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
@@ -1552,7 +1551,6 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_005, TestSize.Level0)
     bool eosFlag = false;
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
     ret = WriteSample(trackId, inputFile_, eosFlag, flag);
-    std::cout << "ret :" << ret << ",eosFlag:" << eosFlag << ",flag:"<< flag << std::endl;
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, inputFile_, eosFlag, flag);
     }
