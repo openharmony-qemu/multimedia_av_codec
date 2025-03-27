@@ -231,6 +231,7 @@ private:
     bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
     void HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackId);
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
+    bool IsNeedMapToInnerTrackID();
 
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
@@ -309,7 +310,6 @@ private:
     std::map<uint32_t, std::unique_ptr<Task>> sampleConsumerTaskMap_;
     std::shared_ptr<MediaSyncManager> syncCenter_;
     bool isFlvLiveStream_ = false;
-    bool isHandlingSelectBitrateBySampleQueue_ = false;
     std::unique_ptr<Task> notifyBitrateTask_;
     std::unique_ptr<Task> notifySampleConsumeTask_;
     std::unique_ptr<Task> notifySampleProduceTask_;
