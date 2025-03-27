@@ -322,7 +322,7 @@ Status SampleQueue::QuerySizeForNextAcquireBuffer(size_t& size)
         sampleBuffer = rollbackBufferQueue_.front();
     } else {
         Status ret = AcquireBuffer(sampleBuffer);
-        FALSE_RETURN_V_MSG_W(
+        FALSE_RETURN_V_MSG_D(
             ret == Status::OK, ret, PUBLIC_LOG_S " failed ret=" PUBLIC_LOG_D32, config_.queueName_.c_str(), ret);
         SampleQueue::RollbackBuffer(sampleBuffer);
     }
@@ -434,7 +434,7 @@ Status SampleQueue::ResponseForSwitchDone(int64_t startPtsOnSwitch)
         startPtsOnSwitch);
 
     Status ret = DiscardSampleAfter(startPtsOnSwitch);
-    FALSE_RETURN_V(ret == Status::OK, ret);
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     {
         std::lock_guard<std::mutex> statusLock(statusMutex_);
         if (switchStatus_ == SelectBitrateStatus::SWITCHING) {
