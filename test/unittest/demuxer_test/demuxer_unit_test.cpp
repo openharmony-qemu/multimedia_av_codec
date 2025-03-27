@@ -290,7 +290,12 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1000, TestSize.Level1)
     ASSERT_EQ(demuxer_->UnselectTrackByID(-1), AV_ERR_OK);
 }
 
-HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1000, TestSize.Level1)
+/**
+ * @tc.name: Demuxer_CreateDemuxer_1001
+ * @tc.desc: create demuxer
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1001, TestSize.Level1)
 {
     InitResource(g_mp4Path3, LOCAL);
     ASSERT_TRUE(initStatus_);
