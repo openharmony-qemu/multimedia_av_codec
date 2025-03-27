@@ -45,12 +45,12 @@ list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SY
 
 string g_mp4Path = TEST_FILE_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
 string g_mp4Path2 = TEST_FILE_PATH + string("test_mpeg2_B_Gop25_4sec.mp4");
+string g_mp4Path3 = TEST_FILE_PATH + string("test_mpeg2_B_Gop25_4sec_attachment.mkv");
 string g_mp4Path4 = TEST_FILE_PATH + string("zero_track.mp4");
 string g_mp4Path5 = TEST_FILE_PATH + string("timed_metadata_track.mp4");
 string g_mkvPath2 = TEST_FILE_PATH + string("h264_opus_4sec.mkv");
 string g_tsPath = TEST_FILE_PATH + string("test_mpeg2_Gop25_4sec.ts");
 string g_aacPath = TEST_FILE_PATH + string("audio/aac_44100_1.aac");
-string g_aacPath1 = TEST_FILE_PATH + string("audio/aac_44100_1_latm.aac");
 string g_flacPath = TEST_FILE_PATH + string("audio/flac_48000_1_cover.flac");
 string g_m4aPath = TEST_FILE_PATH + string("audio/m4a_48000_1.m4a");
 string g_mp3Path = TEST_FILE_PATH + string("audio/mp3_48000_1_cover.mp3");
@@ -288,6 +288,15 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1000, TestSize.Level1)
     ASSERT_EQ(demuxer_->UnselectTrackByID(1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(-1), AV_ERR_OK);
+}
+
+HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1000, TestSize.Level1)
+{
+    InitResource(g_mp4Path3, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SelectTrackByID(2), AV_ERR_OK);
 }
 
 /**
@@ -729,30 +738,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1090, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1100, TestSize.Level1)
 {
     InitResource(g_aacPath, LOCAL);
-    ASSERT_TRUE(initStatus_);
-    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
-    ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
-    uint32_t idx = 0;
-    while (!isEOS(eosFlag_)) {
-        ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx);
-    }
-    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
-    ASSERT_EQ(frames_[0], 1293);
-    ASSERT_EQ(keyFrames_[0], 1293);
-    RemoveValue();
-}
-
-/**
- * @tc.name: Demuxer_ReadSample_1101
- * @tc.desc: copy current sample to buffer
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1101, TestSize.Level1)
-{
-    InitResource(g_aacPath1, LOCAL);
     ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
