@@ -1675,11 +1675,9 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
     uint32_t cttsIndex = 0;
     int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
-
+    ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
-    int32_t cttsCurNum = 0;
-
-    cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
+    int32_t cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
     while (sttsIndex < avStream->stts_count && cttsIndex < avStream->ctts_count &&
             cttsCurNum >= 0 && sttsCurNum >= 0) {
         if (cttsCurNum == 0) {
@@ -1699,10 +1697,12 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
         double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
         double ptsTemp = static_cast<double>(dts) + static_cast<double>(avStream->ctts_data[cttsIndex].duration);
         pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
-        if (mode == GET_ALL_FRAME_PTS &&
-            static_cast<uint32_t>(pts2DtsMap_.size()) >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
-            MEDIA_LOG_I("PTS list has reached the maximum limit");
-            break;
+        if (mode == GET_ALL_FRAME_PTS) {
+            if (ptsCnt_ >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
+                MEDIA_LOG_I("PTS cnt has reached the maximum limit");
+                break;
+            }
+            ptsCnt_++;
         }
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index, static_cast<int64_t>(dts * timeScaleRate));
         sttsCurNum--;
@@ -1726,9 +1726,8 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
     uint32_t sttsIndex = 0;
     int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
-
+    ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
-
     while (sttsIndex < avStream->stts_count && sttsCurNum >= 0) {
         if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
             (dts / static_cast<int64_t>(avStream->time_scale))) {
@@ -1738,10 +1737,12 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
         double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
         double ptsTemp = static_cast<double>(dts);
         pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
-        if (mode == GET_ALL_FRAME_PTS &&
-            static_cast<uint32_t>(pts2DtsMap_.size()) >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
-            MEDIA_LOG_I("PTS list has reached the maximum limit");
-            break;
+        if (mode == GET_ALL_FRAME_PTS) {
+            if (ptsCnt_ >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
+                MEDIA_LOG_I("PTS cnt has reached the maximum limit");
+                break;
+            }
+            ptsCnt_++;
         }
         PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index, pts);
         sttsCurNum--;
@@ -1850,6 +1851,17 @@ void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
 {
     setLimitByUser = true;
     cachelimitSize_ = limitSize;
+}
+
+Status FFmpegDemuxerPlugin::GetCurrentCacheSize(uint32_t trackId, uint32_t& size)
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
+    uint32_t dataSize = cacheQueue_.GetCacheDataSize(trackId);
+    FALSE_RETURN_V_MSG_E(dataSize < UINT32_MAX, Status::ERROR_WRONG_STATE, "CacheSize is invalid");
+    size = dataSize;
+    return Status::OK;
 }
 
 void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
