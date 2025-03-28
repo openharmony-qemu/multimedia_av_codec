@@ -874,8 +874,12 @@ void HCodec::FlushingState::ChangeStateIfWeOwnAllBuffers()
     }
     int32_t ret = AVCS_ERR_OK;
     if (!codec_->IsAllBufferOwnedByUsOrSurface()) {
+        ParamSP stopMsg = make_shared<ParamBundle>();
+        stopMsg->SetValue("generation", codec_->stateGeneration_);
+        stopMsg->SetValue("isNeedNotifyCaller", false);
+        codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, stopMsg);
+        SLOGE("Try to change state but buffer state error");
         ret = AVCS_ERR_UNKNOWN;
-        codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, nullptr);
     }
     MsgInfo msg {MsgWhat::FLUSH, 0, nullptr};
     if (codec_->GetFirstSyncMsgToReply(msg)) {
