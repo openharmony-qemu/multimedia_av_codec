@@ -56,6 +56,7 @@ string g_mkvPath2 = TEST_FILE_PATH + string("h264_opus_4sec.mkv");
 string g_tsPath = TEST_FILE_PATH + string("test_mpeg2_Gop25_4sec.ts");
 string g_aacPath = TEST_FILE_PATH + string("audio/aac_44100_1.aac");
 string g_flacPath = TEST_FILE_PATH + string("audio/flac_48000_1_cover.flac");
+string g_flacPath1 = TEST_FILE_PATH + string("audio/flac_48000_1_duplicate_information.flac");
 string g_m4aPath = TEST_FILE_PATH + string("audio/m4a_48000_1.m4a");
 string g_mp3Path = TEST_FILE_PATH + string("audio/mp3_48000_1_cover.mp3");
 string g_oggPath = TEST_FILE_PATH + string("audio/ogg_48000_1.ogg");
@@ -1053,6 +1054,25 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1111, TestSize.Level1)
     fwrite(addr_, sizeof(uint8_t), buffSize_, saveFile);
     fclose(saveFile);
 #endif
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1112
+ * @tc.desc: get metadata artist when the file has multiple duplicate artists
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1112, TestSize.Level1)
+{
+    fd_ = OpenFile(g_flacPath1);
+    size_ = GetFileSize(g_flacPath1);
+    printf("---- %s ----\n", g_flacPath1.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ARTIST, formatVal_.artist));
+    ASSERT_EQ(formatVal_.artist, "artist");
 }
 
 /**
