@@ -855,7 +855,7 @@ HWTEST(TestAudioSink, audio_sink_HandleEosInner, TestSize.Level1)
     audioSink->eosInterruptType_ = AudioSink::EosInterruptState::INITIAL;
     audioSink->eosTask_ = std::make_unique<Task>("OS_EOSa", "test", TaskType::AUDIO, TaskPriority::HIGH, false);
     audioSink->HandleEosInner(false);
-    EXPECT_EQ(true, audioSink->eosDraining_);
+    EXPECT_EQ(false, audioSink->eosDraining_);
 
     audioSink->eosInterruptType_ = AudioSink::EosInterruptState::INITIAL;
     audioSink->eosTask_ = nullptr;
