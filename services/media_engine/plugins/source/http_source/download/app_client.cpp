@@ -63,7 +63,7 @@ void AppClient::MapToString(std::map<std::string, std::string> httpHeader)
         iter != httpHeaderTmp.end(); iter++) {
         headerStr = iter->first + " : " + iter->second;
         char* headerTmp = (char*)headerStr.c_str();
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR " AppClient header: " PUBLIC_LOG_S,
+        MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient header: " PUBLIC_LOG_S,
             FAKE_POINTER(this), (char*)headerStr.c_str());
         void* buffer = reinterpret_cast<void*>(headerTmp);
         rxHeader_(buffer, 1, 1, userParam_);
