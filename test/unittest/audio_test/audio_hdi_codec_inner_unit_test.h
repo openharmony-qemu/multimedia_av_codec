@@ -35,14 +35,6 @@ namespace Plugins {
 namespace Hdi {
 using namespace OHOS::HDI::Codec::V3_0;
 
-class AudioHdiCodecInnerUnitTest : public testing::Test {
-public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
-};
-
 class HdiCodecInner : public HdiCodec {
 public:
     HdiCodecInner() = default;
