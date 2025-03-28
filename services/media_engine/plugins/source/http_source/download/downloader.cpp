@@ -799,25 +799,26 @@ bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
 size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader)
 {
     auto currentRequest_ = mediaDownloader->currentRequest_;
-    int64_t needDropLen = currentRequest_->startPos_ - currentRequest_->dropedDataLen_;
     int64_t writeOffSet = -1;
-    if (needDropLen > 0) {
-        writeOffSet = needDropLen >= static_cast<int64_t>(dataLen) ? 0 : needDropLen; // 0:drop all
+    if (currentRequest_->startPos_ > 0) {
+        writeOffSet = currentRequest_->startPos_ >= static_cast<int64_t>(dataLen) ?
+            0 : currentRequest_->startPos_; // 0:drop all
     }
     bool dropRet = false;
+    uint32_t writeLen = 0;
     if (writeOffSet > 0) {
         int64_t secondParam = static_cast<int64_t>(dataLen) - writeOffSet;
         if (secondParam < 0) {
             secondParam = 0;
         }
-        dropRet = currentRequest_->saveData_(static_cast<uint8_t *>(buffer) + writeOffSet,
-                                             static_cast<uint32_t>(secondParam), mediaDownloader->isNotBlock_);
+        writeLen = currentRequest_->saveData_(static_cast<uint8_t *>(buffer) + writeOffSet,
+            static_cast<uint32_t>(secondParam), mediaDownloader->isNotBlock_);
+        dropRet = writeLen == secondParam;
         currentRequest_->dropedDataLen_ = currentRequest_->dropedDataLen_ + writeOffSet;
         MEDIA_LOG_D("DropRetryData: last drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
                     currentRequest_->dropedDataLen_, currentRequest_->startPos_);
     } else if (writeOffSet == 0) {
-        currentRequest_->dropedDataLen_ = currentRequest_->dropedDataLen_ +
-                                            static_cast<int64_t>(dataLen);
+        currentRequest_->dropedDataLen_ += static_cast<int64_t>(dataLen);
         dropRet = true;
         MEDIA_LOG_D("DropRetryData: drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
                     currentRequest_->dropedDataLen_, currentRequest_->startPos_);
@@ -828,10 +829,15 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
         currentRequest_->retryOnGoing_ = false;
         currentRequest_->dropedDataLen_ = 0;
         if (writeOffSet > 0) {
-            currentRequest_->startPos_ = currentRequest_->startPos_ +
-                                         static_cast<int64_t>(dataLen) - writeOffSet;
+            currentRequest_->startPos_ += static_cast<int64_t>(dataLen) - writeOffSet;
         }
         MEDIA_LOG_I("drop data finished, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
+    }
+    if (!dropRet && mediaDownloader->sourceLoader_ != nullptr) {
+        mediaDownloader->currentRequest_->startPos_ += writeLen;
+        mediaDownloader->PauseLoop(true);
+        mediaDownloader->currentRequest_->retryOnGoing_ = true;
+        mediaDownloader->currentRequest_->dropedDataLen_ = 0;
     }
     return dropRet ? dataLen : 0; // 0:save data failed or drop error
 }
@@ -911,6 +917,8 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     if (writeLen != dataLen) {
         if (mediaDownloader->sourceLoader_ != nullptr) {
             mediaDownloader->PauseLoop(true);
+            mediaDownloader->currentRequest_->retryOnGoing_ = true;
+            mediaDownloader->currentRequest_->dropedDataLen_ = 0;
         }
         MEDIA_LOG_W("Save data failed.");
         return 0; // save data failed, make perform finished.
