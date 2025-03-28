@@ -161,6 +161,10 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     userCap.blockSize = {hdiVideoCap.blockSize.width, hdiVideoCap.blockSize.height};
     userCap.pixFormat = GetSupportedFormat(hdiVideoCap);
     userCap.bitrateMode = GetSupportedBitrateMode(hdiVideoCap);
+    if (IsSupportSQR(userCap.bitrateMode)) {
+        userCap.maxBitrate = {hdiCap.bitRate.min, hdiCap.bitRate.max};
+        userCap.sqrFactor =  {0, MAX_ENCODE_SQRFACTOR};
+    }
     GetCodecProfileLevels(hdiCap, userCap);
     userCap.measuredFrameRate = GetMeasuredFrameRate(hdiVideoCap);
     userCap.supportSwapWidthHeight = hdiCap.canSwapWidthHeight;
@@ -197,6 +201,17 @@ vector<int32_t> HCodecList::GetSupportedBitrateMode(const CodecVideoPortCap& hdi
         }
     }
     return vec;
+}
+
+bool HCodecList::IsSupportSQR(const vector<int32_t>& supportBitrateMode)
+{
+    VideoEncodeBitrateMode innerMode = SQR;
+    auto it = std::find(supportBitrateMode.begin(), supportBitrateMode.end(),  static_cast<int32_t>(innerMode));
+    if (it != supportBitrateMode.end()) {
+        LOGI("support SQR bitRateMode!");
+        return true;
+    }
+    return false;
 }
 
 vector<int32_t> HCodecList::GetSupportedFormat(const CodecVideoPortCap& hdiVideoCap)
