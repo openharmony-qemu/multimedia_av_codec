@@ -25,7 +25,7 @@ int32_t GetAvcEncoderCapabilityList(std::vector<CapabilityData> &caps)
 
 void CreateAvcEncoderByName(const std::string &name, std::shared_ptr<CodecBase> &codec)
 {
-    codec = std::shared_ptr<AvcEncoder>(name);
+    codec = std::make_shared<AvcEncoder>(name);
 }
 }
 } // namespace OHOS::MediaAVCodec::Codec
