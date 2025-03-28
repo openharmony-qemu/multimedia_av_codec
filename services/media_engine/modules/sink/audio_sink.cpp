@@ -907,13 +907,16 @@ void AudioSink::GetAvailableOutputBuffers()
     Status ret = Status::OK;
     while (ret == Status::OK) {
         ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
-        FALSE_RETURN_NOLOG(ret == Status::OK && filledInputBuffer != nullptr);
+        if (ret != Status::OK || filledInputBuffer == nullptr) {
+            break;
+        }
         if (filledInputBuffer->memory_ == nullptr || filledInputBuffer->pts_ < 0) {
             inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
             continue;
         }
-        FALSE_RETURN_NOLOG(filledInputBuffer->memory_ != nullptr);
-        FALSE_RETURN(DropApeBuffer(filledInputBuffer) == false);
+        if (DropApeBuffer(filledInputBuffer)) {
+            break;
+        }
         if (IsEosBuffer(filledInputBuffer)) {
             MEDIA_LOG_I("AudioSink Recv EOS");
             isEosBuffer_ = true;
