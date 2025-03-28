@@ -76,7 +76,7 @@ public:
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
     void SetIsReportedErrorCode() override;
-    bool isNotRetry(const std::shared_ptr<DownloadRequest>& request) override
+    bool IsNotRetry(const std::shared_ptr<DownloadRequest>& request) override
     {
         if (isRingBuffer_ && isSelectingBitrate_.load()) {
             return false;
