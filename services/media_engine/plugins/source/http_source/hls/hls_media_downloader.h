@@ -165,6 +165,8 @@ private:
     void HandleWaterLine();
     bool CacheBufferFullLoop();
     bool IsNeedBufferForPlaying();
+    bool CheckLoopTimeout(int64_t loopStartTime);
+    void HandleSaveDataLoopContinue();
 
 private:
     size_t totalBufferSize_ {0};
@@ -306,6 +308,7 @@ private:
     std::atomic<bool> isNeedResume_ {false};
     uint64_t cachedDuration_ {0};
     uint64_t memorySize_ {0};
+    SteadyClock loopInterruptClock_;
 };
 }
 }

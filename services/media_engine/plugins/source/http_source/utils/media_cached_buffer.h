@@ -24,11 +24,13 @@
 
 #include "common/log.h"
 #include "lru_cache.h"
+#include "osal/utils/steady_clock.h"
 
 namespace OHOS {
 namespace Media {
 constexpr uint32_t CHUNK_SIZE = 16 * 1024;
 constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
+constexpr int64_t LOOP_TIMEOUT = 60; // s
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = Clock::time_point;
@@ -126,9 +128,14 @@ protected:
                 return fragmentPos;
             }
         }
-
+        int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
         auto fragmentCachePos = std::find_if(fragmentCacheBuffer_.begin(), fragmentCacheBuffer_.end(),
-            [offset, pred](const auto& fragment) {
+            [offset, pred, loopStartTime, this](const auto& fragment) {
+                int64_t now = this->loopInterruptClock_.ElapsedSeconds();
+                int64_t loopDuration = now > loopStartTime ? now - loopStartTime : 0;
+                if (loopDuration > LOOP_TIMEOUT) {
+                    return true;
+                }
                 if (pred(offset, fragment.offsetBegin, fragment.offsetBegin + fragment.dataLength)) {
                     return true;
                 }
@@ -164,6 +171,8 @@ protected:
     void ResetReadSizeAlloc();
     CacheChunk* UpdateFragmentCacheForDelHead(FragmentIterator& fragmentIter);
     void HandleFragmentPos(FragmentIterator& fragmentIter);
+    void UpdateFragment(FragmentIterator& fragmentPos, size_t hasReadSize, uint64_t offsetChunk);
+    bool CheckLoopTimeout(int64_t loopStartTime);
 
 protected:
     std::mutex mutex_;
@@ -181,6 +190,7 @@ protected:
     LruCache<int64_t, FragmentIterator> lruCache_;
 
     bool isLargeOffsetSpan_ {false};
+    SteadyClock loopInterruptClock_;
 };
 
 class CacheMediaBuffer {

@@ -37,6 +37,8 @@ struct ReadDataInfo {
     bool isEos_ = false;
 };
 
+constexpr int64_t LOOP_TIMEOUT = 60; // s
+
 class MediaDownloader {
 public:
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
