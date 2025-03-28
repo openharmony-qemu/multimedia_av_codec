@@ -805,7 +805,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_sqr_bitrate_with_qual
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE,SQR);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 30);
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
