@@ -304,7 +304,7 @@ Status AudioSink::Pause()
                 ScopedTimer timer("AudioSinkPlugin Pause BOOT", OVERTIME_WARNING_MS);
                 {
                     std::unique_lock<std::mutex> eosCbLock(eosCbMutex_);
-                    hangOnEosCb_ = false;
+                    hangeOnEosCb_ = false;
                     eosCbCond_.notify_all();
                 }
                 plugin_->PauseTransitent();
