@@ -146,7 +146,6 @@ public:
     int32_t GetCurrentVideoTrackId();
     uint32_t GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos);
     void SetIsEnableReselectVideoTrack(bool isEnable);
-    bool IsHasMultiVideoTrack();
     void SetApiVersion(int32_t apiVersion);
 private:
     class AVBufferQueueProducerListener;
@@ -323,7 +322,6 @@ private:
     bool isAutoMaintainPts_ = false;
     std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
     bool isEnableReselectVideoTrack_ {false};
-    int32_t videoTrackCount_ = 0;
     uint32_t targetVideoTrackId_ {TRACK_ID_DUMMY};
     SyncFrameInfo syncFrameInfo_ {};
     std::mutex syncFrameInfoMutex_ {};
