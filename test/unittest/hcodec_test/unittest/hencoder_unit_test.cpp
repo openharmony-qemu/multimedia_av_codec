@@ -791,6 +791,142 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cq_bitrate_invalid_quality, T
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
+#ifdef HMOS_TEST
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_sqr_bitrate_with_quality, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 30);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_sqr_bitrate_with_sqrfactor_maxbitrate, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, 30);
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, 12000000);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_sqr_bitrate_with_sqrfactor_without_maxbitrate, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, 30);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_sqr_bitrate_with_maxbitrate_without_sqrfactor, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, 12000000);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_sqr_bitrate_with_nothing, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_sqr_bitrate_with_bitrate_without_maxbitrate, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 10000);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_sqr_bitrate_with_maxbitrate_with_invalid_bitrate, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, 12000000);
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 10000);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+#endif
+
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_bitrate_mode, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
@@ -960,6 +1096,32 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_temporal_GOP_size, Te
     }
 }
 
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_no_temporal_GOP_size, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    CapabilityData cap;
+    int32_t ret = GetEncoderCapabilityForMime(cap, "video/hevc");
+    ASSERT_TRUE(ret == AVCS_ERR_OK);
+ 
+    auto TSVCCap = cap.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
+    if (TSVCCap != cap.featuresMap.end()) {
+        Media::Meta meta{};
+        int32_t err = testObj->Init(meta);
+        ASSERT_TRUE(err == AVCS_ERR_OK);
+        Format format;
+        format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 2); // 2: gop mode
+        ret = testObj->Configure(format);
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+    }
+}
+
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_temporal_scale_and_LTR, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
@@ -987,6 +1149,81 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_temporal_scale_and_LT
         ret = testObj->Configure(format);
         ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
     }
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_repeat_encode_ok, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, 30); // after 30ms repeat
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, 10); // max repeat 10 frames
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+ 
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_repeat_encode_invalid_after, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, 0); // after 0ms repeat
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, 10); // max repeat 10 frames
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+}
+ 
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_repeat_encode_invalid_maxCount, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, 30); // after 30ms repeat
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, 0); // max repeat 10 frames
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+}
+ 
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_repeat_encode_no_maxCount, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, 30); // after 30ms repeat
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
 /* ============== GET_OUTPUT_FORMAT ============== */
