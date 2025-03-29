@@ -30,6 +30,7 @@
 #include "video_decoder_adapter.h"
 #include "avcodec_sysevent.h"
 #include "media_core.h"
+#include "scoped_timer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "VideoDecoderAdapter" };
@@ -40,6 +41,7 @@ namespace Media {
 using namespace MediaAVCodec;
 using FileType = OHOS::Media::Plugins::FileType;
 const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
+static const int64_t CODEC_START_WARNING_MS = 50;
 
 VideoDecoderCallback::VideoDecoderCallback(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
 {
@@ -158,7 +160,11 @@ Status VideoDecoderAdapter::Start()
     MEDIA_LOG_I_SHORT("Start enter.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     FALSE_RETURN_V_MSG(isConfigured_, Status::ERROR_INVALID_STATE, "mediaCodec_ is not configured");
-    int32_t ret = mediaCodec_->Start();
+    int32_t ret;
+    {
+        ScopedTimer timer("mediaCodec Start", CODEC_START_WARNING_MS);
+        ret = mediaCodec_->Start();
+    }
     if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
         std::string instanceId = std::to_string(instanceId_);
         struct VideoCodecFaultInfo videoCodecFaultInfo;
@@ -258,6 +264,7 @@ void VideoDecoderAdapter::PrepareInputBufferQueue()
         MemoryType::UNKNOWN_MEMORY, VIDEO_INPUT_BUFFER_QUEUE_NAME, true);
     inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
     inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
+    isRenderStarted_ = false;
 }
 
 sptr<AVBufferQueueProducer> VideoDecoderAdapter::GetBufferQueueProducer()
@@ -290,6 +297,12 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
             tmpBuffer->memory_->SetSize(0);
         }
         FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr.");
+        if (!isRenderStarted_.load() && !(tmpBuffer->flag_& static_cast<uint32_t>(Plugins::AVBufferFlag::EOS))) {
+            MEDIA_LOG_I("AquireAvailableInputBuffer for first frame,  index: %{public}u,  bufferid: %{public}" PRIu64
+                ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),
+                tmpBuffer->pts_, tmpBuffer->flag_);
+            isRenderStarted_ = true;
+        }        
         int32_t ret = mediaCodec_->QueueInputBuffer(index);
         if (ret != ERR_OK) {
             MEDIA_LOG_E_SHORT("QueueInputBuffer failed, index: %{public}u,  bufferid: %{public}" PRIu64

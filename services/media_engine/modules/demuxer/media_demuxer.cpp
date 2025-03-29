@@ -41,6 +41,7 @@
 #include "demuxer_plugin_manager.h"
 #include "media_demuxer_pts_functions.cpp"
 #include "avcodec_log.h"
+#include "scoped_timer.h"
 
 namespace {
 const std::string DUMP_PARAM = "a";
@@ -75,6 +76,12 @@ constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if
 constexpr int32_t US_TO_S = 1000000;
 constexpr int32_t US_TO_MS = 1000;
 constexpr int32_t SAMPLE_BUFFER_SIZE_EXTRA = 128;
+constexpr int64_t SEEK_ONLINE_WARNING_MS = 600;
+constexpr int64_t SEEKCLOSEST_ONLINE_WARNING_MS = 800;
+constexpr int64_t SEEK_LOCAL_WARNING_MS = 78;
+constexpr int64_t SEEKCLOSEST_LOCAL_WARNING_MS = 309;
+constexpr int64_t READSAMPLE_AUIDO_WARNING_MS = 50;
+constexpr int64_t READSAMPLE_WARNING_MS = 100;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
@@ -1252,8 +1259,10 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_D("Source seek");
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
+            ScopedTimer timer("seek closest online", SEEKCLOSEST_ONLINE_WARNING_MS);
             ret = source_->SeekToTime(seekTime, SeekMode::SEEK_PREVIOUS_SYNC);
         } else {
+            ScopedTimer timer("seek online", SEEK_ONLINE_WARNING_MS);
             ret = source_->SeekToTime(seekTime, SeekMode::SEEK_CLOSEST_SYNC);
         }
         if (subtitleSource_) {
@@ -1264,8 +1273,10 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     } else {
         MEDIA_LOG_D("Demuxer seek");
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
+            ScopedTimer timer("seek closest local", SEEKCLOSEST_LOCAL_WARNING_MS);
             ret = demuxerPluginManager_->SeekTo(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
         } else {
+            ScopedTimer timer("seek closest", SEEK_LOCAL_WARNING_MS);
             ret = demuxerPluginManager_->SeekTo(seekTime, mode, realSeekTime);
         }
     }
@@ -2139,6 +2150,7 @@ Status MediaDemuxer::HandleTrackEos(uint32_t trackId)
 void MediaDemuxer::SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer)
 {
     FALSE_RETURN_MSG(outputBuffer != nullptr, "outputBuffer is nullptr.");
+
     MEDIA_LOG_D("OutputBuffer PTS: " PUBLIC_LOG_D64 " DTS: " PUBLIC_LOG_D64, outputBuffer->pts_, outputBuffer->dts_);
     outputBuffer->pts_ = outputBuffer->dts_;
 }
@@ -2232,7 +2244,12 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Demuxer plugin is nullptr");
     }
 
-    Status ret = ReadSampleWithPerfRecord(pluginTemp, innerTrackID, sample);
+    int64_t threshold = trackId == audioTrackId_ ? READSAMPLE_AUIDO_WARNING_MS : READSAMPLE_WARNING_MS;
+    Status ret = Status::OK;
+    {
+        ScopedTimer timer("ReadSample", threshold);
+        ret = ReadSampleWithPerfRecord(pluginTemp, innerTrackID, sample);
+    }
     if (ret == Status::END_OF_STREAM) {
         MEDIA_LOG_I("Read eos for track " PUBLIC_LOG_U32, trackId);
     } else if (ret != Status::OK) {

@@ -18,9 +18,11 @@
 #include "common/log.h"
 #include "meta/meta.h"
 #include "audio_decoder_adapter.h"
+#include "scoped_timer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioDecoderAdapter"};
+constexpr int64_t AUDIOCODEC_START_WARNING_MS = 50;
 }
 
 namespace OHOS {
@@ -88,7 +90,11 @@ Status AudioDecoderAdapter::Start()
         return Status::OK;
     }
     FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
-    int32_t ret = audiocodec_->Start();
+    int32_t ret;
+    {
+        ScopedTimer timer("AudioCodec Start", AUDIOCODEC_START_WARNING_MS);
+        ret = audiocodec_->Start();
+    }
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     isRunning_ = true;
     MEDIA_LOG_D("out");

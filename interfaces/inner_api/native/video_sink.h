@@ -53,6 +53,7 @@ private:
     void UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
         const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void PerfRecord(int64_t waitTime);
+    void ReportPts(int64_t nowPts);
 
     class VideoLagDetector : public LagDetector {
     public:

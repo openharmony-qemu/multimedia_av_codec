@@ -28,6 +28,7 @@
 #include "osal/utils/util.h"
 #include "parameters.h"
 #include "scope_guard.h"
+#include "scoped_timer.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
@@ -46,6 +47,7 @@ static const uint32_t PREROLL_WAIT_TIME = 1000; // Lock wait for 1000ms.
 static const uint32_t TASK_DELAY_TOLERANCE = 5 * 1000 * 1000; // task delay tolerance 5_000_000ns also 5ms
 static const int64_t MAX_DEBUG_LOG = 10;
 static const int32_t MAX_ADVANCE_US = 80000; // max advance us at render time
+static const int64_t OVERTIME_WARNING_MS = 50;
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -312,8 +314,10 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
             Status::ERROR_INVALID_PARAMETER, "get name by mime failed.");
         std::string secureDecoderName = baseName + ".secure";
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder %{public}s", secureDecoderName.c_str());
+        ScopedTimer timer("drm-protected videos decoder Init", OVERTIME_WARNING_MS);
         ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, false, secureDecoderName);
     } else {
+        ScopedTimer timer("VideoDecoder Init", OVERTIME_WARNING_MS);
         ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, codecMimeType_);
     }
 

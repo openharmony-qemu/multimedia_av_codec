@@ -34,6 +34,7 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_time.h"
 #include "source/source.h"
+#include "scoped_timer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "StreamDemuxer" };
@@ -44,6 +45,7 @@ namespace Media {
 
 const int32_t TRY_READ_SLEEP_TIME = 10;  //ms
 const int32_t TRY_READ_TIMES = 10;
+constexpr int64_t SOURCE_READ_WARNING_MS = 100;
 constexpr uint64_t LIVE_CONTENT_LENGTH = 2147483646;
 StreamDemuxer::StreamDemuxer() : position_(0)
 {
@@ -244,7 +246,10 @@ Status StreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size,
     Status err = Status::OK;
     int32_t retryTimes = 0;
     while (true && !isInterruptNeeded_.load()) {
-        err = source_->Read(streamID, data, offset, size);
+        {
+            ScopedTimer timer("Source Read", SOURCE_READ_WARNING_MS);
+            err = source_->Read(streamID, data, offset, size);
+        }
         if (IsDash() && streamID != data->streamID) {
             break;
         }

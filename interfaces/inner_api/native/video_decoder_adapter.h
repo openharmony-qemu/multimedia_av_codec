@@ -99,6 +99,7 @@ private:
     PerfRecorder perfRecorder_ {};
     int32_t fileType_{0};
     std::deque<int64_t> inputBufferDtsQue_;
+    std::atomic<bool> isRenderStarted_{false};
 };
 
 class VideoDecoderCallback : public OHOS::MediaAVCodec::MediaCodecCallback {

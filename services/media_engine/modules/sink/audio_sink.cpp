@@ -18,6 +18,7 @@
 #include "plugin/plugin_manager_v2.h"
 #include "common/log.h"
 #include "calc_max_amplitude.h"
+#include "scoped_timer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSink" };
@@ -33,6 +34,8 @@ constexpr int64_t AUDIO_SAMPLE_32_BIT = 4;
 constexpr int64_t SEC_TO_US = 1000 * 1000;
 constexpr int64_t EOS_CALLBACK_WAIT_MS = 500;
 constexpr int32_t BOOT_APP_UID = 1003;
+constexpr int64_t INIT_PLUGIN_WARNING_MS = 20;
+constexpr int64_t OVERTIME_WARNING_MS = 50;
 }
 
 namespace OHOS {
@@ -71,6 +74,7 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
     auto sink = audioSink_.lock();
     FALSE_RETURN_MSG(sink != nullptr, "audioSink_ is nullptr");
     AudioStandard::BufferDesc bufferDesc;
+    MEDIA_LOG_D("GetBufferDesc in");
     Status ret = sink->GetBufferDesc(bufferDesc);
     FALSE_RETURN_MSG(ret == Status::OK, "GetBufferDesc fail, ret=" PUBLIC_LOG_D32, ret);
     bufferDesc.dataLength = 0;
@@ -161,7 +165,10 @@ Status AudioSink::InitAudioSinkPlugin(std::shared_ptr<Meta>& meta,
     meta->SetData(Tag::APP_UID, appUid_);
     plugin_->SetEventReceiver(receiver);
     plugin_->SetParameter(meta);
-    plugin_->Init();
+    {
+        ScopedTimer timer("InitAudioSinkPlugin", INIT_PLUGIN_WARNING_MS);
+        plugin_->Init();
+    }
     if (isCallbackMode_) {
         audioSinkDataCallback_ = std::make_shared<AudioSinkDataCallbackImpl>(shared_from_this());
         Status ret = plugin_->SetRequestDataCallback(audioSinkDataCallback_);
@@ -252,7 +259,11 @@ Status AudioSink::Prepare()
 
 Status AudioSink::Start()
 {
-    Status ret = plugin_->Start();
+    Status ret = Status::OK;
+    {
+        ScopedTimer timer("Source InitPlugin", OVERTIME_WARNING_MS);
+        ret = plugin_->Start();
+    }
     if (ret != Status::OK) {
         MEDIA_LOG_I("AudioSink start error " PUBLIC_LOG_D32, ret);
         return ret;
@@ -287,21 +298,24 @@ Status AudioSink::Pause()
     Status ret = Status::OK;
     underrunDetector_.Reset();
     lagDetector_.Reset();
-    if (appUid_ == BOOT_APP_UID) {
-        if (eosTask_  != nullptr) {
-            eosTask_->SubmitJobOnce([this] {
-                {
-                    std::unique_lock<std::mutex> eosCbLock(eosCbMutex_);
-                    hangeOnEosCb_ = false;
-                    eosCbCond_.notify_all();
-                }
-                plugin_->PauseTransitent();
-            });
+    {
+        ScopedTimer timer("AudioSinkPlugin Pause", OVERTIME_WARNING_MS);
+        if (appUid_ == BOOT_APP_UID) {
+            if (eosTask_  != nullptr) {
+                eosTask_->SubmitJobOnce([this] {
+                    {
+                        std::unique_lock<std::mutex> eosCbLock(eosCbMutex_);
+                        hangOnEosCb_ = false;
+                        eosCbCond_.notify_all();
+                    }
+                    plugin_->PauseTransitent();
+                });
+            }
+        } else if (isTransitent_ || (isEos_ && (isCalledBySystemApp_ || isLoop_))) {
+            ret = plugin_->PauseTransitent();
+        } else {
+            ret = plugin_->Pause();
         }
-    } else if (isTransitent_ || (isEos_ && (isCalledBySystemApp_ || isLoop_))) {
-        ret = plugin_->PauseTransitent();
-    } else {
-        ret = plugin_->Pause();
     }
     forceUpdateTimeAnchorNextTime_ = true;
     if (ret != Status::OK) {
@@ -734,7 +748,12 @@ void AudioSink::AudioDataSynchroizer::UpdateLastBufferPTS(int64_t bufferOffset, 
     MEDIA_LOG_D("lastBuffer Info: lastBufferPTS_ is " PUBLIC_LOG_D64 " lastBufferOffset_ is " PUBLIC_LOG_D64
         " and compensateDuration_ is " PUBLIC_LOG_D64, lastBufferPTS_, lastBufferOffset_, compensateDuration_);
     curBufferPTS_ = curBufferPTS_ == HST_TIME_NONE ? 0 : curBufferPTS_;
-    lastBufferPTS_ = curBufferPTS_ + lastBufferOffset_ + bufferDuration_;
+    int64_t tempPTS = curBufferPTS_ + lastBufferOffset_ + bufferDuration_;
+    if (tempPTS < lastBufferPTS_) {
+        MEDIA_LOG_W("audio pts is not increasing, last pts: " PUBLIC_LOG_D64 ", current pts: " PUBLIC_LOG_D64,
+            lastBufferPTS_, tempPTS);
+    }
+    lastBufferPTS_ = tempPTS;
     lastBufferOffset_ = bufferOffset;
     sumDuration_ += bufferDuration_;
     FALSE_RETURN_MSG(speed != 0, "speed is 0");
