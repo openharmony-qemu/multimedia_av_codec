@@ -150,8 +150,6 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     userCap.isVendor = true;
     userCap.maxInstance = hdiCap.maxInst;
     userCap.bitrate = {hdiCap.bitRate.min, hdiCap.bitRate.max};
-    userCap.maxBitrate = {hdiCap.bitRate.min, hdiCap.bitRate.max};
-    userCap.sqrFactor =  {0, MAX_ENCODE_SQRFACTOR};
     userCap.alignment = {hdiVideoCap.whAlignment.widthAlignment, hdiVideoCap.whAlignment.heightAlignment};
     userCap.width = {hdiVideoCap.minSize.width, hdiVideoCap.maxSize.width};
     userCap.height = {hdiVideoCap.minSize.height, hdiVideoCap.maxSize.height};
