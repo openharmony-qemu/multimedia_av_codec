@@ -786,8 +786,8 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
                     "frame_size: %{public}d",
                     cachedFrame_->nb_samples, avCodecContext_->frame_size);
     }
-    int32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
-        avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);
+    int32_t destSamplesPerFrame = (avCodecContext_->frame_size > cachedFrame_->nb_samples) ?
+        avCodecContext_->frame_size : cachedFrame_->nb_samples;
     cachedFrame_->extended_data = cachedFrame_->data;
     cachedFrame_->extended_data[0] = destBuffer;
     cachedFrame_->linesize[0] = cachedFrame_->nb_samples * bytesPerSample;
