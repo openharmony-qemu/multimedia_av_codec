@@ -298,24 +298,24 @@ Status AudioSink::Pause()
     Status ret = Status::OK;
     underrunDetector_.Reset();
     lagDetector_.Reset();
-    {
-        ScopedTimer timer("AudioSinkPlugin Pause", OVERTIME_WARNING_MS);
-        if (appUid_ == BOOT_APP_UID) {
-            if (eosTask_  != nullptr) {
-                eosTask_->SubmitJobOnce([this] {
-                    {
-                        std::unique_lock<std::mutex> eosCbLock(eosCbMutex_);
-                        hangOnEosCb_ = false;
-                        eosCbCond_.notify_all();
-                    }
-                    plugin_->PauseTransitent();
-                });
-            }
-        } else if (isTransitent_ || (isEos_ && (isCalledBySystemApp_ || isLoop_))) {
-            ret = plugin_->PauseTransitent();
-        } else {
-            ret = plugin_->Pause();
+    if (appUid_ == BOOT_APP_UID) {
+        if (eosTask_  != nullptr) {
+            eosTask_->SubmitJobOnce([this] {
+                ScopedTimer timer("AudioSinkPlugin Pause BOOT", OVERTIME_WARNING_MS);
+                {
+                    std::unique_lock<std::mutex> eosCbLock(eosCbMutex_);
+                    hangOnEosCb_ = false;
+                    eosCbCond_.notify_all();
+                }
+                plugin_->PauseTransitent();
+            });
         }
+    } else if (isTransitent_ || (isEos_ && (isCalledBySystemApp_ || isLoop_))) {
+        ScopedTimer timer("AudioSinkPlugin PauseTransitent", OVERTIME_WARNING_MS);
+        ret = plugin_->PauseTransitent();
+    } else {
+        ScopedTimer timer("AudioSinkPlugin Pause", OVERTIME_WARNING_MS);
+        ret = plugin_->Pause();
     }
     forceUpdateTimeAnchorNextTime_ = true;
     if (ret != Status::OK) {
