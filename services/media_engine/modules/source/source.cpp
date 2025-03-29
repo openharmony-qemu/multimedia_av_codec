@@ -23,9 +23,11 @@
 #include "common/media_source.h"
 #include "plugin/plugin_manager_v2.h"
 #include "source.h"
+#include "scoped_timer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "Source" };
+constexpr int64_t SOURCE_INIT_WARNING_MS = 20;
 }
 
 namespace OHOS {
@@ -95,7 +97,10 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
     Status ret = FindPlugin(source);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SetSource FindPlugin failed");
 
-    ret = InitPlugin(source);
+    {
+        ScopedTimer timer("Source InitPlugin", SOURCE_INIT_WARNING_MS);
+        ret = InitPlugin(source);
+    }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SetSource InitPlugin failed");
 
     if (plugin_ != nullptr) {

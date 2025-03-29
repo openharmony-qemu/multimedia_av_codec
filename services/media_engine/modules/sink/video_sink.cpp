@@ -114,6 +114,7 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         }
         UpdateTimeAnchorIfNeeded(nowCt, waitTime, buffer);
         lagDetector_.CalcLag(buffer);
+        ReportPts(buffer->pts_);
         lastBufferRelativePts_ = buffer->pts_ - firstPts_;
     } else {
         MEDIA_LOG_I_SHORT("Video sink EOS");
@@ -131,6 +132,14 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     discardFrameCnt_++;
     PerfRecord(waitTime);
     return -1;
+}
+
+void VideoSink::ReportPts(int64_t nowPts)
+{
+    if (nowPts < lastPts_) {
+        MEDIA_LOG_W("video pts is not increasing, last pts: " PUBLIC_LOG_D64 ", current pts: " PUBLIC_LOG_D64,
+            lastPts_, nowPts);
+    }
 }
 
 Status VideoSink::SetPerfRecEnabled(bool isPerfRecEnabled)

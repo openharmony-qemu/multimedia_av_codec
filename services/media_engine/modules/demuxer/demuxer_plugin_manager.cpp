@@ -36,6 +36,7 @@
 #include "plugin/plugin_time.h"
 #include "base_stream_demuxer.h"
 #include "media_demuxer.h"
+#include "scoped_timer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerPluginManager" };
@@ -43,6 +44,7 @@ constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 constexpr int WAIT_INITIAL_BUFFERING_END_TIME_MS = 3000;
 constexpr int32_t API_VERSION_16 = 16;
 constexpr int32_t API_VERSION_18 = 18;
+constexpr int64_t SNIFF_WARNING_MS = 200;
 }
 
 namespace OHOS {
@@ -265,7 +267,11 @@ Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr
         return Status::ERROR_UNKNOWN;
     }
 
-    std::string type = streamDemuxer->SnifferMediaType(streamID);
+    std::string type;
+    {
+        ScopedTimer timer("SnifferMediaType", SNIFF_WARNING_MS);
+        type = streamDemuxer->SnifferMediaType(streamID);
+    }
     MediaTypeFound(streamDemuxer, type, streamID);
 
     FALSE_RETURN_V_MSG_E(streamInfoMap_[streamID].plugin != nullptr, Status::ERROR_INVALID_PARAMETER,
@@ -967,6 +973,5 @@ void DemuxerPluginManager::SetApiVersion(int32_t apiVersion)
 {
     apiVersion_ = apiVersion;
 }
-
 } // namespace Media
 } // namespace OHOS

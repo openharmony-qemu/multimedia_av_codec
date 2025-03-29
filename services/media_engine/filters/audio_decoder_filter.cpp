@@ -22,6 +22,7 @@
 #include "sink/audio_sampleformat.h"
 #include "avcodec_info.h"
 #include "avcodec_sysevent.h"
+#include "scoped_timer.h"
 #ifdef SUPPORT_DRM
 #include "i_keysession_service.h"
 #endif
@@ -37,6 +38,7 @@ using namespace MediaAVCodec;
 using namespace OHOS::Media::Plugins;
 constexpr int32_t SAMPLE_RATE_48K = 48000;
 constexpr int32_t SAMPLE_FORMAT_BIT_DEPTH_16 = 16;
+constexpr int64_t DECODER_INIT_WARNING_MS = 50;
 static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("builtin.player.audiodecoder",
     FilterType::FILTERTYPE_ADEC, [](const std::string& name, const FilterType type) {
         return std::make_shared<AudioDecoderFilter>(name, FilterType::FILTERTYPE_ADEC);
@@ -337,7 +339,11 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     UpdateTrackInfoSampleFormat(mime, meta);
     meta_ = meta;
     SetParameter(meta);
-    auto ret = decoder_->Init(true, mime);
+    Status ret = Status::OK;
+    {
+        ScopedTimer timer("AudioDecoder Init", DECODER_INIT_WARNING_MS);
+        ret = decoder_->Init(true, mime);
+    }
     FALSE_RETURN_V(ret == Status::OK, Status::ERROR_INVALID_PARAMETER);
 
     std::shared_ptr<AudioDecoderCallback> mediaCodecCallback

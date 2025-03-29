@@ -25,6 +25,7 @@
 #include "demuxer_filter.h"
 #include "media_types.h"
 #include "avcodec_sysevent.h"
+#include "scoped_timer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerFilter" };
@@ -39,6 +40,7 @@ using FileType = OHOS::Media::Plugins::FileType;
 namespace {
     const std::string MIME_IMAGE = "image";
     const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
+    const int64_t DEMUXER_START_WARNING_MS = 20;
 }
 static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
     "builtin.player.demuxer", FilterType::FILTERTYPE_DEMUXER,
@@ -347,6 +349,7 @@ Status DemuxerFilter::DoStart()
     MEDIA_LOG_I_SHORT("Loop is not started. PrepareBeforeStart firstly.");
     isLoopStarted = true;
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
+    ScopedTimer timer("Demuxer Start", DEMUXER_START_WARNING_MS);
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->Start();
 }
