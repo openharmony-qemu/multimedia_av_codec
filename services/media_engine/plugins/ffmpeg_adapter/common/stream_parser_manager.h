@@ -57,6 +57,7 @@ public:
     void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData,
         size_t sideDataSize, bool isExtradata);
     void ParseAnnexbExtraData(const uint8_t *sample, int32_t size);
+    std::vector<uint8_t> GetLogInfo();
     
 private:
     StreamParser *streamParser_ {nullptr};

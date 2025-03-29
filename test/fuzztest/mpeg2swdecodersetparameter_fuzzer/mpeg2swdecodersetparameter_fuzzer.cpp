@@ -17,6 +17,7 @@
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
 #include "videodec_sample.h"
+#include <fuzzer/FuzzedDataProvider.h>
 #define FUZZ_PROJECT_NAME "swdecodersetparametermpeg2_fuzzer"
 using namespace std;
 using namespace OHOS;
@@ -43,9 +44,10 @@ bool ChangeBinaryInData(const uint8_t *data, size_t size)
         vDecSample->Start();
     }
     OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("avdec_mpeg2", DEFAULT_WIDTH, DEFAULT_HEIGHT);
-    int32_t intData = *reinterpret_cast<const int32_t *>(data);
-    int64_t longData = *reinterpret_cast<const int64_t *>(data);
-    double doubleData = *reinterpret_cast<const double *>(data);
+    FuzzedDataProvider fdp(data, size);
+    int32_t intData = fdp.ConsumeIntegral<int32_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
+    double doubleData = fdp.ConsumeFloatingPoint<double>();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, intData);

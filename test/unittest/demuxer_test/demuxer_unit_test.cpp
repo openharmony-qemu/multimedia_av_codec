@@ -45,6 +45,7 @@ list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SY
 
 string g_mp4Path = TEST_FILE_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
 string g_mp4Path2 = TEST_FILE_PATH + string("test_mpeg2_B_Gop25_4sec.mp4");
+string g_mp4Path3 = TEST_FILE_PATH + string("test_mpeg2_B_Gop25_4sec_attachment.mkv");
 string g_mp4Path4 = TEST_FILE_PATH + string("zero_track.mp4");
 string g_mp4Path5 = TEST_FILE_PATH + string("timed_metadata_track.mp4");
 string g_mkvPath2 = TEST_FILE_PATH + string("h264_opus_4sec.mkv");
@@ -58,6 +59,7 @@ string g_wavPath = TEST_FILE_PATH + string("audio/wav_48000_1.wav");
 string g_amrPath = TEST_FILE_PATH + string("audio/amr_nb_8000_1.amr");
 string g_amrPath2 = TEST_FILE_PATH + string("audio/amr_wb_16000_1.amr");
 string g_audioVividPath = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.mp4");
+string g_audioVividPath1 = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k_noftyp.mp4");
 string g_audioVividPath2 = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.ts");
 string g_multiSoundTrackMp4Path = TEST_FILE_PATH + string("avcc_aac_mp3.mp4");
 string g_flvPath = TEST_FILE_PATH + string("h264.flv");
@@ -286,6 +288,20 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1000, TestSize.Level1)
     ASSERT_EQ(demuxer_->UnselectTrackByID(1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(-1), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_CreateDemuxer_1001
+ * @tc.desc: create demuxer
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_1001, TestSize.Level1)
+{
+    InitResource(g_mp4Path3, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SelectTrackByID(2), AV_ERR_OK);
 }
 
 /**
@@ -935,6 +951,29 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1180, TestSize.Level1)
     RemoveValue();
 }
 
+/**
+ * @tc.name: Demuxer_ReadSample_1181
+ * @tc.desc: copy current sample to buffer(av3a mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1181, TestSize.Level1)
+{
+    InitResource(g_audioVividPath1, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    uint32_t idx = 0;
+    while (!isEOS(eosFlag_)) {
+        ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+        CountFrames(idx);
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1380);
+    ASSERT_EQ(keyFrames_[0], 1380);
+    RemoveValue();
+}
 
 /**
  * @tc.name: Demuxer_SeekToTime_1000

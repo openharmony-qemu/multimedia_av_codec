@@ -209,6 +209,7 @@ private:
     std::vector<uint32_t> IFramePos_;
     double fps_{0};
     int64_t minPts_ = 0;
+    uint32_t ptsCnt_ = 0;
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
     bool updatePosIsForward_ = true;

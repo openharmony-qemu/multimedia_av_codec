@@ -275,6 +275,7 @@ Status AudioServerSinkPlugin::Init()
         mimeType_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
     rendererOptions_.streamInfo.format = rendererParams_.sampleFormat;
     rendererOptions_.streamInfo.channels = rendererParams_.channelCount;
+    rendererOptions_.rendererInfo.playerType = AudioStandard::PlayerType::PLAYER_TYPE_AV_PLAYER;
     MEDIA_LOG_I_SHORT("Create audio renderer for samplingRate " PUBLIC_LOG_D32 " encoding " PUBLIC_LOG_D32
                 " sampleFormat " PUBLIC_LOG_D32 " channels " PUBLIC_LOG_D32,
                 rendererOptions_.streamInfo.samplingRate, rendererOptions_.streamInfo.encoding,
@@ -291,6 +292,7 @@ Status AudioServerSinkPlugin::Init()
         audioRenderer_->SetOffloadAllowed(false);
     }
     audioRenderer_->SetInterruptMode(audioInterruptMode_);
+    audioRenderer_->SetSourceDuration(sourceDuraionMs_);
     return Status::OK;
 }
 
@@ -565,6 +567,7 @@ void AudioServerSinkPlugin::SetUpParamsSetterMap()
     SetUpAudioRenderInfoSetter();
     SetUpAudioRenderSetFlagSetter();
     SetUpAudioInterruptModeSetter();
+    SetUpAudioRenderSourceDurationSetter();
 }
 
 void AudioServerSinkPlugin::SetUpMimeTypeSetter()
@@ -720,6 +723,16 @@ void AudioServerSinkPlugin::SetUpAudioInterruptModeSetter()
             "AUDIO_INTERRUPT_MODE type should be int32_t");
         AudioInterruptMode2InterruptMode(AnyCast<AudioInterruptMode>(para), audioInterruptMode_);
         SetInterruptMode(audioInterruptMode_);
+        return Status::OK;
+    };
+}
+
+void AudioServerSinkPlugin::SetUpAudioRenderSourceDurationSetter()
+{
+    paramsSetterMap_[Tag::MEDIA_DURATION] = [this](const ValueType &para) {
+        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int64_t>(para), Status::ERROR_MISMATCHED_TYPE,
+            "MEDIA_DURATION type should be int64_t");
+        sourceDuraionMs_ = AnyCast<int64_t>(para);
         return Status::OK;
     };
 }

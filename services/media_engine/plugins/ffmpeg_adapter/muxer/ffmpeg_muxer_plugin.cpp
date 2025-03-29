@@ -44,6 +44,7 @@ constexpr float LONGITUDE_MAX = 180.0f;
 constexpr int32_t MIN_HE_AAC_SAMPLE_RATE = 16000;
 const std::string TIMED_METADATA_HANDLER_NAME = "timed_metadata";
 constexpr int32_t MAX_USERMETA_STRING_LENGTH = 256;
+const std::string LOG_INFO_KEY_STRING = "com.openharmony.video.sei.h_log";
 
 bool IsMuxerSupported(const char *name)
 {
@@ -607,6 +608,26 @@ Status FFmpegMuxerPlugin::SetCodecParameterCuvaByParser(AVStream *stream)
     return Status::NO_ERROR;
 }
 
+void FFmpegMuxerPlugin::SetSeiLogInfo()
+{
+    uint8_t colorTransfer = hevcParser_->GetColorTransfer();
+    if (colorTransfer == static_cast<uint8_t>(TransferCharacteristic::UNSPECIFIED)) { // UNSPECIFIED is 2
+        std::vector<uint8_t> logInfo = hevcParser_->GetLogInfo();
+        std::ostringstream oss;
+        if (logInfo.empty() || logInfo.size() > MAX_USERMETA_STRING_LENGTH / 2) { // 2 characters indicate
+            MEDIA_LOG_E("invalid logInfo, logInfo.size: %{public}zu", logInfo.size());
+            return;
+        }
+        for (uint8_t info : logInfo) {
+            oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(info); // 2 characters indicate
+        }
+        std::string logInfoKey = "moov_level_meta_key_" + LOG_INFO_KEY_STRING;
+        std::string logInfoValue = "00000001" + oss.str();
+        av_dict_set(&formatContext_->metadata, "moov_level_meta_flag", "1", 0);
+        av_dict_set(&formatContext_->metadata, logInfoKey.c_str(), logInfoValue.c_str(), 0);
+    }
+}
+
 Status FFmpegMuxerPlugin::SetDisplayMatrix(AVStream* stream)
 {
     uint32_t displayMatrix[9] = {
@@ -980,6 +1001,7 @@ Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const std::share
                     Status::ERROR_INVALID_DATA, "set color failed!");
                 FALSE_RETURN_V_MSG_E(SetCodecParameterCuvaByParser(st) == Status::NO_ERROR,
                     Status::ERROR_INVALID_DATA, "set cuva flag failed!");
+                SetSeiLogInfo();
             }
             if (!(sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) &&
                 (st->codecpar->codec_id == AV_CODEC_ID_H264)) {

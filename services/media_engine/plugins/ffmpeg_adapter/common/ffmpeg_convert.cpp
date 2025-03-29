@@ -31,6 +31,7 @@ Status Resample::Init(const ResamplePara &resamplePara)
     if (resamplePara_.bitsPerSample != 8 && resamplePara_.bitsPerSample != 24) { // 8 24
         auto destFrameSize = av_samples_get_buffer_size(nullptr, resamplePara_.channels,
                                                         resamplePara_.destSamplesPerFrame, resamplePara_.destFmt, 0);
+        cacheSize_ = destFrameSize;
         resampleCache_.reserve(destFrameSize);
         resampleChannelAddr_.reserve(resamplePara_.channels);
         auto tmp = resampleChannelAddr_.data();
@@ -93,6 +94,40 @@ Status Resample::InitSwrContext(const ResamplePara &resamplePara)
     return Status::OK;
 }
 
+#if defined(_WIN32) || !defined(OHOS_LITE)
+void Resample::ConvertCommon(const uint8_t *srcBuffer, const size_t srcLength,
+                             uint8_t *&destBuffer, size_t &destLength)
+{
+    size_t lineSize = srcLength / resamplePara_.channels;
+    std::vector<const uint8_t *> tmpInput(resamplePara_.channels);
+    tmpInput[0] = srcBuffer;
+    if (av_sample_fmt_is_planar(resamplePara_.srcFfFmt)) {
+        for (size_t i = 1; i < tmpInput.size(); ++i) {
+            tmpInput[i] = tmpInput[i - 1] + lineSize;
+        }
+    }
+    auto samples = lineSize / static_cast<size_t>(av_get_bytes_per_sample(resamplePara_.srcFfFmt));
+    size_t destSize = samples * av_get_bytes_per_sample(resamplePara_.destFmt) * resamplePara_.channels;
+    if (cacheSize_ < destSize) {
+        cacheSize_ = destSize;
+        resampleCache_.reserve(cacheSize_);
+        resampleCache_.assign(cacheSize_, 0);
+        auto tmp = resampleChannelAddr_.data();
+        av_samples_fill_arrays(tmp, nullptr, resampleCache_.data(), resamplePara_.channels,
+                               samples, resamplePara_.destFmt, 0);
+    }
+    auto res = swr_convert(swrCtx_.get(), resampleChannelAddr_.data(), samples, tmpInput.data(), samples);
+    if (res < 0) {
+        MEDIA_LOG_E("resample input failed");
+        destLength = 0;
+    } else {
+        destBuffer = resampleCache_.data();
+        size_t bytesPerSample = static_cast<size_t>(av_get_bytes_per_sample(resamplePara_.destFmt));
+        destLength = static_cast<size_t>(res) * bytesPerSample * resamplePara_.channels;
+    }
+}
+#endif
+
 Status Resample::Convert(const uint8_t *srcBuffer, const size_t srcLength, uint8_t *&destBuffer, size_t &destLength)
 {
 #if defined(_WIN32) || !defined(OHOS_LITE)
@@ -100,6 +135,7 @@ Status Resample::Convert(const uint8_t *srcBuffer, const size_t srcLength, uint8
         FALSE_RETURN_V_MSG(resamplePara_.destFmt == AV_SAMPLE_FMT_S16, Status::ERROR_UNIMPLEMENTED,
                            "resample 8bit to other format can not support");
         destLength = srcLength * 2; // 2
+        cacheSize_ = destLength;
         resampleCache_.reserve(destLength);
         resampleCache_.assign(destLength, 0);
         for (size_t i{0}; i < destLength / 2; i++) {                                                    // 2
@@ -112,6 +148,7 @@ Status Resample::Convert(const uint8_t *srcBuffer, const size_t srcLength, uint8
         FALSE_RETURN_V_MSG(resamplePara_.destFmt == AV_SAMPLE_FMT_S16, Status::ERROR_UNIMPLEMENTED,
                            "resample 24bit to other format can not support");
         destLength = srcLength / 3 * 2; // 3 2
+        cacheSize_ = destLength;
         resampleCache_.reserve(destLength);
         resampleCache_.assign(destLength, 0);
         for (size_t i = 0; i < destLength / 2; i++) {                                                           // 2
@@ -120,25 +157,7 @@ Status Resample::Convert(const uint8_t *srcBuffer, const size_t srcLength, uint8
         }
         destBuffer = resampleCache_.data();
     } else {
-        size_t lineSize = srcLength / resamplePara_.channels;
-        std::vector<const uint8_t *> tmpInput(resamplePara_.channels);
-        tmpInput[0] = srcBuffer;
-        if (av_sample_fmt_is_planar(resamplePara_.srcFfFmt)) {
-            for (size_t i = 1; i < tmpInput.size(); ++i) {
-                tmpInput[i] = tmpInput[i - 1] + lineSize;
-            }
-        }
-        auto samples = lineSize / static_cast<size_t>(av_get_bytes_per_sample(resamplePara_.srcFfFmt));
-        auto res = swr_convert(swrCtx_.get(), resampleChannelAddr_.data(), resamplePara_.destSamplesPerFrame,
-                               tmpInput.data(), samples);
-        if (res < 0) {
-            MEDIA_LOG_E("resample input failed");
-            destLength = 0;
-        } else {
-            destBuffer = resampleCache_.data();
-            size_t bytesPerSample = static_cast<size_t>(av_get_bytes_per_sample(resamplePara_.destFmt));
-            destLength = static_cast<size_t>(res) * bytesPerSample * resamplePara_.channels;
-        }
+        ConvertCommon(srcBuffer, srcLength, destBuffer, destLength);
     }
 #endif
     return Status::OK;

@@ -71,6 +71,7 @@ public:
     void SetAppUid(int32_t appUid) override;
     bool GetBufferingTimeOut() override;
     void NotifyInitSuccess() override;
+    uint64_t GetMemorySize() override;
 
 private:
     void ReceiveMpdStreamInitEvent();
