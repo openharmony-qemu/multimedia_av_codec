@@ -314,7 +314,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
             Status::ERROR_INVALID_PARAMETER, "get name by mime failed.");
         std::string secureDecoderName = baseName + ".secure";
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder %{public}s", secureDecoderName.c_str());
-        ScopedTimer timer("drm-protected videos decoder Init", OVERTIME_WARNING_MS);
+        ScopedTimer timer("drm-protected VideoDecoder Init", OVERTIME_WARNING_MS);
         ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, false, secureDecoderName);
     } else {
         ScopedTimer timer("VideoDecoder Init", OVERTIME_WARNING_MS);
