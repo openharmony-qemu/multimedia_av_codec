@@ -142,21 +142,21 @@ bool ADecBufferDemo::RunCase(const uint8_t *data, size_t size)
 
 bool ADecBufferDemo::ConfigVorbisExtraData(OH_AVFormat *format)
 {
-    std::ifstream inputFile_(INPUT_VORBIS_FILE_PATH, std::ios::binary);
+    std::ifstream inputFile(INPUT_VORBIS_FILE_PATH, std::ios::binary);
     int64_t extradataSize;
-    DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.is_open(), false, "Fatal: file is not open");
-    inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
-    DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.gcount() == sizeof(int64_t), false,
+    DEMO_CHECK_AND_RETURN_RET_LOG(inputFile.is_open(), false, "Fatal: file is not open");
+    inputFile.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
+    DEMO_CHECK_AND_RETURN_RET_LOG(inputFile.gcount() == sizeof(int64_t), false,
                                   "Fatal: read extradataSize bytes error");
     if (extradataSize < 0) {
         return false;
     }
     char buffer[extradataSize];
-    inputFile_.read(buffer, extradataSize);
-    DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.gcount() == extradataSize, false, "Fatal: read extradata bytes error");
+    inputFile.read(buffer, extradataSize);
+    DEMO_CHECK_AND_RETURN_RET_LOG(inputFile.gcount() == extradataSize, false, "Fatal: read extradata bytes error");
     OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), reinterpret_cast<uint8_t *>(buffer),
                           extradataSize);
-    inputFile_.close();
+    inputFile.close();
     return true;
 }
 
