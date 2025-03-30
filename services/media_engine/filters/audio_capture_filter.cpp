@@ -382,7 +382,9 @@ void AudioCaptureFilter::RecordCachedData()
 
     if (firstAudioFramePts_.load() > firstVideoFramePts_.load()) {
         // audio frame is later than video frame, add zeros to the front of the cache queue.
-        int32_t diffCount = (firstAudioFramePts_.load() - firstVideoFramePts_.load()) / AUDIO_CAPTURE_READ_FRAME_TIME;
+        // diffCount less than AUDIO_CAPTURE_MAX_CACHED_FRAMES
+        int32_t diffCount =std::min(AUDIO_CAPTURE_MAX_CACHED_FRAMES, static_cast<int32_t>(
+            (firstAudioFramePts_.load() - firstVideoFramePts_.load()) / AUDIO_CAPTURE_READ_FRAME_TIME));
         MEDIA_LOG_I("Audio late, diffCount: " PUBLIC_LOG_D32, diffCount);
         while (diffCount > 0) {
             auto cacheAudioData = std::shared_ptr<uint8_t>(new uint8_t[bufferSize]{0}, [](uint8_t *p) { delete[] p; });
@@ -391,7 +393,9 @@ void AudioCaptureFilter::RecordCachedData()
         }
     } else {
         // audio frame is faster than video frame, crop frames of the cache queue.
-        int32_t diffCount = (firstVideoFramePts_.load() - firstAudioFramePts_.load()) / AUDIO_CAPTURE_READ_FRAME_TIME;
+        // diffCount less than AUDIO_CAPTURE_MAX_CACHED_FRAMES
+        int32_t diffCount = std::min(AUDIO_CAPTURE_MAX_CACHED_FRAMES, static_cast<int32_t>(
+            (firstVideoFramePts_.load() - firstAudioFramePts_.load()) / AUDIO_CAPTURE_READ_FRAME_TIME));
         MEDIA_LOG_I("Video late, diffCount: " PUBLIC_LOG_D32, diffCount);
         while (diffCount > 0) {
             if (!cachedAudioData_.empty()) {
