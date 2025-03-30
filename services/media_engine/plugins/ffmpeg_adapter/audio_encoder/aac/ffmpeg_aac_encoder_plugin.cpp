@@ -774,6 +774,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
     uint8_t *destBuffer = const_cast<uint8_t *>(srcBuffer);
     size_t srcBufferSize = static_cast<size_t>(memory->GetSize());
     size_t destBufferSize = srcBufferSize;
+    uint32_t destSamplesPerFrame;
     if (needResample_ && resample_ != nullptr) {
         if (resample_->Convert(srcBuffer, srcBufferSize, destBuffer, destBufferSize) != Status::OK) {
             MEDIA_LOG_E("Convert sample format failed");
@@ -786,8 +787,11 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
                     "frame_size: %{public}d",
                     cachedFrame_->nb_samples, avCodecContext_->frame_size);
     }
-    int32_t destSamplesPerFrame = (avCodecContext_->frame_size > cachedFrame_->nb_samples) ?
-        avCodecContext_->frame_size : cachedFrame_->nb_samples;
+    if (needResample_ && resample_ != nullptr) {
+        destSamplesPerFrame = resample_->GetSampleOffset();
+    } else {
+        destSamplesPerFrame = cachedFrame_->nb_samples;
+    }
     cachedFrame_->extended_data = cachedFrame_->data;
     cachedFrame_->extended_data[0] = destBuffer;
     cachedFrame_->linesize[0] = cachedFrame_->nb_samples * bytesPerSample;

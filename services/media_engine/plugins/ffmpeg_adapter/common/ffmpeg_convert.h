@@ -57,9 +57,10 @@ public:
     Status InitSwrContext(const ResamplePara &resamplePara);
     Status Convert(const uint8_t *srcBuffer, const size_t srcLength, uint8_t *&destBuffer, size_t &destLength);
     Status ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame);
-
+    uint32_t GetSampleOffset();
 private:
     ResamplePara resamplePara_{};
+    uint32_t sampleOffset_ = 0;
 #if defined(_WIN32) || !defined(OHOS_LITE)
     void ConvertCommon(const uint8_t *srcBuffer, const size_t srcLength, uint8_t *&destBuffer, size_t &destLength);
     size_t cacheSize_ = 0;

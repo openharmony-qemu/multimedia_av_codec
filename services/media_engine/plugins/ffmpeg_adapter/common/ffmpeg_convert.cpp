@@ -35,6 +35,7 @@ Status Resample::Init(const ResamplePara &resamplePara)
         resampleCache_.reserve(destFrameSize);
         resampleChannelAddr_.reserve(resamplePara_.channels);
         auto tmp = resampleChannelAddr_.data();
+        sampleOffset_ = resamplePara_.destSamplesPerFrame;
         av_samples_fill_arrays(tmp, nullptr, resampleCache_.data(), resamplePara_.channels,
                                resamplePara_.destSamplesPerFrame, resamplePara_.destFmt, 0);
         auto swrContext = swr_alloc();
@@ -113,6 +114,7 @@ void Resample::ConvertCommon(const uint8_t *srcBuffer, const size_t srcLength,
         resampleCache_.reserve(cacheSize_);
         resampleCache_.assign(cacheSize_, 0);
         auto tmp = resampleChannelAddr_.data();
+        sampleOffset_ = samples;
         av_samples_fill_arrays(tmp, nullptr, resampleCache_.data(), resamplePara_.channels,
                                samples, resamplePara_.destFmt, 0);
     }
@@ -203,6 +205,11 @@ Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
+}
+
+uint32_t Resample::GetSampleOffset()
+{
+    return sampleOffset_;
 }
 
 #if defined(VIDEO_SUPPORT)
