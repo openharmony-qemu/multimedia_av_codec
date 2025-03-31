@@ -383,7 +383,7 @@ void AudioCaptureFilter::RecordCachedData()
     if (firstAudioFramePts_.load() > firstVideoFramePts_.load()) {
         // audio frame is later than video frame, add zeros to the front of the cache queue.
         // diffCount less than AUDIO_CAPTURE_MAX_CACHED_FRAMES
-        int32_t diffCount =std::min(AUDIO_CAPTURE_MAX_CACHED_FRAMES, static_cast<int32_t>(
+        int32_t diffCount = std::min(AUDIO_CAPTURE_MAX_CACHED_FRAMES, static_cast<int32_t>(
             (firstAudioFramePts_.load() - firstVideoFramePts_.load()) / AUDIO_CAPTURE_READ_FRAME_TIME));
         MEDIA_LOG_I("Audio late, diffCount: " PUBLIC_LOG_D32, diffCount);
         while (diffCount > 0) {
