@@ -766,6 +766,7 @@ void AudioSink::UpdateRenderInfo()
     uint32_t position;
     FALSE_RETURN_MSG(plugin_->GetAudioPosition(time, position), "GetAudioPosition from audioRender failed");
     int64_t currentRenderClockTime = time.tv_sec * SEC_TO_US + time.tv_nsec / US_TO_MS; // convert to us
+    FALSE_RETURN(sampleRate_ > 0);
     int64_t currentRenderPTS = static_cast<int64_t>(position) * SEC_TO_US / sampleRate_;
     MEDIA_LOG_D("currentRenderPTS is " PUBLIC_LOG_D64 " and currentRenderClockTime is " PUBLIC_LOG_D64,
         currentRenderPTS, currentRenderClockTime);
@@ -1321,6 +1322,7 @@ int64_t AudioSink::getPendingAudioPlayoutDurationUs(int64_t nowUs)
 {
     int64_t writtenSamples = numFramesWritten_ * samplePerFrame_;
     const int64_t numFramesPlayed = plugin_->GetPlayedOutDurationUs(nowUs);
+    FALSE_RETURN(sampleRate_ > 0, 0);
     int64_t pendingUs = (writtenSamples - numFramesPlayed) * HST_MSECOND / sampleRate_;
     MEDIA_LOG_D("pendingUs: " PUBLIC_LOG_D64, pendingUs);
     if (pendingUs < 0) {
