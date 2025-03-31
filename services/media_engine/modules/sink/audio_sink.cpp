@@ -1322,7 +1322,7 @@ int64_t AudioSink::getPendingAudioPlayoutDurationUs(int64_t nowUs)
 {
     int64_t writtenSamples = numFramesWritten_ * samplePerFrame_;
     const int64_t numFramesPlayed = plugin_->GetPlayedOutDurationUs(nowUs);
-    FALSE_RETURN(sampleRate_ > 0, 0);
+    FALSE_RETURN_V(sampleRate_ > 0, 0);
     int64_t pendingUs = (writtenSamples - numFramesPlayed) * HST_MSECOND / sampleRate_;
     MEDIA_LOG_D("pendingUs: " PUBLIC_LOG_D64, pendingUs);
     if (pendingUs < 0) {
