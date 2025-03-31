@@ -24,7 +24,7 @@
 #include "avcodec_sysevent.h"
 #include "scoped_timer.h"
 #ifdef SUPPORT_DRM
-#include "i_keysession_service.h"
+#include "imedia_key_session_service.h"
 #endif
 
 namespace {

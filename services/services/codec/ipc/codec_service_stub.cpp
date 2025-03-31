@@ -25,7 +25,7 @@
 #include "codec_listener_proxy.h"
 #include "codec_server.h"
 #ifdef SUPPORT_DRM
-#include "key_session_service_proxy.h"
+#include "media_key_session_service_proxy.h"
 #endif
 #include "event_manager.h"
 #include "ipc_skeleton.h"

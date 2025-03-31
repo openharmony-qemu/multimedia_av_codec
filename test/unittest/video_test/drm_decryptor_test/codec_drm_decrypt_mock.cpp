@@ -18,7 +18,7 @@
 #include "unittest_log.h"
 #include "codec_drm_decrypt_mock.h"
 #ifdef SUPPORT_DRM
-#include "i_keysession_service.h"
+#include "imedia_key_session_service.h"
 #endif
 
 namespace OHOS {
