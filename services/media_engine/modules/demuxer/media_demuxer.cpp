@@ -226,16 +226,17 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
         ReportSceneCodeForDemuxer(SceneCode::AV_META_SCENE_PARSE_REF_FOR_DRAGGING_PLAY);
         parserRefInfoTask_->Start();
     }
-    TryRecvParserTask();
+    TryReclaimParserTask();
     return ret;
 }
 
-void MediaDemuxer::TryRecvParserTask()
+void MediaDemuxer::TryReclaimParserTask()
 {
+    std::lock_guard<std::mutex> lock(parserTaskMutex_);
     if (isParserTaskEnd_ && parserRefInfoTask_ != nullptr) {
         parserRefInfoTask_->Stop();
         parserRefInfoTask_ = nullptr;
-        MEDIA_LOG_I("Success to recovery");
+        MEDIA_LOG_I("Success to reclaim parser task");
     }
 }
 
@@ -251,6 +252,7 @@ int64_t MediaDemuxer::ParserRefInfo()
         return 0;
     }
     Status ret = videoPlugin->ParserRefInfo();
+    std::lock_guard<std::mutex> lock(parserTaskMutex_);
     if ((ret == Status::OK || ret == Status::ERROR_UNKNOWN) && parserRefInfoTask_ != nullptr) {
         parserRefInfoTask_->Stop();
         isParserTaskEnd_ = true;
@@ -268,7 +270,7 @@ Status MediaDemuxer::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, Fr
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
-    TryRecvParserTask();
+    TryReclaimParserTask();
     Status ret = videoPlugin->GetFrameLayerInfo(videoSample, frameLayerInfo);
     if (ret == Status::ERROR_NULL_POINTER && parserRefInfoTask_ != nullptr) {
         return Status::ERROR_AGAIN;
@@ -282,7 +284,7 @@ Status MediaDemuxer::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLa
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
-    TryRecvParserTask();
+    TryReclaimParserTask();
     Status ret = videoPlugin->GetFrameLayerInfo(frameId, frameLayerInfo);
     if (ret == Status::ERROR_NULL_POINTER && parserRefInfoTask_ != nullptr) {
         return Status::ERROR_AGAIN;
@@ -296,7 +298,7 @@ Status MediaDemuxer::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
-    TryRecvParserTask();
+    TryReclaimParserTask();
     Status ret = videoPlugin->GetGopLayerInfo(gopId, gopLayerInfo);
     if (ret == Status::ERROR_NULL_POINTER && parserRefInfoTask_ != nullptr) {
         return Status::ERROR_AGAIN;
@@ -325,7 +327,7 @@ Status MediaDemuxer::GetIFramePos(std::vector<uint32_t> &IFramePos)
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
-    TryRecvParserTask();
+    TryReclaimParserTask();
     return videoPlugin->GetIFramePos(IFramePos);
 }
 
@@ -335,7 +337,7 @@ Status MediaDemuxer::Dts2FrameId(int64_t dts, uint32_t &frameId)
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
-    TryRecvParserTask();
+    TryReclaimParserTask();
     return videoPlugin->Dts2FrameId(dts, frameId);
 }
 
@@ -345,7 +347,7 @@ Status MediaDemuxer::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
-    TryRecvParserTask();
+    TryReclaimParserTask();
     return videoPlugin->SeekMs2FrameId(seekMs, frameId);
 }
 
@@ -355,7 +357,7 @@ Status MediaDemuxer::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
-    TryRecvParserTask();
+    TryReclaimParserTask();
     return videoPlugin->FrameId2SeekMs(frameId, seekMs);
 }
 
