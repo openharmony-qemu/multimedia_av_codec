@@ -112,7 +112,8 @@ bool FFmpegDemuxerPlugin::IsMultiVideoTrack()
             MEDIA_LOG_W("Track " PUBLIC_LOG_D32 " info is nullptr", trackIndex);
             continue;
         }
-        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+            FFmpegFormatHelper::IsVideoCodecId(avStream->codecpar->codec_id)) {
             if (hasVideo) {
                 return true;
             }
@@ -386,7 +387,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
 
 Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
 {
-    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
+    FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
     MEDIA_LOG_D("In, dts: " PUBLIC_LOG_D64, videoSample->dts_);
     if (isSdtpExist_) {
         uint32_t frameId = 0;
@@ -399,14 +400,14 @@ Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSam
 
 Status FFmpegDemuxerPlugin::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
 {
-    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
+    FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
     MEDIA_LOG_D("In, dts: " PUBLIC_LOG_U32, frameId);
     return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
 }
 
 Status FFmpegDemuxerPlugin::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 {
-    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
+    FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
     MEDIA_LOG_D("In, gopId: " PUBLIC_LOG_U32, gopId);
     return referenceParser_->GetGopLayerInfo(gopId, gopLayerInfo);
 }

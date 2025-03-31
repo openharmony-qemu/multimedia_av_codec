@@ -143,12 +143,6 @@ private:
     Status GetMediaInfo();
     void ResetParam();
 
-    Status InitIoContext();
-    Status ParserRefInit();
-    Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
-    Status SelectProGopId();
-    void ParserBoxInfo();
-    AVStream *GetVideoStream();
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
     bool IsLessMaxReferenceParserFrames(uint32_t trackIndex);
@@ -176,6 +170,12 @@ private:
     int64_t relativePTSToIndexRightDiff_ = INT64_MAX;
     int64_t relativePTSToIndexLeftDiff_ = INT64_MAX;
     int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
+    Status InitIoContext();
+    Status ParserRefInit();
+    Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
+    Status SelectProGopId();
+    void ParserBoxInfo();
+    AVStream *GetVideoStream();
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
