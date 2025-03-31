@@ -359,6 +359,8 @@ Status DecoderSurfaceFilter::DoPrepare()
         videoDecoder_->PrepareInputBufferQueue();
         sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
         sptr<Media::AVBufferQueueConsumer> inputBufferQueueConsumer = videoDecoder_->GetBufferQueueConsumer();
+        FALSE_RETURN_V_MSG(inputBufferQueueConsumer != nullptr, Status::ERROR_NULL_POINTER,
+                           "inputBufferQueueConsumer_ is nullptr");
         inputBufferQueueConsumer->SetBufferAvailableListener(listener);
         onLinkedResultCallback_->OnLinkedResult(videoDecoder_->GetBufferQueueProducer(), meta_);
         if (seiMessageCbStatus_) {

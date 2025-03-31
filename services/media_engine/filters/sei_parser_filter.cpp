@@ -81,6 +81,8 @@ Status SeiParserFilter::DoPrepare()
     MEDIA_LOG_I("Prepare enter.");
     PrepareState();
     inputBufferQueueConsumer_ = GetBufferQueueConsumer();
+    FALSE_RETURN_V_MSG(inputBufferQueueConsumer_ != nullptr, Status::ERROR_NULL_POINTER,
+                       "inputBufferQueueConsumer_ is nullptr");
     sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
     inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
     if (onLinkedResultCallback_ != nullptr) {
