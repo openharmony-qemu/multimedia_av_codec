@@ -18,8 +18,8 @@
 #include "avcodec_log.h"
 #include "securec.h"
 #ifdef SUPPORT_DRM
-#include "i_keysession_service.h"
-#include "i_mediadecryptmodule_service.h"
+#include "imedia_key_session_service.h"
+#include "imedia_decrypt_module_service.h"
 #endif
 
 namespace {
@@ -30,7 +30,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 
 #ifdef SUPPORT_DRM
-using DrmBuffer = DrmStandard::IMediaDecryptModuleService::DrmBuffer;
+using DrmBuffer = DrmStandard::DrmBuffer;
 #endif
 #define DRM_VIDEO_FRAME_ARR_LEN            3
 #define DRM_AMBIGUITY_ARR_LEN              3
@@ -688,7 +688,7 @@ int32_t CodecDrmDecrypt::SetDrmBuffer(const MetaDrmCencInfo * const cencInfo, co
     DrmBuffer inDrmBuffer;
     DrmBuffer outDrmBuffer;
     int32_t retCode = AVCS_ERR_INVALID_VAL;
-    DrmStandard::IMediaDecryptModuleService::CryptInfo cryptInfo;
+    DrmStandard::CryptInfo cryptInfo;
     CHECK_AND_RETURN_RET_LOG((inBuf->memory_ != nullptr && outBuf->memory_ != nullptr), AVCS_ERR_NO_MEMORY,
         "CodecDrmDecrypt SetDrmBuffer memory_ null");
     inDrmBuffer.bufferType = static_cast<uint32_t>(inBuf->memory_->GetMemoryType());
@@ -711,7 +711,7 @@ int32_t CodecDrmDecrypt::SetDrmBuffer(const MetaDrmCencInfo * const cencInfo, co
     outDrmBuffer.offset = static_cast<uint32_t>(outBuf->memory_->GetOffset());
     outDrmBuffer.sharedMemType = static_cast<uint32_t>(outBuf->memory_->GetMemoryFlag());
 
-    cryptInfo.type = static_cast<DrmStandard::IMediaDecryptModuleService::CryptAlgorithmType>(cencInfo->algo);
+    cryptInfo.type = static_cast<DrmStandard::CryptAlgorithmType>(cencInfo->algo);
     std::vector<uint8_t> keyIdVector(cencInfo->keyId, cencInfo->keyId + cencInfo->keyIdLen);
     cryptInfo.keyId = keyIdVector;
     std::vector<uint8_t> ivVector(cencInfo->iv, cencInfo->iv + cencInfo->ivLen);
@@ -720,7 +720,7 @@ int32_t CodecDrmDecrypt::SetDrmBuffer(const MetaDrmCencInfo * const cencInfo, co
     cryptInfo.pattern.skipBlocks = cencInfo->skipBlocks;
 
     for (uint32_t i = 0; i < cencInfo->subSampleNum; i++) {
-        DrmStandard::IMediaDecryptModuleService::SubSample temp({ cencInfo->subSamples[i].clearHeaderLen,
+        DrmStandard::SubSample temp({ cencInfo->subSamples[i].clearHeaderLen,
             cencInfo->subSamples[i].payLoadLen });
         cryptInfo.subSample.emplace_back(temp);
     }

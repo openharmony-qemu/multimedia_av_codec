@@ -32,7 +32,7 @@
 #include "meta/meta_key.h"
 #include "surface_type.h"
 #ifdef SUPPORT_DRM
-#include "i_keysession_service.h"
+#include "imedia_key_session_service.h"
 #endif
 #ifdef AVCODEC_SUPPORT_EVENT_MANAGER
 #include "event_manager.h"
@@ -648,11 +648,11 @@ int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySes
 
     // check session level when secure video path is true
 #ifdef SUPPORT_DRM
-    DrmStandard::IMediaKeySessionService::ContentProtectionLevel sessionLevel;
-    int ret = keySession->GetContentProtectionLevel(&sessionLevel);
+    DrmStandard::ContentProtectionLevel sessionLevel;
+    int ret = keySession->GetContentProtectionLevel(sessionLevel);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == 0, AVCS_ERR_INVALID_VAL, "GetContentProtectionLevel failed");
     if (sessionLevel <
-        DrmStandard::IMediaKeySessionService::ContentProtectionLevel::CONTENT_PROTECTION_LEVEL_HW_CRYPTO) {
+        DrmStandard::ContentProtectionLevel::CONTENT_PROTECTION_LEVEL_HW_CRYPTO) {
         AVCODEC_LOGE("CheckDrmSvpConsistency failed, key session's content protection level is too low!");
         return AVCS_ERR_INVALID_VAL;
     }

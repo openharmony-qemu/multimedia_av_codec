@@ -25,7 +25,7 @@
 #include "common/log.h"
 #include "parameters.h"
 #ifdef SUPPORT_DRM
-#include "i_keysession_service.h"
+#include "imedia_key_session_service.h"
 #endif
 
 using namespace OHOS;
