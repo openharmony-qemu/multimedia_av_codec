@@ -1834,7 +1834,7 @@ void HttpMediaDownloader::RestartAndClearBuffer()
         MEDIA_LOG_I("HTTP clear cachebuffer done.");
     }
     downloader_->Resume();
-    isAllowResume_.store(true);
+    isAllowResume_.store(false);
     MEDIA_LOG_I("HTTP RestartAndClearBuffer out.");
 }
 
@@ -1924,6 +1924,26 @@ bool HttpMediaDownloader::IsAutoSelectConditionOk()
         return false;
     }
     return true;
+}
+
+void HttpMediaDownloader::ClearBuffer()
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr.");
+    FALSE_RETURN_MSG(ringBuffer_ != nullptr || cacheMediaBuffer_ != nullptr, "buffer is nullptr.");
+    if (isRingBuffer_) {
+        size_t sizeBefore = ringBuffer_->GetFreeSize();
+        ringBuffer_->SetActive(false);
+        ringBuffer_->SetActive(true);
+        size_t sizeAfter = ringBuffer_->GetFreeSize();
+        MEDIA_LOG_I("HTTP ClearBuffer done, sizeBefore: " PUBLIC_LOG_ZU " sizeAfter: " PUBLIC_LOG_ZU,
+            sizeBefore, sizeAfter);
+    } else {
+        size_t sizeBefore = cacheMediaBuffer_->GetFreeSize();
+        cacheMediaBuffer_->Clear();
+        size_t sizeAfter = cacheMediaBuffer_->GetFreeSize();
+        MEDIA_LOG_I("HTTP ClearBuffer done, sizeBefore: " PUBLIC_LOG_ZU " sizeAfter: " PUBLIC_LOG_ZU,
+            sizeBefore, sizeAfter);
+    }
 }
 }
 }
