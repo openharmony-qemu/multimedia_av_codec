@@ -176,6 +176,13 @@ Status SuperResolutionPostProcessor::Release()
     return Status::OK;
 }
 
+Status SuperResolutionPostProcessor::NotifyEos()
+{
+    MEDIA_LOG_D("Notify eos");
+    auto ret = postProcessor_->NotifyEos();
+    return ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK ? Status::OK : Status::ERROR_INVALID_OPERATION;
+}
+
 sptr<Surface> SuperResolutionPostProcessor::GetInputSurface()
 {
     return postProcessor_->GetInputSurface();
@@ -193,6 +200,7 @@ void SuperResolutionPostProcessor::OnOutputBufferAvailable(uint32_t index, VpeBu
     if (buffer == nullptr) {
         MEDIA_LOG_E("Create buffer failed");
         ReleaseOutputBuffer(index, false);
+        return;
     }
     if (flag & static_cast<uint32_t>(VPE_BUFFER_FLAG_EOS)) {
         buffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
@@ -206,6 +214,7 @@ void SuperResolutionPostProcessor::OnOutputBufferAvailable(uint32_t index, const
     if (buffer == nullptr) {
         MEDIA_LOG_E("Create buffer failed");
         ReleaseOutputBuffer(index, false);
+        return;
     }
     if (info.flag & static_cast<uint32_t>(VPE_BUFFER_FLAG_EOS)) {
         buffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);

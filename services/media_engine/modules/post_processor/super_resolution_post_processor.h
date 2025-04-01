@@ -38,6 +38,7 @@ public:
     Status Stop() override;
     Status Start() override;
     Status Release() override;
+    Status NotifyEos() override;
 
     sptr<Surface> GetInputSurface() override;
     Status SetOutputSurface(sptr<Surface> surface) override;
