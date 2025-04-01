@@ -340,13 +340,9 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
 #endif
     }
 
-    if (postProcessor_) {
-        postProcessor_->SetOutputSurface(videoSurface_);
-        postProcessor_->SetEventReceiver(eventReceiver_);
-        postProcessor_->SetVideoWindowSize(postProcessorTargetWidth_, postProcessorTargetHeight_);
-        postProcessor_->SetPostProcessorOn(isPostProcessorOn_);
-        postProcessor_->Init();
-    }
+    ret = InitPostProcessor();
+    FALSE_RETURN_V(ret == Status::OK, ret);
+
     videoSink_->SetParameter(meta_);
     eosTask_ = std::make_unique<Task>("OS_EOSv", groupId_, TaskType::VIDEO, TaskPriority::HIGH, false);
     return Status::OK;
@@ -390,9 +386,9 @@ Status DecoderSurfaceFilter::DoStart()
         readThread_ = std::make_unique<std::thread>(&DecoderSurfaceFilter::RenderLoop, this);
         pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     }
-    auto ret = videoDecoder_->Start();
+    FALSE_RETURN_V(ret == Status::OK, ret);
     if (postProcessor_) {
-        postProcessor_->Start();
+        ret = postProcessor_->Start();
     }
     return ret;
 }
@@ -477,8 +473,9 @@ Status DecoderSurfaceFilter::DoStop()
     stopTime_ = (int64_t)tv.tv_sec * 1000000 + (int64_t)tv.tv_usec; // 1000000 means transfering from s to us.
     videoSink_->ResetSyncInfo();
     auto ret = videoDecoder_->Stop();
+    Status ret2 = Status::OK;
     if (postProcessor_) {
-        postProcessor_->Stop();
+        ret2 = postProcessor_->Stop();
     }
     if (!IS_FILTER_ASYNC && !isThreadExit_.load()) {
         isThreadExit_ = true;
@@ -487,7 +484,8 @@ Status DecoderSurfaceFilter::DoStop()
         readThread_->join();
         readThread_ = nullptr;
     }
-    return ret;
+    FALSE_RETURN_V(ret == Status::OK, ret);
+    return ret2;
 }
 
 Status DecoderSurfaceFilter::DoFlush()
@@ -1298,6 +1296,22 @@ Status DecoderSurfaceFilter::SetSeiMessageCbStatus(bool status, const std::vecto
             producerListener_ != nullptr, Status::ERROR_NO_MEMORY, "sei listener create failed");
     }
     producerListener_->SetSeiMessageCbStatus(status, payloadTypes);
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::InitPostProcessor()
+{
+    FALSE_RETURN_V_NOLOG(postProcessor_ != nullptr, Status::OK);
+    postProcessor_->SetOutputSurface(videoSurface_);
+    postProcessor_->SetEventReceiver(eventReceiver_);
+    postProcessor_->SetVideoWindowSize(postProcessorTargetWidth_, postProcessorTargetHeight_);
+    postProcessor_->SetPostProcessorOn(isPostProcessorOn_);
+    auto ret = postProcessor_->Init();
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("Init postProcessor fail ret = %{public}d", ret);
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
     return Status::OK;
 }
 
