@@ -351,7 +351,16 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
             isCompleted = (eosCount_ == preFilterCount_) || (videoIsEos && audioIsEos);
         }
         if (eventReceiver_ != nullptr && isCompleted) {
-            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
+            MEDIA_LOG_I("mediaMuxer_ stop begin");
+            stopCount_ = preFilterCount_;
+            Status res = mediaMuxer_->Stop();
+            if (res == Status::OK) {
+                MEDIA_LOG_I("mediaMuxer_ stop success");
+                eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
+            } else {
+                MEDIA_LOG_I("mediaMuxer_ stop failed, res = %{public}d", static_cast<int32_t>(res));
+                eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, res});
+            }
         }
     }
     if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
