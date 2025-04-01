@@ -223,7 +223,7 @@ private:
     Status InnerSelectTrack(int32_t trackId);
     Status HandleReadSample(uint32_t trackId);
     int64_t ParserRefInfo();
-    void TryRecvParserTask();
+    void TryReclaimParserTask();
 
     Status HandleSelectTrack(int32_t trackId);
     Status HandleDashSelectTrack(int32_t trackId);
@@ -299,6 +299,7 @@ private:
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
+    std::mutex parserTaskMutex_ {};
     std::atomic<bool> isOnEventNoMemory_ = false;
     std::atomic<bool> isSeekError_ = false;
     std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
