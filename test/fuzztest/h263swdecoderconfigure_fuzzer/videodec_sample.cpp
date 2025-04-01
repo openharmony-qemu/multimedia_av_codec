@@ -284,7 +284,7 @@ int32_t VDecFuzzSample::CreateVideoDecoder(string codeName)
         OH_VideoDecoder_Destroy(tmpDec);
         tmpDec = nullptr;
     }
-    tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_H263);
     if (tmpDec) {
         OH_VideoDecoder_Destroy(tmpDec);
         tmpDec = nullptr;
