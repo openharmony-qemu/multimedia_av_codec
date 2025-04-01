@@ -375,7 +375,7 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
     }
 }
 
-viod MuxerFilter::HandleTransCoderComplete()
+void MuxerFilter::HandleTransCoderComplete()
 {
     FALSE_RETURN_MSG(mediaMuxer_ != nullptr, "mediaDemuxer_ is nullptr");
     MEDIA_LOG_I("mediaMuxer_ stop begin");
