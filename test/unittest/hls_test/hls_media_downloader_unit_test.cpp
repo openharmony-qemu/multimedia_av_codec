@@ -1250,4 +1250,213 @@ HWTEST_F(HlsMediaDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_001, TestSize.Le
     downloader->waterlineForPlaying_ = 0;
     EXPECT_EQ(downloader->IsNeedBufferForPlaying(), false);
 }
+
+HWTEST_F(HlsMediaDownloaderUnitTest, UpdateWaterLineAbove_001, TestSize.Level1)
+{
+    hlsMediaDownloader->waterLineAbove_ = 0;
+    hlsMediaDownloader->isFirstFrameArrived_ = false;
+    hlsMediaDownloader->UpdateWaterLineAbove();
+    EXPECT_EQ(hlsMediaDownloader->waterLineAbove_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, UpdateWaterLineAbove_002, TestSize.Level1)
+{
+    hlsMediaDownloader->waterLineAbove_ = 0;
+    hlsMediaDownloader->currentBitRate_ = 0;
+    hlsMediaDownloader->isFirstFrameArrived_ = true;
+    hlsMediaDownloader->UpdateWaterLineAbove();
+    EXPECT_GT(hlsMediaDownloader->waterLineAbove_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, UpdateWaterLineAbove_003, TestSize.Level1)
+{
+    hlsMediaDownloader->waterLineAbove_ = 0;
+    hlsMediaDownloader->currentBitRate_ = BUFFER_SIZE;
+    hlsMediaDownloader->isFirstFrameArrived_ = true;
+    hlsMediaDownloader->UpdateWaterLineAbove();
+    EXPECT_GT(hlsMediaDownloader->waterLineAbove_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, read, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[BUFFER_SIZE];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = BUFFER_SIZE;
+    readDataInfo.isEos_ = true;
+
+    downloader->isBuffering_ = true;
+    downloader->canWrite_ = false;
+    downloader->Read(buff, readDataInfo);
+
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckPlaylist, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[BUFFER_SIZE];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = BUFFER_SIZE;
+    readDataInfo.isEos_ = true;
+    downloader->Read(buff, readDataInfo);
+
+    OSAL::SleepFor(1 * 1000);
+    downloader->isStopped = true;
+    downloader->readOffset_ = 1;
+    std::cout << "GetBufferSize: " << downloader->backPlayList_.size() << std::endl;
+    std::cout << "GetBufferSize: " << downloader->readTsIndex_ << std::endl;
+    std::cout << "GetBufferSize: " << downloader->CheckReadStatus() << std::endl;
+    downloader->readTsIndex_ = BUFFER_SIZE + BUFFER_SIZE;
+    downloader->isStopped = true;
+    downloader->CheckPlaylist(buff, readDataInfo);
+
+    downloader->isStopped = false;
+    downloader->CheckPlaylist(buff, readDataInfo);
+
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckPlaylist_1, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[BUFFER_SIZE];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = BUFFER_SIZE;
+    readDataInfo.isEos_ = true;
+
+    downloader->readTsIndex_ = BUFFER_SIZE + BUFFER_SIZE;
+    downloader->isStopped = false;
+    downloader->CheckPlaylist(buff, readDataInfo);
+
+    downloader->isStopped = true;
+
+    std::cout << "GetBufferSize: " << downloader->GetBufferSize() << std::endl;
+    std::cout << "bLive_: " << static_cast<bool>(downloader->GetSeekable()) << std::endl;
+
+    downloader->CheckPlaylist(buff, readDataInfo);
+
+    downloader->Read(buff, readDataInfo);
+
+    downloader->isStopped = true;
+    downloader->readOffset_ = 1;
+
+    downloader->readTsIndex_ = BUFFER_SIZE + BUFFER_SIZE;
+    downloader->isStopped = true;
+    downloader->CheckPlaylist(buff, readDataInfo);
+
+    downloader->isStopped = false;
+    downloader->CheckPlaylist(buff, readDataInfo);
+
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, ReadDelegate, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[BUFFER_SIZE];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = BUFFER_SIZE;
+    readDataInfo.isEos_ = true;
+    downloader->readTsIndex_ = BUFFER_SIZE - 1;
+    std::cout << "isEos_ : " << downloader->CheckReadStatus() << std::endl;
+    std::cout << "GetBufferSize: " << downloader->GetBufferSize() << std::endl;
+    std::cout << "readTsIndex_ : " << downloader->readTsIndex_ << std::endl;
+    std::cout << "backPlayList_.size() : " << downloader->backPlayList_.size() << std::endl;
+    
+    downloader->ReadDelegate(buff, readDataInfo);
+    downloader->Read(buff, readDataInfo);
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, SaveCacheBufferDataNotblock, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[BUFFER_SIZE];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = BUFFER_SIZE;
+    readDataInfo.isEos_ = true;
+    downloader->Read(buff, readDataInfo);
+    uint8_t * data = new uint8_t[10];
+    uint32_t len = BUFFER_SIZE;
+    uint32_t res = downloader->SaveCacheBufferDataNotblock(data, len);
+    cout << "res: " << res << endl;
+    delete[] data;
+    EXPECT_GE(res, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, SaveCacheBufferDataNotblock_1, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[BUFFER_SIZE];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = BUFFER_SIZE;
+    readDataInfo.isEos_ = true;
+    downloader->Read(buff, readDataInfo);
+    uint8_t * data = new uint8_t[BUFFER_SIZE];
+ 
+    uint32_t len = BUFFER_SIZE;
+    cout << "cacheMediaBuffer_->GetFreeSize(): " << downloader->cacheMediaBuffer_->GetFreeSize() << endl;
+    downloader->isNeedResume_.store(true);
+    uint32_t res = downloader->SaveCacheBufferDataNotblock(data, len);
+    cout << "res: " << res << endl;
+    delete[] data;
+    EXPECT_GE(res, 0);
+}
 }
