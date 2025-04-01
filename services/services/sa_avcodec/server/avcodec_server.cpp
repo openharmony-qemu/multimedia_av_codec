@@ -62,8 +62,6 @@ void AVCodecServer::OnStart()
     IPCSkeleton::SetMaxWorkThreadNum(SERVER_MAX_IPC_THREAD_NUM);
     AddSystemAbilityListener(MEMORY_MANAGER_SA_ID);
     ServiceStartEventWrite(useTime, "AV_CODEC service");
-    AddSystemAbilityListener(SUSPEND_MANAGER_SYSTEM_ABILITY_ID);
-    BackGroundEventHandler::GetInstance().RegisterSuspendObserver();
 }
 
 int32_t AVCodecServer::OnIdle([[maybe_unused]] const SystemAbilityOnDemandReason &idleReason)
@@ -81,7 +79,6 @@ void AVCodecServer::OnStop()
 {
     std::lock_guard<std::mutex> stateLock(stateMutex_);
     AVCODEC_LOGI("In");
-    BackGroundEventHandler::GetInstance().UnregisterSuspendObserver();
     AVCodecServerManager::GetInstance().NotifyProcessStatus(0);
 }
 
@@ -91,9 +88,6 @@ void AVCodecServer::OnAddSystemAbility(int32_t systemAbilityId, const std::strin
     if (systemAbilityId == MEMORY_MANAGER_SA_ID) {
         AVCodecServerManager::GetInstance().SetMemMgrStatus(true);
         AVCodecServerManager::GetInstance().NotifyProcessStatus(1);
-    }
-    if (systemAbilityId == SUSPEND_MANAGER_SYSTEM_ABILITY_ID) {
-        BackGroundEventHandler::GetInstance().RegisterSuspendObserver();
     }
 }
 
@@ -140,6 +134,24 @@ int32_t AVCodecServer::GetSubSystemAbility(IStandardAVCodecService::AVCodecSyste
         return AVCS_ERR_IPC_SET_DEATH_LISTENER_FAILED;
     }
 
+    return AVCS_ERR_OK;
+}
+
+int32_t AVCodecServer::SuspendFreeze(const std::vector<pid_t> &pidList)
+{
+    BackGroundEventHandler::GetInstance().NotifyFrozen(pidList);
+    return AVCS_ERR_OK;
+}
+
+int32_t AVCodecServer::SuspendActive(const std::vector<pid_t> &pidList)
+{
+    BackGroundEventHandler::GetInstance().NotifyActive(pidList);
+    return AVCS_ERR_OK;
+}
+
+int32_t AVCodecServer::SuspendActiveAll()
+{
+    BackGroundEventHandler::GetInstance().NotifyActiveAll();
     return AVCS_ERR_OK;
 }
 

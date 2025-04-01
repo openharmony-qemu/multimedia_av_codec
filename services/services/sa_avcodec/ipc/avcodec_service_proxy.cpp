@@ -56,5 +56,55 @@ int32_t AVCodecServiceProxy::GetSubSystemAbility(IStandardAVCodecService::AVCode
     CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Remote object is nullptr");
     return reply.ReadInt32();
 }
+
+int32_t AVCodecServiceProxy::SuspendFreeze(const std::vector<pid_t> &pidList)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool ret = data.WriteInterfaceToken(AVCodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write descriptor");
+
+    (void)data.WriteInt32Vector(pidList);
+    int error =
+        Remote()->SendRequest(static_cast<uint32_t>(AVCodecServiceInterfaceCode::FREEZE), data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Create av_codec proxy failed, error: %{public}d", error);
+    return reply.ReadInt32();
+}
+
+int32_t AVCodecServiceProxy::SuspendActive(const std::vector<pid_t> &pidList)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool ret = data.WriteInterfaceToken(AVCodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write descriptor");
+
+    (void)data.WriteInt32Vector(pidList);
+    int error =
+        Remote()->SendRequest(static_cast<uint32_t>(AVCodecServiceInterfaceCode::ACTIVE), data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Create av_codec proxy failed, error: %{public}d", error);
+    return reply.ReadInt32();
+}
+
+int32_t AVCodecServiceProxy::SuspendActiveAll()
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool ret = data.WriteInterfaceToken(AVCodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write descriptor");
+
+    int error =
+        Remote()->SendRequest(static_cast<uint32_t>(AVCodecServiceInterfaceCode::ACTIVEALL), data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Create av_codec proxy failed, error: %{public}d", error);
+    return reply.ReadInt32();
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

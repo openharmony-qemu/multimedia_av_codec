@@ -16,35 +16,24 @@
 #ifndef BACKGROUND_EVENT_HANDLER_H
 #define BACKGROUND_EVENT_HANDLER_H
 
+#include <shared_mutex>
+#include <unordered_set>
 #include "refbase.h"
-#ifdef USE_EFFICIENCY_MANAGER
-#include "suspend_state_observer_stub.h"
-#endif //USE_EFFICIENCY_MANAGER
 
 namespace OHOS {
 namespace MediaAVCodec {
-#ifdef USE_EFFICIENCY_MANAGER
-class SuspendStateObserverStubObj : public SuspendManager::SuspendStateObserverStub {
-public:
-    ErrCode OnActive(const std::vector<int32_t> &pidList, const int32_t uid) override;
-    ErrCode OnDoze(const int32_t uid) override;
-    ErrCode OnFrozen(const std::vector<int32_t> &pidList, const int32_t uid) override;
-    ErrCode OnFrozenUid(const int32_t uid, const uint32_t reasonId) override;
-};
-#endif //USE_EFFICIENCY_MANAGER
-
 class BackGroundEventHandler {
 public:
     static BackGroundEventHandler &GetInstance();
     BackGroundEventHandler();
     ~BackGroundEventHandler() = default;
-    void RegisterSuspendObserver();
-    void UnregisterSuspendObserver();
+    void NotifyFrozen(const std::vector<int32_t> &pidList);
+    void NotifyActive(const std::vector<int32_t> &pidList);
+    void NotifyActiveAll();
 
 private:
-#ifdef USE_EFFICIENCY_MANAGER
-    sptr<SuspendStateObserverStubObj> suspendObservers_ = nullptr;
-#endif //USE_EFFICIENCY_MANAGER
+    std::mutex mutex_;
+    std::unordered_set<pid_t> frozenPidList_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

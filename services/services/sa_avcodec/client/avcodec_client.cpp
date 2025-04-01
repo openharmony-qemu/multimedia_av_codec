@@ -88,6 +88,33 @@ int32_t AVCodecClient::CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCo
     return ret;
 }
 
+int32_t AVCodecClient::SuspendFreeze(const std::vector<pid_t> &pidList)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto ret = IsAlived();
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
+
+    return avCodecProxy_->SuspendFreeze(pidList);
+}
+
+int32_t AVCodecClient::SuspendActive(const std::vector<pid_t> &pidList)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto ret = IsAlived();
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
+
+    return avCodecProxy_->SuspendActive(pidList);
+}
+
+int32_t AVCodecClient::SuspendActiveAll()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto ret = IsAlived();
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
+
+    return avCodecProxy_->SuspendActiveAll();
+}
+
 #ifdef SUPPORT_CODEC
 int32_t AVCodecClient::CreateCodecService(std::shared_ptr<ICodecService> &codecClient)
 {

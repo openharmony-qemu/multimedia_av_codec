@@ -27,6 +27,9 @@ public:
 
     int32_t GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
                                 const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &object) override;
+    int32_t SuspendFreeze(const std::vector<pid_t> &pidList) override;
+    int32_t SuspendActive(const std::vector<pid_t> &pidList) override;
+    int32_t SuspendActiveAll() override;
 
 private:
     static inline BrokerDelegator<AVCodecServiceProxy> delegator_;
