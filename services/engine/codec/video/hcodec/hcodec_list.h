@@ -28,6 +28,7 @@ public:
 private:
     CapabilityData HdiCapToUserCap(const CodecHDI::CodecCompCapability& hdiCap);
     std::vector<int32_t> GetSupportedBitrateMode(const CodecHDI::CodecVideoPortCap& hdiVideoCap);
+    bool IsSupportSQR(const std::vector<int32_t>& supportBitrateMode);
     std::vector<int32_t> GetSupportedFormat(const CodecHDI::CodecVideoPortCap& hdiVideoCap);
     std::map<ImgSize, Range> GetMeasuredFrameRate(const CodecHDI::CodecVideoPortCap& hdiVideoCap);
     void GetCodecProfileLevels(const CodecHDI::CodecCompCapability& hdiCap, CapabilityData& userCap);
