@@ -36,6 +36,9 @@ class AVCodecClient : public IAVCodecService, public NoCopyable {
 public:
     AVCodecClient() noexcept;
     ~AVCodecClient();
+    int32_t SuspendFreeze(const std::vector<pid_t> &pidList) override;
+    int32_t SuspendActive(const std::vector<pid_t> &pidList) override;
+    int32_t SuspendActiveAll() override;
 
 #ifdef SUPPORT_CODEC
     int32_t CreateCodecService(std::shared_ptr<ICodecService> &codecClient) override;

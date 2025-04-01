@@ -17,6 +17,7 @@
 #include "avcodec_log.h"
 #include "avcodec_server_manager.h"
 #include "avcodec_xcollie.h"
+#include "background_event_handler.h"
 
 
 namespace {
@@ -88,6 +89,15 @@ int AVCodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Mess
         case static_cast<uint32_t>(AVCodecServiceInterfaceCode::GET_SUBSYSTEM):
             ret = GetSystemAbility(data, reply);
             break;
+        case static_cast<uint32_t>(AVCodecServiceInterfaceCode::FREEZE):
+            ret = OnSuspendFreeze(data, reply);
+            break;
+        case static_cast<uint32_t>(AVCodecServiceInterfaceCode::ACTIVE):
+            ret = OnSuspendActive(data, reply);
+            break;
+        case static_cast<uint32_t>(AVCodecServiceInterfaceCode::ACTIVEALL):
+            ret = OnSuspendActiveAll(data, reply);
+            break;
         default:
             AVCODEC_LOGW("AVCodecServiceStub: no member func supporting, applying default process");
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
@@ -143,6 +153,36 @@ int32_t AVCodecServiceStub::GetSystemAbility(MessageParcel &data, MessageParcel 
     (void)reply.WriteRemoteObject(stubObj);
     (void)reply.WriteInt32(ret);
     
+    return AVCS_ERR_OK;
+}
+
+int32_t AVCodecServiceStub::OnSuspendFreeze(MessageParcel &data, MessageParcel &reply)
+{
+    std::vector<pid_t> pidList;
+    CHECK_AND_RETURN_RET_LOG(data.ReadInt32Vector(&pidList),
+                             AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+                             "Failed to read pidList from MessageParcel");
+    int32_t ret = SuspendFreeze(pidList);
+    (void)reply.WriteInt32(ret);
+
+    return AVCS_ERR_OK;
+}
+int32_t AVCodecServiceStub::OnSuspendActive(MessageParcel &data, MessageParcel &reply)
+{
+    std::vector<pid_t> pidList;
+    CHECK_AND_RETURN_RET_LOG(data.ReadInt32Vector(&pidList),
+                             AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+                             "Failed to read pidList from MessageParcel");
+    int32_t ret = SuspendActive(pidList);
+    (void)reply.WriteInt32(ret);
+
+    return AVCS_ERR_OK;
+}
+int32_t AVCodecServiceStub::OnSuspendActiveAll(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t ret = SuspendActiveAll();
+    (void)reply.WriteInt32(ret);
+
     return AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec

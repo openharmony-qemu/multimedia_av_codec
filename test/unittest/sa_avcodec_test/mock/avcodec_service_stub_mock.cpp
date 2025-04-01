@@ -69,5 +69,35 @@ int32_t AVCodecServiceStub::SetDeathListener(const sptr<IRemoteObject> &object)
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
     return mock->SetDeathListener(object);
 }
+
+int32_t AVCodecServiceStub::SuspendFreeze(const std::vector<pid_t> &pidList)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    for (pid_t pid : pidList) {
+        UNITTEST_INFO_LOG("pid: %d", pid);
+    }
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->SuspendFreeze(pidList);
+}
+
+int32_t AVCodecServiceStub::SuspendActive(const std::vector<pid_t> &pidList)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    for (pid_t pid : pidList) {
+        UNITTEST_INFO_LOG("pid: %d", pid);
+    }
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->SuspendActive(pidList);
+}
+
+int32_t AVCodecServiceStub::SuspendActiveAll()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->SuspendActiveAll();
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -62,6 +62,9 @@ enum class AVCodecListServiceInterfaceCode {
 
 enum class AVCodecServiceInterfaceCode {
     GET_SUBSYSTEM = 0,
+    FREEZE,
+    ACTIVE,
+    ACTIVEALL
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
