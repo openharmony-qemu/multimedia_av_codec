@@ -1321,7 +1321,8 @@ Status DecoderSurfaceFilter::SetPostProcessorOn(bool isPostProcessorOn)
     FALSE_RETURN_V(isPostProcessorSupported_, Status::ERROR_UNSUPPORTED_FORMAT);
     FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
 
-    return postProcessor_->SetPostProcessorOn(isPostProcessorOn);
+    postProcessor_->SetPostProcessorOn(isPostProcessorOn);
+    return Status::OK;
 }
 
 Status DecoderSurfaceFilter::SetVideoWindowSize(int32_t width, int32_t height)
