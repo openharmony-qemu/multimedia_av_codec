@@ -80,7 +80,7 @@ namespace {
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0100, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -102,7 +102,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0200, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -124,7 +124,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0300, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -146,7 +146,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0400, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -168,7 +168,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0500, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -190,7 +190,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0500, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0600, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -212,7 +212,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0700, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -234,7 +234,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0700, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0800, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -256,7 +256,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0800, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0900, TestSize.Level0)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -280,7 +280,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0900, TestSize.Level0)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1000, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -304,7 +304,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1000, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1100, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -328,7 +328,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1200, TestSize.Level0)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -352,7 +352,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1200, TestSize.Level0)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1300, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -376,7 +376,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1400, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -400,7 +400,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1500, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -424,7 +424,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1500, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1600, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -448,7 +448,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1700, TestSize.Level0)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -472,7 +472,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1700, TestSize.Level0)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1800, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -496,7 +496,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1800, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1900, TestSize.Level0)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -520,7 +520,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_1900, TestSize.Level0)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2000, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -544,7 +544,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2000, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2100, TestSize.Level0)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -568,7 +568,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2100, TestSize.Level0)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2200, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -592,7 +592,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2300, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -616,7 +616,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2400, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -640,7 +640,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2500, TestSize.Level3)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = "/data/test/media/mpeg4_res_change.m4v";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -664,7 +664,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2500, TestSize.Level3)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2600, TestSize.Level3)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = "/data/test/media/mpeg4_err_res.m4v";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -688,7 +688,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2600, TestSize.Level3)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2700, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = "/data/test/media/mpeg4_simple@level6_1280x720_30.m4v";
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -710,7 +710,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2700, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2800, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = "/data/test/media/mpeg4_simple@level6_1280x720_30.m4v";
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -732,7 +732,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2800, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2900, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = "/data/test/media/mpeg4_simple@level6_1280x720_30.m4v";
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -754,7 +754,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_2900, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_3000, TestSize.Level3)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -778,7 +778,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_3000, TestSize.Level3)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_SWDEC_MPEG4_IPB_0100, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -802,7 +802,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_SWDEC_MPEG4_IPB_0100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_IPB_0200, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -826,7 +826,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_IPB_0200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_IPB_0300, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
 
         int32_t ret = vDecSample->CreateVideoDecoder(g_codecNameMpeg4);
@@ -850,7 +850,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_IPB_0300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0100, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = -1;
@@ -870,7 +870,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0100, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0200, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 0;
@@ -890,7 +890,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0200, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0300, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1;
@@ -910,7 +910,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0300, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0400, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 4097;
@@ -930,7 +930,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0400, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0500, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 10000;
@@ -950,7 +950,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0500, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0600, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 64;
@@ -974,7 +974,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0700, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         if (!access("/system/lib64/media/", 0)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -997,7 +997,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0700, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0800, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         if (!access("/system/lib64/media/", 0)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -1020,7 +1020,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0800, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0900, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         if (!access("/system/lib64/media/", 0)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -1043,7 +1043,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0900, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_1000, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         if (!access("/system/lib64/media/", 0)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -1066,7 +1066,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_1000, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0100, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1091,7 +1091,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0100, TestSize.Leve
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0200, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1114,7 +1114,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0200, TestSize.Leve
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0300, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1137,7 +1137,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0300, TestSize.Leve
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0400, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr){
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1158,8 +1158,8 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0400, TestSize.Leve
  * @tc.desc      : function test
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_SWDEC_RESOLUTION_PROFILE_0010, TestSize.Level2)
-{  
-    if (cap_mpeg4 != nullptr){
+{
+    if (cap_mpeg4 != nullptr) {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profResoChange.m4v";
     vDecSample->DEFAULT_WIDTH = 1920;
