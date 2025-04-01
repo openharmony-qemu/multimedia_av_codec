@@ -23,6 +23,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecAbilitySingleton"};
+constexpr int32_t MAX_SQR_FACTOR = 51;
 }
 
 namespace OHOS {
@@ -87,6 +88,10 @@ bool CodecAbilitySingleton::IsCapabilityValid(const CapabilityData &cap)
             "width is invalid, range is [%{public}d, %{public}d]", cap.width.minVal, cap.width.maxVal);
         CHECK_AND_RETURN_RET_LOG(cap.height.minVal > 0 && cap.height.minVal <= cap.height.maxVal, false,
             "height is invalid, range is [%{public}d, %{public}d]", cap.height.minVal, cap.height.maxVal);
+    }
+    if (std::find(cap.bitrateMode.begin(), cap.bitrateMode.end(), SQR) != cap.bitrateMode.end()) {
+        CHECK_AND_RETURN_RET_LOG(cap.sqrFactor.maxVal <= MAX_SQR_FACTOR && cap.sqrFactor.minVal >= 0, false,
+            "sqrFactor is invalid, range is [%{public}d, %{public}d]", cap.sqrFactor.minVal, cap.sqrFactor.maxVal);
     }
     return true;
 }

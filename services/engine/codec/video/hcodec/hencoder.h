@@ -57,6 +57,8 @@ private:
     int32_t ConfigureOutputBitrate(const Format &format);
     static std::optional<uint32_t> GetBitRateFromUser(const Format &format);
     static std::optional<VideoEncodeBitrateMode> GetBitRateModeFromUser(const Format &format);
+    static std::optional<uint32_t> GetSQRFactorFromUser(const Format &format);
+    static std::optional<uint32_t> GetSQRMaxBitrateFromUser(const Format &format);
     int32_t SetupAVCEncoderParameters(const Format &format, std::optional<double> frameRate);
     void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, int32_t iFrameInterval, double frameRate);
     int32_t SetupHEVCEncoderParameters(const Format &format, std::optional<double> frameRate);
@@ -72,6 +74,7 @@ private:
     int32_t SetRepeat(const Format &format);
     int32_t SetTemperalLayer(const Format &format);
     int32_t SetConstantQualityMode(int32_t quality);
+    int32_t SetSQRMode(const Format &format);
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;

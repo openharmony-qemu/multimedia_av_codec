@@ -141,6 +141,7 @@ bool HCodecList::IsSupportedVideoCodec(const CodecCompCapability &hdiCap)
 CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
 {
     constexpr int32_t MAX_ENCODE_QUALITY = 100;
+    constexpr int32_t MAX_ENCODE_SQRFACTOR = 51;
     const CodecVideoPortCap& hdiVideoCap = hdiCap.port.video;
     CapabilityData userCap;
     userCap.codecName = hdiCap.compName;
@@ -149,6 +150,8 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     userCap.isVendor = true;
     userCap.maxInstance = hdiCap.maxInst;
     userCap.bitrate = {hdiCap.bitRate.min, hdiCap.bitRate.max};
+    userCap.maxBitrate = {hdiCap.bitRate.min, hdiCap.bitRate.max};
+    userCap.sqrFactor =  {0, MAX_ENCODE_SQRFACTOR};
     userCap.alignment = {hdiVideoCap.whAlignment.widthAlignment, hdiVideoCap.whAlignment.heightAlignment};
     userCap.width = {hdiVideoCap.minSize.width, hdiVideoCap.maxSize.width};
     userCap.height = {hdiVideoCap.minSize.height, hdiVideoCap.maxSize.height};
@@ -186,9 +189,11 @@ vector<int32_t> HCodecList::GetSupportedBitrateMode(const CodecVideoPortCap& hdi
 {
     vector<int32_t> vec;
     for (BitRateMode mode : hdiVideoCap.bitRatemode) {
-        optional<VideoEncodeBitrateMode> innerMode = TypeConverter::HdiBitrateModeToInnerMode(mode);
+        OMX_VIDEO_CONTROLRATETYPE omxMode = static_cast<OMX_VIDEO_CONTROLRATETYPE>(mode);
+        optional<VideoEncodeBitrateMode> innerMode = TypeConverter::OmxBitrateModeToInnerMode(omxMode);
         if (innerMode.has_value()) {
             vec.push_back(innerMode.value());
+            LOGI("support (inner) bitRateMode %d", innerMode.value());
         }
     }
     return vec;

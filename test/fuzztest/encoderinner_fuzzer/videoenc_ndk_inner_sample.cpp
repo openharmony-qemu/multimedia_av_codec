@@ -1197,4 +1197,7 @@ bool VEncNdkInnerFuzzSample::GetWaterMarkCapability(std::string codecMimeType)
         std::cout << " Not support watermark" << std::endl;
         return false;
     }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    (void)codecInfo->GetSupportedMaxBitrate();
+    (void)codecInfo->GetSupportedSqrFactor();
 }

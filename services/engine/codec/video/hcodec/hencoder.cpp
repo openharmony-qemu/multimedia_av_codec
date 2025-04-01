@@ -474,6 +474,32 @@ std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
     return nullopt;
 }
 
+std::optional<uint32_t> HEncoder::GetSQRFactorFromUser(const Format &format)
+{
+    int32_t sqrFactor;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor) && sqrFactor > 0) {
+        LOGI("user set SQR factor is  %d", sqrFactor);
+        return static_cast<uint32_t>(sqrFactor);
+    }
+    return nullopt;
+}
+
+std::optional<uint32_t> HEncoder::GetSQRMaxBitrateFromUser(const Format &format)
+{
+    int64_t maxBitRateLong;
+    if (format.GetLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitRateLong) &&
+        maxBitRateLong > 0 && maxBitRateLong <= UINT32_MAX) {
+        LOGI("user set max bit rate %" PRId64 "", maxBitRateLong);
+        return static_cast<uint32_t>(maxBitRateLong);
+    }
+    int32_t maxBitRateInt;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitRateInt) && maxBitRateInt > 0) {
+        LOGI("user set max bit rate %d", maxBitRateInt);
+        return static_cast<uint32_t>(maxBitRateInt);
+    }
+    return nullopt;
+}
+
 std::optional<VideoEncodeBitrateMode> HEncoder::GetBitRateModeFromUser(const Format &format)
 {
     VideoEncodeBitrateMode mode;
@@ -499,6 +525,44 @@ int32_t HEncoder::SetConstantQualityMode(int32_t quality)
     return AVCS_ERR_OK;
 }
 
+int32_t HEncoder::SetSQRMode(const Format &format)
+{
+    StableControlRate bitrateType;
+    InitOMXParamExt(bitrateType);
+    bitrateType.portIndex = OMX_DirOutput;
+    if (!GetParameter(OMX_IndexParamControlRateSQR, bitrateType)) {
+        HLOGE("get OMX_IndexParamControlRateSQR failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    optional<uint32_t> sqrFactor = GetSQRFactorFromUser(format);
+    optional<uint32_t> maxBitrate = GetSQRMaxBitrateFromUser(format);
+    optional<uint32_t> bitRate = GetBitRateFromUser(format);
+    if (sqrFactor.has_value()) {
+        bitrateType.sqrFactor = sqrFactor.value();
+        LOGI("set sqr factor %u", bitrateType.sqrFactor);
+    }
+    if (maxBitrate.has_value()) {
+        bitrateType.sMaxBitrate = maxBitrate.value();
+        LOGI("set max bit rate %u bps", bitrateType.sMaxBitrate);
+    }
+    if (bitRate.has_value() && !maxBitrate.has_value()) {
+        bitrateType.sTargetBitrate = bitRate.value();
+        LOGI("set target bitrate %u bps", bitrateType.sTargetBitrate);
+    }
+    if (!SetParameter(OMX_IndexParamControlRateSQR, bitrateType)) {
+        HLOGE("failed to set OMX_IndexParamControlRateSQR");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("set SQR mode succ");
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, bitrateType.sqrFactor);
+    outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+        static_cast<int64_t>(bitrateType.sMaxBitrate));
+    outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE,
+        static_cast<int64_t>(bitrateType.sTargetBitrate));
+    return AVCS_ERR_OK;
+}
+
 int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
 {
     OMX_VIDEO_PARAM_BITRATETYPE bitrateType;
@@ -514,11 +578,15 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
         format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) && quality >= 0) {
         return SetConstantQualityMode(quality);
     }
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) &&
+        (bitRateMode.has_value() && bitRateMode.value() == SQR)) {
+        return SetSQRMode(format);
+    }
     optional<uint32_t> bitRate = GetBitRateFromUser(format);
     if (bitRate.has_value()) {
         bitrateType.nTargetBitrate = bitRate.value();
     }
-    if (bitRateMode.has_value()) {
+    if (bitRateMode.has_value() && bitRateMode.value() != SQR && bitRateMode.value() != CQ) {
         auto omxBitrateMode = TypeConverter::InnerModeToOmxBitrateMode(bitRateMode.value());
         if (omxBitrateMode.has_value()) {
             bitrateType.eControlRate = omxBitrateMode.value();

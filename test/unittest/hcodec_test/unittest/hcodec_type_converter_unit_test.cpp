@@ -204,18 +204,18 @@ HWTEST(HCodecTypeConverterUnitTest, inner_hevc_profile_to_omx_profile_not_find, 
     ASSERT_FALSE(ret.has_value());
 }
 
-HWTEST(HCodecTypeConverterUnitTest, hdi_bitrate_mode_to_inner_mode_find, TestSize.Level1)
+HWTEST(HCodecTypeConverterUnitTest, OMX_bitrate_mode_to_inner_mode_find, TestSize.Level1)
 {
     optional<VideoEncodeBitrateMode> ret =
-        TypeConverter::HdiBitrateModeToInnerMode(CodecHDI::BIT_RATE_MODE_VBR);
+        TypeConverter::OmxBitrateModeToInnerMode(OMX_Video_ControlRateVariable);
     ASSERT_TRUE(ret.has_value());
     EXPECT_EQ(ret.value(), VBR);
 }
 
-HWTEST(HCodecTypeConverterUnitTest, hdi_bitrate_mode_to_inner_mode_not_find, TestSize.Level1)
+HWTEST(HCodecTypeConverterUnitTest, OMX_bitrate_mode_to_inner_mode_not_find, TestSize.Level1)
 {
     optional<VideoEncodeBitrateMode> ret =
-        TypeConverter::HdiBitrateModeToInnerMode(CodecHDI::BIT_RATE_MODE_INVALID);
+        TypeConverter::OmxBitrateModeToInnerMode(OMX_Video_ControlRateDisable);
     ASSERT_FALSE(ret.has_value());
 }
 } // OHOS::MediaAVCodec
