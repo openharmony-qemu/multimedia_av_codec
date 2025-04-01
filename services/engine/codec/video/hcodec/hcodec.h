@@ -31,7 +31,7 @@
 #include "meta/meta_key.h" // foundation/multimedia/histreamer/interface/inner_api/
 
 namespace OHOS::MediaAVCodec {
-class HCodec : public CodecBase, protected StateMachine, public std::enable_shared_from_this<HCodec> {
+class HCodec : public CodecBase, protected StateMachine {
 public:
     static std::shared_ptr<HCodec> Create(const std::string &name);
     int32_t Init(Media::Meta &callerInfo) override;
@@ -60,7 +60,6 @@ public:
     int32_t Release() override;
     int32_t NotifyMemoryRecycle() override;
     int32_t NotifyMemoryWriteBack() override;
-    virtual GSError OnBufferReleasedByConsumer(uint64_t surfaceId) { return GSERROR_OK; }
 
 protected:
     enum MsgWhat : MsgType {
@@ -533,14 +532,14 @@ private:
 
     class HdiCallback : public CodecHDI::ICodecCallback {
     public:
-        explicit HdiCallback(std::weak_ptr<HCodec> codec) : codec_(codec) { }
+        explicit HdiCallback(std::weak_ptr<MsgToken> codec) : codec_(codec) { }
         virtual ~HdiCallback() = default;
         int32_t EventHandler(CodecHDI::CodecEventType event,
                              const CodecHDI::EventInfo& info);
         int32_t EmptyBufferDone(int64_t appData, const CodecHDI::OmxCodecBuffer& buffer);
         int32_t FillBufferDone(int64_t appData, const CodecHDI::OmxCodecBuffer& buffer);
     private:
-        std::weak_ptr<HCodec> codec_;
+        std::weak_ptr<MsgToken> codec_;
     };
 
 private:

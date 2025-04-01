@@ -47,17 +47,22 @@ protected:
     using TimeUs = int64_t;
     static TimeUs GetNowUs();
 
+    struct MsgToken {
+        std::mutex m_mtx;
+        std::map<TimeUs, MsgInfo> m_msgQueue;  // msg will be sorted by timeUs
+        std::condition_variable m_threadCond;
+        void SendAsyncMsg(MsgType type, const ParamSP &msg, uint32_t delayUs = 0);
+    };
+    std::shared_ptr<MsgToken> m_token;
+
 private:
     void MainLoop();
     MsgId GenerateMsgId();
 
 private:
     std::thread m_thread;
-    std::mutex m_mtx;
     bool m_threadNeedStop = false;
     MsgId m_lastMsgId = 0;
-    std::map<TimeUs, MsgInfo> m_msgQueue;  // msg will be sorted by timeUs
-    std::condition_variable m_threadCond;
 
     std::mutex m_replyMtx;
     std::map<MsgId, ParamSP> m_replies;

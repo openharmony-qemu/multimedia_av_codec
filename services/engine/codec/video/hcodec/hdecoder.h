@@ -78,7 +78,6 @@ private:
     void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     int32_t Attach(BufferInfo &info);
-    GSError OnBufferReleasedByConsumer(uint64_t surfaceId) override;
     void OnGetBufferFromSurface(const ParamSP& param) override;
     SurfaceBufferItem RequestBuffer();
     std::vector<BufferInfo>::iterator FindBelongTo(sptr<SurfaceBuffer>& buffer);

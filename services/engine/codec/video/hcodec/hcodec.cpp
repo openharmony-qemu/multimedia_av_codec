@@ -355,7 +355,7 @@ int32_t HCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo 
     msg->SetValue("event", event);
     msg->SetValue("data1", info.data1);
     msg->SetValue("data2", info.data2);
-    std::shared_ptr<HCodec> codec = codec_.lock();
+    std::shared_ptr<MsgToken> codec = codec_.lock();
     if (codec == nullptr) {
         LOGI("HCodec is gone");
         return HDF_SUCCESS;
@@ -368,7 +368,7 @@ int32_t HCodec::HdiCallback::EmptyBufferDone(int64_t appData, const OmxCodecBuff
 {
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue(BUFFER_ID, buffer.bufferId);
-    std::shared_ptr<HCodec> codec = codec_.lock();
+    std::shared_ptr<MsgToken> codec = codec_.lock();
     if (codec == nullptr) {
         LOGI("HCodec is gone");
         return HDF_SUCCESS;
@@ -381,7 +381,7 @@ int32_t HCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuffe
 {
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("omxBuffer", buffer);
-    std::shared_ptr<HCodec> codec = codec_.lock();
+    std::shared_ptr<MsgToken> codec = codec_.lock();
     if (codec == nullptr) {
         LOGI("HCodec is gone");
         return HDF_SUCCESS;
@@ -1384,7 +1384,7 @@ int32_t HCodec::OnAllocateComponent()
         HLOGE("GetCodecComponentManager failed");
         return AVCS_ERR_UNKNOWN;
     }
-    compCb_ = new HdiCallback(weak_from_this());
+    compCb_ = new HdiCallback(m_token);
     int32_t ret = compMgr_->CreateComponent(compNode_, componentId_, caps_.compName, 0, compCb_);
     if (ret != HDF_SUCCESS || compNode_ == nullptr) {
         compCb_ = nullptr;

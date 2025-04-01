@@ -129,10 +129,10 @@ private:
 private:
     class EncoderBuffersConsumerListener : public IBufferConsumerListener {
     public:
-        explicit EncoderBuffersConsumerListener(HEncoder *codec) : codec_(codec) {}
+        explicit EncoderBuffersConsumerListener(std::weak_ptr<MsgToken> codec) : codec_(codec) {}
         void OnBufferAvailable() override;
     private:
-        HEncoder* codec_;
+        std::weak_ptr<MsgToken> codec_;
     };
 
 private:
