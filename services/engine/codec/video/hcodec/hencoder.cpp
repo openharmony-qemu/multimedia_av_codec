@@ -888,7 +888,7 @@ int32_t HEncoder::SubmitAllBuffersOwnedByUs()
     }
     if (inputSurface_) {
         ClearDirtyList();
-        sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(this);
+        sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(m_token);
         inputSurface_->RegisterConsumerListener(listener);
         SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr);
     } else {
@@ -1414,7 +1414,10 @@ void HEncoder::ResetSlot(BufferInfo& info)
 
 void HEncoder::EncoderBuffersConsumerListener::OnBufferAvailable()
 {
-    codec_->SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr);
+    std::shared_ptr<MsgToken> codec = codec_.lock();
+    if (codec != nullptr) {
+        codec->SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr);
+    }
 }
 
 void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)

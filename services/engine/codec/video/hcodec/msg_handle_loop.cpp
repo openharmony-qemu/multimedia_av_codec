@@ -25,6 +25,7 @@ using namespace std;
 
 MsgHandleLoop::MsgHandleLoop()
 {
+    m_token = make_shared<MsgToken>();
     m_thread = thread(&MsgHandleLoop::MainLoop, this);
 }
 
@@ -36,9 +37,9 @@ MsgHandleLoop::~MsgHandleLoop()
 void MsgHandleLoop::Stop()
 {
     {
-        lock_guard<mutex> lock(m_mtx);
+        lock_guard<mutex> lock(m_token->m_mtx);
         m_threadNeedStop = true;
-        m_threadCond.notify_one();
+        m_token->m_threadCond.notify_one();
     }
 
     if (m_thread.joinable()) {
@@ -47,6 +48,11 @@ void MsgHandleLoop::Stop()
 }
 
 void MsgHandleLoop::SendAsyncMsg(MsgType type, const ParamSP &msg, uint32_t delayUs)
+{
+    m_token->SendAsyncMsg(type, msg, delayUs);
+}
+
+void MsgHandleLoop::MsgToken::SendAsyncMsg(MsgType type, const ParamSP &msg, uint32_t delayUs)
 {
     lock_guard<mutex> lock(m_mtx);
     TimeUs nowUs = GetNowUs();
@@ -63,14 +69,14 @@ bool MsgHandleLoop::SendSyncMsg(MsgType type, const ParamSP &msg, ParamSP &reply
 {
     MsgId id = GenerateMsgId();
     {
-        lock_guard<mutex> lock(m_mtx);
+        lock_guard<mutex> lock(m_token->m_mtx);
         TimeUs time = GetNowUs();
-        if (m_msgQueue.find(time) != m_msgQueue.end()) {
+        if (m_token->m_msgQueue.find(time) != m_token->m_msgQueue.end()) {
             LOGW("DUPLICATIVE MSG TIMESTAMP!!!");
             time++;
         }
-        m_msgQueue[time] = MsgInfo {type, id, msg};
-        m_threadCond.notify_one();
+        m_token->m_msgQueue[time] = MsgInfo {type, id, msg};
+        m_token->m_threadCond.notify_one();
     }
 
     unique_lock<mutex> lock(m_replyMtx);
@@ -102,7 +108,7 @@ void MsgHandleLoop::PostReply(MsgId id, const ParamSP &reply)
 
 MsgId MsgHandleLoop::GenerateMsgId()
 {
-    lock_guard<mutex> lock(m_mtx);
+    lock_guard<mutex> lock(m_token->m_mtx);
     m_lastMsgId++;
     if (m_lastMsgId == ASYNC_MSG_ID) {
         m_lastMsgId++;
@@ -117,22 +123,22 @@ void MsgHandleLoop::MainLoop()
     while (true) {
         MsgInfo info;
         {
-            unique_lock<mutex> lock(m_mtx);
-            m_threadCond.wait(lock, [this] {
-                return m_threadNeedStop || !m_msgQueue.empty();
+            unique_lock<mutex> lock(m_token->m_mtx);
+            m_token->m_threadCond.wait(lock, [this] {
+                return m_threadNeedStop || !m_token->m_msgQueue.empty();
             });
             if (m_threadNeedStop) {
-                LOGD("stopped, remain %zu msg unprocessed", m_msgQueue.size());
+                LOGD("stopped, remain %zu msg unprocessed", m_token->m_msgQueue.size());
                 break;
             }
-            TimeUs processUs = m_msgQueue.begin()->first;
+            TimeUs processUs = m_token->m_msgQueue.begin()->first;
             TimeUs nowUs = GetNowUs();
             if (processUs > nowUs) {
-                m_threadCond.wait_for(lock, chrono::microseconds(processUs - nowUs));
+                m_token->m_threadCond.wait_for(lock, chrono::microseconds(processUs - nowUs));
                 continue;
             }
-            info = m_msgQueue.begin()->second;
-            m_msgQueue.erase(m_msgQueue.begin());
+            info = m_token->m_msgQueue.begin()->second;
+            m_token->m_msgQueue.erase(m_token->m_msgQueue.begin());
         }
         OnMsgReceived(info);
     }

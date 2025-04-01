@@ -837,28 +837,23 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
 int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
 {
     uint64_t surfaceId = surface->GetUniqueId();
-    std::weak_ptr<HCodec> weakThis = weak_from_this();
+    std::weak_ptr<MsgToken> weakThis = m_token;
     GSError err = surface->RegisterReleaseListener([weakThis, surfaceId](sptr<SurfaceBuffer>&) {
-        std::shared_ptr<HCodec> codec = weakThis.lock();
+        std::shared_ptr<MsgToken> codec = weakThis.lock();
         if (codec == nullptr) {
             LOGD("decoder is gone");
             return GSERROR_OK;
         }
-        return codec->OnBufferReleasedByConsumer(surfaceId);
+        ParamSP param = make_shared<ParamBundle>();
+        param->SetValue("surfaceId", surfaceId);
+        codec->SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, param);
+        return GSERROR_OK;
     });
     if (err != GSERROR_OK) {
         HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed, GSError=%d", surfaceId, err);
         return AVCS_ERR_UNKNOWN;
     }
     return AVCS_ERR_OK;
-}
-
-GSError HDecoder::OnBufferReleasedByConsumer(uint64_t surfaceId)
-{
-    ParamSP param = make_shared<ParamBundle>();
-    param->SetValue("surfaceId", surfaceId);
-    SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, param);
-    return GSERROR_OK;
 }
 
 HDecoder::SurfaceBufferItem HDecoder::RequestBuffer()
