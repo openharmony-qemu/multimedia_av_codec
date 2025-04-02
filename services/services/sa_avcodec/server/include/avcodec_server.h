@@ -21,7 +21,6 @@
 #include "nocopyable.h"
 #include "system_ability.h"
 
-
 namespace OHOS {
 namespace MediaAVCodec {
 class AVCodecServer : public SystemAbility, public AVCodecServiceStub {
@@ -33,7 +32,10 @@ public:
     // IStandardAVCodecService override
     int32_t GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
                                 const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject) override;
-
+    int32_t SuspendFreeze(const std::vector<pid_t> &pidList) override;
+    int32_t SuspendActive(const std::vector<pid_t> &pidList) override;
+    int32_t SuspendActiveAll() override;
+                            
 protected:
     // SystemAbility override
     void OnDump() override;

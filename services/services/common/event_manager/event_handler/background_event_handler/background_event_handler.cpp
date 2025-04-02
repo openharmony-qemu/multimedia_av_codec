@@ -19,19 +19,13 @@
 #include "avcodec_server.h"
 #include "avcodec_server_manager.h"
 #include "codec_service_stub.h"
-#ifdef USE_EFFICIENCY_MANAGER
 #include "syspara/parameters.h"
-#include "suspend_manager_client.h"
-#endif //USE_EFFICIENCY_MANAGER
 
-#ifdef USE_EFFICIENCY_MANAGER
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "BackGroundEventHandler"};
 } // namespace
-#endif //USE_EFFICIENCY_MANAGER
 namespace OHOS {
 namespace MediaAVCodec {
-#ifdef USE_EFFICIENCY_MANAGER
 static std::vector<sptr<IRemoteObject>> GetFreezeInfoList(pid_t pid)
 {
     std::vector<sptr<IRemoteObject>> instanceList;
@@ -45,10 +39,22 @@ static std::vector<sptr<IRemoteObject>> GetFreezeInfoList(pid_t pid)
     return instanceList;
 }
 
-static void NotifyFrozen(const std::vector<int32_t> &pidList)
+BackGroundEventHandler::BackGroundEventHandler() {}
+
+void BackGroundEventHandler::NotifyFrozen(const std::vector<int32_t> &pidList)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
+    bool recycleMemory = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
+    if (!recycleMemory) {
+        AVCODEC_LOGI("recycle memory is not supported on this platform");
+        return;
+    }
     for (auto pid : pidList) {
         std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
+        if (!instanceList.empty()) {
+            frozenPidList_.insert(pid);
+            AVCODEC_LOGI("Freeze pid: %{pubilc}d, frozenPidList_ size: %{pubilc}zu", pid, frozenPidList_.size());
+        }
         for (auto &instance : instanceList) {
             CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
             static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyMemoryRecycle();
@@ -57,10 +63,15 @@ static void NotifyFrozen(const std::vector<int32_t> &pidList)
     return;
 }
 
-static void NotifyActive(const std::vector<int32_t> &pidList)
+void BackGroundEventHandler::NotifyActive(const std::vector<int32_t> &pidList)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     for (auto pid : pidList) {
         std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
+        if (!instanceList.empty()) {
+            frozenPidList_.erase(pid);
+            AVCODEC_LOGI("Active pid: %{pubilc}d, frozenPidList_ size: %{pubilc}zu", pid, frozenPidList_.size());
+        }
         for (auto &instance : instanceList) {
             CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
             static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyMemoryWriteBack();
@@ -69,61 +80,17 @@ static void NotifyActive(const std::vector<int32_t> &pidList)
     return;
 }
 
-ErrCode SuspendStateObserverStubObj::OnActive(const std::vector<int32_t> &pidList, const int32_t uid)
+void BackGroundEventHandler::NotifyActiveAll()
 {
-    AVCODEC_LOGI("OnActive, pidList size:%{public}zu, uid:%{public}d", pidList.size(), uid);
-    NotifyActive(pidList);
-    return ERR_OK;
-}
-
-ErrCode SuspendStateObserverStubObj::OnDoze(const int32_t uid)
-{
-    return ERR_OK;
-}
-
-ErrCode SuspendStateObserverStubObj::OnFrozen(const std::vector<int32_t> &pidList, const int32_t uid)
-{
-    AVCODEC_LOGI("OnFrozen, pidList size:%{public}zu, uid:%{public}d", pidList.size(), uid);
-    NotifyFrozen(pidList);
-    return ERR_OK;
-}
-
-ErrCode SuspendStateObserverStubObj::OnFrozenUid(const int32_t uid, const uint32_t reasonId)
-{
-    return ERR_OK;
-}
-#endif //USE_EFFICIENCY_MANAGER
-
-BackGroundEventHandler::BackGroundEventHandler() {}
-
-void BackGroundEventHandler::RegisterSuspendObserver()
-{
-#ifdef USE_EFFICIENCY_MANAGER
-    bool recycleMemory = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
-    AVCODEC_LOGI("recycleMemory is %{public}d", recycleMemory);
-    if (recycleMemory) {
-        if (suspendObservers_ == nullptr) {
-            suspendObservers_ = sptr<SuspendStateObserverStubObj>::MakeSptr();
-            CHECK_AND_RETURN_LOG(suspendObservers_ != nullptr, "Create Suspend Observer failed");
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (auto pid : frozenPidList_) {
+        std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
+        for (auto &instance : instanceList) {
+            CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
+            static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyMemoryWriteBack();
         }
-        auto ret = SuspendManager::SuspendManagerClient::GetInstance().RegisterSuspendObserver(suspendObservers_);
-        CHECK_AND_RETURN_LOG(ret == ERR_OK, "RegisterSuspendObserver failed, return: %{public}d", ret);
-        AVCODEC_LOGI("RegisterSuspendObserver succeed");
     }
-#endif //USE_EFFICIENCY_MANAGER
-    return;
-}
-
-void BackGroundEventHandler::UnregisterSuspendObserver()
-{
-#ifdef USE_EFFICIENCY_MANAGER
-    if (suspendObservers_ != nullptr) {
-        auto ret = SuspendManager::SuspendManagerClient::GetInstance().UnregisterSuspendObserver(suspendObservers_);
-        CHECK_AND_RETURN_LOG(ret == ERR_OK, "UnRegisterSuspendObserver failed, return: %{public}d", ret);
-        suspendObservers_ = nullptr;
-        AVCODEC_LOGI("UnRegisterSuspendObserver succeed");
-    }
-#endif //USE_EFFICIENCY_MANAGER
+    frozenPidList_.clear();
     return;
 }
 
