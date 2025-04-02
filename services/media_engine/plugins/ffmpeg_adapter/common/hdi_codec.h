@@ -89,6 +89,10 @@ public:
         int32_t EventHandler(CodecEventType event, const EventInfo &info) override;
         int32_t EmptyBufferDone(int64_t appData, const OmxCodecBuffer &buffer) override;
         int32_t FillBufferDone(int64_t appData, const OmxCodecBuffer &buffer) override;
+        std::shared_ptr<HdiCodec>& GetHdiCodec()
+        {
+            return hdiCodec_;
+        }
     private:
         std::shared_ptr<HdiCodec> hdiCodec_ = nullptr;
     };
@@ -99,7 +103,7 @@ private:
     Status InitBuffersByPort(PortIndex portIndex, uint32_t bufferSize);
     Status FreeBuffer(PortIndex portIndex, const std::shared_ptr<OmxCodecBuffer> &omxBuffer);
 
-private:
+protected:
     struct OmxBufferInfo {
         std::shared_ptr<OmxCodecBuffer> omxBuffer = nullptr;
         std::shared_ptr<AVBuffer> avBuffer = nullptr;
