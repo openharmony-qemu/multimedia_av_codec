@@ -53,7 +53,7 @@ void BackGroundEventHandler::NotifyFrozen(const std::vector<int32_t> &pidList)
         std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
         if (!instanceList.empty()) {
             frozenPidList_.insert(pid);
-            AVCODEC_LOGI("Freeze pid: %{pubilc}d, frozenPidList_ size: %{pubilc}zu", pid, frozenPidList_.size());
+            AVCODEC_LOGI("Freeze pid: %{public}d, frozenPidList_ size: %{public}zu", pid, frozenPidList_.size());
         }
         for (auto &instance : instanceList) {
             CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
@@ -70,7 +70,7 @@ void BackGroundEventHandler::NotifyActive(const std::vector<int32_t> &pidList)
         std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
         if (!instanceList.empty()) {
             frozenPidList_.erase(pid);
-            AVCODEC_LOGI("Active pid: %{pubilc}d, frozenPidList_ size: %{pubilc}zu", pid, frozenPidList_.size());
+            AVCODEC_LOGI("Active pid: %{public}d, frozenPidList_ size: %{public}zu", pid, frozenPidList_.size());
         }
         for (auto &instance : instanceList) {
             CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
@@ -85,6 +85,7 @@ void BackGroundEventHandler::NotifyActiveAll()
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto pid : frozenPidList_) {
         std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
+        AVCODEC_LOGI("ActiveAll, frozenPidList_ size: %{public}zu", frozenPidList_.size());
         for (auto &instance : instanceList) {
             CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
             static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyMemoryWriteBack();
