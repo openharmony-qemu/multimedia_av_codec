@@ -104,7 +104,7 @@ void AudioEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     if (ret != 0 && isTranscoderMode_) {
         MEDIA_LOG_I("TranscoderMode");
         FALSE_RETURN(eventReceiver_ != nullptr);
-        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUO_ENC_TYPE});
+        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_ENC_TYPE});
     }
 }
 
@@ -136,7 +136,7 @@ Status AudioEncoderFilter::DoPrepare()
         case FilterType::FILTERTYPE_AENC:
             if (isTranscoderMode_) {
                 MEDIA_LOG_I("TranscoderMode");
-                return filterCallback_->OnCallback(shared_from_this(), FilterCallbackCommand::NEXT_FILTER_NEEDED,
+                return filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                     StreamType::STREAMTYPE_ENCODED_AUDIO);
             }
             filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
@@ -220,7 +220,7 @@ Status AudioEncoderFilter::NotifyEos()
     return Status::OK;
 }
 
-Status::AudioEncoderFilter::SetTranscoderMode()
+Status AudioEncoderFilter::SetTranscoderMode()
 {
     MEDIA_LOG_I("SetTranscoderMode");
     isTranscoderMode_ = true;
