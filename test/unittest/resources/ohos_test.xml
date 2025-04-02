@@ -223,7 +223,7 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_hardware_memrecycle_unit_test">
+    <target name="videodec_hdecoder_memrecycle_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/720_1280_25_avcc.h264 -> /data/test/media" src="res"/>
