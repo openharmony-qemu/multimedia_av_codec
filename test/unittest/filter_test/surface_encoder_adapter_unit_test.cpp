@@ -458,7 +458,7 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckFrames_300, T
     surfaceEncoderAdapter_->lastBufferTime_ = 0;
     surfaceEncoderAdapter_->pauseResumeQueue_.push_back(std::make_pair(100, StateCode::PAUSE));
     surfaceEncoderAdapter_->CheckFrames(currentPts, checkFramesPauseTime);
-    ASSERT_EQ(checkFramesPauseTime, 100);
+    ASSERT_EQ(checkFramesPauseTime, 200 + (0 - 100));
 }
 
 /**
@@ -473,7 +473,7 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckFrames_400, T
     surfaceEncoderAdapter_->lastBufferTime_ = 0;
     surfaceEncoderAdapter_->pauseResumeQueue_.push_back(std::make_pair(100, StateCode::RESUME));
     surfaceEncoderAdapter_->CheckFrames(currentPts, checkFramesPauseTime);
-    ASSERT_EQ(checkFramesPauseTime, 300);
+    ASSERT_EQ(checkFramesPauseTime, 200 - 100000000);
 }
 
 /**

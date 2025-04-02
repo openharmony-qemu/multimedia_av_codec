@@ -34,6 +34,8 @@ constexpr uint32_t TIME_OUT_MS = 1000;
 constexpr uint32_t NS_PER_US = 1000;
 constexpr int64_t SEC_TO_NS = 1000000000;
 constexpr uint32_t STOP_TIME_OUT_MS = 2000;
+// alignment delay between the first video frame and the first audio frame after resuming 
+constexpr uint32_t AUDIO_VIDEO_ALIGN_DELAY_TEMP_NS = 100000000;
 //Codec wait timeout with no video frame received
 constexpr uint32_t AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED = 50001 ;
 namespace OHOS {
@@ -172,6 +174,7 @@ void SurfaceEncoderAdapter::ConfigureGeneralFormat(MediaAVCodec::Format &format,
     if (meta->Find(Tag::VIDEO_FRAME_RATE) != meta->end()) {
         double videoFrameRate;
         meta->Get<Tag::VIDEO_FRAME_RATE>(videoFrameRate);
+        FALSE_LOG_MSG(videoFrameRate > 0, "videoFrameRate get invalid");
         videoFrameRate_ = static_cast<int32_t>(videoFrameRate);
         MEDIA_LOG_I("videoFrameRate_: %{public}d", videoFrameRate_);
         format.PutDoubleValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
@@ -407,7 +410,8 @@ Status SurfaceEncoderAdapter::Pause()
     }
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
     GetCurrentTime(pauseTime_);
-    MEDIA_LOG_I("Pause time: " PUBLIC_LOG_D64, pauseTime);
+    FALSE_RETURN_V_MSG(pauseTime_ > 0, Status::ERROR_UNKNOWN, "GetCurrentTime pauseTime_ <= 0");
+    MEDIA_LOG_I("Pause time: " PUBLIC_LOG_D64, pauseTime_);
     if (pauseResumeQueue_.empty() ||
         (pauseResumeQueue_.back().second == StateCode::RESUME && pauseResumeQueue_.back().first <= pauseTime_)) {
         pauseResumeQueue_.push_back({pauseTime_, StateCode::PAUSE});
@@ -429,6 +433,7 @@ Status SurfaceEncoderAdapter::Resume()
     }
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
     GetCurrentTime(resumeTime_);
+    FALSE_RETURN_V_MSG(pauseTime_ > 0, Status::ERROR_UNKNOWN, "GetCurrentTime resumeTime_ <= 0");
     MEDIA_LOG_I("resume time: " PUBLIC_LOG_D64, resumeTime_);
     if (pauseResumeQueue_.empty()) {
         MEDIA_LOG_I("Status Error, no pause before resume");
@@ -439,7 +444,7 @@ Status SurfaceEncoderAdapter::Resume()
         pauseResumePts_.back().first = std::min(resumeTime_, pauseResumePts_.back().first);
     }
     if (pauseTime_ != -1) {
-        totalPauseTime_ += resumeTime_ - pauseTime_;
+        totalPauseTime_ = totalPauseTime_ + resumeTime_ - pauseTime_;
         MEDIA_LOG_I("total pause time: " PUBLIC_LOG_D64, totalPauseTime_);
         // total pause time (without checkFramesPauseTime)
         totalPauseTimeQueue_.push_back(totalPauseTime_);
@@ -754,11 +759,15 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
     
     bool isDroppedFrames = CheckFrames(currentPts, checkFramesPauseTime_);
     MEDIA_LOG_D("OnInputParameterWithAttrAvailable checkFramesPauseTime " PUBLIC_LOG_D64, checkFramesPauseTime_);
+    MEDIA_LOG_D("OnInputParameterWithAttrAvailable isDroppedFrames = " PUBLIC_LOG_S,
+        isDroppedFrames ? "true" : "false");
     {
         std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
         // adjustPts means timestamps after resume time are translated to corresponding ones after pause time
         int64_t adjustPts = currentPts - totalPauseTimeQueue_[0] + checkFramesPauseTime_;
         MEDIA_LOG_D("OnInputParameterWithAttrAvailable adjustPts " PUBLIC_LOG_D64, adjustPts);
+        MEDIA_LOG_D("OnInputParameterWithAttrAvailable totalPauseTimeQueue_[0] " PUBLIC_LOG_D64,
+                    totalPauseTimeQueue_[0]);
         if (!isDroppedFrames) {
             mappingTimeQueue_.push_back({currentPts, adjustPts});
         }
@@ -787,10 +796,10 @@ bool SurfaceEncoderAdapter::CheckFrames(int64_t currentPts, int64_t &checkFrames
     // resumetime后的第一帧，放到pausepts后的第一帧
     if (stateCode == StateCode::PAUSE) {
         // pausetime与上一帧之间的帧间隔
-        int64_t InterFrameCount = ((pauseResumeQueue_[0].first - lastBufferTime_) + (SEC_TO_NS / videoFrameRate_) - 1) /
+        int64_t interFrameCount = ((pauseResumeQueue_[0].first - lastBufferTime_) + (SEC_TO_NS / videoFrameRate_) - 1) /
             (SEC_TO_NS / videoFrameRate_);
         // pausetime与本应该收到的下一帧的差
-        checkFramesPauseTime += (SEC_TO_NS / videoFrameRate_) * interFrameCount -
+        checkFramesPauseTime = checkFramesPauseTime + (SEC_TO_NS / videoFrameRate_) * interFrameCount -
             (pauseResumeQueue_[0].first - lastBufferTime_);
     } else {
         if (!totalPauseTimeQueue_.empty()) {
@@ -798,7 +807,9 @@ bool SurfaceEncoderAdapter::CheckFrames(int64_t currentPts, int64_t &checkFrames
             totalPauseTimeQueue_.pop_front();
         }
         // resumetime之后第一帧与resumetime的差
-        checkFramesPauseTime -= (currentPts - pauseResumeQueue_[0].first);
+        // checkFramesPauseTime =checkFramesPauseTime - (currentPts - pauseResumeQueue_[0].first);
+        // 音频延迟100ms，从100ms开始对齐
+        checkFramesPauseTime = checkFramesPauseTime - AUDIO_VIDEO_ALIGN_DELAY_TEMP_NS;
     }
     pauseResumeQueue_.pop_front();
     return CheckFrames(currentPts, checkFramesPauseTime);
