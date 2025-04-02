@@ -386,6 +386,7 @@ Status DecoderSurfaceFilter::DoStart()
         readThread_ = std::make_unique<std::thread>(&DecoderSurfaceFilter::RenderLoop, this);
         pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     }
+    auto ret = videoDecoder_->Start();
     FALSE_RETURN_V(ret == Status::OK, ret);
     if (postProcessor_) {
         ret = postProcessor_->Start();
