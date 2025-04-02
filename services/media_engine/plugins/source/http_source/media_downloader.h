@@ -199,6 +199,10 @@ public:
     {
         return 0;
     }
+    virtual void ClearBuffer()
+    {
+        MEDIA_LOG_W("ClearBuffer is unimplemented.");
+    }
 };
 }
 }

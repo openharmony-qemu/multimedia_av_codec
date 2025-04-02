@@ -81,6 +81,11 @@ public:
         if (isRingBuffer_ && isSelectingBitrate_.load()) {
             return false;
         }
+        std::string location = "";
+        request->GetLocation(location);
+        if (isRingBuffer_ && !location.empty()) {
+            return false;
+        }
         return isRingBuffer_ && request->GetFileContentLengthNoWait() == 0 && !isAllowResume_.load();
     }
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
@@ -96,6 +101,7 @@ public:
     bool IsFlvLive() override;
     uint64_t GetMemorySize() override;
     void SetIsTriggerAutoMode(bool isAuto) override;
+    void ClearBuffer() override;
 
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);

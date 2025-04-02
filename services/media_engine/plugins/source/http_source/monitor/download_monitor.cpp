@@ -29,6 +29,7 @@ namespace {
     constexpr int32_t READ_LOG_FEQUENCE = 50;
     constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
     constexpr int64_t RETRY_SEG = 50;
+    constexpr int32_t REDIRECT_CODE = 302;
     const std::set<int32_t> CLIENT_NOT_RETRY_ERROR_CODES = {
         992,
     };
@@ -240,6 +241,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     auto clientError = request->GetClientError();
     int serverError = request->GetServerError();
     auto retryTimes = request->GetRetryTimes();
+    isNeedClearBuffer_ = serverError == REDIRECT_CODE;
     std::set<int> notRetryErrorSet = {400, 401};
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
@@ -289,6 +291,9 @@ void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
 {
     FALSE_RETURN_MSG(downloader != nullptr, "downloader is nullptr.");
     if (NeedRetry(request)) {
+        if (isNeedClearBuffer_) {
+            downloader_->ClearBuffer();
+        }
         AutoLock lock(taskMutex_);
         bool exists = CppExt::AnyOf(retryTasks_.begin(), retryTasks_.end(), [&](const RetryRequest& item) {
             return item.request->IsSame(request);

@@ -107,6 +107,7 @@ private:
     Callback* callback_ {nullptr};
     Mutex taskMutex_ {};
     uint64_t haveReadData_ {0};
+    bool isNeedClearBuffer_ {false};
 
     std::set<int32_t> clientNotRetryErrorSet = {
         6,  // CURLE_COULDNT_RESOLVE_HOST

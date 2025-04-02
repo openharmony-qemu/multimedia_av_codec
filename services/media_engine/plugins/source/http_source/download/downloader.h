@@ -143,6 +143,7 @@ public:
     void SetRequestProtocolType(RequestProtocolType protocolType);
     void SetIsM3u8Request(bool isM3u8Request);
     std::atomic<bool> isHeaderUpdated_ {false};
+    std::atomic<bool> haveRedirectRetry_ {false};
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
@@ -221,6 +222,7 @@ private:
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
     static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
     static void HandleFileContentLen(HeaderInfo* header);
+    static void UpdateRequestSize(Downloader* mediaDownloader);
     void PauseLoop(bool isAsync = false);
     void WaitLoopPause();
     void NotifyLoopPause();
@@ -228,6 +230,7 @@ private:
     void HandleRetErrorCode();
     void DonwloaderInit(const std::string& name);
     void OpenAppUri();
+    void HandleRedirect(Status& ret);
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;

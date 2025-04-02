@@ -46,6 +46,7 @@ constexpr int REQUEST_OFTEN_ERROR_CODE = 500;
 constexpr int SLEEP_TEN_MICRO_SEC = 10; // 10ms
 const std::string INVALID_CONTENT_TYPES[] = {"text/html", "application/json"};
 constexpr int APP_OPEN_RETRY_TIMES = 10;
+constexpr int32_t REDIRECT_CODE = 302;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -648,6 +649,17 @@ void Downloader::OpenAppUri()
     }
 }
 
+void Downloader::HandleRedirect(Status& ret)
+{
+    if (!currentRequest_->location_.empty() && !currentRequest_->haveRedirectRetry_.load()) {
+        currentRequest_->clientError_ = 0;
+        currentRequest_->serverError_ = REDIRECT_CODE;
+        ret = Status::ERROR_SERVER;
+        currentRequest_->haveRedirectRetry_.store(true);
+        currentRequest_->headerInfo_.contentLen = 0;
+    }
+}
+
 void Downloader::RequestData()
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop, startPos: "
@@ -670,6 +682,9 @@ void Downloader::RequestData()
     auto handleResponseCb = [this](int32_t clientCode, int32_t serverCode, Status ret) {
         currentRequest_->clientError_ = clientCode;
         currentRequest_->serverError_ = serverCode;
+
+        HandleRedirect(ret);
+
         if (isDestructor_) {
             return;
         }
@@ -872,6 +887,19 @@ void Downloader::HandleFileContentLen(HeaderInfo* header)
     }
 }
 
+void Downloader::UpdateRequestSize(Downloader* mediaDownloader)
+{
+    int64_t remaining = 0;
+    if (mediaDownloader->currentRequest_->endPos_ <= 0) {
+        remaining = static_cast<int64_t>(mediaDownloader->currentRequest_->headerInfo_.fileContentLen) -
+                    mediaDownloader->currentRequest_->startPos_;
+    } else {
+        remaining = mediaDownloader->currentRequest_->endPos_ - mediaDownloader->currentRequest_->startPos_ + 1;
+    }
+
+    mediaDownloader->currentRequest_->requestSize_ = remaining < PER_REQUEST_SIZE ? remaining : PER_REQUEST_SIZE;
+}
+
 size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
     auto mediaDownloader = static_cast<Downloader *>(userParam);
@@ -881,6 +909,13 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     }
     int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
     int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
+
+    if (!mediaDownloader->currentRequest_->location_.empty() &&
+        !mediaDownloader->currentRequest_->haveRedirectRetry_.load()) {
+        MEDIA_LOG_W("Receive location, need retry.");
+        return 0;
+    }
+
     UpdateHeaderInfo(mediaDownloader);
     MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData, dataLen: " + std::to_string(dataLen)
         + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
@@ -903,16 +938,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                      mediaDownloader->currentRequest_->startPos_);
     mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + writeLen;
- 
-    int64_t remaining = 0;
-    if (mediaDownloader->currentRequest_->endPos_ <= 0) {
-        remaining = static_cast<int64_t>(mediaDownloader->currentRequest_->headerInfo_.fileContentLen) -
-                    mediaDownloader->currentRequest_->startPos_;
-    } else {
-        remaining = mediaDownloader->currentRequest_->endPos_ - mediaDownloader->currentRequest_->startPos_ + 1;
-    }
-
-    mediaDownloader->currentRequest_->requestSize_ = remaining < PER_REQUEST_SIZE ? remaining : PER_REQUEST_SIZE;
+    UpdateRequestSize(mediaDownloader);
  
     if (writeLen != dataLen) {
         if (mediaDownloader->sourceLoader_ != nullptr) {
@@ -1014,6 +1040,7 @@ bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Do
         FALSE_RETURN_V(token != nullptr, false);
         if (info != nullptr && mediaDownloader != nullptr) {
             info->contentLen = atol(StringTrim(token));
+            MEDIA_LOG_I("content-length: " PUBLIC_LOG_D32, static_cast<int32_t>(info->contentLen));
             if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
                 info->isChunked = true;
             }
@@ -1079,6 +1106,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         !strncmp(key, "location", strlen("location"))) {
         FALSE_RETURN_V(next != nullptr, size * nitems);
         char* location = StringTrim(next);
+        MEDIA_LOG_I("location: " PUBLIC_LOG_S, location);
         mediaDownloader->currentRequest_->location_ = location;
     }
 
