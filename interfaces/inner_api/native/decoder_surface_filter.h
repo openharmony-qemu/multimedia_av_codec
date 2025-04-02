@@ -111,6 +111,7 @@ public:
     void ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs = 0L);
     Status SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes);
 
+    Status InitPostProcessor();
     void SetPostProcessorType(VideoPostProcessorType type);
     Status SetPostProcessorOn(bool isSuperResolutionOn);
     Status SetVideoWindowSize(int32_t width, int32_t height);
