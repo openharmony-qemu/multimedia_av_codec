@@ -32,7 +32,7 @@ using namespace VideoProcessingEngine;
 static bool isSuperResolutionSupported(const std::shared_ptr<Meta>& meta)
 {
     FALSE_RETURN_V(meta != nullptr, false);
- 
+
     int32_t width = 0;
     int32_t height = 0;
     bool isDrmProtected = false;
@@ -99,7 +99,7 @@ public:
             "Invalid input: addr is null or addrSize=%{public}zu(Expected:%{public}zu)!",
             addrSize, sizeof(VpeBufferSize));
         auto size = reinterpret_cast<VpeBufferSize*>(addr);
- 
+
         MEDIA_LOG_D("OnOutputFormatChanged nextW=" PUBLIC_LOG_D32 " nextH=" PUBLIC_LOG_D32, size->width, size->height);
         if (size->width <= 0 || size->height <= 0) {
             MEDIA_LOG_W("invaild video size");
