@@ -50,10 +50,6 @@ struct OH_AVCapability : public OHOS::RefBase {
     OH_AVCapability();
     ~OH_AVCapability() override;
     OHOS::MediaAVCodec::CapabilityData *capabilityData_;
-    int32_t *profiles_ = nullptr;
-    int32_t *levels_ = nullptr;
-    int32_t *pixFormats_ = nullptr;
-    int32_t *sampleRates_ = nullptr;
     enum AVMagic magic_;
 };
 
