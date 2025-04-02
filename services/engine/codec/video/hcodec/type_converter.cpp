@@ -238,6 +238,8 @@ vector<BitrateModeMapping> g_bitrateModeTable {
     {CBR, OMX_Video_ControlRateConstant},
     {VBR, OMX_Video_ControlRateVariable},
     {CBR_VIDEOCALL, static_cast<OMX_VIDEO_CONTROLRATETYPE>(OMX_Video_ControlRateConstantWithRlambda)},
+    {CQ, static_cast<OMX_VIDEO_CONTROLRATETYPE>(OMX_Video_ControlRateConstantWithCQ)},
+    {SQR, static_cast<OMX_VIDEO_CONTROLRATETYPE>(OMX_Video_ControlRateConstantWithSQR)},
 };
 
 optional<AVCodecType> TypeConverter::HdiCodecTypeToInnerCodecType(CodecHDI::CodecType type)
@@ -460,22 +462,6 @@ std::optional<std::vector<int32_t>> TypeConverter::InnerVvcMaxLevelToAllLevels(V
     }
     LOGW("unknown VvcMaxLevel %d", maxLevel);
     return nullopt;
-}
-
-std::optional<VideoEncodeBitrateMode> TypeConverter::HdiBitrateModeToInnerMode(BitRateMode mode)
-{
-    static const map<BitRateMode, VideoEncodeBitrateMode> table = {
-        {BIT_RATE_MODE_VBR, VBR},
-        {BIT_RATE_MODE_CBR, CBR},
-        {BIT_RATE_MODE_CQ,  CQ},
-        {BIT_RATE_MODE_CBR_Rlambda,  CBR_VIDEOCALL},
-    };
-    auto it = table.find(mode);
-    if (it == table.end()) {
-        LOGW("unknown BitRateMode %d", mode);
-        return std::nullopt;
-    }
-    return it->second;
 }
 
 std::optional<OMX_VIDEO_CONTROLRATETYPE> TypeConverter::InnerModeToOmxBitrateMode(VideoEncodeBitrateMode mode)

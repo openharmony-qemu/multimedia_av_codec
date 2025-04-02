@@ -141,6 +141,7 @@ bool HCodecList::IsSupportedVideoCodec(const CodecCompCapability &hdiCap)
 CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
 {
     constexpr int32_t MAX_ENCODE_QUALITY = 100;
+    constexpr int32_t MAX_ENCODE_SQRFACTOR = 51;
     const CodecVideoPortCap& hdiVideoCap = hdiCap.port.video;
     CapabilityData userCap;
     userCap.codecName = hdiCap.compName;
@@ -158,6 +159,10 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     userCap.blockSize = {hdiVideoCap.blockSize.width, hdiVideoCap.blockSize.height};
     userCap.pixFormat = GetSupportedFormat(hdiVideoCap);
     userCap.bitrateMode = GetSupportedBitrateMode(hdiVideoCap);
+    if (IsSupportSQR(userCap.bitrateMode)) {
+        userCap.maxBitrate = {hdiCap.bitRate.min, hdiCap.bitRate.max};
+        userCap.sqrFactor =  {0, MAX_ENCODE_SQRFACTOR};
+    }
     GetCodecProfileLevels(hdiCap, userCap);
     userCap.measuredFrameRate = GetMeasuredFrameRate(hdiVideoCap);
     userCap.supportSwapWidthHeight = hdiCap.canSwapWidthHeight;
@@ -186,12 +191,25 @@ vector<int32_t> HCodecList::GetSupportedBitrateMode(const CodecVideoPortCap& hdi
 {
     vector<int32_t> vec;
     for (BitRateMode mode : hdiVideoCap.bitRatemode) {
-        optional<VideoEncodeBitrateMode> innerMode = TypeConverter::HdiBitrateModeToInnerMode(mode);
+        OMX_VIDEO_CONTROLRATETYPE omxMode = static_cast<OMX_VIDEO_CONTROLRATETYPE>(mode);
+        optional<VideoEncodeBitrateMode> innerMode = TypeConverter::OmxBitrateModeToInnerMode(omxMode);
         if (innerMode.has_value()) {
             vec.push_back(innerMode.value());
+            LOGI("support (inner) bitRateMode %d", innerMode.value());
         }
     }
     return vec;
+}
+
+bool HCodecList::IsSupportSQR(const vector<int32_t>& supportBitrateMode)
+{
+    VideoEncodeBitrateMode innerMode = SQR;
+    auto it = std::find(supportBitrateMode.begin(), supportBitrateMode.end(),  static_cast<int32_t>(innerMode));
+    if (it != supportBitrateMode.end()) {
+        LOGI("support SQR bitRateMode!");
+        return true;
+    }
+    return false;
 }
 
 vector<int32_t> HCodecList::GetSupportedFormat(const CodecVideoPortCap& hdiVideoCap)
