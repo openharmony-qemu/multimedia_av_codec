@@ -86,7 +86,7 @@ ohos_unittest("sa_avcodec_unit_test") {
     "ipc:ipc_single",
     "media_foundation:media_foundation",
   ]
-  
+
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }

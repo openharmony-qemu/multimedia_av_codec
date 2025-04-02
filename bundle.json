@@ -84,6 +84,7 @@
           "hiview",
           "cJSON",
           "bundle_framework",
+          "efficiency_manager",
           "drivers_peripheral_codec",
           "openmax",
           "memory_utils"

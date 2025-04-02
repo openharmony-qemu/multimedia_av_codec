@@ -56,6 +56,10 @@ ohos_source_set("sa_manager") {
     "samgr:samgr_proxy",
   ]
 
+  if (av_codec_support_efficiency_manager) {
+    external_deps += [ "efficiency_manager:suspend_manager_client" ]
+  }
+
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
