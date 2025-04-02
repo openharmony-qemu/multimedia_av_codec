@@ -168,23 +168,23 @@ void SuspendFreeze()
 {
     pid_t pid = getpid();
     const std::vector<pid_t> pidList(pid);
-    auto ret = AVCodecServivceFactory::GetInstance().SuspendFreeze(pidList);
+    auto ret = AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
-void SuspendActivate()
+void SuspendActive()
 {
     pid_t pid = getpid();
     const std::vector<pid_t> pidList(pid);
-    auto ret = AVCodecServivceFactory::GetInstance().SuspendActivate(pidList);
+    auto ret = AVCodecServiceFactory::GetInstance().SuspendActive(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
-void SuspendActivateAll()
+void SuspendActiveAll()
 {
     pid_t pid = getpid();
     const std::vector<pid_t> pidList(pid);
-    auto ret = AVCodecServivceFactory::GetInstance().SuspendActivateAll(pidList);
+    auto ret = AVCodecServiceFactory::GetInstance().SuspendActiveAll();
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
@@ -249,7 +249,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_004, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    videoDec_->isKeepExecuting_ = true;
+
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     SuspendFreeze();
@@ -285,45 +285,45 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_006, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->WaitForEos());
+    EXPECT_TRUE(videoDec_->WaitForEos());
     SuspendFreeze();
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_001
- * @tc.desc: activate process of freeze and decoder is Initialized
+ * @tc.name: VideoDecoder_Hardware_Active_001
+ * @tc.desc: active process of freeze and decoder is Initialized
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     SuspendFreeze();
-    SuspendActivate();
+    SuspendActive();
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_002
- * @tc.desc: activate process of freeze and decoder is Configured
+ * @tc.name: VideoDecoder_Hardware_Active_002
+ * @tc.desc: active process of freeze and decoder is Configured
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_002, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     SuspendFreeze();
-    SuspendActivate();
+    SuspendActive();
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_003
- * @tc.desc: activate process of freeze and decoder is Prepared
+ * @tc.name: VideoDecoder_Hardware_Active_003
+ * @tc.desc: active process of freeze and decoder is Prepared
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_003, TestSize.Level1)
 {
     auto testCode = GetParam();
     CreateByNameWithParam(testCode);
@@ -339,33 +339,32 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_003, TestSize.Level1)
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
         SuspendFreeze();
-        SuspendActivate();
+        SuspendActive();
     }
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_004
- * @tc.desc: activate process of freeze and decoder is Executing
+ * @tc.name: VideoDecoder_Hardware_Active_004
+ * @tc.desc: active process of freeze and decoder is Executing
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_004, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    videoDec_->isKeepExecuting_ = true;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     SuspendFreeze();
-    SuspendActivate();
+    SuspendActive();
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_005
- * @tc.desc: activate process of freeze and decoder is Flush
+ * @tc.name: VideoDecoder_Hardware_Active_005
+ * @tc.desc: active process of freeze and decoder is Flush
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_005, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_005, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -375,15 +374,15 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_005, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
     SuspendFreeze();
-    SuspendActivate();
+    SuspendActive();
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_006
- * @tc.desc: activate process of freeze and decoder is EOS
+ * @tc.name: VideoDecoder_Hardware_Active_006
+ * @tc.desc: active process of freeze and decoder is EOS
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_006, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_006, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -391,46 +390,46 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_006, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->WaitForEos());
+    EXPECT_TRUE(videoDec_->WaitForEos());
     SuspendFreeze();
-    SuspendActivate();
+    SuspendActive();
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_All_001
- * @tc.desc: activate all process of freeze and decoder is Initialized
+ * @tc.name: VideoDecoder_Hardware_Active_All_001
+ * @tc.desc: active all process of freeze and decoder is Initialized
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     SuspendFreeze();
-    SuspendActivateAll();
+    SuspendActiveAll();
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_All_002
- * @tc.desc: activate all process of freeze and decoder is Configured
+ * @tc.name: VideoDecoder_Hardware_Active_All_002
+ * @tc.desc: active all process of freeze and decoder is Configured
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_All_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_002, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     SuspendFreeze();
-    SuspendActivateAll();
+    SuspendActiveAll();
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_All_003
- * @tc.desc: activate all process of freeze and decoder is Prepared
+ * @tc.name: VideoDecoder_Hardware_Active_All_003
+ * @tc.desc: active all process of freeze and decoder is Prepared
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_All_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_003, TestSize.Level1)
 {
     auto testCode = GetParam();
     CreateByNameWithParam(testCode);
@@ -446,33 +445,32 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_All_003, TestSize.Level1)
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
         SuspendFreeze();
-        SuspendActivateAll();
+        SuspendActiveAll();
     }
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_All_004
- * @tc.desc: activate all process of freeze and decoder is Executing
+ * @tc.name: VideoDecoder_Hardware_Active_All_004
+ * @tc.desc: active all process of freeze and decoder is Executing
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_All_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_004, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    videoDec_->isKeepExecuting_ = true;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     SuspendFreeze();
-    SuspendActivateAll();
+    SuspendActiveAll();
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_All_005
- * @tc.desc: activate all process of freeze and decoder is Flush
+ * @tc.name: VideoDecoder_Hardware_Active_All_005
+ * @tc.desc: active all process of freeze and decoder is Flush
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_All_005, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_005, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -482,15 +480,15 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_All_005, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
     SuspendFreeze();
-    SuspendActivateAll();
+    SuspendActiveAll();
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Activate_All_006
- * @tc.desc: activate all process of freeze and decoder is EOS
+ * @tc.name: VideoDecoder_Hardware_Active_All_006
+ * @tc.desc: active all process of freeze and decoder is EOS
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_All_006, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_006, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -498,9 +496,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Activate_All_006, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->WaitForEos());
+    EXPECT_TRUE(videoDec_->WaitForEos());
     SuspendFreeze();
-    SuspendActivateAll();
+    SuspendActiveAll();
 }
 
 } // namespace

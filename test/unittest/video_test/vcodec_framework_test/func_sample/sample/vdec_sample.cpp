@@ -691,7 +691,7 @@ int32_t VideoDecSample::InputLoopInner()
     if (h263Reader_ != nullptr) {
         h263Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (avccReader_ != nullptr) {
-            avccReader_->FillBuffer(buffer->GetAddr(), attr, isKeepExecuting_);
+        avccReader_->RepeatFillBuffer(buffer->GetAddr(), attr, inFile_);
     } else {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
     }
