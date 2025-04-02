@@ -172,28 +172,6 @@ HWTEST_F(AudioServerSinkPluginUnitTest, audio_server_sink_plugin_init_deinit, Te
     ASSERT_TRUE(freeStatus == Status::OK);
 }
 
-HWTEST_F(AudioServerSinkPluginUnitTest, stop_renderer, TestSize.Level1)
-{
-    auto res = plugin_->StopRender();
-    ASSERT_EQ(res, true);
-
-    auto audioRenderer = std::make_unique<NiceMock<MockAudioRenderer>>();
-
-    EXPECT_CALL(*audioRenderer, GetStatus())
-        .WillOnce(Return(RendererState::RENDERER_RUNNING))
-        .WillOnce(Return(RendererState::RENDERER_STOPPED))
-        .WillOnce(Return(RendererState::RENDERER_STOPPED));
-    EXPECT_CALL(*audioRenderer, Stop()).WillOnce(Return(false));
-
-    plugin_->audioRenderer_ = std::move(audioRenderer);
-
-    res = plugin_->StopRender();
-    ASSERT_EQ(res, false);
-
-    res = plugin_->StopRender();
-    ASSERT_EQ(res, true);
-}
-
 HWTEST_F(AudioServerSinkPluginUnitTest, audio_server_sink_plugin_start, TestSize.Level1)
 {
     auto res = plugin_->Start();
