@@ -1818,6 +1818,9 @@ void MediaDemuxer::InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, uint32_
         auto trackMeta = mediaInfo.tracks[index];
         std::string mimeType;
         bool ret = trackMeta.Get<Tag::MIME_TYPE>(mimeType);
+        if (ret) {
+            MEDIA_LOG_D("mimeType: " PUBLIC_LOG_S ", index: " PUBLIC_LOG_U32, mimeType.c_str(), index);
+        }
         if (ret && mimeType.find("video") == 0 &&
             !IsTrackDisabled(Plugins::MediaType::VIDEO)) {
             dafaultTrack += "/V:";
