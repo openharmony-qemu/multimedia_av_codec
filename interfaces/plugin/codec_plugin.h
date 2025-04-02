@@ -66,11 +66,6 @@ public:
     virtual Status Release() = 0;
 
     virtual Status SetDataCallback(DataCallback *dataCallback) = 0;
-
-    virtual Status SetTranscoderMode()
-    {
-        return Status::OK;
-    }
 };
 
 /// Codec plugin api major number.

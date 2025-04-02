@@ -935,9 +935,6 @@ void MediaCodec::ClearInputBuffer()
 
 void MediaCodec::OnEvent(const std::shared_ptr<Plugins::PluginEvent> event)
 {
-    if (HandleOtherErrorEvent(event)) {
-        return;
-    }
     if (event->type != Plugins::PluginEventType::AUDIO_OUTPUT_FORMAT_CHANGED) {
         return;
     }
@@ -954,22 +951,6 @@ void MediaCodec::OnEvent(const std::shared_ptr<Plugins::PluginEvent> event)
     } else {
         MEDIA_LOG_E("receive AUDIO_OUTPUT_FORMAT_CHANGED, but lock callback fail");
     }
-}
-
-bool MediaCodec::HandleOtherErrorEvent(const std::shared_ptr<Plugins::PluginEvent> event)
-{
-    if (!isTranscoderMode_ || event->type != Plugins::PluginEventType::OTHER_ERROR) {
-        return false;
-    }
-    auto realPtr = mediaCodecCallback_.lock();
-    if (realPtr != nullptr) {
-        CodecErrorType errorType = CodecErrorType::CODEC_ERROR_INTERNAL;
-        int32_t errorCode = 0;
-        realPtr->OnError(errorType, errorCode);
-    } else {
-        MEDIA_LOG_E("receive OTHER_ERROR, but lock callback fail");
-    }
-    return true;
 }
 
 std::string MediaCodec::StateToString(CodecState state)
@@ -1004,13 +985,6 @@ void MediaCodec::OnDumpInfo(int32_t fd)
         MEDIA_LOG_E("MediaCodec::OnDumpInfo write failed.");
         return;
     }
-}
-
-void MediaCodec::SetTranscoderMode()
-{
-    FALSE_RETURN_MSG(codecPlugin_ != nullptr, "not inited!");
-    isTranscoderMode_ = true;
-    codecPlugin_->SetTranscoderMode();
 }
 
 uint32_t MediaCodec::GetApiVersion()
