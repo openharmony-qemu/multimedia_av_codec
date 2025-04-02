@@ -38,6 +38,7 @@ public:
     Status Stop() override;
     Status Start() override;
     Status Release() override;
+    Status NotifyEos() override;
 
     sptr<Surface> GetInputSurface() override;
     Status SetOutputSurface(sptr<Surface> surface) override;
@@ -67,6 +68,8 @@ private:
 
     std::shared_ptr<PostProcessorCallback> filterCallback_;
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_ {nullptr};
+
+    std::shared_mutex mutex_ {};
 };
 
 // } // namespace Pipeline

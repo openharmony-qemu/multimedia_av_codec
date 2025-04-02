@@ -111,6 +111,7 @@ public:
     void ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs = 0L);
     Status SetSeiMessageCbStatus(bool status, const std::vector<int32_t> &payloadTypes);
 
+    Status InitPostProcessor();
     void SetPostProcessorType(VideoPostProcessorType type);
     Status SetPostProcessorOn(bool isSuperResolutionOn);
     Status SetVideoWindowSize(int32_t width, int32_t height);
@@ -230,9 +231,6 @@ private:
     bool isPostProcessorSupported_ {true};
     VideoPostProcessorType postProcessorType_ { VideoPostProcessorType::NONE };
     std::shared_ptr<BaseVideoPostProcessor> postProcessor_;
-
-    int64_t eosPts_ {INT64_MAX};
-    int64_t prevDecoderPts_ {INT64_MAX};
 };
 } // namespace Pipeline
 } // namespace Media

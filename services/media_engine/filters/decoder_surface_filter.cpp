@@ -336,13 +336,9 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
 #endif
     }
 
-    if (postProcessor_) {
-        postProcessor_->SetOutputSurface(videoSurface_);
-        postProcessor_->SetEventReceiver(eventReceiver_);
-        postProcessor_->SetVideoWindowSize(postProcessorTargetWidth_, postProcessorTargetHeight_);
-        postProcessor_->SetPostProcessorOn(isPostProcessorOn_);
-        postProcessor_->Init();
-    }
+    ret = InitPostProcessor();
+    FALSE_RETURN_V(ret == Status::OK, ret);
+
     videoSink_->SetParameter(meta_);
     eosTask_ = std::make_unique<Task>("OS_EOSv", groupId_, TaskType::VIDEO, TaskPriority::HIGH, false);
     return Status::OK;
@@ -385,8 +381,9 @@ Status DecoderSurfaceFilter::DoStart()
         pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     }
     auto ret = videoDecoder_->Start();
+    FALSE_RETURN_V(ret == Status::OK, ret);
     if (postProcessor_) {
-        postProcessor_->Start();
+        ret = postProcessor_->Start();
     }
     return ret;
 }
@@ -471,8 +468,9 @@ Status DecoderSurfaceFilter::DoStop()
     stopTime_ = (int64_t)tv.tv_sec * 1000000 + (int64_t)tv.tv_usec; // 1000000 means transfering from s to us.
     videoSink_->ResetSyncInfo();
     auto ret = videoDecoder_->Stop();
+    Status ret2 = Status::OK;
     if (postProcessor_) {
-        postProcessor_->Stop();
+        ret2 = postProcessor_->Stop();
     }
     if (!IS_FILTER_ASYNC && !isThreadExit_.load()) {
         isThreadExit_ = true;
@@ -481,14 +479,14 @@ Status DecoderSurfaceFilter::DoStop()
         readThread_->join();
         readThread_ = nullptr;
     }
-    return ret;
+    FALSE_RETURN_V(ret == Status::OK, ret);
+    return ret2;
 }
 
 Status DecoderSurfaceFilter::DoFlush()
 {
     MEDIA_LOG_I("Flush");
     lastRenderTimeNs_ = HST_TIME_NONE;
-    eosPts_ = INT64_MAX;
     videoDecoder_->Flush();
     if (postProcessor_) {
         postProcessor_->Flush();
@@ -923,8 +921,6 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     MEDIA_LOG_D("DrainOutputBuffer, pts:" PUBLIC_LOG_D64, outputBuffer->pts_);
     if ((outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS))) {
         MEDIA_LOG_I("DrainOutputBuffer output EOS");
-    } else if (postProcessorType_ == VideoPostProcessorType::SUPER_RESOLUTION && outputBuffer->pts_ >= eosPts_) {
-        outputBuffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     }
     std::unique_lock<std::mutex> lock(mutex_);
     FALSE_RETURN_NOLOG(!DrainSeekContinuous(index, outputBuffer));
@@ -944,9 +940,8 @@ void DecoderSurfaceFilter::DecoderDrainOutputBuffer(uint32_t index, std::shared_
     MEDIA_LOG_D("DecoderDrainOutputBuffer pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
     if (outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)) {
         MEDIA_LOG_I("Decoder output EOS");
-        eosPts_ = prevDecoderPts_;
+        postProcessor_->NotifyEos();
     }
-    prevDecoderPts_ = outputBuffer->pts_;
     FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
     videoDecoder_->ReleaseOutputBuffer(index, true);
 }
@@ -1299,6 +1294,22 @@ Status DecoderSurfaceFilter::SetSeiMessageCbStatus(bool status, const std::vecto
     return Status::OK;
 }
 
+Status DecoderSurfaceFilter::InitPostProcessor()
+{
+    FALSE_RETURN_V_NOLOG(postProcessor_ != nullptr, Status::OK);
+    postProcessor_->SetOutputSurface(videoSurface_);
+    postProcessor_->SetEventReceiver(eventReceiver_);
+    postProcessor_->SetVideoWindowSize(postProcessorTargetWidth_, postProcessorTargetHeight_);
+    postProcessor_->SetPostProcessorOn(isPostProcessorOn_);
+    auto ret = postProcessor_->Init();
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("Init postProcessor fail ret = %{public}d", ret);
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
+    return Status::OK;
+}
+
 void DecoderSurfaceFilter::SetPostProcessorType(VideoPostProcessorType type)
 {
     postProcessorType_ = type;
@@ -1325,7 +1336,8 @@ Status DecoderSurfaceFilter::SetPostProcessorOn(bool isPostProcessorOn)
     FALSE_RETURN_V(isPostProcessorSupported_, Status::ERROR_UNSUPPORTED_FORMAT);
     FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
 
-    return postProcessor_->SetPostProcessorOn(isPostProcessorOn);
+    postProcessor_->SetPostProcessorOn(isPostProcessorOn);
+    return Status::OK;
 }
 
 Status DecoderSurfaceFilter::SetVideoWindowSize(int32_t width, int32_t height)

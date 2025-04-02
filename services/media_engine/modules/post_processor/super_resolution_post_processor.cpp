@@ -130,6 +130,7 @@ SuperResolutionPostProcessor::SuperResolutionPostProcessor()
 
 SuperResolutionPostProcessor::~SuperResolutionPostProcessor()
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     postProcessor_ = nullptr;
 }
 
@@ -141,49 +142,79 @@ bool SuperResolutionPostProcessor::IsValid()
 Status SuperResolutionPostProcessor::Init()
 {
     MEDIA_LOG_D("Init in");
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
+
+    auto ret = SetQualityLevel(DEFAULT_QUALITY_LEVEL);
+    FALSE_RETURN_V(ret == Status::OK, ret);
     auto callback = std::make_shared<VPECallback>(shared_from_this());
-    SetQualityLevel(DEFAULT_QUALITY_LEVEL);
-    postProcessor_->RegisterCallback(callback);
-    return Status::OK;
+    return postProcessor_->RegisterCallback(callback) == VPEAlgoErrCode::VPE_ALGO_ERR_OK ?
+        Status::OK : Status::ERROR_INVALID_STATE;
 }
 
 Status SuperResolutionPostProcessor::Flush()
 {
     MEDIA_LOG_D("Flush in");
-    postProcessor_->Flush();
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
+    auto ret = postProcessor_->Flush();
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_STATE);
     return Status::OK;
 }
 
 Status SuperResolutionPostProcessor::Stop()
 {
     MEDIA_LOG_D("Stop in");
-    postProcessor_->Stop();
-    Release();
-    return Status::OK;
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
+    auto ret = postProcessor_->Stop();
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_STATE);
+    return Release();
 }
 
 Status SuperResolutionPostProcessor::Start()
 {
     MEDIA_LOG_D("Start in");
-    postProcessor_->Start();
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
+    auto ret = postProcessor_->Start();
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_STATE);
     return Status::OK;
 }
 
 Status SuperResolutionPostProcessor::Release()
 {
     MEDIA_LOG_D("Release in");
-    postProcessor_->Release();
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
+    auto ret = postProcessor_->Release();
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_STATE);
+    return Status::OK;
+}
+
+Status SuperResolutionPostProcessor::NotifyEos()
+{
+    MEDIA_LOG_D("Notify eos");
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
+    auto ret = postProcessor_->NotifyEos();
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_PARAMETER);
     return Status::OK;
 }
 
 sptr<Surface> SuperResolutionPostProcessor::GetInputSurface()
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, nullptr);
     return postProcessor_->GetInputSurface();
 }
 
 Status SuperResolutionPostProcessor::SetOutputSurface(sptr<Surface> surface)
 {
-    postProcessor_->SetOutputSurface(surface);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
+    auto ret = postProcessor_->SetOutputSurface(surface);
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_PARAMETER);
     return Status::OK;
 }
 
@@ -193,6 +224,7 @@ void SuperResolutionPostProcessor::OnOutputBufferAvailable(uint32_t index, VpeBu
     if (buffer == nullptr) {
         MEDIA_LOG_E("Create buffer failed");
         ReleaseOutputBuffer(index, false);
+        return;
     }
     if (flag & static_cast<uint32_t>(VPE_BUFFER_FLAG_EOS)) {
         buffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
@@ -206,6 +238,7 @@ void SuperResolutionPostProcessor::OnOutputBufferAvailable(uint32_t index, const
     if (buffer == nullptr) {
         MEDIA_LOG_E("Create buffer failed");
         ReleaseOutputBuffer(index, false);
+        return;
     }
     if (info.flag & static_cast<uint32_t>(VPE_BUFFER_FLAG_EOS)) {
         buffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
@@ -216,14 +249,20 @@ void SuperResolutionPostProcessor::OnOutputBufferAvailable(uint32_t index, const
 
 Status SuperResolutionPostProcessor::ReleaseOutputBuffer(uint32_t index, bool render)
 {
-    postProcessor_->ReleaseOutputBuffer(index, render);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
+    auto ret = postProcessor_->ReleaseOutputBuffer(index, render);
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_STATE);
     return Status::OK;
 }
 
 Status SuperResolutionPostProcessor::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
 {
     MEDIA_LOG_D("RenderOutputBufferAtTime timestamp: %{public}" PRId64, renderTimestampNs);
-    postProcessor_->RenderOutputBufferAtTime(index, renderTimestampNs);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
+    auto ret = postProcessor_->RenderOutputBufferAtTime(index, renderTimestampNs);
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_STATE);
     return Status::OK;
 }
 
@@ -236,11 +275,15 @@ Status SuperResolutionPostProcessor::SetCallback(const std::shared_ptr<PostProce
 Status SuperResolutionPostProcessor::SetPostProcessorOn(bool isPostProcessorOn)
 {
     MEDIA_LOG_D("SetPostProcessorOn: %{public}d", isPostProcessorOn);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
+    VPEAlgoErrCode ret = VPEAlgoErrCode::VPE_ALGO_ERR_OK;
     if (isPostProcessorOn) {
-        postProcessor_->Enable();
+        ret = postProcessor_->Enable();
     } else {
-        postProcessor_->Disable();
+        ret = postProcessor_->Disable();
     }
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_STATE);
     return Status::OK;
 }
 
@@ -253,8 +296,11 @@ Status SuperResolutionPostProcessor::SetEventReceiver(const std::shared_ptr<Pipe
 Status SuperResolutionPostProcessor::SetParameter(const Format &format)
 {
     MEDIA_LOG_D("Setparameter in");
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
     auto ret = postProcessor_->SetParameter(format);
-    return ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK ? Status::OK : Status::ERROR_INVALID_PARAMETER;
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_PARAMETER);
+    return Status::OK;
 }
 
 Status SuperResolutionPostProcessor::SetQualityLevel(DetailEnhancerQualityLevel level)
@@ -264,28 +310,34 @@ Status SuperResolutionPostProcessor::SetQualityLevel(DetailEnhancerQualityLevel 
     parameter.PutIntValue(ParameterKey::DETAIL_ENHANCER_QUALITY_LEVEL, level);
     parameter.PutIntValue(ParameterKey::DETAIL_ENHANCER_AUTO_DOWNSHIFT, 0);
     auto ret = postProcessor_->SetParameter(parameter);
-    return ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK ? Status::OK : Status::ERROR_INVALID_PARAMETER;
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_PARAMETER);
+    return Status::OK;
 }
 
 Status SuperResolutionPostProcessor::SetVideoWindowSize(int32_t width, int32_t height)
 {
     MEDIA_LOG_D("SetVideoWindowSize in");
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::ERROR_INVALID_STATE);
     Format parameter;
     VpeBufferSize outputSize = { width, height };
     parameter.PutBuffer(ParameterKey::DETAIL_ENHANCER_TARGET_SIZE,
         reinterpret_cast<const uint8_t*>(&outputSize), sizeof(VpeBufferSize));
     auto ret = postProcessor_->SetParameter(parameter);
-    return ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK ? Status::OK : Status::ERROR_INVALID_PARAMETER;
+    FALSE_RETURN_V(ret == VPEAlgoErrCode::VPE_ALGO_ERR_OK, Status::ERROR_INVALID_PARAMETER);
+    return Status::OK;
 }
 
 void SuperResolutionPostProcessor::OnError(VPEAlgoErrCode errorCode)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     FALSE_RETURN_MSG(filterCallback_ != nullptr, "OnOutputFormatChanged callback_ is nullptr");
     MEDIA_LOG_E("SuperResolutionPostProcessor error happened. ErrorCode: %{public}d", errorCode);
 }
 
 void SuperResolutionPostProcessor::OnOutputFormatChanged(const Format &format)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     FALSE_RETURN_MSG(filterCallback_ != nullptr, "OnOutputFormatChanged callback_ is nullptr");
     filterCallback_->OnOutputFormatChanged(format);
 }
@@ -293,6 +345,7 @@ void SuperResolutionPostProcessor::OnOutputFormatChanged(const Format &format)
 void SuperResolutionPostProcessor::OnSuperResolutionChanged(bool enable)
 {
     MEDIA_LOG_D("OnSuperResolutionChanged: %{public}d", enable);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     isPostProcessorOn_ = enable;
     if (eventReceiver_ != nullptr) {
         eventReceiver_->OnEvent({"SuperResolutionPostProcessor", EventType::EVENT_SUPER_RESOLUTION_CHANGED, enable});
