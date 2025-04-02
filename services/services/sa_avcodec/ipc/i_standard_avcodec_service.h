@@ -35,6 +35,9 @@ public:
 
     virtual int32_t GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
         const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject) = 0;
+    virtual int32_t SuspendFreeze(const std::vector<pid_t> &pidList) = 0;
+    virtual int32_t SuspendActive(const std::vector<pid_t> &pidList) = 0;
+    virtual int32_t SuspendActiveAll() = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardAVCodecServiceInterface");
 };

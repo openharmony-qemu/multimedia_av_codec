@@ -41,11 +41,6 @@ declare_args() {
   av_codec_enable_codec_rv = false
   av_codec_enable_codec_cook = false
   av_codec_enable_codec_ac3 = false
-  av_codec_support_efficiency_manager = false
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.resourceschedule_efficiency_manager)) {
-    av_codec_support_efficiency_manager = true
-  }
 }
 av_codec_sanitize = {
   boundary_sanitize = true
@@ -138,10 +133,6 @@ if (!av_codec_support_software_codec) {
   av_codec_support_fcodec = false
   av_codec_support_avc_encoder = false
   av_codec_support_hevc_decoder = false
-}
-
-if (av_codec_support_efficiency_manager) {
-  av_codec_defines += [ "USE_EFFICIENCY_MANAGER" ]
 }
 
 if (av_codec_enable_codec_rm) {

@@ -17,6 +17,7 @@
 #define I_AVCODEC_SERVICE_H
 
 #include <memory>
+#include <vector>
 
 #ifdef SUPPORT_CODEC
 #include "i_codec_service.h"
@@ -80,6 +81,32 @@ public:
      * @version 4.0
      */
     virtual int32_t DestroyCodecService(std::shared_ptr<ICodecService> codec) = 0;
+
+    /**
+    * @brief Get freeze status message from suspend manager.
+    *
+    * @param pidList The list of pid to be frozen.
+    * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+    * @since 5.1
+    */
+    virtual int32_t SuspendFreeze(const std::vector<pid_t> &pidList) = 0;
+
+    /**
+        * @brief Get active status message from suspend manager.
+        *
+        * @param pidList The list of pid to be active.
+        * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+        * @since 5.1
+        */
+    virtual int32_t SuspendActive(const std::vector<pid_t> &pidList) = 0;
+
+    /**
+        * @brief Reset all frozen pids into active state.
+        *
+        * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+        * @since 5.1
+        */
+    virtual int32_t SuspendActiveAll() = 0;
 #endif
 };
 class __attribute__((visibility("default"))) AVCodecServiceFactory {
