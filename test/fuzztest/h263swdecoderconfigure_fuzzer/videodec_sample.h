@@ -106,8 +106,8 @@ public:
     OHNativeWindow *nativeWindow = nullptr;
     sptr<Surface> cs = nullptr;
     sptr<Surface> ps = nullptr;
-private:
     std::atomic<bool> isRunning_ { false };
+private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unordered_map<uint32_t, OH_AVMemory *> inBufferMap_;

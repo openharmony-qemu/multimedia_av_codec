@@ -87,6 +87,7 @@ void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
     }
     cout << "Error errorCode=" << errorCode << endl;
     g_fuzzError = true;
+    g_decSample->isRunning_.store(false);
     signal->inCond_.notify_all();
 }
 
@@ -283,7 +284,7 @@ int32_t VDecFuzzSample::CreateVideoDecoder(string codeName)
         OH_VideoDecoder_Destroy(tmpDec);
         tmpDec = nullptr;
     }
-    tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_H263);
     if (tmpDec) {
         OH_VideoDecoder_Destroy(tmpDec);
         tmpDec = nullptr;
