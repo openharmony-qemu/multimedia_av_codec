@@ -686,12 +686,7 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
             cacheBuffer = availOutputBuffers_.front();
         }
         if (IsEosBuffer(cacheBuffer)) {
-            MEDIA_LOG_I("AudioSink Recv EOS size: " PUBLIC_LOG_D32 " dataLength: " PUBLIC_LOG_D32
-                " bufferlength: " PUBLIC_LOG_D32, static_cast<int32_t>(size),
-                static_cast<int32_t>(bufferDesc.dataLength), static_cast<int32_t>(bufferDesc.bufLength));
-            if (plugin_ && size > 0) {
-                (void)plugin_->MuteAudioBuffer(bufferDesc.buffer, bufferDesc.dataLength, size);
-            }
+            MEDIA_LOG_I("AudioSink Recv EOS");
             break;
         }
         size_t cacheBufferSize = 0;

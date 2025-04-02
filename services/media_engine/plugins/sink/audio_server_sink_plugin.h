@@ -131,8 +131,6 @@ public:
     Status SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback) override;
  
     bool GetAudioPosition(timespec &time, uint32_t &framePosition) override;
-
-    Status MuteAudioBuffer(uint8_t *addr, size_t offset, size_t length) override;
  
     Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc) override;
  

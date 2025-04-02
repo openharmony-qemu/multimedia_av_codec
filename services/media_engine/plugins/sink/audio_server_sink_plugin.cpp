@@ -1177,15 +1177,6 @@ void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::OnWriteData(size_t l
     cb->OnWriteData(length, isAudioVivid_);
 }
 
-Status AudioServerSinkPlugin::MuteAudioBuffer(uint8_t *addr, size_t offset, size_t length)
-{
-    FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audioRender_ is nullptr");
-    int32_t ret = audioRenderer_->MuteAudioBuffer(addr, offset, length, rendererOptions_.streamInfo.format);
-    FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
-        "MuteAudioBuffer failed, ret=" PUBLIC_LOG_D32, ret);
-    return Status::OK;
-}
-
 Status AudioServerSinkPlugin::EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "Enqueue audioRender_ is nullptr");
