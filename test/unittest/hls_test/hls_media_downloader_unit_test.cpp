@@ -1437,7 +1437,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SaveCacheBufferDataNotblock_1, TestSize.Lev
     readDataInfo.wantReadLength_ = BUFFER_SIZE;
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
-    uint8_t * data = new uint8_t[BUFFER_SIZE]; 
+    uint8_t * data = new uint8_t[BUFFER_SIZE];
     uint32_t len = BUFFER_SIZE;
     downloader->isNeedResume_.store(true);
     uint32_t res = downloader->SaveCacheBufferDataNotblock(data, len);
