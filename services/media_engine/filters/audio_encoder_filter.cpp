@@ -99,7 +99,7 @@ void AudioEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     eventReceiver_ = receiver;
     filterCallback_ = callback;
     mediaCodec_ = std::make_shared<MediaCodec>();
-    FALSE_RETURN_MSG(MediaCodec_ != nullptr, "mediaCodec is nullptr");
+    FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec is nullptr");
     int32_t ret = mediaCodec_->Init(codecMimeType_, true);
     if (ret != 0 && isTranscoderMode_) {
         MEDIA_LOG_I("TranscoderMode");
