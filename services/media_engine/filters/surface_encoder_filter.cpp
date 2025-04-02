@@ -221,6 +221,7 @@ Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 Status SurfaceEncoderFilter::SetTransCoderMode()
 {
     MEDIA_LOG_I("SetTransCoderMode");
+    isTranscoderMode_ = true;
     mediaCodec_->SetTransCoderMode();
     return Status::OK;
 }
@@ -239,6 +240,7 @@ sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
 
 Status SurfaceEncoderFilter::DoPrepare()
 {
+    FALSE_RETURN_V(filterCallback_ != nullptr, Status::ERROR_NULL_POINTER);
     MEDIA_LOG_I("Prepare");
     if (isTranscoderMode_) {
         MEDIA_LOG_I("TranscoderMode");
