@@ -181,6 +181,7 @@ struct AvccReaderInfo {
 class AvccReader : public DataProducerBase {
 public:
     int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr, bool isKeepExecuting) override;
     void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t naluType, bool isEosFrame);
     bool IsEOS();
     bool CheckFillBuffer(uint8_t naluType);

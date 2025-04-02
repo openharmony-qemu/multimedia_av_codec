@@ -19,6 +19,7 @@
 #include "unittest_utils.h"
 #include "codeclist_mock.h"
 #include "venc_sample.h"
+#include "i_avcodec_service.h"
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
@@ -1651,6 +1652,67 @@ HWTEST_P(TEST_SUIT, VideoEncoder_HRDVivid2SDR_004, TestSize.Level1)
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_Hardware_Freeze_001
+ * @tc.desc: encoder is Flush and freeze process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Freeze_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
+    pid_t pid = getpid();
+    const std::vector<pid_t> pidList(pid);
+    auto ret = AVCodecServivceFactory::GetInstance().SuspendFreeze(pidList);
+    ASSERT_NE(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.name: VideoEncoder_Hardware_Activate_001
+ * @tc.desc: activate process of freeze and encoder is Flush
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Activate_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
+    pid_t pid = getpid();
+    const std::vector<pid_t> pidList(pid);
+    auto ret = AVCodecServivceFactory::GetInstance().SuspendFreeze(pidList);
+    ASSERT_NE(AVCS_ERR_OK, ret);
+    auto ret = AVCodecServivceFactory::GetInstance().SuspendActivate(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.name: VideoEncoder_Hardware_Activate_All_001
+ * @tc.desc: activate all process of freeze and decoder is Flush
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Activate_All_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
+    pid_t pid = getpid();
+    const std::vector<pid_t> pidList(pid);
+    auto ret = AVCodecServivceFactory::GetInstance().SuspendFreeze(pidList);
+    ASSERT_NE(AVCS_ERR_OK, ret);
+    auto ret = AVCodecServivceFactory::GetInstance().SuspendActivateAll(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 } // namespace
 

@@ -160,6 +160,7 @@ private:
     bool isH264Stream_ = true;  // true: H264; false: H265
     bool isMpeg2Stream_ = true; // true: Mpeg2; false: Mpeg4
     bool isMpegStream_ = false;
+    bool isKeepExecuting_ = false;
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;

@@ -29,6 +29,7 @@ class DataProducerBase {
 public:
     virtual ~DataProducerBase() = default;
     virtual int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) = 0;
+    virtual int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr, bool isKeepExecuting) = 0;
 };
 } // MediaAVCodec
 } // OHOS
