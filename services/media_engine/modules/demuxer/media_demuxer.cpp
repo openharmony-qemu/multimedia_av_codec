@@ -1189,16 +1189,10 @@ Status MediaDemuxer::UnselectTrack(int32_t trackId)
 Status MediaDemuxer::HandleHlsRebootPlugin()
 {
     MEDIA_LOG_D("In");
-    TrackType trackType = TrackType::TRACK_VIDEO;
     StreamType streamType = StreamType::MIXED;
-    int32_t trackId = 0;
-    if (videoTrackId_ != TRACK_ID_DUMMY) {
-        trackId = static_cast<int32_t>(videoTrackId_);
-        trackType = TrackType::TRACK_VIDEO;
-    } else {
-        trackId = static_cast<int32_t>(audioTrackId_);
-        trackType = TrackType::TRACK_AUDIO;
-    }
+    TrackType trackType = videoTrackId_ != TRACK_ID_DUMMY ? TrackType::TRACK_VIDEO : TrackType::TRACK_AUDIO;
+    int32_t trackId = videoTrackId_ != TRACK_ID_DUMMY ? static_cast<int32_t>(videoTrackId_)
+                                        : static_cast<int32_t>(audioTrackId_);
     FALSE_RETURN_V(!subStreamDemuxer_ || trackId != static_cast<int32_t>(subtitleTrackId_), Status::OK);
     Status ret = Status::OK;
     if (static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY) {
@@ -1228,14 +1222,10 @@ Status MediaDemuxer::HandleHlsRebootPlugin()
         ret = demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer_, isRebooted);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot demuxer plugin failed");
     }
-    Status audioRet = Status::OK;
-    Status videoRet = Status::OK;
-    if (audioTrackId_ != TRACK_ID_DUMMY) {
-        audioRet = InnerSelectTrack(static_cast<int32_t>(audioTrackId_));
-    }
-    if (videoTrackId_ != TRACK_ID_DUMMY) {
-        videoRet = InnerSelectTrack(static_cast<int32_t>(videoTrackId_));
-    }
+    Status audioRet = audioTrackId_ != TRACK_ID_DUMMY ?
+        InnerSelectTrack(static_cast<int32_t>(audioTrackId_)) : Status::OK;
+    Status videoRet = videoTrackId_ != TRACK_ID_DUMMY ?
+        InnerSelectTrack(static_cast<int32_t>(videoTrackId_)) : Status::OK;
     ret = audioRet == Status::OK ? videoRet : audioRet;
     {
         std::unique_lock<std::mutex> lock(rebootPluginMutex_);
