@@ -3134,7 +3134,7 @@ void MediaDemuxer::ReportMemoryUsage(uint32_t trackId, std::shared_ptrPlugins::D
     Status ret = pluginTemp->GetCurrentCacheSize(trackId, memoryUsage);
     FALSE_RETURN_NOLOG(ret == Status::OK);
     trackMemoryUsages_[trackId] = memoryUsage;
-    eventReceiver_->OnMemoryUsageEvent({"DEMUX_PLUGIN", DfxEventType::DFX_INFO_MEMORY_USAGE, trackMemoryUsages_});
+    eventReceiver_->OnMemoryUsageEvent({"DEMUXER_PLUGIN", DfxEventType::DFX_INFO_MEMORY_USAGE, trackMemoryUsages_});
 
     auto sampleIter = sampleQueueMap_.find(trackId);
     FALSE_RETURN_NOLOG(sampleIter != sampleQueueMap_.end());
