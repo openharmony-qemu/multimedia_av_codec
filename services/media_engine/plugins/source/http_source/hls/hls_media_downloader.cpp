@@ -72,6 +72,7 @@ constexpr uint32_t KILO = 1024;
 constexpr int32_t ONE_HUNDRED_MILLIONSECOND = 100;
 constexpr uint64_t RESUME_FREE_SIZE_THRESHOLD = 2 * 1024 * 1024;
 constexpr size_t STORP_WRITE_BUFFER_REDUNDANCY = 1 * 1024 * 1024;
+constexpr int MAX_RETRY = 10;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -167,17 +168,15 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
     auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
         UpdateDownloadFinished(url, location);
     };
-
     RequestInfo requestInfo;
-    requestInfo.url = playInfo.url_;
+    requestInfo.url = playInfo.rangeUrl_.empty() ? playInfo.url_ : playInfo.rangeUrl_;
     requestInfo.httpHeader = httpHeader_;
-    // TO DO: If the fragment file is too large, should not requestWholeFile.
+    bool isRequestWholeFile = playInfo.rangeUrl_.empty() ? true : playInfo.length_ <= 0;
     downloadRequest_ = std::make_shared<DownloadRequest>(playInfo.duration_, dataSave_,
-                                                         realStatusCallback, requestInfo, true);
-    // push request to back queue for seek
+                                                         realStatusCallback, requestInfo, isRequestWholeFile);
     fragmentDownloadStart[playInfo.url_] = true;
     int64_t startTimePos = playInfo.startTimePos_;
-    curUrl_ = playInfo.url_;
+    curUrl_ = playInfo.rangeUrl_.empty() ? playInfo.url_ : playInfo.rangeUrl_;
     if (writeTsIndex_ == 0) {
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
         MEDIA_LOG_I("HLS PutRequestIntoDownloader init readOffset." PUBLIC_LOG_U64, readOffset_);
@@ -188,14 +187,18 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
     writeOffset_ = SpliceOffset(writeTsIndex_, 0);
     MEDIA_LOG_I("HLS PutRequestIntoDwonloader update writeOffset_: " PUBLIC_LOG_U64 " writeTsIndex_: " PUBLIC_LOG_U32,
         writeOffset_, writeTsIndex_);
-
     {
         AutoLock lock(tsStorageInfoMutex_);
         if (tsStorageInfo_.find(writeTsIndex_) == tsStorageInfo_.end()) {
             tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
         }
     }
-
+    if (!playInfo.rangeUrl_.empty()) {
+        tsStreamIdInfo_[writeTsIndex_] = playInfo.streamId_;
+        if (!isRequestWholeFile) {
+            downloadRequest_->SetRangePos(playInfo.offset_, playInfo.offset_ + palyInfo.length_ - 1); // 1
+        }
+    }
     downloadRequest_->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest_->SetStartTimePos(startTimePos);
@@ -426,6 +429,11 @@ bool HlsMediaDownloader::HandleCache()
 
 void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
 {
+    if (curStreamId_ > 0 && isNeedResetOffset_.load()) {
+        ffmpegOffset_ = ffmpegOffset;
+        isNeedResetOffset_.store(true);
+        return;
+    }
     if (ffmpegOffset_ <= ffmpegOffset) {
         return;
     }
@@ -481,6 +489,9 @@ bool HlsMediaDownloader::CheckDataIntegrity()
 
 Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
+    if (ReadHeaderData(buff, readDataInfo)) {
+        return Status::OK;
+    }
     bool isFinishedPlay = CheckReadStatus() || isStopped;
     if (downloadRequest_ != nullptr) {
         readDataInfo.isEos_ = downloadRequest_->IsEos();
@@ -510,6 +521,31 @@ Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& read
         return Status::END_OF_STREAM;
     }
     return Status::ERROR_UNKNOWN;
+}
+
+bool HlsMediaDownloader::ReadHeaderData(unsigned char* buff, ReadDataInfo& readDataInfo)
+{
+    if (playlistDownloader_ == nullptr || (playlistDownloader_ && !playlistDownloader_->IsHlsFmp4())) {
+        return false;
+    }
+    if (curStreamId_ <= 0 && readDataInfo.streamId_ > 0) {
+        curStreamId_ = readDataInfo.streamId_;
+        isNeedReadHeader.store(true);
+        MEDIA_LOG_D("HLS read curStreamId_ " PUBLIC_LOG_U32, curStreamId_);
+    } else if (readDataInfo.streamId_ > 0 && readDataInfo.streamId_ != curStreamId_) {
+        readDataInfo.nextStreamId_ = curStreamId_;
+        isNeedReadHeader.store(true);
+        MEDIA_LOG_D("HLS read curStreamId_ " PUBLIC_LOG_U32 " curStreamId_ " PUBLIC_LOG_U32,
+                    curStreamId_, readDataInfo.streamId_);
+        return true;
+    }
+    if (readDataInfo.streamId_ > 0 && curStreamId_ == readDataInfo.streamId_ && isNeedReadHeader.load()) {
+        playlistDownloader_->ReadFmp4Header(buff, readDataInfo.realReadLength_, readDataInfo.streamId_);
+        isNeedReadHeader.store(false);
+        MEDIA_LOG_D("HLS read fmp4 header.");
+        return true;
+    }
+    return false;
 }
 
 Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
@@ -571,6 +607,13 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
             cacheMediaBuffer_->ClearFragmentBeforeOffset(SpliceOffset(readTsIndex_, 0));
             readTsIndex_++;
             readOffset_ = SpliceOffset(readTsIndex_, 0);
+            if (tsStreamIdInfo_.find(readTsIndex_) != tsStreamIdInfo_.end() && readDataInfo.streamId_ > 0 &&
+                readDataInfo.streamId_ != tsStreamIdInfo_[readTsIndex_]) {
+                curStreamId_ = tsStreamIdInfo_[readTsIndex_];
+                isNeedResetOffset_.store(true);
+                MEDIA_LOG_D("HLS read readTsIndex_ " PUBLIC_LOG_U32, readTsIndex_.load());
+                return;
+            }
         }
         if (readDataInfo.realReadLength_ < readDataInfo.wantReadLength_ && readTsIndex_ != backPlayList_.size()) {
             uint32_t crossFragLen = readDataInfo.wantReadLength_ - readDataInfo.realReadLength_;
@@ -658,6 +701,9 @@ void HlsMediaDownloader::PrepareToSeek()
 
     AutoLock lock(tsStorageInfoMutex_);
     tsStorageInfo_.clear();
+    if (playlistDownloader_->IsHlsFmp4()) {
+        tsStreamIdInfo_.clear();
+    }
     
     memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
     memset_s(decryptCache_, MIN_BUFFER_SIZE, 0x00, MIN_BUFFER_SIZE);
