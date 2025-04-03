@@ -241,6 +241,9 @@ Status SubtitleSink::PrepareInputBufferQueue()
             i, inputBuffer->GetUniqueId());
         inputBufferVector_.push_back(inputBuffer);
     }
+    FALSE_RETURN_V_NOLOG(playerEventReceiver_ != nullptr, Status::OK);
+    playerEventReceiver_->OnMemoryUsageEvent({"SUBTITLE_BQ",
+        DfxEventType::DFX_INFO_MEMORY_USAGE, inputBufferQueue_->GetMemoryUsage()});
     return Status::OK;
 }
 
