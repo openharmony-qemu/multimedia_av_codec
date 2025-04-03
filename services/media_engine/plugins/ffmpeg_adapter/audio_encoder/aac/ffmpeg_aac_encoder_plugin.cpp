@@ -253,8 +253,10 @@ Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
                 return Status::ERROR_INVALID_DATA;
             }
             bufferMeta_ = inputBuffer->meta_;
-            userPts_ = inputBuffer->pts_;
-            ptsFromInner_ = false;
+            if (ptsMode_ == GENERATE_ENCODE_PTS_BY_INPUT_MODE && isFirstInputPts_) {
+                prevPts_ = inputBuffer->pts_;
+                isFirstInputPts_ = false;
+            }
             dataCallback_->OnInputBufferDone(inputBuffer);
             ret = Status::OK;
         }
@@ -306,17 +308,11 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
 
     // how get perfect pts with upstream pts(us)
     outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) / NS_PER_US;
-    if (ptsMode_ == GENERATE_ENCODE_PTS_BY_INPUT_MODE) {
-        if (ptsFromInner_) {
-            outBuffer->pts_ = (INT64_MAX - userPts_ < outBuffer->duration_)
-                               ? (outBuffer->duration_ - (INT64_MAX - userPts_)) : (userPts_ + outBuffer->duration_);
-            userPts_ = outBuffer->pts_;
-        } else {
-            outBuffer->pts_ = userPts_;
-        }
-        ptsFromInner_ = true;
+    // adjust ffmpeg duration with sample rate
+    if (ptsMode_ == GENERATE_ENCODE_PTS_BY_INPUT_MODE && isFirstOutputPts_) {
+        outBuffer->pts_ = prevPts_;
+        isFirstOutputPts_ = false;
     } else {
-        // adjust ffmpeg duration with sample rate
         outBuffer->pts_ = ((INT64_MAX - prevPts_) < outBuffer->duration_)
                             ? (outBuffer->duration_ - (INT64_MAX - prevPts_))
                             : (prevPts_ + outBuffer->duration_);
@@ -394,8 +390,8 @@ Status FFmpegAACEncoderPlugin::Reset()
     auto ret = CloseCtxLocked();
     prevPts_ = 0;
     ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
-    ptsFromInner_ = false;
-    userPts_ = 0;
+    isFirstInputPts_ = true;
+    isFirstOutputPts_ = true;
     return ret;
 }
 
@@ -406,8 +402,8 @@ Status FFmpegAACEncoderPlugin::Release()
     auto ret = CloseCtxLocked();
     prevPts_ = 0;
     ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
-    ptsFromInner_ = false;
-    userPts_ = 0;
+    isFirstInputPts_ = true;
+    isFirstOutputPts_ = true;
     return ret;
 }
 
@@ -419,7 +415,8 @@ Status FFmpegAACEncoderPlugin::Flush()
         avcodec_flush_buffers(avCodecContext_.get());
     }
     prevPts_ = 0;
-    userPts_ = 0;
+    isFirstInputPts_ = true;
+    isFirstOutputPts_ = true;
     if (fifo_) {
         av_audio_fifo_reset(fifo_);
     }
