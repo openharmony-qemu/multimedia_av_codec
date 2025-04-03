@@ -34,8 +34,6 @@ constexpr uint32_t TIME_OUT_MS = 1000;
 constexpr uint32_t NS_PER_US = 1000;
 constexpr int64_t SEC_TO_NS = 1000000000;
 constexpr uint32_t STOP_TIME_OUT_MS = 2000;
-// alignment delay between the first video frame and the first audio frame after resuming 
-constexpr uint32_t AUDIO_VIDEO_ALIGN_DELAY_TEMP_NS = 100000000;
 //Codec wait timeout with no video frame received
 constexpr uint32_t AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED = 50001 ;
 namespace OHOS {
@@ -807,9 +805,7 @@ bool SurfaceEncoderAdapter::CheckFrames(int64_t currentPts, int64_t &checkFrames
             totalPauseTimeQueue_.pop_front();
         }
         // resumetime之后第一帧与resumetime的差
-        // checkFramesPauseTime =checkFramesPauseTime - (currentPts - pauseResumeQueue_[0].first);
-        // 音频延迟100ms，从100ms开始对齐
-        checkFramesPauseTime = checkFramesPauseTime - AUDIO_VIDEO_ALIGN_DELAY_TEMP_NS;
+        checkFramesPauseTime = checkFramesPauseTime - (currentPts - pauseResumeQueue_[0].first);
     }
     pauseResumeQueue_.pop_front();
     return CheckFrames(currentPts, checkFramesPauseTime);
