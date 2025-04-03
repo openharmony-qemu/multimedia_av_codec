@@ -58,6 +58,10 @@ Status AudioDecoderAdapter::Configure(const std::shared_ptr<Meta> &parameter)
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG(audiocodec_ != nullptr, Status::ERROR_INVALID_STATE, "audiocodec_ is nullptr");
     int32_t ret = audiocodec_->Configure(parameter);
+    if (ret == AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL) {
+        MEDIA_LOG_E("Configure ret is %{public}d", ret);
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
     FALSE_RETURN_V(ret == AVCodecServiceErrCode::AVCS_ERR_OK, Status::ERROR_INVALID_STATE);
     MEDIA_LOG_D("out");
     return Status::OK;
