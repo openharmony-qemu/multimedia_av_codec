@@ -228,7 +228,7 @@ void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
     statusCallback_ = [this](DownloadStatus &&status, std::shared_ptr<Downloader> d,
         std::shared_ptr<DownloadRequest> &request) {
         OnDownloadStatus(std::forward<decltype(status)>(status), downloaderHeader_,
-                            std::forward<decltype(request)>(request));
+                         std::forward<decltype(request)>(request));
     };
     auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
         UpdateDownloadFinished(url, location);

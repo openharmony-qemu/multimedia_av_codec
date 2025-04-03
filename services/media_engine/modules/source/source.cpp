@@ -358,6 +358,7 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::HLS_SEEK_READY) {
         MEDIA_LOG_D("Onevent hls seek ready.");
+        mediaDemuxerCallback_->OnEvent(event);
     } else {
         MEDIA_LOG_I("on event type undefined.");
     }
