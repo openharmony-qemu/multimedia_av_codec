@@ -908,9 +908,10 @@ int32_t AvcEncoder::Start()
     if (avcEncoder_ == nullptr && avcEncoderCreateFunc_ != nullptr) {
         createRet = avcEncoderCreateFunc_(&avcEncoder_, &initParams_);
     }
-    runLock.unlock();
     CHECK_AND_RETURN_RET_LOG(createRet == 0 && avcEncoder_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                              "avc encoder create failed");
+    runLock.unlock();
+
     InitBuffers();
     isSendEos_ = false;
     sendTask_->Start();
@@ -1516,6 +1517,7 @@ int32_t AvcEncoder::FillAvcEncoderInArgs(std::shared_ptr<AVBuffer> &buffer, AVC_
 int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &outArgs)
 {
     uint32_t ret = 0;
+    std::unique_lock<std::mutex> sLock(encRunMutex_);
     if (avcEncoder_ == nullptr || avcEncoderFrameFunc_ == nullptr) {
         AVCODEC_LOGE("Avc encoder load error !");
         return AVCS_ERR_VID_ENC_FAILED;
@@ -1528,10 +1530,8 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
     outArgs.streamBuf = outputAVBuffer->memory_->GetAddr();
     outArgs.size = static_cast<uint32_t>(outputAVBuffer->memory_->GetCapacity());
 
-    std::unique_lock<std::mutex> sLock(encRunMutex_);
     ret = avcEncoderFrameFunc_(avcEncoder_, &inArgs, &outArgs);
     sLock.unlock();
-
     if (ret == 0) {
         outputAVBuffer->memory_->SetSize(outArgs.bytes);
         outputAVBuffer->pts_ = static_cast<int64_t>(outArgs.timestamp);
