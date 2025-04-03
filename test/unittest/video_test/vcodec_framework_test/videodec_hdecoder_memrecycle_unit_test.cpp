@@ -347,7 +347,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_003, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_004, TestSize.Level1)
 {
     std::thread runDecoder(&TEST_SUIT::RunDecoder, this);
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    std::this_thread::sleep_for(std::chrono::milliseconds(300)); // 300ms
     SuspendFreeze();
     SuspendActive();
     runDecoder.join();
@@ -450,7 +450,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_003, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_004, TestSize.Level1)
 {
     std::thread runDecoder(&TEST_SUIT::RunDecoder, this);
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    std::this_thread::sleep_for(std::chrono::milliseconds(300)); // 300ms
     SuspendFreeze();
     SuspendActiveAll();
     runDecoder.join();
