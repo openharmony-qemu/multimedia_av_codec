@@ -89,6 +89,7 @@ public:
     void RestartAndClearBuffer() override;
     bool IsFlvLive() override;
     uint64_t GetMemorySize() override;
+    bool IsHlsFmp4() override;
 
 private:
     int64_t HttpMonitorLoop();

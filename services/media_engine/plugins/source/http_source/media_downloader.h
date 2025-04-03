@@ -203,6 +203,10 @@ public:
     {
         MEDIA_LOG_W("ClearBuffer is unimplemented.");
     }
+    virtual bool IsHlsFmp4()
+    {
+        return false;
+    }
 };
 }
 }
