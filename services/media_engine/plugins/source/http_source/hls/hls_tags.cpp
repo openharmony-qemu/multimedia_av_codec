@@ -90,13 +90,13 @@ std::pair<std::size_t, std::size_t> Attribute::GetByteRange() const
 {
     std::size_t length = 0;
     std::size_t offset = 0;
-    std::string newValue_;
+    std::string newValue;
     if (value_.find("\"") == std::string::npos) {
-        newValue_ = value_;
+        newValue = value_;
     } else {
-        newValue_ = value_.substr(1, value_.size() - 2); // 2
+        newValue = value_.substr(1, value_.size() - 2); // 2
     }
-    std::istringstream is(newValue_);
+    std::istringstream is(newValue);
     is.imbue(std::locale("C"));
     if (!is.eof()) {
         is >> length;
