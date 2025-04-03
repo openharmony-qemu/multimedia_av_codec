@@ -439,10 +439,10 @@ bool HlsPlayListDownloader::ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, u
     errno_t err {0};
     for (const auto &stream : master_->variants_) {
         if (stream->streamId_ == streamId && stream->m3u8_->isHeaderReady_) {
-            readLen = stream->m3u8_->downloadHeaderLen;
+            readLen = stream->m3u8_->downloadHeaderLen_;
             err = memcpy_s(buffer, readLen, stream->m3u8_->fmp4Header_, readLen);
             if (err == 0) {
-                return ture;
+                return true;
             } else {
                 MEDIA_LOG_E("ReadFmp4Header, error.");
             }
