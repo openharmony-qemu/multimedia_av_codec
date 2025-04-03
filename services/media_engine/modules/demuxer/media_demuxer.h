@@ -225,6 +225,8 @@ private:
     bool CheckTrackEnabledById(uint32_t trackId);
     bool HandleDashChangeStream(uint32_t trackId);
 
+    void GetMemoryUsage(uint32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp);
+    void ReportMemoryUsage(uint32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp);
     Status SeekToTimeAfter();
     bool SelectBitRateChangeStream(uint32_t trackId);
     bool SelectTrackChangeStream(uint32_t trackId);
@@ -291,6 +293,10 @@ private:
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
     std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
     std::map<uint32_t, std::shared_ptr<AVBuffer>> bufferMap_;
+
+    // memoryUsage
+    std::unordered_map<uint32_t, uint32_t> trackMemoryUsages_;
+    std::unordered_map<uint32_t, uint32_t> memoryReportLimitCount_;
 
     std::map<uint32_t, std::shared_ptr<SampleQueue>> sampleQueueMap_;
     std::map<uint32_t, bool> eosMap_;
