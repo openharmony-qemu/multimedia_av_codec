@@ -130,6 +130,8 @@ private:
     std::vector<uint32_t> indexs_;
     std::deque<std::pair<int64_t, StateCode>> pauseResumeQueue_;
     std::deque<std::pair<int64_t, int64_t>> mappingTimeQueue_;
+    std::deque<int64_t> totalPauseTimeQueue_{0};
+    int64_t checkFramesPauseTime_{0};
     std::atomic<bool> isThreadExit_ = true;
     bool isTransCoderMode = false;
 
