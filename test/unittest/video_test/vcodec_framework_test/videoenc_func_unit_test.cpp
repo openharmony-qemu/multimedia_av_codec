@@ -1669,7 +1669,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Freeze_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
     const std::vector<pid_t> pidList(pid);
-    ret = AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
+    auto ret = AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
