@@ -116,7 +116,7 @@ void Resample::ConvertCommon(const uint8_t *srcBuffer, const size_t srcLength,
         auto tmp = resampleChannelAddr_.data();
         sampleOffset_ = samples;
         av_samples_fill_arrays(tmp, nullptr, resampleCache_.data(), resamplePara_.channels,
-                               samples, resamplePara_.destFmt, 0);
+                               samples, resamplePara_.destFmt, 1);
     }
     auto res = swr_convert(swrCtx_.get(), resampleChannelAddr_.data(), samples, tmpInput.data(), samples);
     if (res < 0) {

@@ -136,8 +136,6 @@ public:
 
     void OnDumpInfo(int32_t fd);
 
-    void SetTranscoderMode();
-
 private:
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);
@@ -172,7 +170,6 @@ private:
     Status HandleOutputBufferOnce(bool &isOutputBufferAvailable, uint32_t eosStatus, bool isSync);
 
     void HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingNeeded, Status &ret);
-    bool HandleOtherErrorEvent(const std::shared_ptr<Plugins::PluginEvent> event);
 
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
@@ -189,7 +186,6 @@ private:
     bool isBufferMode_;
     bool isDump_ = false;
     bool isSupportAudioFormatChanged_ = true;
-    bool isTranscoderMode_ = false;
     std::string dumpPrefix_ = "";
     int32_t outputBufferCapacity_;
     std::string codecPluginName_;
