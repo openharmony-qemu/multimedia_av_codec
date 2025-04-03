@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <fstream>
 #include <functional>
+#include <thread>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "securec.h"
@@ -739,8 +740,7 @@ int32_t AvccReader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
     return AV_ERR_OK;
 }
 
-int32_t AvccReader::RepeatFillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr,
-                                     std::unique_ptr<std::ifstream>& inFile)
+int32_t AvccReader::KeepFillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -751,12 +751,13 @@ int32_t AvccReader::RepeatFillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ReadNalUnit failed");
         uint8_t naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(bufferAddr));
         bufferAddr += frameSize;
+        if (isEosFrame) {
+            this_thread::sleep_for(std::chrono::milliseconds(3000)); // 3s
+        }
         FillBufferAttr(attr, frameSize, naluType, isEosFrame);
         UNITTEST_CHECK_AND_BREAK_LOG(CheckFillBuffer(naluType), "FillBuffer stop running");
     } while (true);
     frameInputCount_++;
-    inFile->clear();
-    inFile->seekg(0, std::ios::beg); //seek 0
 
     return AV_ERR_OK;
 }

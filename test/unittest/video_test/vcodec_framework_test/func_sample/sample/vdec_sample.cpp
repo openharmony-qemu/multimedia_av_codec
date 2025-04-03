@@ -691,7 +691,8 @@ int32_t VideoDecSample::InputLoopInner()
     if (h263Reader_ != nullptr) {
         h263Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (avccReader_ != nullptr) {
-        avccReader_->RepeatFillBuffer(buffer->GetAddr(), attr, inFile_);
+        isKeepExecuting_ == false ? avccReader_->FillBuffer(buffer->GetAddr(), attr)
+        : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr, inFile_);
     } else {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
     }
@@ -887,7 +888,8 @@ int32_t VideoDecSample::InputLoopInnerExt()
     if (h263Reader_ != nullptr) {
         h263Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (avccReader_ != nullptr) {
-        avccReader_->FillBuffer(buffer->GetAddr(), attr, isKeepExecuting_);
+        isKeepExecuting_ == false ? avccReader_->FillBuffer(buffer->GetAddr(), attr)
+        : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr, inFile_);
     } else {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
     }

@@ -17,6 +17,7 @@
 #include <gtest/hwext/gtest-multithread.h>
 #include <unistd.h>
 #include <vector>
+#include <thread>
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
 #include "vdec_sample.h"
@@ -44,7 +45,7 @@ public:
     void PrepareSource(int32_t param);
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
-    std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
+    VideoDecSample* videoDec_ = nullptr;
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
     std::shared_ptr<VDecCallbackTestExt> vdecCallbackExt_ = nullptr;
@@ -68,7 +69,7 @@ void TEST_SUIT::SetUp(void)
     vdecCallbackExt_ = std::make_shared<VDecCallbackTestExt>(vdecSignal);
     ASSERT_NE(nullptr, vdecCallbackExt_);
 
-    videoDec_ = std::make_shared<VideoDecSample>(vdecSignal);
+    videoDec_ = new <VideoDecSample>(vdecSignal);
     ASSERT_NE(nullptr, videoDec_);
 
     format_ = FormatMockFactory::CreateFormat();
@@ -80,6 +81,7 @@ void TEST_SUIT::TearDown(void)
     if (format_ != nullptr) {
         format_->Destroy();
     }
+    delete videoDec_;
     videoDec_ = nullptr;
 }
 
@@ -162,6 +164,16 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 }
 
+void TEST_SUIT::RunDecoder()
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    videoDec_->isKeepExecuting_ = true;
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+}
+
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, HW_HDR));
 
 void SuspendFreeze()
@@ -241,26 +253,10 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_003, TestSize.Level1)
 
 /**
  * @tc.name: VideoDecoder_Hardware_Freeze_004
- * @tc.desc: decoder is Executing and freeze process
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_004, TestSize.Level1)
-{
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-
-    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    SuspendFreeze();
-}
-
-/**
- * @tc.name: VideoDecoder_Hardware_Freeze_005
  * @tc.desc: decoder is Flush and freeze process
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_005, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_004, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -273,11 +269,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_005, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Freeze_006
+ * @tc.name: VideoDecoder_Hardware_Freeze_005
  * @tc.desc: decoder is EOS and freeze process
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_006, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_005, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -350,13 +346,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_003, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_004, TestSize.Level1)
 {
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    std::thread runDecoder(&TEST_SUIT::RunDecoder, this);
+    this_thread::sleep_for(std::chrono::milliseconds(300));
     SuspendFreeze();
     SuspendActive();
+    runDecoder.join();
 }
 
 /**
@@ -456,13 +450,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_003, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_004, TestSize.Level1)
 {
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    std::thread runDecoder(&TEST_SUIT::RunDecoder, this);
+    this_thread::sleep_for(std::chrono::milliseconds(300));
     SuspendFreeze();
     SuspendActiveAll();
+    runDecoder.join();
 }
 
 /**
