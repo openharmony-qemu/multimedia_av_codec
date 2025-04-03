@@ -102,6 +102,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
 
             return;
         }
+        playList_.clear();
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
 

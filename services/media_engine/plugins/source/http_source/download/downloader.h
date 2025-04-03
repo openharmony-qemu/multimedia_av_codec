@@ -128,6 +128,14 @@ public:
     {
         return isAuthRequest_;
     }
+    void SetIsIndexM3u8Request(bool isIndexM3u8Request)
+    {
+        isIndexM3u8Request_ = isIndexM3u8Request;
+    }
+    bool IsIndexM3u8Request() const
+    {
+        return IsIndexM3u8Request_;
+    }
     bool IsClosed() const;
     void Close();
     double GetDuration() const;
@@ -177,6 +185,7 @@ private:
     int64_t dropedDataLen_ {0};
     std::atomic<bool> isFirstRangeRequestReady_ {false};
     bool isM3u8Request_ {false};
+    bool isIndexM3u8Request_ {false};
     bool isAuthRequest_ {false};
     RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
 };
