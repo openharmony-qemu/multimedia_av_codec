@@ -1383,7 +1383,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0010, TestSize.Level0)
  * @tc.name      : h266变分辨率,8bit解码，buffer, nv21
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0020, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0020, TestSize.Level1)
 {
     if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -1410,7 +1410,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0020, TestSize.Level0)
  * @tc.name      : h266变分辨率,10bit解码，buffer, nv12
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0030, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0030, TestSize.Level1)
 {
     if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -1437,7 +1437,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0030, TestSize.Level0)
  * @tc.name      : h266变分辨率,10bit解码，buffer, nv21
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0040, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0040, TestSize.Level1)
 {
     if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -1464,7 +1464,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0040, TestSize.Level0)
  * @tc.name      : h266变分辨率,hdr解码，buffer, nv12
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0050, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0050, TestSize.Level1)
 {
     if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -1491,7 +1491,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0050, TestSize.Level0)
  * @tc.name      : h266变分辨率,hdr解码，buffer, nv21
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0060, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0060, TestSize.Level1)
 {
     if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -1518,7 +1518,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0060, TestSize.Level0)
  * @tc.name      : h266变分辨率,8bit解码，surface, nv12
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0070, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0070, TestSize.Level1)
 {
     if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -1542,7 +1542,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0070, TestSize.Level0)
  * @tc.name      : h266变分辨率,8bit解码，surface, nv21
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0080, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0080, TestSize.Level1)
 {
     if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -1566,7 +1566,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0080, TestSize.Level0)
  * @tc.name      : h266变分辨率,10bit解码，surface, nv12
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0090, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0090, TestSize.Level1)
 {
     if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -1590,7 +1590,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0090, TestSize.Level0)
  * @tc.name      : h266变分辨率,10bit解码，surface, nv21
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0100, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0100, TestSize.Level1)
 {
     if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -1614,7 +1614,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0100, TestSize.Level0)
  * @tc.name      : h266变分辨率,10bit解码，surface, nv12
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0110, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0110, TestSize.Level1)
 {
     if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -1638,7 +1638,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0110, TestSize.Level0)
  * @tc.name      : h266变分辨率,10bit解码，surface, nv21
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0120, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0120, TestSize.Level1)
 {
     if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
