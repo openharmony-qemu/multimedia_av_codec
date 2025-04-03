@@ -3119,7 +3119,7 @@ bool MediaDemuxer::IsNeedMapToInnerTrackID()
 void MediaDemuxer::GetMemoryUsage(uint32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp)
 {
     FALSE_RETURN_NOLOG(eventReceiver_ != nullptr);
-    if (!memoryReportLimitCount_.count(trackId)) {
+    if (memoryReportLimitCount_.find(trackId) == memoryReportLimitCount_.end()) {
         memoryReportLimitCount_[trackId] = 1;
     } else {
         memoryReportLimitCount_[trackId]++;
