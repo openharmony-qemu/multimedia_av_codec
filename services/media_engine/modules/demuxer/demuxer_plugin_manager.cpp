@@ -219,6 +219,10 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
         streamInfoMap_[streamIndex].streamID = streamIndex;
         streamInfoMap_[streamIndex].bitRate = iter.bitRate;
         if (iter.type == MIXED) {  // 存在混合流则只请求该流
+            if (isHlsFmp4_) {
+                InitVideoTrack(iter);
+                continue;
+            }
             curVideoStreamID_ = streamIndex;
             streamInfoMap_[streamIndex].activated = true;
             streamInfoMap_[streamIndex].type = MIXED;
@@ -972,6 +976,11 @@ void DemuxerPluginManager::NotifyInitialBufferingEnd(bool isInitialBufferingSucc
 void DemuxerPluginManager::SetApiVersion(int32_t apiVersion)
 {
     apiVersion_ = apiVersion;
+}
+
+void DemuxerPluginManager::SetIsHlsFmp4(bool isHlsFmp4)
+{
+    isHlsFmp4_ = isHlsFmp4;
 }
 } // namespace Media
 } // namespace OHOS

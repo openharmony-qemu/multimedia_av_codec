@@ -130,6 +130,7 @@ public:
     void RestartAndClearBuffer();
     bool IsFlvLive();
     uint64_t GetMemorySize();
+    bool IsHlsFmp4();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

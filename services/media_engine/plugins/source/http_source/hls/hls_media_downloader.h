@@ -33,6 +33,7 @@
 #include <utility>
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
+#include "av_common.h"
 
 namespace OHOS {
 namespace Media {
@@ -110,6 +111,8 @@ public:
     void NotifyInitSuccess() override;
     uint64_t GetCachedDuration() override;
     uint64_t GetMemorySize() override;
+    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
+    bool IsHlsFmp4() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -167,6 +170,8 @@ private:
     bool IsNeedBufferForPlaying();
     bool CheckLoopTimeout(int64_t loopStartTime);
     void HandleSaveDataLoopContinue();
+    bool ReadHeaderData(unsigned char* buff, ReadDataInfo& readDataInfo);
+    void HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos);
 
 private:
     size_t totalBufferSize_ {0};
@@ -309,6 +314,11 @@ private:
     uint64_t cachedDuration_ {0};
     uint64_t memorySize_ {0};
     SteadyClock loopInterruptClock_;
+
+    std::map<uint32_t, uint32_t> tsStreamIdInfo_ {};
+    uint32_t curStreamId_ {0};
+    std::atomic<bool> isNeedReadHeader_ {false};
+    std::atomic<bool> isNeedResetOffset_ {false};
 };
 }
 }

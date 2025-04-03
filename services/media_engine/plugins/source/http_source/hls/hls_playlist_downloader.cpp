@@ -30,6 +30,7 @@ constexpr int MIN_PRE_PARSE_NUM = 2; // at least 2 ts frag
 const std::string M3U8_START_TAG = "#EXTM3U";
 const std::string M3U8_END_TAG = "#EXT-X-ENDLIST";
 const std::string M3U8_TS_TAG = "#EXTINF";
+const std::string M3U8_X_MAP_TAG = "#EXT-X-MAP";
 constexpr unsigned int MAX_LIVE_TS_NUM = 3;
 }
 // StateMachine thread: call plugin SetSource -> call Open
@@ -143,8 +144,7 @@ void HlsPlayListDownloader::NotifyListChange()
             break;
         }
         PlayInfo palyInfo;
-        palyInfo.url_ = file->uri_;
-        palyInfo.duration_ = file->duration_;
+        CopyFragmentInfo(palyInfo, file);
         playList.push_back(palyInfo);
     }
     if (!currentVariant_->m3u8_->localDrmInfos_.empty()) {
@@ -160,6 +160,21 @@ void HlsPlayListDownloader::NotifyListChange()
             isLiveUpdateTaskStarted_ = true;
             updateTask_->Start();
         }
+    }
+}
+
+void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file)
+{
+    playInfo.duration_ = file->duration_;
+    playInfo.offset_ = file->offset_;
+    playInfo.length_ = file->length_;
+    if (master_ && currentVariant_ && master_->isFmp4_.load()) {
+        playInfo.url_ = std::to_string(playInfo.offset_) + "_" + std::to_string(playInfo.length_) + "_"
+                        + "_" + file->uri_;
+        playInfo.rangeUrl_ = file->uri_;
+        playInfo.streamId_ = currentVariant_->streamId_;
+    } else {
+        playInfo.url_ = file->uri_;
     }
 }
 
@@ -219,6 +234,7 @@ void HlsPlayListDownloader::UpdateMasterAndNotifyList(bool isPreParse)
 void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
 {
     master_->bLive_ = currentVariant_->m3u8_->IsLive();
+    master_->isFmp4_ = currentVariant_->m3u8_->isHeaderReady_.load();
     master_->duration_ = currentVariant_->m3u8_->GetDuration();
     master_->segmentOffsets_ = currentVariant_->m3u8_->segmentOffsets_;
     master_->hasDiscontinuity_ = currentVariant_->m3u8_->hasDiscontinuity_;
@@ -231,7 +247,8 @@ void HlsPlayListDownloader::PreParseManifest(const std::string& location)
         return;
     }
     if (playList_.find(M3U8_START_TAG) == std::string::npos ||
-        playList_.find(M3U8_END_TAG) != std::string::npos) {
+        playList_.find(M3U8_END_TAG) != std::string::npos ||
+        playList_.find(M3U8_X_MAP_TAG) != std::string::npos) {
         return;
     }
     int tsNum = 0;
@@ -412,6 +429,57 @@ void HlsPlayListDownloader::InterruptM3U8Parse(bool isInterruptNeeded)
     if (currentVariant_ && currentVariant_->m3u8_) {
         currentVariant_->m3u8_->isInterruptNeeded_.store(isInterruptNeeded);
     }
+}
+
+bool HlsPlayListDownloader::ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, uint32_t streamId)
+{
+    if (master_ == nullptr) {
+        return false;
+    }
+    errno_t err {0};
+    for (const auto &stream : master_->variants_) {
+        if (stream->streamId_ == streamId && stream->m3u8_->isHeaderReady_) {
+            readLen = stream->m3u8_->downloadHeaderLen_;
+            err = memcpy_s(buffer, readLen, stream->m3u8_->fmp4Header_, readLen);
+            if (err == 0) {
+                return true;
+            } else {
+                MEDIA_LOG_E("ReadFmp4Header, error.");
+            }
+        }
+    }
+    return false;
+}
+
+void HlsPlayListDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
+{
+    if (master_ && !master_->isFmp4_) {
+        return;
+    }
+    if (currentVariant_ == nullptr) {
+        return;
+    }
+    for (const auto &stream : master_->variants_) {
+        StreamInfo streamInfo;
+        streamInfo.streamId = stream->streamId_;
+        streamInfo.type = StreamType::VIDEO;
+        streamInfo.bitRate = stream->bandWidth_;
+        streamInfo.videoWidth = stream->width_;
+        streamInfo.videoHeight = stream->height_;
+        if (stream->streamId_ == currentVariant_->streamId_) {
+            streams.insert(streams.begin(), streamInfo);
+        } else {
+            streams.push_back(streamInfo);
+        }
+    }
+}
+
+bool HlsPlayListDownloader::IsHlsFmp4()
+{
+    if (master_ && master_->isFmp4_) {
+        return true;
+    }
+    return false;
 }
 }
 }

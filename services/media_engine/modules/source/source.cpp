@@ -356,6 +356,9 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     } else if (event.type == PluginEventType::FLV_AUTO_SELECT_BITRATE) {
         MEDIA_LOG_D("Onevent flv select bitrate.");
         mediaDemuxerCallback_->OnEvent(event);
+    } else if (event.type == PluginEventType::HLS_SEEK_READY) {
+        MEDIA_LOG_D("Onevent hls seek ready.");
+        mediaDemuxerCallback_->OnEvent(event);
     } else {
         MEDIA_LOG_I("on event type undefined.");
     }
@@ -626,6 +629,12 @@ uint64_t Source::GetMemorySize()
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, 0, "plugin_ is nullptr");
     return plugin_->GetMemorySize();
+}
+
+bool Source::IsHlsFmp4()
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
+    return plugin_->IsHlsFmp4();
 }
 } // namespace Media
 } // namespace OHOS

@@ -141,6 +141,7 @@ public:
     Status localSubtitleSeekTo(int64_t seekTime);
     void NotifyInitialBufferingEnd(bool isInitialBufferingSucc);
     void SetApiVersion(int32_t apiVersion);
+    void SetIsHlsFmp4(bool isHlsFmp4);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
@@ -172,6 +173,7 @@ private:
     std::atomic<bool> isInitialBufferingNotified_ = false;
     ConditionVariable initialBufferingEndCond_;
     int32_t apiVersion_ {0};
+    bool isHlsFmp4_ {false};
 };
 } // namespace Media
 } // namespace OHOS

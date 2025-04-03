@@ -54,8 +54,8 @@ struct M3U8Fragment {
     bool discont_ {false};
     uint8_t key_[16] { 0 };
     int iv_[16] {0};
-    int offset_ {-1};
-    int size_ {0};
+    uint32_t offset_ {0};
+    uint32_t length_ {0};
 };
 
 struct M3U8Info {
@@ -96,6 +96,10 @@ struct M3U8 {
     bool SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void ProcessDrmInfos(void);
+    void ParseMap(const std::shared_ptr<AttributesTag>& tag);
+    void DownloadMap(const std::string& uri, size_t offset, size_t length);
+    uint32_t SaveMapData(uint8_t* data, uint32_t len, bool notBlock);
+    void UpdateDownloadFinished(const std::string& url, const std::string& location);
 
     std::shared_ptr<std::string> method_;
     std::shared_ptr<std::string> keyUri_;
@@ -119,6 +123,14 @@ struct M3U8 {
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<size_t> minFragDuration_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
+    uint8_t* fmp4Header_ {nullptr};
+    std::shared_ptr<Downloader> downloaderHeader_;
+    DataSaveFunc dataSaveHeader_;
+    std::atomic<bool> isHeaderReady_ {false};
+    uint32_t downloadHeaderLen_ {0};
+    std::shared_ptr<DownloadRequest> downloadHeaderRequest_;
+    uint32_t offset_ {0};
+    uint32_t length_ {0};
 };
 
 struct M3U8Media {
@@ -145,6 +157,7 @@ struct M3U8VariantStream {
     bool iframe_ {false};
     std::shared_ptr<M3U8> m3u8_;
     std::list<M3U8Media> media_;
+    uint32_t streamId_ {0};
 };
 
 struct M3U8MasterPlaylist {
@@ -176,6 +189,8 @@ struct M3U8MasterPlaylist {
     std::map<std::string, std::string> httpHeader_ {};
     uint32_t initResolution_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
+    std::atomic<bool> isFmp4_ {false};
+    uint32_t defaultStreamId_ {0};
 };
 }
 }

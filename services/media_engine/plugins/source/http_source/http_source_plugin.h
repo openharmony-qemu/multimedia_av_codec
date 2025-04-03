@@ -73,6 +73,7 @@ public:
     void RestartAndClearBuffer() override;
     bool IsFlvLive() override;
     uint64_t GetMemorySize() override;
+    bool IsHlsFmp4() override;
 
 private:
     void CloseUri(bool isAsync = false);
