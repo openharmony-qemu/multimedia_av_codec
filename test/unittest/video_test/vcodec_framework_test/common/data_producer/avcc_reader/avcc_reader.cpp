@@ -15,7 +15,6 @@
 
 #include "avcc_reader.h"
 #include <algorithm>
-#include <fstream>
 #include <functional>
 #include <thread>
 #include "avcodec_errors.h"
