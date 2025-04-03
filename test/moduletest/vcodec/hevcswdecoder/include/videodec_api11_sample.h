@@ -154,6 +154,7 @@ public:
     bool outputCallbackFlush = false;
     bool outputCallbackStop = false;
     bool useHDRSource = false;
+    bool NocaleHash = false;
     bool isAPI = false;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();

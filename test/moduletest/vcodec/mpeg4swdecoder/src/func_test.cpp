@@ -1151,4 +1151,28 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_SURF_CHANGE_0400, TestSize.Leve
         vDecSample->WaitForEOS();
     }
 }
+
+/**
+ * @tc.number    : VIDEO_SWDEC_RESOLUTION_PROFILE_0010
+ * @tc.name      : Resolution and profile change
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_SWDEC_RESOLUTION_PROFILE_0010, TestSize.Level2)
+{
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profResoChange.m4v";
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(2110, vDecSample->outFrameCount);
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
 } // namespace

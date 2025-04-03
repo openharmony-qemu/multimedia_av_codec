@@ -1656,4 +1656,57 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_RESOLUTION_0120, TestSize.Level0)
         ASSERT_EQ(CHANGE_VVC_FRAME, vDecSample->outFrameCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_SWDEC_RESOLUTION_PROFILE_0010
+ * @tc.name      : H264,Resolution and profile change
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_SWDEC_RESOLUTION_PROFILE_0010, TestSize.Level2)
+{
+    if (g_codecName.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profResoChange.h264";
+        vDecSample->DEFAULT_WIDTH = 1104;
+        vDecSample->DEFAULT_HEIGHT = 622;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(350, vDecSample->outFrameCount);
+    } else {
+        cout << "hardware encoder is rk,skip." << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_RESOLUTION_PROFILE_0010
+ * @tc.name      : H265,Resolution and profile change
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_SWDEC_RESOLUTION_PROFILE_0020, TestSize.Level2)
+{
+    if (g_codecNameHEVC.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profResoChange.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(800, vDecSample->outFrameCount);
+    }
+}
 } // namespace
