@@ -751,7 +751,7 @@ int32_t AvccReader::KeepFillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &at
         uint8_t naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(bufferAddr));
         bufferAddr += frameSize;
         if (isEosFrame) {
-            this_thread::sleep_for(std::chrono::milliseconds(3000)); // 3s
+            std::this_thread::sleep_for(std::chrono::milliseconds(3000)); // 3s
         }
         FillBufferAttr(attr, frameSize, naluType, isEosFrame);
         UNITTEST_CHECK_AND_BREAK_LOG(CheckFillBuffer(naluType), "FillBuffer stop running");

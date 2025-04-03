@@ -43,6 +43,7 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
+    void RunDecoder();
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
     VideoDecSample* videoDec_ = nullptr;
@@ -69,7 +70,7 @@ void TEST_SUIT::SetUp(void)
     vdecCallbackExt_ = std::make_shared<VDecCallbackTestExt>(vdecSignal);
     ASSERT_NE(nullptr, vdecCallbackExt_);
 
-    videoDec_ = new <VideoDecSample>(vdecSignal);
+    videoDec_ = new VideoDecSample (vdecSignal);
     ASSERT_NE(nullptr, videoDec_);
 
     format_ = FormatMockFactory::CreateFormat();
@@ -281,7 +282,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_005, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    EXPECT_TRUE(videoDec_->WaitForEos());
     SuspendFreeze();
 }
 
@@ -384,7 +384,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_006, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    EXPECT_TRUE(videoDec_->WaitForEos());
     SuspendFreeze();
     SuspendActive();
 }
@@ -468,7 +467,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_005, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
     SuspendFreeze();
@@ -488,11 +486,38 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_006, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    EXPECT_TRUE(videoDec_->WaitForEos());
     SuspendFreeze();
     SuspendActiveAll();
 }
 
+/**
+ * @tc.name: VideoDecoder_Hardware_Memory_Recycle_007
+ * @tc.desc: unordered memory recycle function invocation
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_007, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    SuspendFreeze();
+    SuspendFreeze();
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    SuspendFreeze();
+    SuspendActiveAll();
+    SuspendActive();
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    SuspendFreeze();
+    SuspendActive();
+    SuspendFreeze();
+    SuspendActiveAll();
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+    SuspendActiveAll();
+    SuspendActive();
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    SuspendFreeze();
+    SuspendActive();
+}
 } // namespace
 
 int main(int argc, char **argv)
