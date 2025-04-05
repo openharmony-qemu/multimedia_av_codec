@@ -144,6 +144,8 @@ Status SampleQueue::PushBuffer(std::shared_ptr<AVBuffer>& sampleBuffer, bool ava
     FALSE_RETURN_V(available && status == Status::OK, status);
 
     lastEnterSamplePts_ = sampleBuffer->pts_;
+    MEDIA_LOG_D(PUBLIC_LOG_S " PushBuffer pts=" PUBLIC_LOG_D64 " dts=" PUBLIC_LOG_D64 " duration=" PUBLIC_LOG_D64,
+        config_.queueName_.c_str(), sampleBuffer->pts_, sampleBuffer->dts_, sampleBuffer->duration_);
     if (!config_.isSupportBitrateSwitch_) {
         return Status::OK;
     }
@@ -549,16 +551,15 @@ void SampleQueue::UpdateQueueId(uint32_t queueId)
     config_.queueId_ = queueId;
 }
 
-int64_t SampleQueue::GetCacheDuration() const
+uint64_t SampleQueue::GetCacheDuration() const
 {
     if (lastEnterSamplePts_ == Plugins::HST_TIME_NONE || lastOutSamplePts_ == Plugins::HST_TIME_NONE) {
         return 0;
     }
-    MEDIA_LOG_D("samplequeue lastEnterSamplePts_=" PUBLIC_LOG_D64 " lastEndSamplePts_=" PUBLIC_LOG_D64,
-        lastEnterSamplePts_,
-        lastOutSamplePts_);
     int64_t diff = lastEnterSamplePts_ - lastOutSamplePts_;
-    return (diff > 0) ? diff : 0;
+    MEDIA_LOG_D(PUBLIC_LOG_S " lastEnterSamplePts_=" PUBLIC_LOG_D64 " lastEndSamplePts_=" PUBLIC_LOG_D64
+        " diff=" PUBLIC_LOG_D64, config_.queueName_.c_str(), lastEnterSamplePts_, lastOutSamplePts_, diff);
+    return (diff > 0) ? static_cast<uint64_t>(diff) : 0;
 }
 
 uint32_t SampleQueue::GetMemoryUsage()
