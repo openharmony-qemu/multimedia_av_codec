@@ -312,6 +312,8 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     if (ptsMode_ == GENERATE_ENCODE_PTS_BY_INPUT_MODE && isFirstOutputPts_) {
         outBuffer->pts_ = prevPts_;
         isFirstOutputPts_ = false;
+    } else if (prevPts_ < 0) {
+        outBuffer->pts_ = prevPts_ + outBuffer->duration_;
     } else {
         outBuffer->pts_ = ((INT64_MAX - prevPts_) < outBuffer->duration_)
                             ? (outBuffer->duration_ - (INT64_MAX - prevPts_))
