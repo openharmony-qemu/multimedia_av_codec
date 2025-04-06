@@ -236,6 +236,9 @@ private:
     void HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackId);
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
     bool IsNeedMapToInnerTrackID();
+    int64_t GetReadLoopRetryUs(uint32_t trackId);
+    uint64_t GetSampleQueueDuration();
+    void UpdateSampleQueueCache();
 
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
@@ -291,6 +294,7 @@ private:
     bool IsIgonreBuffering();
     int64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
+    int64_t lastClockTimeMs_ = 0;
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;

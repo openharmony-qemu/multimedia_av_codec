@@ -80,8 +80,8 @@ public:
 
     void OnBufferAvailable();
     void OnBufferConsumer();
+    uint64_t GetCacheDuration() const;
     void UpdateQueueId(uint32_t queueId);
-    int64_t GetCacheDuration() const;
     uint32_t GetMemoryUsage();
 
 private:
