@@ -32,7 +32,7 @@ using namespace testing::test;
 
 namespace OHOS {
 namespace MediaAVCodec {
-class G711EncPluginUnitTest : public testing::test {
+class G711EncPluginUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
