@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include <thread>
+#include <vector>
 #include "caps_unit_test.h"
 #include "gtest/gtest.h"
 #ifdef CODECLIST_CAPI_UNIT_TEST
@@ -1101,6 +1103,86 @@ HWTEST_F(CapsUnitTest, AVCaps_Levels_005, TestSize.Level1)
     }
 }
 
+HWTEST_F(CapsUnitTest, AVCaps_THREAD_POOL_001, TestSize.Level2)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    const int threadCnt = 10;
+    std::vector<std::thread> threadPool;
+    for (int32_t i = 0; i < threadCnt; i++) {
+        threadPool.emplace_back([&cap]() {
+            const int32_t *profiles = nullptr;
+            uint32_t profilesNum = -1;
+            EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+        });
+    }
+    for (auto &th : threadPool) {
+        th.join();
+    }
+}
+
+HWTEST_F(CapsUnitTest, AVCaps_THREAD_POOL_002, TestSize.Level2)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    const int threadCnt = 10;
+    std::vector<std::thread> threadPool;
+    for (int32_t i = 0; i < threadCnt; i++) {
+        threadPool.emplace_back([&cap]() {
+            const int32_t *levels = nullptr;
+            uint32_t levelsNum = -1;
+            int32_t profile = static_cast<int32_t>(AVC_PROFILE_BASELINE);
+            EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        });
+    }
+    for (auto &th : threadPool) {
+        th.join();
+    }
+}
+
+HWTEST_F(CapsUnitTest, AVCaps_THREAD_POOL_003, TestSize.Level2)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    const int threadCnt = 10;
+    std::vector<std::thread> threadPool;
+    for (int32_t i = 0; i < threadCnt; i++) {
+        threadPool.emplace_back([&cap]() {
+            const int32_t *sampleRates = nullptr;
+            uint32_t sampleRateNum = 0;
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+        });
+    }
+    for (auto &th : threadPool) {
+        th.join();
+    }
+}
+
+HWTEST_F(CapsUnitTest, AVCaps_THREAD_POOL_004, TestSize.Level2)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    const int threadCnt = 10;
+    std::vector<std::thread> threadPool;
+    for (int32_t i = 0; i < threadCnt; i++) {
+        threadPool.emplace_back([&cap]() {
+            const int32_t *pixFormats = nullptr;
+            uint32_t pixFormatNum = -1;
+            EXPECT_EQ(OH_AVCapability_GetVideoSupportedPixelFormats(cap, &pixFormats, &pixFormatNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetVideoSupportedPixelFormats(cap, &pixFormats, &pixFormatNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetVideoSupportedPixelFormats(cap, &pixFormats, &pixFormatNum), AV_ERR_OK);
+        });
+    }
+    for (auto &th : threadPool) {
+        th.join();
+    }
+}
 #endif
 } // namespace MediaAVCodec
 } // namespace OHOS
