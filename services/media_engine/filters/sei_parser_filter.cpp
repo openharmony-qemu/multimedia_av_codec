@@ -136,6 +136,9 @@ Status SeiParserFilter::PrepareInputBufferQueue()
         MEDIA_LOG_I(
             "Attach intput buffer. index: %{public}d, bufferId: %{public}" PRIu64, i, inputBuffer->GetUniqueId());
     }
+    FALSE_RETURN_V_NOLOG(eventReceiver_ != nullptr, Status::OK);
+    eventReceiver_->OnMemoryUsageEvent({"SEI_BQ",
+        DfxEventType::DFX_INFO_MEMORY_USAGE, inputBufferQueue_->GetMemoryUsage()});
     return Status::OK;
 }
 

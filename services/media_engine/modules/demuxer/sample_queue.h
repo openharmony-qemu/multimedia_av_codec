@@ -82,6 +82,7 @@ public:
     void OnBufferConsumer();
     void UpdateQueueId(uint32_t queueId);
     int64_t GetCacheDuration() const;
+    uint32_t GetMemoryUsage();
 
 private:
     Status AcquireBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);

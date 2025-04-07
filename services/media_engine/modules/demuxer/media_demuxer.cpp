@@ -78,6 +78,7 @@ constexpr int32_t SAMPLE_BUFFER_SIZE_EXTRA = 128;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
+constexpr uint32_t LIMIT_MEMORY_REPORT_COUNT = 1000;
 
 static const std::map<TrackType, DemuxerTrackType> TRACK_MAP = {
     {TrackType::TRACK_AUDIO, DemuxerTrackType::AUDIO},
@@ -820,6 +821,9 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     ret = InnerPrepare();
     source_->NotifyInitSuccess();
     ProcessDrmInfos();
+    FALSE_RETURN_V_NOLOG(eventReceiver_ != nullptr, res);
+    eventReceiver_->OnMemoryUsageEvent({"SOURCE",
+        DfxEventType::DFX_INFO_MEMORY_USAGE, source_->GetMemorySize()});
     MEDIA_LOG_I("Out");
     return ret;
 }
@@ -2195,7 +2199,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
     if (demuxerPluginManager_->IsDash() || demuxerPluginManager_->GetTmpStreamIDByTrackID(subtitleTrackId_) != -1) {
         innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
     }
-
+    GetMemoryUsage(trackId, pluginTemp);
     int32_t size = 0;
     Status ret = pluginTemp->GetNextSampleSize(innerTrackID, size);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, ret, "Get size failed for track " PUBLIC_LOG_U32, trackId);
@@ -3082,6 +3086,32 @@ bool MediaDemuxer::IsFlvLive()
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
     return source_->IsFlvLive();
+}
+
+void MediaDemuxer::GetMemoryUsage(uint32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp)
+{
+    FALSE_RETURN_NOLOG(eventReceiver_ != nullptr);
+    if (memoryReportLimitCount_.find(trackId) == memoryReportLimitCount_.end()) {
+        memoryReportLimitCount_[trackId] = 1;
+    } else {
+        memoryReportLimitCount_[trackId]++;
+        FALSE_RETURN_NOLOG(memoryReportLimitCount_[trackId] % LIMIT_MEMORY_REPORT_COUNT == 0);
+        ReportMemoryUsage(trackId, pluginTemp);
+    }
+}
+
+void MediaDemuxer::ReportMemoryUsage(uint32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp)
+{
+    uint32_t memoryUsage = 0;
+    Status ret = pluginTemp->GetCurrentCacheSize(trackId, memoryUsage);
+    FALSE_RETURN_NOLOG(ret == Status::OK);
+    trackMemoryUsages_[trackId] = memoryUsage;
+    eventReceiver_->OnMemoryUsageEvent({"DEMUXER_PLUGIN", DfxEventType::DFX_INFO_MEMORY_USAGE, trackMemoryUsages_});
+
+    auto sampleIter = sampleQueueMap_.find(trackId);
+    FALSE_RETURN_NOLOG(sampleIter != sampleQueueMap_.end());
+    memoryUsage = sampleIter->second->GetMemoryUsage();
+    eventReceiver_->OnMemoryUsageEvent({"SAMPLE_QUEUE", DfxEventType::DFX_INFO_MEMORY_USAGE, memoryUsage});
 }
 } // namespace Media
 } // namespace OHOS
