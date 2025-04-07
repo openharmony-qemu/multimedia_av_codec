@@ -46,7 +46,7 @@ public:
     void RunDecoder();
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
-    VideoDecSample* videoDec_ = nullptr;
+    std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
     std::shared_ptr<VDecCallbackTestExt> vdecCallbackExt_ = nullptr;
@@ -70,7 +70,7 @@ void TEST_SUIT::SetUp(void)
     vdecCallbackExt_ = std::make_shared<VDecCallbackTestExt>(vdecSignal);
     ASSERT_NE(nullptr, vdecCallbackExt_);
 
-    videoDec_ = new VideoDecSample (vdecSignal);
+    videoDec_ = std::make_shared<VideoDecSample>(vdecSignal);
     ASSERT_NE(nullptr, videoDec_);
 
     format_ = FormatMockFactory::CreateFormat();
@@ -82,7 +82,6 @@ void TEST_SUIT::TearDown(void)
     if (format_ != nullptr) {
         format_->Destroy();
     }
-    delete videoDec_;
     videoDec_ = nullptr;
 }
 
