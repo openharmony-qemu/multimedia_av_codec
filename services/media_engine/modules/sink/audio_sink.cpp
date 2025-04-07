@@ -259,6 +259,9 @@ Status AudioSink::Start()
     }
     isEos_ = false;
     state_ = Pipeline::FilterState::RUNNING;
+    FALSE_RETURN_V_NOLOG(playerEventReceiver_ != nullptr, Status::OK);
+    playerEventReceiver_->OnMemoryUsageEvent({"AUDIO_SINK_BQ",
+        DfxEventType::DFX_INFO_MEMORY_USAGE, inputBufferQueue_->GetMemoryUsage()});
     return ret;
 }
 

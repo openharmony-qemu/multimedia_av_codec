@@ -561,6 +561,11 @@ int64_t SampleQueue::GetCacheDuration() const
     return (diff > 0) ? diff : 0;
 }
 
+uint32_t SampleQueue::GetMemoryUsage()
+{
+    return sampleBufferQueue_->GetMemoryUsage();
+}
+
 std::string SampleQueue::StringifyMeta(std::shared_ptr<Meta> &meta)
 {
     FALSE_RETURN_V(meta != nullptr, "");
