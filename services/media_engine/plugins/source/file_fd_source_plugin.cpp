@@ -610,9 +610,6 @@ Status FileFdSourcePlugin::SetReadBlockingFlag(bool isAllowed)
 void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
     bool isInterruptAllowed = true;
-    if (isInterrupted_) {
-        MEDIA_LOG_D("SetInterruptState already interrupted");
-    }
     
     MEDIA_LOG_I("SetInterruptState isInterrupted_" PUBLIC_LOG_D32, isInterruptNeeded);
     {
