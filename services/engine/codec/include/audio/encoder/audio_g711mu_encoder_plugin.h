@@ -43,7 +43,6 @@ public:
         return std::string(AVCodecCodecName::AUDIO_ENCODER_G711MU_NAME);
     }
 
-private:
     int32_t CheckFormat(const Format &format);
     int32_t CheckSampleFormat();
     uint8_t G711MuLawEncode(int16_t pcmValue);
