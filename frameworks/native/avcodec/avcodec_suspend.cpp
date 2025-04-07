@@ -19,20 +19,20 @@
 #include "i_avcodec_service.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecVideoDecoderImpl"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecSuspend"};
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
 int32_t AVCodecSuspend::SuspendFreeze(const std::vector<pid_t> &pidList)
 {
-    CHECK_AND_RETURN_RET_LOG(pidList.empty(), AVCS_ERR_INPUT_DATA_ERROR, "Freeze pidlist is empty");
+    CHECK_AND_RETURN_RET_LOG(!pidList.empty(), AVCS_ERR_INPUT_DATA_ERROR, "Freeze pidlist is empty");
     return AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
 }
 
 int32_t AVCodecSuspend::SuspendActive(const std::vector<pid_t> &pidList)
 {
-    CHECK_AND_RETURN_RET_LOG(pidList.empty(), AVCS_ERR_INPUT_DATA_ERROR, "Active pidlist is empty");
+    CHECK_AND_RETURN_RET_LOG(!pidList.empty(), AVCS_ERR_INPUT_DATA_ERROR, "Active pidlist is empty");
     return AVCodecServiceFactory::GetInstance().SuspendActive(pidList);
 }
 
