@@ -107,6 +107,7 @@ public:
 
     virtual int32_t Start()
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(60));
         return status_;
     }
 

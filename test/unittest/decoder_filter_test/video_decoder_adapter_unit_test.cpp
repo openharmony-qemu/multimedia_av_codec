@@ -249,4 +249,25 @@ HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_ReleaseOutputBuffer_00
     ret = videoDecoder->ReleaseOutputBuffer(1, true);
     ASSERT_EQ(ret, 0);
 }
+
+/**
+ * @tc.name: mediaCodec_Start_Timeout
+ * @tc.desc: mediaCodec Start Timeout
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecoderAdapterUnitTest, mediaCodec_Start_Timeout, TestSize.Level1)
+{
+    std::shared_ptr<VideoDecoderAdapter> videoDecoder = std::make_shared<VideoDecoderAdapter>();
+    std::shared_ptr<TestAVCodecVideoDecoder> mediaCodecTest = std::make_shared<TestAVCodecVideoDecoder>();
+    videoDecoder->mediaCodec_ = mediaCodecTest;
+    EXPECT_EQ(videoDecoder->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, "name"), Status::OK);
+    videoDecoder->SetEventReceiver(nullptr);
+    videoDecoder->SetCallingInfo(0, 0, "test", 0);
+
+    Format format;
+    EXPECT_EQ(videoDecoder->Configure(format), Status::OK);
+    EXPECT_EQ(videoDecoder->SetParameter(format), 0);
+    
+    EXPECT_EQ(videoDecoder->Start(), Status::OK);
+}
 }
