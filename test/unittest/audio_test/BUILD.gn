@@ -583,7 +583,7 @@ ohos_unittest("audio_g711mu_encoder_plugin_unit_test") {
   public_configs = []
 
   if (av_codec_support_test) {
-    sources = [ "./audio_g711mu_encoder_plugin.cpp" ]
+    sources = [ "./audio_g711mu_encoder_plugin_unit_test.cpp" ]
   }
 
   deps = [
