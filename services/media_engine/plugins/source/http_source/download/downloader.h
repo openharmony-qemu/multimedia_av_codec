@@ -133,7 +133,7 @@ public:
     }
     bool IsIndexM3u8Request() const
     {
-        return IsIndexM3u8Request_;
+        return isIndexM3u8Request_;
     }
     bool IsClosed() const;
     void Close();
