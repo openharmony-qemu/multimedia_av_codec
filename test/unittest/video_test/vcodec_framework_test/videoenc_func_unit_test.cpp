@@ -16,7 +16,7 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include "meta/meta_key.h"
-#include "av_codec_suspend.h"
+#include "avcodec_suspend.h"
 #include "unittest_utils.h"
 #include "codeclist_mock.h"
 #include "venc_sample.h"

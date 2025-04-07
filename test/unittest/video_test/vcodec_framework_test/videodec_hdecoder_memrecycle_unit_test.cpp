@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <vector>
 #include <thread>
-#include "av_codec_suspend.h"
+#include "avcodec_suspend.h"
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
 #include "vdec_sample.h"
