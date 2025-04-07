@@ -41,7 +41,6 @@ declare_args() {
   av_codec_enable_codec_rv = false
   av_codec_enable_codec_cook = false
   av_codec_enable_codec_ac3 = false
-  av_codec_enable_codec_mp4v_es = true
 }
 av_codec_sanitize = {
   boundary_sanitize = true
@@ -150,8 +149,4 @@ if (av_codec_enable_codec_cook) {
 
 if (av_codec_enable_codec_ac3) {
   av_codec_defines += [ "SUPPORT_CODEC_AC3" ]
-}
-
-if (av_codec_enable_codec_mp4v_es) {
-  av_codec_defines += [ "SUPPORT_CODEC_MP4V_ES" ]
 }
