@@ -1668,7 +1668,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Freeze_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
-    const std::vector<pid_t> pidList(pid);
+    std::vector<pid_t> pidList = {pid};
     auto ret = AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
@@ -1687,7 +1687,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
-    const std::vector<pid_t> pidList(pid);
+    std::vector<pid_t> pidList = {pid};
     auto ret = AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     ret = AVCodecServiceFactory::GetInstance().SuspendActive(pidList);
@@ -1708,7 +1708,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_All_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
-    const std::vector<pid_t> pidList(pid);
+    std::vector<pid_t> pidList = {pid};
     auto ret = AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     ret = AVCodecServiceFactory::GetInstance().SuspendActiveAll();

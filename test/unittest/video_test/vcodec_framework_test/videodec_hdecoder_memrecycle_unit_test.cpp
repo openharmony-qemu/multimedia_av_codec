@@ -179,7 +179,7 @@ INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, HW_HDR));
 void SuspendFreeze()
 {
     pid_t pid = getpid();
-    const std::vector<pid_t> pidList(pid);
+    std::vector<pid_t> pidList = {pid};
     auto ret = AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
@@ -187,7 +187,7 @@ void SuspendFreeze()
 void SuspendActive()
 {
     pid_t pid = getpid();
-    const std::vector<pid_t> pidList(pid);
+    std::vector<pid_t> pidList = {pid};
     auto ret = AVCodecServiceFactory::GetInstance().SuspendActive(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
@@ -195,7 +195,6 @@ void SuspendActive()
 void SuspendActiveAll()
 {
     pid_t pid = getpid();
-    const std::vector<pid_t> pidList(pid);
     auto ret = AVCodecServiceFactory::GetInstance().SuspendActiveAll();
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
