@@ -50,7 +50,6 @@ struct HeaderInfo {
     bool isChunked {false};
     std::atomic<bool> isClosed {false};
     bool isServerAcceptRange {false};
-    bool isValidContentType {true};
 
     void Update(const HeaderInfo* info)
     {
@@ -235,7 +234,6 @@ private:
     void PauseLoop(bool isAsync = false);
     void WaitLoopPause();
     void NotifyLoopPause();
-    void ResetContentType();
     void HandleRetErrorCode();
     void DonwloaderInit(const std::string& name);
     void OpenAppUri();

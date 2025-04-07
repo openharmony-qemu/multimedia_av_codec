@@ -44,7 +44,6 @@ constexpr int SERVER_RANGE_ERROR_CODE = 416;
 constexpr int32_t LOOP_LOG_FEQUENCE = 50;
 constexpr int REQUEST_OFTEN_ERROR_CODE = 500;
 constexpr int SLEEP_TEN_MICRO_SEC = 10; // 10ms
-const std::string INVALID_CONTENT_TYPES[] = {"text/html", "application/json"};
 constexpr int APP_OPEN_RETRY_TIMES = 10;
 constexpr int32_t REDIRECT_CODE = 302;
 }
@@ -992,15 +991,6 @@ bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size
         std::string tokenStr = (std::string)token;
         MEDIA_LOG_I("Content-Type: " PUBLIC_LOG_S, tokenStr.c_str());
         NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, strlen(type)));
-        info->isValidContentType = true;
-        for (const auto &contentType : INVALID_CONTENT_TYPES) {
-            if (!tokenStr.empty() && tokenStr.find(contentType) != std::string::npos &&
-                !mediaDownloader->currentRequest_->IsAuthRequest()) {
-                info->isValidContentType = false;
-                MEDIA_LOG_E("invalid content type.");
-                break;
-            }
-        }
     }
     return true;
 }
