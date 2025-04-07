@@ -494,7 +494,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_006, TestSize.Level1)
  * @tc.desc: unordered memory recycle function invocation
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_007, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_007, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
