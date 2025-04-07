@@ -775,6 +775,7 @@ bool HttpMediaDownloader::ChangeDownloadPos(bool isSeekHit)
     uint64_t seekOffset = readOffset_;
     if (isSeekHit) {
         isNeedDropData_ = true;
+        OSAL::SleepFor(TEN_MILLISECONDS);
         downloader_->Pause();
         isNeedDropData_ = false;
         seekOffset += GetCurrentBufferSize();
@@ -786,6 +787,7 @@ bool HttpMediaDownloader::ChangeDownloadPos(bool isSeekHit)
         }
     } else {
         isNeedClean_ = true;
+        OSAL::SleepFor(TEN_MILLISECONDS);
         downloader_->Pause();
         isNeedClean_ = false;
     }
