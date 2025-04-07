@@ -239,14 +239,14 @@ int32_t FCodec::ConfigureContext(const Format &format)
     avCodecContext_->width = width_;
     avCodecContext_->height = height_;
     avCodecContext_->thread_count = DEFAULT_THREAD_COUNT;
-#ifdef SUPPORT_CODEC_RV
+#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
     return SetCodecExtradata(format);
 #else
     return AVCS_ERR_OK;
 #endif
 }
 
-#ifdef SUPPORT_CODEC_RV
+#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
 int32_t FCodec::SetCodecExtradata(const Format &format)
 {
     size_t extraSize = 0;
