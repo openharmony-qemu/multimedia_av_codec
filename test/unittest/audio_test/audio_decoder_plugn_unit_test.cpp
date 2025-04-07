@@ -61,7 +61,7 @@ constexpr string_view OUTPUT_PCM_FILE_PATH = "/data/test/media/out.pcm";
 
 namespace OHOS {
 namespace MediaAVCodec {
-class AudioDecPluginUnitTest : public testing::test {
+class AudioDecPluginUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
