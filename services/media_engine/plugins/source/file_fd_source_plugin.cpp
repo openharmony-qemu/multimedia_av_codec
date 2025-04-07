@@ -610,7 +610,6 @@ Status FileFdSourcePlugin::SetReadBlockingFlag(bool isAllowed)
 void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
     bool isInterruptAllowed = true;
-    
     MEDIA_LOG_I("SetInterruptState isInterrupted_" PUBLIC_LOG_D32, isInterruptNeeded);
     {
         std::lock_guard<std::mutex> lock(interruptMutex_);
