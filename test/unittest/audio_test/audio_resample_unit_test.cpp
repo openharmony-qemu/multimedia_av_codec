@@ -25,7 +25,7 @@ using namespace testing::test;
 
 namespace OHOS {
 namespace MediaAVCodec {
-class AudioResampleUnitTest : public testing::test {
+class AudioResampleUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
