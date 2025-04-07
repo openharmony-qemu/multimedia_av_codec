@@ -69,7 +69,7 @@ constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY 
 constexpr uint32_t NEXT_DELAY_TIME_US = 10; // 10us is ok
 constexpr uint32_t SAMPLE_LOOP_RETRY_TIME_US = 20000;
 constexpr uint32_t SAMPLE_LOOP_DELAY_TIME_US = 100000;
-constexpr uint32_t SAMPLE_FLOW_CONTROL_MIN_SAMPLE_DURATION = 200000;
+constexpr uint32_t SAMPLE_FLOW_CONTROL_MIN_SAMPLE_DURATION_US = 200000;
 constexpr uint32_t SAMPLE_FLOW_CONTROL_RATE_POW = 6; // 2^6
 constexpr int64_t UPDATE_SOURCE_CACHE_MS = 100;
 
@@ -2358,7 +2358,7 @@ int64_t MediaDemuxer::GetReadLoopRetryUs(uint32_t trackId)
     FALSE_RETURN_V_MSG_E(sampleQueueMap_.count(trackId) > 0 && sampleQueueMap_[trackId] != nullptr, NEXT_DELAY_TIME_US,
         "sampleQueue " PUBLIC_LOG_D32 " is nullptr", trackId);
     uint64_t sampleDuration = sampleQueueMap_[trackId]->GetCacheDuration();
-    if (sampleDuration <= SAMPLE_FLOW_CONTROL_MIN_SAMPLE_DURATION) {
+    if (sampleDuration <= SAMPLE_FLOW_CONTROL_MIN_SAMPLE_DURATION_US) {
         return NEXT_DELAY_TIME_US;
     }
     return static_cast<int64_t>(sampleDuration >> SAMPLE_FLOW_CONTROL_RATE_POW);
