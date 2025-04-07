@@ -2124,15 +2124,25 @@ bool MediaDemuxer::SelectBitRateChangeStream(uint32_t trackId)
         
         int32_t newInnerTrackId = -1;
         int32_t newTrackId = -1;
-        demuxerPluginManager_->GetTrackInfoByStreamID(newStreamID, newTrackId, newInnerTrackId);
-        demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, newTrackId, newInnerTrackId);
+        if (isHlsFmp4_) {
+            demuxerPluginManager_->GetTrackInfoByStreamID(newStreamID, newTrackId, newInnerTrackId, TRACK_VIDEO);
+            demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, newTrackId, newInnerTrackId);
+            newInnerTrackId = -1;
+            newTrackId = -1;
+            demuxerPluginManager_->GetTrackInfoByStreamID(newStreamID, newTrackId, newInnerTrackId, TRACK_AUDIO);
+            demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, newTrackId, newInnerTrackId);
+        } else {
+            demuxerPluginManager_->GetTrackInfoByStreamID(newStreamID, newTrackId, newInnerTrackId);
+            demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, newTrackId, newInnerTrackId);
+        }
 
         MEDIA_LOG_I("Updata info");
         if (isHlsFmp4_) {
             InnerSelectTrack(static_cast<int32_t>(videoTrackId_));
             InnerSelectTrack(static_cast<int32_t>(audioTrackId_));
+        } else {
+            InnerSelectTrack(static_cast<int32_t>(trackId));
         }
-        InnerSelectTrack(static_cast<int32_t>(trackId));
         MEDIA_LOG_I("Out");
         return true;
     }
