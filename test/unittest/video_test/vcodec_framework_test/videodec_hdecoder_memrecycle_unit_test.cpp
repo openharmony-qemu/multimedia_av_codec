@@ -226,30 +226,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Freeze_003
- * @tc.desc: decoder is Prepared and freeze process
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_003, TestSize.Level1)
-{
-    auto testCode = GetParam();
-    CreateByNameWithParam(testCode);
-    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
-    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    PrepareSource(testCode);
-    format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-
-    if (testCode == VCodecTestCode::HW_HDR) {
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
-        SuspendFreeze();
-    }
-}
-
-/**
  * @tc.name: VideoDecoder_Hardware_Freeze_004
  * @tc.desc: decoder is Flush and freeze process
  * @tc.type: FUNC
@@ -309,31 +285,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     SuspendFreeze();
     SuspendActive();
-}
-
-/**
- * @tc.name: VideoDecoder_Hardware_Active_003
- * @tc.desc: active process of freeze and decoder is Prepared
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_003, TestSize.Level1)
-{
-    auto testCode = GetParam();
-    CreateByNameWithParam(testCode);
-    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
-    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    PrepareSource(testCode);
-    format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-
-    if (testCode == VCodecTestCode::HW_HDR) {
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
-        SuspendFreeze();
-        SuspendActive();
-    }
 }
 
 /**
@@ -415,31 +366,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Active_All_003
- * @tc.desc: active all process of freeze and decoder is Prepared
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_003, TestSize.Level1)
-{
-    auto testCode = GetParam();
-    CreateByNameWithParam(testCode);
-    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
-    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    PrepareSource(testCode);
-    format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-
-    if (testCode == VCodecTestCode::HW_HDR) {
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
-        SuspendFreeze();
-        SuspendActiveAll();
-    }
-}
-
-/**
  * @tc.name: VideoDecoder_Hardware_Active_All_004
  * @tc.desc: active all process of freeze and decoder is Executing
  * @tc.type: FUNC
@@ -515,6 +441,82 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_007, TestSize.Level1)
     SuspendFreeze();
     SuspendActive();
 }
+
+#ifdef HMOS_TEST
+/**
+ * @tc.name: VideoDecoder_Hardware_Freeze_003
+ * @tc.desc: decoder is Prepared and freeze process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_003, TestSize.Level1)
+{
+    auto testCode = GetParam();
+    CreateByNameWithParam(testCode);
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    PrepareSource(testCode);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+
+    if (testCode == VCodecTestCode::HW_HDR) {
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+        SuspendFreeze();
+    }
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Active_All_003
+ * @tc.desc: active all process of freeze and decoder is Prepared
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_003, TestSize.Level1)
+{
+    auto testCode = GetParam();
+    CreateByNameWithParam(testCode);
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    PrepareSource(testCode);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+
+    if (testCode == VCodecTestCode::HW_HDR) {
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+        SuspendFreeze();
+        SuspendActiveAll();
+    }
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Active_003
+ * @tc.desc: active process of freeze and decoder is Prepared
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_003, TestSize.Level1)
+{
+    auto testCode = GetParam();
+    CreateByNameWithParam(testCode);
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    PrepareSource(testCode);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+
+    if (testCode == VCodecTestCode::HW_HDR) {
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+        SuspendFreeze();
+        SuspendActive();
+    }
+}
+#endif // HMOS_TEST
 } // namespace
 
 int main(int argc, char **argv)
