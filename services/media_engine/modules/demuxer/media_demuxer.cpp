@@ -78,7 +78,7 @@ constexpr int32_t SAMPLE_BUFFER_SIZE_EXTRA = 128;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
-constexpr uint32_t LIMIT_MEMORY_REPORT_COUNT = 1024;
+constexpr uint32_t LIMIT_MEMORY_REPORT_COUNT = 1000;
 
 static const std::map<TrackType, DemuxerTrackType> TRACK_MAP = {
     {TrackType::TRACK_AUDIO, DemuxerTrackType::AUDIO},
@@ -3095,7 +3095,7 @@ void MediaDemuxer::GetMemoryUsage(uint32_t trackId, std::shared_ptr<Plugins::Dem
         memoryReportLimitCount_[trackId] = 1;
     } else {
         memoryReportLimitCount_[trackId]++;
-        FALSE_RETURN_NOLOG(memoryReportLimitCount_[trackId] & (LIMIT_MEMORY_REPORT_COUNT - 1) == 0);
+        FALSE_RETURN_NOLOG(memoryReportLimitCount_[trackId] % LIMIT_MEMORY_REPORT_COUNT == 0);
         ReportMemoryUsage(trackId, pluginTemp);
     }
 }
