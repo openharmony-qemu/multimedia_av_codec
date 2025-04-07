@@ -18,10 +18,10 @@
 #include <unistd.h>
 #include <vector>
 #include <thread>
+#include "av_codec_suspend.h"
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
 #include "vdec_sample.h"
-#include "i_avcodec_service.h"
 
 using namespace std;
 using namespace OHOS;
@@ -180,7 +180,7 @@ void SuspendFreeze()
 {
     pid_t pid = getpid();
     std::vector<pid_t> pidList = {pid};
-    auto ret = AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
@@ -188,14 +188,13 @@ void SuspendActive()
 {
     pid_t pid = getpid();
     std::vector<pid_t> pidList = {pid};
-    auto ret = AVCodecServiceFactory::GetInstance().SuspendActive(pidList);
+    auto ret = AVCodecSuspend::SuspendActive(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
 void SuspendActiveAll()
 {
-    pid_t pid = getpid();
-    auto ret = AVCodecServiceFactory::GetInstance().SuspendActiveAll();
+    auto ret = AVCodecSuspend::SuspendActiveAll();
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 

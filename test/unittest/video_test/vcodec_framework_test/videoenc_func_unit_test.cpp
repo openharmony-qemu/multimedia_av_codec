@@ -16,10 +16,10 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include "meta/meta_key.h"
+#include "av_codec_suspend.h"
 #include "unittest_utils.h"
 #include "codeclist_mock.h"
 #include "venc_sample.h"
-#include "i_avcodec_service.h"
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
@@ -1669,7 +1669,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Freeze_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
     std::vector<pid_t> pidList = {pid};
-    auto ret = AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
@@ -1688,9 +1688,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
     std::vector<pid_t> pidList = {pid};
-    auto ret = AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    ret = AVCodecServiceFactory::GetInstance().SuspendActive(pidList);
+    ret = AVCodecSuspend::SuspendActive(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
@@ -1709,9 +1709,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_All_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
     std::vector<pid_t> pidList = {pid};
-    auto ret = AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    ret = AVCodecServiceFactory::GetInstance().SuspendActiveAll();
+    ret = AVCodecSuspend::SuspendActiveAll();
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 } // namespace
