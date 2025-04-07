@@ -1962,7 +1962,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
 
     AVBufferConfig avBufferConfig;
     avBufferConfig.capacity = static_cast<int32_t>(size) + SAMPLE_BUFFER_SIZE_EXTRA;
-    avBufferConfig.size = size;
+    avBufferConfig.size = static_cast<int32_t>(size);
     Status ret = sampleQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
     if (ret != Status::OK) {
@@ -2974,7 +2974,7 @@ int64_t MediaDemuxer::SampleConsumerLoop(uint32_t trackId)
         SetTrackNotifySampleConsumerFlag(trackId, true);
         AVBufferConfig avBufferConfig;
         std::shared_ptr<AVBuffer> dstBuffer;
-        avBufferConfig.capacity = size;
+        avBufferConfig.capacity = static_cast<int32_t>(size);
         status = bufferQueue->RequestBuffer(dstBuffer, avBufferConfig, REQUEST_BUFFER_TIMEOUT);
         CHECK_AND_BREAK_LOG(status == Status::OK, "RequestBuffer from bufferQueue failed " PUBLIC_LOG_U32, trackId);
         SetTrackNotifySampleConsumerFlag(trackId, false);
