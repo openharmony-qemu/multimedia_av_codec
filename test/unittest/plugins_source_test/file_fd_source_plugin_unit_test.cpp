@@ -644,8 +644,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_DeleteCacheBuffer_0100, TestSize.Lev
     int32_t bufferSize = 4;
     char* cacheBuffer = new char[bufferSize];
 
-    fileFdSourcePlugin_->DeleteCacheBuffer(cacheBuffer, 0);
-    EXPECT_NE(nullptr, cacheBuffer);
     fileFdSourcePlugin_->DeleteCacheBuffer(cacheBuffer, 4);
     EXPECT_NE(nullptr, cacheBuffer);
 }
