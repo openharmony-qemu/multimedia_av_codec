@@ -25,7 +25,7 @@
 namespace {
 constexpr int32_t SUPPORT_CHANNELS = 1;
 constexpr int SUPPORT_SAMPLE_RATE = 8000;
-} // namespace
+}  // namespace
 
 using namespace std;
 using namespace testing::ext;
@@ -66,20 +66,21 @@ void G711EncPluginUnitTest::TearDown(void)
 
 /**
  * @tc.name: G711MuLawEncode_001
- * @tc.desc: nagative value
+ * @tc.desc: negative value
  * @tc.type: FUNC
  */
 HWTEST_F(G711EncPluginUnitTest, G711MuLawEncode_001, TestSize.Level1)
 {
     Format format;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     auto ret = g711EncPlugin_->Init(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 
-    ret = g711EncPlugin_->CheckSampleFormat();
+    ret = g711EncPlugin_->CheckFormat(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
+
     int16_t pcmValue = -3000; // negative value
     uint8_t result = g711EncPlugin_->G711MuLawEncode(pcmValue);
     EXPECT_EQ(result, 0x37);
@@ -93,143 +94,149 @@ HWTEST_F(G711EncPluginUnitTest, G711MuLawEncode_001, TestSize.Level1)
 HWTEST_F(G711EncPluginUnitTest, G711MuLawEncode_002, TestSize.Level1)
 {
     Format format;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     auto ret = g711EncPlugin_->Init(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 
-    ret = g711EncPlugin_->CheckSampleFormat();
+    ret = g711EncPlugin_->CheckFormat(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
+
     int16_t pcmValue = 0; // zero value
     uint8_t result = g711EncPlugin_->G711MuLawEncode(pcmValue);
     EXPECT_EQ(result, 0xFF);
 }
 
- /**
+/**
  * @tc.name: G711MuLawEncode_003
- * @tc.desc: positive value and LT AVCODEC_G711MU_CLIP
+ * @tc.desc: positive and LT AVCODEC_G711MU_CLIP
  * @tc.type: FUNC
  */
 HWTEST_F(G711EncPluginUnitTest, G711MuLawEncode_003, TestSize.Level1)
 {
     Format format;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     auto ret = g711EncPlugin_->Init(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 
-    ret = g711EncPlugin_->CheckSampleFormat();
+    ret = g711EncPlugin_->CheckFormat(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
-    int16_t pcmValue = 3000; // positive value and LT AVCODEC_G711MU_CLIP
+
+    int16_t pcmValue = 3000; // positive and LT AVCODEC_G711MU_CLIP
     uint8_t result = g711EncPlugin_->G711MuLawEncode(pcmValue);
     EXPECT_EQ(result, 0xB7);
 }
-
- /**
+/**
  * @tc.name: G711MuLawEncode_004
- * @tc.desc: positive value and GT AVCODEC_G711MU_CLIP
+ * @tc.desc: // positive and GT AVCODEC_G711MU_CLIP
  * @tc.type: FUNC
  */
 HWTEST_F(G711EncPluginUnitTest, G711MuLawEncode_004, TestSize.Level1)
 {
     Format format;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     auto ret = g711EncPlugin_->Init(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 
-    ret = g711EncPlugin_->CheckSampleFormat();
+    ret = g711EncPlugin_->CheckFormat(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
-    int16_t pcmValue = 10000; // positive value and GT AVCODEC_G711MU_CLIP
+
+    int16_t pcmValue = 10000; // positive and GT AVCODEC_G711MU_CLIP
     uint8_t result = g711EncPlugin_->G711MuLawEncode(pcmValue);
     EXPECT_EQ(result, 0x9C);
 }
 
- /**
+/**
  * @tc.name: G711MuLawEncode_005
- * @tc.desc: GT AVCODEC_G711MU_CLIP and LT AVCODEC_G711MU_SEG_END[7]
+ * @tc.desc: GT AVCODEC_G711MU_CLIP and LE AVCODEC_G711MU_SEG_END[7]
  * @tc.type: FUNC
  */
 HWTEST_F(G711EncPluginUnitTest, G711MuLawEncode_005, TestSize.Level1)
 {
     Format format;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     auto ret = g711EncPlugin_->Init(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 
-    ret = g711EncPlugin_->CheckSampleFormat();
+    ret = g711EncPlugin_->CheckFormat(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
-    int16_t pcmValue = 8500; // GT AVCODEC_G711MU_CLIP and LT AVCODEC_G711MU_SEG_END[7]
+
+    int16_t pcmValue = 8500; // GT AVCODEC_G711MU_CLIP and LE AVCODEC_G711MU_SEG_END[7]
     uint8_t result = g711EncPlugin_->G711MuLawEncode(pcmValue);
     EXPECT_EQ(result, 0x9F);
 }
 
- /**
+/**
  * @tc.name: G711MuLawEncode_006
- * @tc.desc: LT AVCODEC_G711MU_SEG_END[7], seg EQ 8
+ * @tc.desc: GT AVCODEC_G711MU_SEG_END[7], seg = 8
  * @tc.type: FUNC
  */
 HWTEST_F(G711EncPluginUnitTest, G711MuLawEncode_006, TestSize.Level1)
 {
     Format format;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     auto ret = g711EncPlugin_->Init(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 
-    ret = g711EncPlugin_->CheckSampleFormat();
+    ret = g711EncPlugin_->CheckFormat(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
-    int16_t pcmValue = 32670; // LT AVCODEC_G711MU_SEG_END[7], seg EQ 8
+
+    int16_t pcmValue = 32670; // GT AVCODEC_G711MU_SEG_END[7], seg EQ 8
     uint8_t result = g711EncPlugin_->G711MuLawEncode(pcmValue);
     EXPECT_EQ(result, 0x80);
 }
 
- /**
+/**
  * @tc.name: G711MuLawEncode_007
- * @tc.desc: EQ AVCODEC_G711MU_CLIP
+ * @tc.desc: AVCODEC_G711MU_CLIP
  * @tc.type: FUNC
  */
 HWTEST_F(G711EncPluginUnitTest, G711MuLawEncode_007, TestSize.Level1)
 {
     Format format;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     auto ret = g711EncPlugin_->Init(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 
-    ret = g711EncPlugin_->CheckSampleFormat();
+    ret = g711EncPlugin_->CheckFormat(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
+
     int16_t pcmValue = 8159; // EQ AVCODEC_G711MU_CLIP
     uint8_t result = g711EncPlugin_->G711MuLawEncode(pcmValue);
     EXPECT_EQ(result, 0x9F);
 }
 
- /**
+/**
  * @tc.name: G711MuLawEncode_008
- * @tc.desc: GT AVCODEC_G711MU_CLIP and LT LT AVCODEC_G711MU_SEG_END[7]
+ * @tc.desc: GT AVCODEC_G711MU_CLIP and LE AVCODEC_G711MU_SEG_END[8]
  * @tc.type: FUNC
  */
 HWTEST_F(G711EncPluginUnitTest, G711MuLawEncode_008, TestSize.Level1)
 {
     Format format;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SUPPORT_SAMPLE_RATE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, SUPPORT_CHANNELS);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     auto ret = g711EncPlugin_->Init(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 
-    ret = g711EncPlugin_->CheckSampleFormat();
+    ret = g711EncPlugin_->CheckFormat(format);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
-    int16_t pcmValue = 8200; // GT AVCODEC_G711MU_CLIP and LT LT AVCODEC_G711MU_SEG_END[7]
+
+    int16_t pcmValue = 8200; // GT AVCODEC_G711MU_CLIP and LE AVCODEC_G711MU_SEG_END[8]
     uint8_t result = g711EncPlugin_->G711MuLawEncode(pcmValue);
     EXPECT_EQ(result, 0x9F);
 }
-} // namespace MediaAVCodec
-} // namespace OHOS
+}  // namespace MediaAVCodec
+}  // namespace OHOS
