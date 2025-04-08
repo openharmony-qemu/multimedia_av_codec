@@ -23,6 +23,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSinkTest" };
 constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
+constexpr int64_t WARNING_TIME_MS = 60;
 }
 
 using namespace testing::ext;
@@ -53,6 +54,7 @@ public:
 
     Status Start() override
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(WARNING_TIME_MS));
         return Status::ERROR_UNKNOWN;
     };
 
@@ -63,11 +65,13 @@ public:
 
     Status PauseTransitent() override
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(WARNING_TIME_MS));
         return Status::ERROR_UNKNOWN;
     };
 
     Status Pause() override
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(WARNING_TIME_MS));
         return Status::ERROR_UNKNOWN;
     };
 
@@ -1321,6 +1325,23 @@ HWTEST(TestAudioSink, audio_sink_SetSeekTime_001, TestSize.Level1)
     int64_t seekTime = 0;
     auto ret = audioSink->SetSeekTime(seekTime);
     ASSERT_TRUE(ret == Status::OK);
+}
+
+HWTEST(TestAudioSink, UpdateLastBufferPTS_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    std::unique_ptr<AudioSink::AudioDataSynchroizer> innerSynchroizer =
+        std::make_unique<AudioSink::AudioDataSynchroizer>();
+    innerSynchroizer->curBufferPTS_ = 123;
+    innerSynchroizer->lastBufferOffset_ = 12;
+    innerSynchroizer->bufferDuration_ = 456;
+    innerSynchroizer->lastBufferPTS_ = 123456;
+    int64_t tempPTS =
+        innerSynchroizer->curBufferPTS_ + innerSynchroizer->lastBufferOffset_ + innerSynchroizer->bufferDuration_;
+    int64_t bufferOffset = 0;
+    float speed = 2;
+    innerSynchroizer->UpdateLastBufferPTS(bufferOffset, speed);
+    EXPECT_EQ(innerSynchroizer->lastBufferPTS_, tempPTS);
 }
 } // namespace Test
 } // namespace Media

@@ -73,6 +73,29 @@ HWTEST_F(AudioDecoderAdapterUnitTest, AudioDecoderAdapterUnitTest_Start, TestSiz
     EXPECT_EQ(ret, Status::OK);
 }
 
+/**
+ * @tc.name: AudioDecoderAdapterUnitTest_Start_Timeout
+ * @tc.desc: Start, isRunning_ true/false
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderAdapterUnitTest, AudioDecoderAdapterUnitTest_Start_Timeout, TestSize.Level1)
+{
+    std::shared_ptr<MockAVCodecAudioCodec> mockaudiocodec_ = std::make_shared<MockAVCodecAudioCodec>();
+    audioDecoderAdapter_->audiocodec_ = mockaudiocodec_;
+    audioDecoderAdapter_->OnDumpInfo(-1);
+    audioDecoderAdapter_->isRunning_ = true;
+    Status ret = audioDecoderAdapter_->Start();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_CALL(*mockaudiocodec_, Start())
+        .WillRepeatedly([]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(60));
+            return 0;
+        });
+    audioDecoderAdapter_->isRunning_ = false;
+    ret = audioDecoderAdapter_->Start();
+    EXPECT_EQ(ret, Status::OK);
+}
+
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

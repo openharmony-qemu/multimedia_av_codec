@@ -261,7 +261,7 @@ Status AudioSink::Start()
 {
     Status ret = Status::OK;
     {
-        ScopedTimer timer("Source InitPlugin", OVERTIME_WARNING_MS);
+        ScopedTimer timer("AudioSinkPlugin Start", OVERTIME_WARNING_MS);
         ret = plugin_->Start();
     }
     if (ret != Status::OK) {

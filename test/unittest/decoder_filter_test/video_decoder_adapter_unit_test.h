@@ -31,6 +31,8 @@
 
 namespace OHOS {
 namespace Media {
+constexpr int64_t WARNING_TIME_MS = 60;
+
 class VideoDecoderAdapterUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
@@ -107,6 +109,7 @@ public:
 
     virtual int32_t Start()
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(WARNING_TIME_MS));
         return status_;
     }
 

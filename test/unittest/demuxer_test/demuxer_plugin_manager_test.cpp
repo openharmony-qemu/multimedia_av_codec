@@ -429,5 +429,15 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetStreamIDByTrackType_001, TestSize.Leve
     EXPECT_EQ(demuxerPluginManager_->GetStreamIDByTrackType(trackType), -1);
 }
 
+HWTEST_F(DemuxerPluginManagerUnitTest, SnifferMediaType_Timeout, TestSize.Level1)
+{
+    int32_t streamId = 0;
+    EXPECT_CALL(*streamDemuxer_, SnifferMediaType(_))
+        .WillRepeatedly([](int32_t streamID) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            return "DEMUXER";
+        });
+    ASSERT_NE(demuxerPluginManager_->LoadDemuxerPlugin(streamId, streamDemuxer_), Status::OK);
+}
 }
 }

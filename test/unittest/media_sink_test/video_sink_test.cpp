@@ -298,6 +298,15 @@ HWTEST_F(TestVideoSink, GetLagInfo_001, TestSize.Level0)
     EXPECT_EQ(avgLagDuration, static_cast<int32_t>(videoSink_->lagDetector_.totalLagDuration_ /
         videoSink_->lagDetector_.lagTimes_));
 }
+
+HWTEST_F(TestVideoSink, ReportPts_001, TestSize.Level0)
+{
+    int64_t nowPts = 0;
+    int64_t lastPts = 2;
+    videoSink_->SetLastPts(lastPts, 0);
+    EXPECT_EQ(videoSink_->lastPts_, lastPts);
+    videoSink_->ReportPts(nowPts);
+}
 }  // namespace Test
 }  // namespace Media
 }  // namespace OHOS
