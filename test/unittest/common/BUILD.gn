@@ -140,6 +140,7 @@ ohos_source_set("av_codec_inner_unit_test") {
     "av_codec:av_codec_client",
     "bounds_checking_function:libsec_static",
     "c_utils:utils",
+    "eventhandler:libeventhandler",
     "graphic_2d:libgraphic_utils",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",

@@ -109,6 +109,7 @@ ohos_executable("av_codec_demo") {
 
   external_deps = [
     "c_utils:utils",
+    "eventhandler:libeventhandler",
     "ffmpeg:libohosffmpeg",
     "graphic_2d:libgraphic_utils",
     "graphic_2d:librender_service_client",
