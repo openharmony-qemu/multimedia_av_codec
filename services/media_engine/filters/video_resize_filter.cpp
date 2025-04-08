@@ -144,7 +144,7 @@ void VideoResizeFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             std::make_shared<ResizeDetailEnhancerVideoCallback>(shared_from_this());
         videoEnhancer_->RegisterCallback(detailEnhancerVideoCallback);
     } else {
-        MEDIA_LOG_I("Init videoEnhancer fail");
+        MEDIA_LOG_I("Create videoEnhancer fail");
         if (eventReceiver_) {
             eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
         }
@@ -180,7 +180,7 @@ Status VideoResizeFilter::Configure(const std::shared_ptr<Meta> &parameter)
     if (ret != 0) {
         MEDIA_LOG_E("videoEnhancer SetParameter fail");
         if (eventReceiver_) {
-            eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+            eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_PARAMS});
         }
         return Status::ERROR_UNKNOWN;
     } else {
@@ -422,8 +422,7 @@ Status VideoResizeFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, St
     if (ret != Status::OK && eventReceiver_) {
         eventReceiver_->OnEvent({"VideoResizeFilter::LinkNext error", EventType::EVENT_ERROR, MSERR_UNKNOWN});
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnLinked failed");
-    return Status::OK;
+    return ret;
 }
 
 Status VideoResizeFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -554,7 +553,7 @@ void VideoResizeFilter::OnVPEError(int32_t errorCode)
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "no eventReceiver_");
     FALSE_RETURN_NOLOG(isVPEReportError_ == false);
     isVPEReportError_ = true;
-    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_SOURCE});
 }
 #endif
 } // namespace Pipeline
