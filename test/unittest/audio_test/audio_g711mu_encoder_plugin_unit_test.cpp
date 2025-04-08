@@ -28,7 +28,7 @@ constexpr int SUPPORT_SAMPLE_RATE = 8000;
 } // namespace
 
 using namespace std;
-using namespace testing::test;
+using namespace testing::ext;
 
 namespace OHOS {
 namespace MediaAVCodec {
