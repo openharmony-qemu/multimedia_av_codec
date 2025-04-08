@@ -101,6 +101,7 @@ ohos_source_set("video_sample") {
     "access_token:libnativetoken_shared",
     "access_token:libtoken_setproc",
     "c_utils:utils",
+    "eventhandler:libeventhandler",
     "graphic_2d:libnative_image",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
