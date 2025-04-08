@@ -602,11 +602,20 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
     readDataInfo.realReadLength_ = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
     readOffset_ += readDataInfo.realReadLength_;
     ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
-
+    if (IsHlsFmp4() && readDataInfo.streamId_ > 0) {
+        size_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
+        if (remain > 0 && remain < DECRYPT_UNIT_LEN) {
+            size_t readRemain = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
+            readOffset_ += readRemain;
+            ffmpegOffset_ += readRemain;
+            readDataInfo.realReadLength_ += readRemain;
+        }
+    }
     if (tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
         tsStorageInfo_[readTsIndex_].second == true) {
         size_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
         if (readOffset_ >= tsEndOffset) {
+            RemoveFmp4PaddingData(buff, readDataInfo);
             cacheMediaBuffer_->ClearFragmentBeforeOffset(SpliceOffset(readTsIndex_, 0));
             readTsIndex_++;
             readOffset_ = SpliceOffset(readTsIndex_, 0);
@@ -630,6 +639,19 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
     canWrite_ = true;
 }
 
+void HlsMediaDownloader::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo)
+{
+    if (IsHlsFmp4() && readDataInfo.streamId_ > 0 && readDataInfo.realReadLength_ > 0) {
+        size_t endValue = buff[readDataInfo.realReadLength_ - 1];
+        size_t paddingStart = readDataInfo.realReadLength_ > endValue ?
+                              readDataInfo.realReadLength_ - endValue : 0;
+        if (buff[paddingStart] == endValue) {
+            readOffset_ -= endValue;
+            ffmpegOffset_ -= endValue;
+            readDataInfo.realReadLength_ -= endValue;
+        }
+    }
+}
 
 Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
@@ -711,6 +733,10 @@ void HlsMediaDownloader::PrepareToSeek()
     memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
     memset_s(decryptCache_, MIN_BUFFER_SIZE, 0x00, MIN_BUFFER_SIZE);
     memset_s(decryptBuffer_, MIN_BUFFER_SIZE, 0x00, MIN_BUFFER_SIZE);
+    auto ret = memcpy_s(iv_, DECRYPT_UNIT_LEN, initIv_, DECRYPT_UNIT_LEN);
+    if (ret != 0) {
+        MEDIA_LOG_E("iv copy error.");
+    }
     afterAlignRemainedLength_ = 0;
     isLastDecryptWriteError_ = false;
 }
@@ -1183,6 +1209,7 @@ void HlsMediaDownloader::OnSourceKeyChange(const uint8_t *key, size_t keyLen, co
         return;
     }
     NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
+    NZERO_LOG(memcpy_s(initIv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
     NZERO_LOG(memcpy_s(key_, DECRYPT_UNIT_LEN, key, keyLen));
     AES_set_decrypt_key(key_, DECRYPT_COPY_LEN, &aesKey_);
 }
@@ -1376,6 +1403,9 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const st
     {
         AutoLock lock(tsStorageInfoMutex_);
         tsStorageInfo_[writeTsIndex_].second = true;
+    }
+    if (keyLen_ > 0) {
+        NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, initIv_, DECRYPT_UNIT_LEN));
     }
     if (!playList_->Empty()) {
         writeTsIndex_++;

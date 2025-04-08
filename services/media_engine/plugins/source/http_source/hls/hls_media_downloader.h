@@ -172,6 +172,7 @@ private:
     void HandleSaveDataLoopContinue();
     bool ReadHeaderData(unsigned char* buff, ReadDataInfo& readDataInfo);
     void HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos);
+    void RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo);
 
 private:
     size_t totalBufferSize_ {0};
@@ -198,6 +199,7 @@ private:
     uint8_t key_[16] = {0};
     size_t keyLen_ {0};
     uint8_t iv_[16] = {0};
+    uint8_t initIv_[16] = {0};
     AES_KEY aesKey_;
     uint8_t decryptCache_[MIN_BUFFER_SIZE] {0};
     uint8_t decryptBuffer_[MIN_BUFFER_SIZE] {0};
