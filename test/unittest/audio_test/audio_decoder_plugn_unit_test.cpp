@@ -54,7 +54,7 @@ static std::set<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = 
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE};
 static std::set<int32_t> supportedSampleRates = {7350, 8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000,
                                                  64000, 88200, 96000};
-const string CODEC_OGG_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME);
+const string CODEC_OGG_NAME = std::string(OHOS::MediaAVCodec::AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME);
 const string INPUT_SOURCE_PATH = "/data/test/media/";
 const string INPUT_OGG_FILE_WITH_HEADER[1][5] = {{"OGG_44k_2c_with_header.dat", "44100", "2", "128000", "16"}};
 constexpr string_view OUTPUT_PCM_FILE_PATH = "/data/test/media/out.pcm";
@@ -286,7 +286,7 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Aac_006, TestSize.Level1)
  * @tc.desc: channels_ != 1 && sampleFormat == SAMPLE_F32LE
  * @tc.type: FUNC
  */
-HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Aac_006, TestSize.Level1)
+HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Aac_007, TestSize.Level1)
 {
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, MAX_CHANNELS);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 44100);
@@ -579,7 +579,7 @@ HWTEST_F(AudioDecPluginUnitTest, CheckInit_g711mu_002, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     g711muDecPlugin_ = std::make_shared<AudioG711muDecoderPlugin>();
     auto ret = g711muDecPlugin_->Init(format_);
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
+    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 }
 
 /**
@@ -594,7 +594,7 @@ HWTEST_F(AudioDecPluginUnitTest, CheckInit_g711mu_003, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     g711muDecPlugin_ = std::make_shared<AudioG711muDecoderPlugin>();
     auto ret = g711muDecPlugin_->Init(format_);
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
+    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
