@@ -21,7 +21,7 @@
 #include "audio_buffer_info.h"
 
 using namespace std;
-using namespace testing::test;
+using namespace testing::ext;
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -80,7 +80,7 @@ HWTEST_F(AudioResampleUnitTest, InitSwrContext_002, TestSize.Level1)
     para.sampleRate = 44100;
     para.srcFmt = AV_SAMPLE_FMT_S16;
     para.destFmt = AV_SAMPLE_FMT_S16;
-    para.channelLayout = 2; // STEREO
+    para.channels = 2; // STEREO
     para.destSamplesPerFrame = 1024;
 
     int32_t ret = audioResample_->InitSwrContext(para);
@@ -98,7 +98,7 @@ HWTEST_F(AudioResampleUnitTest, Init_001, TestSize.Level1)
     para.sampleRate = 44100;
     para.srcFmt = AV_SAMPLE_FMT_S16;
     para.destFmt = AV_SAMPLE_FMT_S16;
-    para.channelLayout = 2; // STEREO
+    para.channels = 2; // STEREO
     para.destSamplesPerFrame = 1024;
 
     int32_t ret = audioResample_->Init(para);
@@ -106,11 +106,11 @@ HWTEST_F(AudioResampleUnitTest, Init_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: ComvertFrame_001
- * @tc.desc: ComvertFrame failed
+ * @tc.name: ConvertFrame_001
+ * @tc.desc: ConvertFrame failed
  * @tc.type: FUNC
  */
-HWTEST_F(AudioResampleUnitTest, ComvertFrame_001, TestSize.Level1)
+HWTEST_F(AudioResampleUnitTest, ConvertFrame_001, TestSize.Level1)
 {
     auto outputFrame = nullptr;
     auto inputFrame = nullptr;
