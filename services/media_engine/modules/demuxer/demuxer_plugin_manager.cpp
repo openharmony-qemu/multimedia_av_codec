@@ -264,6 +264,20 @@ void DemuxerPluginManager::GetTrackInfoByStreamID(int32_t streamID, int32_t& tra
     return;
 }
 
+void DemuxerPluginManager::GetTrackInfoByStreamID(int32_t streamID, int32_t& trackId,
+    int32_t& innerTrackId, TrackType type)
+{
+    auto iter = std::find_if(trackInfoMap_.begin(), trackInfoMap_.end(),
+        [&](const std::pair<int32_t, MediaTrackMap> &item) {
+        return item.second.streamID == streamID && GetTrackTypeByTrackID(item.first) == type;
+    });
+    if (iter != trackInfoMap_.end()) {
+        trackId = iter->first;
+        innerTrackId = iter->second.innerTrackIndex;
+    }
+    return;
+}
+
 Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr<BaseStreamDemuxer> streamDemuxer)
 {
     if (streamID == INVALID_STREAM_OR_TRACK_ID) {
