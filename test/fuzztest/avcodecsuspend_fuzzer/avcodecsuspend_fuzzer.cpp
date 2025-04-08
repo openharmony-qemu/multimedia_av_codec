@@ -40,7 +40,10 @@ bool AvcodecSuspend001FuzzTest(const uint8_t *data, size_t size)
     size_t length = size / sizeof(pid_t);
     size_t copyLength = length * sizeof(pid_t);
     std::vector<pid_t> pidFuzz(length);
-    memcpy_s(pidFuzz.data(), copyLength, data, copyLength);
+    errno_t result = memcpy_s(pidFuzz.data(), copyLength, data, copyLength);
+    if (result != 0) {
+        return false;
+    }
     MediaAVCodec::AVCodecSuspend::SuspendFreeze(pidFuzz);
     MediaAVCodec::AVCodecSuspend::SuspendActive(pidFuzz);
     MediaAVCodec::AVCodecSuspend::SuspendFreeze(pid);
@@ -57,7 +60,10 @@ bool AvcodecSuspend002FuzzTest(const uint8_t *data, size_t size)
     size_t length = size / sizeof(pid_t);
     size_t copyLength = length * sizeof(pid_t);
     std::vector<pid_t> pidFuzz(length);
-    memcpy_s(pidFuzz.data(), copyLength, data, copyLength);
+    errno_t result = memcpy_s(pidFuzz.data(), copyLength, data, copyLength);
+    if (result != 0) {
+        return false;
+    }
     std::vector<pid_t> pid;
     pid_t pid0 = getpid();
     pid.push_back(pid0);
