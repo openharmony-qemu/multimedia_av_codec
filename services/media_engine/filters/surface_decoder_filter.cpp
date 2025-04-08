@@ -158,7 +158,7 @@ Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Configure fail");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE});
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_PARAMS});
         }
     }
     return ret;
