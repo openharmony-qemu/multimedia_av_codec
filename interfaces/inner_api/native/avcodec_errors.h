@@ -90,7 +90,6 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_TRY_AGAIN,                                    // try again later
     AVCS_ERR_INPUT_DATA_ERROR,                             // there is somthing wrong for input data
     AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,       // video unsupport color space conversion
-    AVCS_ERR_PLATFORM_NOT_SUPPORT,                         // platform not support
 
     AVCS_ERR_EXTEND_START = AVCS_ERR_OFFSET + 0xF000,      // extend err start.
 } AVCodecServiceErrCode;

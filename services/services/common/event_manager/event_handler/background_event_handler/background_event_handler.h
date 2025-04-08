@@ -25,16 +25,17 @@ namespace MediaAVCodec {
 class BackGroundEventHandler {
 public:
     static BackGroundEventHandler &GetInstance();
-    BackGroundEventHandler();
-    ~BackGroundEventHandler() = default;
     void NotifyFrozen(const std::vector<int32_t> &pidList);
     void NotifyActive(const std::vector<int32_t> &pidList);
     void NotifyActiveAll();
 
 private:
+    BackGroundEventHandler();
+    ~BackGroundEventHandler() = default;
+
     std::mutex mutex_;
     std::unordered_set<pid_t> frozenPidList_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif //BACKGROUND_EVENT_HANDLER_H
+#endif // BACKGROUND_EVENT_HANDLER_H
