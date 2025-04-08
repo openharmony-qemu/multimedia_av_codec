@@ -416,9 +416,9 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Vorbis_001, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, stoi(INPUT_OGG_FILE_WITH_HEADER[0][3]));
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, MIN_CHANNELS);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32LE);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
     auto ret = vorbisDecPlugin_->Init(format_);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 }
 
 /**
@@ -435,9 +435,9 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Vorbis_002, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, stoi(INPUT_OGG_FILE_WITH_HEADER[0][3]));
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, MIN_CHANNELS);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
     auto ret = vorbisDecPlugin_->Init(format_);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 }
 
 /**
@@ -454,9 +454,9 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Vorbis_003, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, stoi(INPUT_OGG_FILE_WITH_HEADER[0][3]));
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, MAX_CHANNELS);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32LE);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
     auto ret = vorbisDecPlugin_->Init(format_);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 }
 
 /**
@@ -473,9 +473,9 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Vorbis_004, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, stoi(INPUT_OGG_FILE_WITH_HEADER[0][3]));
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, MAX_CHANNELS);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
     auto ret = vorbisDecPlugin_->Init(format_);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 }
 
 /**
@@ -491,7 +491,7 @@ HWTEST_F(AudioDecPluginUnitTest, CheckChannelCount_Vorbis_001, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, stoi(INPUT_OGG_FILE_WITH_HEADER[0][1]));
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, stoi(INPUT_OGG_FILE_WITH_HEADER[0][3]));
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32LE);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
     auto ret = vorbisDecPlugin_->Init(format_);
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 }
@@ -509,7 +509,7 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleRate_Vorbis_001, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, stoi(INPUT_OGG_FILE_WITH_HEADER[0][3]));
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, MAX_CHANNELS);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32LE);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
     auto ret = vorbisDecPlugin_->Init(format_);
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 }
@@ -528,7 +528,7 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleRate_Vorbis_002, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, stoi(INPUT_OGG_FILE_WITH_HEADER[0][3]));
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, MAX_CHANNELS);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32LE);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
     auto ret = vorbisDecPlugin_->Init(format_);
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 }
@@ -547,7 +547,7 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleRate_Vorbis_003, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, stoi(INPUT_OGG_FILE_WITH_HEADER[0][3]));
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, MAX_CHANNELS);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32LE);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitOggFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
     auto ret = vorbisDecPlugin_->Init(format_);
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 }
