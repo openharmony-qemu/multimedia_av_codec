@@ -407,6 +407,12 @@ Status DecoderSurfaceFilter::DoPause()
     return Status::OK;
 }
 
+void DecoderSurfaceFilter::NotifyAudioComplete()
+{
+    FALSE_RETURN(videoSink_ != nullptr);
+    videoSink_->ResetSyncInfo();
+}
+
 Status DecoderSurfaceFilter::DoPauseDragging()
 {
     MEDIA_LOG_I("DoPauseDragging enter.");
