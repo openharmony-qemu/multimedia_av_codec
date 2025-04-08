@@ -39,12 +39,12 @@ namespace {
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
 constexpr int32_t DEFAULT_AAC_TYPE = 1;
-constexpr int32_t AMRNB_SUPORT_CHANNELS = 1;
-constexpr int32_t AMRWB_SUPORT_CHANNELS = 1;
-constexpr int32_t G711MU_SUPORT_CHANNELS = 1;
-constexpr int32_t AMRNB_SUPORT_SAMPLE_RATE = 8000;
-constexpr int32_t AMRWB_SUPORT_SAMPLE_RATE = 16000;
-constexpr int32_t G711MU_SUPORT_SAMPLE_RATE = 8000;
+constexpr int32_t AMRNB_SUPPORT_CHANNELS = 1;
+constexpr int32_t AMRWB_SUPPORT_CHANNELS = 1;
+constexpr int32_t G711MU_SUPPORT_CHANNELS = 1;
+constexpr int32_t AMRNB_SUPPORT_SAMPLE_RATE = 8000;
+constexpr int32_t AMRWB_SUPPORT_SAMPLE_RATE = 16000;
+constexpr int32_t G711MU_SUPPORT_SAMPLE_RATE = 8000;
 
 static std::set<int32_t> supportedSampleRate = {96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000,
                                                 11025, 8000, 7350};
@@ -319,8 +319,8 @@ HWTEST_F(AudioDecPluginUnitTest, CheckChannelCount_Aac_001, TestSize.Level1)
  */
 HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Amrnb_001, TestSize.Level1)
 {
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRNB_SUPORT_CHANNELS);
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRNB_SUPORT_SAMPLE_RATE);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRNB_SUPPORT_CHANNELS);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRNB_SUPPORT_SAMPLE_RATE);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32LE);
     amrnbDecPlugin_ = std::make_shared<AudioFFMpegAmrnbDecoderPlugin>();
     auto ret = amrnbDecPlugin_->Init(format_);
@@ -334,8 +334,8 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Amrnb_001, TestSize.Level1)
  */
 HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Amrnb_002, TestSize.Level1)
 {
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRNB_SUPORT_CHANNELS);
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRNB_SUPORT_SAMPLE_RATE);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRNB_SUPPORT_CHANNELS);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRNB_SUPPORT_SAMPLE_RATE);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     amrnbDecPlugin_ = std::make_shared<AudioFFMpegAmrnbDecoderPlugin>();
     auto ret = amrnbDecPlugin_->Init(format_);
@@ -349,8 +349,8 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Amrnb_002, TestSize.Level1)
  */
 HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Amrnb_003, TestSize.Level1)
 {
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRNB_SUPORT_CHANNELS);
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRNB_SUPORT_SAMPLE_RATE);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRNB_SUPPORT_CHANNELS);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRNB_SUPPORT_SAMPLE_RATE);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16P);
     amrnbDecPlugin_ = std::make_shared<AudioFFMpegAmrnbDecoderPlugin>();
     auto ret = amrnbDecPlugin_->Init(format_);
@@ -364,8 +364,8 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Amrnb_003, TestSize.Level1)
  */
 HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Amrwb_001, TestSize.Level1)
 {
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRWB_SUPORT_CHANNELS);
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRWB_SUPORT_SAMPLE_RATE);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRWB_SUPPORT_CHANNELS);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRWB_SUPPORT_SAMPLE_RATE);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32LE);
     amrwbDecPlugin_ = std::make_shared<AudioFFMpegAmrwbDecoderPlugin>();
     auto ret = amrwbDecPlugin_->Init(format_);
@@ -379,8 +379,8 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Amrwb_001, TestSize.Level1)
  */
 HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Amrwb_002, TestSize.Level1)
 {
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRNB_SUPORT_CHANNELS);
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRWB_SUPORT_SAMPLE_RATE);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRNB_SUPPORT_CHANNELS);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRWB_SUPPORT_SAMPLE_RATE);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     amrwbDecPlugin_ = std::make_shared<AudioFFMpegAmrwbDecoderPlugin>();
     auto ret = amrwbDecPlugin_->Init(format_);
@@ -394,8 +394,8 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Amrwb_002, TestSize.Level1)
  */
 HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_Amrwb_003, TestSize.Level1)
 {
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRNB_SUPORT_CHANNELS);
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRWB_SUPORT_SAMPLE_RATE);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, AMRNB_SUPPORT_CHANNELS);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, AMRWB_SUPPORT_SAMPLE_RATE);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16P);
     amrwbDecPlugin_ = std::make_shared<AudioFFMpegAmrwbDecoderPlugin>();
     auto ret = amrwbDecPlugin_->Init(format_);
@@ -559,8 +559,8 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleRate_Vorbis_003, TestSize.Level1)
  */
 HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_G711mu_001, TestSize.Level1)
 {
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, G711MU_SUPORT_CHANNELS);
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, G711MU_SUPORT_SAMPLE_RATE);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, G711MU_SUPPORT_CHANNELS);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, G711MU_SUPPORT_SAMPLE_RATE);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     g711muDecPlugin_ = std::make_shared<AudioG711muDecoderPlugin>();
     auto ret = g711muDecPlugin_->Init(format_);
@@ -575,7 +575,7 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_G711mu_001, TestSize.Level1)
 HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_G711mu_001, TestSize.Level1)
 {
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 2); // unsupported channelcount
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, G711MU_SUPORT_SAMPLE_RATE);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, G711MU_SUPPORT_SAMPLE_RATE);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     g711muDecPlugin_ = std::make_shared<AudioG711muDecoderPlugin>();
     auto ret = g711muDecPlugin_->Init(format_);
@@ -589,7 +589,7 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_G711mu_001, TestSize.Level1)
  */
 HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_G711mu_001, TestSize.Level1)
 {
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, G711MU_SUPORT_CHANNELS);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, G711MU_SUPPORT_CHANNELS);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 192000); // unsupported samplerate
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
     g711muDecPlugin_ = std::make_shared<AudioG711muDecoderPlugin>();
