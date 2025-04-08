@@ -50,7 +50,6 @@ struct HeaderInfo {
     bool isChunked {false};
     std::atomic<bool> isClosed {false};
     bool isServerAcceptRange {false};
-    bool isValidContentType {true};
 
     void Update(const HeaderInfo* info)
     {
@@ -128,6 +127,14 @@ public:
     {
         return isAuthRequest_;
     }
+    void SetIsIndexM3u8Request(bool isIndexM3u8Request)
+    {
+        isIndexM3u8Request_ = isIndexM3u8Request;
+    }
+    bool IsIndexM3u8Request() const
+    {
+        return isIndexM3u8Request_;
+    }
     bool IsClosed() const;
     void Close();
     double GetDuration() const;
@@ -177,6 +184,7 @@ private:
     int64_t dropedDataLen_ {0};
     std::atomic<bool> isFirstRangeRequestReady_ {false};
     bool isM3u8Request_ {false};
+    bool isIndexM3u8Request_ {false};
     bool isAuthRequest_ {false};
     RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
 };
@@ -226,7 +234,6 @@ private:
     void PauseLoop(bool isAsync = false);
     void WaitLoopPause();
     void NotifyLoopPause();
-    void ResetContentType();
     void HandleRetErrorCode();
     void DonwloaderInit(const std::string& name);
     void OpenAppUri();

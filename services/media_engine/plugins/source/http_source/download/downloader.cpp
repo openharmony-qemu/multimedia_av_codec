@@ -44,7 +44,6 @@ constexpr int SERVER_RANGE_ERROR_CODE = 416;
 constexpr int32_t LOOP_LOG_FEQUENCE = 50;
 constexpr int REQUEST_OFTEN_ERROR_CODE = 500;
 constexpr int SLEEP_TEN_MICRO_SEC = 10; // 10ms
-const std::string INVALID_CONTENT_TYPES[] = {"text/html", "application/json"};
 constexpr int APP_OPEN_RETRY_TIMES = 10;
 constexpr int32_t REDIRECT_CODE = 302;
 }
@@ -522,15 +521,6 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
     return true;
 }
 
-void Downloader::ResetContentType()
-{
-    if (currentRequest_ && !currentRequest_->headerInfo_.isValidContentType) {
-        currentRequest_->headerInfo_.isValidContentType = true;
-        size_t sizeOfType = sizeof(currentRequest_->headerInfo_.contentType);
-        memset_s(currentRequest_->headerInfo_.contentType, sizeOfType, 0, sizeOfType);
-    }
-}
-
 std::string GetSystemParam(const std::string &key)
 {
     char value[MAX_LEN] = {0};
@@ -710,7 +700,6 @@ void Downloader::RequestData()
             currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
         }
     };
-    ResetContentType();
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData enter.", FAKE_POINTER(this));
     client_->RequestData(startPos, currentRequest_->requestSize_, sourceInfo, handleResponseCb);
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData end.", FAKE_POINTER(this));
@@ -904,9 +893,6 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
 {
     auto mediaDownloader = static_cast<Downloader *>(userParam);
     size_t dataLen = size * nitems;
-    if (!mediaDownloader->currentRequest_->headerInfo_.isValidContentType) {
-        return dataLen;
-    }
     int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
     int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
 
@@ -921,7 +907,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
     mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
  
-    if (IsDropDataRetryRequest(mediaDownloader)) {
+    if (IsDropDataRetryRequest(mediaDownloader) && !mediaDownloader->currentRequest_->IsIndexM3u8Request()) {
         return DropRetryData(buffer, dataLen, mediaDownloader);
     }
     HeaderInfo* header = &(mediaDownloader->currentRequest_->headerInfo_);
@@ -1005,15 +991,6 @@ bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size
         std::string tokenStr = (std::string)token;
         MEDIA_LOG_I("Content-Type: " PUBLIC_LOG_S, tokenStr.c_str());
         NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, strlen(type)));
-        info->isValidContentType = true;
-        for (const auto &contentType : INVALID_CONTENT_TYPES) {
-            if (!tokenStr.empty() && tokenStr.find(contentType) != std::string::npos &&
-                !mediaDownloader->currentRequest_->IsAuthRequest()) {
-                info->isValidContentType = false;
-                MEDIA_LOG_E("invalid content type.");
-                break;
-            }
-        }
     }
     return true;
 }
