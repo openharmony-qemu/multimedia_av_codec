@@ -409,6 +409,7 @@ Status DecoderSurfaceFilter::DoPause()
 
 void DecoderSurfaceFilter::NotifyAudioComplete()
 {
+    FALSE_RETURN(videoSink_ != nullptr);
     videoSink_->ResetSyncInfo();
 }
 
