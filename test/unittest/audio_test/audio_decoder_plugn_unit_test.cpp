@@ -21,6 +21,7 @@
 #include "audio_g711mu_decoder_plugin.h"
 #include <set>
 #include <fstream>
+#include "media_description.h"
 #include "avcodec_trace.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -33,7 +34,7 @@
 #include "avcodec_audio_decoder.h"
 
 using namespace std;
-using namespace testing::test;
+using namespace testing::ext;
 
 namespace {
 constexpr int32_t MIN_CHANNELS = 1;
@@ -93,7 +94,6 @@ void AudioDecPluginUnitTest::TearDownTestCase(void)
 
 void AudioDecPluginUnitTest::SetUp(void)
 {
-    audioResample_ = std::make_shared<AudioResample>();
     cout << "[SetUp]: SetUp!!!" << endl;
 }
 
@@ -553,11 +553,11 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleRate_Vorbis_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: CheckSampleFormat_G711mu_001
+ * @tc.name: CheckInit_g711mu_001
  * @tc.desc: CheckInit success
  * @tc.type: FUNC
  */
-HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_G711mu_001, TestSize.Level1)
+HWTEST_F(AudioDecPluginUnitTest, CheckInit_g711mu_001, TestSize.Level1)
 {
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, G711MU_SUPPORT_CHANNELS);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, G711MU_SUPPORT_SAMPLE_RATE);
@@ -568,11 +568,11 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_G711mu_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: CheckSampleFormat_G711mu_002
+ * @tc.name: CheckInit_g711mu_002
  * @tc.desc: unsupported channelcount
  * @tc.type: FUNC
  */
-HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_G711mu_001, TestSize.Level1)
+HWTEST_F(AudioDecPluginUnitTest, CheckInit_g711mu_002, TestSize.Level1)
 {
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 2); // unsupported channelcount
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, G711MU_SUPPORT_SAMPLE_RATE);
@@ -583,11 +583,11 @@ HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_G711mu_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: CheckSampleFormat_G711mu_001
+ * @tc.name: CheckInit_g711mu_003
  * @tc.desc: unsupported samplerate
  * @tc.type: FUNC
  */
-HWTEST_F(AudioDecPluginUnitTest, CheckSampleFormat_G711mu_001, TestSize.Level1)
+HWTEST_F(AudioDecPluginUnitTest, CheckInit_g711mu_003, TestSize.Level1)
 {
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, G711MU_SUPPORT_CHANNELS);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 192000); // unsupported samplerate
