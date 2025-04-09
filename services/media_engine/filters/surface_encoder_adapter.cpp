@@ -431,7 +431,7 @@ Status SurfaceEncoderAdapter::Resume()
     }
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
     GetCurrentTime(resumeTime_);
-    FALSE_RETURN_V_MSG(pauseTime_ > 0, Status::ERROR_UNKNOWN, "GetCurrentTime resumeTime_ <= 0");
+    FALSE_RETURN_V_MSG(resumeTime_ > 0, Status::ERROR_UNKNOWN, "GetCurrentTime resumeTime_ <= 0");
     MEDIA_LOG_I("resume time: " PUBLIC_LOG_D64, resumeTime_);
     if (pauseResumeQueue_.empty()) {
         MEDIA_LOG_I("Status Error, no pause before resume");
