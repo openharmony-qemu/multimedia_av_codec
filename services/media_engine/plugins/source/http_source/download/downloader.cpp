@@ -838,7 +838,7 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
         MEDIA_LOG_I("drop data finished, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
     }
     if (!dropRet && mediaDownloader->sourceLoader_ != nullptr) {
-        mediaDownloader->currentRequest_->startPos_ += writeLen;
+        mediaDownloader->currentRequest_->startPos_ += static_cast<int64_t>(writeLen);
         mediaDownloader->PauseLoop(true);
         mediaDownloader->currentRequest_->retryOnGoing_ = true;
         mediaDownloader->currentRequest_->dropedDataLen_ = 0;

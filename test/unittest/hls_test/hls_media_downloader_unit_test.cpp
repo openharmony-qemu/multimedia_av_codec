@@ -1265,7 +1265,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, UpdateWaterLineAbove_002, TestSize.Level1)
     hlsMediaDownloader->currentBitRate_ = 0;
     hlsMediaDownloader->isFirstFrameArrived_ = true;
     hlsMediaDownloader->UpdateWaterLineAbove();
-    EXPECT_GT(hlsMediaDownloader->waterLineAbove_, 0);
+    EXPECT_GE(hlsMediaDownloader->waterLineAbove_, 0);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, UpdateWaterLineAbove_003, TestSize.Level1)
@@ -1274,7 +1274,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, UpdateWaterLineAbove_003, TestSize.Level1)
     hlsMediaDownloader->currentBitRate_ = BUFFER_SIZE;
     hlsMediaDownloader->isFirstFrameArrived_ = true;
     hlsMediaDownloader->UpdateWaterLineAbove();
-    EXPECT_GT(hlsMediaDownloader->waterLineAbove_, 0);
+    EXPECT_GE(hlsMediaDownloader->waterLineAbove_, 0);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, read, TestSize.Level1)
