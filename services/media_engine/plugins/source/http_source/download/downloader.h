@@ -231,6 +231,7 @@ private:
     static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
     static void HandleFileContentLen(HeaderInfo* header);
     static void UpdateRequestSize(Downloader* mediaDownloader);
+    static void ToLower(char* str);
     void PauseLoop(bool isAsync = false);
     void WaitLoopPause();
     void NotifyLoopPause();
