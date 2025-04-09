@@ -101,7 +101,7 @@ ohos_unittest("decoder_filter_unit_test") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "graphic_surface:surface_static",
-    "graphic_surface:sync_fence_static",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
