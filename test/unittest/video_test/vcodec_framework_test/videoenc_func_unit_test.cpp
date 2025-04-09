@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include "meta/meta_key.h"
+#include "avcodec_suspend.h"
 #include "unittest_utils.h"
 #include "codeclist_mock.h"
 #include "venc_sample.h"
@@ -1651,6 +1652,67 @@ HWTEST_P(TEST_SUIT, VideoEncoder_HRDVivid2SDR_004, TestSize.Level1)
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_Hardware_Freeze_001
+ * @tc.desc: encoder is Flush and freeze process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Freeze_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
+    pid_t pid = getpid();
+    std::vector<pid_t> pidList = {pid};
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.name: VideoEncoder_Hardware_Active_001
+ * @tc.desc: active process of freeze and encoder is Flush
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
+    pid_t pid = getpid();
+    std::vector<pid_t> pidList = {pid};
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = AVCodecSuspend::SuspendActive(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.name: VideoEncoder_Hardware_Active_All_001
+ * @tc.desc: active all process of freeze and decoder is Flush
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_All_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
+    pid_t pid = getpid();
+    std::vector<pid_t> pidList = {pid};
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = AVCodecSuspend::SuspendActiveAll();
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 } // namespace
 
