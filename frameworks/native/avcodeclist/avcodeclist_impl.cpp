@@ -204,14 +204,5 @@ void *AVCodecListImpl::NewBuffer(size_t bufSize)
     bufAddrSet_.insert(temp);
     return static_cast<void *>(temp);
 }
-
-void AVCodecListImpl::DeleteBuffer(void *bufAddr)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_LOG(bufAddr != nullptr, "bufAddr is nullptr!");
-    uint8_t *temp = static_cast<uint8_t *>(bufAddr);
-    bufAddrSet_.erase(temp);
-    delete[] temp;
-}
 } // namespace MediaAVCodec
 } // namespace OHOS
