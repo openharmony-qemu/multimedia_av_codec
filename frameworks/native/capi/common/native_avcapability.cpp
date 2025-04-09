@@ -49,10 +49,6 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
     OH_AVCapability *obj = static_cast<OH_AVCapability *>(addr);
     obj->magic_ = AVMagic::AVCODEC_MAGIC_AVCAPABILITY;
     obj->capabilityData_ = capabilityData;
-    obj->profiles_ = nullptr;
-    obj->levels_ = nullptr;
-    obj->pixFormats_ = nullptr;
-    obj->sampleRates_ = nullptr;
     AVCODEC_LOGD("OH_AVCodec_GetCapability successful");
     return obj;
 }
@@ -86,10 +82,6 @@ OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEnc
     OH_AVCapability *obj = static_cast<OH_AVCapability *>(addr);
     obj->magic_ = AVMagic::AVCODEC_MAGIC_AVCAPABILITY;
     obj->capabilityData_ = capabilityData;
-    obj->profiles_ = nullptr;
-    obj->levels_ = nullptr;
-    obj->pixFormats_ = nullptr;
-    obj->sampleRates_ = nullptr;
     AVCODEC_LOGD("OH_AVCodec_GetCapabilityByCategory successful");
     return obj;
 }
@@ -136,18 +128,13 @@ OH_AVErrCode OH_AVCapability_GetSupportedProfiles(OH_AVCapability *capability, c
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
     CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, AV_ERR_UNKNOWN,
         "Get supported profiles failed: CreateAVCodecList failed");
-    if (capability->profiles_ != nullptr) {
-        codeclist->DeleteBuffer(capability->profiles_);
-        capability->profiles_ = nullptr;
-    }
-
     size_t vecSize = vec.size() * sizeof(int32_t);
-    capability->profiles_ = static_cast<int32_t *>(codeclist->NewBuffer(vecSize));
-    CHECK_AND_RETURN_RET_LOG(capability->profiles_ != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
-    errno_t ret = memcpy_s(capability->profiles_, vecSize, vec.data(), vecSize);
+    int32_t *buf = static_cast<int32_t *>(codeclist->NewBuffer(vecSize));
+    CHECK_AND_RETURN_RET_LOG(buf != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
+    errno_t ret = memcpy_s(buf, vecSize, vec.data(), vecSize);
     CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_UNKNOWN, "memcpy_s failed");
 
-    *profiles = capability->profiles_;
+    *profiles = buf;
     *profileNum = vec.size();
     return AV_ERR_OK;
 }
@@ -175,18 +162,13 @@ OH_AVErrCode OH_AVCapability_GetSupportedLevelsForProfile(OH_AVCapability *capab
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
     CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, AV_ERR_UNKNOWN,
         "Get supported levels for profile failed: CreateAVCodecList failed");
-    if (capability->levels_ != nullptr) {
-        codeclist->DeleteBuffer(capability->levels_);
-        capability->levels_ = nullptr;
-    }
-
     size_t vecSize = vec.size() * sizeof(int32_t);
-    capability->levels_ = static_cast<int32_t *>(codeclist->NewBuffer(vecSize));
-    CHECK_AND_RETURN_RET_LOG(capability->levels_ != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
-    errno_t ret = memcpy_s(capability->levels_, vecSize, vec.data(), vecSize);
+    int32_t *buf = static_cast<int32_t *>(codeclist->NewBuffer(vecSize));
+    CHECK_AND_RETURN_RET_LOG(buf != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
+    errno_t ret = memcpy_s(buf, vecSize, vec.data(), vecSize);
     CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_UNKNOWN, "memcpy_s failed");
 
-    *levels = capability->levels_;
+    *levels = buf;
     *levelNum = vec.size();
     return AV_ERR_OK;
 }
@@ -295,18 +277,13 @@ OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRates(OH_AVCapability *capab
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
     CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, AV_ERR_UNKNOWN,
         "Get audio supported samplerates failed: CreateAVCodecList failed");
-    if (capability->sampleRates_ != nullptr) {
-        codeclist->DeleteBuffer(capability->sampleRates_);
-        capability->sampleRates_ = nullptr;
-    }
-
     size_t vecSize = vec.size() * sizeof(int32_t);
-    capability->sampleRates_ = static_cast<int32_t *>(codeclist->NewBuffer(vecSize));
-    CHECK_AND_RETURN_RET_LOG(capability->sampleRates_ != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
-    errno_t ret = memcpy_s(capability->sampleRates_, vecSize, vec.data(), vecSize);
+    int32_t *buf = static_cast<int32_t *>(codeclist->NewBuffer(vecSize));
+    CHECK_AND_RETURN_RET_LOG(buf != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
+    errno_t ret = memcpy_s(buf, vecSize, vec.data(), vecSize);
     CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_UNKNOWN, "memcpy_s failed");
 
-    *sampleRates = capability->sampleRates_;
+    *sampleRates = buf;
     *sampleRateNum = vec.size();
     return AV_ERR_OK;
 }
@@ -351,16 +328,12 @@ OH_AVErrCode OH_AVCapability_GetVideoSupportedPixelFormats(OH_AVCapability *capa
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
     CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, AV_ERR_UNKNOWN,
         "Get video supported pixel formats failed: CreateAVCodecList failed");
-    if (capability->pixFormats_ != nullptr) {
-        codeclist->DeleteBuffer(capability->pixFormats_);
-        capability->pixFormats_ = nullptr;
-    }
     size_t vecSize = vec.size() * sizeof(int32_t);
-    capability->pixFormats_ = static_cast<int32_t *>(codeclist->NewBuffer(vecSize));
-    CHECK_AND_RETURN_RET_LOG(capability->pixFormats_ != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
-    errno_t ret = memcpy_s(capability->pixFormats_, vecSize, vec.data(), vecSize);
+    int32_t *buf = static_cast<int32_t *>(codeclist->NewBuffer(vecSize));
+    CHECK_AND_RETURN_RET_LOG(buf != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
+    errno_t ret = memcpy_s(buf, vecSize, vec.data(), vecSize);
     CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_UNKNOWN, "memcpy_s failed");
-    *pixFormats = capability->pixFormats_;
+    *pixFormats = buf;
     *pixFormatNum = vec.size();
     return AV_ERR_OK;
 }

@@ -37,7 +37,6 @@ public:
                                   const AVCodecCategory &category) override;
     void *GetBuffer(const std::string &name, uint32_t sizeOfCap) override;
     void *NewBuffer(size_t bufSize) override;
-    void DeleteBuffer(void *bufAddr) override;
 
 private:
     bool IsStrMatch(const std::string &str, const std::vector<std::string>& strVec);
