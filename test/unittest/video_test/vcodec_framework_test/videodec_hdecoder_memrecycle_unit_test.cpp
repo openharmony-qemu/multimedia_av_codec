@@ -442,6 +442,40 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_007, TestSize.Level1)
     SuspendActive();
 }
 
+/**
+ * @tc.name: VideoDecoder_Hardware_Memory_Recycle_008
+ * @tc.desc: unordered memory recycle function invocation
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_008, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    SuspendFreeze();
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    SuspendFreeze();
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    SuspendActive();
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    SuspendFreeze();
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
+    SuspendActiveAll();
+    SuspendActive();
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    SuspendActiveAll();
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
+    SuspendFreeze();
+    SuspendActive();
+}
+
 #ifdef HMOS_TEST
 /**
  * @tc.name: VideoDecoder_Hardware_Freeze_003
