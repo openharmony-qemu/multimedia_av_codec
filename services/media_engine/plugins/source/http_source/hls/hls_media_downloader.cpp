@@ -581,14 +581,14 @@ bool HlsMediaDownloader::ReadHeaderData(unsigned char* buff, ReadDataInfo& readD
     } else if (readDataInfo.streamId_ > 0 && readDataInfo.streamId_ != curStreamId_) {
         readDataInfo.nextStreamId_ = curStreamId_;
         isNeedReadHeader_.store(true);
-        MEDIA_LOG_D("HLS read curStreamId_ " PUBLIC_LOG_U32 " curStreamId_ " PUBLIC_LOG_U32,
+        MEDIA_LOG_I("HLS read curStreamId_ " PUBLIC_LOG_U32 " curStreamId_ " PUBLIC_LOG_U32,
                     curStreamId_, readDataInfo.streamId_);
         return true;
     }
     if (readDataInfo.streamId_ > 0 && curStreamId_ == readDataInfo.streamId_ && isNeedReadHeader_.load()) {
         playlistDownloader_->ReadFmp4Header(buff, readDataInfo.realReadLength_, readDataInfo.streamId_);
         isNeedReadHeader_.store(false);
-        MEDIA_LOG_D("HLS read fmp4 header.");
+        MEDIA_LOG_I("HLS read fmp4 header.");
         return true;
     }
     return false;
