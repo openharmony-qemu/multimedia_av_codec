@@ -23,6 +23,8 @@
 #include "unittest_utils.h"
 #include "vdec_sample.h"
 
+#define TEST_SUIT VideoHDecoderMemoryRecyleTest
+
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
