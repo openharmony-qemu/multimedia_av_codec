@@ -1034,7 +1034,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1420, TestSize.Level2)
  */
 HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0100, TestSize.Level0)
 {
-    if (access(INP_DIR_VVC_1080, F_OK) == 0 && cap_vvc != nullptr) {
+    if (access(INP_DIR_VVC_1080, F_OK) == 0 && g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1056,7 +1056,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0100, TestSize.Level0)
  */
 HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0200, TestSize.Level0)
 {
-    if (access(INP_DIR_VVC_1080, F_OK) == 0 && cap_vvc != nullptr) {
+    if (access(INP_DIR_VVC_1080, F_OK) == 0 && g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1077,7 +1077,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0200, TestSize.Level0)
  */
 HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0300, TestSize.Level1)
 {
-    if (access(INP_DIR_VVC_1080, F_OK) == 0 && cap_vvc != nullptr) {
+    if (access(INP_DIR_VVC_1080, F_OK) == 0 && g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1099,7 +1099,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0300, TestSize.Level1)
  */
 HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0400, TestSize.Level2)
 {
-    if (access(inpDirVvcResolution, F_OK) == 0 && cap_vvc != nullptr) {
+    if (access(inpDirVvcResolution, F_OK) == 0 && g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = inpDirVvcResolution;
         vDecSample->DEFAULT_WIDTH = 1104;
@@ -1122,7 +1122,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0400, TestSize.Level2)
  */
 HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0500, TestSize.Level1)
 {
-    if (access(INP_DIR_VVC_1080, F_OK) == 0 && cap_vvc != nullptr) {
+    if (access(INP_DIR_VVC_1080, F_OK) == 0 && g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1145,7 +1145,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0500, TestSize.Level1)
  */
 HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0600, TestSize.Level2)
 {
-    if (access(INP_DIR_VVC_1080, F_OK) == 0 && cap_vvc != nullptr) {
+    if (access(INP_DIR_VVC_1080, F_OK) == 0 && g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -1171,7 +1171,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0600, TestSize.Level2)
  */
 HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0700, TestSize.Level2)
 {
-    if (access(INP_DIR_VVC_1080, F_OK) == 0 && cap_vvc != nullptr) {
+    if (access(INP_DIR_VVC_1080, F_OK) == 0 && g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -1195,7 +1195,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0700, TestSize.Level2)
  */
 HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0800, TestSize.Level2)
 {
-    if (access(INP_DIR_VVC_1080, F_OK) == 0 && cap_vvc != nullptr) {
+    if (access(INP_DIR_VVC_1080, F_OK) == 0 && g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1217,7 +1217,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0800, TestSize.Level2)
  */
 HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0900, TestSize.Level2)
 {
-    if (access(INP_DIR_VVC_1080, F_OK) == 0 && cap_vvc != nullptr) {
+    if (access(INP_DIR_VVC_1080, F_OK) == 0 && g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -1245,7 +1245,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0900, TestSize.Level2)
  */
 HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_1000, TestSize.Level2)
 {
-    if (access(INP_DIR_VVC_1080, F_OK) == 0 && cap_vvc != nullptr) {
+    if (access(INP_DIR_VVC_1080, F_OK) == 0 && g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
