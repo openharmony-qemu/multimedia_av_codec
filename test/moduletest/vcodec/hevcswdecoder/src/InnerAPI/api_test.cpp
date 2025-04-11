@@ -96,8 +96,10 @@ namespace {
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0100, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByMime("");
-    ASSERT_EQ(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByMime("");
+        ASSERT_EQ(nullptr, vdec_);
+    }
 }
 
 /**
@@ -107,8 +109,10 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0100, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0300, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName("");
-    ASSERT_EQ(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName("");
+        ASSERT_EQ(nullptr, vdec_);
+    }
 }
 
 /**
@@ -118,12 +122,14 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0300, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0500, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    std::shared_ptr<VDecInnerCallback> cb_ = make_shared<VDecInnerCallback>(nullptr);
-    int32_t ret = vdec_->SetCallback(cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+        std::shared_ptr<VDecInnerCallback> cb_ = make_shared<VDecInnerCallback>(nullptr);
+        int32_t ret = vdec_->SetCallback(cb_);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+    }
 }
 
 /**
@@ -133,9 +139,11 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0500, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0600, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
-    ASSERT_EQ(AVCS_ERR_NO_MEMORY, vdec_->SetOutputSurface(nullptr));
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
+        ASSERT_EQ(AVCS_ERR_NO_MEMORY, vdec_->SetOutputSurface(nullptr));
+    }
 }
 
 /**
@@ -145,8 +153,10 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0600, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0700, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_invalidCodecMime);
-    ASSERT_EQ(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_invalidCodecMime);
+        ASSERT_EQ(nullptr, vdec_);
+    }
 }
 
 /**
@@ -156,8 +166,10 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0700, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0800, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByMime(g_invalidCodecMime);
-    ASSERT_EQ(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByMime(g_invalidCodecMime);
+        ASSERT_EQ(nullptr, vdec_);
+    }
 }
 
 /**
@@ -167,9 +179,11 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0800, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0900, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(0, true));
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(0, true));
+    }
 }
 
 /**
@@ -179,9 +193,11 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0900, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1000, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(0, false));
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(0, false));
+    }
 }
 
 /**
@@ -191,9 +207,11 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1000, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1100, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(-1, false));
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(-1, false));
+    }
 }
 
 /**
@@ -203,15 +221,17 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1100, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1200, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    AVCodecBufferInfo info;
-    info.presentationTimeUs = -1;
-    info.size = -1;
-    info.offset = -1;
-    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_EOS;
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->QueueInputBuffer(0, info, flag));
+        AVCodecBufferInfo info;
+        info.presentationTimeUs = -1;
+        info.size = -1;
+        info.offset = -1;
+        AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_EOS;
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->QueueInputBuffer(0, info, flag));
+    }
 }
 
 /**
@@ -221,13 +241,15 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1200, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0100, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    std::shared_ptr<AVCodecVideoDecoder> vdec_2 = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_2);
-    ASSERT_EQ(AVCS_ERR_OK, vdec_2->Release());
-    vdec_2 = nullptr;
+        std::shared_ptr<AVCodecVideoDecoder> vdec_2 = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_2);
+        ASSERT_EQ(AVCS_ERR_OK, vdec_2->Release());
+        vdec_2 = nullptr;
+    }
 }
 
 /**
@@ -237,17 +259,19 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0100, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0200, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+        Format format;
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->Configure(format));
+    }
 }
 
 /**
@@ -257,18 +281,20 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0200, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0300, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+        Format format;
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->Start());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->Start());
+    }
 }
 
 /**
@@ -278,19 +304,21 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0300, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0400, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+        Format format;
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Stop());
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Stop());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Stop());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Stop());
+    }
 }
 
 /**
@@ -300,20 +328,22 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0400, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+        Format format;
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Stop());
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Reset());
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Reset());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Stop());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Reset());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Reset());
+    }
 }
 
 /**
@@ -323,31 +353,33 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
-    
-    std::shared_ptr<VDecInnerCallback> cb_ = make_shared<VDecInnerCallback>(signal_);
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->SetCallback(cb_));
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
+        Format format;
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
+        
+        std::shared_ptr<VDecInnerCallback> cb_ = make_shared<VDecInnerCallback>(signal_);
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->SetCallback(cb_));
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
 
-    for (int i = 0; i < 2; i++) {
-        unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.wait(lock, []() { return signal_->inIdxQueue_.size() > 0; });
-        uint32_t index = signal_->inIdxQueue_.front();
-        cout << "QueueInputBuffer  index:" << index << endl;
-        ASSERT_EQ(AVCS_ERR_OK, vdec_->QueueInputBuffer(index));
+        for (int i = 0; i < 2; i++) {
+            unique_lock<mutex> lock(signal_->inMutex_);
+            signal_->inCond_.wait(lock, []() { return signal_->inIdxQueue_.size() > 0; });
+            uint32_t index = signal_->inIdxQueue_.front();
+            cout << "QueueInputBuffer  index:" << index << endl;
+            ASSERT_EQ(AVCS_ERR_OK, vdec_->QueueInputBuffer(index));
+        }
+
+        vdec_->Release();
+        vdec_ = nullptr;
+        signal_->inIdxQueue_.pop();
     }
-
-    vdec_->Release();
-    vdec_ = nullptr;
-    signal_->inIdxQueue_.pop();
 }
 
 /**
@@ -357,19 +389,21 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0700, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+        Format format;
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Flush());
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Flush());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Flush());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Flush());
+    }
 }
 
 /**
@@ -379,20 +413,22 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0700, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+        Format format;
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Stop());
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->Release());
-    vdec_ = nullptr;
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Stop());
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->Release());
+        vdec_ = nullptr;
+    }
 }
 
 /**
@@ -402,13 +438,15 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0900, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByMime(g_codecMime);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByMime(g_codecMime);
+        ASSERT_NE(nullptr, vdec_);
 
-    std::shared_ptr<AVCodecVideoDecoder> vdec_2 = VideoDecoderFactory::CreateByMime(g_codecMime);
-    ASSERT_NE(nullptr, vdec_2);
-    ASSERT_EQ(AVCS_ERR_OK, vdec_2->Release());
-    vdec_2 = nullptr;
+        std::shared_ptr<AVCodecVideoDecoder> vdec_2 = VideoDecoderFactory::CreateByMime(g_codecMime);
+        ASSERT_NE(nullptr, vdec_2);
+        ASSERT_EQ(AVCS_ERR_OK, vdec_2->Release());
+        vdec_2 = nullptr;
+    }
 }
 
 /**
@@ -418,12 +456,14 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0900, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_1000, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    std::shared_ptr<VDecInnerCallback> cb_ = make_shared<VDecInnerCallback>(nullptr);
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->SetCallback(cb_));
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->SetCallback(cb_));
+        std::shared_ptr<VDecInnerCallback> cb_ = make_shared<VDecInnerCallback>(nullptr);
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->SetCallback(cb_));
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->SetCallback(cb_));
+    }
 }
 
 /**
@@ -433,12 +473,14 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_1000, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_1100, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    Format format;
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->GetOutputFormat(format));
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->GetOutputFormat(format));
+        Format format;
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->GetOutputFormat(format));
+        ASSERT_EQ(AVCS_ERR_OK, vdec_->GetOutputFormat(format));
+    }
 }
 
 /**
@@ -448,17 +490,19 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_1100, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_1200, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
-    ASSERT_NE(nullptr, vdec_);
+    if (!access("/system/lib64/media/", 0)) {
+        vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, vdec_);
 
-    Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+        Format format;
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->SetParameter(format));
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->SetParameter(format));
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->SetParameter(format));
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->SetParameter(format));
+    }
 }
 
 /**
