@@ -328,7 +328,6 @@ void AudioEncoderBufferCapiUnitTest::OutputFunc()
                 << index << ", data size:" << avBuffer->buffer_->memory_->GetSize() << endl;
             outputFile_->write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(avBuffer)),
                                avBuffer->buffer_->memory_->GetSize());
-            outputFrameCnt_++;
         }
         if (avBuffer != nullptr &&
             (avBuffer->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || avBuffer->buffer_->memory_->GetSize()== 0)) {
@@ -346,6 +345,8 @@ void AudioEncoderBufferCapiUnitTest::OutputFunc()
             cout << "decode eos" << endl;
             isRunning_.store(false);
             signal_->startCond_.notify_all();
+        } else {
+            outputFrameCnt_++;
         }
     }
     cout << "stop, exit" << endl;
