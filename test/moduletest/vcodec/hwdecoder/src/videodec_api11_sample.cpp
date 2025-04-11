@@ -91,8 +91,8 @@ public:
             cout << "surface is nullptr" << endl;
             return;
         } else {
-            if (g_yuvSurface && outFile_ != nullptr) {
-                int32_t frameSize = (g_strideSurface * g_sliceSurface * THREE) >> 1;
+            int32_t frameSize = (g_strideSurface * g_sliceSurface * THREE) >> 1;
+            if (g_yuvSurface && outFile_ != nullptr && frameSize <= buffer->GetSize()) {
                 outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), frameSize);
             }
         }
@@ -114,6 +114,7 @@ VDecAPI11Sample::~VDecAPI11Sample()
             nativeWindow[i] = nullptr;
         }
     }
+    g_yuvSurface = false;
     Stop();
     Release();
 }
