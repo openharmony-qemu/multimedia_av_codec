@@ -316,6 +316,10 @@ Status AudioCaptureFilter::SendEos()
 {
     MEDIA_LOG_I("SendEos");
     Status ret = Status::OK;
+    // send cached data before
+    if (!cachedAudioData_.empty()) {
+        RecordCachedData();
+    }
     if (outputBufferQueue_) {
         std::shared_ptr<AVBuffer> buffer;
         AVBufferConfig avBufferConfig;
