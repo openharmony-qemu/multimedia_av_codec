@@ -72,8 +72,8 @@ constexpr int32_t TO_BYTE                       = 8;
 constexpr int32_t PERCENT_100                   = 100;
 constexpr int32_t MAX_RANK                      = 100;
 constexpr int32_t READ_RETRY                    = 2;
-constexpr int32_t READ_ERROR_NO_12              = 12;
-constexpr int32_t READ_ERROR_NO_5               = 5;
+constexpr int32_t READ_ERROR_IO                 = EIO;
+constexpr int32_t READ_ERROR_NOMEM              = ENOMEM;
 constexpr float CACHE_LEVEL_1                   = 0.3;
 
 constexpr unsigned int HMDFS_IOC = 0xf2;
@@ -203,7 +203,7 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
     if (size <= 0) {
         HandleReadResult(expectedLen, size);
-        FALSE_RETURN_V((isEnableFdCache_ || (errno != READ_ERROR_NO_12 && errno != READ_ERROR_NO_5)),
+        FALSE_RETURN_V((isEnableFdCache_ || (errno != READ_ERROR_NOMEM && errno != READ_ERROR_IO)),
             Status::ERROR_INVALID_DATA);
         MEDIA_LOG_D("ReadLocal END_OF_STREAM");
         return Status::END_OF_STREAM;
