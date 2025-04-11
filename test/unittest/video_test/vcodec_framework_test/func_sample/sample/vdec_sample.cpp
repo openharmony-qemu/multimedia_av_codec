@@ -51,26 +51,9 @@ constexpr uint8_t SHA_H263[SHA512_DIGEST_LENGTH] = {
     0x66, 0x9c, 0x58, 0x41, 0x6f, 0xad, 0xdd, 0xa9, 0x68, 0x1e, 0x76, 0xf2, 0x6e, 0x8e, 0x5b, 0xe5,
     0xe2, 0xc6, 0x5f, 0x5f, 0xab, 0xca, 0xc2, 0x5e, 0x8e, 0x77, 0xe6, 0xad, 0x59, 0x63, 0x40, 0x6b};
 
-
 uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 std::atomic<uint32_t> g_shaBufferCount = 0;
 SHA512_CTX g_ctxTest;
-
-void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA)
-{
-    if (needCheckSHA) {
-        ++g_shaBufferCount;
-    }
-    const int32_t frameSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 / 2; // 3: nom, 2: denom
-    const int32_t bufferWidth = size * DEFAULT_WIDTH / frameSize;
-    for (int32_t i = 0; i < size; i += bufferWidth) {
-        if (needCheckSHA && g_shaBufferCount < BUFFER_COUNT) {
-            SHA512_Update(&g_ctxTest, addr + i, DEFAULT_WIDTH);
-        }
-    }
-    if ((addr!=nullptr)&&(outFile!=nullptr)&&(outFile->is_open())&&(size>0))
-        (void)outFile->write(addr, size);
-}
 } // namespace
 
 namespace OHOS {
@@ -142,6 +125,10 @@ void VDecCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     cout << "VDec Format Changed" << endl;
     cout << "info: " << format->DumpInfo() << endl;
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, signal_->width_));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, signal_->height_));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, signal_->wStride_));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, signal_->hStride_));
 }
 
 void VDecCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data)
@@ -681,6 +668,28 @@ void VideoDecSample::CheckSHA()
     cout << std::dec << "\n========================================\n";
 }
 
+void VideoDecSample::UpdateSHA(const char *addr, int32_t size)
+{
+    if (needCheckSHA_) {
+        ++g_shaBufferCount;
+    }
+    const char *temp = addr;
+    if (needCheckSHA_ && g_shaBufferCount < BUFFER_COUNT && size > 0) {
+        for (int32_t i = 0; i < signal_->height_; ++i) {
+            SHA512_Update(&g_ctxTest, temp, signal_->width_);
+            temp += signal_->wStride_;
+        }
+        temp += (signal_->hStride_ - signal_->height_) * signal_->wStride_;
+        for (int32_t i = 0; i < (signal_->height_ / 2); ++i) { // 2: denom
+            SHA512_Update(&g_ctxTest, temp, signal_->width_);
+            temp += signal_->wStride_;
+        }
+    }
+    if ((addr != nullptr) && (outFile_ != nullptr) && (outFile_->is_open()) && (size > 0)) {
+        (void)outFile_->write(addr, size);
+    }
+}
+
 int32_t VideoDecSample::InputLoopInner()
 {
     uint32_t index = signal_->inIndexQueue_.front();
@@ -817,7 +826,7 @@ int32_t VideoDecSample::OutputLoopInnerExt()
     uint32_t ret;
     auto buffer = signal_->outBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-        "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+                                      "Fatal: GetOutputBuffer fail, exit, index: %d", index);
     CheckFormatKey();
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
@@ -827,8 +836,8 @@ int32_t VideoDecSample::OutputLoopInnerExt()
             testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263) ?
             attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
-            "Fatal: GetOutputBuffer fail, exit, index: %d", index);
-        UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
+                                          "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+        UpdateSHA(bufferAddr, size);
         ret = FreeOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
     } else if (attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
