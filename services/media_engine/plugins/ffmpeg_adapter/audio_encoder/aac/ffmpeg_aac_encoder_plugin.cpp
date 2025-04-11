@@ -23,6 +23,7 @@
 #include "common/log.h"
 #include "avcodec_log.h"
 #include "osal/utils/util.h"
+#include "avcodec_common.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -357,7 +358,7 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
         if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
             if (!isEosFlush_) {
                 avcodec_send_frame(avCodecContext_.get(), NULL);
-                outputBuffer->flag_ = 10;
+                outputBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_NONE;
             }
             Status tmp = ReceiveBuffer(outputBuffer);
             MEDIA_LOG_I("output eos, flag:%{public}d", outputBuffer->flag_);
@@ -426,6 +427,7 @@ Status FFmpegAACEncoderPlugin::Flush()
         avcodec_flush_buffers(avCodecContext_.get());
     }
     prevPts_ = 0;
+    isEosFlush_ = false;
     isFirstInputPts_ = true;
     isFirstOutputPts_ = true;
     if (fifo_) {
