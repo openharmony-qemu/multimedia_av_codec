@@ -41,6 +41,11 @@ public:
     int32_t errorNum = 0;
     std::atomic<bool> isRunning_ = false;
     std::atomic<bool> isPreparing_ = true;
+
+    int32_t width_ = 0;
+    int32_t height_ = 0;
+    int32_t wStride_ = 0;
+    int32_t hStride_ = 0;
 };
 
 class VDecCallbackTest : public AVCodecCallbackMock {
@@ -141,6 +146,7 @@ private:
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
     void CheckSHA();
+    void UpdateSHA(const char *addr, int32_t size);
     int32_t CreateAvccReader();
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
