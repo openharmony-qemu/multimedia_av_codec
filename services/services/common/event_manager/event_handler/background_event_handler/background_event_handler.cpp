@@ -45,8 +45,12 @@ void BackGroundEventHandler::NotifyFrozen(const std::vector<int32_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     bool recycleMemory = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
-    if (recycleMemory == 2) {
+    if (!recycleMemory){
         AVCODEC_LOGI("recycle memory is not supported on this platform");
+        return;
+    }
+    if (pidList.empty() || pidList.size() > 1000000) {
+        AVCODEC_LOGI("NotifyFrozen logic is disabled.");
         return;
     }
     for (auto pid : pidList) {
@@ -66,8 +70,8 @@ void BackGroundEventHandler::NotifyFrozen(const std::vector<int32_t> &pidList)
 void BackGroundEventHandler::NotifyActive(const std::vector<int32_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (true) {
-        AVCODEC_LOGI("temporary recycle memory is not supported.");
+    if (pidList.empty() || pidList.size() > 1000000) {
+        AVCODEC_LOGI("NotifyActive logic is disabled.");
         return;
     }
     for (auto pid : pidList) {
