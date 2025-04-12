@@ -203,8 +203,8 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
     if (size <= 0) {
         HandleReadResult(expectedLen, size);
-        FALSE_RETURN_V((isEnableFdCache_ || (errno != READ_ERROR_NOMEM && errno != READ_ERROR_IO)),
-            Status::ERROR_INVALID_DATA);
+        FALSE_RETURN_V((loc_ != IOCTL_CLOUD || isEnableFdCache_ ||
+            (errno != READ_ERROR_NOMEM && errno != READ_ERROR_IO)), Status::ERROR_INVALID_DATA);
         MEDIA_LOG_D("ReadLocal END_OF_STREAM");
         return Status::END_OF_STREAM;
     }
@@ -651,6 +651,9 @@ void FileFdSourcePlugin::CheckFileType()
     MEDIA_LOG_I("SetSource ioctl loc, ret " PUBLIC_LOG_D32 ", loc " PUBLIC_LOG_D32 ", errno"
         PUBLIC_LOG_D32, ioResult, loc, errno);
 
+    if (ioResult == 0) {
+        loc_ = loc;
+    }
     if (!isEnableFdCache_) {
         isCloudFile_ = false;
         return;
