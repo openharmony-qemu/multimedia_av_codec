@@ -50,7 +50,7 @@ void BackGroundEventHandler::NotifyFrozen(const std::vector<int32_t> &pidList)
         AVCODEC_LOGI("recycle memory is not supported on this platform");
         return;
     }
-    if (pidList.empty() || pidList.size() > MAX_PID_LIST_SIZE) {
+    if (pidList.empty() || pidList.size() < MAX_PID_LIST_SIZE) {
         AVCODEC_LOGI("NotifyFrozen logic is disabled.");
         return;
     }
@@ -71,7 +71,7 @@ void BackGroundEventHandler::NotifyFrozen(const std::vector<int32_t> &pidList)
 void BackGroundEventHandler::NotifyActive(const std::vector<int32_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (pidList.empty() || pidList.size() > MAX_PID_LIST_SIZE) {
+    if (pidList.empty() || pidList.size() < MAX_PID_LIST_SIZE) {
         AVCODEC_LOGI("NotifyActive logic is disabled.");
         return;
     }
