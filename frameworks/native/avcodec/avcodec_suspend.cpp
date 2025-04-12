@@ -27,24 +27,12 @@ namespace MediaAVCodec {
 int32_t AVCodecSuspend::SuspendFreeze(const std::vector<pid_t> &pidList)
 {
     CHECK_AND_RETURN_RET_LOG(!pidList.empty(), AVCS_ERR_INPUT_DATA_ERROR, "Freeze pidlist is empty");
-    for (const auto &pid : pidList) {
-        if (pid < 0 || static_cast<uint32_t>(pid) > std::numeric_limits<uint32_t>::max()) {
-            AVCODEC_LOGE("Invalid pid: %d. Pid must be a non-negative 32-bit unsigned integer.", pid);
-            return AVCS_ERR_INPUT_DATA_ERROR;
-        }
-    }
     return AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
 }
 
 int32_t AVCodecSuspend::SuspendActive(const std::vector<pid_t> &pidList)
 {
     CHECK_AND_RETURN_RET_LOG(!pidList.empty(), AVCS_ERR_INPUT_DATA_ERROR, "Active pidlist is empty");
-    for (const auto &pid : pidList) {
-        if (pid < 0 || static_cast<uint32_t>(pid) > std::numeric_limits<uint32_t>::max()) {
-            AVCODEC_LOGE("Invalid pid: %d. Pid must be a non-negative 32-bit unsigned integer.", pid);
-            return AVCS_ERR_INPUT_DATA_ERROR;
-        }
-    }
     return AVCodecServiceFactory::GetInstance().SuspendActive(pidList);
 }
 
