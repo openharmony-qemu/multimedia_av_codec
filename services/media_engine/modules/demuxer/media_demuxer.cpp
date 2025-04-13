@@ -1220,10 +1220,11 @@ Status MediaDemuxer::HandleHlsRebootPlugin()
             seekReadyInfo = seekReadyStreamInfo_[static_cast<int32_t>(streamType)];
             seekReadyStreamInfo_.erase(static_cast<int32_t>(streamType));
         }
-        if (seekReadyInfo.second == SEEK_TO_EOS || (seekReadyInfo.first >= 0 && seekReadyInfo.first != streamID)) {
-            MEDIA_LOG_I("End of stream or streamID changed, isEOS: " PUBLIC_LOG_D32 ", streamId: " PUBLIC_LOG_D32,
-                seekReadyInfo.second, seekReadyInfo.first);
+        if (seekReadyInfo.second == SEEK_TO_EOS) {
+            MEDIA_LOG_I("Seek to eos");
             return Status::OK;
+        } else if (seekReadyInfo.first >= 0 && seekReadyInfo.first != streamID) {
+            return HandleSeekChangeStream(streamID, seekReadyInfo.first, trackId);
         }
         bool isRebooted = true;
         ret = demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer_, isRebooted);
@@ -1241,6 +1242,17 @@ Status MediaDemuxer::HandleHlsRebootPlugin()
     return ret;
 }
 
+Status MediaDemuxer::HandleSeekChangeStream(int32_t currentStreamId, int32_t newStreamId, int32_t trackId)
+{
+    MEDIA_LOG_I("streamID changed, streamId: " PUBLIC_LOG_D32 ", newStreamId: " PUBLIC_LOG_D32,
+        currentStreamId, newStreamId);
+    // only fix completed seek currently
+    if (HasEosTrack()) {
+        streamDemuxer_->SetNewVideoStreamID(newStreamId);
+        HandleDashChangeStream(trackId);
+    }
+    return Status::OK;
+}
 
 Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
 {
