@@ -118,7 +118,7 @@ SurfaceDecoderFilter::~SurfaceDecoderFilter()
 
 void SurfaceDecoderFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
 {
-    MEDIA_LOG_E("AVCodec decoder error happend. ErrorType: %{public}d, errorCode: %{public}d",
+    MEDIA_LOG_E("AVCodec decoder error happened. ErrorType: %{public}d, errorCode: %{public}d",
         static_cast<int32_t>(errorType), errorCode);
     if (eventReceiver_ != nullptr) {
         eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
