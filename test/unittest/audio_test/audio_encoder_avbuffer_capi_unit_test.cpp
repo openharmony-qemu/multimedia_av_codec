@@ -192,6 +192,7 @@ protected:
     std::unique_ptr<std::ifstream> soFile_;
     int32_t fileSize_ = 0;
     uint32_t frameBytes_ = FLAC_DEFAULT_FRAME_BYTES; // default for flac
+    int32_t outputFrameCnt_ = 0;
 };
 
 void AudioEncoderBufferCapiUnitTest::SetUpTestCase(void)
@@ -270,8 +271,11 @@ void AudioEncoderBufferCapiUnitTest::InputFunc()
         }
         if (!inputFile_->eof()) {
             inputFile_->read((char *)OH_AVBuffer_GetAddr(buffer), frameBytes_);
-            buffer->buffer_->memory_->SetSize(frameBytes_);
-            fileSize_ -= frameBytes_;
+            int32_t readSize = inputFile_->gcount();
+            if (readSize == 0) {
+                continue;
+            }
+            buffer->buffer_->memory_->SetSize(readSize);
         } else {
             buffer->buffer_->memory_->SetSize(1);
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
@@ -304,6 +308,7 @@ void AudioEncoderBufferCapiUnitTest::OutputFunc()
         cout << "Fatal: open output file fail" << endl;
         return;
     }
+    outputFrameCnt_ = 0;
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
@@ -323,6 +328,7 @@ void AudioEncoderBufferCapiUnitTest::OutputFunc()
                 << index << ", data size:" << avBuffer->buffer_->memory_->GetSize() << endl;
             outputFile_->write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(avBuffer)),
                                avBuffer->buffer_->memory_->GetSize());
+            outputFrameCnt_++;
         }
         if (avBuffer != nullptr &&
             (avBuffer->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || avBuffer->buffer_->memory_->GetSize()== 0)) {
@@ -566,6 +572,7 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, encodeTest_02, TestSize.Level1)
 {
     InitFile(AudioBufferFormatType::TYPE_AAC);
     CreateCodecFunc(AudioBufferFormatType::TYPE_AAC);
+    int32_t needOutputCnt = fileSize_ / AAC_DEFAULT_FRAME_BYTES;
     format = OH_AVFormat_Create();
     EXPECT_NE(nullptr, format);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
@@ -583,6 +590,7 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, encodeTest_02, TestSize.Level1)
     }
 
     JoinThread();
+    EXPECT_EQ(outputFrameCnt_, needOutputCnt);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
 }
