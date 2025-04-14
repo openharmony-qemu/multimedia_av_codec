@@ -253,6 +253,10 @@ Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
                 return Status::ERROR_INVALID_DATA;
             }
             bufferMeta_ = inputBuffer->meta_;
+            if (ptsMode_ == GENERATE_ENCODE_PTS_BY_INPUT_MODE && isFirstInputPts_) {
+                prevPts_ = inputBuffer->pts_;
+                isFirstInputPts_ = false;
+            }
             dataCallback_->OnInputBufferDone(inputBuffer);
             ret = Status::OK;
         }
@@ -305,9 +309,16 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     // how get perfect pts with upstream pts(us)
     outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) / NS_PER_US;
     // adjust ffmpeg duration with sample rate
-    outBuffer->pts_ = ((INT64_MAX - prevPts_) < avPacket_->duration)
-                          ? (outBuffer->duration_ - (INT64_MAX - prevPts_))
-                          : (prevPts_ + outBuffer->duration_);
+    if (ptsMode_ == GENERATE_ENCODE_PTS_BY_INPUT_MODE && isFirstOutputPts_) {
+        outBuffer->pts_ = prevPts_;
+        isFirstOutputPts_ = false;
+    } else if (prevPts_ < 0) {
+        outBuffer->pts_ = prevPts_ + outBuffer->duration_;
+    } else {
+        outBuffer->pts_ = ((INT64_MAX - prevPts_) < outBuffer->duration_)
+                            ? (outBuffer->duration_ - (INT64_MAX - prevPts_))
+                            : (prevPts_ + outBuffer->duration_);
+    }
     prevPts_ = outBuffer->pts_;
     return Status::OK;
 }
@@ -380,6 +391,9 @@ Status FFmpegAACEncoderPlugin::Reset()
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     prevPts_ = 0;
+    ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    isFirstInputPts_ = true;
+    isFirstOutputPts_ = true;
     return ret;
 }
 
@@ -388,6 +402,10 @@ Status FFmpegAACEncoderPlugin::Release()
     MEDIA_LOG_I("Release enter");
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
+    prevPts_ = 0;
+    ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    isFirstInputPts_ = true;
+    isFirstOutputPts_ = true;
     return ret;
 }
 
@@ -399,6 +417,8 @@ Status FFmpegAACEncoderPlugin::Flush()
         avcodec_flush_buffers(avCodecContext_.get());
     }
     prevPts_ = 0;
+    isFirstInputPts_ = true;
+    isFirstOutputPts_ = true;
     if (fifo_) {
         av_audio_fifo_reset(fifo_);
     }
@@ -561,6 +581,9 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
             MEDIA_LOG_E("this plugin only support LC-AAC, input profile:%{public}d", aacProfile);
             return Status::ERROR_INVALID_PARAMETER;
         }
+    }
+    if (meta->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode_)) {
+        MEDIA_LOG_I("ptsMode_:%{public}d", static_cast<int32_t>(ptsMode_));
     }
 
     if (meta->Get<Tag::AUDIO_AAC_IS_ADTS>(type)) {
@@ -736,6 +759,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
     uint8_t *destBuffer = const_cast<uint8_t *>(srcBuffer);
     size_t srcBufferSize = static_cast<size_t>(memory->GetSize());
     size_t destBufferSize = srcBufferSize;
+    uint32_t destSamplesPerFrame;
     if (needResample_ && resample_ != nullptr) {
         if (resample_->Convert(srcBuffer, srcBufferSize, destBuffer, destBufferSize) != Status::OK) {
             MEDIA_LOG_E("Convert sample format failed");
@@ -748,8 +772,11 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
                     "frame_size: %{public}d",
                     cachedFrame_->nb_samples, avCodecContext_->frame_size);
     }
-    int32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
-        avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);
+    if (needResample_ && resample_ != nullptr) {
+        destSamplesPerFrame = resample_->GetSampleOffset();
+    } else {
+        destSamplesPerFrame = cachedFrame_->nb_samples;
+    }
     cachedFrame_->extended_data = cachedFrame_->data;
     cachedFrame_->extended_data[0] = destBuffer;
     cachedFrame_->linesize[0] = cachedFrame_->nb_samples * bytesPerSample;
