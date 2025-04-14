@@ -862,7 +862,7 @@ ohos_unittest("videodec_memrecycle_unit_test") {
     "-Wextra",
     "-Wimplicit-fallthrough",
     "-Wsign-compare",
-    "-Wunused-parameter",
+    "-Wno-unused-parameter",
     "-Dprivate=public",
     "-Dprotected=public",
     "-Dprivate=public",

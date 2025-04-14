@@ -31,7 +31,7 @@ using namespace std;
 using namespace OHOS::Media;
 class TestConsumerListener : public IBufferConsumerListener {
 public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
+    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) name(name) {};
     ~TestConsumerListener() {}
     void OnBufferAvailable() override
     {
@@ -46,6 +46,7 @@ private:
     int64_t timestamp = 0;
     Rect damage = {};
     sptr<Surface> cs {nullptr};
+    std::string_view name;
 };
 
 namespace {
@@ -120,8 +121,7 @@ int64_t VDecNdkInnerSample::GetSystemTimeUs()
 {
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
-    int64_t nanoTime = static_cast<int64_t>now.tv_sec * NANOS_IN_SECOND + now.tv_nsec;
-
+    int64_t nanoTime = static_cast<int64_t>(now.tv_sec * NANOS_IN_SECOND + now.tv_nsec);
     return nanoTime / NANOS_IN_MICRO;
 }
 
