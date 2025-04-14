@@ -1,15 +1,17 @@
-# Copyright (C) 2025 Huawei Device Co., Ltd.
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include "audio_raw_decoder_plugin.h"
 #include "avcodec_log.h"
 #include "avcodec_codec_name.h"
@@ -69,7 +71,8 @@ static std::vector<AudioSampleFormat> supportedSampleFormats = {
     AudioSampleFormat::SAMPLE_F32BE,
     AudioSampleFormat::SAMPLE_F64BE
 };
-static std::vector<AudioSampleFormat, AudioSampleFormat> formatMap = {
+
+static std::unordered_map<AudioSampleFormat, AudioSampleFormat> formatMap = {
     {AudioSampleFormat::SAMPLE_S16BE, AudioSampleFormat::SAMPLE_S16LE},
     {AudioSampleFormat::SAMPLE_S24BE, AudioSampleFormat::SAMPLE_S24LE},
     {AudioSampleFormat::SAMPLE_S32BE, AudioSampleFormat::SAMPLE_S32LE},
@@ -79,7 +82,7 @@ static std::vector<AudioSampleFormat, AudioSampleFormat> formatMap = {
 
 AudioRawDecoderPlugin::AudioRawDecoderPlugin(const std::string &name)
     : CodecPlugin(std::move(name)), audioSampleFormat_(AudioSampleFormat::INVALID_WIDTH),
-      srcSampleFormat_(AudioSampleFormat::INVALID_WIDTH), pts_(0),, channels_(0), sampleRate_(0), offset_(0),
+      srcSampleFormat_(AudioSampleFormat::INVALID_WIDTH), pts_(0), channels_(0), sampleRate_(0), offset_(0),
       frameSize_(0), maxInputSize_(0), maxOutputSize_(0), durationTime_(0), eosFlag_(false), dataCallback_(nullptr),
       format_(nullptr), inputBuffer_(0)
 {
@@ -216,7 +219,7 @@ Status AudioRawDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
     return Status::OK;
 }
 
-double AudioRawDecoderPlugin::F64beToDouble(const uint8_t *src)
+double AudioRawDecoderPlugin::F64BEToDouble(const uint8_t *src)
 {
     double val = 0.0;
     uint64_t value = 0;
@@ -231,7 +234,7 @@ double AudioRawDecoderPlugin::F64beToDouble(const uint8_t *src)
 
 Status AudioRawDecoderPlugin::F64BEToF32LE(const uint8_t *src, float *des)
 {
-    double val = F64beToDouble(src);
+    double val = F64BEToDouble(src);
     *des = static_cast<float>(val);
     return Status::OK;
 }
@@ -326,12 +329,12 @@ Status AudioRawDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outpu
     return Status::OK;
 }
 
-Status AudioRawDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &input
+Status AudioRawDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers)
 {
     return Status::OK;
 }
 
-Status AudioRawDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outp
+Status AudioRawDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers)
 {
     return Status::OK;
 }
@@ -383,7 +386,7 @@ bool AudioRawDecoderPlugin::CheckFormat()
         return false;
     }
 
-    if(formatMap[srcSampleFormat_] != audioSampleFormat_) {
+    if (formatMap[srcSampleFormat_] != audioSampleFormat_) {
         AVCODEC_LOGE("format:%{public}d --> %{public}d not supported", srcSampleFormat_, audioSampleFormat_);
         return false;
     }

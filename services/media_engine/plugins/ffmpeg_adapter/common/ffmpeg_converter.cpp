@@ -95,6 +95,8 @@ const std::vector<std::pair<AVSampleFormat, AudioSampleFormat>> g_pFfSampleFmtMa
     {AVSampleFormat::AV_SAMPLE_FMT_S16P, AudioSampleFormat::SAMPLE_S16P},
     {AVSampleFormat::AV_SAMPLE_FMT_S32P, AudioSampleFormat::SAMPLE_S32P},
     {AVSampleFormat::AV_SAMPLE_FMT_FLTP, AudioSampleFormat::SAMPLE_F32P},
+    {AVSampleFormat::AV_SAMPLE_FMT_S64, AudioSampleFormat::SAMPLE_S64},
+    {AVSampleFormat::AV_SAMPLE_FMT_S64P, AudioSampleFormat::SAMPLE_S64P},
 };
 
 // align with player framework capability.
@@ -104,6 +106,21 @@ const std::vector<std::pair<AVCodecID, AudioSampleFormat>> g_pFfCodeIDToSampleFm
     {AVCodecID::AV_CODEC_ID_PCM_S24LE, AudioSampleFormat::SAMPLE_S24LE},
     {AVCodecID::AV_CODEC_ID_PCM_S32LE, AudioSampleFormat::SAMPLE_S32LE},
     {AVCodecID::AV_CODEC_ID_PCM_F32LE, AudioSampleFormat::SAMPLE_F32LE},
+    {AVCodecID::AV_CODEC_ID_PCM_S16LE_PLANAR, AudioSampleFormat::SAMPLE_S16P},
+    {AVCodecID::AV_CODEC_ID_PCM_S24LE_PLANAR, AudioSampleFormat::SAMPLE_S24P},
+    {AVCodecID::AV_CODEC_ID_PCM_S32LE_PLANAR, AudioSampleFormat::SAMPLE_S32P},
+    {AVCodecID::AV_CODEC_ID_PCM_S8, AudioSampleFormat::SAMPLE_S8},
+    {AVCodecID::AV_CODEC_ID_PCM_S8_PLANAR, AudioSampleFormat::SAMPLE_S8P},
+    {AVCodecID::AV_CODEC_ID_PCM_U16LE, AudioSampleFormat::SAMPLE_U16},
+    {AVCodecID::AV_CODEC_ID_PCM_U24LE, AudioSampleFormat::SAMPLE_U24},
+    {AVCodecID::AV_CODEC_ID_PCM_U32LE, AudioSampleFormat::SAMPLE_U32},
+    {AVCodecID::AV_CODEC_ID_PCM_S64LE, AudioSampleFormat::SAMPLE_S64},
+    {AVCodecID::AV_CODEC_ID_PCM_F64LE, AudioSampleFormat::SAMPLE_F64},
+    {AVCodecID::AV_CODEC_ID_PCM_S16BE, AudioSampleFormat::SAMPLE_S16BE},
+    {AVCodecID::AV_CODEC_ID_PCM_S24BE, AudioSampleFormat::SAMPLE_S24BE},
+    {AVCodecID::AV_CODEC_ID_PCM_S32BE, AudioSampleFormat::SAMPLE_S32BE},
+    {AVCodecID::AV_CODEC_ID_PCM_F32BE, AudioSampleFormat::SAMPLE_F32BE},
+    {AVCodecID::AV_CODEC_ID_PCM_F64BE, AudioSampleFormat::SAMPLE_F64BE},  
 };
 
 const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayoutToString = {

@@ -49,6 +49,14 @@ static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
     }
 );
 
+static std::map<AudioSampleFormat, AudioSampleFormat> g_sampleFormatBeToLe = {
+    {AudioSampleFormat::SAMPLE_S16BE, AudioSampleFormat::SAMPLE_S16LE},
+    {AudioSampleFormat::SAMPLE_S24BE, AudioSampleFormat::SAMPLE_S24LE},
+    {AudioSampleFormat::SAMPLE_S32BE, AudioSampleFormat::SAMPLE_S32LE},
+    {AudioSampleFormat::SAMPLE_F32BE, AudioSampleFormat::SAMPLE_F32LE},
+    {AudioSampleFormat::SAMPLE_F64BE, AudioSampleFormat::SAMPLE_F32LE},
+};
+
 class DemuxerFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit DemuxerFilterLinkCallback(std::shared_ptr<DemuxerFilter> demuxerFilter)
@@ -250,7 +258,7 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
         FALSE_CONTINUE_NOLOG(!ShouldTrackSkipped(mediaType, mime, index));
 
         StreamType streamType;
-        FALSE_RETURN_V_NOLOG(FindStreamType(streamType, mediaType, mime, index), Status::ERROR_INVALID_PARAMETER);
+        FALSE_RETURN_V_NOLOG(FindStreamType(streamType, mediaType, mime, index, meta), Status::ERROR_INVALID_PARAMETER);
         bool isTrackInvalid = mime.find("invalid") == 0;
         hasInvalidVideo |= (isTrackInvalid && streamType == StreamType::STREAMTYPE_ENCODED_VIDEO);
         hasInvalidAudio |= (isTrackInvalid && streamType == StreamType::STREAMTYPE_ENCODED_AUDIO);
@@ -695,14 +703,19 @@ bool DemuxerFilter::FindTrackId(StreamType outType, int32_t &trackId)
     return false;
 }
 
-bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, std::string mime, size_t index)
+bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, std::string mime,
+    size_t index, std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I_SHORT("mediaType is %{public}d", static_cast<int32_t>(mediaType));
     if (mediaType == Plugins::MediaType::SUBTITLE) {
         streamType = StreamType::STREAMTYPE_SUBTITLE;
     } else if (mediaType == Plugins::MediaType::AUDIO) {
         if (mime == std::string(MimeType::AUDIO_RAW)) {
-            streamType = StreamType::STREAMTYPE_RAW_AUDIO;
+            if(CheckIsBigendian(meta)) {
+                streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+            } else {
+                streamType = StreamType::STREAMTYPE_RAW_AUDIO;
+            }
         } else {
             streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
         }
@@ -713,6 +726,21 @@ bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, 
         return false;
     }
     return true;
+}
+
+bool DemuxerFilter::CheckIsBigendian(std::shared_ptr<Meta> &meta)
+{
+    AudioSampleFormat sampleFormat = SAMPLE_U8;
+    bool sampleFormatGetRes = meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
+    FALSE_RETURN_V(sampleFormatGetRes, false);
+    MEDIA_LOG_I("samplefomart :%{public}d", sampleFormat);
+    auto iter = g_sampleFormatBeToLe.find(sampleFormat);
+    if (iter != g_sampleFormatBeToLe.end()) {
+        meta->SetData(Tag::AUDIO_RAW_SAMPLE_FORMAT, iter->first);
+        meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, iter->second);
+        return true;
+    }
+    return false;
 }
 
 bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string mime, size_t index)

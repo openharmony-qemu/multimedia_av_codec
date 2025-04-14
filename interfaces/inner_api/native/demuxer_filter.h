@@ -138,12 +138,14 @@ protected:
 
 private:
     bool FindTrackId(StreamType outType, int32_t &trackId);
-    bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime, size_t index);
+    bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime,
+        size_t index, std::shared_ptr<Meta> &meta);
     bool ShouldTrackSkipped(Plugins::MediaType mediaType, std::string mime, size_t index);
     void UpdateTrackIdMap(StreamType streamType, int32_t index);
     Status FaultDemuxerEventInfoWrite(StreamType& streamType);
     bool IsVideoMime(const std::string& mime);
     bool IsAudioMime(const std::string& mime);
+    bool CheckIsBigendian(std::shared_ptr<Meta> &meta);
     Status HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount);
     std::string CollectVideoAndAudioMime();
     std::string uri_;
