@@ -36,6 +36,7 @@ constexpr int MIN_BIT_RATE_MP3_ENCODE = 8000;
 constexpr int MAX_CHANNEL_COUNT_MP3 = 2;
 constexpr int MAX_CHANNEL_COUNT_APE = 2;
 constexpr int MAX_CHANNEL_COUNT_OPUS = 2;
+constexpr int MAX_CHANNEL_COUNT_RAW = 16;
 
 constexpr int MIN_BIT_RATE_AAC = 8000;
 constexpr int MAX_BIT_RATE_AAC = 960000;
@@ -58,6 +59,8 @@ const std::vector<int32_t> AUDIO_AAC_SAMPLE_RATE = {7350, 8000, 11025, 12000, 16
 
 const std::vector<int32_t> AUDIO_OPUS_SAMPLE_RATE = {8000, 12000, 16000, 24000, 48000};
 const std::vector<int32_t> AUDIO_MP3_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000};
+const std::vector<int32_t> AUDIO_RAW_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
+    44100, 48000, 64000, 88200, 96000, 192000};
 
 constexpr int MIN_BIT_RATE_FLAC = 32000;
 constexpr int MAX_BIT_RATE_FLAC = 1536000;
@@ -74,6 +77,8 @@ constexpr int MAX_BIT_RATE_AMRNB = 12200;
 
 constexpr int MIN_BIT_RATE_AAC_ENCODER = 1;
 constexpr int MAX_BIT_RATE_AAC_ENCODER = 500000;
+
+constexpr int MAX_BIT_RATE_RAW = 1536000;
 
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
 const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000, 192000};
@@ -219,6 +224,20 @@ CapabilityData AudioCodeclistInfo::GetAPEDecoderCapability()
     audioApeCapability.sampleRate = AUDIO_SAMPLE_RATE;
     audioApeCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioApeCapability;
+}
+
+CapabilityData AudioCodeclistInfo::GetRawDecoderCapability()
+{
+    CapabilityData audioRawCapability;
+    audioRawCapability.codecName = AVCodecCodecName::AUDIO_DECODER_RAW_NAME;
+    audioRawCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioRawCapability.mimeType = CodecMimeType::AUDIO_RAW;
+    audioRawCapability.isVendor = false;
+    audioRawCapability.bitrate = Range(0, MAX_BIT_RATE_RAW);
+    audioRawCapability.channels = Range(1, MAX_CHANNEL_COUNT_RAW);
+    audioRawCapability.sampleRate = AUDIO_RAW_SAMPLE_RATE;
+    audioRawCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioRawCapability;
 }
 
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
@@ -456,9 +475,9 @@ AudioCodeclistInfo::AudioCodeclistInfo()
 #endif
                           GetMP3DecoderCapability(),   GetAacDecoderCapability(),    GetFlacDecoderCapability(),
                           GetOpusDecoderCapability(),  GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(),
-                          GetAmrwbDecoderCapability(), GetG711muDecoderCapability(), GetAacEncoderCapability(),
-                          GetFlacEncoderCapability(),  GetOpusEncoderCapability(),   GetG711muEncoderCapability(),
-                          GetAPEDecoderCapability(),   GetMP3EncoderCapability(),
+                          GetAmrwbDecoderCapability(), GetG711muDecoderCapability(), GetRawDecoderCapability(),
+                          GetAacEncoderCapability(), GetFlacEncoderCapability(),  GetOpusEncoderCapability(),
+                          GetG711muEncoderCapability(), GetAPEDecoderCapability(),   GetMP3EncoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(),  GetLbvcEncoderCapability(),
