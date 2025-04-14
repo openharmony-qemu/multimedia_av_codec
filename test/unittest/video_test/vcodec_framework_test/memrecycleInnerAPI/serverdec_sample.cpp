@@ -523,7 +523,7 @@ int32_t VDecNdkInnerSample::PushData(std::shared_ptr<AVBuffer> buffer, uint32_t 
         return 1;
     }
 
-    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) 
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT)
                                                 ((ch[1] & 0xFF) << SIXTEEN) |
                                                 ((ch[0] & 0xFF) << TWENTY_FOUR));
     if (bufferSize >= ((defaultWidth * defaultHeight * THREE) >> 1)) {
