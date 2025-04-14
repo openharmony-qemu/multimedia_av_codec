@@ -523,9 +523,10 @@ int32_t VDecNdkInnerSample::PushData(std::shared_ptr<AVBuffer> buffer, uint32_t 
         return 1;
     }
 
-    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
-                                     ((ch[0] & 0xFF) << TWENTY_FOUR));
-    if (bufferSize >= (defaultWidth * defaultHeight * THREE) >> 1) {
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) 
+                                                ((ch[1] & 0xFF) << SIXTEEN) |
+                                                ((ch[0] & 0xFF) << TWENTY_FOUR));
+    if (bufferSize >= ((defaultWidth * defaultHeight * THREE) >> 1)) {
         cout << "read bufferSize abnormal. buffersize = " << bufferSize << endl;
         return 1;
     }
@@ -788,7 +789,7 @@ void VDecNdkInnerSample::ProcessOutputData(std::shared_ptr<AVBuffer> buffer, uin
 {
     if (!sfOutput) {
         uint32_t size = buffer->memory_->GetCapacity();
-        if (size >= (defaultWidth * defaultHeight * THREE) >> 1) {
+        if (size >= ((defaultWidth * defaultHeight * THREE) >> 1)) {
             uint8_t *cropBuffer = new uint8_t[size];
             if (memcpy_s(cropBuffer, size, buffer->memory_->GetAddr(),
                 defaultWidth * defaultHeight) != EOK) {
