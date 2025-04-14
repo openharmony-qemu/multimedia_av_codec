@@ -124,7 +124,7 @@ public:
     double defaultFrameRate = 30.0;
     uint32_t repeatStartStopBeforeEos = 0;
     uint32_t repeatStartFlushBeforeEos = 0;
-    bool SF_OUTPUT = false;
+    bool sfOutput = false;
     bool beforeEosInput = false;
     bool beforeEosInputInput = false;
     bool afterEosDestoryCodec = true;

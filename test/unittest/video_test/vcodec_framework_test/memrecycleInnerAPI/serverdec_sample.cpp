@@ -120,7 +120,7 @@ int64_t VDecNdkInnerSample::GetSystemTimeUs()
 {
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
-    int64_t nanoTime = (int64_t)now.tv_sec * NANOS_IN_SECOND + now.tv_nsec;
+    int64_t nanoTime = static_cast<int64_t>now.tv_sec * NANOS_IN_SECOND + now.tv_nsec;
 
     return nanoTime / NANOS_IN_MICRO;
 }
@@ -523,9 +523,9 @@ int32_t VDecNdkInnerSample::PushData(std::shared_ptr<AVBuffer> buffer, uint32_t 
         return 1;
     }
 
-    uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
                                      ((ch[0] & 0xFF) << TWENTY_FOUR));
-    if (bufferSize >= defaultWidth * defaultHeight * THREE >> 1) {
+    if (bufferSize >= (defaultWidth * defaultHeight * THREE) >> 1) {
         cout << "read bufferSize abnormal. buffersize = " << bufferSize << endl;
         return 1;
     }
@@ -554,7 +554,7 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
     }
 
     int32_t size = buffer->memory_->GetCapacity();
-    if (size < (int32_t)(bufferSize + START_CODE_SIZE)) {
+    if (size < static_cast<int32_t>(bufferSize + START_CODE_SIZE)) {
         delete[] fileBuffer;
         cout << "buffer size not enough." << endl;
         return 0;
@@ -679,19 +679,19 @@ void VDecNdkInnerSample::InputFunc()
 
         if (!inFile_->eof()) {
             vdec_->NotifyMemoryRecycle();
-            usleep(1000*1000); // 1000*1000为1000ms
+            usleep(1000 * 1000); // 1000*1000为1000ms
             vdec_->NotifyMemoryWriteBack();
-            usleep(1000*1000); // 1000*1000为1000ms
+            usleep(1000 * 1000); // 1000*1000为1000ms
             int32_t ret = PushData(buffer, index);
-            usleep(1000*1000); // 1000*1000为1000ms
+            usleep(1000 * 1000); // 1000*1000为1000ms
             vdec_->NotifyMemoryRecycle();
-            usleep(3000*1000); // 3000*1000为3000ms
+            usleep(3000 * 1000); // 3000*1000为3000ms
             vdec_->NotifyMemoryRecycle();
-            usleep(1000);
+            usleep(1000); // 1000为1000ms
             vdec_->NotifyMemoryWriteBack();
-            usleep(1000*1000); // 1000*1000为1000ms
+            usleep(1000 * 1000); // 1000*1000为1000ms
             vdec_->NotifyMemoryWriteBack();
-            usleep(500*1000); // 500*1000为500ms
+            usleep(500 * 1000); // 500*1000为500ms
             if (ret == 1) {
                 break;
             }
@@ -729,13 +729,13 @@ void VDecNdkInnerSample::InputErrorFunc()
 
         if (!inFile_->eof()) {
             vdec_->NotifyMemoryWriteBack();
-            usleep(1000*1000); // 1000*1000为1000ms
+            usleep(1000 * 1000); // 1000*1000为1000ms
             int32_t ret = PushData(buffer, index);
-            usleep(1000*1000); // 1000*1000为1000ms
+            usleep(1000 * 1000); // 1000*1000为1000ms
             vdec_->NotifyMemoryRecycle();
-            usleep(3000*1000); // 3000*1000为3000ms
+            usleep(3000 * 1000); // 3000*1000为3000ms
             vdec_->NotifyMemoryRecycle();
-            usleep(1000*1000); // 1000*1000为1000ms
+            usleep(1000 * 1000); // 1000*1000为1000ms
             if (ret == 1) {
                 break;
             }
@@ -786,21 +786,21 @@ void VDecNdkInnerSample::OutputFunc()
 
 void VDecNdkInnerSample::ProcessOutputData(std::shared_ptr<AVBuffer> buffer, uint32_t index)
 {
-    if (!SF_OUTPUT) {
+    if (!sfOutput) {
         uint32_t size = buffer->memory_->GetCapacity();
-        if (size >= defaultWidth * defaultHeight * THREE >> 1) {
+        if (size >= (defaultWidth * defaultHeight * THREE) >> 1) {
             uint8_t *cropBuffer = new uint8_t[size];
             if (memcpy_s(cropBuffer, size, buffer->memory_->GetAddr(),
-                    defaultWidth * defaultHeight) != EOK) {
+                defaultWidth * defaultHeight) != EOK) {
                 cout << "Fatal: memory copy failed Y" << endl;
             }
             // copy UV
             uint32_t uvSize = size - defaultWidth * defaultHeight;
             if (memcpy_s(cropBuffer + defaultWidth * defaultHeight, uvSize,
-                    buffer->memory_->GetAddr() + defaultWidth * defaultHeight, uvSize) != EOK) {
+                buffer->memory_->GetAddr() + defaultWidth * defaultHeight, uvSize) != EOK) {
                 cout << "Fatal: memory copy failed UV" << endl;
             }
-            SHA512_Update(&g_ctx, cropBuffer, defaultWidth * defaultHeight * THREE >> 1);
+            SHA512_Update(&g_ctx, cropBuffer, (defaultWidth * defaultHeight * THREE) >> 1);
             delete[] cropBuffer;
         }
 

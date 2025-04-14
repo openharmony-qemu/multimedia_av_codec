@@ -98,7 +98,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0100, TestSize.Level12)
         vDecSample->defaultWidth = 1920;
         vDecSample->defaultHeight = 1080;
         vDecSample->defaultFrameRate = 30;
-        vDecSample->SF_OUTPUT = true;
+        vDecSample->sfOutput = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
     }
@@ -117,7 +117,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0200, TestSize.Level12)
         vDecSample->defaultWidth = 1920;
         vDecSample->defaultHeight = 1080;
         vDecSample->defaultFrameRate = 30;
-        vDecSample->SF_OUTPUT = true;
+        vDecSample->sfOutput = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunErrorVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
     }
@@ -136,7 +136,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0300, TestSize.Level12)
         vDecSample->defaultWidth = 1920;
         vDecSample->defaultHeight = 1080;
         vDecSample->defaultFrameRate = 30;
-        vDecSample->SF_OUTPUT = true;
+        vDecSample->sfOutput = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunFcodecVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
     }
@@ -155,7 +155,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level12)
         vDecSample->defaultWidth = 1920;
         vDecSample->defaultHeight = 1080;
         vDecSample->defaultFrameRate = 30;
-        vDecSample->SF_OUTPUT = false;
+        vDecSample->sfOutput = false;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunFcodecVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
     }
@@ -174,7 +174,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level12)
         vDecSample->defaultWidth = 1920;
         vDecSample->defaultHeight = 1080;
         vDecSample->defaultFrameRate = 30;
-        vDecSample->SF_OUTPUT = true;
+        vDecSample->sfOutput = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunFcodecErrorVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
     }
