@@ -113,21 +113,21 @@ public:
     void CreateSurface();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
 
-    const char *INP_DIR;
-    const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
+    const char *inputDir = "/data/test/media/720_1280_25_avcc.h265";
+    const char *outputDir = "/data/test/media/VDecTest.yuv";
     sptr<Surface> cs[2] = {};
     sptr<Surface> ps[2] = {};
     NativeWindow *nativeWindow[2] = {};
-    uint32_t DEFAULT_WIDTH = 1920;
-    uint32_t DEFAULT_HEIGHT = 1080;
-    uint32_t DEFAULT_BITRATE = 10000000;
-    double DEFAULT_FRAME_RATE = 30.0;
-    uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;
-    uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0;
+    uint32_t defaultWidth = 1920;
+    uint32_t defaultHeight = 1080;
+    uint32_t defaultBitrate = 10000000;
+    double defaultFrameRate = 30.0;
+    uint32_t repeatStartStopBeforeEos = 0;
+    uint32_t repeatStartFlushBeforeEos = 0;
     bool SF_OUTPUT = false;
-    bool BEFORE_EOS_INPUT = false;
-    bool BEFORE_EOS_INPUT_INPUT = false;
-    bool AFTER_EOS_DESTORY_CODEC = true;
+    bool beforeEosInput = false;
+    bool beforeEosInputInput = false;
+    bool afterEosDestoryCodec = true;
 
     uint32_t errCount = 0;
     uint32_t outCount = 0;

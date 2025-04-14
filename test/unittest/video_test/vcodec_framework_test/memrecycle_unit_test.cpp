@@ -47,7 +47,7 @@ public:
     // TearDown: Called after each test case
     void TearDown() override;
 protected:
-    const char *INP_DIR_1080_30 = "/data/test/media/720_1280_25_avcc.h265"; //szj  后期把INP_DIR_1080_30改成INP_DIR_720
+    const char *INP_DIR_720_30 = "/data/test/media/720_1280_25_avcc.h265";
 };
 
 std::shared_ptr<AVCodecVideoDecoder> vdec_ = nullptr;
@@ -55,10 +55,6 @@ std::shared_ptr<VDecInnerSignal> signal_ = nullptr;
 std::string g_invalidCodecMime = "avdec_h265";
 std::string g_codecMime = "video/hevc";
 std::string g_codecName = "";
-
-constexpr uint32_t DEFAULT_WIDTH = 1920;
-constexpr uint32_t DEFAULT_HEIGHT = 1080;
-constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 void HevcswdecInnerApiNdkTest::SetUpTestCase()
 {
@@ -70,7 +66,7 @@ void HevcswdecInnerApiNdkTest::SetUpTestCase()
 
 void HevcswdecInnerApiNdkTest::TearDownTestCase() {}
 
-void HevcswdecInnerApiNdkTest::SetUp() 
+void HevcswdecInnerApiNdkTest::SetUp()
 {
     signal_ = make_shared<VDecInnerSignal>();
 }
@@ -98,10 +94,10 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0100, TestSize.Level12)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->inputDir = INP_DIR_720_30;
+        vDecSample->defaultWidth = 1920;
+        vDecSample->defaultHeight = 1080;
+        vDecSample->defaultFrameRate = 30;
         vDecSample->SF_OUTPUT = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
@@ -117,10 +113,10 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0200, TestSize.Level12)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->inputDir = INP_DIR_720_30;
+        vDecSample->defaultWidth = 1920;
+        vDecSample->defaultHeight = 1080;
+        vDecSample->defaultFrameRate = 30;
         vDecSample->SF_OUTPUT = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunErrorVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
@@ -136,10 +132,10 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0300, TestSize.Level12)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->inputDir = INP_DIR_720_30;
+        vDecSample->defaultWidth = 1920;
+        vDecSample->defaultHeight = 1080;
+        vDecSample->defaultFrameRate = 30;
         vDecSample->SF_OUTPUT = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunFcodecVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
@@ -155,10 +151,10 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level12)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->inputDir = INP_DIR_720_30;
+        vDecSample->defaultWidth = 1920;
+        vDecSample->defaultHeight = 1080;
+        vDecSample->defaultFrameRate = 30;
         vDecSample->SF_OUTPUT = false;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunFcodecVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
@@ -174,10 +170,10 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level12)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->inputDir = INP_DIR_720_30;
+        vDecSample->defaultWidth = 1920;
+        vDecSample->defaultHeight = 1080;
+        vDecSample->defaultFrameRate = 30;
         vDecSample->SF_OUTPUT = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunFcodecErrorVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();

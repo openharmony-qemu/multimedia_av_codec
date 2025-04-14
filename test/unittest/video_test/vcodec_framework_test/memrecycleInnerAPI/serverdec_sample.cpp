@@ -93,7 +93,7 @@ void VDecInnerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<A
     if (innersignal_ == nullptr) {
         std::cout << "buffer is null 1" << endl;
         return;
-    }   
+    }
 
     unique_lock<mutex> lock(innersignal_->inMutex_);
     innersignal_->inIdxQueue_.push(index);
@@ -128,7 +128,7 @@ int64_t VDecNdkInnerSample::GetSystemTimeUs()
 void VDecNdkInnerSample::CreateSurface()
 {
     cs[0] = Surface::CreateSurfaceAsConsumer();
-    sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs[0], OUT_DIR);
+    sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs[0], outputDir);
     cs[0]->RegisterConsumerListener(listener);
     auto p = cs[0]->GetProducer();
     ps[0] = Surface::CreateSurfaceAsProducer(p);
@@ -138,10 +138,10 @@ void VDecNdkInnerSample::CreateSurface()
 int32_t VDecNdkInnerSample::Configure()
 {
     Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, defaultWidth);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, defaultHeight);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, defaultFrameRate);
 
     return vdec_->Configure(format);
 }
@@ -254,7 +254,7 @@ int32_t VDecNdkInnerSample::StartErrorVideoDecoder() // 内存回收异常操作
         return AVCS_ERR_UNKNOWN;
     }
 
-    inFile_->open(INP_DIR, ios::in | ios::binary);
+    inFile_->open(inputDir, ios::in | ios::binary);
     if (!inFile_->is_open()) {
         OpenFileFail();
         return AVCS_ERR_UNKNOWN;
@@ -310,7 +310,7 @@ int32_t VDecNdkInnerSample::StartVideoDecoder()
         return AVCS_ERR_UNKNOWN;
     }
 
-    inFile_->open(INP_DIR, ios::in | ios::binary);
+    inFile_->open(inputDir, ios::in | ios::binary);
     if (!inFile_->is_open()) {
         OpenFileFail();
         return AVCS_ERR_UNKNOWN;
@@ -351,7 +351,7 @@ int32_t VDecNdkInnerSample::RunHEVCVideoDecoder(const std::string &codeName)
 {
     int32_t ret = AVCS_ERR_OK;
     CreateSurface();
-    if(!nativeWindow[0]) {
+    if (!nativeWindow[0]) {
         cout << "Failed to create surface" << endl;
         return AVCS_ERR_UNKNOWN;
     }
@@ -388,7 +388,7 @@ int32_t VDecNdkInnerSample::RunFcodecVideoDecoder(const std::string &codeName)
 {
     int32_t ret = AVCS_ERR_OK;
     CreateSurface();
-    if(!nativeWindow[0]) {
+    if (!nativeWindow[0]) {
         cout << "Failed to create surface" << endl;
         return AVCS_ERR_UNKNOWN;
     }
@@ -425,7 +425,7 @@ int32_t VDecNdkInnerSample::RunHEVCErrorVideoDecoder(const std::string &codeName
 {
     int32_t ret = AVCS_ERR_OK;
     CreateSurface();
-    if(!nativeWindow[0]) {
+    if (!nativeWindow[0]) {
         cout << "Failed to create surface" << endl;
         return AVCS_ERR_UNKNOWN;
     }
@@ -462,7 +462,7 @@ int32_t VDecNdkInnerSample::RunFcodecErrorVideoDecoder(const std::string &codeNa
 {
     int32_t ret = AVCS_ERR_OK;
     CreateSurface();
-    if(!nativeWindow[0]) {
+    if (!nativeWindow[0]) {
         cout << "Failed to create surface" << endl;
         return AVCS_ERR_UNKNOWN;
     }
@@ -497,15 +497,15 @@ int32_t VDecNdkInnerSample::RunFcodecErrorVideoDecoder(const std::string &codeNa
 
 int32_t VDecNdkInnerSample::PushData(std::shared_ptr<AVBuffer> buffer, uint32_t index)
 {
-    static uint32_t repeat_count = 0;
+    static uint32_t repeatCount = 0;
 
-    if (BEFORE_EOS_INPUT && frameCount > TEN) {
+    if (beforeEosInput && frameCount > TEN) {
         SetEOS(index, buffer);
         return 1;
     }
 
-    if (BEFORE_EOS_INPUT_INPUT && frameCount > TEN) {
-        BEFORE_EOS_INPUT_INPUT = false;
+    if (beforeEosInputInput && frameCount > TEN) {
+        beforeEosInputInput = false;
     }
 
     char ch[4] = {};
@@ -513,8 +513,8 @@ int32_t VDecNdkInnerSample::PushData(std::shared_ptr<AVBuffer> buffer, uint32_t 
     if (repeatRun && inFile_->eof()) {
         inFile_->clear();
         inFile_->seekg(0, ios::beg);
-        cout << "repeat run " << repeat_count << endl;
-        repeat_count++;
+        cout << "repeat run " << repeatCount << endl;
+        repeatCount++;
         return 0;
     }
 
@@ -525,7 +525,7 @@ int32_t VDecNdkInnerSample::PushData(std::shared_ptr<AVBuffer> buffer, uint32_t 
 
     uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
                                      ((ch[0] & 0xFF) << TWENTY_FOUR));
-    if (bufferSize >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
+    if (bufferSize >= defaultWidth * defaultHeight * THREE >> 1) {
         cout << "read bufferSize abnormal. buffersize = " << bufferSize << endl;
         return 1;
     }
@@ -606,15 +606,15 @@ int32_t VDecNdkInnerSample::StateEOS()
 
 void VDecNdkInnerSample::RepeatStartBeforeEOS()
 {
-    if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
-        REPEAT_START_FLUSH_BEFORE_EOS--;
+    if (repeatStartFlushBeforeEos > 0) {
+        repeatStartFlushBeforeEos--;
         vdec_->Flush();
         FlushBuffer();
         vdec_->Start();
     }
 
-    if (REPEAT_START_STOP_BEFORE_EOS > 0) {
-        REPEAT_START_STOP_BEFORE_EOS--;
+    if (repeatStartStopBeforeEos > 0) {
+        repeatStartStopBeforeEos--;
         vdec_->Stop();
         FlushBuffer();
         vdec_->Start();
@@ -634,7 +634,7 @@ void VDecNdkInnerSample::SetEOS(uint32_t index, std::shared_ptr<AVBuffer> buffer
 
 void VDecNdkInnerSample::WaitForEOS()
 {
-    if (!AFTER_EOS_DESTORY_CODEC && inputLoop_ && inputLoop_->joinable()) {
+    if (!afterEosDestoryCodec && inputLoop_ && inputLoop_->joinable()) {
         inputLoop_->join();
     }
 
@@ -656,10 +656,7 @@ void VDecNdkInnerSample::OpenFileFail()
 void VDecNdkInnerSample::InputFunc()
 {
     errCount = 0;
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         RepeatStartBeforeEOS();
 
         unique_lock<mutex> lock(signal_->inMutex_);
@@ -682,19 +679,19 @@ void VDecNdkInnerSample::InputFunc()
 
         if (!inFile_->eof()) {
             vdec_->NotifyMemoryRecycle();
-            usleep(1000*1000);
+            usleep(1000*1000); // 1000*1000为1000ms
             vdec_->NotifyMemoryWriteBack();
-            usleep(1000*1000);
+            usleep(1000*1000); // 1000*1000为1000ms
             int32_t ret = PushData(buffer, index);
-            usleep(1000*1000);
+            usleep(1000*1000); // 1000*1000为1000ms
             vdec_->NotifyMemoryRecycle();
-            usleep(3000*1000);
+            usleep(3000*1000); // 3000*1000为3000ms
             vdec_->NotifyMemoryRecycle();
             usleep(1000);
             vdec_->NotifyMemoryWriteBack();
-            usleep(1000*1000);
+            usleep(1000*1000); // 1000*1000为1000ms
             vdec_->NotifyMemoryWriteBack();
-            usleep(500*1000);
+            usleep(500*1000); // 500*1000为500ms
             if (ret == 1) {
                 break;
             }
@@ -709,11 +706,7 @@ void VDecNdkInnerSample::InputFunc()
 void VDecNdkInnerSample::InputErrorFunc()
 {
     errCount = 0;
-    while (true)
-    {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         RepeatStartBeforeEOS();
 
         unique_lock<mutex> lock(signal_->inMutex_);
@@ -736,13 +729,13 @@ void VDecNdkInnerSample::InputErrorFunc()
 
         if (!inFile_->eof()) {
             vdec_->NotifyMemoryWriteBack();
-            usleep(1000*1000);
+            usleep(1000*1000); // 1000*1000为1000ms
             int32_t ret = PushData(buffer, index);
-            usleep(1000*1000);
+            usleep(1000*1000); // 1000*1000为1000ms
             vdec_->NotifyMemoryRecycle();
-            usleep(3000*1000);
+            usleep(3000*1000); // 3000*1000为3000ms
             vdec_->NotifyMemoryRecycle();
-            usleep(1000*1000);
+            usleep(1000*1000); // 1000*1000为1000ms
             if (ret == 1) {
                 break;
             }
@@ -757,11 +750,7 @@ void VDecNdkInnerSample::InputErrorFunc()
 void VDecNdkInnerSample::OutputFunc()
 {
     SHA512_Init(&g_ctx);
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
-
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() {
             return signal_->outIdxQueue_.size() > 0;
@@ -781,7 +770,7 @@ void VDecNdkInnerSample::OutputFunc()
             SHA512_Final(g_md, &g_ctx);
             OPENSSL_cleanse(&g_ctx, sizeof(g_ctx));
             MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
-            if (AFTER_EOS_DESTORY_CODEC) {
+            if (afterEosDestoryCodec) {
                 (void)Stop();
                 Release();
             }
@@ -799,19 +788,19 @@ void VDecNdkInnerSample::ProcessOutputData(std::shared_ptr<AVBuffer> buffer, uin
 {
     if (!SF_OUTPUT) {
         uint32_t size = buffer->memory_->GetCapacity();
-        if (size >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
+        if (size >= defaultWidth * defaultHeight * THREE >> 1) {
             uint8_t *cropBuffer = new uint8_t[size];
             if (memcpy_s(cropBuffer, size, buffer->memory_->GetAddr(),
-                            DEFAULT_WIDTH * DEFAULT_HEIGHT) != EOK) {
+                    defaultWidth * defaultHeight) != EOK) {
                 cout << "Fatal: memory copy failed Y" << endl;
             }
             // copy UV
-            uint32_t uvSize = size - DEFAULT_WIDTH * DEFAULT_HEIGHT;
-            if (memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize,
-                            buffer->memory_->GetAddr() + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize) != EOK) {
+            uint32_t uvSize = size - defaultWidth * defaultHeight;
+            if (memcpy_s(cropBuffer + defaultWidth * defaultHeight, uvSize,
+                    buffer->memory_->GetAddr() + defaultWidth * defaultHeight, uvSize) != EOK) {
                 cout << "Fatal: memory copy failed UV" << endl;
             }
-            SHA512_Update(&g_ctx, cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);
+            SHA512_Update(&g_ctx, cropBuffer, defaultWidth * defaultHeight * THREE >> 1);
             delete[] cropBuffer;
         }
 
