@@ -1469,7 +1469,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
                 seekTime, ffTime, realSeekTime, static_cast<int32_t>(mode), flag);
     if (flag == AVSEEK_FLAG_FRAME && FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4) {
         int keyFrameNext = av_index_search_timestamp(avStream, ffTime, AVSEEK_FLAG_FRAME);
-        FALSE_RETURN_V_MSG_E(keyFrameNext >= 0, Status::ERROR_INVALID_PARAMETER,
+        FALSE_RETURN_V_MSG_E(keyFrameNext >= 0, Status::ERROR_OUT_OF_RANGE,
             "Seek failed, err: Not next key frame");
     }
     auto ret = av_seek_frame(formatContext_.get(), trackIndex, ffTime, flag);
