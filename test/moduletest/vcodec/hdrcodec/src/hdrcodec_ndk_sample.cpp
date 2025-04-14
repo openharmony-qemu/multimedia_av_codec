@@ -384,7 +384,7 @@ int32_t HDRCodecNdkSample::SendDataH263(OH_AVCodec *codec, uint32_t index, OH_AV
     return 0;
 }
 
-int32_t HDRCodecNdkSample::DecAvcPushData(OH_AVMemory *data, uint32_t bufferSize, uint8_t *fileBuffer)
+int32_t DecAvcPushData(OH_AVMemory *data, uint32_t bufferSize, uint8_t *fileBuffer)
 {
     int32_t size = OH_AVMemory_GetSize(data);
     if (size < bufferSize + START_CODE_SIZE) {
@@ -435,7 +435,7 @@ int32_t HDRCodecNdkSample::SendDataAvc(OH_AVCodec *codec, uint32_t index, OH_AVM
     } else {
         attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     }
-    if (!DecAvcPushData(data, bufferSize, fileBuffer)) {
+    if (DecAvcPushData(data, bufferSize, fileBuffer)) {
         return 0;
     }
     attr.pts = GetSystemTimeUs();
@@ -450,7 +450,7 @@ int32_t HDRCodecNdkSample::SendDataAvc(OH_AVCodec *codec, uint32_t index, OH_AVM
     return 0;
 }
 
-int32_t HDRCodecNdkSample::DecPushData(OH_AVMemory *data, uint32_t bufferSize, uint8_t *fileBuffer)
+int32_t DecPushData(OH_AVMemory *data, uint32_t bufferSize, uint8_t *fileBuffer)
 {
     int32_t size = OH_AVMemory_GetSize(data);
     if (size < bufferSize) {
@@ -510,7 +510,7 @@ int32_t HDRCodecNdkSample::SendDataMpeg2(OH_AVCodec *codec, uint32_t index, OH_A
     if (pPrereadBuffer_ == prereadBufferSize_ && inFile_->eof()) {
         finishLastPush = true;
     }
-    if (!DecPushData(data, bufferSize, fileBuffer)) {
+    if (DecPushData(data, bufferSize, fileBuffer)) {
         return 0;
     }
     attr.pts = GetSystemTimeUs();
@@ -561,7 +561,7 @@ int32_t HDRCodecNdkSample::SendDataMpeg4(OH_AVCodec *codec, uint32_t index, OH_A
     if (pPrereadBuffer_ == prereadBufferSize_ && inFile_->eof()) {
         finishLastPush = true;
     }
-    if (!DecPushData(data, bufferSize, fileBuffer)) {
+    if (DecPushData(data, bufferSize, fileBuffer)) {
         return 0;
     }
     attr.pts = GetSystemTimeUs();
@@ -682,7 +682,6 @@ static int32_t RepeatCallStartFlushStop(HDRCodecNdkSample *sample)
     return 0;
 }
 
-
 HDRCodecNdkSample::~HDRCodecNdkSample()
 {
     inputNum = 0;
@@ -729,7 +728,7 @@ int32_t HDRCodecNdkSample::CreateDemuxerVideocoder(const char *file, std::string
     if (!source) {
         return AV_ERR_UNKNOWN;
     }
-    if (!CreateVideocoder(codeName, enCodeName)) {
+    if (CreateVideocoder(codeName, enCodeName)) {
         return AV_ERR_UNKNOWN;
     }
     demuxer = OH_AVDemuxer_CreateWithSource(source);
