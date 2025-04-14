@@ -708,7 +708,7 @@ bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, 
         streamType = StreamType::STREAMTYPE_SUBTITLE;
     } else if (mediaType == Plugins::MediaType::AUDIO) {
         if (mime == std::string(MimeType::AUDIO_RAW)) {
-            if(CheckIsBigendian(meta)) {
+            if (CheckIsBigendian(meta)) {
                 streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
             } else {
                 streamType = StreamType::STREAMTYPE_RAW_AUDIO;
