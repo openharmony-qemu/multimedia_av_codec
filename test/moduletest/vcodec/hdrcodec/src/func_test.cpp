@@ -82,7 +82,6 @@ namespace {
     constexpr uint32_t FRAMENUM_26 = 26;
     constexpr uint32_t FRAMENUM_180 = 180;
     constexpr uint32_t FRAMENUM_80 = 80;
-    constexpr uint32_t FRAMENUM_180 = 180;
     constexpr uint32_t FRAMENUM_254 = 254;
 }
 void HDRFuncNdkTest::SetUpTestCase()
