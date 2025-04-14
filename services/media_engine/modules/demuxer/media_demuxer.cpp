@@ -1247,7 +1247,7 @@ Status MediaDemuxer::HandleSeekChangeStream(int32_t currentStreamId, int32_t new
     MEDIA_LOG_I("streamID changed, streamId: " PUBLIC_LOG_D32 ", newStreamId: " PUBLIC_LOG_D32,
         currentStreamId, newStreamId);
     // only fix completed seek currently
-    if (HasEosTrack()) {
+    if (streamDemuxer_ != nullptr && HasEosTrack()) {
         streamDemuxer_->SetNewVideoStreamID(newStreamId);
         HandleDashChangeStream(trackId);
     }
