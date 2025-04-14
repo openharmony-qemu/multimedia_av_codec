@@ -65,6 +65,11 @@ constexpr uint32_t MAX_WIDTH = 4000;
 constexpr uint32_t MAX_HEIGHT = 3000;
 constexpr uint32_t MAX_NALU_SIZE = MAX_WIDTH * MAX_HEIGHT << 1;
 constexpr int32_t AUDIO_BUFFER_SIZE = 1024 * 1024;
+constexpr int32_t CHANNEL_0 = 0;
+constexpr int32_t CHANNEL_1 = 1;
+constexpr int32_t CHANNEL_2 = 2;
+constexpr int32_t CHANNEL_3 = 3;
+constexpr int32_t CHANNEL_4 = 4;
 }
 
 int64_t GetSystemTimeUs()
@@ -379,6 +384,29 @@ int32_t HDRCodecNdkSample::SendDataH263(OH_AVCodec *codec, uint32_t index, OH_AV
     return 0;
 }
 
+int32_t HDRCodecNdkSample::DecAvcPushData(OH_AVMemory *data, uint32_t bufferSize, uint8_t *fileBuffer)
+{
+    int32_t size = OH_AVMemory_GetSize(data);
+    if (size < bufferSize + START_CODE_SIZE) {
+        cout << "error: size < bufferSize" << endl;
+        return 1;
+    }
+    uint8_t *avBuffer = OH_AVMemory_GetAddr(data);
+    if (avBuffer == nullptr) {
+        inFile_->clear();
+        inFile_->seekg(0, ios::beg);
+        delete[] fileBuffer;
+        return 1;
+    }
+    if (memcpy_s(avBuffer, size, fileBuffer, bufferSize + START_CODE_SIZE) != EOK) {
+        delete[] fileBuffer;
+        cout << "Fatal: memcpy fail" << endl;
+        return 1;
+    }
+    delete[] fileBuffer;
+    return 0;
+}
+
 int32_t HDRCodecNdkSample::SendDataAvc(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data)
 {
     OH_AVCodecBufferAttr attr;
@@ -407,24 +435,7 @@ int32_t HDRCodecNdkSample::SendDataAvc(OH_AVCodec *codec, uint32_t index, OH_AVM
     } else {
         attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     }
-
-    int32_t size = OH_AVMemory_GetSize(data);
-    if (size < bufferSize + START_CODE_SIZE) {
-        cout << "error: size < bufferSize" << endl;
-        return 0;
-    }
-    uint8_t *avBuffer = OH_AVMemory_GetAddr(data);
-    if (avBuffer == nullptr) {
-        cout << "avBuffer == nullptr" << endl;
-        inFile_->clear();
-        inFile_->seekg(0, ios::beg);
-        delete[] fileBuffer;
-        return 0;
-    }
-    
-    if (memcpy_s(avBuffer, size, fileBuffer, bufferSize + START_CODE_SIZE) != EOK) {
-        delete[] fileBuffer;
-        cout << "Fatal: memcpy fail" << endl;
+    if (!DecAvcPushData(data, bufferSize, fileBuffer)) {
         return 0;
     }
     attr.pts = GetSystemTimeUs();
@@ -435,6 +446,32 @@ int32_t HDRCodecNdkSample::SendDataAvc(OH_AVCodec *codec, uint32_t index, OH_AVM
         cout << "push input data failed,error:" << result << endl;
     } else {
         inputNum++;
+    }
+    return 0;
+}
+
+int32_t HDRCodecNdkSample::DecPushData(OH_AVMemory *data, uint32_t bufferSize, uint8_t *fileBuffer)
+{
+    int32_t size = OH_AVMemory_GetSize(data);
+    if (size < bufferSize) {
+        cout << "error: size < bufferSize" << endl;
+        inFile_->clear();
+        inFile_->seekg(0, ios::beg);
+        delete[] fileBuffer;
+        return 1;
+    }
+    uint8_t *avBuffer = OH_AVMemory_GetAddr(data);
+    if (avBuffer == nullptr) {
+        cout << "avBuffer == nullptr" << endl;
+        inFile_->clear();
+        inFile_->seekg(0, ios::beg);
+        delete[] fileBuffer;
+        return 1;
+    }
+    if (memcpy_s(avBuffer, size, fileBuffer, bufferSize) != EOK) {
+        delete[] fileBuffer;
+        cout << "Fatal: memcpy fail" << endl;
+        return 1;
     }
     delete[] fileBuffer;
     return 0;
@@ -473,26 +510,9 @@ int32_t HDRCodecNdkSample::SendDataMpeg2(OH_AVCodec *codec, uint32_t index, OH_A
     if (pPrereadBuffer_ == prereadBufferSize_ && inFile_->eof()) {
         finishLastPush = true;
     }
-
-    int32_t size = OH_AVMemory_GetSize(data);
-    if (size < bufferSize) {
-        inFile_->clear();
-        inFile_->seekg(0, ios::beg);
-        delete[] fileBuffer;
+    if (!DecPushData(data, bufferSize, fileBuffer)) {
         return 0;
     }
-    uint8_t *avBuffer = OH_AVMemory_GetAddr(data);
-    if (avBuffer == nullptr) {
-        inFile_->clear();
-        inFile_->seekg(0, ios::beg);
-        delete[] fileBuffer;
-        return 0;
-    }
-    if (memcpy_s(avBuffer, size, fileBuffer, bufferSize) != EOK) {
-        delete[] fileBuffer;
-        return 0;
-    }
-    delete[] fileBuffer;
     attr.pts = GetSystemTimeUs();
     attr.size = bufferSize;
     attr.offset = 0;
@@ -541,30 +561,9 @@ int32_t HDRCodecNdkSample::SendDataMpeg4(OH_AVCodec *codec, uint32_t index, OH_A
     if (pPrereadBuffer_ == prereadBufferSize_ && inFile_->eof()) {
         finishLastPush = true;
     }
-
-    int32_t size = OH_AVMemory_GetSize(data);
-    if (size < bufferSize) {
-        cout << "error: size < bufferSize" << endl;
-        inFile_->clear();
-        inFile_->seekg(0, ios::beg);
-        delete[] fileBuffer;
+    if (!DecPushData(data, bufferSize, fileBuffer)) {
         return 0;
     }
-    uint8_t *avBuffer = OH_AVMemory_GetAddr(data);
-    if (avBuffer == nullptr) {
-        cout << "avBuffer == nullptr" << endl;
-        inFile_->clear();
-        inFile_->seekg(0, ios::beg);
-        delete[] fileBuffer;
-        return 0;
-    }
-    
-    if (memcpy_s(avBuffer, size, fileBuffer, bufferSize) != EOK) {
-        delete[] fileBuffer;
-        cout << "Fatal: memcpy fail" << endl;
-        return 0;
-    }
-    delete[] fileBuffer;
     attr.pts = GetSystemTimeUs();
     attr.size = bufferSize;
     attr.offset = 0;
@@ -580,19 +579,19 @@ int32_t HDRCodecNdkSample::SendDataMpeg4(OH_AVCodec *codec, uint32_t index, OH_A
 int32_t HDRCodecNdkSample::SendData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data)
 {
     switch (typeDec) {
-        case 0: {
+        case CHANNEL_0: {
             return SendDataHdr(codec, index, data);
         }
-        case 1: {
+        case CHANNEL_1: {
             return SendDataH263(codec, index, data);
         }
-        case 2: {
+        case CHANNEL_2: {
             return SendDataAvc(codec, index, data);
         }
-        case 3: {
+        case CHANNEL_3: {
             return SendDataMpeg2(codec, index, data);
         }
-        case 4: {
+        case CHANNEL_4: {
             return SendDataMpeg4(codec, index, data);
         }
         default:
@@ -724,23 +723,13 @@ int32_t HDRCodecNdkSample::CreateDemuxerVideocoder(const char *file, std::string
 {
     int trackType = 0;
     fd = open(file, O_RDONLY);
-    outFd = open("./output.mp4",O_CREAT | O_RDWR |O_TRUNC,S_IRUSR | S_IWUSR);
+    outFd = open("./output.mp4", O_CREAT | O_RDWR |O_TRUNC, S_IRUSR | S_IWUSR);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!source) {
         return AV_ERR_UNKNOWN;
     }
-    decSignal = new VSignal();
-    if (decSignal == nullptr) {
-        return AV_ERR_UNKNOWN;
-    }
-    vdec_ = OH_VideoDecoder_CreateByName(codeName.c_str());
-    if (vdec_ == nullptr) {
-        return AV_ERR_UNKNOWN;
-    }
-
-    venc_ = OH_VideoEncoder_CreateByName(enCodeName.c_str());
-    if (venc_ == nullptr) {
+    if (!CreateVideocoder(codeName, enCodeName)) {
         return AV_ERR_UNKNOWN;
     }
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -756,16 +745,15 @@ int32_t HDRCodecNdkSample::CreateDemuxerVideocoder(const char *file, std::string
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
         OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
         OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &trackType);
-        int32_t rotation = 0;
         if (trackType == MEDIA_TYPE_VID) {
             videoTrackID = index;
-            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation);
+            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &DEFAULT_ROTATION);
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_WIDTH, &DEFAULT_WIDTH);
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_HEIGHT, &DEFAULT_HEIGHT);
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_PIXEL_FORMAT, &DEFAULT_PIXEL_FORMAT);
             OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &DEFAULT_FRAME_RATE);
             OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, MIME_TYPE);
-            OH_AVMuxer_SetRotation(muxer, rotation);
+            OH_AVMuxer_SetRotation(muxer, DEFAULT_ROTATION);
         } else {
             audioTrackID = index;
         }
@@ -941,17 +929,20 @@ int32_t HDRCodecNdkSample::ReConfigure()
     return ret;
 }
 
-void HDRCodecNdkSample::WriteAudioTrack() 
+void HDRCodecNdkSample::WriteAudioTrack()
 {
     OH_AVMemory *buffer = nullptr;
     buffer = OH_AVMemory_Create(AUDIO_BUFFER_SIZE);
-    while (true) {
+    bool audioWrite = true;
+    while (audioWrite) {
         if (!g_isRunning.load()) {
+            audioWrite = false;
             break;
         }
         OH_AVCodecBufferAttr info;
         OH_AVDemuxer_ReadSample(demuxer, audioTrackID, buffer, &info);
         if (info.flags & AVCODEC_BUFFER_FLAGS_EOS) {
+            audioWrite = false;
             break;
         }
         OH_AVMuxer_WriteSample(muxer, audioTrackID, buffer, info);
@@ -1069,7 +1060,7 @@ int32_t HDRCodecNdkSample::Release()
         OH_VideoEncoder_Destroy(venc_);
         venc_ = nullptr;
     }
-    if (muxer！= nullptr) {
+    if (muxer != nullptr) {
         OH_AVMuxer_Destroy(muxer);
         muxer = nullptr;
     }

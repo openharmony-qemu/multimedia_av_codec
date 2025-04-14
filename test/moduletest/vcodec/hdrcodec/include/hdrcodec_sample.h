@@ -96,6 +96,7 @@ public:
     bool needTransCode = false;
     int32_t DEFAULT_WIDTH = 3840;
     int32_t DEFAULT_HEIGHT = 2160;
+    int32_t DEFAULT_ROTATION = 0;
     int32_t DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV12;
     double DEFAULT_FRAME_RATE = 30.0;
     const char *MIME_TYPE = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
@@ -117,6 +118,7 @@ public:
     int32_t inputNum = 0;
     bool finishLastPush = false;
     bool DEMUXER_FLAG = false;
+
 private:
     OHNativeWindow *window = nullptr;
     OH_AVCodecAsyncCallback encCb_;
