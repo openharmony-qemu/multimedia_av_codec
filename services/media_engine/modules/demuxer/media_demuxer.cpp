@@ -2121,7 +2121,8 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
 
 bool MediaDemuxer::SelectBitRateChangeStream(uint32_t trackId)
 {
-    int32_t currentStreamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+    FALSE_RETURN_V(videoTrackId_ != TRACK_ID_DUMMY, false);
+    int32_t currentStreamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
     int32_t newStreamID = streamDemuxer_->GetNewVideoStreamID();
     if (newStreamID >= 0 && currentStreamID != newStreamID) {
         MEDIA_LOG_I("In");
@@ -2141,19 +2142,19 @@ bool MediaDemuxer::SelectBitRateChangeStream(uint32_t trackId)
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, newTrackId, newInnerTrackId);
             newInnerTrackId = -1;
             newTrackId = -1;
-            demuxerPluginManager_->GetTrackInfoByStreamID(newStreamID, newTrackId, newInnerTrackId, TRACK_AUDIO);
-            demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, newTrackId, newInnerTrackId);
+            if (audioTrackId_ != TRACK_ID_DUMMY) {
+                demuxerPluginManager_->GetTrackInfoByStreamID(newStreamID, newTrackId, newInnerTrackId, TRACK_AUDIO);
+                demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, newTrackId, newInnerTrackId);
+            }
         } else {
             demuxerPluginManager_->GetTrackInfoByStreamID(newStreamID, newTrackId, newInnerTrackId);
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, newTrackId, newInnerTrackId);
         }
 
         MEDIA_LOG_I("Updata info");
-        if (isHlsFmp4_) {
-            InnerSelectTrack(static_cast<int32_t>(videoTrackId_));
+        InnerSelectTrack(static_cast<int32_t>(videoTrackId_));
+        if (isHlsFmp4_ && audioTrackId_ != TRACK_ID_DUMMY) {
             InnerSelectTrack(static_cast<int32_t>(audioTrackId_));
-        } else {
-            InnerSelectTrack(static_cast<int32_t>(trackId));
         }
         MEDIA_LOG_I("Out");
         return true;
@@ -2258,7 +2259,7 @@ bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
 
     MEDIA_LOG_I("Change stream begin, currentStreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
         currentStreamID, newStreamID);
-    if (trackId == videoTrackId_ && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
+    if ((trackId == videoTrackId_ || isHlsFmp4_) && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
         ret = SelectBitRateChangeStream(trackId);
         if (ret) {
             streamDemuxer_->SetChangeFlag(true);
