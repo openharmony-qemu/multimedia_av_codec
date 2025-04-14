@@ -2121,6 +2121,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
 
 bool MediaDemuxer::SelectBitRateChangeStream(uint32_t trackId)
 {
+    (void) trackId;
     FALSE_RETURN_V(videoTrackId_ != TRACK_ID_DUMMY, false);
     int32_t currentStreamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
     int32_t newStreamID = streamDemuxer_->GetNewVideoStreamID();
