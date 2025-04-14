@@ -1,154 +1,183 @@
+/*
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <iostream>
+#include <cstdio>
+#include <atomic>
+#include <fstream>
+#include <thread>
+#include <mutex>
+#include <queue>
+#include <string>
+
 #include "gtest/gtest.h"
+#include "serverdec_sample.h"
+#include "avcodec_video_decoder.h"
 #include "meta/format.h"
 #include "avcodec_errors.h"
-#include "surface.h"
-#include "hevc_decoder.h"
+#include "avcodec_common.h"
+#include "native_avcapability.h"
 
-using namespace testing;
-using namespace testing::ext;
+using namespace std;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
-using namespace OHOS::MediaAVCodec::Codec;
+using namespace testing::ext;
 
-class TestConsumerListener : public IBufferConsumerListener {
+namespace {
+class HevcswdecInnerApiNdkTest : public testing::Test {
 public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name);
-    ~TestConsumerListener();
-    void OnBufferAvailable() override;
-
-private:
-    int64_t  timestamp_ = 0;
-    OHOS::Rect damage_ = {};
-    sptr<Surface> cs_ = nullptr;
-    std::unique_ptr<std::ofstream> outFile_;
-};
-
-TestConsumerListener::TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs_(cs)
-{
-    outFile_ = std::make_unique<std::ofstream>();
-    outFile_->open(name.data(), std::ios::out | std::ios::binary);
-}
-
-TestConsumerListener::~TestConsumerListener()
-{
-    if (outFile_ != nullptr) {
-        outFile_->close();
-    }
-}
-
-void TestConsumerListener::OnBufferAvailable()
-{
-    sptr<SurfaceBuffer> buffer;
-    int32_t flushFence;
-
-    cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
-
-    (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
-    cs_->ReleaseBuffer(buffer, -1);
-}
-
-static sptr<Surface> GetSurface()
-{
-    sptr<Surface> cs = Surface::CreateSurfaceAsConsumer();
-    sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs, "./surface");
-    cs->RegisterConsumerListener(listener);
-    auto p = cs->GetProducer();
-    sptr<Surface> ps = Surface::CreateSurfaceAsProducer(p);
-    return ps;
-}
-
-class HevcDecoderTest : public ::testing::Test {
+    // SetUpTestCase: Called before all test cases
+    static void SetUpTestCase(void);
+    // TearDownTestCase: Called after all test case
+    static void TearDownTestCase(void);
+    // SetUp: Called before each test case
+    void SetUp() override;
+    // TearDown: Called after each test case
+    void TearDown() override;
 protected:
-    void SetUp()
-    {
-        std::cout << "[SetUp]: SetUp!!!" << std::endl;
-        outputSurface = GetSurface();
-    }
-
-    void TearDown()
-    {
-        std::cout << "[TearDown]: over!!!" << std::endl;
-        outputSurface = nullptr;
-    }
-
-    sptr<Surface> outputSurface;
+    const char *INP_DIR_720_30 = "/data/test/media/720_1280_25_avcc.h265";
 };
 
-/**
- * @tc.name  : MemoryRecycleTest
- * @tc.number: HevcDecoderTest_001
- * @tc.desc  : Test NotifyMemoryRecycle when surface is null.
- */
-HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_01, TestSize.Level0)
+std::shared_ptr<AVCodecVideoDecoder> vdec_ = nullptr;
+std::shared_ptr<VDecInnerSignal> signal_ = nullptr;
+std::string g_invalidCodecMime = "avdec_h265";
+std::string g_codecMime = "video/hevc";
+std::string g_codecName = "";
+
+void HevcswdecInnerApiNdkTest::SetUpTestCase()
 {
-    HevcDecoder hevcDecoder("hevc_decoder");
-    Format format;
-    EXPECT_EQ(hevcDecoder.Configure(format), AVCS_ERR_OK);
-    hevcDecoder.state_ = HevcDecoder::State::RUNNING;
-    EXPECT_EQ(hevcDecoder.AllocateBuffers(), AVCS_ERR_OK);
-    EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_UNKNOWN);
-    hevcDecoder.Release();
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), false, SOFTWARE);
+    const char *tmpCodecName = OH_AVCapability_GetName(cap);
+    g_codecName = tmpCodecName;
+    cout << "g_codecName: " << g_codecName << endl;
+}
+
+void HevcswdecInnerApiNdkTest::TearDownTestCase() {}
+
+void HevcswdecInnerApiNdkTest::SetUp()
+{
+    signal_ = make_shared<VDecInnerSignal>();
+}
+
+void HevcswdecInnerApiNdkTest::TearDown()
+{
+    if (signal_) {
+        signal_ = nullptr;
+    }
+
+    if (vdec_ != nullptr) {
+        vdec_->Release();
+        vdec_ = nullptr;
+    }
+}
+} // namespace
+
+namespace {
+/**
+ * @tc.number    : VIDEO_MEMORYRECYCLE_0100
+ * @tc.name      : Normal decoding process
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0100, TestSize.Level12)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->inputDir = INP_DIR_720_30;
+        vDecSample->defaultWidth = 1920;
+        vDecSample->defaultHeight = 1080;
+        vDecSample->defaultFrameRate = 30;
+        vDecSample->sfOutput = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+    }
 }
 
 /**
- * @tc.name  : MemoryRecycleTest
- * @tc.number: HevcDecoderTest_002
- * @tc.desc  : Test NotifyMemoryWriteBack when surface is null.
+ * @tc.number    : VIDEO_MEMORYRECYCLE_0200
+ * @tc.name      : Normal decoding process
+ * @tc.desc      : api test
  */
-HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_02, TestSize.Level0)
+HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0200, TestSize.Level12)
 {
-    HevcDecoder hevcDecoder("hevc_decoder");
-    EXPECT_EQ(hevcDecoder.NotifyMemoryWriteBack(), AVCS_ERR_UNKNOWN);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->inputDir = INP_DIR_720_30;
+        vDecSample->defaultWidth = 1920;
+        vDecSample->defaultHeight = 1080;
+        vDecSample->defaultFrameRate = 30;
+        vDecSample->sfOutput = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunErrorVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+    }
 }
 
 /**
- * @tc.name  : MemoryRecycleTest
- * @tc.number: HevcDecoderTest_003
- * @tc.desc  : Test NotifyMemoryRecycle when state is not RUNNING, FLUSHED or EOS.
+ * @tc.number    : VIDEO_MEMORYRECYCLE_0300
+ * @tc.name      : Normal decoding process
+ * @tc.desc      : api test
  */
-HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_03, TestSize.Level0)
+HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0300, TestSize.Level12)
 {
-    HevcDecoder hevcDecoder("hevc_decoder");
-    hevcDecoder.sInfo_.surface = outputSurface;
-    EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_INVALID_STATE);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->inputDir = INP_DIR_720_30;
+        vDecSample->defaultWidth = 1920;
+        vDecSample->defaultHeight = 1080;
+        vDecSample->defaultFrameRate = 30;
+        vDecSample->sfOutput = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunFcodecVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+    }
 }
 
 /**
- * @tc.name  : MemoryRecycleTest
- * @tc.number: HevcDecoderTest_004
- * @tc.desc  : Test NotifyMemoryWriteBack when state is FREEZEING or FROZEN.
+ * @tc.number    : VIDEO_MEMORYRECYCLE_0400
+ * @tc.name      : Normal decoding process
+ * @tc.desc      : api test
  */
-HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_04, TestSize.Level0)
+HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level12)
 {
-    HevcDecoder hevcDecoder("hevc_decoder");
-    hevcDecoder.sInfo_.surface = outputSurface;
-    hevcDecoder.state_ = HevcDecoder::State::RUNNING;
-    EXPECT_EQ(hevcDecoder.NotifyMemoryWriteBack(), AVCS_ERR_INVALID_STATE);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->inputDir = INP_DIR_720_30;
+        vDecSample->defaultWidth = 1920;
+        vDecSample->defaultHeight = 1080;
+        vDecSample->defaultFrameRate = 30;
+        vDecSample->sfOutput = false;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunFcodecVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+    }
 }
 
 /**
- * @tc.name  : MemoryRecycleTest
- * @tc.number: HevcDecoderTest_005
- * @tc.desc  : Test NotifyMemoryRecycle when state is RUNNING, FLUSHED or EOS.
+ * @tc.number    : VIDEO_MEMORYRECYCLE_0500
+ * @tc.name      : Normal decoding process
+ * @tc.desc      : api test
  */
-HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_05, TestSize.Level0)
+HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level12)
 {
-    HevcDecoder hevcDecoder("hevc_decoder");
-    hevcDecoder.sInfo_.surface = outputSurface;
-    hevcDecoder.state_ = HevcDecoder::State::RUNNING;
-    EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_OK);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->inputDir = INP_DIR_720_30;
+        vDecSample->defaultWidth = 1920;
+        vDecSample->defaultHeight = 1080;
+        vDecSample->defaultFrameRate = 30;
+        vDecSample->sfOutput = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunFcodecErrorVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+    }
 }
 
-/**
- * @tc.name  : MemoryRecycleTest
- * @tc.number: HevcDecoderTest_006
- * @tc.desc  : Test NotifyMemoryRecycle when state is RUNNING, FLUSHED or EOS.
- */
-HWTEST_F(HevcDecoderTest, NotifyMemoryRecycle_ReturnError_HEVC_06, TestSize.Level0)
-{
-    HevcDecoder hevcDecoder("hevc_decoder");
-    hevcDecoder.sInfo_.surface = outputSurface;
-    hevcDecoder.state_ = HevcDecoder::State::RUNNING;
-    EXPECT_EQ(hevcDecoder.NotifyMemoryRecycle(), AVCS_ERR_OK);
-    EXPECT_EQ(hevcDecoder.NotifyMemoryWriteBack(), AVCS_ERR_OK);
-}
+} // namespace
