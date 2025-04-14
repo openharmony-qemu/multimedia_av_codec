@@ -70,7 +70,6 @@ ohos_shared_library("hcodec") {
     "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_3.0",
     "drivers_interface_display:libdisplay_commontype_proxy_1.0",
-    "drivers_peripheral_codec:libcodec_hdi_omx_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hdf_core:libhdf_utils",
