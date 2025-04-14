@@ -860,8 +860,8 @@ ohos_unittest("memrecycle_inner_unit_test") {
     "$av_codec_root_dir/test/unittest/common/",
   ]
 
-  cflags += [
-      "-std=c++17",
+  cflags = [
+    "-std=c++17",
     "-fno-rtti",
     "-fno-exceptions",
     "-Wall",
