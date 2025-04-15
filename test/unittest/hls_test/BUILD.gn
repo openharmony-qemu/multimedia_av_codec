@@ -101,6 +101,7 @@ ohos_unittest("hls_media_downloader_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -129,6 +130,7 @@ ohos_unittest("hls_playlist_downloader_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -157,6 +159,7 @@ ohos_unittest("hls_tags_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -185,6 +188,7 @@ ohos_unittest("m3u8_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"

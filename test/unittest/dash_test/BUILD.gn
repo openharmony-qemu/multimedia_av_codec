@@ -112,6 +112,7 @@ ohos_unittest("dash_xml_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
 }
 
@@ -137,6 +138,7 @@ ohos_unittest("dash_mpd_parser_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
 }
 
@@ -162,6 +164,7 @@ ohos_unittest("dash_media_downloader_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
 
   resource_config_file =
@@ -190,6 +193,7 @@ ohos_unittest("dash_mpd_downloader_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
 
   resource_config_file =
@@ -218,6 +222,7 @@ ohos_unittest("dash_segment_downloader_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
 
   resource_config_file =
