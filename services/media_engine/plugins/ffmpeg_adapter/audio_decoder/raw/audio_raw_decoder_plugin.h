@@ -20,10 +20,10 @@ namespace Media {
 namespace Plugins {
 namespace Audio {
 class AudioRawDecoderPlugin : public CodecPlugin {
-    public:
+public:
     explicit AudioRawDecoderPlugin(const std::string &name);
 
-    ~AudioRawDecoderPlugin();
+    ~AudioRawDecoderPlugin() override;
 
     Status Init() override;
 
