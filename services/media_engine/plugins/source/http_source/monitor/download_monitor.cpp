@@ -488,7 +488,7 @@ void DownloadMonitor::SetStartPts(int64_t startPts)
     }
 }
 
-void DownloadMonitor::SetExtraCache(int64_t cacheDuration)
+void DownloadMonitor::SetExtraCache(uint64_t cacheDuration)
 {
     if (downloader_) {
         downloader_->SetExtraCache(cacheDuration);

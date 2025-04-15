@@ -177,7 +177,7 @@ public:
         MEDIA_LOG_W("SetStartPts is unimplemented.");
     }
 
-    virtual void SetExtraCache(int64_t cacheDuration)
+    virtual void SetExtraCache(uint64_t cacheDuration)
     {
         MEDIA_LOG_W("SetExtraCache is unimplemented.");
     }
