@@ -109,7 +109,6 @@ const std::vector<std::pair<AVCodecID, AudioSampleFormat>> g_pFfCodeIDToSampleFm
     {AVCodecID::AV_CODEC_ID_PCM_S16LE_PLANAR, AudioSampleFormat::SAMPLE_S16P},
     {AVCodecID::AV_CODEC_ID_PCM_S24LE_PLANAR, AudioSampleFormat::SAMPLE_S24P},
     {AVCodecID::AV_CODEC_ID_PCM_S32LE_PLANAR, AudioSampleFormat::SAMPLE_S32P},
-    {AVCodecID::AV_CODEC_ID_PCM_S8, AudioSampleFormat::SAMPLE_S8},
     {AVCodecID::AV_CODEC_ID_PCM_S8_PLANAR, AudioSampleFormat::SAMPLE_S8P},
     {AVCodecID::AV_CODEC_ID_PCM_U16LE, AudioSampleFormat::SAMPLE_U16},
     {AVCodecID::AV_CODEC_ID_PCM_U24LE, AudioSampleFormat::SAMPLE_U24},
