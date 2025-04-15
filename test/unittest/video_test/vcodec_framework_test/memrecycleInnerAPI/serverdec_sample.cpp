@@ -525,7 +525,7 @@ int32_t VDecNdkInnerSample::PushData(std::shared_ptr<AVBuffer> buffer, uint32_t 
     }
 
     uint32_t bufferSize = static_cast<uint32_t>(((static_cast<unsigned char>(ch[3]) & 0xFF)) |
-                                                ((static_cast<unsigned char>(ch[2]) & 0xFF) << EIGHT)
+                                                ((static_cast<unsigned char>(ch[2]) & 0xFF) << EIGHT) |
                                                 ((static_cast<unsigned char>(ch[1]) & 0xFF) << SIXTEEN) |
                                                 ((static_cast<unsigned char>(ch[0]) & 0xFF) << TWENTY_FOUR));
     if (bufferSize >= ((defaultWidth * defaultHeight * THREE) >> 1)) {
