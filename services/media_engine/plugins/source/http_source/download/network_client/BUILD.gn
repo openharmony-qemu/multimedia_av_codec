@@ -60,6 +60,7 @@ ohos_static_library("http_curl_client") {
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
+    "samgr:samgr_proxy",
   ]
 
   subsystem_name = "multimedia"
