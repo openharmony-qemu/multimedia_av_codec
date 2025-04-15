@@ -1019,6 +1019,7 @@ void HevcDecoder::ReleaseBuffers()
 
     inputAvailQue_->Clear();
     buffers_[INDEX_INPUT].clear();
+    inputBufferCnt_ = 0;
 
     std::unique_lock<std::mutex> oLock(outputMutex_);
     codecAvailQue_->Clear();
@@ -1039,6 +1040,8 @@ void HevcDecoder::ReleaseBuffers()
         AVCODEC_LOGI("surface cleancache success");
     }
     buffers_[INDEX_OUTPUT].clear();
+    outputBufferCnt_ = 0;
+    outAVBuffer4Surface_.clear();
     oLock.unlock();
     isBufferAllocated_ = false;
 }

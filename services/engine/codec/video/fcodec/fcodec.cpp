@@ -1008,6 +1008,7 @@ void FCodec::ReleaseBuffers()
     inputAvailQue_->Clear();
     std::unique_lock<std::mutex> iLock(inputMutex_);
     buffers_[INDEX_INPUT].clear();
+    inputBufferCnt_ = 0;
     synIndex_ = std::nullopt;
     iLock.unlock();
 
@@ -1031,6 +1032,7 @@ void FCodec::ReleaseBuffers()
     }
     buffers_[INDEX_OUTPUT].clear();
     outAVBuffer4Surface_.clear();
+    outputBufferCnt_ = 0;
     oLock.unlock();
     isBufferAllocated_ = false;
 }
