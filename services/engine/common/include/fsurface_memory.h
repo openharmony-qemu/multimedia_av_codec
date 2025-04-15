@@ -18,9 +18,7 @@
 
 #include "refbase.h"
 #include "surface.h"
-#include "surface_buffer.h"
 #include "sync_fence.h"
-#include <cstdint>
 
 namespace OHOS {
 namespace MediaAVCodec {
