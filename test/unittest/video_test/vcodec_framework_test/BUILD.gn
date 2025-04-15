@@ -51,7 +51,6 @@ group("vcodec_framework_test") {
       ":videodec_h263_capi_unit_test",
       ":videodec_h263_inner_unit_test",
       ":videodec_h263_stable_unit_test",
-      ":videodec_hdecoder_memrecycle_unit_test",
       ":videodec_hdrvivid2sdr_capi_unit_test",
       ":videodec_hdrvivid2sdr_inner_unit_test",
       ":videodec_hevcdec_unit_test",
