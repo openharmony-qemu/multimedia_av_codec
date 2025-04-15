@@ -23,13 +23,13 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 using namespace Audio;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioRawDecoderPlugin"};
-Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register>& reg)
+Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register> &reg)
 {
     CodecPluginDef definition;
     definition.name = std::string(OHOS::MediaAVCodec::AVCodecCodecName::AUDIO_DECODER_RAW_NAME);
     definition.pluginType = PluginType::AUDIO_DECODER;
     definition.rank = 100;  // 100
-    definition.SetCreator([](const std::string& name) -> std::shared_ptr<CodecPlugin> {
+    definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
         return std::make_shared<AudioRawDecoderPlugin>(name);
     });
 
@@ -49,7 +49,7 @@ Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register>& reg)
 
 void UnRegisterAudioDecoderPlugin() {}
 
-PLUGIN_DEFINITION(RawAudioDecoder, LicenseType::VENDOR, RegisterAudioDecoderPlugins,
+PLUGIN_DEFINITION(RawAudioDecoder, LicenseType::APACHE_V2, RegisterAudioDecoderPlugins,
     UnRegisterAudioDecoderPlugin);
 }
 namespace OHOS {
@@ -172,7 +172,7 @@ Status AudioRawDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramete
     }
     maxOutputSize_ = channels_ * AUDIO_FRAME_LENGHT_DEFAULT * desBytesSize;
     inputBuffer_.resize(maxInputSize_);
-    AVCODEC_LOGI("input size:%{public}d, output size:%{public}d, format:%{public}d,des format:%{public}d",
+    AVCODEC_LOGI("input size:%{public}d, output size:%{public}d, format:%{public}d,dest format:%{public}d",
         maxInputSize_, maxOutputSize_, srcSampleFormat_, audioSampleFormat_);
     format_->Set<Tag::AUDIO_MAX_INPUT_SIZE>(static_cast<int32_t>(maxInputSize_));
     format_->Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(static_cast<int32_t>(maxOutputSize_));
