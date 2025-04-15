@@ -53,11 +53,11 @@ namespace {
 const string MIME_TYPE = "video/hevc";
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
-constexpr int32_t THREE = 3;
-constexpr int32_t EIGHT = 8;
-constexpr int32_t TEN = 10;
-constexpr int32_t SIXTEEN = 16;
-constexpr int32_t TWENTY_FOUR = 24;
+const int32_t THREE = 3;
+const int32_t EIGHT = 8;
+const int32_t TEN = 10;
+const int32_t SIXTEEN = 16;
+const int32_t TWENTY_FOUR = 24;
 constexpr uint32_t FRAME_INTERVAL = 1;
 constexpr uint8_t H264_NALU_TYPE = 0x1f;
 constexpr uint32_t START_CODE_SIZE = 4;
