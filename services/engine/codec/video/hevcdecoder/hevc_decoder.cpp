@@ -1581,9 +1581,7 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
                 ownedBySurfaceBufferIndex.push_back(index);
             }
         } else {
-            if (surfaceMemory->GetBase() == nullptr) {
-                RequestSurfaceBufferOnce(index);
-            }
+            RequestSurfaceBufferOnce(index);
             surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         }
         if (surfaceBuffer == nullptr) {
@@ -1629,13 +1627,14 @@ int32_t HevcDecoder::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurfa
 
 void HevcDecoder::CombineConsumerUsage()
 {
- uint64_t defaultUsage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
- uint64_t consumerUsage = sInfo_.surface->GetDefaultUsage();
- uint64_t cfgedUsage = sInfo_.requestConfig.usage;
- uint64_t finalUsage = defaultUsage | consumerUsage | cfgedUsage;
- sInfo_.requestConfig.usage = finalUsage;
- AVCODEC_LOGI("Usage: default(0x%{public}" PRIu64 ") | consumer(0x%{public}" PRIu64 ") | cfged(0x%{public}" PRIu64
-              ") -> final(0x%{public}" PRIu64 ").", defaultUsage, consumerUsage, cfgedUsage, finalUsage);
+    uint64_t defaultUsage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
+    uint64_t consumerUsage = sInfo_.surface->GetDefaultUsage();
+    uint64_t cfgedUsage = sInfo_.requestConfig.usage;
+    uint64_t finalUsage = defaultUsage | consumerUsage | cfgedUsage;
+    sInfo_.requestConfig.usage = finalUsage;
+    AVCODEC_LOGI("Usage: default(0x%{public}" PRIu64 ") | consumer(0x%{public}" PRIu64 ") | cfged(0x%{public}" PRIu64
+                 ") -> final(0x%{public}" PRIu64 ").",
+                 defaultUsage, consumerUsage, cfgedUsage, finalUsage);
 }
 
 int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)

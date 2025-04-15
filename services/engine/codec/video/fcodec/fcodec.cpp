@@ -1471,9 +1471,7 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
                 ownedBySurfaceBufferIndex.push_back(index);
             }
         } else {
-            if (buffers_[INDEX_OUTPUT][index]->sMemory_->GetBase() == nullptr) {
-                RequestSurfaceBufferOnce(index);
-            }
+            RequestSurfaceBufferOnce(index);
             surfaceBuffer = buffers_[INDEX_OUTPUT][index]->sMemory_->GetSurfaceBuffer();
         }
         CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get old surface buffer error!");
@@ -1620,13 +1618,14 @@ GSError FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
 
 void FCodec::CombineConsumerUsage()
 {
- uint64_t defaultUsage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
- uint64_t consumerUsage = sInfo_.surface->GetDefaultUsage();
- uint64_t cfgedUsage = sInfo_.requestConfig.usage;
- uint64_t finalUsage = defaultUsage | consumerUsage | cfgedUsage;
- sInfo_.requestConfig.usage = finalUsage;
- AVCODEC_LOGI("Usage: default(0x%{public}" PRIu64 ") | consumer(0x%{public}" PRIu64 ") | cfged(0x%{public}" PRIu64
-              ") -> final(0x%{public}" PRIu64 ").", defaultUsage, consumerUsage, cfgedUsage, finalUsage);
+    uint64_t defaultUsage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
+    uint64_t consumerUsage = sInfo_.surface->GetDefaultUsage();
+    uint64_t cfgedUsage = sInfo_.requestConfig.usage;
+    uint64_t finalUsage = defaultUsage | consumerUsage | cfgedUsage;
+    sInfo_.requestConfig.usage = finalUsage;
+    AVCODEC_LOGI("Usage: default(0x%{public}" PRIu64 ") | consumer(0x%{public}" PRIu64 ") | cfged(0x%{public}" PRIu64
+                 ") -> final(0x%{public}" PRIu64 ").",
+                 defaultUsage, consumerUsage, cfgedUsage, finalUsage);
 }
 
 int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
