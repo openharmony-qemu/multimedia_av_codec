@@ -53,11 +53,11 @@ namespace {
 const string MIME_TYPE = "video/hevc";
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
-#define THREE 3;
-#define EIGHT 8;
-#define TEN 10;
-#define SIXTEEN 16;
-#define TWENTY_FOUR 24;
+#define THREE 3; // 3
+#define EIGHT 8; // 8
+#define TEN 10; // 10
+#define SIXTEEN 16; // 16
+#define TWENTY_FOUR 24; // 24
 constexpr uint32_t FRAME_INTERVAL = 1;
 constexpr uint8_t H264_NALU_TYPE = 0x1f;
 constexpr uint32_t START_CODE_SIZE = 4;
@@ -681,9 +681,9 @@ void VDecNdkInnerSample::InputFunc()
 
         if (!inFile_->eof()) {
             vdec_->NotifyMemoryRecycle();
-            usleep(1000); // 100为100ms
+            usleep(100); // 100为100ms
             vdec_->NotifyMemoryWriteBack();
-            usleep(1000); // 100为100ms
+            usleep(100); // 100为100ms
             int32_t ret = PushData(buffer, index);
             usleep(100); // 100为100ms
             vdec_->NotifyMemoryRecycle();

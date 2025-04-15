@@ -90,7 +90,7 @@ namespace {
  * @tc.name      : Normal decoding process
  * @tc.desc      : api test
  */
-HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0100, TestSize.Level12)
+HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0100, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
@@ -109,7 +109,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0100, TestSize.Level12)
  * @tc.name      : Normal decoding process
  * @tc.desc      : api test
  */
-HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0200, TestSize.Level12)
+HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0200, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
@@ -128,7 +128,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0200, TestSize.Level12)
  * @tc.name      : Normal decoding process
  * @tc.desc      : api test
  */
-HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0300, TestSize.Level12)
+HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0300, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
@@ -147,7 +147,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0300, TestSize.Level12)
  * @tc.name      : Normal decoding process
  * @tc.desc      : api test
  */
-HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level12)
+HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
@@ -166,7 +166,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level12)
  * @tc.name      : Normal decoding process
  * @tc.desc      : api test
  */
-HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level12)
+HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
