@@ -380,19 +380,22 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
     }
     switch (level) {
         case AV_LOG_WARNING:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " WARN] " PUBLIC_LOG_S, level, buf);
+            MEDIA_LOG_D("[FFLogW] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_ERROR:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " ERROR] " PUBLIC_LOG_S, level, buf);
+            MEDIA_LOG_E("[FFLogE] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_FATAL:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " FATAL] " PUBLIC_LOG_S, level, buf);
+            MEDIA_LOG_E("[FFLogF] " PUBLIC_LOG_S, buf);
+            break;
+        case AV_LOG_PANIC:
+            MEDIA_LOG_E("[FFLogP] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_INFO:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " INFO] " PUBLIC_LOG_S, level, buf);
+            MEDIA_LOG_D("[FFLogI] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_DEBUG:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " DEBUG] " PUBLIC_LOG_S, level, buf);
+            MEDIA_LOG_D("[FFLogD] " PUBLIC_LOG_S, buf);
             break;
         default:
             break;
