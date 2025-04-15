@@ -53,11 +53,11 @@ namespace {
 const string MIME_TYPE = "video/hevc";
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
-const int32_t THREE = 3;
-const int32_t EIGHT = 8;
-const int32_t TEN = 10;
-const int32_t SIXTEEN = 16;
-const int32_t TWENTY_FOUR = 24;
+#define THREE 3;
+#define EIGHT 8;
+#define TEN 10;
+#define SIXTEEN 16;
+#define TWENTY_FOUR 24;
 constexpr uint32_t FRAME_INTERVAL = 1;
 constexpr uint8_t H264_NALU_TYPE = 0x1f;
 constexpr uint32_t START_CODE_SIZE = 4;
@@ -681,19 +681,19 @@ void VDecNdkInnerSample::InputFunc()
 
         if (!inFile_->eof()) {
             vdec_->NotifyMemoryRecycle();
-            usleep(1000 * 1000); // 1000*1000为1000ms
+            usleep(1000); // 100为100ms
             vdec_->NotifyMemoryWriteBack();
-            usleep(1000 * 1000); // 1000*1000为1000ms
+            usleep(1000); // 100为100ms
             int32_t ret = PushData(buffer, index);
-            usleep(1000 * 1000); // 1000*1000为1000ms
+            usleep(100); // 100为100ms
             vdec_->NotifyMemoryRecycle();
-            usleep(3000 * 1000); // 3000*1000为3000ms
+            usleep(100); // 100为300ms
             vdec_->NotifyMemoryRecycle();
-            usleep(1000); // 1000为1000ms
+            usleep(100); // 100为100ms
             vdec_->NotifyMemoryWriteBack();
-            usleep(1000 * 1000); // 1000*1000为1000ms
+            usleep(100); // 100为100ms
             vdec_->NotifyMemoryWriteBack();
-            usleep(500 * 1000); // 500*1000为500ms
+            usleep(100); // 100为100ms
             if (ret == 1) {
                 break;
             }
@@ -731,13 +731,13 @@ void VDecNdkInnerSample::InputErrorFunc()
 
         if (!inFile_->eof()) {
             vdec_->NotifyMemoryWriteBack();
-            usleep(1000 * 1000); // 1000*1000为1000ms
+            usleep(100); // 100为100ms
             int32_t ret = PushData(buffer, index);
-            usleep(1000 * 1000); // 1000*1000为1000ms
+            usleep(100); // 100为100ms
             vdec_->NotifyMemoryRecycle();
-            usleep(3000 * 1000); // 3000*1000为3000ms
+            usleep(100); // 100为100ms
             vdec_->NotifyMemoryRecycle();
-            usleep(1000 * 1000); // 1000*1000为1000ms
+            usleep(100); // 100为100ms
             if (ret == 1) {
                 break;
             }
