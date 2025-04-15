@@ -332,9 +332,7 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
         if (audioCapturer_->GetStatus() != AudioStandard::CAPTURER_RUNNING) {
             return Status::ERROR_AGAIN;
         }
-        if (bufData->GetAddr() == nullptr) {
-            return Status::ERROR_INVALID_PARAMETER;
-        }
+        FALSE_RETURN_V_MSG_E(bufData->GetAddr() == nullptr, Status::ERROR_NOT_ENOUGH_DATA, "audioCapturer Read() fail")
         size = audioCapturer_->Read(*bufData->GetAddr(), expectedLen, true);
     }
     FALSE_RETURN_V_MSG_E(size >= 0, Status::ERROR_NOT_ENOUGH_DATA, "audioCapturer Read() fail");
