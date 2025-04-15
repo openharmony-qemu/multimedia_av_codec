@@ -872,8 +872,8 @@ ohos_unittest("videodec_memrecycle_unit_test") {
 
   if (av_codec_support_test) {
     sources = [
+      "./memrecycleInnerAPI/serverdec_sample.cpp",
       "./videodec_memrecycle_unit_test.cpp",
-      "./memrecycleInnerAPI/serverdec_sample.cpp"
     ]
   }
 
