@@ -166,7 +166,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level1)
  * @tc.name      : Normal decoding process
  * @tc.desc      : api test
  */
-HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0400, TestSize.Level1)
+HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0500, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
