@@ -23,6 +23,7 @@
 #include "common/log.h"
 #include "avcodec_log.h"
 #include "osal/utils/util.h"
+#include "avcodec_common.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -355,8 +356,15 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
         MEDIA_LOG_D("SendFrameToFfmpeg no one frame data");
         // last frame mark eos
         if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
+            if (!isEosFlush_) {
+                avcodec_send_frame(avCodecContext_.get(), NULL);
+                outputBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_NONE;
+            }
+            Status tmp = ReceiveBuffer(outputBuffer);
+            MEDIA_LOG_I("output eos, flag:%{public}d", outputBuffer->flag_);
             dataCallback_->OnOutputBufferDone(outBuffer_);
-            return Status::OK;
+            status = ((tmp == Status::OK&& !isEosFlush_) ? Status::ERROR_AGAIN : Status::OK);
+            isEosFlush_ = true;
         }
         return status;
     }
@@ -391,6 +399,7 @@ Status FFmpegAACEncoderPlugin::Reset()
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     prevPts_ = 0;
+    isEosFlush_ = false;
     ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     isFirstInputPts_ = true;
     isFirstOutputPts_ = true;
@@ -403,6 +412,7 @@ Status FFmpegAACEncoderPlugin::Release()
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     prevPts_ = 0;
+    isEosFlush_ = false;
     ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     isFirstInputPts_ = true;
     isFirstOutputPts_ = true;
@@ -417,6 +427,7 @@ Status FFmpegAACEncoderPlugin::Flush()
         avcodec_flush_buffers(avCodecContext_.get());
     }
     prevPts_ = 0;
+    isEosFlush_ = false;
     isFirstInputPts_ = true;
     isFirstOutputPts_ = true;
     if (fifo_) {
@@ -506,7 +517,7 @@ Status FFmpegAACEncoderPlugin::InitContext()
         MEDIA_LOG_I("flags:%{public}d global_quality:%{public}d", avCodecContext_->flags,
             avCodecContext_->global_quality);
     }
-
+    avCodecContext_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     if (needResample_) {
         avCodecContext_->sample_fmt = avCodec_->sample_fmts[0];
     }
