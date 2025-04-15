@@ -99,7 +99,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0100, TestSize.Level1)
         vDecSample->defaultHeight = 1080;
         vDecSample->defaultFrameRate = 30;
         vDecSample->sfOutput = true;
-        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunHEVCVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
     }
 }
@@ -118,7 +118,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0200, TestSize.Level1)
         vDecSample->defaultHeight = 1080;
         vDecSample->defaultFrameRate = 30;
         vDecSample->sfOutput = true;
-        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunErrorVideoDecoder(g_codecName));
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunHEVCErrorVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
     }
 }
