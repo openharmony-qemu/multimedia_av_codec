@@ -56,10 +56,15 @@ public:
     void SetInitResolution(uint32_t width, uint32_t height) override;
     size_t GetLiveUpdateGap() const override;
     void InterruptM3U8Parse(bool isInterruptNeeded) override;
+    void GetStreamInfo(std::vector<StreamInfo>& streams) override;
+    bool ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, uint32_t streamId) override;
+    bool IsHlsFmp4() override;
 
 private:
     void UpdateMasterInfo(bool isPreParse);
     void UpdateMasterAndNotifyList(bool isPreParse);
+    void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file);
+
 private:
     std::string url_ {};
     PlayListChangeCallback* callback_ {nullptr};

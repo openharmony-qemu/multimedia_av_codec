@@ -70,6 +70,7 @@ public:
     uint64_t GetCachedDuration() override;
     void RestartAndClearBuffer() override;
     bool IsFlvLive() override;
+    bool IsHlsFmp4() override;
 
 private:
     void CloseUri(bool isAsync = false);

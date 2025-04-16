@@ -127,6 +127,7 @@ public:
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
     bool IsFlvLive();
+    bool IsHlsFmp4();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
