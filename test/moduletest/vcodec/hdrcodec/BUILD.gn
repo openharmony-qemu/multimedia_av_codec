@@ -66,13 +66,13 @@ ohos_unittest("hdrcodec_native_module_test") {
 
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:capi_packages",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avdemuxer",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avsource",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_venc",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avdemuxer",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avsource",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:capi_packages",
   ]
   external_deps = [
     "c_utils:utils",
