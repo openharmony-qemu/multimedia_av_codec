@@ -95,6 +95,7 @@ public:
     Status InitDefaultPlay(const std::vector<StreamInfo>& streams);
     std::shared_ptr<Plugins::DemuxerPlugin> GetPluginByStreamID(int32_t streamID);
     void GetTrackInfoByStreamID(int32_t streamID, int32_t& trackId, int32_t& innerTrackId);
+    void GetTrackInfoByStreamID(int32_t streamID, int32_t& trackId, int32_t& innerTrackId, TrackType type);
     
     int32_t GetTmpStreamIDByTrackID(int32_t trackId);
     int32_t GetTmpInnerTrackIDByTrackID(int32_t trackId);
