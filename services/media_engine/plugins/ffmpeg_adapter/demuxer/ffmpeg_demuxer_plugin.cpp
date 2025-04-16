@@ -1504,8 +1504,10 @@ Status FFmpegDemuxerPlugin::Flush()
 void FFmpegDemuxerPlugin::ResetEosStatus()
 {
     MEDIA_LOG_I("In");
-    formatContext_->pb->eof_reached = 0;
-    formatContext_->pb->error = 0;
+    if (formatContext_ != nullptr && formatContext_->pb != nullptr) {
+        formatContext_->pb->eof_reached = 0;
+        formatContext_->pb->error = 0;
+    }
 }
 
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
