@@ -78,7 +78,7 @@ public:
     virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
 };
 
-class MediaCodec : public Plugins::DataCallback {
+class MediaCodec : public std::enable_shared_from_this<MediaCodec>, public Plugins::DataCallback {
 public:
     MediaCodec();
 

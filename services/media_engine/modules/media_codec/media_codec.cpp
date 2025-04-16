@@ -39,18 +39,23 @@ namespace OHOS {
 namespace Media {
 class InputBufferAvailableListener : public IConsumerListener {
 public:
-    explicit InputBufferAvailableListener(MediaCodec *mediaCodec)
+    explicit InputBufferAvailableListener(std::shared_ptr<MediaCodec> mediaCodec)
     {
         mediaCodec_ = mediaCodec;
     }
 
     void OnBufferAvailable() override
     {
-        mediaCodec_->ProcessInputBuffer();
+        auto realPtr = mediaCodec_.lock();
+        if (realPtr != nullptr) {
+            realPtr->ProcessInputBuffer();
+        } else {
+            MEDIA_LOG_W("mediacodec was released, can not process input buffer");
+        }
     }
 
 private:
-    MediaCodec *mediaCodec_;
+    std::weak_ptr<MediaCodec> mediaCodec_;
 };
 
 MediaCodec::MediaCodec()
@@ -551,7 +556,7 @@ int32_t MediaCodec::PrepareInputBufferQueue()
     }
     FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, (int32_t)Status::ERROR_UNKNOWN, "inputBufferQueue_ is nullptr");
     inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
-    sptr<IConsumerListener> listener = new InputBufferAvailableListener(this);
+    sptr<IConsumerListener> listener = new InputBufferAvailableListener(shared_from_this());
     FALSE_RETURN_V_MSG_E(inputBufferQueueConsumer_ != nullptr, (int32_t)Status::ERROR_UNKNOWN,
                          "inputBufferQueueConsumer_ is nullptr");
     inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
