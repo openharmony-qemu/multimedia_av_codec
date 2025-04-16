@@ -93,7 +93,7 @@ public:
     MOCK_METHOD(Status, AutoSelectBitRate, (uint32_t bitRate), ());
     MOCK_METHOD(Status, StopBufferring, (bool flag), ());
     MOCK_METHOD(Status, SetStartPts, (int64_t startPts), ());
-    MOCK_METHOD(Status, SetExtraCache, (int64_t cacheDuration), ());
+    MOCK_METHOD(Status, SetExtraCache, (uint64_t cacheDuration), ());
     MOCK_METHOD(Status, SetCurrentBitRate, (int32_t bitRate, int32_t streamID), ());
     MOCK_METHOD(void, SetCallback, (Callback * callback), ());
     MOCK_METHOD(bool, IsNeedPreDownload, (), ());

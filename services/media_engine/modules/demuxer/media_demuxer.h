@@ -293,7 +293,7 @@ private:
     Status NotifySampleQueueBufferConsume(uint32_t queueId);
     Status HandleSelectBitrateBySampleQueue(int64_t startPts, uint32_t bitrate);
     bool IsIgonreBuffering();
-    int64_t demuxerCacheDuration_ = 0;
+    uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
     int64_t lastClockTimeMs_ = 0;
 

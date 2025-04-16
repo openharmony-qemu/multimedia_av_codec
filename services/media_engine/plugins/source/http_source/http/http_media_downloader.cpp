@@ -1701,10 +1701,10 @@ void HttpMediaDownloader::SetStartPts(int64_t startPts)
     flvStartPts_ = startPts;
 }
 
-void HttpMediaDownloader::SetExtraCache(int64_t cacheDuration)
+void HttpMediaDownloader::SetExtraCache(uint64_t cacheDuration)
 {
     extraCache_ = cacheDuration;
-    MEDIA_LOG_D("SetExtraCache extraCache_=" PUBLIC_LOG_D64, extraCache_);
+    MEDIA_LOG_D("SetExtraCache extraCache_=" PUBLIC_LOG_U64, extraCache_);
 }
 
 bool HttpMediaDownloader::SelectBitRate(uint32_t bitRate)

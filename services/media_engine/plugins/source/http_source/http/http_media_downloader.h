@@ -92,7 +92,7 @@ public:
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     void NotifyInitSuccess() override;
     void SetStartPts(int64_t startPts) override;
-    void SetExtraCache(int64_t cacheDuration) override;
+    void SetExtraCache(uint64_t cacheDuration) override;
     bool SelectBitRate(uint32_t bitRate) override;
     bool AutoSelectBitRate(uint32_t bitRate) override;
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
@@ -243,7 +243,7 @@ private:
     size_t timeoutInterval_ = 0;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
     int64_t flvStartPts_ {0};
-    int64_t extraCache_ {0};
+    uint64_t extraCache_ {0};
     MediaStreamList playMediaStreams_;
     std::atomic<bool> isSelectingBitrate_ {false};
     std::shared_ptr<PlayMediaStream> defaultStream_ {nullptr};
