@@ -108,7 +108,7 @@ void HCodec::BaseState::OnCodecEvent(CodecEventType event, uint32_t data1, uint3
         codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
         if (data1 == static_cast<uint32_t>(OMX_ErrorUnsupportedSetting)) {
             SLOGE("unsupport, need force shut down");
-            (void)codec_->ForceShutdown(codec_->stateGeneration_, fasle);
+            (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
         }
     } else {
         SLOGW("ignore event %d, data1 = %u, data2 = %u", event, data1, data2);
