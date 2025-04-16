@@ -178,21 +178,6 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr
     }
 }
 
-void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file)
-{
-    playInfo.duration_ = file->duration_;
-    playInfo.offset_ = file->offset_;
-    playInfo.length_ = file->length_;
-    if (master_ && currentVariant_ && master_->isFmp4_.load()) {
-        playInfo.url_ = std::to_string(playInfo.offset_) + "_" + std::to_string(playInfo.length_) + "_"
-                        + "_" + file->uri_;
-        playInfo.rangeUrl_ = file->uri_;
-        playInfo.streamId_ = currentVariant_->streamId_;
-    } else {
-        playInfo.url_ = file->uri_;
-    }
-}
-
 void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPreParse)
 {
     if (!location.empty()) {
