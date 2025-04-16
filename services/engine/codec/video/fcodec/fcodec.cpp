@@ -405,7 +405,7 @@ void FCodec::InitBuffers()
     }
     for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][i]->sMemory_;
-        if (surfaceMemory->isAttached || surfaceMemory->owner == Owner::OWNED_BY_SURFACE) {
+        if (surfaceMemory->isAttached && surfaceMemory->owner == Owner::OWNED_BY_SURFACE) {
             buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_SURFACE;
             renderAvailQue_->Push(i);
         } else {
@@ -936,10 +936,12 @@ int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
     oLock.unlock();
     if (width_ != outputBuffer->width_ || height_ != outputBuffer->height_) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
+        CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Surface memory is nullptr!");
         AVCODEC_LOGI("Update surface memory, width=%{public}d, height=%{public}d", width_, height_);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
         if (surfaceMemory->isAttached) {
             sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+            CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get surface buffer failed!");
             int32_t ret = Detach(surfaceBuffer);
             CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Surface buffer detach failed!");
             surfaceMemory->isAttached = false;
