@@ -605,9 +605,11 @@ Status FileFdSourcePlugin::SetReadBlockingFlag(bool isAllowed)
 
 void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
+    bool isInterruptAllowed = true;
     MEDIA_LOG_I("SetInterruptState isInterrupted_" PUBLIC_LOG_D32, isInterruptNeeded);
     {
         std::lock_guard<std::mutex> lock(interruptMutex_);
+        isInterruptAllowed = !(isInterrupted_ && isInterruptNeeded);
         isInterrupted_ = isInterruptNeeded;
         bufferCond_.notify_all();
     }
@@ -619,7 +621,7 @@ void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
         }
     }
     
-    if (isInterrupted_ && isCloudFile_) {
+    if (isInterrupted_ && isInterruptAllowed && isCloudFile_) {
         if (downloadTask_ != nullptr) {
             downloadTask_->StopAsync();
         }
