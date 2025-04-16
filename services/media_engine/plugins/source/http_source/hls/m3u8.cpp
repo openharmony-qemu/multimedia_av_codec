@@ -246,7 +246,6 @@ void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
     if (length > 0) {
         downloadHeaderRequest_->SetRangePos(offset, offset + length);
     }
-    downloadHeaderRequest_->SetIsAuthRequest(true);
     downloaderHeader_->Download(downloadHeaderRequest_, -1);
     downloaderHeader_->Start();
 }
