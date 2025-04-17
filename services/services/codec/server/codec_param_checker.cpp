@@ -303,30 +303,86 @@ bool CheckBitrateAndQualityParamRange(CapabilityData &capData, Format &format)
             capData.maxBitrate.minVal, capData.maxBitrate.maxVal);
     }
 
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor)) {
-        bool sqrFactorValid = capData.sqrFactor.InRange(sqrFactor);
-        CHECK_AND_RETURN_RET_LOG(sqrFactorValid, false,
-            "Param invalid, %{public}s: %{public}d, range: %{public}d-%{public}d",
-            MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR.data(), static_cast<int32_t>(sqrFactor),
-            capData.sqrFactor.minVal, capData.sqrFactor.maxVal);
-    }
     return true;
+}
+
+/*
+return 
+false: SQR is not set successfully, convert to VBR, ignore sqrfactor、max_bitrate
+true：SQR is set successfully
+*/
+bool CheckSqrMode(CapabilityData &capData, Format &format)
+{
+    int64_t bitrate;
+    int64_t maxBitrate;
+    int32_t quality;
+    int32_t sqrFactor;
+    int32_t bitrateMode;
+    bool bitrateExist = format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
+    bool maxBitrateExist = format.GetLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitrate);
+    bool qualityExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
+    bool sqrFactorExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
+    bool bitrateModeExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+
+    if (!bitrateModeExist || bitrateMode != VideoEncodeBitrateMode::SQR) {
+        return false;
+    }
+
+    if (qualityExist) {
+        AVCODEC_LOGE("Param invalid, in SQR mode but set quality!");
+    }
+
+    if (IsSupported(capData, VideoEncodeBitrateMode::SQR)) {
+        if (sqrFactorExist && !capData.sqrFactor.InRange(sqrFactor)) {
+            AVCODEC_LOGE("Param invalid, %{public}s: %{public}d, range: %{public}d-%{public}d",
+                MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR.data(), static_cast<int32_t>(sqrFactor),
+                capData.sqrFactor.minVal, capData.sqrFactor.maxVal);
+        } else {
+            if (bitrateExist && !capData.bitrate.InRange(bitrate)) {
+                AVCODEC_LOGE("Param invalid, %{public}s: %{public}d, range: %{public}d-%{public}d",
+                    MediaDescriptionKey::MD_KEY_BITRATE.data(), static_cast<int32_t>(bitrate),
+                    capData.bitrate.minVal, capData.bitrate.maxVal);
+                format.RemoveKey(MediaDescriptionKey::MD_KEY_BITRATE);
+            }
+            if (maxBitrateExist && !capData.maxBitrate.InRange(maxBitrate)) {
+                AVCODEC_LOGE("Param invalid, %{public}s: %{public}d, range: %{public}d-%{public}d",
+                    MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE.data(), static_cast<int32_t>(maxBitrate),
+                    capData.maxBitrate.minVal, capData.maxBitrate.maxVal);
+                format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE);
+            }
+            return true;
+        }
+    }
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::VBR); // ...
+    format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR);
+    format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE);
+    AVCODEC_LOGW("Param invalid, convert the mode to VBR!");
+    return false;
 }
 
 bool CheckBitrateModeSupport(CapabilityData &capData, Format &format)
 {
     int32_t bitrateMode;
-    // 1) set mode which is not supported
+    int32_t quality;
+    bool qualityExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
+    // 1) set mode which may be not supported
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode)) {
         CHECK_AND_RETURN_RET_LOG(IsSupported(capData.bitrateMode, bitrateMode),
             false, "Param invalid, %{public}s: %{public}d not supported",
             MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE.data(), bitrateMode);     // Invalid bitrate mode
-    } else {  // 2) set params whose corresponding mode is not supported
+        if (!qualityExist && bitrateMode == VideoEncodeBitrateMode::CQ) {
+            format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, DEFAULT_QUALITY);
+            AVCODEC_LOGW("In CQ mode but not set quality, set default quality: %{public}d", DEFAULT_QUALITY);
+        }
+    } else {  // 2) set params whose corresponding mode may be not supported
         int32_t sqrFactor;
         if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor)) {
-            CHECK_AND_RETURN_RET_LOG(
-                IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::SQR)),
-                false, "sqr mode not supported!");
+            format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::SQR);
+            CheckSqrMode(capData, format);
+        } else if (qualityExist &&
+                IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CQ))) {
+                format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::CQ);
+            }
         }
     }
     return true;
@@ -349,6 +405,18 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, [[mayb
     PrintParam(qualityExist, MediaDescriptionKey::MD_KEY_QUALITY, quality);
     PrintParam(sqrFactorExist, MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
     PrintParam(bitrateModeExist, MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+
+    /* CHECK: set SQR */
+    if (CheckSqrMode(capData, format)) {
+        return AVCS_ERR_OK;
+    }
+
+    /* CHECK: set VBR\CBR\CQ   or   set no mode */
+    if (bitrateMode == VideoEncodeBitrateMode::CQ || bitrateMode == VideoEncodeBitrateMode::VBR ||
+        VideoEncodeBitrateMode::CBR) {
+        format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR);
+        format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE);
+    }
 
     // 1. conflict
     // 1）conlict between (key)params
@@ -373,23 +441,6 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, [[mayb
     // 3 param range
     CHECK_AND_RETURN_RET_LOG(CheckBitrateAndQualityParamRange(capData, format), AVCS_ERR_CODEC_PARAM_INCORRECT,
         "param val not in range!");
-
-    // 4. add default param
-    if (bitrateModeExist) {
-        if (!qualityExist && bitrateMode == VideoEncodeBitrateMode::CQ) {
-            format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, DEFAULT_QUALITY);
-            AVCODEC_LOGW("In CQ mode but not set quality, set default quality: %{public}d", DEFAULT_QUALITY);
-        }
-    } else {
-        if (qualityExist && IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CQ))) {
-            bitrateMode = VideoEncodeBitrateMode::CQ;
-            format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-        }
-        if (sqrFactorExist && IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::SQR))) {
-            bitrateMode = VideoEncodeBitrateMode::SQR;
-            format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-        }
-    }
 
     return AVCS_ERR_OK;
 }
