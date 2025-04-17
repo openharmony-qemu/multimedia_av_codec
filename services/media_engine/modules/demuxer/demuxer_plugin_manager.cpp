@@ -217,6 +217,10 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
         streamInfoMap_[streamIndex].streamID = streamIndex;
         streamInfoMap_[streamIndex].bitRate = iter.bitRate;
         if (iter.type == MIXED) {  // 存在混合流则只请求该流
+            if (isHlsFmp4_) {
+                InitVideoTrack(iter);
+                continue;
+            }
             curVideoStreamID_ = streamIndex;
             streamInfoMap_[streamIndex].activated = true;
             streamInfoMap_[streamIndex].type = MIXED;
@@ -250,6 +254,20 @@ void DemuxerPluginManager::GetTrackInfoByStreamID(int32_t streamID, int32_t& tra
     auto iter = std::find_if(trackInfoMap_.begin(), trackInfoMap_.end(),
         [&](const std::pair<int32_t, MediaTrackMap> &item) {
         return item.second.streamID == streamID;
+    });
+    if (iter != trackInfoMap_.end()) {
+        trackId = iter->first;
+        innerTrackId = iter->second.innerTrackIndex;
+    }
+    return;
+}
+
+void DemuxerPluginManager::GetTrackInfoByStreamID(int32_t streamID, int32_t& trackId,
+    int32_t& innerTrackId, TrackType type)
+{
+    auto iter = std::find_if(trackInfoMap_.begin(), trackInfoMap_.end(),
+        [&](const std::pair<int32_t, MediaTrackMap> &item) {
+        return item.second.streamID == streamID && GetTrackTypeByTrackID(item.first) == type;
     });
     if (iter != trackInfoMap_.end()) {
         trackId = iter->first;
@@ -968,5 +986,9 @@ void DemuxerPluginManager::SetApiVersion(int32_t apiVersion)
     apiVersion_ = apiVersion;
 }
 
+void DemuxerPluginManager::SetIsHlsFmp4(bool isHlsFmp4)
+{
+    isHlsFmp4_ = isHlsFmp4;
+}
 } // namespace Media
 } // namespace OHOS

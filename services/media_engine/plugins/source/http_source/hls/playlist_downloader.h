@@ -20,6 +20,7 @@
 #include <map>
 #include "download/downloader.h"
 #include "plugin/plugin_base.h"
+#include "plugin/source_plugin.h"
 
 namespace OHOS {
 namespace Media {
@@ -29,6 +30,10 @@ struct PlayInfo {
     std::string url_;
     double duration_;
     int64_t startTimePos_ {0};
+    uint32_t offset_ {0};
+    uint32_t length_ {0};
+    std::string rangeUrl_;
+    uint32_t streamId_ {0};
 };
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
@@ -64,6 +69,10 @@ public:
     virtual bool IsParseAndNotifyFinished() = 0;
     virtual bool IsParseFinished() = 0;
     virtual void SetInitResolution(uint32_t width, uint32_t height) = 0;
+    virtual void GetStreamInfo(std::vector<StreamInfo>& streams) = 0;
+    virtual bool ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, uint32_t streamId) = 0;
+    virtual bool IsHlsFmp4() = 0;
+
     void SetInterruptState(bool isInterruptNeeded);
     void Resume();
     void Pause(bool isAsync = false);

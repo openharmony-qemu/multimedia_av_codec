@@ -329,6 +329,9 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     } else if (event.type == PluginEventType::DASH_SEEK_READY) {
         MEDIA_LOG_D("Onevent dash seek ready.");
         mediaDemuxerCallback_->OnEvent(event);
+    }  else if (event.type == PluginEventType::HLS_SEEK_READY) {
+        MEDIA_LOG_D("Onevent hls seek ready.");
+        mediaDemuxerCallback_->OnEvent(event);
     } else {
         MEDIA_LOG_I("on event type undefined.");
     }
@@ -593,6 +596,12 @@ bool Source::IsFlvLive()
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
     return plugin_->IsFlvLive();
+}
+
+bool Source::IsHlsFmp4()
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
+    return plugin_->IsHlsFmp4();
 }
 } // namespace Media
 } // namespace OHOS

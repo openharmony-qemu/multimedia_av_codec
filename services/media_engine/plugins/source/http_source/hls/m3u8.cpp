@@ -32,6 +32,7 @@ constexpr uint32_t DRM_PSSH_TITLE_LEN = 16;
 constexpr uint32_t WAIT_KEY_SLEEP_TIME = 10;
 constexpr uint32_t MAX_DOWNLOAD_TIME = 500;
 constexpr uint64_t BAND_WIDTH_LIMIT = 3 * 1024 * 1024;
+constexpr uint32_t DEFAULT_HEADER_SIZE = 1 * 1024 * 1024;
 constexpr double SECOND_TO_MICROSECOND = 1000.0 * 1000.0;
 const char DRM_PSSH_TITLE[] = "data:text/plain;";
 
@@ -87,6 +88,11 @@ M3U8::~M3U8()
     if (downloader_) {
         downloader_ = nullptr;
     }
+    if (downloaderHeader_) {
+        downloaderHeader_ = nullptr;
+    }
+    delete fmp4Header_;
+    fmp4Header_ = nullptr;
 }
 
 bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
@@ -140,10 +146,12 @@ void M3U8::InitTagUpdaters()
     tagUpdatersMap_[HlsTag::URI] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
         info.uri = UriJoin(uri_, std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString());
     };
-    tagUpdatersMap_[HlsTag::EXTXBYTERANGE] = [](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        std::ignore = tag;
+    tagUpdatersMap_[HlsTag::EXTXBYTERANGE] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = info;
-        MEDIA_LOG_I("need to parse EXTXBYTERANGE");
+        std::string value = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString();
+        std::shared_ptr<Attribute> attr = std::make_shared<Attribute>("BYTERANGE", value);
+        offset_ = attr->GetByteRange().first + 1; // 1
+        length_ = attr->GetByteRange().second;
     };
 }
 
@@ -168,11 +176,95 @@ void M3U8::InitTagUpdatersMap()
             }
         }
     };
-    tagUpdatersMap_[HlsTag::EXTXMAP] = [](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        std::ignore = tag;
+    tagUpdatersMap_[HlsTag::EXTXMAP] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = info;
-        MEDIA_LOG_I("need to parse EXTXMAP");
+        ParseMap(std::static_pointer_cast<AttributesTag>(tag));
     };
+}
+
+void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
+{
+    std::string uri;
+    auto uriAttribute = tag->GetAttributeByName("URI");
+    if (uriAttribute) {
+        if (uriAttribute->QuotedString().empty()) {
+            return;
+        }
+        uri = UriJoin(uri_, uriAttribute->QuotedString());
+    }
+    auto byteRangeAttribute = tag->GetAttributeByName("BYTERANGE");
+    size_t offset = 0;
+    size_t length = 0;
+    if (byteRangeAttribute) {
+        offset = byteRangeAttribute->GetByteRange().first;
+        length = byteRangeAttribute->GetByteRange().second;
+    }
+    if (isHeaderReady_.load()) {
+        return;
+    }
+    if (length > 0) {
+        fmp4Header_ = new uint8_t[length + 1]; // 1
+    }
+    DownloadMap(uri, offset, length);
+    uint32_t downloadTime = 0;
+    while (!isHeaderReady_.load() && downloadTime < MAX_DOWNLOAD_TIME && !isInterruptNeeded_.load()) {
+        Task::SleepInTask(WAIT_KEY_SLEEP_TIME);
+        downloadTime++;
+    }
+    if (isHeaderReady_.load()) {
+        MEDIA_LOG_I("x-map ready download " PUBLIC_LOG_U32, downloadHeaderLen_);
+    }
+}
+
+void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
+{
+    if (uri.empty()) {
+        return;
+    }
+    downloaderHeader_ = std::make_shared<Downloader>("HlsSourceMap");
+    dataSaveHeader_ = [this](uint8_t *&&data, uint32_t &&len, bool &&notBlock) {
+        return SaveMapData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len), notBlock);
+    };
+    statusCallback_ = [this](DownloadStatus &&status, std::shared_ptr<Downloader> d,
+        std::shared_ptr<DownloadRequest> &request) {
+        OnDownloadStatus(std::forward<decltype(status)>(status), downloaderHeader_,
+                         std::forward<decltype(request)>(request));
+    };
+    auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
+        UpdateDownloadFinished(url, location);
+    };
+    auto realStatusCallback = [this](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
+        std::shared_ptr<DownloadRequest> &request) {
+        statusCallback_(status, downloaderHeader_, std::forward<decltype(request)>(request));
+    };
+    RequestInfo requestInfo;
+    requestInfo.url = uri;
+    requestInfo.httpHeader = httpHeader_;
+    downloadHeaderRequest_ = std::make_shared<DownloadRequest>(dataSaveHeader_, realStatusCallback,
+                                                        requestInfo, length > 0 ? false : true);
+    downloadHeaderRequest_->SetDownloadDoneCb(downloadDoneCallback);
+    if (length > 0) {
+        downloadHeaderRequest_->SetRangePos(offset, offset + length);
+    }
+    downloaderHeader_->Download(downloadHeaderRequest_, -1);
+    downloaderHeader_->Start();
+}
+
+void M3U8::UpdateDownloadFinished(const std::string& url, const std::string& location)
+{
+    isHeaderReady_.store(true);
+}
+
+uint32_t M3U8::SaveMapData(uint8_t* data, uint32_t len, bool notBlock)
+{
+    if (fmp4Header_ == nullptr && downloadHeaderRequest_) {
+        uint32_t headerLen = downloadHeaderRequest_->GetFileContentLengthNoWait();
+        headerLen = headerLen > 0 ? headerLen : DEFAULT_HEADER_SIZE; // 1MB
+        fmp4Header_ = new uint8_t[headerLen];
+    }
+    NZERO_RETURN_V(memcpy_s(fmp4Header_ + downloadHeaderLen_, len, data, len), 0);
+    downloadHeaderLen_ += len;
+    return len;
 }
 
 void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
@@ -234,6 +326,8 @@ void M3U8::AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration)
         minFragDuration_.store(duration);
     }
     segmentOffsets_.emplace_back(duration);
+    fragment->offset_ = offset_;
+    fragment->length_ = length_;
     files_.emplace_back(fragment);
 }
 
@@ -454,6 +548,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     MEDIA_LOG_I("This is a simple media playlist, not a master playlist ");
     auto m3u8 = std::make_shared<M3U8>(uri_, "");
     auto stream = std::make_shared<M3U8VariantStream>(uri_, uri_, m3u8);
+    stream->streamId_ = ++defaultStreamId_;
     variants_.emplace_back(stream);
     defaultVariant_ = stream;
     if (isDecryptAble_) {
@@ -469,6 +564,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     segmentOffsets_ = m3u8->segmentOffsets_;
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();
+    isFmp4_ = m3u8->isHeaderReady_.load();
     isSimple_ = true;
     MEDIA_LOG_I("UpdateMediaPlaylist called, duration_ = " PUBLIC_LOG_F, duration_);
 }
@@ -509,6 +605,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
                     auto uri = UriJoin(uri_, name);
                     auto stream = std::make_shared<M3U8VariantStream>(name, uri, std::make_shared<M3U8>(uri, name));
                     FALSE_RETURN_MSG(stream != nullptr, "UpdateMasterPlaylist memory not enough");
+                    stream->streamId_ = ++defaultStreamId_;
                     if (tag->GetType() == HlsTag::EXTXIFRAMESTREAMINF) {
                         stream->iframe_ = true;
                     }

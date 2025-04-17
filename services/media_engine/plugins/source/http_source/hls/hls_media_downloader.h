@@ -33,6 +33,7 @@
 #include <utility>
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
+#include "av_common.h"
 
 namespace OHOS {
 namespace Media {
@@ -109,6 +110,8 @@ public:
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     void NotifyInitSuccess() override;
     uint64_t GetCachedDuration() override;
+    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
+    bool IsHlsFmp4() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -164,7 +167,9 @@ private:
     void HandleWaterLine();
     bool CacheBufferFullLoop();
     bool IsNeedBufferForPlaying();
-
+    bool ReadHeaderData(unsigned char* buff, ReadDataInfo& readDataInfo);
+    void HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos);
+    void RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo);
 private:
     size_t totalBufferSize_ {0};
     std::shared_ptr<Downloader> downloader_;
@@ -190,6 +195,7 @@ private:
     uint8_t key_[16] = {0};
     size_t keyLen_ {0};
     uint8_t iv_[16] = {0};
+    uint8_t initIv_[16] = {0};
     AES_KEY aesKey_;
     uint8_t decryptCache_[MIN_BUFFER_SIZE] {0};
     uint8_t decryptBuffer_[MIN_BUFFER_SIZE] {0};
@@ -304,6 +310,10 @@ private:
     std::atomic<bool> isTimeoutErrorNotified_ {false};
     std::atomic<bool> isNeedResume_ {false};
     uint64_t cachedDuration_ {0};
+    std::map<uint32_t, uint32_t> tsStreamIdInfo_ {};
+    uint32_t curStreamId_ {0};
+    std::atomic<bool> isNeedReadHeader_ {false};
+    std::atomic<bool> isNeedResetOffset_ {false};
 };
 }
 }

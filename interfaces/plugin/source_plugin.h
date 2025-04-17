@@ -278,6 +278,10 @@ public:
     {
         return false;
     }
+    virtual bool IsHlsFmp4()
+    {
+        return false;
+    }
 };
 
 /// Source plugin api major number.

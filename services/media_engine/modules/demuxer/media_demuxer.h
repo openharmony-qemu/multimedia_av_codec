@@ -103,6 +103,8 @@ public:
     void OnEvent(const Plugins::PluginEvent &event) override;
     void OnEventBuffer(const Plugins::PluginEvent &event);
     void OnSeekReadyEvent(const Plugins::PluginEvent &event);
+    void OnDashSeekReadyEvent(const Plugins::PluginEvent &event);
+    void OnHlsSeekReadyEvent(const Plugins::PluginEvent &event);
     void OnDfxEvent(const Plugins::PluginDfxEvent &event) override;
 
     Status SetPerfRecEnabled(bool isPerfRecEnabled);
@@ -256,6 +258,9 @@ private:
     Status HandleDashSelectTrack(int32_t trackId);
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
     Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
+    Status HandleHlsRebootPlugin();
+    Status HandleSeekChangeStream(int32_t currentStreamId, int32_t newStreamId, int32_t trackId);
+
     bool IsSubtitleMime(const std::string& mime);
     void HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
     void InitPtsInfo();
@@ -374,6 +379,8 @@ private:
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
     int32_t apiVersion_ {0};
+    bool isHlsFmp4_ {false};
+    std::mutex changeStreamMutex_ {};
 };
 } // namespace Media
 } // namespace OHOS
