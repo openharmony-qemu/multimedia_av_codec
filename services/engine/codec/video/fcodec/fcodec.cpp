@@ -781,7 +781,6 @@ void FCodec::StopRequestSurfaceBufferThread()
     }
 }
 
-
 bool FCodec::RequestSurfaceBufferOnce(uint32_t index)
 {
     if (!requestBufferThreadExit_.load()) {
