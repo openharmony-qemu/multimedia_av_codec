@@ -285,7 +285,8 @@ private:
             int64_t currentRenderPTS_ {0};
             int64_t lastReportedClockTime_ {HST_TIME_NONE};
             int64_t lastBufferOffset_ {0};
-            int64_t compensatePTS_ {0};
+            int64_t compensateDuration_ {0};
+            int64_t sumDuration_ {0};
     };
     std::unique_ptr<AudioDataSynchroizer> innerSynchroizer_ = std::make_unique<AudioDataSynchroizer>();
     MemoryType bufferMemoryType_ {MemoryType::UNKNOWN_MEMORY};
