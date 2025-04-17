@@ -565,7 +565,7 @@ Status HttpMediaDownloader::HandleRingBuffer(unsigned char* buff, ReadDataInfo& 
         isTimeoutErrorNotified_.store(true);
         return Status::END_OF_STREAM;
     }
-    if (isBuffering_ && !downloadRequest_->IsChunkedVod() && CheckBufferingOneSeconds()) {
+    if (isBuffering_ && CheckBufferingOneSeconds() && !downloadRequest_->IsChunkedVod()) {
         MEDIA_LOG_I("HTTP Return error again.");
         return Status::ERROR_AGAIN;
     }
@@ -583,7 +583,7 @@ Status HttpMediaDownloader::HandleCacheBuffer(unsigned char* buff, ReadDataInfo&
         isTimeoutErrorNotified_.store(true);
         return Status::END_OF_STREAM;
     }
-    if (isBuffering_ && !downloadRequest_->IsChunkedVod() && canWrite_ && CheckBufferingOneSeconds()) {
+    if (isBuffering_ && canWrite_ && CheckBufferingOneSeconds() && !downloadRequest_->IsChunkedVod()) {
         MEDIA_LOG_I("HTTP Return error again.");
         return Status::ERROR_AGAIN;
     }
