@@ -137,11 +137,12 @@ void HlsMediaDownloader::HlsInit(std::shared_ptr<MediaSourceLoaderCombinations> 
 HlsMediaDownloader::~HlsMediaDownloader()
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor in", FAKE_POINTER(this));
-    if (playlistDownloader_ != nullptr) {
-        playlistDownloader_ = nullptr;
-    }
     if (downloader_ != nullptr) {
         downloader_->Stop(false);
+    }
+    cacheMediaBuffer_ = nullptr;
+    if (playlistDownloader_ != nullptr) {
+        playlistDownloader_ = nullptr;
     }
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor out", FAKE_POINTER(this));
 }
@@ -655,6 +656,7 @@ void HlsMediaDownloader::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo
 
 Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
+    FALSE_RETURN_V(cacheMediaBuffer_ != nullptr, Status::ERROR_AGAIN);
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     readTime_ = now;
     if (isBuffering_ && !canWrite_) {
