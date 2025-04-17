@@ -617,15 +617,12 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
         return HandleRingBuffer(buff, readDataInfo);
     } else {
-        {
-            AutoLock lock(sleepMutex_);
-            if (cacheMediaBuffer_ == nullptr) {
-                WaitUntilInterrupt(TEN_MILLISECONDS, [this]() {
-                    return isInterruptNeeded_.load() || !isCacheBufferInited_;
-                });
-                if (!isCacheBufferInited_) {
-                    return Status::END_OF_STREAM;
-                }
+        if (cacheMediaBuffer_ == nullptr) {
+            WaitUntilInterrupt(TEN_MILLISECONDS, [this]() {
+                return isInterruptNeeded_.load() || !isCacheBufferInited_;
+            });
+            if (!isCacheBufferInited_) {
+                return Status::END_OF_STREAM;
             }
         }
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
