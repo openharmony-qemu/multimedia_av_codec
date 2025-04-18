@@ -28,6 +28,7 @@
 #include <unordered_map>
 #include "hevc_decoder.h"
 #include "codecbase.h"
+#include "surface/window.h"
 namespace OHOS {
 namespace MediaAVCodec {
 
@@ -60,7 +61,7 @@ public:
     int32_t sendFrameIndex;
     sptr<Surface> cs[2] = {};
     sptr<Surface> ps[2] = {};
-    NativeWindow *nativeWindow[2] = ();
+    NativeWindow *nativeWindow[2] = {};
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
 protected:
     std::shared_ptr<CodecBase> codec_;
