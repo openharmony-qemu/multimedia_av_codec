@@ -101,7 +101,7 @@ public:
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void HandleEvent(const Plugins::PluginEvent &event);
     void OnEvent(const Plugins::PluginEvent &event) override;
-    void OnEventBuffer(const Plugins::PluginEvent &event);
+    void OnEventBuffer(const Plugins::PluginEvent &event, std::shared_ptr<Pipeline::EventReceiver> eventReceiver);
     void OnSeekReadyEvent(const Plugins::PluginEvent &event);
     void OnDashSeekReadyEvent(const Plugins::PluginEvent &event);
     void OnHlsSeekReadyEvent(const Plugins::PluginEvent &event);
