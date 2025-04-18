@@ -19,7 +19,6 @@
 namespace OHOS::Media {
 using namespace testing::ext;
 constexpr int64_t FRAME_INTERVAL_MS = 5;
-constexpr uint32_t LARGER_QUEUE_SIZE = 150;
 
 void SampleQueueUnitTest::SetUpTestCase(void)
 {}
@@ -43,7 +42,7 @@ Status SampleQueueUnitTest::InitLargeSampleQueue()
     sampleQueueConfig.isFlvLiveStream_ = true;
     sampleQueueConfig.isSupportBitrateSwitch_ = true;
     sampleQueueConfig.queueId_ = 1;
-    sampleQueueConfig.bufferCap_ = LARGER_QUEUE_SIZE;
+    sampleQueueConfig.bufferCap_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
     Status status = sampleQueue_->Init(sampleQueueConfig);
     return status;
 }
@@ -479,7 +478,7 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_SwitchBitrateNormal, TestSize.Level1)
 HWTEST_F(SampleQueueUnitTest, SampleQueue_DiscardSampleAfter, TestSize.Level1)
 {
     EXPECT_EQ(InitLargeSampleQueue(), Status::OK);
-    int64_t frameCount = 150;
+    int64_t frameCount = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
     int64_t frameIntervalMs = 1;
     size_t bufferSize = 512;
     int64_t pushFrames = 0;
