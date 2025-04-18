@@ -33,6 +33,25 @@ constexpr int32_t TIME = 12345;
 constexpr int32_t MAX_SEND_FRAMES = 10;
 } // namespace
 
+class TestConsumerListenerBuffer : public IBufferConsumerListener {
+    public:
+        ConsumerListenerBuffer(sptr<Surface> cs, std::string_view name) : cs(cs) {};
+        ~ConsumerListenerBuffer() {}
+        void OnBufferAvailable() override
+        {
+            sptr<SurfaceBuffer> buffer;
+            int32_t flushFence;
+            cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
+            cs->ReleaseBuffer(buffer, -1);
+        }
+    
+    private:
+        int64_t timestamp = 0;
+        Rect damage = {};
+        sptr<Surface> cs {nullptr};
+    };
+    
+
 void VDecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
     tester->Flush();
@@ -86,6 +105,16 @@ int32_t VDecServerSample::SetCallback()
 {
     shared_ptr<CallBack> cb = make_shared<CallBack>(this);
     return codec_->SetCallback(cb);
+}
+
+void VDecNdkSample::CreateSurface()
+{
+    cs[0] = Surface::CreateSurfaceAsConsumer();
+    sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs[0], OUT_DIR);
+    cs[0]->RegisterConsumerListener(listener);
+    auto p = cs[0]->GetProducer();
+    ps[0] = Surface::CreateSurfaceAsProducer(p);
+    nativeWindow[0] = CreateNativeWindowFromSurface(&ps[0]);
 }
 
 void VDecServerSample::RunVideoServerDecoder()
