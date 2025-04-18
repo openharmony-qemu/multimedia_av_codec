@@ -276,9 +276,7 @@ int32_t FramerateChecker(CapabilityData &capData, Format &format, CodecScenario 
 bool CheckBitrateAndQualityParamRange(CapabilityData &capData, Format &format)
 {
     int64_t bitrate;
-    int64_t maxBitrate;
     int32_t quality;
-    int32_t sqrFactor;
     if (format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate)) {
         bool bitrateValid = capData.bitrate.InRange(bitrate);
         CHECK_AND_RETURN_RET_LOG(bitrateValid, false,
@@ -298,7 +296,7 @@ bool CheckBitrateAndQualityParamRange(CapabilityData &capData, Format &format)
 }
 
 /*
-return 
+return
 false: SQR is not set successfully. If the mode is SQR, convert to VBR and ignore sqrfactor、max_bitrate
 true : SQR is set successfully
 */
@@ -321,7 +319,7 @@ bool CheckSqrMode(CapabilityData &capData, Format &format)
         return false;
     }
 
-    if (IsSupported(capData, VideoEncodeBitrateMode::SQR)) {
+    if (IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::SQR))) {
         if (sqrFactorExist && !capData.sqrFactor.InRange(sqrFactor)) {
             AVCODEC_LOGW("Param invalid, %{public}s: %{public}d, range: %{public}d-%{public}d",
                 MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR.data(), static_cast<int32_t>(sqrFactor),

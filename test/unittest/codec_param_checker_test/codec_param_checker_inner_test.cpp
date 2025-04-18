@@ -337,7 +337,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1539,
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityDataHevc_);
     const auto &sqrFactorRange = codecInfo->GetSupportedSqrFactor();
     formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactorRange.minVal - 1);
-    formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE)
+    formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
     ASSERT_EQ(AVCS_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
 }
 
@@ -352,7 +352,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1540,
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityDataHevc_);
     const auto &sqrFactorRange = codecInfo->GetSupportedSqrFactor();
     formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactorRange.maxVal + 1);
-    formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE)
+    formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
     ASSERT_EQ(AVCS_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
 }
 
@@ -367,7 +367,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1541,
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityDataHevc_);
     const auto &maxBitrateRange = codecInfo->GetSupportedMaxBitrate();
     formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitrateRange.minVal - 1);
-    formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE)
+    formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
     ASSERT_EQ(AVCS_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
 }
 
@@ -382,7 +382,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1542,
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityDataHevc_);
     const auto &maxBitrateRange = codecInfo->GetSupportedMaxBitrate();
     formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitrateRange.maxVal + 1);
-    formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE)
+    formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
     ASSERT_EQ(AVCS_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
 }
 
@@ -693,7 +693,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1561,
     if (IsEncoderBitrateModeSupported(capabilityDataHevc_, SQR)) {
         formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, DEFAULT_SQR_FACTOR);
-        formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, INT64_MAX)
+        formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, INT64_MAX);
         formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, INT32_MAX);
         std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityDataHevc_);
         const auto &maxBitrateRange = codecInfo->GetSupportedMaxBitrate();
@@ -732,7 +732,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1563,
         std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityDataHevc_);
         const auto &sqrFactorRange = codecInfo->GetSupportedSqrFactor();
         formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactorRange.maxVal + 1);
-        formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE)
+        formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
         ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
     }
 }
