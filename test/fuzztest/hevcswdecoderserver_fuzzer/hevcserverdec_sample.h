@@ -62,7 +62,7 @@ public:
     sptr<Surface> cs[2] = {};
     sptr<Surface> ps[2] = {};
     NativeWindow *nativeWindow[2] = {};
-    const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
+    const char *outDIR = "/data/test/media/VDecTest.yuv";
 protected:
     std::shared_ptr<CodecBase> codec_;
     std::atomic<bool> isRunning_ { false };

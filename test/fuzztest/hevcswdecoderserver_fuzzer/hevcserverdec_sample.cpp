@@ -109,7 +109,7 @@ int32_t VDecServerSample::SetCallback()
 void VDecServerSample::CreateSurface()
 {
     cs[0] = Surface::CreateSurfaceAsConsumer();
-    sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs[0], OUT_DIR);
+    sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs[0], outDIR);
     cs[0]->RegisterConsumerListener(listener);
     auto p = cs[0]->GetProducer();
     ps[0] = Surface::CreateSurfaceAsProducer(p);
