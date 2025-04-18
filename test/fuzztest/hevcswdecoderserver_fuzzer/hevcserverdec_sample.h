@@ -51,6 +51,7 @@ public:
     int32_t SetCallback();
     void GetOutputFormat();
     void Flush();
+    void Stop();
     void Reset();
     void InputFunc();
     void WaitForEos();

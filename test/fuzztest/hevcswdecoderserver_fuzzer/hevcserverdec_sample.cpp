@@ -270,3 +270,13 @@ void VDecServerSample::Reset()
         signal_->inCond_.notify_all();
     }
 }
+
+void VDecServerSample::Stop()
+{
+    int32_t err = codec_->Stop();
+    if (err != AVCS_ERR_OK) {
+        cout << "Stop fail" << endl;
+        isRunning_.store(false);
+        signal_->inCond_.notify_all();
+    }
+}
