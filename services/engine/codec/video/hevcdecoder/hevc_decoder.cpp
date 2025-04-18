@@ -508,7 +508,7 @@ int32_t HevcDecoder::Flush()
     ResetBuffers();
     int32_t ret = 0;
     while (ret == 0 && hevcDecoderFlushFrameFunc_ != nullptr) {
-        ret = ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
+        ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
     }
     state_ = State::FLUSHED;
     AVCODEC_LOGI("Flush codec successful, state: Flushed");
