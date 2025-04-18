@@ -33,24 +33,23 @@ constexpr int32_t TIME = 12345;
 constexpr int32_t MAX_SEND_FRAMES = 10;
 } // namespace
 
-class TestConsumerListenerBuffer : public IBufferConsumerListener {
-    public:
-        ConsumerListenerBuffer(sptr<Surface> cs, std::string_view name) : cs(cs) {};
-        ~ConsumerListenerBuffer() {}
-        void OnBufferAvailable() override
-        {
-            sptr<SurfaceBuffer> buffer;
-            int32_t flushFence;
-            cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
-            cs->ReleaseBuffer(buffer, -1);
-        }
-    
-    private:
-        int64_t timestamp = 0;
-        Rect damage = {};
-        sptr<Surface> cs {nullptr};
-    };
-    
+class TestConsumerListener : public IBufferConsumerListener {
+public:
+    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
+    ~TestConsumerListener() {}
+    void OnBufferAvailable() override
+    {
+        sptr<SurfaceBuffer> buffer;
+        int32_t flushFence;
+        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
+        cs->ReleaseBuffer(buffer, -1);
+    }
+
+private:
+    int64_t timestamp = 0;
+    Rect damage = {};
+    sptr<Surface> cs {nullptr};
+};
 
 void VDecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
@@ -107,7 +106,7 @@ int32_t VDecServerSample::SetCallback()
     return codec_->SetCallback(cb);
 }
 
-void VDecNdkSample::CreateSurface()
+void VDecServerSample::CreateSurface()
 {
     cs[0] = Surface::CreateSurfaceAsConsumer();
     sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs[0], OUT_DIR);
@@ -163,7 +162,7 @@ void VDecServerSample::RunVideoServerSurfaceDecoder()
     }
     std::vector<CapabilityData> caps;
     err = GetHevcDecoderCapabilityList(caps);
-    int32_t err = ConfigServerDecoder();
+    err = ConfigServerDecoder();
     if (err != AVCS_ERR_OK) {
         cout << "ConfigServerDecoder failed" << endl;
         return;
@@ -190,7 +189,6 @@ void VDecServerSample::RunVideoServerSurfaceDecoder()
         isRunning_.store(false);
     }
 }
-
 
 void VDecServerSample::InputFunc()
 {
