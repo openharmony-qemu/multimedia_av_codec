@@ -13,22 +13,18 @@
  * limitations under the License.
  */
 
-
 #include "sample_queue_unit_test.h"
 
 #define LOCAL true
 namespace OHOS::Media {
 using namespace testing::ext;
 constexpr int64_t FRAME_INTERVAL_MS = 5;
-constexpr uint32_t LARGER_QUEUE_SIZE = 150;
 
 void SampleQueueUnitTest::SetUpTestCase(void)
-{
-}
+{}
 
 void SampleQueueUnitTest::TearDownTestCase(void)
-{
-}
+{}
 
 void SampleQueueUnitTest::SetUp()
 {
@@ -38,8 +34,7 @@ void SampleQueueUnitTest::SetUp()
 }
 
 void SampleQueueUnitTest::TearDown()
-{
-}
+{}
 
 Status SampleQueueUnitTest::InitLargeSampleQueue()
 {
@@ -47,7 +42,7 @@ Status SampleQueueUnitTest::InitLargeSampleQueue()
     sampleQueueConfig.isFlvLiveStream_ = true;
     sampleQueueConfig.isSupportBitrateSwitch_ = true;
     sampleQueueConfig.queueId_ = 1;
-    sampleQueueConfig.bufferCap_ = LARGER_QUEUE_SIZE;
+    sampleQueueConfig.bufferCap_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
     Status status = sampleQueue_->Init(sampleQueueConfig);
     return status;
 }
@@ -56,7 +51,7 @@ Status SampleQueueUnitTest::InitNormalSampleQueue()
 {
     SampleQueue::Config sampleQueueConfig{};
     sampleQueueConfig.isFlvLiveStream_ = false;
-    sampleQueueConfig.isSupportBitrateSwitch_ = true;
+    sampleQueueConfig.isSupportBitrateSwitch_ = false;
     sampleQueueConfig.queueId_ = 0;
     sampleQueueConfig.bufferCap_ = 1;
     Status status = sampleQueue_->Init(sampleQueueConfig);
@@ -127,6 +122,18 @@ void SampleQueueUnitTest::ConsumerLoop(int64_t frameCount, int64_t frameInterval
 }
 
 /**
+ * @tc.name: SampleQueue_GetBufferQueueProducer
+ * @tc.desc: test SampleQueue Get BufferQueueProducer
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(SampleQueueUnitTest, SampleQueue_GetBufferQueueProducer, TestSize.Level1)
+{
+    EXPECT_EQ(InitNormalSampleQueue(), Status::OK);
+    EXPECT_TRUE(sampleQueue_->GetBufferQueueProducer() != nullptr);
+}
+
+/**
  * @tc.name: SampleQueue_Init_Not_Support_Bitrate_Switch
  * @tc.desc: test SampleQueue init but not support bitrate switch
  * @tc.type: FUNC
@@ -165,7 +172,6 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_RequestBuffer, TestSize.Level1)
     EXPECT_EQ(status, Status::OK);
 }
 
-
 /**
  * @tc.name: SampleQueue_PushBuffer
  * @tc.desc: test SampleQueue push Buffer
@@ -190,7 +196,6 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_PushBuffer, TestSize.Level1)
     EXPECT_EQ(status, Status::OK);
     EXPECT_EQ(sqCb_->OnConsumeSum_, 1);
 }
-
 
 /**
  * @tc.name: SampleQueue_AcquireCopyToDstBuffer
@@ -251,7 +256,7 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_AcquireCopyToDstBufferFail, TestSize.L
     std::shared_ptr<AVBuffer> sampleBuffer;
     status = sampleQueue_->RequestBuffer(sampleBuffer, avBufferConfig, 0);
     EXPECT_EQ(status, Status::OK);
-    
+
     UpdateBufferInfo(sampleBuffer, pts, srcBufferSize);
 
     status = sampleQueue_->PushBuffer(sampleBuffer, true);
@@ -268,6 +273,92 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_AcquireCopyToDstBufferFail, TestSize.L
     auto avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
     std::shared_ptr<AVBuffer> sampleBuffer2 = AVBuffer::CreateAVBuffer(avAllocator, avBufferConfig.capacity);
     status = sampleQueue_->AcquireCopyToDstBuffer(sampleBuffer2);
+    EXPECT_NE(status, Status::OK);
+}
+
+/**
+ * @tc.name: SampleQueue_AcquireCopyToDstBufferFail
+ * @tc.desc: test SampleQueue Acquire and Copy to Dst Buffer Fail
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(SampleQueueUnitTest, SampleQueue_AcquireCopyToDstBufferFailForNullMeta, TestSize.Level1)
+{
+    Status status = InitLargeSampleQueue();
+    EXPECT_EQ(status, Status::OK);
+
+    constexpr size_t srcBufferSize = 1024;
+    constexpr size_t dstBufferSize = 512;
+    constexpr int64_t pts = 1;
+    AVBufferConfig avBufferConfig;
+    avBufferConfig.capacity = srcBufferSize;
+    avBufferConfig.size = srcBufferSize;
+    std::shared_ptr<AVBuffer> srcBuffer;
+    status = sampleQueue_->RequestBuffer(srcBuffer, avBufferConfig, 0);
+    EXPECT_EQ(status, Status::OK);
+
+    UpdateBufferInfo(srcBuffer, pts, srcBufferSize);
+    EXPECT_TRUE(srcBuffer->meta_ != nullptr);
+
+    status = sampleQueue_->PushBuffer(srcBuffer, true);
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_EQ(sqCb_->OnConsumeSum_, 1);
+
+    size_t size = 0;
+    status = sampleQueue_->QuerySizeForNextAcquireBuffer(size);
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_EQ(size, srcBufferSize);
+
+    avBufferConfig.memoryType = MemoryType::VIRTUAL_MEMORY;
+    avBufferConfig.capacity = dstBufferSize;
+    auto avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
+    std::shared_ptr<AVBuffer> dstBuffer = AVBuffer::CreateAVBuffer(avAllocator, avBufferConfig.capacity);
+
+    srcBuffer->meta_ = nullptr;
+    status = sampleQueue_->AcquireCopyToDstBuffer(dstBuffer);
+    EXPECT_NE(status, Status::OK);
+}
+
+/**
+ * @tc.name: SampleQueue_AcquireCopyToDstBufferFailForNullMemory
+ * @tc.desc: test SampleQueue Acquire and Copy to Dst Buffer Fail for nullptr memory
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(SampleQueueUnitTest, SampleQueue_AcquireCopyToDstBufferFailForNullMemory, TestSize.Level1)
+{
+    Status status = InitLargeSampleQueue();
+    EXPECT_EQ(status, Status::OK);
+
+    constexpr size_t srcBufferSize = 1024;
+    constexpr size_t dstBufferSize = 512;
+    constexpr int64_t pts = 1;
+    AVBufferConfig avBufferConfig;
+    avBufferConfig.capacity = srcBufferSize;
+    avBufferConfig.size = srcBufferSize;
+    std::shared_ptr<AVBuffer> srcBuffer;
+    status = sampleQueue_->RequestBuffer(srcBuffer, avBufferConfig, 0);
+    EXPECT_EQ(status, Status::OK);
+
+    UpdateBufferInfo(srcBuffer, pts, srcBufferSize);
+    EXPECT_TRUE(srcBuffer->memory_ != nullptr);
+
+    status = sampleQueue_->PushBuffer(srcBuffer, true);
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_EQ(sqCb_->OnConsumeSum_, 1);
+
+    size_t size = 0;
+    status = sampleQueue_->QuerySizeForNextAcquireBuffer(size);
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_EQ(size, srcBufferSize);
+
+    avBufferConfig.memoryType = MemoryType::VIRTUAL_MEMORY;
+    avBufferConfig.capacity = dstBufferSize;
+    auto avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
+    std::shared_ptr<AVBuffer> dstBuffer = AVBuffer::CreateAVBuffer(avAllocator, avBufferConfig.capacity);
+
+    dstBuffer->memory_ = nullptr;
+    status = sampleQueue_->AcquireCopyToDstBuffer(dstBuffer);
     EXPECT_NE(status, Status::OK);
 }
 
@@ -364,7 +455,7 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_SwitchBitrateNormal, TestSize.Level1)
             if (pushFrames_ == 300) {
                 sampleQueue_->ReadySwitchBitrate(2000);
             }
-            if (sqCb_->switchPtsVec_.size()  > 0) {
+            if (sqCb_->switchPtsVec_.size() > 0) {
                 break;
             }
         }
@@ -378,4 +469,146 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_SwitchBitrateNormal, TestSize.Level1)
     EXPECT_EQ(sqCb_->switchPtsVec_.size(), 1);
 }
 
+/**
+ * @tc.name: SampleQueue_DiscardSampleAfter
+ * @tc.desc: test SampleQueue for discard sample
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(SampleQueueUnitTest, SampleQueue_DiscardSampleAfter, TestSize.Level1)
+{
+    EXPECT_EQ(InitLargeSampleQueue(), Status::OK);
+    int64_t frameCount = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
+    int64_t frameIntervalMs = 1;
+    size_t bufferSize = 512;
+    int64_t pushFrames = 0;
+    while (pushFrames < frameCount) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(frameIntervalMs));
+        int64_t pts = pushFrames;
+        AVBufferConfig avBufferConfig;
+        avBufferConfig.capacity = bufferSize;
+        avBufferConfig.size = bufferSize;
+        std::shared_ptr<AVBuffer> sampleBuffer;
+        Status status = sampleQueue_->RequestBuffer(sampleBuffer, avBufferConfig, 0);
+        if (status != Status::OK) {
+            continue;
+        }
+        bool isKeyFrame = pushFrames_ % 30 == 0;
+        UpdateBufferInfo(sampleBuffer, pts, bufferSize);
+        if (isKeyFrame) {
+            sampleQueue_->keyFramePtsSet_.insert(pts);
+        }
+
+        status = sampleQueue_->PushBuffer(sampleBuffer, true);
+        pushFrames++;
+        std::cout << "========== pushFrames " << pushFrames << std::endl;
+    }
+    EXPECT_EQ(sampleQueue_->DiscardSampleAfter(200), Status::OK);
+    EXPECT_EQ(sampleQueue_->lastEndSamplePts_, 200);
 }
+
+/**
+ * @tc.name: SampleQueue_ReadySwitchBitrateInvalid
+ * @tc.desc: test SampleQueue for ReadySwitchBitrate Invalid
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(SampleQueueUnitTest, SampleQueue_ReadySwitchBitrateInvalid, TestSize.Level1)
+{
+    EXPECT_EQ(InitNormalSampleQueue(), Status::OK);
+    EXPECT_EQ(sampleQueue_->ReadySwitchBitrate(2000), Status::ERROR_INVALID_OPERATION);
+}
+
+/**
+ * @tc.name: SampleQueue_ReadySwitchBitrateFromReadySwitch
+ * @tc.desc: test SampleQueue for SampleQueue_ReadySwitchBitrateFromReadySwitch
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(SampleQueueUnitTest, SampleQueue_ReadySwitchBitrateFromReadySwitch, TestSize.Level1)
+{
+    EXPECT_EQ(InitLargeSampleQueue(), Status::OK);
+    uint32_t bitrate = 2000;
+    sampleQueue_->switchStatus_ = SelectBitrateStatus::READY_SWITCH;
+    EXPECT_EQ(sampleQueue_->ReadySwitchBitrate(bitrate), Status::OK);
+    EXPECT_EQ(sampleQueue_->nextSwitchBitrate_, bitrate);
+}
+
+/**
+ * @tc.name: SampleQueue_ReadySwitchBitrateFromSwitching
+ * @tc.desc: test SampleQueue for SampleQueue_ReadySwitchBitrateFromSwitching
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(SampleQueueUnitTest, SampleQueue_ReadySwitchBitrateFromSwitching, TestSize.Level1)
+{
+    EXPECT_EQ(InitLargeSampleQueue(), Status::OK);
+    uint32_t bitrate = 2000;
+    sampleQueue_->switchStatus_ = SelectBitrateStatus::SWITCHING;
+    EXPECT_EQ(sampleQueue_->ReadySwitchBitrate(bitrate), Status::OK);
+    EXPECT_EQ(sampleQueue_->switchBitrateWaitList_.front(), bitrate);
+}
+
+/**
+ * @tc.name: SampleQueue_ReadySwitchBitrateFromSwitchingWithWaitList
+ * @tc.desc: test SampleQueue for SampleQueue_ReadySwitchBitrateFromSwitchingWithWaitList
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(SampleQueueUnitTest, SampleQueue_ReadySwitchBitrateFromSwitchingWithWaitList, TestSize.Level1)
+{
+    EXPECT_EQ(InitLargeSampleQueue(), Status::OK);
+    uint32_t bitrate = 1000;
+    sampleQueue_->switchBitrateWaitList_.push_back(bitrate);
+    bitrate = 2000;
+    sampleQueue_->switchStatus_ = SelectBitrateStatus::SWITCHING;
+    EXPECT_EQ(sampleQueue_->ReadySwitchBitrate(bitrate), Status::OK);
+    EXPECT_EQ(sampleQueue_->switchBitrateWaitList_.front(), bitrate);
+    EXPECT_EQ(sampleQueue_->switchBitrateWaitList_.size(), SampleQueue::MAX_BITRATE_SWITCH_WAIT_NUMBER);
+}
+
+/**
+ * @tc.name: SampleQueue_IsKeyFrameAvailable
+ * @tc.desc: test SampleQueue for IsKeyFrameAvailable
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(SampleQueueUnitTest, SampleQueue_IsKeyFrameAvailable, TestSize.Level1)
+{
+    EXPECT_EQ(InitLargeSampleQueue(), Status::OK);
+    sampleQueue_->lastEndSamplePts_ = 2500000;
+    sampleQueue_->keyFramePtsSet_.insert(3000000);
+    sampleQueue_->keyFramePtsSet_.insert(4000000);
+    EXPECT_TRUE(sampleQueue_->IsKeyFrameAvailable());
+    EXPECT_EQ(sampleQueue_->startPtsToSwitch_, 4000000);
+
+    sampleQueue_->keyFramePtsSet_.insert(5000000);
+    sampleQueue_->keyFramePtsSet_.insert(6000000);
+    sampleQueue_->keyFramePtsSet_.insert(7000000);
+    EXPECT_TRUE(sampleQueue_->IsKeyFrameAvailable());
+    EXPECT_EQ(sampleQueue_->startPtsToSwitch_, 6000000);
+
+    sampleQueue_->keyFramePtsSet_.clear();
+    EXPECT_FALSE(sampleQueue_->IsKeyFrameAvailable());
+}
+
+/**
+ * @tc.name: SampleQueue_GetCacheDuration
+ * @tc.desc: test SampleQueue for GetCacheDuration
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(SampleQueueUnitTest, SampleQueue_GetCacheDuration, TestSize.Level1)
+{
+    EXPECT_EQ(InitLargeSampleQueue(), Status::OK);
+    sampleQueue_->lastEnterSamplePts_ = Plugins::HST_TIME_NONE;
+    EXPECT_EQ(sampleQueue_->GetCacheDuration(), 0);
+
+    sampleQueue_->lastOutSamplePts_ = Plugins::HST_TIME_NONE;
+    EXPECT_EQ(sampleQueue_->GetCacheDuration(), 0);
+
+    sampleQueue_->lastOutSamplePts_ = 1000;
+    sampleQueue_->lastEnterSamplePts_ = 3000;
+    EXPECT_EQ(sampleQueue_->GetCacheDuration(), 2000);
+}
+}  // namespace OHOS::Media

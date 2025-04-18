@@ -69,7 +69,9 @@ constexpr size_t LARGE_OFFSET_SPAN_THRESHOLD = 10 * 1024 * 1024;
 constexpr int32_t STATE_CHANGE_THRESHOLD = 2;
 constexpr size_t LARGE_VIDEO_THRESHOLD = 18 * 1024 * 1024;
 constexpr size_t BUFFER_REDUNDANCY = 4 * 1024 * 1024;
-constexpr float DEFAULT_FLV_START_CACHE_TIME = 1;
+constexpr size_t IGNORE_BUFFERING_WITH_START_TIME_MS = 5000;
+constexpr size_t IGNORE_BUFFERING_EXTRA_CACHE_BEYOND_MS = 300;
+
 }
 void HttpMediaDownloader::InitRingBuffer(uint32_t expectBufferDuration)
 {
@@ -336,7 +338,8 @@ void HttpMediaDownloader::HandleWaterline()
 bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
 {
     AutoLock lk(savedataMutex_);
-    if (!isFirstFrameArrived_) {
+    if (!isFirstFrameArrived_ ||
+        (isRingBuffer_ && (steadyClock_.ElapsedMilliseconds() - openTime_) < IGNORE_BUFFERING_WITH_START_TIME_MS)) {
         if (GetCurrentBufferSize() >= wantReadLength || HandleBreak()) {
             return false;
         } else {
@@ -360,6 +363,9 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
     if (fileContenLen > readOffset_) {
         fileRemain = fileContenLen - readOffset_;
         cacheWaterLine = std::min(fileRemain, cacheWaterLine);
+    }
+    if (isRingBuffer_ && extraCache_ >= IGNORE_BUFFERING_EXTRA_CACHE_BEYOND_MS) {
+        return false;
     }
     if (GetCurrentBufferSize() >= cacheWaterLine) {
         return false;
@@ -390,6 +396,10 @@ bool HttpMediaDownloader::StartBuffering(unsigned int& wantReadLength)
         MEDIA_LOG_I("HTTP ClearCacheBuffer.");
         ClearCacheBuffer();
         canWrite_ = true;
+    }
+
+    if (isRingBuffer_ && (steadyClock_.ElapsedMilliseconds() - openTime_) < IGNORE_BUFFERING_WITH_START_TIME_MS) {
+        return false;
     }
     isBuffering_ = true;
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
@@ -1439,11 +1449,14 @@ void HttpMediaDownloader::UpdateWaterLineAbove()
         } else {
             cacheTime = DEFAULT_CACHE_TIME;
         }
-        if (isRingBuffer_ && (steadyClock_.ElapsedMilliseconds() - openTime_) < TWO_SECONDS) {
-            cacheTime = DEFAULT_FLV_START_CACHE_TIME;
+        if (isRingBuffer_) {
+            cacheTime -= static_cast<float>(extraCache_ / ONE_SECONDS);
+            cacheTime = std::max(cacheTime, 0.0f);
         }
         waterLineAbove = static_cast<size_t>(cacheTime * currentBitRate_ / BYTES_TO_BIT);
-        waterLineAbove = std::max(MIN_WATER_LINE_ABOVE, waterLineAbove);
+        if (!isRingBuffer_) {
+            waterLineAbove = std::max(MIN_WATER_LINE_ABOVE, waterLineAbove);
+        }
     } else {
         MEDIA_LOG_D("UpdateWaterLineAbove default: " PUBLIC_LOG_ZU, waterLineAbove);
     }
@@ -1672,6 +1685,12 @@ void HttpMediaDownloader::NotifyInitSuccess()
 void HttpMediaDownloader::SetStartPts(int64_t startPts)
 {
     flvStartPts_ = startPts;
+}
+
+void HttpMediaDownloader::SetExtraCache(uint64_t cacheDuration)
+{
+    extraCache_ = cacheDuration;
+    MEDIA_LOG_D("SetExtraCache extraCache_=" PUBLIC_LOG_U64, extraCache_);
 }
 
 bool HttpMediaDownloader::SelectBitRate(uint32_t bitRate)

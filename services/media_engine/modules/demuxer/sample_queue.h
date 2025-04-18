@@ -42,7 +42,7 @@ enum class SelectBitrateStatus : uint32_t {
 
 class SampleQueue : public std::enable_shared_from_this<SampleQueue> {
 public:
-    static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE = 150;
+    static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE = 1;
     static constexpr uint32_t DEFAULT_SAMPLE_QUEUE_SIZE = 1;
     static constexpr uint32_t MAX_SAMPLE_BUFFER_CAP = 10 * 1024 * 1024;
     static constexpr uint32_t DEFAULT_VIDEO_SAMPLE_BUFFER_CAP = 1 * 1024 * 1024;
@@ -80,8 +80,8 @@ public:
 
     void OnBufferAvailable();
     void OnBufferConsumer();
+    uint64_t GetCacheDuration() const;
     void UpdateQueueId(uint32_t queueId);
-    int64_t GetCacheDuration() const;
 
 private:
     Status AcquireBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
@@ -105,6 +105,8 @@ private:
     std::string SetToString(std::set<int64_t> localSet);
     std::string StringifyMeta(std::shared_ptr<Meta> &meta);
 
+    Status UpdateLastOutSamplePts(int64_t lastOutSamplePts);
+
     Config config_{};
     std::weak_ptr<SampleQueueCallback> sampleQueueCb_;
 
@@ -113,6 +115,7 @@ private:
     sptr<AVBufferQueueConsumer> sampleBufferQueueConsumer_;
 
     int64_t lastEnterSamplePts_{Plugins::HST_TIME_NONE};
+    int64_t lastOutSamplePts_{Plugins::HST_TIME_NONE};
     int64_t lastEndSamplePts_{Plugins::HST_TIME_NONE};
     int64_t startPtsToSwitch_{Plugins::HST_TIME_NONE};
     SelectBitrateStatus switchStatus_{SelectBitrateStatus::NORMAL};

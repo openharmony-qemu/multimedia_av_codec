@@ -179,6 +179,11 @@ public:
         return Status::OK;
     }
 
+    virtual Status SetExtraCache(uint64_t cacheDuration)
+    {
+        return Status::OK;
+    }
+
     virtual Status SelectBitRate(uint32_t bitRate)
     {
         return Status::OK;

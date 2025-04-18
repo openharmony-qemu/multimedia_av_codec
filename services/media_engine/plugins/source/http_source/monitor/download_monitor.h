@@ -82,6 +82,7 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void NotifyInitSuccess() override;
     void SetStartPts(int64_t startPts) override;
+    void SetExtraCache(uint64_t cacheDuration) override;
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
     uint64_t GetCachedDuration() override;
     void RestartAndClearBuffer() override;

@@ -117,6 +117,15 @@ Status Source::SetStartPts(int64_t startPts)
     return plugin_->SetStartPts(startPts);
 }
 
+Status Source::SetExtraCache(uint64_t cacheDuration)
+{
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("SetExtraCache failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->SetExtraCache(cacheDuration);
+}
+
 void Source::SetBundleName(const std::string& bundleName)
 {
     if (plugin_ != nullptr) {
