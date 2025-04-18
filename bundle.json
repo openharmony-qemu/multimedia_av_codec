@@ -96,7 +96,8 @@
           "base_group": [],
           "fwk_group": [
             "//foundation/multimedia/av_codec/interfaces/kits/c:capi_packages",
-            "//foundation/multimedia/av_codec/interfaces/inner_api/native:av_codec_client"
+            "//foundation/multimedia/av_codec/interfaces/inner_api/native:av_codec_client",
+            "//foundation/multimedia/av_codec/interfaces/inner_api/native:av_codec_suspend_client"
           ],
           "service_group": [
             "//foundation/multimedia/av_codec/services:av_codec_services_package",
@@ -104,6 +105,33 @@
           ]
         },
         "inner_kits": [
+          {
+            "type": "so",
+            "name": "//foundation/multimedia/av_codec/interfaces/inner_api/native:av_codec_suspend_client",
+            "header": {
+              "header_files": [
+                "avcodec_audio_decoder.h",
+                "avcodec_audio_encoder.h",
+                "avcodec_video_decoder.h",
+                "avcodec_video_encoder.h",
+                "avcodec_audio_codec.h",
+                "avdemuxer.h",
+                "avmuxer.h",
+                "avsource.h",
+                "avcodec_errors.h",
+                "media_description.h",
+                "audio_base_codec_ext.h",
+                "av_common.h",
+                "avcodec_audio_common.h",
+                "avcodec_codec_name.h",
+                "avcodec_common.h",
+                "avcodec_info.h",
+                "avcodec_list.h",
+                "avcodec_mime_type.h"
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
+            }
+          },
           {
             "type": "so",
             "name": "//foundation/multimedia/av_codec/interfaces/inner_api/native:av_codec_client",
