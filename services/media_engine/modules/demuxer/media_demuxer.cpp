@@ -2432,9 +2432,10 @@ void MediaDemuxer::HandleEvent(const Plugins::PluginEvent &event)
 void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("In");
-
     HandleEvent(event);
-    if (eventReceiver_ == nullptr && event.type != PluginEventType::SOURCE_DRM_INFO_UPDATE) {
+    std::weak_ptr p = eventReceiver_;
+    auto eventReceiver = p.lock();
+    if (eventReceiver == nullptr && event.type != PluginEventType::SOURCE_DRM_INFO_UPDATE) {
         MEDIA_LOG_D("EventReceiver is nullptr");
         return;
     }
@@ -2447,33 +2448,34 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
             MEDIA_LOG_E("OnEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
+            eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
             break;
         }
         case PluginEventType::CACHED_DURATION: {
             MEDIA_LOG_D("OnEvent cached duration");
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_CACHED_DURATION, event.param});
+            eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_CACHED_DURATION, event.param});
             break;
         }
         case PluginEventType::SOURCE_BITRATE_START: {
             MEDIA_LOG_D("OnEvent source bitrate start");
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_BITRATE_START, event.param});
+            eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_BITRATE_START, event.param});
             break;
         }
         default:
             break;
     }
-    OnEventBuffer(event);
+    OnEventBuffer(event, eventReceiver);
 }
 
-void MediaDemuxer::OnEventBuffer(const Plugins::PluginEvent &event)
+void MediaDemuxer::OnEventBuffer(const Plugins::PluginEvent &event,
+    std::shared_ptr<Pipeline::EventReceiver> eventReceiver)
 {
     switch (event.type) {
         case PluginEventType::BUFFERING_END: {
             MEDIA_LOG_D("OnEvent pause");
             if (!IsIgonreBuffering()) {
                 MEDIA_LOG_D("OnEvent BUFFERING_END");
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
+                eventReceiver->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
             }
             break;
         }
@@ -2481,13 +2483,13 @@ void MediaDemuxer::OnEventBuffer(const Plugins::PluginEvent &event)
             MEDIA_LOG_D("OnEvent start");
             if (!IsIgonreBuffering()) {
                 MEDIA_LOG_D("OnEvent BUFFERING_START");
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
+                eventReceiver->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
             }
             break;
         }
         case PluginEventType::EVENT_BUFFER_PROGRESS: {
             MEDIA_LOG_D("OnEvent percent update");
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, event.param});
+            eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, event.param});
             break;
         }
         default:
