@@ -778,6 +778,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1566,
 {
     SetFormatBasicParam(formatInner_);
     if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, SQR)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, DEFAULT_SQR_FACTOR);
         ASSERT_EQ(AV_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
     }
@@ -792,6 +793,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1567,
 {
     SetFormatBasicParam(formatInner_);
     if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, SQR)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, DEFAULT_MAX_BITRATE);
         ASSERT_EQ(AV_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
     }
@@ -806,6 +808,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1568,
 {
     SetFormatBasicParam(formatInner_);
     if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, SQR)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, INT32_MAX);
         ASSERT_EQ(AV_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
     }
@@ -820,6 +823,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1569,
 {
     SetFormatBasicParam(formatInner_);
     if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, SQR)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, INT64_MAX);
         ASSERT_EQ(AV_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
     }
@@ -834,6 +838,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1570,
 {
     SetFormatBasicParam(formatInner_);
     if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, SQR)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
         ASSERT_EQ(AV_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
     }
@@ -848,6 +853,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1571,
 {
     SetFormatBasicParam(formatInner_);
     if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, SQR)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, DEFAULT_QUALITY);
         ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
     }
@@ -862,6 +868,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1572,
 {
     SetFormatBasicParam(formatInner_);
     if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, SQR)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, INT64_MAX);
         ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
     }
@@ -876,6 +883,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1573,
 {
     SetFormatBasicParam(formatInner_);
     if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, SQR)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
         formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, INT32_MAX);
         formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, INT64_MAX);
@@ -884,7 +892,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1573,
 }
 
 /**
- * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1563
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1574
  * @tc.desc: codec video configure sqr_factor not in range and bitrate mode is SQR
  * @tc.type: FUNC
  */
