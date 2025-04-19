@@ -34,6 +34,7 @@ using namespace OHOS::MediaAVCodec::VCodecTestParam;
 
 namespace {
 const std::vector<pid_t> invalidPidList = {INT_MIN, INT_MAX};
+constexpr int32_t DEFAULT_PROCESS_COUNT = 3;
 class TEST_SUIT : public testing::TestWithParam<int32_t> {
 public:
     static void SetUpTestCase(void);
@@ -203,7 +204,7 @@ void SuspendActiveAll()
 
 void CreateMultiHardwareDecoder(std::vector<int>& pidList, int32_t testCode)
 {
-    for (int32_t i = 0; i < 3; i++) {
+    for (int32_t i = 0; i < DEFAULT_PROCESS_COUNT; i++) {
         pid_t pid = fork();
         if (pid == 0) {
             const char* arg = nullptr;
@@ -237,7 +238,7 @@ void CreateMultiHardwareDecoder(std::vector<int>& pidList, int32_t testCode)
 
 void DestroyMultiHardwareDecoder(const std::vector<int> pidList)
 {
-    for (int32_t i = 0; i < 3; i++) {
+    for (int32_t i = 0; i < DEFAULT_PROCESS_COUNT; i++) {
         kill(pidList[i], SIGTERM);
         wait(nullptr);
     }
