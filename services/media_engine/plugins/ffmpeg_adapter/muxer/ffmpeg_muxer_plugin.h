@@ -113,7 +113,7 @@ private:
     std::shared_ptr<StreamParserManager> hevcParser_ {nullptr};
     std::unordered_map<int32_t, VideoSampleInfo> videoTracksInfo_;
     std::mutex mutex_;
-    int32_t editList_ = -1;
+    int32_t editList_ = 1;
 };
 } // namespace Ffmpeg
 } // namespace Plugins
