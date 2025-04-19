@@ -895,7 +895,7 @@ Status FFmpegMuxerPlugin::Start()
     if (optionName.size() != 0) {
         av_dict_set(&options, "movflags", optionName.c_str(), 0);
     }
-    if (editList == 0) {
+    if (editList_ == 0) {
         av_dict_set(&options, "use_editlist", "0", 0);
     }
     int ret = avformat_write_header(formatContext_.get(), &options);
