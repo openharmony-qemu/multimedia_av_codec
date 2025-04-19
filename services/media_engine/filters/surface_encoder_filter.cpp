@@ -17,7 +17,6 @@
 
 #include <iostream>
 #include <string>
-
 #include "common/log.h"
 #include "common/media_core.h"
 #include "filter/filter_factory.h"
