@@ -33,6 +33,7 @@ using namespace testing::mt;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 
 namespace {
+const std::vector<pid_t> invalidPidList = {INT_MIN, INT_MAX};
 class TEST_SUIT : public testing::TestWithParam<int32_t> {
 public:
     static void SetUpTestCase(void);
@@ -45,7 +46,7 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
-    void RunDecoder();
+    void CreateExecutingDecoder();
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
     std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
@@ -166,7 +167,7 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 }
 
-void TEST_SUIT::RunDecoder()
+void TEST_SUIT::CreateExecutingDecoder()
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -176,7 +177,7 @@ void TEST_SUIT::RunDecoder()
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
-INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, HW_HDR));
+INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
 
 void SuspendFreeze()
 {
@@ -198,6 +199,78 @@ void SuspendActiveAll()
 {
     auto ret = AVCodecSuspend::SuspendActiveAll();
     ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+void CreateMultiHardwareDecoder(std::vector<int>& pidList, int32_t testCode)
+{
+    for (int32_t i = 0; i < 3; i++) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            const char* arg = nullptr;
+            switch (testCode) {
+                case HW_AVC:
+                    arg = "--create_multi_avc_dec";
+                    break;
+                case HW_HEVC:
+                    arg = "--create_multi_hevc_dec";
+                    break;
+                default:
+                    arg = "--create_multi_avc_dec";
+                    break;
+            }
+
+            execl("/data/test/videodec_hdecoder_memrecycle_unit_test",
+                "videodec_hdecoder_memrecycle_unit_test",
+                arg,
+                nullptr);
+            std::cerr << "execl failed!" << std::endl;
+            exit(1);
+        } else if (pid > 0) {
+            pidList.emplace_back(pid);
+        } if (pid < 0) {
+            std::cerr << "fork process failed!" << std::endl;
+            exit(1);
+        }
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(3000)); // 3000ms
+}
+
+void DestroyMultiHardwareDecoder(const std::vector<int> pidList)
+{
+    for (int32_t i = 0; i < 3; i++) {
+        kill(pidList[i], SIGTERM);
+        wait(nullptr);
+    }
+}
+
+/**
+ * @tc.name: Create_Hardware_Avc_Decoder
+ * @tc.desc: create a executing hadware avc decoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Create_Hardware_Avc_Decoder, TestSize.Level1)
+{
+    CreateByNameWithParam(VCodecTestCode::HW_AVC);
+    SetFormatWithParam(VCodecTestCode::HW_AVC);
+    PrepareSource(VCodecTestCode::HW_AVC);
+    videoDec_->isKeepExecuting_ = true;
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+}
+
+/**
+ * @tc.name: Create_Hardware_Hevc_Decoder
+ * @tc.desc: create a executing hadware hevc decoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Create_Hardware_Hevc_Decoder, TestSize.Level1)
+{
+    CreateByNameWithParam(VCodecTestCode::HW_HEVC);
+    SetFormatWithParam(VCodecTestCode::HW_HEVC);
+    PrepareSource(VCodecTestCode::HW_HEVC);
+    videoDec_->isKeepExecuting_ = true;
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
 /**
@@ -238,7 +311,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_004, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
     SuspendFreeze();
@@ -255,9 +327,142 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_005, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     SuspendFreeze();
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Freeze_006
+ * @tc.desc: 1.decoder is EOS
+ *           2.pidList contains int_min
+ *           3.freeze process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_006, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    auto ret = AVCodecSuspend::SuspendFreeze({INT_MIN});
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Freeze_007
+ * @tc.desc: 1.decoder is EOS
+ *           2.pidList contains int_max
+ *           3.freeze process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_007, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    auto ret = AVCodecSuspend::SuspendFreeze({INT_MAX});
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Freeze_008
+ * @tc.desc: 1.decoder is EOS
+ *           2.pidList contains int_min and pid of the current process
+ *           3.freeze process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_008, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    auto ret = AVCodecSuspend::SuspendFreeze({INT_MIN, getpid()});
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Freeze_009
+ * @tc.desc: 1.decoder is Flush
+ *           2.freeze process
+ *           3.pidList is empty
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_009, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+    auto ret = AVCodecSuspend::SuspendFreeze({});
+    ASSERT_EQ(AVCS_ERR_INPUT_DATA_ERROR, ret);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_MultiProcess_Freeze_001
+ * @tc.desc: decoder is executing and freeze all process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Freeze_001, TestSize.Level1)
+{
+    std::vector<pid_t> pidList;
+    CreateMultiHardwareDecoder(pidList, GetParam());
+    std::vector<pid_t> freezePidList = pidList.empty() ? invalidPidList : pidList;
+    auto ret = AVCodecSuspend::SuspendFreeze(freezePidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    DestroyMultiHardwareDecoder(pidList);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_MultiProcess_Freeze_002
+ * @tc.desc: decoder is executing and freeze one of process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Freeze_002, TestSize.Level1)
+{
+    std::vector<pid_t> pidList;
+    CreateMultiHardwareDecoder(pidList, GetParam());
+    std::vector<pid_t> freezePidList = pidList.empty() ? invalidPidList : std::vector<pid_t>{pidList[0]};
+    auto ret = AVCodecSuspend::SuspendFreeze(freezePidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    DestroyMultiHardwareDecoder(pidList);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_MultiProcess_Freeze_003
+ * @tc.desc: decoder is executing and freeze one of process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Freeze_003, TestSize.Level1)
+{
+    std::vector<pid_t> pidList;
+    CreateMultiHardwareDecoder(pidList, GetParam());
+    std::vector<pid_t> freezePidList = pidList.empty() ? invalidPidList : std::vector<pid_t>{INT_MIN, pidList[0]};
+    auto ret = AVCodecSuspend::SuspendFreeze(freezePidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    DestroyMultiHardwareDecoder(pidList);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_MultiProcess_Freeze_004
+ * @tc.desc: decoder is executing and freeze all process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Freeze_004, TestSize.Level1)
+{
+    std::vector<pid_t> pidList;
+    CreateMultiHardwareDecoder(pidList, GetParam());
+    std::vector<pid_t> freezePidList = pidList;
+    freezePidList.emplace_back(INT_MIN);
+    auto ret = AVCodecSuspend::SuspendFreeze(freezePidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    DestroyMultiHardwareDecoder(pidList);
 }
 
 /**
@@ -296,7 +501,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_002, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_004, TestSize.Level1)
 {
-    std::thread runDecoder(&TEST_SUIT::RunDecoder, this);
+    std::thread runDecoder(&TEST_SUIT::CreateExecutingDecoder, this);
     std::this_thread::sleep_for(std::chrono::milliseconds(300)); // 300ms
     SuspendFreeze();
     SuspendActive();
@@ -314,7 +519,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_005, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
     SuspendFreeze();
@@ -332,10 +536,157 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_006, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    SuspendFreeze();
     SuspendActive();
+    SuspendFreeze();
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Active_007
+ * @tc.desc: 1.decoder is EOS
+ *           2.pidList contains int_min
+ *           3.activate process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_007, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    auto ret = AVCodecSuspend::SuspendFreeze({INT_MIN});
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = AVCodecSuspend::SuspendActive({INT_MIN});
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Active_008
+ * @tc.desc: 1.decoder is EOS
+ *           2.pidList contains int_max
+ *           3.activate process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_008, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    auto ret = AVCodecSuspend::SuspendFreeze({INT_MAX});
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = AVCodecSuspend::SuspendActive({INT_MAX});
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Active_009
+ * @tc.desc: 1.decoder is EOS
+ *           2.pidList contains int_min and pid of the current process
+ *           3.activate process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_009, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    auto ret = AVCodecSuspend::SuspendFreeze({INT_MIN, getpid()});
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = AVCodecSuspend::SuspendActive({INT_MIN, getpid()});
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Active_010
+ * @tc.desc: 1.decoder is Flush
+ *           2.activate process
+ *           3.pidList is empty
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_010, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+    auto ret = AVCodecSuspend::SuspendActive({});
+    ASSERT_EQ(AVCS_ERR_INPUT_DATA_ERROR, ret);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_001
+ * @tc.desc: decoder is executing and active all process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_001, TestSize.Level1)
+{
+    std::vector<pid_t> pidList;
+    CreateMultiHardwareDecoder(pidList, GetParam());
+    std::vector<pid_t> freezePidList = pidList.empty() ? invalidPidList : pidList;
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = AVCodecSuspend::SuspendActive(freezePidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    DestroyMultiHardwareDecoder(pidList);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_002
+ * @tc.desc: decoder is executing and active one of process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_002, TestSize.Level1)
+{
+    std::vector<pid_t> pidList;
+    CreateMultiHardwareDecoder(pidList, GetParam());
+    std::vector<pid_t> freezePidList = pidList.empty() ? invalidPidList : std::vector<pid_t>{pidList[0]};
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = AVCodecSuspend::SuspendActive(freezePidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    DestroyMultiHardwareDecoder(pidList);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_003
+ * @tc.desc: decoder is executing and active one of process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_003, TestSize.Level1)
+{
+    std::vector<pid_t> pidList;
+    CreateMultiHardwareDecoder(pidList, GetParam());
+    std::vector<pid_t> freezePidList = pidList.empty() ? invalidPidList : std::vector<pid_t>{INT_MIN, pidList[0]};
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = AVCodecSuspend::SuspendActive(freezePidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    DestroyMultiHardwareDecoder(pidList);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_004
+ * @tc.desc: decoder is executing and active all process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_004, TestSize.Level1)
+{
+    std::vector<pid_t> pidList;
+    CreateMultiHardwareDecoder(pidList, GetParam());
+    std::vector<pid_t> freezePidList = pidList;
+    freezePidList.emplace_back(INT_MIN);
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = AVCodecSuspend::SuspendActive(freezePidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    DestroyMultiHardwareDecoder(pidList);
 }
 
 /**
@@ -374,7 +725,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_002, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_004, TestSize.Level1)
 {
-    std::thread runDecoder(&TEST_SUIT::RunDecoder, this);
+    std::thread runDecoder(&TEST_SUIT::CreateExecutingDecoder, this);
     std::this_thread::sleep_for(std::chrono::milliseconds(300)); // 300ms
     SuspendFreeze();
     SuspendActiveAll();
@@ -409,10 +760,43 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_006, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     SuspendFreeze();
     SuspendActiveAll();
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_All_001
+ * @tc.desc: decoder is executing and active all process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_All_001, TestSize.Level1)
+{
+    std::vector<pid_t> pidList;
+    CreateMultiHardwareDecoder(pidList, GetParam());
+    std::vector<pid_t> freezePidList = pidList.empty() ? invalidPidList : pidList;
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = AVCodecSuspend::SuspendActiveAll();
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    DestroyMultiHardwareDecoder(pidList);
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_All_002
+ * @tc.desc: decoder is executing and active one of process
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_All_002, TestSize.Level1)
+{
+    std::vector<pid_t> pidList;
+    CreateMultiHardwareDecoder(pidList, GetParam());
+    std::vector<pid_t> freezePidList = pidList.empty() ? invalidPidList : std::vector<pid_t>{pidList[0]};
+    auto ret = AVCodecSuspend::SuspendFreeze(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = AVCodecSuspend::SuspendActiveAll();
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    DestroyMultiHardwareDecoder(pidList);
 }
 
 /**
@@ -484,23 +868,45 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_008, TestSize.Level1)
  * @tc.desc: decoder is Prepared and freeze process
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Freeze_003, TestSize.Level1)
 {
-    auto testCode = GetParam();
-    CreateByNameWithParam(testCode);
+    CreateByNameWithParam(VCodecTestCode::HW_HDR);
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
     format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    PrepareSource(testCode);
+    PrepareSource(VCodecTestCode::HW_HDR);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR) {
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
-        SuspendFreeze();
-    }
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+    SuspendFreeze();
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Freeze_010
+ * @tc.desc: 1.decoder called post processing
+ *           2.decoder is executing
+ *           3.freeze process
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Freeze_010, TestSize.Level1)
+{
+    CreateByNameWithParam(VCodecTestCode::HW_HDR);
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    PrepareSource(VCodecTestCode::HW_HDR);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+    videoDec_->isKeepExecuting_ = true;
+
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+    EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
+    SuspendFreeze();
 }
 
 /**
@@ -508,24 +914,47 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_003, TestSize.Level1)
  * @tc.desc: active all process of freeze and decoder is Prepared
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Active_All_003, TestSize.Level1)
 {
-    auto testCode = GetParam();
-    CreateByNameWithParam(testCode);
+    CreateByNameWithParam(VCodecTestCode::HW_HDR);
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
     format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    PrepareSource(testCode);
+    PrepareSource(VCodecTestCode::HW_HDR);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR) {
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
-        SuspendFreeze();
-        SuspendActiveAll();
-    }
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+    SuspendFreeze();
+    SuspendActiveAll();
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Active_All_007
+ * @tc.desc: 1.decoder called post processing
+ *           2.decoder is executing
+ *           3.active all process
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Active_All_007, TestSize.Level1)
+{
+    CreateByNameWithParam(VCodecTestCode::HW_HDR);
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    PrepareSource(VCodecTestCode::HW_HDR);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+    videoDec_->isKeepExecuting_ = true;
+
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+    EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
+    SuspendFreeze();
+    SuspendActiveAll();
 }
 
 /**
@@ -533,24 +962,47 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_003, TestSize.Level1)
  * @tc.desc: active process of freeze and decoder is Prepared
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Active_003, TestSize.Level1)
 {
-    auto testCode = GetParam();
-    CreateByNameWithParam(testCode);
+    CreateByNameWithParam(VCodecTestCode::HW_HDR);
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
     format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    PrepareSource(testCode);
+    PrepareSource(VCodecTestCode::HW_HDR);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR) {
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
-        SuspendFreeze();
-        SuspendActive();
-    }
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+    SuspendFreeze();
+    SuspendActive();
+}
+
+/**
+ * @tc.name: VideoDecoder_Hardware_Active_011
+ * @tc.desc: 1.decoder called post processing
+ *           2.decoder is executing
+ *           3.active all process
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Active_011, TestSize.Level1)
+{
+    CreateByNameWithParam(VCodecTestCode::HW_HDR);
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    PrepareSource(VCodecTestCode::HW_HDR);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+    videoDec_->isKeepExecuting_ = true;
+
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+    EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
+    SuspendFreeze();
+    SuspendActive();
 }
 #endif // HMOS_TEST
 } // namespace
@@ -560,7 +1012,17 @@ int main(int argc, char **argv)
     testing::GTEST_FLAG(output) = "xml:./";
     for (int i = 0; i < argc; ++i) {
         cout << argv[i] << endl;
-        if (strcmp(argv[i], "--need_dump") == 0) {
+        if (strcmp(argv[i], "--create_multi_avc_dec") == 0) {
+            DecArgv(i, argc, argv);
+            testing::InitGoogleTest(&argc, argv);
+            testing::GTEST_FLAG(filter) = "VideoHDecoderMemoryRecyleTest.Create_Hardware_Avc_Decoder";
+            return RUN_ALL_TESTS();
+        } else if (strcmp(argv[i], "--create_multi_hevc_dec") == 0) {
+            DecArgv(i, argc, argv);
+            testing::InitGoogleTest(&argc, argv);
+            testing::GTEST_FLAG(filter) = "VideoHDecoderMemoryRecyleTest.Create_Hardware_Hevc_Decoder";
+            return RUN_ALL_TESTS();
+        } else if (strcmp(argv[i], "--need_dump") == 0) {
             VideoDecSample::needDump_ = true;
             DecArgv(i, argc, argv);
         }
