@@ -895,8 +895,9 @@ Status FFmpegMuxerPlugin::Start()
     if (optionName.size() != 0) {
         av_dict_set(&options, "movflags", optionName.c_str(), 0);
     }
-    std::string editListStr = std::to_string(editList_);
-    av_dict_set(&options, "use_editlist", editListStr.c_str(), 0);
+    if (editList == 0) {
+        av_dict_set(&options, "use_editlist", "0", 0);
+    }
     int ret = avformat_write_header(formatContext_.get(), &options);
     if (ret < 0) {
         MEDIA_LOG_E("write header failed, %{public}s", AVStrError(ret).c_str());
