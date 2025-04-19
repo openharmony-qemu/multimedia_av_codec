@@ -295,6 +295,10 @@ Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
         useTimedMetadata_ = true;
         MEDIA_LOG_I("use timed metadata track");
     }
+    if (param->GetData(Tag::MEDIA_EDITLIST, dataInt) && dataInt == 0) {
+        editList_ = 0;
+        MEDIA_LOG_I("close edit list");
+    }
     ret = SetRotation(param);
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
     ret = SetLocation(param);
@@ -891,6 +895,8 @@ Status FFmpegMuxerPlugin::Start()
     if (optionName.size() != 0) {
         av_dict_set(&options, "movflags", optionName.c_str(), 0);
     }
+    std::string editListStr = std::to_string(editList_);
+    av_dict_set(&options, "use_editlist", editListStr.c_str(), 0);
     int ret = avformat_write_header(formatContext_.get(), &options);
     if (ret < 0) {
         MEDIA_LOG_E("write header failed, %{public}s", AVStrError(ret).c_str());
