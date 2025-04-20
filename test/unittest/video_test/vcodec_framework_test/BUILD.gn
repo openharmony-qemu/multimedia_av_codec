@@ -705,7 +705,7 @@ ohos_unittest("videodec_hdrvivid2sdr_capi_unit_test") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_single",
-    "openssl:libssl_shared",
+    "openssl:libcrypto_shared",
     "window_manager:libwm",
   ]
 
