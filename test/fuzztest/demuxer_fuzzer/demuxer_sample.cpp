@@ -25,6 +25,23 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
 
+#define DRM_UUID_LEN 16
+
+#define MAX_PSSH_DATA_LEN 2048
+
+typedef struct DRM_PsshInfo {
+    uint8_t uuid[DRM_UUID_LEN];
+    int32_t dataLen;
+    uint8_t data[MAX_PSSH_DATA_LEN];
+} DRM_PsshInfo;
+
+#define MAX_PSSH_INFO_COUNT 8
+
+typedef struct DRM_MediaKeySystemInfo {
+    uint32_t psshCount;
+    DRM_PsshInfo psshInfo[MAX_PSSH_INFO_COUNT];
+} DRM_MediaKeySystemInfo;
+
 DemuxerSample::~DemuxerSample()
 {
     if (fd > 0) {
@@ -92,6 +109,12 @@ static void SetFileValue(OH_AVCodecBufferAttr attr, bool &gReadEnd, int &keyCoun
     }
 }
 
+void DrmMediaKeySystemInfoCallback(DRM_MediaKeySystemInfo *mediaKeySystemInfo)
+{}
+
+void DemuxerMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer, DRM_MediaKeySystemInfo *mediaKeySystemInfo)
+{}
+
 int DemuxerSample::CreateDemuxer()
 {
     fd = open(filePath, O_RDONLY);
@@ -110,6 +133,8 @@ int DemuxerSample::CreateDemuxer()
         fd = 0;
         return -1;
     }
+    OH_AVDemuxer_SetMediaKeySystemInfoCallback(demuxer, DrmMediaKeySystemInfoCallback);
+    OH_AVDemuxer_SetDemuxerMediaKeySystemInfoCallback(demuxer, DemuxerMediaKeySystemInfoCallback);
     return 0;
 }
 
@@ -144,6 +169,7 @@ void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
 void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const char *setLanguage, Params params)
 {
     gReadEnd = false;
+    DRM_MediaKeySystemInfo mediaKeySystemInfo;    
     int ret = CreateDemuxer();
     if (ret < 0) {
         return;
@@ -188,11 +214,13 @@ void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const
     }
     GetAndSetFormat(setLanguage, params);
     uriSource = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+    OH_AVDemuxer_GetMediaKeySystemInfo(demuxer, &mediaKeySystemInfo);
 }
 
 void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, const char *setLanguage, Params params)
 {
     gReadEnd = false;
+    DRM_MediaKeySystemInfo mediaKeySystemInfo;
     int keyCount = 0;
     int ret = CreateDemuxer();
     if (ret < 0) {
@@ -237,4 +265,5 @@ void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, 
     }
     GetAndSetFormat(setLanguage, params);
     uriSource = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+    OH_AVDemuxer_GetMediaKeySystemInfo(demuxer, &mediaKeySystemInfo);
 }
