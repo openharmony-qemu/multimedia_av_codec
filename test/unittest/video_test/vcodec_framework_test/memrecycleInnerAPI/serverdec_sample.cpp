@@ -739,6 +739,8 @@ void VDecNdkInnerSample::InputErrorFunc()
             usleep(100); // 100为100ms
             vdec_->NotifyMemoryRecycle();
             usleep(100); // 100为100ms
+            vdec_->NotifyMemoryWriteBack();
+            usleep(100); // 100为100ms
             if (ret == 1) {
                 break;
             }
