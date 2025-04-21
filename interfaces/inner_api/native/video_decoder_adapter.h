@@ -83,9 +83,7 @@ private:
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> callback_;
     std::shared_ptr<AVBuffer> buffer_;
     std::string mediaCodecName_;
-
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_ {nullptr};
-
     std::mutex mutex_;
     std::mutex dtsQueMutex_;
     std::vector<std::shared_ptr<AVBuffer>> bufferVector_;
