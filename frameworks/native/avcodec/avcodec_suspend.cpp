@@ -27,12 +27,18 @@ namespace MediaAVCodec {
 int32_t AVCodecSuspend::SuspendFreeze(const std::vector<pid_t> &pidList)
 {
     CHECK_AND_RETURN_RET_LOG(!pidList.empty(), AVCS_ERR_INPUT_DATA_ERROR, "Freeze pidlist is empty");
+    for (auto pid : pidList) {
+        CHECK_AND_RETURN_RET_LOG(static_cast<uint32_t>(pid) == pid, AVCS_ERR_INPUT_DATA_ERROR, "pid is not valid");
+    }
     return AVCodecServiceFactory::GetInstance().SuspendFreeze(pidList);
 }
 
 int32_t AVCodecSuspend::SuspendActive(const std::vector<pid_t> &pidList)
 {
     CHECK_AND_RETURN_RET_LOG(!pidList.empty(), AVCS_ERR_INPUT_DATA_ERROR, "Active pidlist is empty");
+    for (auto pid : pidList) {
+        CHECK_AND_RETURN_RET_LOG(static_cast<uint32_t>(pid) == pid, AVCS_ERR_INPUT_DATA_ERROR, "pid is not valid");
+    }
     return AVCodecServiceFactory::GetInstance().SuspendActive(pidList);
 }
 
