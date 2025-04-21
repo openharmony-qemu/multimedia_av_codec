@@ -340,6 +340,7 @@ Status AudioSink::Resume()
         MEDIA_LOG_I("AudioSink resume error " PUBLIC_LOG_D32, ret);
         return ret;
     }
+    isEos_ = false;
     state_ = Pipeline::FilterState::RUNNING;
     AutoLock lock(eosMutex_);
     if (eosInterruptType_ == EosInterruptState::PAUSE) {
@@ -518,9 +519,6 @@ void AudioSink::HandleEosInner(bool drain)
 void AudioSink::DrainAndReportEosEvent()
 {
     plugin_->Drain();
-    if (appUid_ != BOOT_APP_UID) {
-        plugin_->PauseTransitent();
-    }
     eosInterruptType_ = EosInterruptState::NONE;
     eosDraining_ = false; // finish draining task
     isEos_ = true;
