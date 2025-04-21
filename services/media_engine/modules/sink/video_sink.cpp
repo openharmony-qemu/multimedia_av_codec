@@ -26,6 +26,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "VideoSink" };
 constexpr int64_t LAG_LIMIT_TIME = 100;
 constexpr int32_t DROP_FRAME_CONTINUOUSLY_MAX_CNT = 2;
+constexpr int32_t MAX_ADVANCE_US = 80000;
 }
 
 namespace OHOS {
@@ -42,14 +43,18 @@ int64_t GetvideoLatencyFixDelay()
 /// Video Key Frame Flag
 constexpr int BUFFER_FLAG_KEY_FRAME = 0x00000002;
 
-// Video Sync Start Frame
-constexpr int VIDEO_SINK_START_FRAME = 4;
-
 constexpr int64_t WAIT_TIME_US_THRESHOLD = 1500000; // max sleep time 1.5s
 
 constexpr int64_t SINK_TIME_US_THRESHOLD = 100000; // max sink time 100ms
 
 constexpr int64_t PER_SINK_TIME_THRESHOLD = 33000; // max per sink time 33ms
+
+// Video Sync Start Frame
+constexpr int VIDEO_SINK_START_FRAME = 4;
+
+constexpr int64_t WAIT_TIME_US_THRESHOLD_WARNING = 40000; // warning threshold 40ms
+
+constexpr int64_t WAIT_TIME_US_THRESHOLD_RENDER = 70000; // warning threshold render 70ms
 
 constexpr int64_t DELTA_TIME_THRESHOLD = 5000; // max delta time 5ms
 
@@ -58,7 +63,10 @@ VideoSink::VideoSink()
     refreshTime_ = 0;
     syncerPriority_ = IMediaSynchronizer::VIDEO_SINK;
     fixDelay_ = GetvideoLatencyFixDelay();
-    MEDIA_LOG_I_SHORT("ctor");
+    enableRenderAtTime_ = system::GetParameter("debug.media_service.enable_renderattime", "1") == "1";
+    renderAdvanceThreshold_ = static_cast<int64_t>
+        (system::GetIntParameter("debug.media_service.renderattime_advance", MAX_ADVANCE_US));
+    MEDIA_LOG_I_SHORT("VideoSink ctor called...");
 }
 
 VideoSink::~VideoSink()
@@ -251,7 +259,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     int64_t waitTimeUs = 0;
     if (diff < 0) { // buffer is early, diff < 0 or 0 < diff < 40ms(25Hz) render it
         waitTimeUs = 0 - diff;
-        MEDIA_LOG_D_SHORT("buffer is too early waitTimeUs: " PUBLIC_LOG_D64, waitTimeUs);
+        RenderAtTimeLog(waitTimeUs);
         if (waitTimeUs > WAIT_TIME_US_THRESHOLD) {
             waitTimeUs = WAIT_TIME_US_THRESHOLD;
         }
@@ -262,6 +270,17 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     lastBufferAnchoredClockTime_ = bufferAnchoredClockTime;
     bool dropFlag = tooLate && ((buffer->flag_ & BUFFER_FLAG_KEY_FRAME) == 0); // buffer is too late, drop it
     return dropFlag ? -1 : waitTimeUs;
+}
+
+void VideoSink::RenderAtTimeLog(int64_t waitTimeUs)
+{
+    if (enableRenderAtTime_) {
+        MEDIA_LOG_I_FALSE_D((waitTimeUs >= WAIT_TIME_US_THRESHOLD_RENDER + renderAdvanceThreshold_),
+            "enableRenderAtTime is true, buffer is too early waitTimeUs: " PUBLIC_LOG_D64, waitTimeUs);
+    } else {
+        MEDIA_LOG_I_FALSE_D((waitTimeUs >= WAIT_TIME_US_THRESHOLD_WARNING),
+            "buffer is too early waitTimeUs: " PUBLIC_LOG_D64, waitTimeUs);
+    }
 }
 
 void VideoSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter)

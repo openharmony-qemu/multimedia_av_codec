@@ -99,7 +99,6 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
 {
     MEDIA_LOG_I_SHORT("~VideoDecoderAdapter()");
     FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
-    MEDIA_LOG_D("VideoDecoderAdapter::QueueInputBuffer");
     mediaCodec_->Release();
     std::unique_lock<std::mutex> lock(dtsQueMutex_);
     if (!inputBufferDtsQue_.empty()) {
