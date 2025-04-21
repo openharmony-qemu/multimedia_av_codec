@@ -184,6 +184,7 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     LOGI("isSupportWaterMark: %d, isSupportLowLatency: %d, isSupportTSVC: %d, isSupportLTR %d and maxLTRFrameNum %d",
         hdiVideoCap.isSupportWaterMark, hdiVideoCap.isSupportLowLatency, hdiVideoCap.isSupportTSVC,
         hdiVideoCap.isSupportLTR, hdiVideoCap.maxLTRFrameNum);
+    LOGI("isSupportQPMap: %d", hdiVideoCap.isSupportQPMap);
     return userCap;
 }
 
@@ -311,6 +312,9 @@ void HCodecList::GetSupportedFeatureParam(const CodecVideoPortCap& hdiVideoCap,
     }
     if (hdiVideoCap.isSupportSeekWithoutFlush) {
         userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_DECODER_SEEK_WITHOUT_FLUSH)] = Format();
+    }
+    if (hdiVideoCap.isSupportQPMap) {
+        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_QP_MAP)] = Format();
     }
 }
 } // namespace OHOS::MediaAVCodec

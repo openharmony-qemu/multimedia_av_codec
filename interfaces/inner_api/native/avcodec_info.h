@@ -63,6 +63,7 @@ enum class AVCapabilityFeature : int32_t {
     VIDEO_LOW_LATENCY = 2,
     VIDEO_WATERMARK = 3,
     VIDEO_RPR = 4,
+    VIDEO_ENCODER_QP_MAP = 5,
     VIDEO_DECODER_SEEK_WITHOUT_FLUSH = 6,
     MAX_VALUE
 };
@@ -893,6 +894,10 @@ enum VideoEncodeBitrateMode : int32_t {
      * constant quality mode.
      */
     CQ = 2,
+    /**
+     * constant rate factor mode
+     */
+    CRF = 3,
     /**
      * stable quality rate control mode.
      */
