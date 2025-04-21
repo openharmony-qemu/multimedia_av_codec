@@ -106,10 +106,10 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, O
                          void *userData)
 {
     HDRCodecNdkSample *sample = static_cast<HDRCodecNdkSample *>(userData);
-    OH_VideoDecoder_RenderOutputData(codec, index);
     if (attr->flags & AVCODEC_BUFFER_FLAGS_EOS) {
         OH_VideoEncoder_NotifyEndOfStream(sample->venc_);
     } else {
+        OH_VideoDecoder_RenderOutputData(codec, index);
         sample->frameCountDec++;
     }
 }
@@ -153,7 +153,7 @@ static void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *
     if (attr->flags & AVCODEC_BUFFER_FLAGS_EOS) {
         g_isRunning.store(false);
         g_cv.notify_all();
-    } else {
+    } else if (attr->flags != AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
         sample->frameCountEnc++;
     }
     if (sample->DEMUXER_FLAG) {
