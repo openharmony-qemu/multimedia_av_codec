@@ -340,6 +340,7 @@ Status AudioSink::Resume()
         MEDIA_LOG_I("AudioSink resume error " PUBLIC_LOG_D32, ret);
         return ret;
     }
+    isEos_ = false;
     state_ = Pipeline::FilterState::RUNNING;
     AutoLock lock(eosMutex_);
     if (eosInterruptType_ == EosInterruptState::PAUSE) {
