@@ -228,7 +228,7 @@ void CreateMultiHardwareDecoder(std::vector<int>& pidList, int32_t testCode)
             exit(1);
         } else if (pid > 0) {
             pidList.emplace_back(pid);
-        } if (pid < 0) {
+        } else {
             std::cerr << "fork process failed!" << std::endl;
             exit(1);
         }
