@@ -294,6 +294,8 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
 
 void AudioDecoderFilter::UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta)
 {
+    MEDIA_LOG_I_SHORT("UpdateTrackInfoSampleFormat mime:" PUBLIC_LOG_S, mime.c_str());
+    FALSE_RETURN_NOLOG(mime != CodecMimeType::AUDIO_RAW);
     if (mime != CodecMimeType::AUDIO_APE && mime != CodecMimeType::AUDIO_FLAC) {
         meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
         return;
