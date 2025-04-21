@@ -925,7 +925,8 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_);
     MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                      mediaDownloader->currentRequest_->startPos_);
-    mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + writeLen;
+    mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ +
+                                                  static_cast<int64_t>(writeLen);
     UpdateRequestSize(mediaDownloader);
  
     if (writeLen != dataLen) {

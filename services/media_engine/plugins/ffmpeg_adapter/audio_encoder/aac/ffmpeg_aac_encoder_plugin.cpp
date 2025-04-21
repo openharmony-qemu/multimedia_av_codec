@@ -786,7 +786,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
     if (needResample_ && resample_ != nullptr) {
         destSamplesPerFrame = resample_->GetSampleOffset();
     } else {
-        destSamplesPerFrame = cachedFrame_->nb_samples;
+        destSamplesPerFrame = static_cast<uint32_t>(cachedFrame_->nb_samples);
     }
     cachedFrame_->extended_data = cachedFrame_->data;
     cachedFrame_->extended_data[0] = destBuffer;
@@ -794,7 +794,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
     for (int i = 1; i < avCodecContext_->channels; i++) {
         // after convert, the length of line is destSamplesPerFrame
         cachedFrame_->extended_data[i] =
-            cachedFrame_->extended_data[i - 1] + static_cast<uint32_t>(destSamplesPerFrame * bytesPerSample);
+            cachedFrame_->extended_data[i - 1] + destSamplesPerFrame * static_cast<uint32_t>(bytesPerSample);
     }
     int32_t cacheSize = av_audio_fifo_size(fifo_);
     int32_t ret = av_audio_fifo_realloc(fifo_, cacheSize + cachedFrame_->nb_samples);

@@ -433,7 +433,6 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
 {
     if (curStreamId_ > 0 && isNeedResetOffset_.load()) {
         ffmpegOffset_ = ffmpegOffset;
-        isNeedResetOffset_.store(true);
         return;
     }
     if (ffmpegOffset_ <= ffmpegOffset) {
@@ -577,17 +576,18 @@ bool HlsMediaDownloader::ReadHeaderData(unsigned char* buff, ReadDataInfo& readD
         return false;
     }
     if (curStreamId_ <= 0 && readDataInfo.streamId_ > 0) {
-        curStreamId_ = readDataInfo.streamId_;
+        curStreamId_ = static_cast<uint32_t>(readDataInfo.streamId_);
         isNeedReadHeader_.store(true);
         MEDIA_LOG_D("HLS read curStreamId_ " PUBLIC_LOG_U32, curStreamId_);
-    } else if (readDataInfo.streamId_ > 0 && readDataInfo.streamId_ != curStreamId_) {
-        readDataInfo.nextStreamId_ = curStreamId_;
+    } else if (readDataInfo.streamId_ > 0 && readDataInfo.streamId_ != static_cast<int32_t>(curStreamId_)) {
+        readDataInfo.nextStreamId_ = static_cast<int32_t>(curStreamId_);
         isNeedReadHeader_.store(true);
         MEDIA_LOG_I("HLS read curStreamId_ " PUBLIC_LOG_U32 " curStreamId_ " PUBLIC_LOG_U32,
                     curStreamId_, readDataInfo.streamId_);
         return true;
     }
-    if (readDataInfo.streamId_ > 0 && curStreamId_ == readDataInfo.streamId_ && isNeedReadHeader_.load()) {
+    if (readDataInfo.streamId_ > 0 && curStreamId_ == static_cast<uint32_t>(readDataInfo.streamId_) &&
+        isNeedReadHeader_.load()) {
         playlistDownloader_->ReadFmp4Header(buff, readDataInfo.realReadLength_, readDataInfo.streamId_);
         isNeedReadHeader_.store(false);
         MEDIA_LOG_I("HLS read fmp4 header.");
@@ -604,9 +604,9 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
     readDataInfo.realReadLength_ = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
     readOffset_ += readDataInfo.realReadLength_;
     ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
-    if (IsHlsFmp4() && readDataInfo.streamId_ > 0) {
+    if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         size_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
-        if (remain > 0 && remain < DECRYPT_UNIT_LEN) {
+        if (remain > 0 && remain < DECRYPT_UNIT_LEN && keyLen_ > 0) {
             size_t readRemain = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
             readOffset_ += readRemain;
             ffmpegOffset_ += readRemain;
@@ -622,7 +622,8 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
             readTsIndex_++;
             readOffset_ = SpliceOffset(readTsIndex_, 0);
             if (playlistDownloader_->IsHlsFmp4() && tsStreamIdInfo_.find(readTsIndex_) != tsStreamIdInfo_.end() &&
-                readDataInfo.streamId_ > 0 && readDataInfo.streamId_ != tsStreamIdInfo_[readTsIndex_]) {
+                readDataInfo.streamId_ > 0 &&
+                readDataInfo.streamId_ != static_cast<int32_t>(tsStreamIdInfo_[readTsIndex_])) {
                 curStreamId_ = tsStreamIdInfo_[readTsIndex_];
                 isNeedResetOffset_.store(true);
                 MEDIA_LOG_D("HLS read readTsIndex_ " PUBLIC_LOG_U32, readTsIndex_.load());
@@ -643,7 +644,10 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
 
 void HlsMediaDownloader::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (IsHlsFmp4() && readDataInfo.streamId_ > 0 && readDataInfo.realReadLength_ > 0) {
+    if (keyLen_ <= 0) {
+        return;
+    }
+    if ((IsHlsFmp4() && readDataInfo.streamId_ > 0 && readDataInfo.realReadLength_ > 0) || IsPureByteRange()) {
         size_t endValue = buff[readDataInfo.realReadLength_ - 1];
         size_t paddingStart = readDataInfo.realReadLength_ > endValue ?
                               readDataInfo.realReadLength_ - endValue : 0;
@@ -818,7 +822,9 @@ void HlsMediaDownloader::PlaylistBackup(const PlayInfo& fragment)
         }
         return;
     }
-    backPlayList_.push_back(fragment);
+    if (playlistDownloader_->IsParseFinished()) {
+        backPlayList_.push_back(fragment);
+    }
 }
 
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
@@ -2201,6 +2207,14 @@ bool HlsMediaDownloader::IsHlsFmp4()
 {
     if (playlistDownloader_) {
         return playlistDownloader_->IsHlsFmp4();
+    }
+    return false;
+}
+
+bool HlsMediaDownloader::IsPureByteRange()
+{
+    if (playlistDownloader_) {
+        return playlistDownloader_->IsPureByteRange();
     }
     return false;
 }

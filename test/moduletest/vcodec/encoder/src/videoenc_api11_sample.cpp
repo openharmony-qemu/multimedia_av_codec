@@ -17,7 +17,6 @@
 #include <utility>
 #include "iconsumer_surface.h"
 #include "native_buffer_inner.h"
-#include "display_type.h"
 #include "videoenc_api11_sample.h"
 #include "native_avcapability.h"
 using namespace OHOS;

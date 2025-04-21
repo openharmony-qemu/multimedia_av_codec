@@ -16,7 +16,6 @@
 #include <sys/time.h>
 #include <utility>
 #include "native_buffer_inner.h"
-#include "display_type.h"
 #include "iconsumer_surface.h"
 #include "videoenc_inner_sample.h"
 #include "meta/meta_key.h"

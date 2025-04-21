@@ -174,6 +174,7 @@ private:
     void HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos);
     void RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo);
     size_t GetTotalTsBuffersize();
+    bool IsPureByteRange();
 
 private:
     size_t totalBufferSize_ {0};

@@ -316,6 +316,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0010, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_90, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_90, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -339,6 +340,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0020, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_300, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_300, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -363,6 +365,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0030, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_300, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_300, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -387,6 +390,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0040, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_254, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_254, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -411,6 +415,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0050, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_3, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_3, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -435,6 +440,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0060, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_60, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_60, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -458,6 +464,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0070, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_300, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_300, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -482,6 +489,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0080, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_300, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_300, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -506,6 +514,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0090, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_90, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_90, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -529,6 +538,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0100, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_300, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_300, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -553,6 +563,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0110, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_300, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_300, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -577,6 +588,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0111, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_530, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_530, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -600,6 +612,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0112, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_600, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_600, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -623,6 +636,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0113, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_294, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_294, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -646,6 +660,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0114, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_80, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_80, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -669,6 +684,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0120, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_254, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_254, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -693,6 +709,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0130, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_3, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_3, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -717,6 +734,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0140, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_60, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_60, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -740,6 +758,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0150, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_300, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_300, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -764,6 +783,7 @@ HWTEST_F(HDRFuncNdkTest, DEC_ENC_FUNC_0160, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_300, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_300, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -788,6 +808,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0010, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_90, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_90, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -810,6 +831,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0020, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_30, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_30, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -833,6 +855,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0030, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_242, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_242, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -856,6 +879,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0050, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_30, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_30, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -879,6 +903,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0060, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_30, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_30, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -901,6 +926,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0070, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_30, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_30, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -924,6 +950,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0080, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_242, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_242, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -947,6 +974,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0090, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_90, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_90, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -969,6 +997,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0100, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_30, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_30, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -992,6 +1021,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0110, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_242, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_242, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -1015,6 +1045,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0111, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_26, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_26, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -1037,6 +1068,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0112, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_242, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_242, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -1059,6 +1091,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0113, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_180, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_180, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -1081,6 +1114,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0114, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_80, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_80, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -1103,6 +1137,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0120, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_254, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_254, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -1126,6 +1161,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0130, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_30, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_30, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -1149,6 +1185,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0140, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_30, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_30, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -1171,6 +1208,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0150, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_30, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_30, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }
@@ -1194,6 +1232,7 @@ HWTEST_F(HDRFuncNdkTest, DEMUXER_DEC_ENC_MUXER_FUNC_0160, TestSize.Level1)
         sample->WaitForEos();
         ASSERT_EQ(0, sample->errorCount);
         ASSERT_EQ(FRAMENUM_242, sample->frameCountDec);
+        ASSERT_EQ(FRAMENUM_242, sample->frameCountEnc);
         cout << "frameCountDec--" << sample->frameCountDec << endl;
     }
 }

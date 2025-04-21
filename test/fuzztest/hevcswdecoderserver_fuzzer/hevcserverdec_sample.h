@@ -28,6 +28,7 @@
 #include <unordered_map>
 #include "hevc_decoder.h"
 #include "codecbase.h"
+#include "surface/window.h"
 namespace OHOS {
 namespace MediaAVCodec {
 
@@ -45,17 +46,24 @@ public:
     ~VDecServerSample();
 
     void RunVideoServerDecoder();
+    void RunVideoServerSurfaceDecoder();
     int32_t ConfigServerDecoder();
     int32_t SetCallback();
     void GetOutputFormat();
     void Flush();
+    void Stop();
     void Reset();
     void InputFunc();
     void WaitForEos();
+    void CreateSurface();
     VDecSignal *signal_;
     const uint8_t *fuzzData;
     size_t fuzzSize;
     int32_t sendFrameIndex;
+    sptr<Surface> cs[2] = {};
+    sptr<Surface> ps[2] = {};
+    NativeWindow *nativeWindow[2] = {};
+    const char *outDIR = "/data/test/media/VDecTest.yuv";
 protected:
     std::shared_ptr<CodecBase> codec_;
     std::atomic<bool> isRunning_ { false };
