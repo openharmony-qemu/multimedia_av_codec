@@ -67,6 +67,8 @@ public:
     void EventCompleteStopAsync();
 
 private:
+    void HandleTransCoderComplete();
+
     std::string name_;
 
     std::shared_ptr<EventReceiver> eventReceiver_;
