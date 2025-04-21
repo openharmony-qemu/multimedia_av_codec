@@ -173,6 +173,7 @@ private:
     bool ReadHeaderData(unsigned char* buff, ReadDataInfo& readDataInfo);
     void HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos);
     void RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo);
+    bool IsPureByteRange();
 
 private:
     size_t totalBufferSize_ {0};

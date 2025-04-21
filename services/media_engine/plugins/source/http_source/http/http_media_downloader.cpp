@@ -1461,7 +1461,7 @@ void HttpMediaDownloader::UpdateWaterLineAbove()
             cacheTime = DEFAULT_CACHE_TIME;
         }
         if (isRingBuffer_) {
-            cacheTime -= static_cast<float>(extraCache_ / ONE_SECONDS);
+            cacheTime -= static_cast<float>(static_cast<double>(extraCache_) / static_cast<double>(ONE_SECONDS));
             cacheTime = std::max(cacheTime, 0.0f);
         }
         waterLineAbove = static_cast<size_t>(cacheTime * currentBitRate_ / BYTES_TO_BIT);
@@ -1741,7 +1741,7 @@ bool HttpMediaDownloader::SelectBitRate(uint32_t bitRate)
     std::string url = defaultStream_->url;
     AddParamForUrl(url, "startPts", std::to_string(flvStartPts_));
     MEDIA_LOG_I("flvStartPts_ " PUBLIC_LOG_D64, flvStartPts_);
-    currentBitRate_ = defaultStream_->bitrate;
+    currentBitRate_ = static_cast<int32_t>(defaultStream_->bitrate);
     downloadRequest_->SetUrl(url);
     downloadRequest_->SetRangePos(0, -1);
     downloader_->Resume();

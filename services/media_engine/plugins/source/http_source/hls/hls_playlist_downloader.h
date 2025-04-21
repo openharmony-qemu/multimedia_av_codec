@@ -59,6 +59,7 @@ public:
     void GetStreamInfo(std::vector<StreamInfo>& streams) override;
     bool ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, uint32_t streamId) override;
     bool IsHlsFmp4() override;
+    bool IsPureByteRange() override;
 
 private:
     void UpdateMasterInfo(bool isPreParse);

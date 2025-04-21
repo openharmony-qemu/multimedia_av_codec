@@ -72,6 +72,7 @@ public:
     virtual void GetStreamInfo(std::vector<StreamInfo>& streams) = 0;
     virtual bool ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, uint32_t streamId) = 0;
     virtual bool IsHlsFmp4() = 0;
+    virtual bool IsPureByteRange() = 0;
 
     void SetInterruptState(bool isInterruptNeeded);
     void Resume();
