@@ -14,6 +14,7 @@
 */
 
 #include "audio_sink.h"
+#include "avcodec_trace.h"
 #include "syspara/parameters.h"
 #include "plugin/plugin_manager_v2.h"
 #include "common/log.h"
@@ -74,6 +75,7 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
     auto sink = audioSink_.lock();
     FALSE_RETURN_MSG(sink != nullptr, "audioSink_ is nullptr");
     AudioStandard::BufferDesc bufferDesc;
+    MediaAVCodec::AVCodecTrace trace("AudioSink::OnWriteData");
     MEDIA_LOG_D("GetBufferDesc in");
     Status ret = sink->GetBufferDesc(bufferDesc);
     FALSE_RETURN_MSG(ret == Status::OK, "GetBufferDesc fail, ret=" PUBLIC_LOG_D32, ret);
@@ -121,12 +123,14 @@ void AudioSink::HandleAudioRenderRequestPost()
 Status AudioSink::GetBufferDesc(AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(plugin_ != nullptr, Status::ERROR_UNKNOWN, "GetBufferDesc audioSinkPlugin is nullptr");
+    MediaAVCodec::AVCodecTrace trace("AudioSink::GetBufferDesc");
     return plugin_->GetBufferDesc(bufferDesc);
 }
 
 Status AudioSink::EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(plugin_ != nullptr, Status::ERROR_UNKNOWN, "Enqueue audioSinkPlugin is nullptr");
+    MediaAVCodec::AVCodecTrace trace("AudioSink::EnqueueBufferDesc");
     return plugin_->EnqueueBufferDesc(bufferDesc);
 }
 
@@ -681,6 +685,7 @@ bool AudioSink::IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::
     size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts)
 {
     FALSE_RETURN_V_MSG(cacheBufferSize <= size || !isAudioVivid, false, "copy from cache buffer may fail.");
+    MediaAVCodec::AVCodecTrace trace("AudioSink::CopyBuffer");
     bool ret = isAudioVivid ? CopyAudioVividBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts) :
         CopyBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts);
     return ret;
@@ -691,6 +696,7 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
     FALSE_RETURN_V_MSG(size != 0 && size == bufferDesc.bufLength, false,
         "bufferDesc or request size is unavailable");
     std::lock_guard<std::mutex> lock(availBufferMutex_);
+    MediaAVCodec::AVCodecTrace trace("AudioSink::CopyDataToBufferDesc");
     int64_t bufferPts = HST_TIME_NONE;
     do {
         bool isSwapBuffer = false;
@@ -767,6 +773,7 @@ void AudioSink::UpdateRenderInfo()
 {
     timespec time;
     uint32_t position;
+    MediaAVCodec::AVCodecTrace trace("AudioSink::UpdateRenderInfo");
     FALSE_RETURN_MSG(plugin_->GetAudioPosition(time, position), "GetAudioPosition from audioRender failed");
     int64_t currentRenderClockTime = time.tv_sec * SEC_TO_US + time.tv_nsec / US_TO_MS; // convert to us
     FALSE_RETURN(sampleRate_ > 0);
@@ -935,6 +942,7 @@ void AudioSink::GetAvailableOutputBuffers()
     std::lock_guard<std::mutex> lock(availBufferMutex_);
     std::shared_ptr<AVBuffer> filledInputBuffer;
     Status ret = Status::OK;
+    MediaAVCodec::AVCodecTrace trace("AudioSink::GetBufferFromUpstream");
     while (ret == Status::OK) {
         ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
         if (ret != Status::OK || filledInputBuffer == nullptr) {
