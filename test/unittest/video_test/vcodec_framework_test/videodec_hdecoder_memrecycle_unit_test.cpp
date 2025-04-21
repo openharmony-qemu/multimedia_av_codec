@@ -245,11 +245,11 @@ void DestroyMultiHardwareDecoder(const std::vector<int> pidList)
 }
 
 /**
- * @tc.name: Create_Hardware_Avc_Decoder
- * @tc.desc: create a executing hadware avc decoder
+ * @tc.name: Create_A_Running_Hardware_Avc_Decoder
+ * @tc.desc: create a running hadware avc decoder
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, Create_Hardware_Avc_Decoder, TestSize.Level1)
+HWTEST_F(TEST_SUIT, Create_A_Running_Hardware_Avc_Decoder, TestSize.Level1)
 {
     CreateByNameWithParam(VCodecTestCode::HW_AVC);
     SetFormatWithParam(VCodecTestCode::HW_AVC);
@@ -260,11 +260,11 @@ HWTEST_F(TEST_SUIT, Create_Hardware_Avc_Decoder, TestSize.Level1)
 }
 
 /**
- * @tc.name: Create_Hardware_Hevc_Decoder
- * @tc.desc: create a executing hadware hevc decoder
+ * @tc.name: Create_A_Running_Hardware_Hevc_Decoder
+ * @tc.desc: create a running hadware hevc decoder
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, Create_Hardware_Hevc_Decoder, TestSize.Level1)
+HWTEST_F(TEST_SUIT, Create_A_Running_Hardware_Hevc_Decoder, TestSize.Level1)
 {
     CreateByNameWithParam(VCodecTestCode::HW_HEVC);
     SetFormatWithParam(VCodecTestCode::HW_HEVC);
@@ -407,7 +407,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Freeze_009, TestSize.Level1)
 
 /**
  * @tc.name: VideoDecoder_Hardware_MultiProcess_Freeze_001
- * @tc.desc: decoder is executing and freeze all process
+ * @tc.desc: decoder is running and freeze all process
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Freeze_001, TestSize.Level1)
@@ -422,7 +422,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Freeze_001, TestSize.Leve
 
 /**
  * @tc.name: VideoDecoder_Hardware_MultiProcess_Freeze_002
- * @tc.desc: decoder is executing and freeze one of process
+ * @tc.desc: decoder is running and freeze one of process
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Freeze_002, TestSize.Level1)
@@ -437,7 +437,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Freeze_002, TestSize.Leve
 
 /**
  * @tc.name: VideoDecoder_Hardware_MultiProcess_Freeze_003
- * @tc.desc: decoder is executing and freeze one of process
+ * @tc.desc: decoder is running and freeze one of process
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Freeze_003, TestSize.Level1)
@@ -452,7 +452,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Freeze_003, TestSize.Leve
 
 /**
  * @tc.name: VideoDecoder_Hardware_MultiProcess_Freeze_004
- * @tc.desc: decoder is executing and freeze all process
+ * @tc.desc: decoder is running and freeze all process
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Freeze_004, TestSize.Level1)
@@ -623,7 +623,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_010, TestSize.Level1)
 
 /**
  * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_001
- * @tc.desc: decoder is executing and active all process
+ * @tc.desc: decoder is running and active all process
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_001, TestSize.Level1)
@@ -640,7 +640,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_001, TestSize.Leve
 
 /**
  * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_002
- * @tc.desc: decoder is executing and active one of process
+ * @tc.desc: decoder is running and active one of process
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_002, TestSize.Level1)
@@ -657,7 +657,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_002, TestSize.Leve
 
 /**
  * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_003
- * @tc.desc: decoder is executing and active one of process
+ * @tc.desc: decoder is running and active one of process
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_003, TestSize.Level1)
@@ -674,7 +674,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_003, TestSize.Leve
 
 /**
  * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_004
- * @tc.desc: decoder is executing and active all process
+ * @tc.desc: decoder is running and active all process
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_004, TestSize.Level1)
@@ -768,7 +768,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_All_006, TestSize.Level1)
 
 /**
  * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_All_001
- * @tc.desc: decoder is executing and active all process
+ * @tc.desc: decoder is running and active all process
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_All_001, TestSize.Level1)
@@ -785,7 +785,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_All_001, TestSize.
 
 /**
  * @tc.name: VideoDecoder_Hardware_MultiProcess_Active_All_002
- * @tc.desc: decoder is executing and active one of process
+ * @tc.desc: decoder is running and active one of process
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_All_002, TestSize.Level1)
@@ -888,7 +888,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Freeze_003, TestSize.Level1)
 /**
  * @tc.name: VideoDecoder_Hardware_Freeze_010
  * @tc.desc: 1.decoder called post processing
- *           2.decoder is executing
+ *           2.decoder is running
  *           3.freeze process
  * @tc.type: FUNC
  */
@@ -935,7 +935,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Active_All_003, TestSize.Level1)
 /**
  * @tc.name: VideoDecoder_Hardware_Active_All_007
  * @tc.desc: 1.decoder called post processing
- *           2.decoder is executing
+ *           2.decoder is running
  *           3.active all process
  * @tc.type: FUNC
  */
@@ -983,7 +983,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Active_003, TestSize.Level1)
 /**
  * @tc.name: VideoDecoder_Hardware_Active_011
  * @tc.desc: 1.decoder called post processing
- *           2.decoder is executing
+ *           2.decoder is running
  *           3.active all process
  * @tc.type: FUNC
  */
@@ -1016,12 +1016,14 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--create_multi_avc_dec") == 0) {
             DecArgv(i, argc, argv);
             testing::InitGoogleTest(&argc, argv);
-            testing::GTEST_FLAG(filter) = "VideoHDecoderMemoryRecyleTest.Create_Hardware_Avc_Decoder";
+            testing::GTEST_FLAG(filter) =
+                "VideoHDecoderMemoryRecyleTest.Create_A_Running_Hardware_Avc_Decoder";
             return RUN_ALL_TESTS();
         } else if (strcmp(argv[i], "--create_multi_hevc_dec") == 0) {
             DecArgv(i, argc, argv);
             testing::InitGoogleTest(&argc, argv);
-            testing::GTEST_FLAG(filter) = "VideoHDecoderMemoryRecyleTest.Create_Hardware_Hevc_Decoder";
+            testing::GTEST_FLAG(filter) =
+                "VideoHDecoderMemoryRecyleTest.Create_A_Running_Hardware_Hevc_Decoder";
             return RUN_ALL_TESTS();
         } else if (strcmp(argv[i], "--need_dump") == 0) {
             VideoDecSample::needDump_ = true;
