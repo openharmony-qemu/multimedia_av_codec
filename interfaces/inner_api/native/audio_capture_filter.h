@@ -60,6 +60,7 @@ public:
     Status SetAudioCaptureChangeCallback(
         const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback);
     Status GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo);
+    Status SetWillMuteWhenInterrupted(bool muteWhenInterrupted);
     int32_t GetMaxAmplitude();
     void SetVideoFirstFramePts(int64_t firstFramePts);
     void SetWithVideo(bool withVideo);
