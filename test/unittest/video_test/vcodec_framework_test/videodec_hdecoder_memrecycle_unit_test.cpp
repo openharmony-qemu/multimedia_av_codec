@@ -284,9 +284,9 @@ void PrepareSource(int32_t param, std::shared_ptr<VideoDecSample> videoDec, stri
     videoDec->SetOutPath(prefix);
 }
 
-void Create_A_Running_Hardware_Avc_Decoder()
+void CreateARunningHardwareAvcDecoder()
 {
-    const string fileName = "Create_A_Running_Hardware_Avc_Decoder";
+    const string fileName = "CreateARunningHardwareAvcDecoder";
     std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
     std::shared_ptr<VDecCallbackTest> vdecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
     std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
@@ -308,9 +308,9 @@ void Create_A_Running_Hardware_Avc_Decoder()
     videoDec = nullptr;
 }
 
-void Create_A_Running_Hardware_Hevc_Decoder()
+void CreateARunningHardwareHevcDecoder()
 {
-    const string fileName = "Create_A_Running_Hardware_Hevc_Decoder";
+    const string fileName = "CreateARunningHardwareHevcDecoder";
     std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
     std::shared_ptr<VDecCallbackTest> vdecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
     std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
@@ -1072,9 +1072,11 @@ int main(int argc, char **argv)
     for (int i = 0; i < argc; ++i) {
         cout << argv[i] << endl;
         if (strcmp(argv[i], "--create_multi_avc_dec") == 0) {
-            Create_A_Running_Hardware_Avc_Decoder();
+            CreateARunningHardwareAvcDecoder();
+            return 0;
         } else if (strcmp(argv[i], "--create_multi_hevc_dec") == 0) {
-            Create_A_Running_Hardware_Hevc_Decoder();
+            CreateARunningHardwareHevcDecoder();
+            return 0;
         } else if (strcmp(argv[i], "--need_dump") == 0) {
             VideoDecSample::needDump_ = true;
             DecArgv(i, argc, argv);
