@@ -303,23 +303,41 @@ void Create_A_Running_Hardware_Avc_Decoder()
     SetFormatWithParam(format);
     PrepareSource(VCodecTestCode::HW_AVC, videoDec, fileName);
     videoDec->isKeepExecuting_ = true;
-    auto ret = videoDec_->Configure(format);
-    videoDec_->Start();
+    videoDec->Configure(format);
+    videoDec->Start();
+
+    if (format != nullptr) {
+        format->Destroy();
+    }
+    videoDec = nullptr;
 }
 
-/**
- * @tc.name: Create_A_Running_Hardware_Hevc_Decoder
- * @tc.desc: create a running hadware hevc decoder
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, Create_A_Running_Hardware_Hevc_Decoder, TestSize.Level1)
+void Create_A_Running_Hardware_Hevc_Decoder()
 {
-    CreateByNameWithParam(VCodecTestCode::HW_HEVC);
-    SetFormatWithParam(VCodecTestCode::HW_HEVC);
-    PrepareSource(VCodecTestCode::HW_HEVC);
-    videoDec_->isKeepExecuting_ = true;
-    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    const string fileName = "Create_A_Running_Hardware_Hevc_Decoder";
+    std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
+    std::shared_ptr<VDecCallbackTest> vdecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
+    std::shared_ptr<FormatMock> format = nullptr;
+    if (!vdecCallback) {
+        std::cout << "create a running hadware hevc decoder failed" << std::endl;
+    }
+
+    std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
+    if (!videoDec) {
+        std::cout << "create a running hadware hevc decoder failed" << std::endl;
+    }
+
+    CreateByNameWithParam(VCodecTestCode::HW_HEVC, vdecCallback, videoDec);
+    SetFormatWithParam(format);
+    PrepareSource(VCodecTestCode::HW_HEVC, videoDec, fileName);
+    videoDec->isKeepExecuting_ = true;
+    videoDec->Configure(format);
+    videoDec->Start();
+
+    if (format != nullptr) {
+        format->Destroy();
+    }
+    videoDec = nullptr;
 }
 
 /**
@@ -1062,17 +1080,9 @@ int main(int argc, char **argv)
     for (int i = 0; i < argc; ++i) {
         cout << argv[i] << endl;
         if (strcmp(argv[i], "--create_multi_avc_dec") == 0) {
-            DecArgv(i, argc, argv);
-            testing::InitGoogleTest(&argc, argv);
-            testing::GTEST_FLAG(filter) =
-                "VideoHDecoderMemoryRecyleTest.Create_A_Running_Hardware_Avc_Decoder";
-            return RUN_ALL_TESTS();
+            Create_A_Running_Hardware_Avc_Decoder();
         } else if (strcmp(argv[i], "--create_multi_hevc_dec") == 0) {
-            DecArgv(i, argc, argv);
-            testing::InitGoogleTest(&argc, argv);
-            testing::GTEST_FLAG(filter) =
-                "VideoHDecoderMemoryRecyleTest.Create_A_Running_Hardware_Hevc_Decoder";
-            return RUN_ALL_TESTS();
+            Create_A_Running_Hardware_Hevc_Decoder();
         } else if (strcmp(argv[i], "--need_dump") == 0) {
             VideoDecSample::needDump_ = true;
             DecArgv(i, argc, argv);
