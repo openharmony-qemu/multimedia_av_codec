@@ -244,19 +244,67 @@ void DestroyMultiHardwareDecoder(const std::vector<int> pidList)
     }
 }
 
-/**
- * @tc.name: Create_A_Running_Hardware_Avc_Decoder
- * @tc.desc: create a running hadware avc decoder
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, Create_A_Running_Hardware_Avc_Decoder, TestSize.Level1)
+void CreateByNameWithParam(int32_t param, std::shared_ptr<VDecCallbackTest> vdecCallback,
+                           std::shared_ptr<VideoDecSample> videoDec)
 {
-    CreateByNameWithParam(VCodecTestCode::HW_AVC);
-    SetFormatWithParam(VCodecTestCode::HW_AVC);
-    PrepareSource(VCodecTestCode::HW_AVC);
-    videoDec_->isKeepExecuting_ = true;
-    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    std::string codecName = "";
+    if (param == VCodecTestCode::HW_AVC) {
+        auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
+                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+        codecName = capability->GetName();
+    } else {
+        auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
+                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+        codecName = capability->GetName();
+    }
+    std::cout << "CodecName: " << codecName << "\n";
+    if (videoDec->CreateVideoDecMockByName(codecName) == false ||
+        videoDec->SetCallback(vdecCallback) != AV_ERR_OK) {
+        std::cout << "CreateByNameWithParam failed" << std::endl;
+    }
+}
+
+void SetFormatWithParam(std::shared_ptr<FormatMock> format)
+{
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+}
+
+void PrepareSource(int32_t param, std::shared_ptr<VideoDecSample> videoDec, string fileName)
+{
+    std::string sourcePath = decSourcePathMap_.at(param);
+    if (param == VCodecTestCode::HW_HEVC) {
+        videoDec->SetSourceType(false);
+    }
+    videoDec->testParam_ = param;
+    std::cout << "SourcePath: " << sourcePath << std::endl;
+    videoDec->SetSource(sourcePath);
+    string prefix = "/data/test/media/" + fileName;
+    videoDec->SetOutPath(prefix);
+}
+
+void Create_A_Running_Hardware_Avc_Decoder()
+{
+    const string fileName = "Create_A_Running_Hardware_Avc_Decoder";
+    std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
+    std::shared_ptr<VDecCallbackTest> vdecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
+    std::shared_ptr<FormatMock> format = nullptr;
+    if (!vdecCallback) {
+        std::cout << "create a running hadware avc decoder failed" << std::endl;
+    }
+
+    std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
+    if (!videoDec) {
+        std::cout << "create a running hadware avc decoder failed" << std::endl;
+    }
+
+    CreateByNameWithParam(VCodecTestCode::HW_AVC, vdecCallback, videoDec);
+    SetFormatWithParam(format);
+    PrepareSource(VCodecTestCode::HW_AVC, videoDec, fileName);
+    videoDec->isKeepExecuting_ = true;
+    auto ret = videoDec_->Configure(format);
+    videoDec_->Start();
 }
 
 /**
