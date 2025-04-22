@@ -73,6 +73,7 @@ constexpr int32_t ONE_HUNDRED_MILLIONSECOND = 100;
 constexpr uint64_t RESUME_FREE_SIZE_THRESHOLD = 2 * 1024 * 1024;
 constexpr size_t STORP_WRITE_BUFFER_REDUNDANCY = 1 * 1024 * 1024;
 constexpr int MAX_RETRY = 10;
+constexpr uint32_t MAX_LOOP_TIMES = 100;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -1839,7 +1840,7 @@ void HlsMediaDownloader::HandleCachedDuration()
     if (currentBitRate_ <= 0 || callback_ == nullptr) {
         return;
     }
-    cachedDuration_ = static_cast<uint64_t>((static_cast<int64_t>(GetBufferSize()) *
+    cachedDuration_ = static_cast<uint64_t>((static_cast<int64_t>(GetTotalTsBuffersize()) *
         BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / static_cast<int64_t>(currentBitRate_));
     if ((cachedDuration_ > lastDurationReacord_ &&
         cachedDuration_ - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLISECONDS) ||
@@ -2232,6 +2233,27 @@ void HlsMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, i
     if (callback_ != nullptr) {
         callback_->OnEvent({PluginEventType::HLS_SEEK_READY, seekReadyInfo, "hls_seek_ready"});
     }
+}
+
+size_t HlsMediaDownloader::GetTotalTsBuffersize()
+{
+    FALSE_RETURN_V_MSG(cacheMediaBuffer_ != nullptr, 0, "cacheMediaBuffer_ is nullptr.");
+    size_t totalBufferSize = 0;
+    uint32_t tsIndex = readTsIndex_;
+    uint64_t offset = readOffset_;
+    while (tsIndex < writeTsIndex_) {
+        size_t bufferSize = cacheMediaBuffer_->GetBufferSize(offset);
+        uint32_t loopTimes = tsIndex > readOffset_ ? tsIndex - readOffset_ : 0;
+        if (bufferSize == 0 || loopTimes > MAX_LOOP_TIMES) {
+            break;
+        }
+        totalBufferSize += bufferSize;
+        tsIndex++;
+        offset = SpliceOffset(tsIndex, 0);
+    }
+    MEDIA_LOG_D("GetTotalTsBuffersize  readTsIndex_: " PUBLIC_LOG_U32 " tsIndex: "
+        PUBLIC_LOG_U32 " offset: " PUBLIC_LOG_U64, readTsIndex_.load(), tsIndex, offset);
+    return totalBufferSize;
 }
 }
 }
