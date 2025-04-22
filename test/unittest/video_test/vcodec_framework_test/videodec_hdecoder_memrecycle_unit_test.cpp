@@ -289,13 +289,9 @@ void Create_A_Running_Hardware_Avc_Decoder()
     const string fileName = "Create_A_Running_Hardware_Avc_Decoder";
     std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
     std::shared_ptr<VDecCallbackTest> vdecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
-    std::shared_ptr<FormatMock> format = nullptr;
-    if (!vdecCallback) {
-        std::cout << "create a running hadware avc decoder failed" << std::endl;
-    }
-
     std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
-    if (!videoDec) {
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    if (!vdecCallback || !videoDec || !format) {
         std::cout << "create a running hadware avc decoder failed" << std::endl;
     }
 
@@ -317,14 +313,10 @@ void Create_A_Running_Hardware_Hevc_Decoder()
     const string fileName = "Create_A_Running_Hardware_Hevc_Decoder";
     std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
     std::shared_ptr<VDecCallbackTest> vdecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
-    std::shared_ptr<FormatMock> format = nullptr;
-    if (!vdecCallback) {
-        std::cout << "create a running hadware hevc decoder failed" << std::endl;
-    }
-
     std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
-    if (!videoDec) {
-        std::cout << "create a running hadware hevc decoder failed" << std::endl;
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    if (!vdecCallback || !videoDec || !format) {
+        std::cout << "create a running hadware avc decoder failed" << std::endl;
     }
 
     CreateByNameWithParam(VCodecTestCode::HW_HEVC, vdecCallback, videoDec);
@@ -604,8 +596,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Active_006, TestSize.Level1)
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    SuspendActive();
     SuspendFreeze();
+    SuspendActive();
 }
 
 /**
