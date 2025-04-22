@@ -19,7 +19,6 @@
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
 #include "native_buffer_inner.h"
-#include "display_type.h"
 #include "serverdec_sample.h"
 #include "hevc_decoder_api.h"
 #include "fcodec_api.cpp"
