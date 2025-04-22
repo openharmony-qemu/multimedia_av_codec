@@ -170,7 +170,7 @@ Status AudioRawDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramete
     } else {
         maxInputSize_ = channels_ * AUDIO_FRAME_LENGHT_DEFAULT * bytesSize;
     }
-    maxOutputSize_ = channels_ * AUDIO_FRAME_LENGHT_DEFAULT * desBytesSize;
+    maxOutputSize_ = static_cast<uint32_t>(channels_ * AUDIO_FRAME_LENGHT_DEFAULT * desBytesSize);
     inputBuffer_.resize(maxInputSize_);
     AVCODEC_LOGI("input size:%{public}d, output size:%{public}d, format:%{public}d,dest format:%{public}d",
         maxInputSize_, maxOutputSize_, srcSampleFormat_, audioSampleFormat_);
@@ -223,6 +223,10 @@ double AudioRawDecoderPlugin::F64BEToDouble(const uint8_t *src)
 {
     double val = 0.0;
     uint64_t value = 0;
+    if (src == nullptr) {
+        AVCODEC_LOGE("src is null");
+        return val;
+    }
     for (size_t i = 0; i < BYTE_LENGHT_DOUBLE; i++) {
         value |= (static_cast<uint64_t>(src[i]) << (BYTE_LENGHT_DOUBLE * (BYTE_LENGHT_DOUBLE_INDEX - i)));
     }
