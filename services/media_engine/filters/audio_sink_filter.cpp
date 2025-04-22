@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -56,12 +56,12 @@ AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
 {
     filterType_ = filterType;
     audioSink_ = std::make_shared<AudioSink>();
-    MEDIA_LOG_D("audio sink ctor called");
+    MEDIA_LOG_I("audio sink ctor called");
 }
 
 AudioSinkFilter::~AudioSinkFilter()
 {
-    MEDIA_LOG_D("dtor called");
+    MEDIA_LOG_I("dtor called");
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -76,7 +76,7 @@ void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     Filter::Init(receiver, callback);
     eventReceiver_ = receiver;
     filterCallback_ = callback;
-    MEDIA_LOG_D("audio sink Init called");
+    MEDIA_LOG_I("audio sink Init called");
     interruptMonitor_ = monitor;
     if (interruptMonitor_) {
         interruptMonitor_->RegisterListener(audioSink_);
@@ -143,7 +143,7 @@ Status AudioSinkFilter::DoPause()
     }
     // only worked when state is working
     if (state_ != FilterState::READY && state_ != FilterState::RUNNING) {
-        MEDIA_LOG_W("audio sink cannot pause when not working.");
+        MEDIA_LOG_W("audio sink cannot pause when not working");
         return Status::ERROR_INVALID_OPERATION;
     }
     state_ = FilterState::PAUSED;

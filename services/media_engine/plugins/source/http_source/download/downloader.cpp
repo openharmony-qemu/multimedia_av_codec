@@ -46,6 +46,7 @@ constexpr int REQUEST_OFTEN_ERROR_CODE = 500;
 constexpr int SLEEP_TEN_MICRO_SEC = 10; // 10ms
 constexpr int APP_OPEN_RETRY_TIMES = 10;
 constexpr int32_t REDIRECT_CODE = 302;
+constexpr uint32_t MAX_LOOP_TIMES = 100;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -924,7 +925,8 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_);
     MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                      mediaDownloader->currentRequest_->startPos_);
-    mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + writeLen;
+    mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ +
+                                                  static_cast<int64_t>(writeLen);
     UpdateRequestSize(mediaDownloader);
  
     if (writeLen != dataLen) {
@@ -1051,6 +1053,9 @@ void Downloader::ToLower(char* str)
 {
     FALSE_RETURN(str != nullptr);
     for (int i = 0; str[i] != '\0'; ++i) {
+        if (i > MAX_LOOP_TIMES) {
+            break;
+        }
         str[i] = tolower(static_cast<unsigned char>(str[i]));
     }
 }

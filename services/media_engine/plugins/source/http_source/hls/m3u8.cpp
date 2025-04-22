@@ -152,6 +152,10 @@ void M3U8::InitTagUpdaters()
         std::shared_ptr<Attribute> attr = std::make_shared<Attribute>("BYTERANGE", value);
         offset_ = attr->GetByteRange().first + 1; // 1
         length_ = attr->GetByteRange().second;
+        if (!isHeaderReady_.load()) {
+            offset_ -= 1; // 1
+            isPureByteRange_.store(true);
+        }
     };
 }
 
@@ -567,6 +571,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();
     isFmp4_ = m3u8->isHeaderReady_.load();
+    isPureByteRange_.store(m3u8->isPureByteRange_.load());
     isSimple_ = true;
     MEDIA_LOG_I("UpdateMediaPlaylist called, duration_ = " PUBLIC_LOG_F, duration_);
 }

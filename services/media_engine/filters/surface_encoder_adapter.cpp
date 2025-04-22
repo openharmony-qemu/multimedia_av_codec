@@ -336,7 +336,7 @@ Status SurfaceEncoderAdapter::Start()
     }
     ret = codecServer_->Start();
     isStart_ = true;
-    isStartKeyFramePts_= true;
+    isStartKeyFramePts_ = true;
     if (ret == 0) {
         curState_ = ProcessStateCode::RECORDING;
         return Status::OK;
