@@ -45,15 +45,14 @@ void BackGroundEventHandler::NotifyFrozen(const std::vector<int32_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     bool recycleMemory = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
-    if (!recycleMemory) {
-        AVCODEC_LOGI("recycle memory is not supported on this platform");
-        return;
-    }
     for (auto pid : pidList) {
         std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
-        if (!instanceList.empty()) {
+        if (!recycleMemory && !instanceList.empty()) {
             frozenPidList_.insert(pid);
             AVCODEC_LOGI("Freeze pid: %{public}d, frozenPidList_ size: %{public}zu", pid, frozenPidList_.size());
+        } else if {
+            AVCODEC_LOGI("recycle memory is not supported on this platform");
+            continue;
         }
         for (auto &instance : instanceList) {
             CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
