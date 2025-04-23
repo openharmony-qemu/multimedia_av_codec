@@ -644,10 +644,10 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
 
 void HlsMediaDownloader::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (keyLen_ <= 0) {
+    if (keyLen_ <= 0 || readDataInfo.realReadLength_ < 1) {
         return;
     }
-    if ((IsHlsFmp4() && readDataInfo.streamId_ > 0 && readDataInfo.realReadLength_ > 0) || IsPureByteRange()) {
+    if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         size_t endValue = buff[readDataInfo.realReadLength_ - 1];
         size_t paddingStart = readDataInfo.realReadLength_ > endValue ?
                               readDataInfo.realReadLength_ - endValue : 0;
