@@ -17,6 +17,7 @@
 #include "avcodec_common.h"
 #include "ffmpeg_converter.h"
 #include "avcodec_audio_common.h"
+#include <set>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FfmpegBaseDecoder"};
@@ -28,6 +29,11 @@ static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE,
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S32LE,
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE
+};
+static std::set<OHOS::Media::Status> invalidStatus = {
+    OHOS::Media::Status::ERROR_NOT_ENOUGH_DATA,
+    OHOS::Media::Status::ERROR_UNKNOWN,
+    OHOS::Media::Status::ERROR_NO_MEMORY
 };
 } // namespace
 
@@ -160,7 +166,9 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
         }
         CheckFormatChange();
         status = ReceiveFrameSucc(outBuffer);
-        dataCallback_->OnOutputBufferDone(outBuffer);
+        if (invalidStatus.find(status) == invalidStatus.end()) {
+            dataCallback_->OnOutputBufferDone(outBuffer);
+        }
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGI("eos received");
         outBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS;
@@ -224,9 +232,6 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
             avCodecContext_->channel_layout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(layout);
             av_channel_layout_from_mask(&avCodecContext_->ch_layout, avCodecContext_->channel_layout);
         }
-        AVCODEC_LOGI("recode output description,layout:%{public}s channels:%{public}d nb_channels:%{public}d",
-                     FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data(),
-                     avCodecContext_->channels, avCodecContext_->ch_layout.nb_channels);
         format_->SetData(Tag::AUDIO_CHANNEL_LAYOUT, layout);
         if (InitResample() != Status::OK) {
             currentFrameFormatChanged_ = false;
@@ -256,6 +261,10 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     ioInfoMem->Write(outFrame->data[0], outputSize, 0);
     outBuffer->pts_ = cachedFrame_->pts;
     outBuffer->duration_ = static_cast<int64_t>(cachedFrame_->nb_samples * durationTime_);
+    if (avCodecContext_->codec->id == AV_CODEC_ID_AAC && !(outBuffer->pts_ + outBuffer->duration_ > 0)) {
+        AVCODEC_LOGI("drop this output, pts_ + duration_= %{public}" PRIu64, outBuffer->pts_ + outBuffer->duration_);
+        return Status::ERROR_NOT_ENOUGH_DATA;
+    }
     format_->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, outFrame->nb_samples);
     ioInfoMem->SetSize(outputSize);
     if (needResample_) {
@@ -385,6 +394,11 @@ Status FfmpegBaseDecoder::InitResample()
     AVCODEC_LOGI("ffmpeg default sample_fmt :%{public}" PRId32, avCodecContext_->sample_fmt);
     AVCODEC_LOGI("need sample_fmt :%{public}" PRId32, destFmt_);
     AVCODEC_LOGI("frameSize :%{public}" PRId32, avCodecContext_->frame_size);
+    auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(avCodecContext_->channel_layout,
+        avCodecContext_->channels);
+    AVCODEC_LOGI("recode output description,layout:%{public}s channels:%{public}d nb_channels:%{public}d",
+        FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data(),
+        avCodecContext_->channels, avCodecContext_->ch_layout.nb_channels);
     if ((!needResample_ && avCodecContext_->sample_fmt != destFmt_)
         || (needResample_ && currentFrameFormatChanged_)) {
         ResamplePara resamplePara;
