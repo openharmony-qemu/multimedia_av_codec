@@ -140,5 +140,36 @@ void MediaDemuxer::InitMediaStartPts()
         }
     }
 }
+
+void MediaDemuxer::TranscoderInitMediaStartPts()
+{
+    // Init media start time based on the first video track and the first audio track
+    std::string mime;
+    int64_t startTime = 0;
+    bool isInitVideoStartTime = false;
+    bool isInitAudioStartTime = false;
+    for (const auto& trackInfo : mediaMetaData_.trackMetas) {
+        if (trackInfo == nullptr || !(trackInfo->GetData(Tag::MIME_TYPE, mime))) {
+            MEDIA_LOG_W("TrackInfo is null or get mime fail");
+            continue;
+        }
+        if (!isInitVideoStartTime && (mime.find("video/") == 0)) {
+            isInitVideoStartTime = true;
+            FALSE_RETURN(trackInfo->GetData(Tag::MEDIA_START_TIME, startTime));
+            if (transcoderStartPts_ == HST_TIME_NONE || startTime < transcoderStartPts_) {
+                transcoderStartPts_ = startTime;
+            }
+        } else if (!isInitAudioStartTime && (mime.find("audio/") == 0)) {
+            isInitAudioStartTime = true;
+            FALSE_RETURN(trackInfo->GetData(Tag::MEDIA_START_TIME, startTime));
+            if (transcoderStartPts_ == HST_TIME_NONE || startTime < transcoderStartPts_) {
+                transcoderStartPts_ = startTime;
+            }
+        }
+        if (isInitAudioStartTime && isInitVideoStartTime) {
+            break;
+        }
+    } 
+}
 } // namespace Media
 } // namespace OHOS
