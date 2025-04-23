@@ -676,10 +676,11 @@ Status MediaDemuxer::AddDemuxerCopyTask(uint32_t trackId, TaskType type)
 void MediaDemuxer::UpdateThreadPriority(uint32_t trackId)
 {
 #ifdef SUPPORT_START_STOP_ON_DEMAND
-    task->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
+    taskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
 #else
     if (!HasVideo() && trackId == audioTrackId_) {
-        task->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
+        taskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
+        sampleConsumerTaskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
         MEDIA_LOG_I("Update thread priority for audio-only source");
     }
 #endif
