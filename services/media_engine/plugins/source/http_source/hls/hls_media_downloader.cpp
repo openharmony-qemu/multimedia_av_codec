@@ -658,7 +658,9 @@ void HlsMediaDownloader::PlaylistBackup(const PlayInfo& fragment)
         }
         return;
     }
-    backPlayList_.push_back(fragment);
+    if (playlistDownloader_->IsParseFinished()) {
+        backPlayList_.push_back(fragment);
+    }
 }
 
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
