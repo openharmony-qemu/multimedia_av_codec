@@ -235,6 +235,7 @@ private:
     bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
     void HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackId);
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
+    void UpdateThreadPriority(uint32_t trackId);
     bool IsNeedMapToInnerTrackID();
     int64_t GetReadLoopRetryUs(uint32_t trackId);
     uint64_t GetSampleQueueDuration();
