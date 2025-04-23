@@ -651,15 +651,9 @@ Status MediaDemuxer::AddDemuxerCopyTask(uint32_t trackId, TaskType type)
     FALSE_RETURN_V_MSG_W(task != nullptr, Status::OK,
         "Create task failed, track:" PUBLIC_LOG_U32 ", type:" PUBLIC_LOG_D32,
         trackId, type);
-#ifdef SUPPORT_START_STOP_ON_DEMAND
-    task->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
-#else
-    if (!HasVideo() && trackId == audioTrackId_) {
-        task->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
-        MEDIA_LOG_I("Update thread priority for audio-only source");
-    }
-#endif
+
     taskMap_[trackId] = std::move(task);
+    UpdateThreadPriority(trackId);
     taskMap_[trackId]->RegisterJob([this, trackId] { return ReadLoop(trackId); });
 
     // To wake up DEMUXER TRACK WORKING TASK immediately on input buffer available.
@@ -679,6 +673,19 @@ Status MediaDemuxer::AddDemuxerCopyTask(uint32_t trackId, TaskType type)
     return Status::OK;
 }
 
+void MediaDemuxer::UpdateThreadPriority(uint32_t trackId)
+{
+#ifdef SUPPORT_START_STOP_ON_DEMAND
+    taskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
+#else
+    if (!HasVideo() && trackId == audioTrackId_) {
+        taskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
+        sampleConsumerTaskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
+        MEDIA_LOG_I("Update thread priority for audio-only source");
+    }
+#endif
+}
+
 Status MediaDemuxer::AddDemuxerCopyTaskByTrack(uint32_t trackId, DemuxerTrackType type)
 {
     uint32_t trackType = static_cast<uint32_t>(type);
@@ -695,7 +702,7 @@ Status MediaDemuxer::AddDemuxerCopyTaskByTrack(uint32_t trackId, DemuxerTrackTyp
         "Create sampleConsumerTask failed, track:" PUBLIC_LOG_U32 ",DemuxerTrackType:" PUBLIC_LOG_D32, trackId, type);
     sampleConsumerTaskMap_[trackId] = std::move(sampleConsumerTask);
     sampleConsumerTaskMap_[trackId]->RegisterJob([this, trackId] { return SampleConsumerLoop(trackId); });
-
+    UpdateThreadPriority(trackId);
     if (notifySampleConsumeTask_ == nullptr) {
         notifySampleConsumeTask_
             = std::make_unique<Task>("SAM_CON", playerId_, TaskType::DECODER, TaskPriority::HIGH, false);
