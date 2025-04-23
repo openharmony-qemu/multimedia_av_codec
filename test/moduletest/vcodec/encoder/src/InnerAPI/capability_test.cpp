@@ -511,7 +511,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0100, TestSize.Level
     Format format;
     capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
-    if (IsEncoderBitrateModeSupported(capabilityData, VBR)) {
+    if (IsEncoderBitrateModeSupported(capabilityData, CBR)) {
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, venc_);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -536,7 +536,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0110, TestSize.Level
     Format format;
     capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
-    if (IsEncoderBitrateModeSupported(capabilityData, VBR)) {
+    if (IsEncoderBitrateModeSupported(capabilityData, CBR)) {
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, venc_);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -561,7 +561,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0120, TestSize.Level
     Format format;
     capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
-    if (IsEncoderBitrateModeSupported(capabilityData, VBR)) {
+    if (IsEncoderBitrateModeSupported(capabilityData, CBR)) {
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, venc_);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -588,7 +588,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0130, TestSize.Level
     Format format;
     capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
-    if (IsEncoderBitrateModeSupported(capabilityData, VBR)) {
+    if (IsEncoderBitrateModeSupported(capabilityData, CQ)) {
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, venc_);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -613,7 +613,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0140, TestSize.Level
     Format format;
     capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
-    if (IsEncoderBitrateModeSupported(capabilityData, VBR)) {
+    if (IsEncoderBitrateModeSupported(capabilityData, CQ)) {
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, venc_);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -638,7 +638,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0150, TestSize.Level
     Format format;
     capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
-    if (IsEncoderBitrateModeSupported(capabilityData, VBR)) {
+    if (IsEncoderBitrateModeSupported(capabilityData, CQ)) {
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, venc_);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
