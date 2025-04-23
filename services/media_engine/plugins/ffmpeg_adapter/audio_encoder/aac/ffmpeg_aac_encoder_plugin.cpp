@@ -284,6 +284,7 @@ Status FFmpegAACEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outp
         MEDIA_LOG_E("queue out buffer is nullptr.");
         return Status::ERROR_INVALID_PARAMETER;
     }
+    std::lock_guard<std::mutex> lock(avMutex_);
     outBuffer_ = outputBuffer;
     Status ret = SendOutputBuffer(outputBuffer);
     return ret;
@@ -775,6 +776,7 @@ Status FFmpegAACEncoderPlugin::Prepare()
 
 Status FFmpegAACEncoderPlugin::Stop()
 {
+    std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
     if (outBuffer_) {
