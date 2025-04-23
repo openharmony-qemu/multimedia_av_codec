@@ -62,6 +62,10 @@ enum ShortOption {
     OPT_ENABLE_PARAMS_FEEDBACK,
     OPT_SQR_FACTOR,
     OPT_MAX_BITRATE,
+    OPT_ENABLE_QP_MAP,
+    OPT_IS_ABS_QP_MAP,
+    OPT_QP_MAP_VALUE,
+    OPT_TARGET_QP,
     // decoder only
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
@@ -100,6 +104,7 @@ static struct option g_longOptions[] = {
     {"quality",         required_argument,  nullptr, OPT_QUALITY},
     {"sqrFactor",       required_argument,  nullptr, OPT_SQR_FACTOR},
     {"maxBitrate",      required_argument,  nullptr, OPT_MAX_BITRATE},
+    {"targetQp",        required_argument,  nullptr, OPT_TARGET_QP},
     {"qpRange",         required_argument,  nullptr, OPT_QP_RANGE},
     {"ltrFrameCount",   required_argument,  nullptr, OPT_LTR_FRAME_COUNT},
     {"repeatAfter",     required_argument,  nullptr, OPT_REPEAT_AFTER},
@@ -107,6 +112,9 @@ static struct option g_longOptions[] = {
     {"layerCnt",        required_argument,  nullptr, OPT_LAYER_COUNT},
     {"waterMark",       required_argument,  nullptr, OPT_WATERMARK},
     {"paramsFeedback",  required_argument,  nullptr, OPT_ENABLE_PARAMS_FEEDBACK},
+    {"enableQPMap",     required_argument,  nullptr, OPT_ENABLE_QP_MAP},
+    {"isAbsQpMap",       required_argument,  nullptr, OPT_IS_ABS_QP_MAP},
+    {"qpMapValue",      required_argument,  nullptr, OPT_QP_MAP_VALUE},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
@@ -147,8 +155,8 @@ void ShowUsage()
     std::cout << " --profile            video profile, for 264: 0(baseline), 1(constrained baseline), " << std::endl;
     std::cout << "                      2(constrained high), 3(extended), 4(high), 8(main)" << std::endl;
     std::cout << "                      for 265: 0(main), 1(main 10)" << std::endl;
-    std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ), 3(CBR_VIDEOCALL), 4(SQR)"
-              << std::endl;
+    std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ), 3(CRF), 4(SQR)"
+              << ", 10(CBR_VIDEOCALL)" << std::endl;
     std::cout << " --bitRate            target encode bit rate (bps)" << std::endl;
     std::cout << " --quality            target encode quality" << std::endl;
     std::cout << " --sqrFactor           target encode QP" << std::endl;
@@ -261,6 +269,9 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_MAX_BITRATE:
                 opt.maxBitrate = stol(optarg);
                 break;
+            case OPT_TARGET_QP:
+                opt.targetQp = stol(optarg);
+                break;
             case OPT_QP_RANGE: {
                 istringstream is(optarg);
                 QPRange range;
@@ -286,6 +297,9 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_ENABLE_PARAMS_FEEDBACK:
                 opt.paramsFeedback = stol(optarg);
+                break;
+            case OPT_ENABLE_QP_MAP:
+                opt.enableQPMap = stol(optarg);
                 break;
             // decoder only
             case OPT_DEC_THEN_ENC:
@@ -366,6 +380,11 @@ void CommandOpt::ParseSetParameter(uint32_t frameNo, const string &s)
         value >> qpRange.qpMin >> c >> qpRange.qpMax;
         setParameterParamsMap[frameNo].qpRange = qpRange;
     }
+    if (key == "targetQp") {
+        uint32_t targetQp;
+        value >> targetQp;
+        setParameterParamsMap[frameNo].targetQp = targetQp;
+    }
 }
 
 void CommandOpt::ParsePerFrameParam(uint32_t frameNo, const string &s)
@@ -401,6 +420,19 @@ void CommandOpt::ParsePerFrameParam(uint32_t frameNo, const string &s)
         EBRParam ebrParam;
         value >> ebrParam.minQp >> c >> ebrParam.maxQp >> c >> ebrParam.startQp >> c >> ebrParam.isSkip;
         perFrameParamsMap[frameNo].ebrParam = ebrParam;
+    }
+    if (key == "isAbsQpMap") {
+        bool absQp;
+        value >> absQp;
+        perFrameParamsMap[frameNo].absQpMap = absQp;
+    }
+    if (key == "qpMapValue") {
+        int32_t qpMapValue;
+        value >> qpMapValue;
+        perFrameParamsMap[frameNo].qpMapValue = qpMapValue;
+        if (!perFrameParamsMap[frameNo].absQpMap.has_value()) {
+            perFrameParamsMap[frameNo].absQpMap = false;
+        }
     }
 }
 
@@ -481,6 +513,9 @@ void CommandOpt::Print() const
     if (maxBitrate.has_value()) {
         TLOGI("maxBitrate %u", maxBitrate.value());
     }
+    if (targetQp.has_value()) {
+        TLOGI("targetQp %u", targetQp.value());
+    }
     if (qpRange.has_value()) {
         TLOGI("qpRange %u~%u", qpRange->qpMin, qpRange->qpMax);
     }
@@ -504,6 +539,9 @@ void CommandOpt::Print() const
         if (setparam.frameRate.has_value()) {
             TLOGI("    frameRate %f", setparam.frameRate.value());
         }
+        if (setparam.frameRate.has_value()) {
+            TLOGI("    frameRate %f", setparam.frameRate.value());
+        }
     }
     for (const auto &[frameNo, perFrame] : perFrameParamsMap) {
         TLOGI("frameNo = %u:", frameNo);
@@ -516,6 +554,10 @@ void CommandOpt::Print() const
         if (perFrame.ltrParam.has_value()) {
             TLOGI("    LTR, markAsLTR %d, useLTR %d, useLTRPoc %u",
                   perFrame.ltrParam->markAsLTR, perFrame.ltrParam->useLTR, perFrame.ltrParam->useLTRPoc);
+        }
+        if (perFrame.absQpMap.has_value() && perFrame.qpMapValue.has_value()) {
+            TLOGI("    qpMap, type %d (0: delta qp, 1: abs qp), value %d",
+                  perFrame.absQpMap.value(), perFrame.qpMapValue.value());
         }
     }
     for (const auto &[frameNo, resourceParam] : resourceParamsMap) {

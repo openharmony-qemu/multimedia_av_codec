@@ -59,6 +59,7 @@ private:
     static std::optional<VideoEncodeBitrateMode> GetBitRateModeFromUser(const Format &format);
     static std::optional<uint32_t> GetSQRFactorFromUser(const Format &format);
     static std::optional<uint32_t> GetSQRMaxBitrateFromUser(const Format &format);
+    static std::optional<uint32_t> GetCRFtagetQpFromUser(const Format &format);
     int32_t SetupAVCEncoderParameters(const Format &format, std::optional<double> frameRate);
     void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, int32_t iFrameInterval, double frameRate);
     int32_t SetupHEVCEncoderParameters(const Format &format, std::optional<double> frameRate);
@@ -75,6 +76,8 @@ private:
     int32_t SetTemperalLayer(const Format &format);
     int32_t SetConstantQualityMode(int32_t quality);
     int32_t SetSQRMode(const Format &format);
+    int32_t EnableFrameQPMap(const Format &format);
+    int32_t SetCRFMode(int32_t targetQp);
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
@@ -109,6 +112,8 @@ private:
                                        const std::shared_ptr<Media::Meta> &meta);
     void WrapStartQPIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                   const std::shared_ptr<Media::Meta> &meta);
+    void WrapQPMapParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                  const std::shared_ptr<Media::Meta> &meta);
     void WrapIsSkipFrameIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                       const std::shared_ptr<Media::Meta> &meta);
     void BeforeCbOutToUser(BufferInfo &info) override;
@@ -141,6 +146,7 @@ private:
     bool enableSurfaceModeInputCb_ = false;
     bool enableLTR_ = false;
     bool enableTSVC_ = false;
+    bool enableQPMap_ = false;
     sptr<Surface> inputSurface_;
     uint32_t inBufferCnt_ = 0;
     static constexpr size_t MAX_LIST_SIZE = 256;
