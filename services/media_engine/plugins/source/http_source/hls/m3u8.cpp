@@ -246,6 +246,7 @@ void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
     if (length > 0) {
         downloadHeaderRequest_->SetRangePos(offset, offset + length);
     }
+    downloadHeaderRequest_ -> SetIsAuthRequest(true);
     downloaderHeader_->Download(downloadHeaderRequest_, -1);
     downloaderHeader_->Start();
 }
@@ -409,6 +410,7 @@ void M3U8::DownloadKey()
     requestInfo.url = realKeyUrl;
     requestInfo.httpHeader = httpHeader_;
     downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, requestInfo, true);
+    downloadHeaderRequest_ -> SetIsAuthRequest(true);
     downloader_->Download(downloadRequest_, -1);
     downloader_->Start();
 }

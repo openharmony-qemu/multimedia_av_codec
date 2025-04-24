@@ -50,7 +50,6 @@ struct HeaderInfo {
     bool isChunked {false};
     std::atomic<bool> isClosed {false};
     bool isServerAcceptRange {false};
-    bool isValidContentType {true};
 
     void Update(const HeaderInfo* info)
     {
@@ -112,13 +111,25 @@ public:
     {
         return url_;
     }
+    void SetIsAuthRequest(bool isAuthRequest)
+    {
+        isAuthRequest_ = isAuthRequest;
+    }
+    bool IsAuthRequest() const
+    {
+        return isAuthRequest_;
+    }
     const std::map<std::string, std::string>& GetHttpHeader() const
     {
         return httpHeader_;
     }
-    void SetUrl(const std::string& url)
+    void SetIsIndexM3u8Request(bool isIndexM3u8Request)
     {
-        url_ = url;
+        isIndexM3u8Request_ = isIndexM3u8Request;
+    }
+    bool isIndexM3u8Request() const
+    {
+        return isIndexM3u8Request_;
     }
     bool IsClosed() const;
     void Close();
@@ -168,6 +179,8 @@ private:
     int64_t dropedDataLen_ {0};
     std::atomic<bool> isFirstRangeRequestReady_ {false};
     bool isM3u8Request_ {false};
+    bool isIndexM3u8Request_ {false};
+    bool isAuthRequest_ {false};
     RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
 };
 
@@ -202,7 +215,8 @@ private:
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
     static bool HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
-    static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t headerSize, 
+                                Downloader* mediaDownloader);
     static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
     static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
@@ -214,7 +228,6 @@ private:
     void PauseLoop(bool isAsync = false);
     void WaitLoopPause();
     void NotifyLoopPause();
-    void ResetContentType();
     void HandleRetErrorCode();
     void DonwloaderInit(const std::string& name);
     void OpenAppUri();

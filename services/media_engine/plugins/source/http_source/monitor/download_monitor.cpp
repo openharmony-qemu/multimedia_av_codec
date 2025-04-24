@@ -23,7 +23,6 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
     constexpr int RETRY_TIMES_TO_REPORT_ERROR = 10;
-    constexpr int RETRY_THRESHOLD = 1;
     constexpr int APP_DOWNLOAD_RETRY_TIMES = 60;
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
@@ -143,14 +142,16 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     return ret;
 }
 
-bool DownloadMonitor::SeekToPos(int64_t offset)
+bool DownloadMonitor::SeekToPos(int64_t offset, bool& isSeekHit)
 {
     isPlaying_ = true;
-    {
+    isSeekHit = false;
+    bool res = downloader_->SeekToPos(offset, isSeekHit);
+    if (!isSeekHit) {
         AutoLock lock(taskMutex_);
         retryTasks_.clear();
     }
-    return downloader_->SeekToPos(offset);
+    return res;
 }
 
 size_t DownloadMonitor::GetContentLength() const
@@ -210,15 +211,6 @@ void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCo
         MEDIA_LOG_E("callback_ is nullptr, notify error failed.");
         return;
     }
-    if (serverErrorCode != 0) {
-        int32_t errorCode = MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR;
-        GetServerMediaServiceErrorCode(serverErrorCode, errorCode);
-        if (downloader_ != nullptr) {
-            downloader_->SetIsReportedErrorCode();
-        }
-        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "server error"});
-        MEDIA_LOG_I("Notify http server error, code " PUBLIC_LOG_D32, serverErrorCode);
-    }
     if (clientErrorCode != 0) {
         int32_t errorCode = MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR;
         GetClientMediaServiceErrorCode(clientErrorCode, errorCode);
@@ -228,6 +220,15 @@ void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCo
         callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "client error"});
         MEDIA_LOG_I("Notify http client error, code " PUBLIC_LOG_D32, clientErrorCode);
     }
+    if (serverErrorCode != 0) {
+        int32_t errorCode = MediaServiceErrCode::MSERR_DATA_SOURCE_IO_ERROR;
+        GetServerMediaServiceErrorCode(serverErrorCode, errorCode);
+        if (downloader_ != nullptr) {
+            downloader_->SetIsReportedErrorCode();
+        }
+        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "client error"});
+        MEDIA_LOG_I("Notify http server error, code " PUBLIC_LOG_D32, serverErrorCode);
+    }
 }
 
 bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
@@ -235,10 +236,12 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     auto clientError = request->GetClientError();
     int serverError = request->GetServerError();
     auto retryTimes = request->GetRetryTimes();
-    std::set<int> notRetryErrorSet = {400, 401};
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
-
+    if (CLIENT_NOT_RETRY_CODES.find(static_cast<int32_t>(clientError)) != CLIENT_NOT_RETRY_CODES.end()) {
+        MEDIA_LOG_I("Client error code is 23 or 992, not retry.");
+        return false;
+    }
     if (downloader_ != nullptr && downloader_->IsNotRetry(request)) { // flv living
         NotifyError(clientError, serverError);
         downloader_->SetDownloadErrorState();
@@ -248,10 +251,8 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     if (clientError == 0 && serverError == 0) {
         return false;
     }
-    if (CLIENT_NOT_RETRY_ERROR_CODES.find(clientError) != CLIENT_NOT_RETRY_ERROR_CODES.end()) {
-        return false;
-    }
-    if (retryTimes <= RETRY_THRESHOLD || (GetPlayable() && !GetReadTimeOut(clientError == -1))) { // -1: NOT_READY
+
+    if ((GetPlayable() && !GetReadTimeOut(clientError == -1))) { // -1: NOT_READY
         return true;
     }
 
@@ -469,27 +470,6 @@ void DownloadMonitor::NotifyInitSuccess()
 {
     FALSE_RETURN_MSG(downloader_ != nullptr, "NotifyInitSuccess downloader is nullptr");
     downloader_->NotifyInitSuccess();
-}
-
-void DownloadMonitor::SetStartPts(int64_t startPts)
-{
-    if (downloader_) {
-        downloader_->SetStartPts(startPts);
-    }
-}
-
-void DownloadMonitor::SetExtraCache(uint64_t cacheDuration)
-{
-    if (downloader_) {
-        downloader_->SetExtraCache(cacheDuration);
-    }
-}
-
-void DownloadMonitor::SetMediaStreams(const MediaStreamList& mediaStreams)
-{
-    if (downloader_) {
-        downloader_->SetMediaStreams(mediaStreams);
-    }
 }
 
 uint64_t DownloadMonitor::GetCachedDuration()

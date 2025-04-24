@@ -44,7 +44,6 @@ constexpr int SERVER_RANGE_ERROR_CODE = 416;
 constexpr int32_t LOOP_LOG_FEQUENCE = 50;
 constexpr int REQUEST_OFTEN_ERROR_CODE = 500;
 constexpr int SLEEP_TEN_MICRO_SEC = 10; // 10ms
-const std::string INVALID_CONTENT_TYPES[] = {"text/html", "application/json"};
 constexpr int APP_OPEN_RETRY_TIMES = 10;
 }
 
@@ -521,15 +520,6 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
     return true;
 }
 
-void Downloader::ResetContentType()
-{
-    if (currentRequest_ && !currentRequest_->headerInfo_.isValidContentType) {
-        currentRequest_->headerInfo_.isValidContentType = true;
-        size_t sizeOfType = sizeof(currentRequest_->headerInfo_.contentType);
-        memset_s(currentRequest_->headerInfo_.contentType, sizeOfType, 0, sizeOfType);
-    }
-}
-
 std::string GetSystemParam(const std::string &key)
 {
     char value[MAX_LEN] = {0};
@@ -695,7 +685,6 @@ void Downloader::RequestData()
             currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
         }
     };
-    ResetContentType();
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData enter.", FAKE_POINTER(this));
     client_->RequestData(startPos, currentRequest_->requestSize_, sourceInfo, handleResponseCb);
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData end.", FAKE_POINTER(this));
@@ -834,7 +823,7 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
         MEDIA_LOG_I("drop data finished, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
     }
     if (!dropRet && mediaDownloader->sourceLoader_ != nullptr) {
-        mediaDownloader->currentRequest_->startPos_ += writeLen;
+        mediaDownloader->currentRequest_->startPos_ += static_cast<int64_t>(writeLen);
         mediaDownloader->PauseLoop(true);
         mediaDownloader->currentRequest_->retryOnGoing_ = true;
         mediaDownloader->currentRequest_->dropedDataLen_ = 0;
@@ -865,7 +854,7 @@ void Downloader::HandleFileContentLen(HeaderInfo* header)
         if (header->contentLen > 0) {
             MEDIA_LOG_W("Unsupported range, use content length as content file length, contentLen: " PUBLIC_LOG_D32,
                 static_cast<int32_t>(header->contentLen));
-            header->fileContentLen = header->contentLen;
+            header->fileContentLen = static_cast<size_t>(header->contentLen);
         } else {
             MEDIA_LOG_D("fileContentLen and contentLen are both zero.");
         }
@@ -876,9 +865,6 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
 {
     auto mediaDownloader = static_cast<Downloader *>(userParam);
     size_t dataLen = size * nitems;
-    if (!mediaDownloader->currentRequest_->headerInfo_.isValidContentType) {
-        return dataLen;
-    }
     int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
     int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
     UpdateHeaderInfo(mediaDownloader);
@@ -886,7 +872,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
     mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
  
-    if (IsDropDataRetryRequest(mediaDownloader)) {
+    if (IsDropDataRetryRequest(mediaDownloader) && !mediaDownloader->currentRequest_->isIndexM3u8Request_()) {
         return DropRetryData(buffer, dataLen, mediaDownloader);
     }
     HeaderInfo* header = &(mediaDownloader->currentRequest_->headerInfo_);
@@ -902,7 +888,8 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_);
     MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                      mediaDownloader->currentRequest_->startPos_);
-    mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + writeLen;
+    mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + 
+        static_cast<int64_t>(writeLen);
  
     int64_t remaining = 0;
     if (mediaDownloader->currentRequest_->endPos_ <= 0) {
@@ -969,7 +956,8 @@ bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, siz
     return true;
 }
 
-bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size_t headerSize, 
+                                    Downloader* mediaDownloader)
 {
     if (!strncmp(key, "Content-Type", strlen("Content-Type"))) {
         char* token = strtok_s(nullptr, ":", &next);
@@ -978,14 +966,6 @@ bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size
         std::string tokenStr = (std::string)token;
         MEDIA_LOG_I("Content-Type: " PUBLIC_LOG_S, tokenStr.c_str());
         NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, strlen(type)));
-        info->isValidContentType = true;
-        for (const auto &contentType : INVALID_CONTENT_TYPES) {
-            if (!tokenStr.empty() && tokenStr.find(contentType) != std::string::npos) {
-                info->isValidContentType = false;
-                MEDIA_LOG_E("invalid content type.");
-                break;
-            }
-        }
     }
     return true;
 }
@@ -1080,7 +1060,8 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         mediaDownloader->currentRequest_->location_ = location;
     }
 
-    if (!HandleContentRange(info, key, next, size, nitems) || !HandleContentType(info, key, next, size, nitems) ||
+    if (!HandleContentRange(info, key, next, size, nitems) || 
+        !HandleContentType(info, key, next, size * nitems, mediaDownloader) ||
         !HandleContentEncode(info, key, next, size, nitems) ||
         !HandleContentLength(info, key, next, mediaDownloader) ||
         !HandleRange(info, key, next, size, nitems)) {
@@ -1121,6 +1102,9 @@ void Downloader::SetInterruptState(bool isInterruptNeeded)
     isInterruptNeeded_ = isInterruptNeeded;
     if (currentRequest_ != nullptr) {
         currentRequest_->isInterruptNeeded_ = isInterruptNeeded;
+    }
+    if (sourceLoader_ != nullptr) {
+        client_->Cloase(false);
     }
     NotifyLoopPause();
 }

@@ -53,7 +53,7 @@ void PlayListDownloader::PlayListDownloaderInit()
     updateTask_->RegisterJob([this] {
         UpdateManifest();
         size_t updateTime = GetLiveUpdateGap();
-        if (updateTime > 0) {
+        if (updateTime > 0 && updateTime > static_cast<size_t>(PLAYLIST_UPDATE_RATE)) {
             return updateTime;
         }
         return static_cast<size_t>(PLAYLIST_UPDATE_RATE);
@@ -102,6 +102,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
 
             return;
         }
+        playList_.clear();
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
 
@@ -118,6 +119,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
     };
     downloadRequest_->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
+    downloadRequest_->SetIsIndexM3u8Request(true);
     if (downloader_ != nullptr) {
         downloader_->Download(downloadRequest_, -1); // -1
         downloader_->Start();
