@@ -168,7 +168,7 @@ private:
     bool CacheBufferFullLoop();
     bool IsNeedBufferForPlaying();
     bool CheckLoopTimeout(int64_t loopStartTime);
-    void HandleSavedataLoopContinue();
+    void HandleSaveDataLoopContinue();
     bool ReadHeaderData(unsigned char* buff, ReadDataInfo& readDataInfo);
     void HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos);
     void RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo);

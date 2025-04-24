@@ -494,13 +494,6 @@ void HttpSourcePlugin::NotifyInitSuccess()
     downloader_->NotifyInitSuccess();
 }
 
-Status HttpSourcePlugin::SetExtraCache(uint64_t cacheDuration)
-{
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    downloader_->SetExtraCache(cacheDuration);
-    return Status::OK;
-}
-
 uint64_t HttpSourcePlugin::GetCachedDuration()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");

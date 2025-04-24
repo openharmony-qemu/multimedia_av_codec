@@ -872,7 +872,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
     mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
  
-    if (IsDropDataRetryRequest(mediaDownloader) && !mediaDownloader->currentRequest_->isIndexM3u8Request_()) {
+    if (IsDropDataRetryRequest(mediaDownloader) && !mediaDownloader->currentRequest_->IsIndexM3u8Request()) {
         return DropRetryData(buffer, dataLen, mediaDownloader);
     }
     HeaderInfo* header = &(mediaDownloader->currentRequest_->headerInfo_);
@@ -1104,7 +1104,7 @@ void Downloader::SetInterruptState(bool isInterruptNeeded)
         currentRequest_->isInterruptNeeded_ = isInterruptNeeded;
     }
     if (sourceLoader_ != nullptr) {
-        client_->Cloase(false);
+        client_->Close(false);
     }
     NotifyLoopPause();
 }

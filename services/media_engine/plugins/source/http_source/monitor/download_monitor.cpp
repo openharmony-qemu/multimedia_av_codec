@@ -226,7 +226,7 @@ void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCo
         if (downloader_ != nullptr) {
             downloader_->SetIsReportedErrorCode();
         }
-        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "client error"});
+        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "server error"});
         MEDIA_LOG_I("Notify http server error, code " PUBLIC_LOG_D32, serverErrorCode);
     }
 }
@@ -238,7 +238,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     auto retryTimes = request->GetRetryTimes();
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
-    if (CLIENT_NOT_RETRY_CODES.find(static_cast<int32_t>(clientError)) != CLIENT_NOT_RETRY_CODES.end()) {
+    if (CLIENT_NOT_RETRY_ERROR_CODES.find(static_cast<int32_t>(clientError)) != CLIENT_NOT_RETRY_ERROR_CODES.end()) {
         MEDIA_LOG_I("Client error code is 23 or 992, not retry.");
         return false;
     }

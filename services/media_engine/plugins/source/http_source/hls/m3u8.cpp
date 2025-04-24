@@ -410,7 +410,7 @@ void M3U8::DownloadKey()
     requestInfo.url = realKeyUrl;
     requestInfo.httpHeader = httpHeader_;
     downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, requestInfo, true);
-    downloadHeaderRequest_ -> SetIsAuthRequest(true);
+    downloadRequest_ -> SetIsAuthRequest(true);
     downloader_->Download(downloadRequest_, -1);
     downloader_->Start();
 }

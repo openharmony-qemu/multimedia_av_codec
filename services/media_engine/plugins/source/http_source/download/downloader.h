@@ -127,7 +127,7 @@ public:
     {
         isIndexM3u8Request_ = isIndexM3u8Request;
     }
-    bool isIndexM3u8Request() const
+    bool IsIndexM3u8Request() const
     {
         return isIndexM3u8Request_;
     }

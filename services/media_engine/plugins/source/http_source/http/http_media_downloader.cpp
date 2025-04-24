@@ -611,7 +611,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
     } else {
         if (cacheMediaBuffer_ == nullptr) {
             WaitUntilInterrupt(TEN_MILLISECONDS, [this]() {
-                return isInterruptNeeded_.load() || !isCacheBufferInited_;
+                return isInterruptNeeded_.load() || isCacheBufferInited_;
             });
             if (!isCacheBufferInited_) {
                 return Status::END_OF_STREAM;
@@ -848,8 +848,8 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset, bool& isSeekHit)
     isSeekHit = false;
     MEDIA_LOG_I("HTTP Seek miss.");
 
-    size_t fileContenLength = downloadRequest_->GetFileContentLength();
-    isNeedClearHasRead_ = fileContenLength > LARGE_VIDEO_THRESHOLD ? true : false;
+    size_t fileContentLength = downloadRequest_->GetFileContentLength();
+    isNeedClearHasRead_ = fileContentLength > LARGE_VIDEO_THRESHOLD ? true : false;
 
     uint64_t diff = static_cast<size_t>(offset) > writeOffset_ ?
         static_cast<size_t>(offset) - writeOffset_ : 0;
@@ -1611,7 +1611,7 @@ void HttpMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& p
     if (playStrategy->bufferDurationForPlaying > 0) {
         bufferDurationForPlaying_ = playStrategy->bufferDurationForPlaying;
         waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(CURRENT_BIT_RATE) / 
-            static_cast<doubel>(BYTES_TO_BIT) * bufferDurationForPlaying_);
+            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
         MEDIA_LOG_I("HTTP buffer duration for playing : " PUBLIC_LOG ".3f", bufferDurationForPlaying_);
     }
 }
@@ -1660,11 +1660,11 @@ bool HttpMediaDownloader::CheckLoopTimeout(int64_t startLoopTime)
 {
     int64_t now = loopInterruptClock_.ElapsedSeconds();
     int64_t loopDuration = now > startLoopTime ? now - startLoopTime : 0;
-    bool isLoopTimeout = loopDuration > LOOP_TIMEOUT ? true : false;
-    if (isLoopTimeout) {
+    bool isLoopTimeOut = loopDuration > LOOP_TIMEOUT ? true : false;
+    if (isLoopTimeOut) {
         SetDownloadErrorState();
         MEDIA_LOG_E("loop timeout");
-        return isLoopTimeout;
+        return isLoopTimeOut;
     }
 }
 

@@ -158,9 +158,9 @@ size_t CacheMediaChunkBufferImpl::Read(void* ptr, uint64_t offset, size_t readSi
     uint64_t hasReadOffset = offset;
     size_t oneReadSize = ReadInner(dst, hasReadOffset, readSize);
     hasReadSize = oneReadSize;
-    int64_t loopStarTime = loopInterruptClock_.ElapsedSeconds();
+    int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
     while (hasReadSize < readSize && oneReadSize != 0) {
-        if (CheckLoopTimeout(loopStarTime)) {
+        if (CheckLoopTimeout(loopStartTime)) {
             break;
         }
         dst += oneReadSize;
@@ -194,9 +194,9 @@ size_t CacheMediaChunkBufferImpl::ReadInner(void* ptr, uint64_t offset, size_t r
             chunkPos = SplitFragmentCacheBuffer(fragmentPos, offset, chunkPos);
         }
         size_t hasReadSize = 0;
-        int64_t loopStarTime = loopInterruptClock_.ElapsedSeconds();
+        int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
         while (hasReadSize < readSize && chunkPos != fragmentPos->chunks.end()) {
-            if (CheckLoopTimeout(loopStarTime)) {
+            if (CheckLoopTimeout(loopStartTime)) {
                 break;
             }
             auto chunkInfo = *chunkPos;
@@ -268,9 +268,9 @@ bool CacheMediaChunkBufferImpl::WriteInPlace(FragmentIterator& fragmentPos, uint
         writePos_->accessLength = static_cast<int64_t>(accessLengthTmp);
     }
     ++chunkPos;
-    int64_t loopStarTime = loopInterruptClock_.ElapsedSeconds();
+    int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
     while (writeSizeTmp < writeSize && chunkPos != chunkList.end()) {
-        if (CheckLoopTimeout(loopStarTime)) {
+        if (CheckLoopTimeout(loopStartTime)) {
             break;
         }
         chunkInfoTmp = *chunkPos;
@@ -572,9 +572,9 @@ size_t CacheMediaChunkBufferImpl::WriteChunk(FragmentCacheBuffer& fragmentCacheB
         writedTmp += WriteOneChunkData(*chunkInfo, src, offset, writeSize);
         fragmentCacheBuffer.dataLength += static_cast<int64_t>(writedTmp);
     }
-    int64_t loopStarTime = loopInterruptClock_.ElapsedSeconds();
+    int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
     while (writedTmp < writeSize && writedTmp >= 0) {
-        if (CheckLoopTimeout(loopStarTime)) {
+        if (CheckLoopTimeout(loopStartTime)) {
             break;
         }
         auto chunkOffset = offset + static_cast<uint64_t>(writedTmp);
@@ -1002,18 +1002,18 @@ void CacheMediaChunkBufferImpl::DumpInner(uint64_t param)
         MEDIA_LOG_D("cacheBuff   fragment length : "PUBLIC_LOG_D64, fragment.dataLength);
         MEDIA_LOG_D("cacheBuff   chunk num       : "PUBLIC_LOG_ZU, fragment.chunks.size());
         MEDIA_LOG_D("cacheBuff   access length   : "PUBLIC_LOG_U64, fragment.accessLength);
-        MEDIA_LOG_D("cacheBuff   read size       : "PUBLIC_LOG_ZU, fragment.totalReadSize);
+        MEDIA_LOG_D("cacheBuff   read size       : "PUBLIC_LOG_U64, fragment.totalReadSize);
         if(fragment.accessPos != fragment.chunks.end()){
             auto & chunkInfo = *fragment.accessPos;
-            MEDIA_LOG_D("cachebuff  access offset: " PUBLIC_LOG_D64 ", len:" PUBLIC_LOG_U32,
-                chunkInfo->offset, chunkInfo->datalength);
+            MEDIA_LOG_D("cacheBuff  access offset: " PUBLIC_LOG_D64 ", len:" PUBLIC_LOG_U32,
+                chunkInfo->offset, chunkInfo->dataLength);
         } else {
             MEDIA_LOG_D("cacheBuff  access ended");
         }
         if (!fragment.chunks.empty()){
-            auto & chunkInfo = *fragment.accessPos;
-            MEDIA_LOG_D("cachebuff  last chunk offset: " PUBLIC_LOG_D64 ", len:" PUBLIC_LOG_U32,
-                chunkInfo->offset, chunkInfo->datalength);
+            auto & chunkInfo = fragment.chunks.back();
+            MEDIA_LOG_D("cacheBuff  last chunk offset: " PUBLIC_LOG_D64 ", len:" PUBLIC_LOG_U32,
+                chunkInfo->offset, chunkInfo->dataLength);
         }
         MEDIA_LOG_D("cacheBuff ");
     }
@@ -1025,7 +1025,7 @@ bool CacheMediaChunkBufferImpl::CheckLoopTimeout(int64_t loopStartTime)
     int64_t loopDuration = now > loopStartTime ? now - loopStartTime : 0;
     bool isLoopTimeout = loopDuration > LOOP_TIMEOUT;
     if(isLoopTimeout) {
-        MEDIA_LOG_E("loop timeout");
+        MEDIA_LOG_E("loop timeout.");
     }
     return isLoopTimeout;
 }
