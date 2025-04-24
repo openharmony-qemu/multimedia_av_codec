@@ -285,6 +285,7 @@ void AvcEncoder::GetBufferFromSurface()
     }
     AVCODEC_LOGD("timestamp: %{public}" PRId64 ", dataSize: %{public}d", pts, buffer->GetSize());
 
+    CHECK_AND_RETURN_LOG(!freeList_.empty(), "freeList_ is empty!");
     std::unique_lock<std::mutex> listLock(freeListMutex_);
     uint32_t index = freeList_.front();
     freeList_.pop_front();
@@ -295,11 +296,13 @@ void AvcEncoder::GetBufferFromSurface()
     if (enableSurfaceModeInputCb_) {
         inputBuffer->surfaceBuffer_ = buffer;
         inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer();
+        CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
         inputBuffer->avBuffer_->pts_ = pts;
         callback_->OnInputBufferAvailable(index, inputBuffer->avBuffer_);
     } else {
         inputBuffer->surfaceBuffer_ = nullptr;
         inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(buffer);
+        CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
         inputBuffer->avBuffer_->pts_ = pts;
         inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
         inputAvailQue_->Push(index);
@@ -905,9 +908,10 @@ int32_t AvcEncoder::Start()
     if (avcEncoder_ == nullptr && avcEncoderCreateFunc_ != nullptr) {
         createRet = avcEncoderCreateFunc_(&avcEncoder_, &initParams_);
     }
-    runLock.unlock();
     CHECK_AND_RETURN_RET_LOG(createRet == 0 && avcEncoder_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                              "avc encoder create failed");
+    runLock.unlock();
+
     InitBuffers();
     isSendEos_ = false;
     sendTask_->Start();
@@ -1152,6 +1156,8 @@ int32_t AvcEncoder::QueueInputBuffer(uint32_t index)
         bool discard = GetDiscardFlagFromAVBuffer(inputBuffer->avBuffer_);
         inputBuffer->avBuffer_->meta_->Clear();
         inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(inputBuffer->surfaceBuffer_);
+        CHECK_AND_RETURN_RET_LOG(inputBuffer->avBuffer_ != nullptr && inputBuffer->avBuffer_->memory_ != nullptr,
+            AVCS_ERR_INVALID_VAL, "Allocate input buffer failed, index=%{public}u", index);
         inputBuffer->avBuffer_->pts_ = pts;
         if (discard) {
             inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
@@ -1200,6 +1206,8 @@ int32_t AvcEncoder::NotifyEos()
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     if (inputSurface_ != nullptr) {
         inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer();
+        CHECK_AND_RETURN_RET_LOG(inputBuffer->avBuffer_ != nullptr, AVCS_ERR_INVALID_VAL,
+            "Allocate input buffer failed, index=%{public}u", index);
     }
     inputBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_EOS;
     inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
@@ -1509,6 +1517,7 @@ int32_t AvcEncoder::FillAvcEncoderInArgs(std::shared_ptr<AVBuffer> &buffer, AVC_
 int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &outArgs)
 {
     uint32_t ret = 0;
+    std::unique_lock<std::mutex> sLock(encRunMutex_);
     if (avcEncoder_ == nullptr || avcEncoderFrameFunc_ == nullptr) {
         AVCODEC_LOGE("Avc encoder load error !");
         return AVCS_ERR_VID_ENC_FAILED;
@@ -1521,10 +1530,8 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
     outArgs.streamBuf = outputAVBuffer->memory_->GetAddr();
     outArgs.size = static_cast<uint32_t>(outputAVBuffer->memory_->GetCapacity());
 
-    std::unique_lock<std::mutex> sLock(encRunMutex_);
     ret = avcEncoderFrameFunc_(avcEncoder_, &inArgs, &outArgs);
     sLock.unlock();
-
     if (ret == 0) {
         outputAVBuffer->memory_->SetSize(outArgs.bytes);
         outputAVBuffer->pts_ = static_cast<int64_t>(outArgs.timestamp);

@@ -32,22 +32,9 @@ std::shared_ptr<CodecBase> AvcEncoderLoader::CreateByName(const std::string &nam
 {
     AvcEncoderLoader &loader = GetInstance();
 
-    CodecBase *noDeleterPtr = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(loader.mutex_);
-        CHECK_AND_RETURN_RET_LOG(loader.Init() == AVCS_ERR_OK, nullptr, "Create codec by name failed: init error");
-        noDeleterPtr = loader.Create(name).get();
-        CHECK_AND_RETURN_RET_LOG(noDeleterPtr != nullptr, nullptr, "Create AvcEncoder by name failed: no memory");
-        ++(loader.avcEncoderCount_);
-    }
-    auto deleter = [&loader](CodecBase *ptr) {
-        std::lock_guard<std::mutex> lock(loader.mutex_);
-        AvcEncoder *codec = reinterpret_cast<AvcEncoder*>(ptr);
-        codec->DecStrongRef(codec);
-        --(loader.avcEncoderCount_);
-        loader.CloseLibrary();
-    };
-    return std::shared_ptr<CodecBase>(noDeleterPtr, deleter);
+    std::lock_guard<std::mutex> lock(loader.mutex_);
+    CHECK_AND_RETURN_RET_LOG(loader.Init() == AVCS_ERR_OK, nullptr, "Create codec by name failed: init error");
+    return loader.Create(name);
 }
 
 int32_t AvcEncoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
@@ -56,9 +43,7 @@ int32_t AvcEncoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
 
     std::lock_guard<std::mutex> lock(loader.mutex_);
     CHECK_AND_RETURN_RET_LOG(loader.Init() == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Get capability failed: init error");
-    int32_t ret = loader.GetCaps(caps);
-    loader.CloseLibrary();
-    return ret;
+    return loader.GetCaps(caps);
 }
 
 AvcEncoderLoader::AvcEncoderLoader() : VideoCodecLoader(AVC_ENCODER_LIB_PATH,
