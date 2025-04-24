@@ -1733,6 +1733,10 @@ Status MediaDemuxer::ResumeAudioAlign()
             uint32_t trackId = it->first;
             if (trackId == audioTrackId_) {
                 bufferQueueMap_[trackId]->Clear();
+                auto itSample = sampleQueueMap_.find(trackId);
+                if (itSample != sampleQueueMap_.end() && itSample->second != nullptr) {
+                    itSample->second->Clear();
+                }
             }
             it++;
         }
