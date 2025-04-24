@@ -169,7 +169,7 @@ void MediaDemuxer::TranscoderInitMediaStartPts()
         if (isInitAudioStartTime && isInitVideoStartTime) {
             break;
         }
-    } 
+    }
 }
 } // namespace Media
 } // namespace OHOS
