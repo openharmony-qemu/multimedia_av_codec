@@ -206,7 +206,7 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
         MEDIA_LOG_W("Out of stream, seek to " PUBLIC_LOG_D64, timeStamp);
         timeStamp = streamDuration;
     }
-    if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO || stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         MEDIA_LOG_D("Reset timeStamp by start time [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
             timeStamp, timeStamp + startTime);
         timeStamp += startTime;
@@ -1456,6 +1456,11 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     MEDIA_LOG_I("Time [" PUBLIC_LOG_U64 "/" PUBLIC_LOG_U64 "/" PUBLIC_LOG_D64 "] flag ["
                 PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]",
                 seekTime, ffTime, realSeekTime, static_cast<int32_t>(mode), flag);
+    if (flag == AVSEEK_FLAG_FRAME && FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4) {
+        int keyFrameNext = av_index_search_timestamp(avStream, ffTime, AVSEEK_FLAG_FRAME);
+        FALSE_RETURN_V_MSG_E(keyFrameNext >= 0, Status::ERROR_INVALID_PARAMETER,
+            "Seek failed, err: Not next key frame");
+    }
     auto ret = av_seek_frame(formatContext_.get(), trackIndex, ffTime, flag);
     if (formatContext_->pb->error) {
         formatContext_->pb->error = 0;
