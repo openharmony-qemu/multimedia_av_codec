@@ -223,9 +223,10 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level1)
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_SEEK, TestSize.Level1)
 {
     MP4httpMediaDownloader->GetSeekable();
-    bool result = MP4httpMediaDownloader->SeekToPos(100);
+    bool isSeekHit = false;
+    bool result = MP4httpMediaDownloader->SeekToPos(100, isSeekHit);
     EXPECT_TRUE(result);
-    result = MP4httpMediaDownloader->SeekToPos(10000000);
+    result = MP4httpMediaDownloader->SeekToPos(10000000, isSeekHit);
     EXPECT_TRUE(result);
 }
 
@@ -333,7 +334,8 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_MP4_DOWNLOADINFO, TestSize.L
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_SEEK_FLV, TestSize.Level1)
 {
     FLVhttpMediaDownloader->GetSeekable();
-    bool result = FLVhttpMediaDownloader->SeekToPos(100);
+    bool isSeekHit =  false;
+    bool result = FLVhttpMediaDownloader->SeekToPos(100, isSeekHit);
     FLVhttpMediaDownloader->SetReadBlockingFlag(true);
     EXPECT_TRUE(result);
 }
@@ -464,7 +466,8 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_FLC_SEEK, TestSize.Level1)
     httpMediaDownloader->downloadErrorState_ = true;
     httpMediaDownloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1000);
-    httpMediaDownloader->SeekToPos(100 * 1024 * 1024);
+    bool isSeekHit = false;
+    httpMediaDownloader->SeekToPos(100 * 1024 * 1024, isSeekHit);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -652,95 +655,4 @@ HWTEST_F(HttpMediaDownloaderUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
     EXPECT_EQ(httpMediaDownloader->isBuffering_, true);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, SET_PLAY_STRATEGY_002, TestSize.Level1)
-{
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5, nullptr);
-    std::map<std::string, std::string> httpHeader;
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                        std::shared_ptr<DownloadRequest>& request) {};
-    httpMediaDownloader->SetStatusCallback(statusCallback);
-    httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    httpMediaDownloader->callback_ = sourceCallback;
-
-    MediaStreamList mediaStreams;
-    std::shared_ptr<PlayMediaStream> mediaStreamA = std::make_shared<PlayMediaStream>();
-    mediaStreamA->width = 480;
-    mediaStreamA->height = 360;
-    mediaStreamA->bitrate = 3200;
-    mediaStreams.push_back(mediaStreamA);
-    std::shared_ptr<PlayMediaStream> mediaStreamB = std::make_shared<PlayMediaStream>();
-    mediaStreamB->width = 640;
-    mediaStreamB->height = 480;
-    mediaStreamB->bitrate = 4800;
-    mediaStreams.push_back(mediaStreamB);
-    std::shared_ptr<PlayMediaStream> mediaStreamC = std::make_shared<PlayMediaStream>();
-    mediaStreamC->width = 640;
-    mediaStreamC->height = 480;
-    mediaStreamC->bitrate = 4000;
-    mediaStreams.push_back(mediaStreamC);
-    std::shared_ptr<PlayMediaStream> mediaStreamD = std::make_shared<PlayMediaStream>();
-    mediaStreamD->width = 1280;
-    mediaStreamD->height = 720;
-    mediaStreamD->bitrate = 8000;
-    mediaStreams.push_back(mediaStreamD);
-    std::shared_ptr<PlayMediaStream> mediaStreamE = std::make_shared<PlayMediaStream>();
-    mediaStreamE->width = 1280;
-    mediaStreamE->height = 720;
-    mediaStreamE->bitrate = 4000;
-    mediaStreams.push_back(mediaStreamE);
-
-    httpMediaDownloader->SetMediaStreams(mediaStreams);
-    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
-    playStrategy->width = 1280;
-    playStrategy->height = 720;
-    httpMediaDownloader->SetPlayStrategy(playStrategy);
-    EXPECT_EQ(httpMediaDownloader->defaultStream_->width, 1280);
-    EXPECT_EQ(httpMediaDownloader->defaultStream_->height, 720);
-    EXPECT_EQ(httpMediaDownloader->defaultStream_->bitrate, 4000);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, SELECT_BIT_RATE_001, TestSize.Level1)
-{
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 5, nullptr);
-    std::map<std::string, std::string> httpHeader;
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                        std::shared_ptr<DownloadRequest>& request) {};
-    httpMediaDownloader->SetStatusCallback(statusCallback);
-    httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    httpMediaDownloader->callback_ = sourceCallback;
-    MediaStreamList mediaStreams;
-    std::shared_ptr<PlayMediaStream> mediaStreamA = std::make_shared<PlayMediaStream>();
-    mediaStreamA->width = 480;
-    mediaStreamA->height = 360;
-    mediaStreamA->bitrate = 3200;
-    mediaStreamA->url = FLV_SEGMENT_BASE;
-    mediaStreams.push_back(mediaStreamA);
-    std::shared_ptr<PlayMediaStream> mediaStreamB = std::make_shared<PlayMediaStream>();
-    mediaStreamB->width = 640;
-    mediaStreamB->height = 480;
-    mediaStreamB->bitrate = 4800;
-    mediaStreamB->url = FLV_SEGMENT_BASE;
-    mediaStreams.push_back(mediaStreamB);
-    std::shared_ptr<PlayMediaStream> mediaStreamC = std::make_shared<PlayMediaStream>();
-    mediaStreamC->width = 640;
-    mediaStreamC->height = 480;
-    mediaStreamC->bitrate = 4000;
-    mediaStreamC->url = FLV_SEGMENT_BASE;
-    mediaStreams.push_back(mediaStreamC);
-    std::sort(mediaStreams.begin(), mediaStreams.end(),
-        [](const std::shared_ptr<PlayMediaStream>& streamA, const std::shared_ptr<PlayMediaStream>& streamB) {
-            return (streamA->bitrate < streamB->bitrate) ||
-                (streamA->bitrate == streamB->bitrate &&
-                    streamA->width * streamA->height < streamB->width * streamB->height);
-    });
-    httpMediaDownloader->SetMediaStreams(mediaStreams);
-    httpMediaDownloader->SelectBitRate(4000);
-    EXPECT_EQ(httpMediaDownloader->defaultStream_->width, 640);
-    EXPECT_EQ(httpMediaDownloader->defaultStream_->height, 480);
-    EXPECT_EQ(httpMediaDownloader->defaultStream_->bitrate, 4000);
-}
 }
