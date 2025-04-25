@@ -19,6 +19,7 @@
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
 #include "native_buffer_inner.h"
+#include "display_type.h"
 #include "videodec_inner_sample.h"
 
 using namespace OHOS;
@@ -104,7 +105,6 @@ void VDecInnerCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInf
 
 VDecNdkInnerSample::~VDecNdkInnerSample()
 {
-    Release();
 }
 
 int64_t VDecNdkInnerSample::GetSystemTimeUs()
@@ -522,6 +522,9 @@ void VDecNdkInnerSample::OutputFunc()
 
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() {
+            if (!isRunning_.load()) {
+                return true;
+            }
             return signal_->outIdxQueue_.size() > 0;
         });
 
@@ -655,4 +658,11 @@ bool VDecNdkInnerSample::MdCompare(unsigned char *buffer, int len, const char *s
         }
     }
     return result;
+}
+
+void VDecNdkInnerSample::SetRunning()
+{
+    isRunning_.store(false);
+    signal_->inCond_.notify_all();
+    signal_->outCond_.notify_all();
 }
