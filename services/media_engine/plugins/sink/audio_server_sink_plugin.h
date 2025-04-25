@@ -256,6 +256,7 @@ private:
     std::condition_variable writeCond_;
     std::shared_ptr<AudioStandard::AudioRendererWriteCallback> audioRenderWriteCallback_ {nullptr};
     OHOS::Media::Mutex releaseRendererMutex_{};
+    uint64_t enqueueNumber_ {0};
 };
 } // namespace Plugin
 } // namespace Media
