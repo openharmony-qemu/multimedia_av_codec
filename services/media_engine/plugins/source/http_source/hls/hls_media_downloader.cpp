@@ -1711,8 +1711,8 @@ void HlsMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
         size_t remainingBuffer = GetBufferSize();
         uint64_t bufferDuration = 0;
         if (currentBitrate_ > 0) {
-            bufferDuration = static_cast<uint64_t>(remainingBuffer)
-                                / static_cast<uint64_t>(currentBitrate_);
+            bufferDuration = static_cast<uint64_t>(remainingBuffer)/
+                             static_cast<uint64_t>(currentBitrate_);
         } else {
             bufferDuration = static_cast<uint64_t>(remainingBuffer) / CURRENT_BIT_RATE;
         }

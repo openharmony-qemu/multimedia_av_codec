@@ -220,7 +220,7 @@ size_t CacheMediaChunkBufferImpl::ReadInner(void* ptr, uint64_t offset, size_t r
     return 0;
 }
 
-void CacheMediaChunkBufferImpl::UpdateFragment(FragmentIterator& fragmentPos, size_t hasReadSize, 
+void CacheMediaChunkBufferImpl::UpdateFragment(FragmentIterator& fragmentPos, size_t hasReadSize,
     uint64_t offsetChunk)
 {
     uint64_t lengthDiff = offsetChunk > fragmentPos->offsetBegin ? offsetChunk - fragmentPos->offsetBegin : 0;
@@ -997,13 +997,13 @@ void CacheMediaChunkBufferImpl::DumpInner(uint64_t param)
     MEDIA_LOG_D("cacheBuff read size factor  : " PUBLIC_LOG_F, initReadSizeFactor_);
     MEDIA_LOG_D("cacheBuff free chunk num:   : " PUBLIC_LOG_ZU, freeChunks_.size());
     MEDIA_LOG_D("cacheBuff fragment num:     : " PUBLIC_LOG_ZU, fragmentCacheBuffer_.size());
-    for(auto const & fragment : fragmentCacheBuffer_) {
+    for (auto const & fragment : fragmentCacheBuffer_) {
         MEDIA_LOG_D("cacheBuff - fragment offset : " PUBLIC_LOG_U64, fragment.offsetBegin);
         MEDIA_LOG_D("cacheBuff   fragment length : " PUBLIC_LOG_D64, fragment.dataLength);
         MEDIA_LOG_D("cacheBuff   chunk num       : " PUBLIC_LOG_ZU, fragment.chunks.size());
         MEDIA_LOG_D("cacheBuff   access length   : " PUBLIC_LOG_U64, fragment.accessLength);
         MEDIA_LOG_D("cacheBuff   read size       : " PUBLIC_LOG_U64, fragment.totalReadSize);
-        if(fragment.accessPos != fragment.chunks.end()) {
+        if (fragment.accessPos != fragment.chunks.end()) {
             auto &chunkInfo = *fragment.accessPos;
             MEDIA_LOG_D("cacheBuff   access offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
                 chunkInfo->offset, chunkInfo->dataLength);
