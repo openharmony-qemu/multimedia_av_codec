@@ -1762,13 +1762,13 @@ Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
         currentBitRate_ = -1; // -1
     } else {
         int32_t playlistBitrate = static_cast<int32_t>(playlistDownloader_->GetCurBitrate());
-        currentBitRate_ = std::max(playlistBitrate,static_cast<int32_t>(bitRate));
+        currentBitRate_ = std::max(playlistBitrate, static_cast<int32_t>(bitRate));
         MEDIA_LOG_I("HLS playlistBitrate: " PUBLIC_LOG_D32 " currentBitRate: " PUBLIC_LOG_D32,
             playlistBitrate, currentBitRate_);
     }
     if (bufferDurationForPlaying_ > 0 && currentBitRate_ > 0) {
-        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(currentBitRate_) / 
-        static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
+        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(currentBitRate_) /
+            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
     }
     return Status::OK;
 }
@@ -2091,8 +2091,8 @@ void HlsMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& pl
     }
     if (playStrategy->bufferDurationForPlaying > 0) {
         bufferDurationForPlaying_ = playStrategy->bufferDurationForPlaying;
-            waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(CURRENT_BIT_RATE) /
-        static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
+        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(CURRENT_BIT_RATE) /
+            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
         MEDIA_LOG_I("HLS buffer duration for playing : " PUBLIC_LOG ".3f", bufferDurationForPlaying_);
     }
 }
@@ -2148,7 +2148,7 @@ bool HlsMediaDownloader::CheckLoopTimeout(int64_t loopStartTime)
     int64_t now = loopInterruptClock_.ElapsedSeconds();
     int64_t loopDuration = now > loopStartTime ? now - loopStartTime : 0;
     bool isLoopTimeout = loopDuration > LOOP_TIMEOUT;
-    if (isLoopTimeout){
+    if (isLoopTimeout) {
         SetDownloadErrorState();
         MEDIA_LOG_E("loop timeout.");
     }
