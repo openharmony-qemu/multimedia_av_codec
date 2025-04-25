@@ -45,7 +45,7 @@ public:
     void Pause() override;
     void Resume() override;
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
-    bool SeekToPos(int64_t offset,bool& isSeekHit) override;
+    bool SeekToPos(int64_t offset, bool& isSeekHit) override;
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;

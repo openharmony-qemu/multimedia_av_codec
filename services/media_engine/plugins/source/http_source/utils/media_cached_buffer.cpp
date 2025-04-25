@@ -1005,14 +1005,14 @@ void CacheMediaChunkBufferImpl::DumpInner(uint64_t param)
         MEDIA_LOG_D("cacheBuff   read size       : "PUBLIC_LOG_U64, fragment.totalReadSize);
         if(fragment.accessPos != fragment.chunks.end()){
             auto & chunkInfo = *fragment.accessPos;
-            MEDIA_LOG_D("cacheBuff  access offset: " PUBLIC_LOG_D64 ", len:" PUBLIC_LOG_U32,
+            MEDIA_LOG_D("cacheBuff   access offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
                 chunkInfo->offset, chunkInfo->dataLength);
         } else {
-            MEDIA_LOG_D("cacheBuff  access ended");
+            MEDIA_LOG_D("cacheBuff   access ended");
         }
         if (!fragment.chunks.empty()){
             auto & chunkInfo = fragment.chunks.back();
-            MEDIA_LOG_D("cacheBuff  last chunk offset: " PUBLIC_LOG_D64 ", len:" PUBLIC_LOG_U32,
+            MEDIA_LOG_D("cacheBuff   last chunk offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
                 chunkInfo->offset, chunkInfo->dataLength);
         }
         MEDIA_LOG_D("cacheBuff ");

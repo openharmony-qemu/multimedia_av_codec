@@ -215,8 +215,8 @@ private:
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
     static bool HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
-    static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t headerSize, 
-                                Downloader* mediaDownloader);
+    static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t headerSize,
+                                  Downloader* mediaDownloader);
     static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
     static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);

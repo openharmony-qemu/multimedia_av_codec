@@ -1664,8 +1664,8 @@ bool HttpMediaDownloader::CheckLoopTimeout(int64_t startLoopTime)
     if (isLoopTimeOut) {
         SetDownloadErrorState();
         MEDIA_LOG_E("loop timeout");
-        return isLoopTimeOut;
     }
+    return isLoopTimeOut;
 }
 
 uint64_t HttpMediaDownloader::GetCachedDuration()

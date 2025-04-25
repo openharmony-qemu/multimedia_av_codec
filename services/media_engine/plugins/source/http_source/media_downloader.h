@@ -37,7 +37,7 @@ struct ReadDataInfo {
     bool isEos_ = false;
 };
 
-constexpr int64_t LOOP_TIMEOUT = 60; //s
+constexpr int64_t LOOP_TIMEOUT = 60; // s
 
 class MediaDownloader {
 public:

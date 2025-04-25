@@ -888,7 +888,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_);
     MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                      mediaDownloader->currentRequest_->startPos_);
-    mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + 
+    mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ +
         static_cast<int64_t>(writeLen);
  
     int64_t remaining = 0;
@@ -956,8 +956,8 @@ bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, siz
     return true;
 }
 
-bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size_t headerSize, 
-                                    Downloader* mediaDownloader)
+bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size_t headerSize,
+                                   Downloader* mediaDownloader)
 {
     if (!strncmp(key, "Content-Type", strlen("Content-Type"))) {
         char* token = strtok_s(nullptr, ":", &next);
@@ -1060,7 +1060,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         mediaDownloader->currentRequest_->location_ = location;
     }
 
-    if (!HandleContentRange(info, key, next, size, nitems) || 
+    if (!HandleContentRange(info, key, next, size, nitems) ||
         !HandleContentType(info, key, next, size * nitems, mediaDownloader) ||
         !HandleContentEncode(info, key, next, size, nitems) ||
         !HandleContentLength(info, key, next, mediaDownloader) ||

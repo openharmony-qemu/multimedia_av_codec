@@ -1207,7 +1207,7 @@ void DashSegmentDownloader::NotifyInitSuccess()
     if (bufferDurationForPlaying_ <= 0 || realTimeBitBate_ <= 0) {
         return;
     }
-    waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(realTimeBitBate_) / 
+    waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(realTimeBitBate_) /
         static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
     isBuffering_.store(true);
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
@@ -1225,10 +1225,10 @@ bool DashSegmentDownloader::GetBufferingTimeOut()
 
 bool DashSegmentDownloader::CheckLoopTimeout(int64_t startLoopTime)
 {
-    int64_t now =loopInterruptClock_.ElapsedSeconds();
-    int64_t loopDuration = now > startLoopTime ? now -startLoopTime : 0;
+    int64_t now = loopInterruptClock_.ElapsedSeconds();
+    int64_t loopDuration = now > startLoopTime ? now - startLoopTime : 0;
     bool isLoopTimeOut = loopDuration > LOOP_TIMEOUT ? true : false;
-    if(isLoopTimeOut){
+    if (isLoopTimeOut) {
         MEDIA_LOG_E("loop timeout");
     }
     return isLoopTimeOut;

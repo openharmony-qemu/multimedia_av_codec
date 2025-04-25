@@ -581,7 +581,7 @@ bool HlsMediaDownloader::ReadHeaderData(unsigned char* buff, ReadDataInfo& readD
                     curStreamId_, readDataInfo.streamId_);
         return true;
     }
-    if (readDataInfo.streamId_ > 0 && curStreamId_ == static_cast<uint32_t>(readDataInfo.streamId_) && 
+    if (readDataInfo.streamId_ > 0 && curStreamId_ == static_cast<uint32_t>(readDataInfo.streamId_) &&
         isNeedReadHeader_.load()) {
         playlistDownloader_->ReadFmp4Header(buff, readDataInfo.realReadLength_, readDataInfo.streamId_);
         isNeedReadHeader_.store(false);
@@ -617,7 +617,7 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
             readTsIndex_++;
             readOffset_ = SpliceOffset(readTsIndex_, 0);
             if (playlistDownloader_->IsHlsFmp4() && tsStreamIdInfo_.find(readTsIndex_) != tsStreamIdInfo_.end() &&
-                readDataInfo.streamId_ > 0 && 
+                readDataInfo.streamId_ > 0 &&
                 readDataInfo.streamId_ != static_cast<int32_t>(tsStreamIdInfo_[readTsIndex_])) {
                 curStreamId_ = tsStreamIdInfo_[readTsIndex_];
                 isNeedResetOffset_.store(true);
@@ -1176,7 +1176,7 @@ void HlsMediaDownloader::DownloadReport()
             // Remaining playable time: s
             uint64_t bufferDuration = 0;
             if (currentBitrate_ > 0) {
-                bufferDuration = bufferedDuration_ / static_cast<uint64_t> (currentBitrate_);
+                bufferDuration = bufferedDuration_ / static_cast<uint64_t>(currentBitrate_);
             } else {
                 bufferDuration = bufferedDuration_ / CURRENT_BIT_RATE;
             }
@@ -1711,7 +1711,7 @@ void HlsMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
         size_t remainingBuffer = GetBufferSize();
         uint64_t bufferDuration = 0;
         if (currentBitrate_ > 0) {
-            bufferDuration = static_cast<uint64_t>(remainingBuffer) 
+            bufferDuration = static_cast<uint64_t>(remainingBuffer)
                                 / static_cast<uint64_t>(currentBitrate_);
         } else {
             bufferDuration = static_cast<uint64_t>(remainingBuffer) / CURRENT_BIT_RATE;
@@ -1775,7 +1775,7 @@ Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 
 void HlsMediaDownloader::CalculateBitRate(size_t fragmentSize, double duration)
 {
-    if (fragmentSize == 0 || duration <ZERO_THRESHOLD) {
+    if (fragmentSize == 0 || duration < ZERO_THRESHOLD) {
         return;
     }
     double divisorFragmentSize = (static_cast<double>(fragmentSize) / static_cast<double>(ONE_SECONDS))
@@ -2091,7 +2091,7 @@ void HlsMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& pl
     }
     if (playStrategy->bufferDurationForPlaying > 0) {
         bufferDurationForPlaying_ = playStrategy->bufferDurationForPlaying;
-        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(CURRENT_BIT_RATE) / 
+            waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(CURRENT_BIT_RATE) /
         static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
         MEDIA_LOG_I("HLS buffer duration for playing : " PUBLIC_LOG ".3f", bufferDurationForPlaying_);
     }
@@ -2136,7 +2136,7 @@ void HlsMediaDownloader::NotifyInitSuccess()
         playlistBitrate = static_cast<uint32_t>(playlistDownloader_->GetCurBitrate());
     }
     if (playlistBitrate > 0) {
-        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(playlistBitrate) / 
+        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(playlistBitrate) /
             static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
     }
     isBuffering_.store(true);
@@ -2145,10 +2145,10 @@ void HlsMediaDownloader::NotifyInitSuccess()
 
 bool HlsMediaDownloader::CheckLoopTimeout(int64_t loopStartTime)
 {
-    int64_t now =loopInterruptClock_.ElapsedSeconds();
-    int64_t loopDuration = now > loopStartTime ? now -loopStartTime : 0;
+    int64_t now = loopInterruptClock_.ElapsedSeconds();
+    int64_t loopDuration = now > loopStartTime ? now - loopStartTime : 0;
     bool isLoopTimeout = loopDuration > LOOP_TIMEOUT;
-    if(isLoopTimeout){
+    if (isLoopTimeout){
         SetDownloadErrorState();
         MEDIA_LOG_E("loop timeout.");
     }
