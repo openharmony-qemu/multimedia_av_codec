@@ -169,7 +169,7 @@ void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
 void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const char *setLanguage, Params params)
 {
     gReadEnd = false;
-    DRM_MediaKeySystemInfo mediaKeySystemInfo;    
+    DRM_MediaKeySystemInfo mediaKeySystemInfo;
     int ret = CreateDemuxer();
     if (ret < 0) {
         return;
