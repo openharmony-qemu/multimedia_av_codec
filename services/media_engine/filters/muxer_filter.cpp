@@ -33,6 +33,7 @@ static const std::unordered_map<OHOS::Media::Plugins::OutputFormat, std::string>
     {OHOS::Media::Plugins::OutputFormat::AMR, OHOS::Media::Plugins::MimeType::MEDIA_AMR},
     {OHOS::Media::Plugins::OutputFormat::MP3, OHOS::Media::Plugins::MimeType::MEDIA_MP3},
     {OHOS::Media::Plugins::OutputFormat::WAV, OHOS::Media::Plugins::MimeType::MEDIA_WAV},
+    {OHOS::Media::Plugins::OutputFormat::AAC, OHOS::Media::Plugins::MimeType::MEDIA_AAC},
 };
 }
 
@@ -254,6 +255,10 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     meta->Get<Tag::MIME_TYPE>(mimeType);
     if (mimeType.find("audio/") == 0) {
         audioCodecMimeType_ = mimeType;
+        if (mimeType == "audio/mp4a-latm") {
+            meta->Set<Tag::AUDIO_AAC_IS_ADTS>(isAdts_);
+            meta->Set<Tag::MEDIA_PROFILE>(mediaProfile_);
+        }
     } else if (mimeType.find("video/") == 0) {
         videoCodecMimeType_ = mimeType;
     } else if (mimeType.find("meta/") == 0) {
