@@ -46,7 +46,6 @@ void BackGroundEventHandler::NotifyFrozen(const std::vector<int32_t> &pidList)
     std::lock_guard<std::mutex> lock(mutex_);
     bool recycleMemory = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
     if (!recycleMemory) {
-        AVCODEC_LOGI("recycle memory is not supported on this platform");
         return;
     }
     for (auto pid : pidList) {
