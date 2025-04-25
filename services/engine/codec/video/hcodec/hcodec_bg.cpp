@@ -232,6 +232,12 @@ int32_t HDecoder::ActiveBuffers()
 
 void HDecoder::SubmitBuffersToNextOwner()
 {
+    while (!inputBufIdQueueToOmx_.empty()) {
+        uint32_t bufferId = inputBufIdQueueToOmx_.front();
+        inputBufIdQueueToOmx_.pop();
+        auto bufInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
+        OnQueueInputBuffer(RESUBMIT_BUFFER, bufInfo);
+    }
     for (BufferInfo& info : inputBufferPool_) {
         if (info.nextStepOwner == BufferOwner::OWNED_BY_OMX) {
             HLOGI("bufferId = %d, input buffer next owner is omx", info.bufferId);
@@ -297,6 +303,8 @@ void HCodec::FrozenState::OnMsgReceived(const MsgInfo &info)
             (void)info.param->GetValue(BUFFER_ID, bufferId);
             codec_->OnQueueInputBuffer(info, inputMode_);
             codec_->RecordBufferStatus(OMX_DirInput, bufferId, OWNED_BY_OMX);
+            codec_->inputBufIdQueueToOmx_.push(bufferId);
+            codec_->inputBufIdQueueToOmx_.push(bufferId);
             return;
         }
         case MsgWhat::RENDER_OUTPUT_BUFFER: {
