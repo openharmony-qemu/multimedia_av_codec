@@ -63,9 +63,6 @@ public:
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
-
-private:
-    int32_t Initialize();
     struct FBuffer {
     public:
         FBuffer() = default;
@@ -76,6 +73,9 @@ private:
         int32_t width_ = 0;
         int32_t height_ = 0;
     };
+
+private:
+    int32_t Initialize();
 
     enum struct State : int32_t {
         UNINITIALIZED,
