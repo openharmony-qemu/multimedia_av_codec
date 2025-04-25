@@ -744,15 +744,22 @@ int FFmpegDemuxerPlugin::AVReadFrameLimit(const uint32_t readId, AVPacket *pkt, 
         return AVERROR_INVALIDDATA;
     }
     ioContext_.isLimit = isLimit; 
-    if (ioContext_.isLimit) {
+    if (ioContext_.isLimit && FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::FLV &&
+        formatContext_->streams[readId]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         int width = 0;
         int height = 0;
         Meta &format = mediaInfo_.tracks[readId];
         ioContext_.isLimit = format.GetData(Tag::VIDEO_WIDTH, width) && format.GetData(Tag::VIDEO_HEIGHT, height);
         ioContext_.sizeLimit = width * height * 3 * 2;
+    } else {
+        ioContext_.isLimit = false;
     }
+    
     int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
+
     ioContext_.isLimit = false;
+    ioContext_.sizeLimit = 0;
+    ioContext_.readSizeCnt = 0;
     return ffmpegRet;
 }
 
