@@ -304,7 +304,6 @@ void HCodec::FrozenState::OnMsgReceived(const MsgInfo &info)
             codec_->OnQueueInputBuffer(info, inputMode_);
             codec_->RecordBufferStatus(OMX_DirInput, bufferId, OWNED_BY_OMX);
             codec_->inputBufIdQueueToOmx_.push(bufferId);
-            codec_->inputBufIdQueueToOmx_.push(bufferId);
             return;
         }
         case MsgWhat::RENDER_OUTPUT_BUFFER: {
