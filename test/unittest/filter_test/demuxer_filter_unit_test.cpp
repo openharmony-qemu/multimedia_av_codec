@@ -404,13 +404,14 @@ HWTEST_F(DemuxerFilterUnitTest, FindTrackId, TestSize.Level1)
 HWTEST_F(DemuxerFilterUnitTest, FindStreamType, TestSize.Level1)
 {
     auto audio = StreamType::STREAMTYPE_RAW_AUDIO;
-    auto res = demuxerFilter_->FindStreamType(audio, Plugins::MediaType::SUBTITLE, "", 0);
+    shared_ptr<Meta> meta = make_shared<Meta>();
+    auto res = demuxerFilter_->FindStreamType(audio, Plugins::MediaType::SUBTITLE, "", 0, meta);
     EXPECT_EQ(res, true);
-    res = demuxerFilter_->FindStreamType(audio, Plugins::MediaType::AUDIO, std::string(MimeType::AUDIO_RAW), 0);
+    res = demuxerFilter_->FindStreamType(audio, Plugins::MediaType::AUDIO, std::string(MimeType::AUDIO_RAW), 0, meta);
     EXPECT_EQ(res, true);
-    res = demuxerFilter_->FindStreamType(audio, Plugins::MediaType::VIDEO, "", 0);
+    res = demuxerFilter_->FindStreamType(audio, Plugins::MediaType::VIDEO, "", 0, meta);
     EXPECT_EQ(res, true);
-    res = demuxerFilter_->FindStreamType(audio, Plugins::MediaType::TIMEDMETA, "", 0);
+    res = demuxerFilter_->FindStreamType(audio, Plugins::MediaType::TIMEDMETA, "", 0, meta);
     EXPECT_EQ(res, false);
 }
 
