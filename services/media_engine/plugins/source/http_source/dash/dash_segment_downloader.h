@@ -139,7 +139,7 @@ class DashSegmentDownloader {
 public:
     DashSegmentDownloader(Callback *callback, int streamId, MediaAVCodec::MediaType streamType,
                           uint64_t expectDuration, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
-    virtual ~DashSegmentDownloader();
+    virtual ~DashSegmentDownloader() noexcept;
 
     bool Open(const std::shared_ptr<DashSegment> &dashSegment);
     void Close(bool isAsync, bool isClean);
