@@ -28,45 +28,62 @@ FSurfaceMemory::~FSurfaceMemory()
     ReleaseSurfaceBuffer();
 }
 
-void FSurfaceMemory::AllocSurfaceBuffer()
+int32_t FSurfaceMemory::AllocSurfaceBuffer()
 {
-    CHECK_AND_RETURN_LOG(sInfo_->surface != nullptr, "surface info is nullptr");
+    CHECK_AND_RETURN_RET_LOG(sInfo_->surface != nullptr, AVCS_ERR_UNKNOWN, "Surface is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(!isAttached, AVCS_ERR_UNKNOWN, "Only support when not attach!");
+    CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ == nullptr, AVCS_ERR_UNKNOWN, "Surface buffer is not nullptr!");
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    CHECK_AND_RETURN_RET_LOG(surfaceBuffer, AVCS_ERR_UNKNOWN, "Create surface buffer failed!");
+    GSError err = surfaceBuffer->Alloc(sInfo_->requestConfig);
+    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, err, "Alloc surface buffer failed, GSERROR=%{public}d", err);
+    SetSurfaceBuffer(surfaceBuffer, Owner::OWNED_BY_CODEC);
+    isAttached = false;
+    AVCODEC_LOGI("Alloc surface buffer success seq=%{public}u", surfaceBuffer_->GetSeqNum());
+    return AVCS_ERR_OK;
+}
+
+int32_t FSurfaceMemory::RequestSurfaceBuffer()
+{
+    CHECK_AND_RETURN_RET_LOG(sInfo_->surface != nullptr, AVCS_ERR_UNKNOWN, "Surface is nullptr");
+    CHECK_AND_RETURN_RET_LOG(owner == Owner::OWNED_BY_SURFACE, AVCS_ERR_UNKNOWN, "Only support when owned by surface!");
     sptr<SurfaceBuffer> surfaceBuffer = nullptr;
     auto ret = sInfo_->surface->RequestBuffer(surfaceBuffer, fence_, sInfo_->requestConfig);
     if (ret != OHOS::SurfaceError::SURFACE_ERROR_OK || surfaceBuffer == nullptr) {
         if (ret != OHOS::SurfaceError::SURFACE_ERROR_NO_BUFFER) {
-            AVCODEC_LOGE("surface RequestBuffer fail, ret: %{public}" PRIu64, static_cast<uint64_t>(ret));
+            AVCODEC_LOGE("Request surface buffer fail, ret=%{public}" PRIu64, static_cast<uint64_t>(ret));
         }
-        return;
+        return ret;
     }
-    surfaceBuffer_ = surfaceBuffer;
+    SetSurfaceBuffer(surfaceBuffer, Owner::OWNED_BY_CODEC);
+    return AVCS_ERR_OK;
 }
 
 void FSurfaceMemory::ReleaseSurfaceBuffer()
 {
-    CHECK_AND_RETURN_LOG(surfaceBuffer_ != nullptr, "surface buffer is nullptr");
-    if (!needRender_) {
-        auto ret = sInfo_->surface->CancelBuffer(surfaceBuffer_);
-        if (ret != OHOS::SurfaceError::SURFACE_ERROR_OK) {
-            AVCODEC_LOGE("surface CancelBuffer fail, ret:  %{public}" PRIu64, static_cast<uint64_t>(ret));
-        }
-    }
+    CHECK_AND_RETURN_LOG(surfaceBuffer_ != nullptr, "Surface buffer is nullptr!");
     surfaceBuffer_ = nullptr;
 }
 
 sptr<SurfaceBuffer> FSurfaceMemory::GetSurfaceBuffer()
 {
-    if (!surfaceBuffer_) {
-        AllocSurfaceBuffer();
+    if (isAttached && owner == Owner::OWNED_BY_SURFACE) {
+        CHECK_AND_RETURN_RET_LOG(RequestSurfaceBuffer() == AVCS_ERR_OK, nullptr, "Get surface buffer failed!");
     }
     return surfaceBuffer_;
 }
 
+void FSurfaceMemory::SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner)
+{
+    surfaceBuffer_ = surfaceBuffer;
+    owner = toChangeOwner;
+}
+
 int32_t FSurfaceMemory::GetSurfaceBufferStride()
 {
-    CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, 0, "surfaceBuffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, 0, "Surface buffer is nullptr!");
     auto bufferHandle = surfaceBuffer_->GetBufferHandle();
-    CHECK_AND_RETURN_RET_LOG(bufferHandle != nullptr, AVCS_ERR_UNKNOWN, "Fail to get bufferHandle");
+    CHECK_AND_RETURN_RET_LOG(bufferHandle != nullptr, AVCS_ERR_UNKNOWN, "Failed to get bufferHandle!");
     stride_ = bufferHandle->stride;
     return stride_;
 }
@@ -76,29 +93,24 @@ sptr<SyncFence> FSurfaceMemory::GetFence()
     return fence_;
 }
 
-void FSurfaceMemory::SetNeedRender(bool needRender)
-{
-    needRender_ = needRender;
-}
-
 void FSurfaceMemory::UpdateSurfaceBufferScaleMode()
 {
-    CHECK_AND_RETURN_LOG(surfaceBuffer_ != nullptr, "surface buffer is nullptr");
+    CHECK_AND_RETURN_LOG(surfaceBuffer_ != nullptr, "Surface buffer is nullptr!");
     auto ret = sInfo_->surface->SetScalingMode(surfaceBuffer_->GetSeqNum(), sInfo_->scalingMode);
     if (ret != OHOS::SurfaceError::SURFACE_ERROR_OK) {
-        AVCODEC_LOGE("update surface buffer scaling mode fail, ret: %{public}" PRIu64, static_cast<uint64_t>(ret));
+        AVCODEC_LOGE("Update surface buffer scaling mode failed, ret=%{public}" PRIu64, static_cast<uint64_t>(ret));
     }
 }
 
 uint8_t *FSurfaceMemory::GetBase() const
 {
-    CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, nullptr, "surfaceBuffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, nullptr, "Surface buffer is nullptr!");
     return static_cast<uint8_t *>(surfaceBuffer_->GetVirAddr());
 }
 
 int32_t FSurfaceMemory::GetSize() const
 {
-    CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, -1, "surfaceBuffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, -1, "Surface buffer is nullptr!");
     uint32_t size = surfaceBuffer_->GetSize();
     return static_cast<int32_t>(size);
 }
