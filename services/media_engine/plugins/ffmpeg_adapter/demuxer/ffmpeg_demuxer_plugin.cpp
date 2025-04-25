@@ -737,6 +737,25 @@ void FFmpegDemuxerPlugin::ResetContext()
     ioContext_.retry = false;
 }
 
+int FFmpegDemuxerPlugin::AVReadFrameLimit(const uint32_t readId, AVPacket *pkt, bool isLimit)
+{
+    if (readId > mediaInfo_.tracks.size()) {
+        MEDIA_LOG_E("Read id is invalid, id: " PUBLIC_LOG_D32, readId);
+        return AVERROR_INVALIDDATA;
+    }
+    ioContext_.isLimit = isLimit; 
+    if (ioContext_.isLimit) {
+        int width = 0;
+        int height = 0;
+        Meta &format = mediaInfo_.tracks[readId];
+        ioContext_.isLimit = format.GetData(Tag::VIDEO_WIDTH, width) && format.GetData(Tag::VIDEO_HEIGHT, height);
+        ioContext_.sizeLimit = width * height * 3 * 2;
+    }
+    int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
+    ioContext_.isLimit = false;
+    return ffmpegRet;
+}
+
 Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -750,7 +769,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
         }
         std::unique_lock<std::mutex> sLock(syncMutex_);
-        int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
+        int ffmpegRet = AVReadFrameLimit(readId, pkt, true);
         sLock.unlock();
         if (ffmpegRet == AVERROR_EOF) { // eos
             WebvttMP4EOSProcess(pkt);
@@ -837,6 +856,16 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
         if (static_cast<size_t>(ioContext->offset + bufSize) > ioContext->fileSize) {
             bufSize = static_cast<int64_t>(ioContext->fileSize) - ioContext->offset;
         }
+    }
+
+    if (ioContext->isLimit) {
+
+        if (ioContext->readSizeCnt + bufSize > ioContext->sizeLimit) {
+            MEDIA_LOG_E("Read limit size cur size: " PUBLIC_LOG_D32 ", limit size: " PUBLIC_LOG_U64 ", read size: " PUBLIC_LOG_D32, ioContext->readSizeCnt, ioContext->sizeLimit, bufSize);
+            return AVERROR_INVALIDDATA;
+        }
+
+        ioContext->readSizeCnt += bufSize;
     }
     return 0;
 }
