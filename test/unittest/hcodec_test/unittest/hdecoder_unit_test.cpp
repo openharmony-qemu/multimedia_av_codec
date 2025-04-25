@@ -1277,4 +1277,3 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_valid_003
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
 }
-}
