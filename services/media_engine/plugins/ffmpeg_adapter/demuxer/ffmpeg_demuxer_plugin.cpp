@@ -60,6 +60,8 @@ const int64_t INIT_TIME_THRESHOLD = 1000;
 const uint32_t ID3V2_HEADER_SIZE = 10;
 const int32_t MS_TO_NS = 1000 * 1000;
 const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000;
+const int DEFAULT_CHANNEL_CNT = 3;
+const int FLV_READ_SIZE_LIMIT_FACTOR = 2;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -743,6 +745,7 @@ int FFmpegDemuxerPlugin::AVReadFrameLimit(const uint32_t readId, AVPacket *pkt, 
         MEDIA_LOG_E("Read id is invalid, id: " PUBLIC_LOG_D32, readId);
         return AVERROR_INVALIDDATA;
     }
+
     ioContext_.isLimit = isLimit; 
     if (ioContext_.isLimit && FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::FLV &&
         formatContext_->streams[readId]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -750,7 +753,7 @@ int FFmpegDemuxerPlugin::AVReadFrameLimit(const uint32_t readId, AVPacket *pkt, 
         int height = 0;
         Meta &format = mediaInfo_.tracks[readId];
         ioContext_.isLimit = format.GetData(Tag::VIDEO_WIDTH, width) && format.GetData(Tag::VIDEO_HEIGHT, height);
-        ioContext_.sizeLimit = width * height * 3 * 2;
+        ioContext_.sizeLimit = width * height * DEFAULT_CHANNEL_CNT * FLV_READ_SIZE_LIMIT_FACTOR;
     } else {
         ioContext_.isLimit = false;
     }
@@ -866,9 +869,9 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
     }
 
     if (ioContext->isLimit) {
-
         if (ioContext->readSizeCnt + bufSize > ioContext->sizeLimit) {
-            MEDIA_LOG_E("Read limit size cur size: " PUBLIC_LOG_D32 ", limit size: " PUBLIC_LOG_U64 ", read size: " PUBLIC_LOG_D32, ioContext->readSizeCnt, ioContext->sizeLimit, bufSize);
+            MEDIA_LOG_E("Read limit size cur size: " PUBLIC_LOG_D32 ", limit size: " PUBLIC_LOG_U64 ", read size: " PUBLIC_LOG_D32, 
+                ioContext->readSizeCnt, ioContext->sizeLimit, bufSize);
             return AVERROR_INVALIDDATA;
         }
 
