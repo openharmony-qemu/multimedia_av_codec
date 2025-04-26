@@ -80,6 +80,7 @@ group("av_codec_unit_test") {
         "unittest/media_engine/filters:media_engine_filter_unit_test",
         "unittest/media_sink_test:av_audio_sink_unit_test",
         "unittest/plugins_source_test:plugins_source_unit_test",
+        "unittest/post_processor_test:post_processor_unit_test",
         "unittest/pts_and_index_conversion_test:pts_and_index_conversion_unit_test",
         "unittest/reference_parser_test:reference_parser_inner_unit_test",
         "unittest/sa_avcodec_test:sa_avcodec_unit_test",
