@@ -91,7 +91,7 @@ ohos_unittest("plugins_source_unit_test") {
   external_deps = [
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
-    "googletest:gmock_main",
+    "googletest:gmock",
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
