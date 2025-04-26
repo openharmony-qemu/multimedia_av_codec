@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef BASE_VIDEO_POST_PROCESSOR_H
+#ifndef INTERFACES_INNER_API_ALGORITHM_VIDEO_H
 #define INTERFACES_INNER_API_ALGORITHM_VIDEO_H
 
 #include "gmock/gmock.h"
@@ -33,7 +33,8 @@ namespace VideoProcessingEngine {
 
 class VpeVideo {
 public:
-    static std::shared_ptr<VpeVideo> Create(uint32_t type) {
+    static std::shared_ptr<VpeVideo> Create(uint32_t type)
+    {
         return std::make_shared<VpeVideo>();
     }
     MOCK_METHOD(VPEAlgoErrCode, RegisterCallback, (const std::shared_ptr<VpeVideoCallback>& callback), ());
@@ -52,7 +53,7 @@ public:
     MOCK_METHOD(VPEAlgoErrCode, RenderOutputBufferAtTime, (uint32_t index, int64_t renderTimestamp), ());
 };
 
-} // namespace 
+} // namespace VideoProcessingEngine
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_INNER_API_ALGORITHM_VIDEO_H
