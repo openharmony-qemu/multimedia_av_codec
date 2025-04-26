@@ -746,7 +746,7 @@ int FFmpegDemuxerPlugin::AVReadFrameLimit(const uint32_t readId, AVPacket *pkt, 
         return AVERROR_INVALIDDATA;
     }
 
-    ioContext_.isLimit = isLimit; 
+    ioContext_.isLimit = isLimit;
     if (ioContext_.isLimit && FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::FLV &&
         formatContext_->streams[readId]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         int width = 0;
@@ -870,7 +870,7 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
 
     if (ioContext->isLimit) {
         if (ioContext->readSizeCnt + bufSize > ioContext->sizeLimit) {
-            MEDIA_LOG_E("Read limit size cur size: " PUBLIC_LOG_D32 ", limit size: " PUBLIC_LOG_U64 ", read size: " PUBLIC_LOG_D32, 
+            MEDIA_LOG_E("Read limit cur: " PUBLIC_LOG_D32 ", limit: " PUBLIC_LOG_U64 ", read: " PUBLIC_LOG_D32,
                 ioContext->readSizeCnt, ioContext->sizeLimit, bufSize);
             return AVERROR_INVALIDDATA;
         }
