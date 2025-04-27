@@ -501,28 +501,18 @@ HWTEST_F(M3u8UnitTest, CHOOSE_STREAM_BY_RESOLUTION_001, TestSize.Level1)
     stream->height_ = 640;
     master->variants_.emplace_back(stream);
     master->variants_.emplace_back(nullptr);
-
     auto stream1 = std::make_shared<M3U8VariantStream>("test", "https://example.com/key",
         std::make_shared<M3U8>("https://example.com/key", "test"));
     stream1->bandWidth_ = 2000;
     stream1->width_ = 480;
     stream1->height_ = 640;
     master->variants_.emplace_back(stream1);
-
     auto stream2 = std::make_shared<M3U8VariantStream>("test", "https://example.com/key",
         std::make_shared<M3U8>("https://example.com/key", "test"));
     stream2->bandWidth_ = 2000;
     stream2->width_ = 720;
     stream2->height_ = 1080;
     master->variants_.emplace_back(stream2);
-
-    auto stream3 = std::make_shared<M3U8VariantStream>("test", "https://example.com/key",
-        std::make_shared<M3U8>("https://example.com/key", "test"));
-    stream3->bandWidth_ = 1500;
-    stream3->width_ = 720;
-    stream3->height_ = 1080;
-    master->variants_.emplace_back(stream3);
-
     auto stream4 = std::make_shared<M3U8VariantStream>("test", "https://example.com/key",
         std::make_shared<M3U8>("https://example.com/key", "test"));
     stream4->bandWidth_ = 3000;

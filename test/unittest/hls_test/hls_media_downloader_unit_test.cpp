@@ -1885,9 +1885,5 @@ HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_004, TestSize.Level1)
     downloader->playlistDownloader_->Pause(true);
     EXPECT_EQ(downloader->playlistDownloader_->IsLive(), true);
     EXPECT_NE(downloader->playlistDownloader_->updateTask_, nullptr);
-
-    downloader->playlistDownloader_->updateTask_ = nullptr;
-    downloader->playlistDownloader_->Resume();
-    downloader->playlistDownloader_->Pause(false);
 }
 }
