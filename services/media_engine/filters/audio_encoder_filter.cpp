@@ -110,8 +110,9 @@ void AudioEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 
 Status AudioEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_I("Configure");
     configureParameter_ = parameter;
+    FALSE_RETURN_V_NOLOG(!isTranscoderMode_, Status::OK);
+    MEDIA_LOG_I("Configure");
     FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     int32_t ret = mediaCodec_->Configure(parameter);
     if (ret != 0) {
@@ -288,6 +289,23 @@ Status AudioEncoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     onLinkedResultCallback_ = callback;
     if (isTranscoderMode_) {
         transcoderMeta_ = meta;
+        return UpdateParameterToConfigure(meta);
+    }
+    return Status::OK;
+}
+
+Status AudioEncoderFilter::UpdateParameterToConfigure(const std::shared_ptr<Meta> &meta)
+{
+    Plugins::AudioSampleFormat sampleFormat = Plugins::AudioSampleFormat::INVALID_WIDTH;
+    if (meta != nullptr && meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat)) {
+        MEDIA_LOG_I("Configure, sampleFormat: " PUBLIC_LOG_D32, static_cast<int32_t>(sampleFormat));
+        configureParameter_->SetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
+    }
+    FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
+    int32_t ret = mediaCodec_->Configure(configureParameter_);
+    if (ret != 0) {
+        SetFaultEvent("AudioEncoderFilter::UpdateParameterToConfigure error", ret);
+        return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
 }
