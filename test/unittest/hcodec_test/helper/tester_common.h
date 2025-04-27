@@ -115,6 +115,8 @@ protected:
     static uint32_t ReadOneFrameYUV420P(std::ifstream& src, ImgBuf& dstImg);
     static uint32_t ReadOneFrameYUV420SP(std::ifstream& src, ImgBuf& dstImg);
     static uint32_t ReadOneFrameRGBA(std::ifstream& src, ImgBuf& dstImg);
+    void SetStaticMetaData(BufInfo& buf);
+    void SetDynamicMetaData(BufInfo& buf);
     sptr<Surface> producerSurface_;
     uint32_t w_ = 0;
     uint32_t h_ = 0;
