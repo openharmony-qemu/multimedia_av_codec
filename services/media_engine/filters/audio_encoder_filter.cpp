@@ -296,10 +296,13 @@ Status AudioEncoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
 
 Status AudioEncoderFilter::UpdateParameterToConfigure(const std::shared_ptr<Meta> &meta)
 {
-    Plugins::AudioSampleFormat sampleFormat = Plugins::AudioSampleFormat::INVALID_WIDTH;
-    if (meta != nullptr && meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat)) {
-        MEDIA_LOG_I("Configure, sampleFormat: " PUBLIC_LOG_D32, static_cast<int32_t>(sampleFormat));
-        configureParameter_->SetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
+    Plugins::AudioSampleFormat dstSampleFormat = Plugins::AudioSampleFormat::INVALID_WIDTH;
+    Plugins::AudioSampleFormat oriSampleFormat = Plugins::AudioSampleFormat::INVALID_WIDTH;
+    if (meta != nullptr && configureParameter_ != nullptr && meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, dstSampleFormat)) {
+        configureParameter_->GetData(Tag::AUDIO_SAMPLE_FORMAT, oriSampleFormat);
+        MEDIA_LOG_I("Configure, sampleFormat: " PUBLIC_LOG_D32 " -> " PUBLIC_LOG_D32,
+            static_cast<int32_t>(oriSampleFormat), static_cast<int32_t>(dstSampleFormat));
+        configureParameter_->SetData(Tag::AUDIO_SAMPLE_FORMAT, dstSampleFormat);
     }
     FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     int32_t ret = mediaCodec_->Configure(configureParameter_);
