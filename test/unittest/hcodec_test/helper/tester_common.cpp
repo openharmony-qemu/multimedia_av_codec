@@ -238,8 +238,8 @@ bool TesterCommon::RunEncoder()
 {
     ifs_ = ifstream(opt_.inputFile, ios::binary);
     IF_TRUE_RETURN_VAL_WITH_MSG(!ifs_, false, "Failed to open file %s", opt_.inputFile.c_str());
-    is10Bit_ = (opt_.protocol == H265) && (opt_.profile == HEVC_PROFILE_MAIN_10);
-    optional<GraphicPixelFormat> displayFmt = TypeConverter::InnerFmtToDisplayFmt(opt_.pixFmt, is10Bit_);
+    is10Bit = (opt_.protocol == H265) && (opt_.profile == HEVC_PROFILE_MAIN_10);
+    optional<GraphicPixelFormat> displayFmt = TypeConverter::InnerFmtToDisplayFmt(opt_.pixFmt, is10Bit);
     IF_TRUE_RETURN_VAL_WITH_MSG(!displayFmt, false, "invalid pixel format");
     displayFmt_ = displayFmt.value();
     w_ = opt_.dispW;
@@ -435,7 +435,7 @@ bool TesterCommon::ReturnInputSurfaceBuffer(BufInfo& buf)
         },
         .timestamp = buf.attr.pts,
     };
-    if (is10Bit_) {
+    if (is10Bit) {
         using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
         {
             vector<uint8_t> vec(sizeof(CM_ColorSpaceInfo));
@@ -449,25 +449,28 @@ bool TesterCommon::ReturnInputSurfaceBuffer(BufInfo& buf)
         {
             vector<uint8_t> vec(sizeof(HdrStaticMetadata));
             HdrStaticMetadata* info = (HdrStaticMetadata*)vec.data();
-            info->smpte2086.displayPrimaryGreen.x = 8500*0.00002; // 8500
-            info->smpte2086.displayPrimaryGreen.y = 39850*0.00002; // 39850
-            info->smpte2086.displayPrimaryBlue.x = 6550*0.00002; //6550
-            info->smpte2086.displayPrimaryBlue.y = 2300*0.00002; // 2300
-            info->smpte2086.displayPrimaryRed.x = 35400*0.00002; // 35400
-            info->smpte2086.displayPrimaryRed.y = 14600*0.00002; // 14600
-            info->smpte2086.whitePoint.x = 15635*0.00002; // 15635
-            info->smpte2086.whitePoint.y = 16450*0.00002; // 16450
-            info->smpte2086.maxLuminance = 10000000*0.0001; // 10000000
-            info->smpte2086.minLuminance = 50*0.0001;       // 50
+            float value1 = 0.00002;
+            float value2 = 0.0001;
+            float lightLevel = 1000.0;
+            info->smpte2086.displayPrimaryGreen.x = 8500*value1; // 8500
+            info->smpte2086.displayPrimaryGreen.y = 39850*value1; // 39850
+            info->smpte2086.displayPrimaryBlue.x = 6550*value1; //6550
+            info->smpte2086.displayPrimaryBlue.y = 2300*value1; // 2300
+            info->smpte2086.displayPrimaryRed.x = 35400*value1; // 35400
+            info->smpte2086.displayPrimaryRed.y = 14600value1; // 14600
+            info->smpte2086.whitePoint.x = 15635*value1; // 15635
+            info->smpte2086.whitePoint.y = 16450*value1; // 16450
+            info->smpte2086.maxLuminance = 10000000*value2; // 10000000
+            info->smpte2086.minLuminance = 50*value2;       // 50
             info->cta861.maxContentLightLevel = 1000.0;;
             info->cta861.maxFrameAverageLightLevel = 1000.0;
             buf.surfaceBuf->SetMetadata(ATTRKEY_HDR_STATIC_METADATA, vec);
         }
         {
-            std::vector<uint8_t> HDR_VIVID_INPUT1 = {1, 47, 87, 30, 138, 187, 117, 240, 26, 190, 187, 29, 128, 0, 82, 142, 25, 152,
-                                            6, 100, 171, 42, 207, 235, 248, 67, 176, 235, 252, 16, 93, 242, 106, 132, 0,
-                                            10, 81, 199, 178, 80, 255, 217, 150, 101, 253, 149, 53, 212, 169, 127, 160, 0,
-                                            0};
+            std::vector<uint8_t> HDR_VIVID_INPUT1 = {1, 47, 87, 30, 138, 187, 117, 240, 26, 190, 187, 29, 128, 0, 82,
+                                            142, 25, 152, 6, 100, 171, 42, 207, 235, 248, 67, 176, 235, 252, 16, 93,
+                                            242, 106, 132, 0, 10, 81, 199, 178, 80, 255, 217, 150, 101, 253, 149, 53,
+                                            212, 169, 127, 160, 0, 0};
             buf.surfaceBuf->SetMetadata(ATTRKEY_HDR_DYNAMIC_METADATA, HDR_VIVID_INPUT1);
         }
     }
@@ -591,8 +594,7 @@ uint32_t TesterCommon::ReadOneFrame(ImgBuf& dstImg)
         case GRAPHIC_PIXEL_FMT_RGBA_8888: {
             return ReadOneFrameRGBA(ifs_, dstImg);
         }
-        default:
-            return 0;
+        default: return 0;
     }
 }
 
