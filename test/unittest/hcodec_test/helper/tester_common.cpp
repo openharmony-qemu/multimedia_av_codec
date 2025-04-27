@@ -28,6 +28,7 @@
 namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace Media;
+using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
 
 std::mutex TesterCommon::vividMtx_;
 std::unordered_map<int64_t, std::vector<uint8_t>> TesterCommon::vividMap_;
@@ -426,6 +427,38 @@ bool TesterCommon::WaitForInputSurfaceBuffer(BufInfo& buf)
     return SurfaceBufferToBufferInfo(buf, surfaceBuffer);
 }
 
+void TesterCommon::SetStaticMetaData(BufInfo& buf)
+{
+    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    vector<uint8_t> vec(sizeof(HdrStaticMetadata));
+    HdrStaticMetadata* info = (HdrStaticMetadata*)vec.data();
+    float value1 = 0.00002;
+    float value2 = 0.0001;
+    float lightLevel = 1000.0;
+    info->smpte2086.displayPrimaryGreen.x = 8500 * value1; // 8500
+    info->smpte2086.displayPrimaryGreen.y = 39850 * value1; // 39850
+    info->smpte2086.displayPrimaryBlue.x = 6550 * value1; //6550
+    info->smpte2086.displayPrimaryBlue.y = 2300 * value1; // 2300
+    info->smpte2086.displayPrimaryRed.x = 35400 * value1; // 35400
+    info->smpte2086.displayPrimaryRed.y = 14600 * value1; // 14600
+    info->smpte2086.whitePoint.x = 15635 * value1; // 15635
+    info->smpte2086.whitePoint.y = 16450 * value1; // 16450
+    info->smpte2086.maxLuminance = 10000000 * value2; // 10000000
+    info->smpte2086.minLuminance = 50 * value2;       // 50
+    info->cta861.maxContentLightLevel = lightLevel;
+    info->cta861.maxFrameAverageLightLevel = lightLevel;
+    buf.surfaceBuf->SetMetadata(ATTRKEY_HDR_STATIC_METADATA, vec);
+}
+ 
+void TesterCommon::SetDynamicMetaData(BufInfo& buf)
+{
+    std::vector<uint8_t> HDR_VIVID_INPUT1 = {1, 47, 87, 30, 138, 187, 117, 240, 26, 190, 187, 29, 128, 0, 82,
+                                    142, 25, 152, 6, 100, 171, 42, 207, 235, 248, 67, 176, 235, 252, 16, 93,
+                                    242, 106, 132, 0, 10, 81, 199, 178, 80, 255, 217, 150, 101, 253, 149, 53,
+                                    212, 169, 127, 160, 0, 0};
+    buf.surfaceBuf->SetMetadata(ATTRKEY_HDR_DYNAMIC_METADATA, HDR_VIVID_INPUT1);
+}
+
 bool TesterCommon::ReturnInputSurfaceBuffer(BufInfo& buf)
 {
     BufferFlushConfig flushConfig = {
@@ -435,44 +468,16 @@ bool TesterCommon::ReturnInputSurfaceBuffer(BufInfo& buf)
         },
         .timestamp = buf.attr.pts,
     };
-    if (is10Bit) {
-        using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
-        {
-            vector<uint8_t> vec(sizeof(CM_ColorSpaceInfo));
-            CM_ColorSpaceInfo* info = (CM_ColorSpaceInfo*)vec.data();
-            info->primaries = COLORPRIMARIES_BT2020;
-            info->transfunc = TRANSFUNC_HLG;
-            info->matrix = MATRIX_BT2020;
-            info->range = RANGE_LIMITED;
-            buf.surfaceBuf->SetMetadata(ATTRKEY_COLORSPACE_INFO, vec);
-        }
-        {
-            vector<uint8_t> vec(sizeof(HdrStaticMetadata));
-            HdrStaticMetadata* info = (HdrStaticMetadata*)vec.data();
-            float value1 = 0.00002;
-            float value2 = 0.0001;
-            float lightLevel = 1000.0;
-            info->smpte2086.displayPrimaryGreen.x = 8500*value1; // 8500
-            info->smpte2086.displayPrimaryGreen.y = 39850*value1; // 39850
-            info->smpte2086.displayPrimaryBlue.x = 6550*value1; //6550
-            info->smpte2086.displayPrimaryBlue.y = 2300*value1; // 2300
-            info->smpte2086.displayPrimaryRed.x = 35400*value1; // 35400
-            info->smpte2086.displayPrimaryRed.y = 14600value1; // 14600
-            info->smpte2086.whitePoint.x = 15635*value1; // 15635
-            info->smpte2086.whitePoint.y = 16450*value1; // 16450
-            info->smpte2086.maxLuminance = 10000000*value2; // 10000000
-            info->smpte2086.minLuminance = 50*value2;       // 50
-            info->cta861.maxContentLightLevel = lightLevel;
-            info->cta861.maxFrameAverageLightLevel = lightLevel;
-            buf.surfaceBuf->SetMetadata(ATTRKEY_HDR_STATIC_METADATA, vec);
-        }
-        {
-            std::vector<uint8_t> HDR_VIVID_INPUT1 = {1, 47, 87, 30, 138, 187, 117, 240, 26, 190, 187, 29, 128, 0, 82,
-                                            142, 25, 152, 6, 100, 171, 42, 207, 235, 248, 67, 176, 235, 252, 16, 93,
-                                            242, 106, 132, 0, 10, 81, 199, 178, 80, 255, 217, 150, 101, 253, 149, 53,
-                                            212, 169, 127, 160, 0, 0};
-            buf.surfaceBuf->SetMetadata(ATTRKEY_HDR_DYNAMIC_METADATA, HDR_VIVID_INPUT1);
-        }
+    if (is10Bit) {     
+        vector<uint8_t> vec(sizeof(CM_ColorSpaceInfo));
+        CM_ColorSpaceInfo* info = (CM_ColorSpaceInfo*)vec.data();
+        info->primaries = COLORPRIMARIES_BT2020;
+        info->transfunc = TRANSFUNC_HLG;
+        info->matrix = MATRIX_BT2020;
+        info->range = RANGE_LIMITED;
+        buf.surfaceBuf->SetMetadata(ATTRKEY_COLORSPACE_INFO, vec);
+        SetStaticMetaData(buf);
+        SetDynamicMetaData(buf);
     }
     GSError err = producerSurface_->FlushBuffer(buf.surfaceBuf, -1, flushConfig);
     if (err != GSERROR_OK) {
