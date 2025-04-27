@@ -361,6 +361,7 @@ protected:
 
     std::vector<BufferInfo> inputBufferPool_;
     std::vector<BufferInfo> outputBufferPool_;
+    std::queue<uint32_t> inputBufIdQueueToOmx_;
     bool isBufferCirculating_ = false;
     bool inputPortEos_ = false;
     bool outputPortEos_ = false;
@@ -523,7 +524,7 @@ private:
     };
 
     struct FrozenState : BaseState {
-        explicit FrozenState(HCodec *codec) : BaseState(codec, "Freeze") {}
+        explicit FrozenState(HCodec *codec) : BaseState(codec, "Frozen") {}
     private:
         void OnMsgReceived(const MsgInfo &info) override;
         void OnShutDown(const MsgInfo &info) override;

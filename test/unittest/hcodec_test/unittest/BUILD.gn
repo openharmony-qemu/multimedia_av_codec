@@ -45,6 +45,7 @@ ohos_unittest("hdecoder_unit_test") {
     "graphic_surface:surface",
     "hdf_core:libhdi",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
