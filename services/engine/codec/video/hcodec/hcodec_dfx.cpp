@@ -441,6 +441,7 @@ void HCodec::BufferInfo::DecideDumpInfo(int& alignedH, uint32_t& totalSize, stri
             suffix = "yuv";
             break;
         }
+        case GRAPHIC_PIXEL_FMT_RGBA_1010102:
         case GRAPHIC_PIXEL_FMT_RGBA_8888: {
             totalSize = static_cast<uint32_t>(byteStride * h);
             suffix = "rgba";
