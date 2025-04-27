@@ -1758,7 +1758,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SEEK_TO_TIME_001, TestSize.Level1)
     downloader->SeekToTime(10000, SeekMode::SEEK_NEXT_SYNC);
     EXPECT_EQ(downloader->isNeedReadHeader_, true);
     downloader->SeekToTime(50000000000, SeekMode::SEEK_NEXT_SYNC);
-    EXPECT_EQ(downloader->readTsIndex_ , 0);
+    EXPECT_EQ(downloader->readTsIndex_, 0);
     downloader->backPlayList_.clear();
     downloader->SeekToTime(50000000000, SeekMode::SEEK_NEXT_SYNC);
     EXPECT_EQ(downloader->readTsIndex_, 0);
