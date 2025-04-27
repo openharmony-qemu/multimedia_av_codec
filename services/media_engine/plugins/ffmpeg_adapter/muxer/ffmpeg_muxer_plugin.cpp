@@ -45,6 +45,7 @@ constexpr int32_t MIN_HE_AAC_SAMPLE_RATE = 16000;
 const std::string TIMED_METADATA_HANDLER_NAME = "timed_metadata";
 constexpr int32_t MAX_USERMETA_STRING_LENGTH = 256;
 const std::string LOG_INFO_KEY_STRING = "com.openharmony.video.sei.h_log";
+constexpr uint32_t CODE_LEN = 4;
 
 bool IsMuxerSupported(const char *name)
 {
@@ -1026,12 +1027,13 @@ Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const std::share
     if (videoTracksInfo_[trackIndex].isNeedTransData_) {
         std::vector<uint8_t> nonAnnexbData = TransAnnexbToMp4(sample->memory_->GetAddr(), sample->memory_->GetSize());
         int32_t size = static_cast<int32_t>(nonAnnexbData.size());
-        FALSE_RETURN_V_MSG_E(size > 0, Status::ERROR_INVALID_DATA, "annexb to mp4 is empty!");
-        std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(nonAnnexbData.data(), size, size);
-        FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "allocate buffer failed!");
-        buffer->pts_ = sample->pts_;
-        buffer->flag_ = sample->flag_;
-        return WriteNormal(trackIndex, buffer);
+        if (size > 0) { // the sample data trnasfer annexb to mp4 by copy, others by change
+            std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(nonAnnexbData.data(), size, size);
+            FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "allocate buffer failed!");
+            buffer->pts_ = sample->pts_;
+            buffer->flag_ = sample->flag_;
+            return WriteNormal(trackIndex, buffer);
+        }
     }
     return WriteNormal(trackIndex, sample);
 }
@@ -1039,22 +1041,39 @@ Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const std::share
 std::vector<uint8_t> FFmpegMuxerPlugin::TransAnnexbToMp4(const uint8_t *sample, int32_t size)
 {
     std::vector<uint8_t> data;
+    bool isCopyData = false;
     uint8_t *nalStart = const_cast<uint8_t *>(sample);
     uint8_t *end = nalStart + size;
     uint8_t *nalEnd = nullptr;
     int32_t startCodeLen = 0;
     uint32_t naluSize = 0;
 
-    nalStart = FindNalStartCode(nalStart, end, startCodeLen);
-    nalStart = nalStart + startCodeLen;
-    while (nalStart < end) {
-        nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
-        naluSize = static_cast<uint32_t>(nalEnd - nalStart);
-        for (int32_t i = sizeof(naluSize) - 1; i >= 0; --i) {
-            data.emplace_back((naluSize >> (i * 0x08)) & 0xFF);
+    nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
+    FALSE_RETURN_V_MSG_E(nalStart == nalEnd && nalStart + startCodeLen < end, data, "the sample is not annexb.");
+    isCopyData = startCodeLen != CODE_LEN ? true : isCopyData;
+    while (nalStart + startCodeLen < end) {
+        int32_t nextCodeLen = 0;
+        nalEnd = FindNalStartCode(nalStart + startCodeLen, end, nextCodeLen);
+        naluSize = static_cast<uint32_t>(nalEnd - (nalStart + startCodeLen));
+        isCopyData = (nalEnd < end && nextCodeLen != CODE_LEN) ? true : isCopyData;
+        if (isCopyData) {
+            MEDIA_LOG_D("transfer annexb to mp4 by copy data, size:%{public}u.", naluSize);
+            if (data.size() == 0 && nalStart != (end - size)) {
+                MEDIA_LOG_I("the sample annexb head length change from 4 to 3.");
+                data.insert(data.end(), end - size, nalStart);
+            }
+            for (uint32_t i = 0; i < CODE_LEN; ++i) {
+                data.emplace_back((naluSize >> ((CODE_LEN - 1 - i) * 0x08)) & 0xFF);
+            }
+            data.insert(data.end(), nalStart + startCodeLen, nalEnd);
+        } else {
+            MEDIA_LOG_D("transfer annexb to mp4 by change data, size:%{public}u.", naluSize);
+            for (uint32_t i = 0; i < CODE_LEN; ++i) {
+                *(nalStart + i) = (naluSize >> ((CODE_LEN - 1 - i) * 0x08)) & 0xFF;
+            }
         }
-        data.insert(data.end(), nalStart, nalEnd);
-        nalStart = nalEnd + startCodeLen;
+        nalStart = nalEnd;
+        startCodeLen = nextCodeLen;
     }
     return data;
 }
