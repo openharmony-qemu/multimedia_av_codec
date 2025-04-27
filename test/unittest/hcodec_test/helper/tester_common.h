@@ -119,7 +119,7 @@ protected:
     uint32_t w_ = 0;
     uint32_t h_ = 0;
     GraphicPixelFormat displayFmt_;
-    bool is10Bit_ = false;
+    bool is10Bit = false;
     static constexpr uint32_t BYTES_PER_PIXEL_RBGA = 4;
     static constexpr uint32_t SAMPLE_RATIO = 2;
 
