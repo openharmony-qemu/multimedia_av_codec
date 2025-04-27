@@ -106,8 +106,8 @@ public:
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;
     void SetIsReportedErrorCode() override;
-    bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
+    bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void NotifyInitSuccess() override;
     uint64_t GetCachedDuration() override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
@@ -167,9 +167,12 @@ private:
     void HandleWaterLine();
     bool CacheBufferFullLoop();
     bool IsNeedBufferForPlaying();
+    bool CheckLoopTimeout(int64_t loopStartTime);
+    void HandleSaveDataLoopContinue();
     bool ReadHeaderData(unsigned char* buff, ReadDataInfo& readDataInfo);
     void HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos);
     void RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo);
+
 private:
     size_t totalBufferSize_ {0};
     std::shared_ptr<Downloader> downloader_;
@@ -304,12 +307,14 @@ private:
     double bufferDurationForPlaying_ {0};
     uint64_t waterlineForPlaying_ {0};
     std::atomic<bool> isDemuxerInitSuccess_ {false};
-	
+    std::atomic<bool> isTimeoutErrorNotified_ {false};
+    
     size_t timeoutInterval_ = 0;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
-    std::atomic<bool> isTimeoutErrorNotified_ {false};
     std::atomic<bool> isNeedResume_ {false};
+    SteadyClock loopInterruptClock_;
     uint64_t cachedDuration_ {0};
+    
     std::map<uint32_t, uint32_t> tsStreamIdInfo_ {};
     uint32_t curStreamId_ {0};
     std::atomic<bool> isNeedReadHeader_ {false};

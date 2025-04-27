@@ -461,7 +461,7 @@ void HlsPlayListDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
     }
     for (const auto &stream : master_->variants_) {
         StreamInfo streamInfo;
-        streamInfo.streamId = stream->streamId_;
+        streamInfo.streamId = static_cast<int32_t>(stream->streamId_);
         streamInfo.type = StreamType::VIDEO;
         streamInfo.bitRate = stream->bandWidth_;
         streamInfo.videoWidth = stream->width_;

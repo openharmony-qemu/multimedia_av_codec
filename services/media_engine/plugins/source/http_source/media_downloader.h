@@ -37,6 +37,8 @@ struct ReadDataInfo {
     bool isEos_ = false;
 };
 
+constexpr int64_t LOOP_TIMEOUT = 60; // s
+
 class MediaDownloader {
 public:
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -46,7 +48,7 @@ public:
     virtual void Pause() = 0;
     virtual void Resume() = 0;
     virtual Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) = 0;
-    virtual bool SeekToPos(int64_t offset)
+    virtual bool SeekToPos(int64_t offset, bool& isSeekhit)
     {
         MEDIA_LOG_E("SeekToPos is unimplemented.");
         return false;
@@ -54,7 +56,7 @@ public:
     virtual size_t GetBufferSize() const = 0;
     virtual bool GetPlayable()
     {
-        return true;
+        return false;
     }
     virtual bool GetBufferingTimeOut() = 0;
     virtual size_t GetContentLength() const = 0;
@@ -164,21 +166,6 @@ public:
     }
 
     virtual void NotifyInitSuccess() {}
-
-    virtual void SetStartPts(int64_t startPts)
-    {
-        MEDIA_LOG_W("SetStartPts is unimplemented.");
-    }
-
-    virtual void SetExtraCache(uint64_t cacheDuration)
-    {
-        MEDIA_LOG_W("SetExtraCache is unimplemented.");
-    }
-
-    virtual void SetMediaStreams(const MediaStreamList& mediaStreams)
-    {
-        MEDIA_LOG_W("SetMediaStreams is unimplemented.");
-    }
     virtual uint64_t GetCachedDuration()
     {
         return 0;

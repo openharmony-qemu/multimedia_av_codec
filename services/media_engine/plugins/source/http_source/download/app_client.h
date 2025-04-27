@@ -79,13 +79,13 @@ private:
     int64_t uuid_ {0};
     std::atomic<bool> isResponseCompleted_ {false};
     ConditionVariable responseCondition_{};
-    LoadingRequestError requestState_;
+    LoadingRequestError requestState_ = LoadingRequestError::LOADING_ERROR_SUCCESS;
     mutable FairMutex mutex_;
     int dataInFlight_ {0};
     long startPos_ {0};
     int len_ {0};
-    std::string redirectUrl_ {};
-    int64_t curOffset_ {};
+    std::string redirectUrl_ {""};
+    int64_t curOffset_ {-2};
 };
 }
 }

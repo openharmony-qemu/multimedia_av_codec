@@ -51,8 +51,6 @@ public:
     bool IsSeekToTimeSupported() override;
     Status GetBitRates(std::vector<uint32_t>& bitRates) override;
     Status SelectBitRate(uint32_t bitRate) override;
-    Status SetStartPts(int64_t startPts) override;
-    Status SetExtraCache(uint64_t cacheDuration) override;
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     Status SelectStream(int32_t streamID) override;
@@ -77,7 +75,6 @@ private:
     void CloseUri(bool isAsync = false);
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
     bool CheckIsM3U8Uri();
-    void InitHttpSource(const std::shared_ptr<MediaSource>& source);
 
     uint32_t bufferSize_;
     uint32_t waterline_;
