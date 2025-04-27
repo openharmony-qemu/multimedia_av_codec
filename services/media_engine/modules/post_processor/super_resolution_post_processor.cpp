@@ -229,6 +229,7 @@ void SuperResolutionPostProcessor::OnOutputBufferAvailable(uint32_t index, VpeBu
     if (flag & static_cast<uint32_t>(VPE_BUFFER_FLAG_EOS)) {
         buffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     }
+    FALSE_RETURN_MSG(filterCallback_ != nullptr, "filterCallback_ is nullptr");
     filterCallback_->OnOutputBufferAvailable(index, buffer);
 }
 
@@ -244,6 +245,7 @@ void SuperResolutionPostProcessor::OnOutputBufferAvailable(uint32_t index, const
         buffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     }
     buffer->pts_ = info.presentationTimestamp;
+    FALSE_RETURN_MSG(filterCallback_ != nullptr, "filterCallback_ is nullptr");
     filterCallback_->OnOutputBufferAvailable(index, buffer);
 }
 
@@ -331,14 +333,14 @@ Status SuperResolutionPostProcessor::SetVideoWindowSize(int32_t width, int32_t h
 void SuperResolutionPostProcessor::OnError(VPEAlgoErrCode errorCode)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
-    FALSE_RETURN_MSG(filterCallback_ != nullptr, "OnOutputFormatChanged callback_ is nullptr");
+    FALSE_RETURN_MSG(filterCallback_ != nullptr, "filterCallback_ is nullptr");
     MEDIA_LOG_E("SuperResolutionPostProcessor error happened. ErrorCode: %{public}d", errorCode);
 }
 
 void SuperResolutionPostProcessor::OnOutputFormatChanged(const Format &format)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
-    FALSE_RETURN_MSG(filterCallback_ != nullptr, "OnOutputFormatChanged callback_ is nullptr");
+    FALSE_RETURN_MSG(filterCallback_ != nullptr, "filterCallback_ is nullptr");
     filterCallback_->OnOutputFormatChanged(format);
 }
 
