@@ -1486,7 +1486,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GET_STREAM_INFO_001, TestSize.Level1)
     EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
     downloader->isInterruptNeeded_ = false;
     std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
-    downloader->Open(testUrl, httpHeader);   
+    downloader->Open(testUrl, httpHeader);
     EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
     downloader->playlistDownloader_ = nullptr;
     EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
@@ -1576,7 +1576,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, READ_HEADER_DATA_001, TestSize.Level1)
     downloader->SetStatusCallback(statusCallback);
     Plugins::Callback* sourceCallback = new SourceCallback();
     downloader->callback_ = sourceCallback;
-    unsigned char * buffer = new unsigned char[1 * 1024 * 1024]; 
+    unsigned char * buffer = new unsigned char[1 * 1024 * 1024];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = 1;
     readDataInfo.wantReadLength_ = 1 * 1024 * 1024;
@@ -1665,7 +1665,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, HANDLE_FFMPEG_READ_BACK_001, TestSize.Level
     downloader->curStreamId_ = 1;
     downloader->isNeedResetOffset_ = false;
     downloader->HandleFfmpegReadback(100);
-    EXPECT_EQ(downloader->ffmpegOffset_, 100);    
+    EXPECT_EQ(downloader->ffmpegOffset_, 100);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, READ_DELEGATE_001, TestSize.Level1)
@@ -1692,7 +1692,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, READ_DELEGATE_001, TestSize.Level1)
     downloader->downloadErrorState_ = true;
     EXPECT_EQ(downloader->CheckBreakCondition(), true);
     EXPECT_EQ(downloader->HandleCache(), false);
-    EXPECT_EQ(downloader->isBuffering_ , false);
+    EXPECT_EQ(downloader->isBuffering_, false);
     readDataInfo.wantReadLength_ = 0;
     EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::END_OF_STREAM);
     readDataInfo.wantReadLength_ = 4096;
@@ -1761,7 +1761,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SEEK_TO_TIME_001, TestSize.Level1)
     EXPECT_EQ(downloader->readTsIndex_ , 0);
     downloader->backPlayList_.clear();
     downloader->SeekToTime(50000000000, SeekMode::SEEK_NEXT_SYNC);
-    EXPECT_EQ(downloader->readTsIndex_ , 0);
+    EXPECT_EQ(downloader->readTsIndex_, 0);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, ON_PLAYLIST_CHANGED_001, TestSize.Level1)
@@ -1785,10 +1785,10 @@ HWTEST_F(HlsMediaDownloaderUnitTest, ON_PLAYLIST_CHANGED_001, TestSize.Level1)
     downloader->isSelectingBitrate_ = true;
     downloader->writeTsIndex_ = 10;
     downloader->OnPlayListChanged(playList);
-    EXPECT_EQ(downloader->isSelectingBitrate_ , true);
+    EXPECT_EQ(downloader->isSelectingBitrate_, true);
 
     downloader->isInterruptNeeded_ = true;
     downloader->OnPlayListChanged(playList);
-    EXPECT_EQ(downloader->isInterruptNeeded_ , true);
+    EXPECT_EQ(downloader->isInterruptNeeded_, true);
 }
 }
