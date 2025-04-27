@@ -307,14 +307,13 @@ bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugins::AudioSampleFo
 Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expectedLen)
 {
     MEDIA_LOG_D("AudioCaptureModule Read");
+    FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NULL_POINTER, "buffer is nullptr");
     auto bufferMeta = buffer->meta_;
     if (!bufferMeta) {
         return Status::ERROR_INVALID_PARAMETER;
     }
     std::shared_ptr<AVMemory> bufData = buffer->memory_;
-    if (bufData->GetCapacity() <= 0) {
-        return Status::ERROR_NO_MEMORY;
-    }
+    FALSE_RETURN_V_MSG_E(bufData && bufData->GetCapacity() > 0, Status::ERROR_NO_MEMORY, "bufData is empty");
     auto size = 0;
     Status ret = Status::OK;
     {
@@ -326,6 +325,8 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
         if (audioCapturer_->GetStatus() != AudioStandard::CAPTURER_RUNNING) {
             return Status::ERROR_AGAIN;
         }
+        FALSE_RETURN_V_MSG_E(bufData->GetAddr() != nullptr,
+            Status::ERROR_NULL_POINTER, "audioCapturer GetAddr() fail");
         size = audioCapturer_->Read(*bufData->GetAddr(), expectedLen, true);
     }
     FALSE_RETURN_V_MSG_E(size >= 0, Status::ERROR_NOT_ENOUGH_DATA, "audioCapturer Read() fail");
