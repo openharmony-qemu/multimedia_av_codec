@@ -529,25 +529,20 @@ HWTEST_F(M3u8UnitTest, CHOOSE_STREAM_BY_RESOLUTION_001, TestSize.Level1)
     stream4->width_ = 720;
     stream4->height_ = 1080;
     master->variants_.emplace_back(stream4);
-
     auto stream5 = std::make_shared<M3U8VariantStream>("test", "https://example.com/key",
         std::make_shared<M3U8>("https://example.com/key", "test"));
     stream4->bandWidth_ = 3000;
     stream4->width_ = 1080;
     stream4->height_ = 1920;
     master->variants_.emplace_back(stream4);
-    
     master->defaultVariant_ = stream;
     master->ChooseStreamByResolution();
-
     uint32_t resolution = 480 * 720;
     master->initResolution_ = resolution;
     master->ChooseStreamByResolution();
-
     resolution = 720 * 1080;
     master->initResolution_ = resolution;
     master->ChooseStreamByResolution();
-
     resolution = 1080 * 1920;
     master->initResolution_ = resolution;
     master->ChooseStreamByResolution();
