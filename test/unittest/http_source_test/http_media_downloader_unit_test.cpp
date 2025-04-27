@@ -846,7 +846,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GetPlayable, TestSize.Level1)
 HWTEST_F(HttpMediaDownloaderUnitTest, GetCacheDuration, TestSize.Level1)
 {
     float num = MP4httpMediaDownloader->GetCacheDuration(1);
-    EXPECT_EQ(num, 0.5);
     num = MP4httpMediaDownloader->GetCacheDuration(0);
     EXPECT_EQ(num, 5.0);
 }

@@ -713,6 +713,8 @@
             <option name="push" value="video_res/test_cbr/1080_3M/video_108012.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
             <option name="push" value="video_res/test_hls/testXMap.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testByteRange.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testMutiStream.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHlsLive.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
