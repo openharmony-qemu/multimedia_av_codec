@@ -62,6 +62,7 @@ const int32_t MS_TO_NS = 1000 * 1000;
 const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000;
 const int DEFAULT_CHANNEL_CNT = 3;
 const int FLV_READ_SIZE_LIMIT_FACTOR = 2;
+const int FLV_READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -739,29 +740,15 @@ void FFmpegDemuxerPlugin::ResetContext()
     ioContext_.retry = false;
 }
 
-int FFmpegDemuxerPlugin::AVReadFrameLimit(const uint32_t readId, AVPacket *pkt, bool isLimit)
+int FFmpegDemuxerPlugin::AVReadFrameLimit(AVPacket *pkt)
 {
-    if (readId > mediaInfo_.tracks.size()) {
-        MEDIA_LOG_E("Read id is invalid, id: " PUBLIC_LOG_D32, readId);
-        return AVERROR_INVALIDDATA;
+    if (!ioContext_.isLimitType) {
+        return av_read_frame(formatContext_.get(), pkt);
     }
 
-    ioContext_.isLimit = isLimit;
-    if (ioContext_.isLimit && FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::FLV &&
-        formatContext_->streams[readId]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        int width = 0;
-        int height = 0;
-        Meta &format = mediaInfo_.tracks[readId];
-        ioContext_.isLimit = format.GetData(Tag::VIDEO_WIDTH, width) && format.GetData(Tag::VIDEO_HEIGHT, height);
-        ioContext_.sizeLimit = width * height * DEFAULT_CHANNEL_CNT * FLV_READ_SIZE_LIMIT_FACTOR;
-    } else {
-        ioContext_.isLimit = false;
-    }
-    
+    ioContext_.isLimit = true;
     int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
-
     ioContext_.isLimit = false;
-    ioContext_.sizeLimit = 0;
     ioContext_.readSizeCnt = 0;
     return ffmpegRet;
 }
@@ -779,7 +766,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
         }
         std::unique_lock<std::mutex> sLock(syncMutex_);
-        int ffmpegRet = AVReadFrameLimit(readId, pkt, true);
+        int ffmpegRet = AVReadFrameLimit(pkt);
         sLock.unlock();
         if (ffmpegRet == AVERROR_EOF) { // eos
             WebvttMP4EOSProcess(pkt);
@@ -869,12 +856,11 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
     }
 
     if (ioContext->isLimit) {
-        if (ioContext->readSizeCnt + bufSize > ioContext->sizeLimit) {
+        if (bufSize > ioContext->sizeLimit - ioContext->readSizeCnt) {
             MEDIA_LOG_E("Read limit cur: " PUBLIC_LOG_D32 ", limit: " PUBLIC_LOG_U64 ", read: " PUBLIC_LOG_D32,
                 ioContext->readSizeCnt, ioContext->sizeLimit, bufSize);
-            return AVERROR_INVALIDDATA;
+            return ret;
         }
-
         ioContext->readSizeCnt += bufSize;
     }
     return 0;
@@ -1127,6 +1113,8 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     // parse media info
     GetMediaInfo();
 
+    SetAVReadFrameLimit();
+
     // check param
     if (ioContext_.retry) {
         if ((formatContext_ && !HasCodecParameters()) || formatContext_ == nullptr) {
@@ -1221,6 +1209,35 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     mediaInfo = mediaInfo_;
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    if (FFmpegFormatHelper::GetFileTypeByName(*formatContext_) != FileType::FLV) {
+        return Status::OK;
+    }
+
+    ioContext_.isLimitType = true;
+    ioContext_.sizeLimit = FLV_READ_SIZE_LIMIT_DEFAULT;
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        if (formatContext_->streams[trackIndex]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            int width = 0;
+            int height = 0;
+            Meta &format = mediaInfo_.tracks[trackIndex];
+            format.GetData(Tag::VIDEO_WIDTH, width);
+            format.GetData(Tag::VIDEO_HEIGHT, height);
+            if (width * height > 0) {
+                uint32_t limitSize = width * height * DEFAULT_CHANNEL_CNT * FLV_READ_SIZE_LIMIT_FACTOR;
+                ioContext_.sizeLimit = ioContext_.sizeLimit == FLV_READ_SIZE_LIMIT_DEFAULT ?
+                    limitSize :
+                    std::max(ioContext_.sizeLimit, limitSize);
+                MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
+                    " limit " PUBLIC_LOG_U32, trackIndex, height, width, ioContext_.sizeLimit);
+            }
+        }
+    }
     return Status::OK;
 }
 
