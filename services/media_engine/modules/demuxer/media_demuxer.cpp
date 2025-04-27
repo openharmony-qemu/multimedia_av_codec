@@ -754,7 +754,9 @@ Status MediaDemuxer::InnerPrepare()
         }
         InitMediaStartPts();
         if (videoTrackId_ != TRACK_ID_DUMMY) {
-            AddDemuxerCopyTaskByTrack(videoTrackId_, DemuxerTrackType::VIDEO);
+            if (isCreatedByFilter_) {
+                AddDemuxerCopyTaskByTrack(videoTrackId_, DemuxerTrackType::VIDEO);
+            }
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, videoTrackId_, -1);
             int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
             streamDemuxer_->SetNewVideoStreamID(streamId);
@@ -766,7 +768,9 @@ Status MediaDemuxer::InnerPrepare()
             targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
         }
         if (audioTrackId_ != TRACK_ID_DUMMY) {
-            AddDemuxerCopyTaskByTrack(audioTrackId_, DemuxerTrackType::AUDIO);
+            if (isCreatedByFilter_) {
+                AddDemuxerCopyTaskByTrack(audioTrackId_, DemuxerTrackType::AUDIO);
+            }
             demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, audioTrackId_, -1);
             int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(audioTrackId_);
             streamDemuxer_->SetNewAudioStreamID(streamId);
@@ -780,7 +784,9 @@ Status MediaDemuxer::InnerPrepare()
             }
         }
         if (subtitleTrackId_ != TRACK_ID_DUMMY) {
-            AddDemuxerCopyTaskByTrack(subtitleTrackId_, DemuxerTrackType::SUBTITLE);
+            if (isCreatedByFilter_) {
+                AddDemuxerCopyTaskByTrack(subtitleTrackId_, DemuxerTrackType::SUBTITLE);
+            }
             demuxerPluginManager_->UpdateTempTrackMapInfo(subtitleTrackId_, subtitleTrackId_, -1);
             int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(subtitleTrackId_);
             streamDemuxer_->SetNewSubtitleStreamID(streamId);
@@ -1910,6 +1916,11 @@ bool MediaDemuxer::HasVideo()
 bool MediaDemuxer::HasAudio()
 {
     return audioTrackId_ != TRACK_ID_DUMMY;
+}
+
+void MediaDemuxer::SetIsCreatedByFilter(bool isCreatedByFilter)
+{
+    isCreatedByFilter_ = isCreatedByFilter;
 }
 
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)

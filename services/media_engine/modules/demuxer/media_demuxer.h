@@ -169,6 +169,8 @@ public:
     bool IsFlvLive();
     bool HasVideo();
     bool HasAudio();
+
+    void SetIsCreatedByFilter(bool isCreatedByFilter);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -402,6 +404,8 @@ private:
     PerfRecorder perfRecorder_ {};
     int32_t apiVersion_ {0};
     bool isHlsFmp4_ {false};
+
+    bool isCreatedByFilter_ {false};
 };
 } // namespace Media
 } // namespace OHOS

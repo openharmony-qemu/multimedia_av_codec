@@ -115,6 +115,7 @@ private:
 DemuxerFilter::DemuxerFilter(std::string name, FilterType type) : Filter(name, type)
 {
     demuxer_ = std::make_shared<MediaDemuxer>();
+    demuxer_->SetIsCreatedByFilter(true);
     AutoLock lock(mapMutex_);
     track_id_map_.clear();
 }
