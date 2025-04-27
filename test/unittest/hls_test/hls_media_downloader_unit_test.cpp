@@ -30,6 +30,8 @@ const std::map<std::string, std::string> httpHeader = {
 
 static const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const std::string M3U8_PATH_1 = "test_hls/testHLSEncode.m3u8";
+static const std::string M3U8_PATH_X_MAP = "test_hls/testXMap.m3u8";
+static const std::string M3U8_PATH_BYTE_RANGE = "test_hls/testByteRange.m3u8";
 constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
@@ -1467,5 +1469,326 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SaveCacheBufferDataNotblock_3, TestSize.Lev
     uint32_t res = downloader->SaveCacheBufferDataNotblock(data, len);
     delete[] data;
     EXPECT_GE(res, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GET_STREAM_INFO_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    std::vector<StreamInfo> streams;
+    EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
+    downloader->isInterruptNeeded_ = true;
+    EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
+    downloader->isInterruptNeeded_ = false;
+    std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
+    downloader->playlistDownloader_ = nullptr;
+    EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, IS_HLS_FMP4_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    EXPECT_EQ(downloader->IsHlsFmp4(), false);
+    downloader->playlistDownloader_ = nullptr;
+    EXPECT_EQ(downloader->IsHlsFmp4(), false);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, HANDLE_SEEK_READY_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    downloader->HandleSeekReady(1, 1, 0);
+    EXPECT_EQ(downloader->IsHlsFmp4(), false);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    std::vector<StreamInfo> streams;
+    downloader->GetStreamInfo(streams);
+    downloader->HandleSeekReady(1, 1, 0);
+    EXPECT_EQ(downloader->IsHlsFmp4(), true);
+    downloader->callback_ = nullptr;
+    downloader->HandleSeekReady(1, 1, 0);
+    EXPECT_EQ(downloader->IsHlsFmp4(), true);
+    downloader->playlistDownloader_ = nullptr;
+    downloader->HandleSeekReady(1, 1, 0);
+    EXPECT_EQ(downloader->IsHlsFmp4(), false);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, REMOVE_FMP4_PADDING_DATA_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    std::vector<StreamInfo> streams;
+    downloader->GetStreamInfo(streams);
+    uint8_t buffer[16] = {
+    0x0d, 0x0C, 0x0C, 0x0C,
+    0x0C, 0x0C, 0x0C, 0x0C,
+    0x0C, 0x0C, 0x0C, 0x0C,
+    0x0C, 0x0C, 0x0C, 0x0C
+    };
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 1;
+    readDataInfo.wantReadLength_ = 100;
+    readDataInfo.realReadLength_ = 16;
+    downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
+    EXPECT_EQ(readDataInfo.realReadLength_, 16);
+    downloader->keyLen_ = 1;
+    downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
+    EXPECT_NE(readDataInfo.realReadLength_, 16);
+    readDataInfo.realReadLength_ = 0;
+    downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
+    EXPECT_EQ(readDataInfo.realReadLength_, 0);
+    readDataInfo.realReadLength_ = 5;
+    downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
+    EXPECT_EQ(readDataInfo.realReadLength_, 5);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, READ_HEADER_DATA_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    unsigned char * buffer = new unsigned char[1 * 1024 * 1024];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 1;
+    readDataInfo.wantReadLength_ = 1 * 1024 * 1024;
+    readDataInfo.realReadLength_ = 16;
+    EXPECT_EQ(downloader->IsHlsFmp4(), false);
+    EXPECT_EQ(downloader->ReadHeaderData(buffer, readDataInfo), false);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    std::vector<StreamInfo> streams;
+    downloader->GetStreamInfo(streams);
+    EXPECT_EQ(downloader->ReadHeaderData(buffer, readDataInfo), true);
+    readDataInfo.streamId_ = 2;
+    EXPECT_EQ(downloader->ReadHeaderData(buffer, readDataInfo), true);
+    downloader->ReadCacheBuffer(buffer, readDataInfo);
+    readDataInfo.streamId_ = 0;
+    EXPECT_EQ(downloader->ReadHeaderData(buffer, readDataInfo), false);
+    readDataInfo.streamId_ = 1;
+    downloader->isNeedReadHeader_ = false;
+    EXPECT_EQ(downloader->ReadHeaderData(buffer, readDataInfo), false);
+    downloader->playlistDownloader_  = nullptr;
+    EXPECT_EQ(downloader->ReadHeaderData(buffer, readDataInfo), false);
+    delete[] buffer;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, IS_PURE_BYTE_RANGE_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    EXPECT_EQ(downloader->IsPureByteRange(), false);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testByteRange.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    std::vector<StreamInfo> streams;
+    downloader->GetStreamInfo(streams);
+    EXPECT_EQ(downloader->IsPureByteRange(), true);
+    downloader->playlistDownloader_  = nullptr;
+    EXPECT_EQ(downloader->IsPureByteRange(), false);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, PUT_REQUEST_INTO_DOWNLOADER_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    PlayInfo playInfo;
+    playInfo.url_ = TEST_URI_PATH + "test_hls/testByteRange.m3u8";
+    playInfo.length_ = 1000;
+    playInfo.offset_ = 0;
+    playInfo.rangeUrl_ = TEST_URI_PATH + "test_hls/testByteRange.m3u8";
+    downloader->fragmentDownloadStart[playInfo.url_] = true;
+    downloader->writeTsIndex_ = 1;
+    downloader->PutRequestIntoDownloader(playInfo);
+    EXPECT_EQ(downloader->downloadRequest_, nullptr);
+    downloader->writeTsIndex_ = 0;
+    downloader->PutRequestIntoDownloader(playInfo);
+    EXPECT_EQ(downloader->downloadRequest_, nullptr);
+    downloader->fragmentDownloadStart[playInfo.url_] = false;
+    downloader->PutRequestIntoDownloader(playInfo);
+    EXPECT_NE(downloader->downloadRequest_, nullptr);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, HANDLE_FFMPEG_READ_BACK_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    downloader->curStreamId_ = 1;
+    downloader->isNeedResetOffset_ = true;
+    downloader->HandleFfmpegReadback(100);
+    EXPECT_EQ(downloader->ffmpegOffset_, 100);
+    downloader->curStreamId_ = 0;
+    downloader->HandleFfmpegReadback(100);
+    EXPECT_EQ(downloader->ffmpegOffset_, 100);
+    downloader->curStreamId_ = 1;
+    downloader->isNeedResetOffset_ = false;
+    downloader->HandleFfmpegReadback(100);
+    EXPECT_EQ(downloader->ffmpegOffset_, 100);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, READ_DELEGATE_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    std::string testUrl = TEST_URI_PATH + "test_hls/testByteRange.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    std::vector<StreamInfo> streams;
+    downloader->GetStreamInfo(streams);
+    
+    EXPECT_NE(downloader->GetDuration(), 0);
+    EXPECT_EQ(downloader->CheckReadStatus(), false);
+    EXPECT_EQ(downloader->GetBufferSize(), 0);
+    unsigned char * buffer = new unsigned char[1 * 1024 * 1024];
+    ReadDataInfo readDataInfo;
+    downloader->isStopped = false;
+    EXPECT_EQ(downloader->CheckPlaylist(buffer, readDataInfo), Status::ERROR_UNKNOWN);
+    downloader->downloadErrorState_ = true;
+    EXPECT_EQ(downloader->CheckBreakCondition(), true);
+    EXPECT_EQ(downloader->HandleCache(), false);
+    EXPECT_EQ(downloader->isBuffering_, false);
+    readDataInfo.wantReadLength_ = 0;
+    EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::END_OF_STREAM);
+    readDataInfo.wantReadLength_ = 4096;
+    EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::OK);
+    EXPECT_EQ(downloader->writeTsIndex_, 0);
+
+    downloader->isBuffering_ = true;
+    EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::ERROR_AGAIN);
+
+    downloader->seekTime_ = 100000000000;
+    EXPECT_EQ(downloader->backPlayList_.size(), 2);
+    downloader->readTsIndex_ = 1;
+    downloader->tsStorageInfo_[downloader->readTsIndex_] = std::make_pair(0, true);
+    EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::END_OF_STREAM);
+
+    downloader->isInterruptNeeded_ = true;
+    EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::END_OF_STREAM);
+    downloader->cacheMediaBuffer_  = nullptr;
+    EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::END_OF_STREAM);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, PREPARE_TO_SEEK_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    downloader->PrepareToSeek();
+    EXPECT_EQ(downloader->playlistDownloader_->IsParseAndNotifyFinished(), false);
+    downloader->isInterruptNeeded_ = true;
+    downloader->PrepareToSeek();
+    EXPECT_EQ(downloader->playlistDownloader_->IsParseAndNotifyFinished(), false);
+    downloader->isInterruptNeeded_ = false;
+    std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    std::vector<StreamInfo> streams;
+    downloader->GetStreamInfo(streams);
+    downloader->PrepareToSeek();
+    EXPECT_EQ(downloader->playlistDownloader_->IsParseAndNotifyFinished(), true);
+    EXPECT_EQ(downloader->IsHlsFmp4(), true);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, SEEK_TO_TIME_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    downloader->SeekToTime(0, SeekMode::SEEK_NEXT_SYNC);
+    EXPECT_EQ(downloader->GetBufferSize(), 0);
+
+    std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    std::vector<StreamInfo> streams;
+    downloader->GetStreamInfo(streams);
+    downloader->PrepareToSeek();
+    downloader->SeekToTime(10000, SeekMode::SEEK_NEXT_SYNC);
+    EXPECT_EQ(downloader->isNeedReadHeader_, true);
+    downloader->SeekToTime(50000000000, SeekMode::SEEK_NEXT_SYNC);
+    EXPECT_EQ(downloader->readTsIndex_, 0);
+    downloader->backPlayList_.clear();
+    downloader->SeekToTime(50000000000, SeekMode::SEEK_NEXT_SYNC);
+    EXPECT_EQ(downloader->readTsIndex_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, ON_PLAYLIST_CHANGED_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+        header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    std::vector<StreamInfo> streams;
+    downloader->GetStreamInfo(streams);
+    downloader->PrepareToSeek();
+
+    std::vector<PlayInfo> playList;
+    PlayInfo palyInfo;
+    playList.push_back(palyInfo);
+    downloader->isSelectingBitrate_ = true;
+    downloader->writeTsIndex_ = 10;
+    downloader->OnPlayListChanged(playList);
+    EXPECT_EQ(downloader->isSelectingBitrate_, true);
+
+    downloader->isInterruptNeeded_ = true;
+    downloader->OnPlayListChanged(playList);
+    EXPECT_EQ(downloader->isInterruptNeeded_, true);
 }
 }
