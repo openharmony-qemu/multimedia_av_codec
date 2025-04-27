@@ -50,6 +50,31 @@ void FileSourceUnitTest::TearDown(void)
 }
 
 /**
+ * @tc.name  : Alloc_001
+ * @tc.number: Alloc_001
+ * @tc.desc  : Test when size is zero, Alloc should return nullptr
+ */
+HWTEST_F(FileSourceUnitTest, Alloc_001, TestSize.Level1)
+{
+    FileSourceAllocator allocator;
+    void* result = allocator.Alloc(0);
+    EXPECT_EQ(result, nullptr);
+}
+
+/**
+ * @tc.name  : Alloc_002
+ * @tc.number: AllocTest_002
+ * @tc.desc  : Test when size is non-zero, Alloc should return valid memory
+ */
+HWTEST_F(FileSourceUnitTest, Alloc_002, TestSize.Level1)
+{
+    FileSourceAllocator allocator;
+    void* result = allocator.Alloc(10);
+    EXPECT_NE(result, nullptr);
+    delete[] static_cast<uint8_t*>(result);
+}
+
+/**
  * @tc.name: FileSource_Prepare_0100
  * @tc.desc: FileSource_Prepare_0100
  * @tc.type: FUNC
