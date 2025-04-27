@@ -462,8 +462,8 @@ bool TesterCommon::ReturnInputSurfaceBuffer(BufInfo& buf)
             info->smpte2086.whitePoint.y = 16450*value1; // 16450
             info->smpte2086.maxLuminance = 10000000*value2; // 10000000
             info->smpte2086.minLuminance = 50*value2;       // 50
-            info->cta861.maxContentLightLevel = 1000.0;;
-            info->cta861.maxFrameAverageLightLevel = 1000.0;
+            info->cta861.maxContentLightLevel = lightLevel;
+            info->cta861.maxFrameAverageLightLevel = lightLevel;
             buf.surfaceBuf->SetMetadata(ATTRKEY_HDR_STATIC_METADATA, vec);
         }
         {
