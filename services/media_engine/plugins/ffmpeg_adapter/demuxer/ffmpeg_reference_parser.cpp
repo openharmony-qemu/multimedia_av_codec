@@ -95,7 +95,7 @@ AVStream *FFmpegDemuxerPlugin::GetVideoStream()
         FALSE_RETURN_V_MSG_E(streamIdx >= 0 && streamIdx < static_cast<int32_t>(formatContext_->nb_streams), nullptr,
             "Can not find video stream, streamIdx " PUBLIC_LOG_D32 ", nb_streams " PUBLIC_LOG_U32,
             streamIdx, formatContext_->nb_streams);
-            parserRefIdx_ = streamIdx;
+        parserRefIdx_ = streamIdx;
     }
     return formatContext_->streams[static_cast<uint32_t>(parserRefIdx_)];
 }
@@ -199,6 +199,7 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
     FALSE_RETURN_V_MSG_E(InitIoContext() == Status::OK, Status::ERROR_UNKNOWN, "Init IOContext failed");
     parserRefCtx_ = InitAVFormatContext(&parserRefIoContext_);
     FALSE_RETURN_V_MSG_E(parserRefCtx_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(IsRefParserSupported(), Status::ERROR_UNSUPPORTED_FORMAT, "Unsupported ref parser");
     for (uint32_t trackIndex = 0; trackIndex < parserRefCtx_->nb_streams; trackIndex++) {
         AVStream *stream = parserRefCtx_->streams[trackIndex];
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_UNKNOWN,
