@@ -857,7 +857,7 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
 
     if (ioContext->isLimit) {
         if (bufSize > ioContext->sizeLimit - ioContext->readSizeCnt) {
-            MEDIA_LOG_E("Read limit cur: " PUBLIC_LOG_D32 ", limit: " PUBLIC_LOG_U64 ", read: " PUBLIC_LOG_D32,
+            MEDIA_LOG_E("Read limit cur: " PUBLIC_LOG_D32 ", limit: " PUBLIC_LOG_U32 ", read: " PUBLIC_LOG_D32,
                 ioContext->readSizeCnt, ioContext->sizeLimit, bufSize);
             return ret;
         }
@@ -1234,7 +1234,7 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
                     limitSize :
                     std::max(ioContext_.sizeLimit, limitSize);
                 MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
-                    " limit " PUBLIC_LOG_U32, trackIndex, height, width, ioContext_.sizeLimit);
+                    " limit " PUBLIC_LOG_U32, trackIndex, width, height, limitSize);
             }
         }
     }
