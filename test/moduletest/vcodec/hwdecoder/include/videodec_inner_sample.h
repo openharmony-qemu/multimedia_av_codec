@@ -105,6 +105,7 @@ public:
     void StopInloop();
     void StopOutloop();
     void ReleaseInFile();
+    void SetRunning();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
 
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
