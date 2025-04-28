@@ -168,6 +168,8 @@ void VideoSink::PerfRecord(int64_t waitTime)
 void VideoSink::ResetSyncInfo()
 {
     ResetPrerollReported();
+    renderFrameCnt_ = 0;
+    dropFrameContinuouslyCnt_ = 0;
     isFirstFrame_ = true;
     lastBufferRelativePts_ = HST_TIME_NONE;
     lastBufferAnchoredClockTime_ = HST_TIME_NONE;
