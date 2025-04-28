@@ -192,20 +192,24 @@ Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta> &meta)
         MEDIA_LOG_W("samplingRate has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
             options_.streamInfo.samplingRate, params.samplingRate);
     }
+    FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_NULL_POINTER, "meta is null, set audio sample rate");
     FALSE_LOG(meta->Set<Tag::AUDIO_SAMPLE_RATE>(params.samplingRate));
 
     if (params.audioChannel != options_.streamInfo.channels) {
         MEDIA_LOG_W("audioChannel has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
             options_.streamInfo.channels, params.audioChannel);
     }
+    FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_NULL_POINTER, "meta is null, set audio channel");
     FALSE_LOG(meta->Set<Tag::AUDIO_CHANNEL_COUNT>(params.audioChannel));
 
     if (params.audioSampleFormat != options_.streamInfo.format) {
         MEDIA_LOG_W("audioSampleFormat has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
             options_.streamInfo.format, params.audioSampleFormat);
     }
+    FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_NULL_POINTER, "meta is null, set audio sample format");
     FALSE_LOG(meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(static_cast<Plugins::AudioSampleFormat>(params.audioSampleFormat)));
 
+    FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_NULL_POINTER, "meta is null, set audio bitrate");
     meta->Set<Tag::MEDIA_BITRATE>(bitRate_);
     return Status::OK;
 }
