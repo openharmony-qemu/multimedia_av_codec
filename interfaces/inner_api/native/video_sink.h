@@ -55,6 +55,7 @@ private:
     void RenderAtTimeLog(int64_t waitTime);
     void PerfRecord(int64_t waitTime);
     void ReportPts(int64_t nowPts);
+    void InitWaitPeriod();
 
     class VideoLagDetector : public LagDetector {
     public:
@@ -80,6 +81,8 @@ private:
     int64_t lastBufferRelativePts_ {HST_TIME_NONE};
     int64_t lastBufferAnchoredClockTime_ {HST_TIME_NONE};
     int64_t deltaTimeAccu_ {0};
+
+    int64_t initialVideoWaitPeriod_ {0};
 
     std::shared_ptr<OHOS::Media::Task> frameRateTask_ {nullptr};
     std::atomic<uint64_t> renderFrameCnt_ {0};

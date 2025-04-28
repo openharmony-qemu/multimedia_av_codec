@@ -47,7 +47,9 @@ constexpr int64_t WAIT_TIME_US_THRESHOLD = 1500000; // max sleep time 1.5s
 
 constexpr int64_t SINK_TIME_US_THRESHOLD = 100000; // max sink time 100ms
 
-constexpr int64_t PER_SINK_TIME_THRESHOLD = 33000; // max per sink time 33ms
+constexpr int64_t PER_SINK_TIME_THRESHOLD_MAX = 33000; // max per sink time 33ms(30Hz)
+
+constexpr int64_t PER_SINK_TIME_THRESHOLD_MIN = 8333; // min per sink time 8.33ms(120Hz)
 
 // Video Sync Start Frame
 constexpr int VIDEO_SINK_START_FRAME = 4;
@@ -57,6 +59,8 @@ constexpr int64_t WAIT_TIME_US_THRESHOLD_WARNING = 40000; // warning threshold 4
 constexpr int64_t WAIT_TIME_US_THRESHOLD_RENDER = 70000; // warning threshold render 70ms
 
 constexpr int64_t DELTA_TIME_THRESHOLD = 5000; // max delta time 5ms
+
+constexpr int64_t US_PER_SECOND = 1000000; // 1000 * 1000 us per second
 
 VideoSink::VideoSink()
 {
@@ -213,8 +217,8 @@ int64_t VideoSink::CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& 
     //  based on the PTS, considering the playback rate
     auto videoDiff = (currentClockTime - lastClockTime_)
         - static_cast<int64_t>((buffer->pts_ - lastPts_) / AdjustPlaybackRate(playbackRate));
-    // render time per frame reduced by PER_SINK_TIME_THRESHOLD
-    auto thresholdAdjustedVideoDiff = videoDiff - PER_SINK_TIME_THRESHOLD;
+    // render time per frame reduced by initialVideoWaitPeriod_
+    auto thresholdAdjustedVideoDiff = videoDiff - initialVideoWaitPeriod_;
 
     auto diff = anchorDiff;
     if (discardFrameCnt_ + renderFrameCnt_ < VIDEO_SINK_START_FRAME) {
@@ -230,6 +234,7 @@ int64_t VideoSink::CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& 
 
 int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
+    InitWaitPeriod();
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN_V(buffer != nullptr, true);
     FALSE_RETURN_V(syncCenter != nullptr, true);
@@ -290,6 +295,23 @@ void VideoSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
     MEDIA_LOG_D_SHORT("VideoSink::SetSyncCenter");
     syncCenter_ = syncCenter;
     MediaSynchronousSink::Init();
+}
+
+void VideoSink::InitWaitPeriod()
+{
+    FALSE_RETURN_NOLOG(initialVideoWaitPeriod_ <= 0);
+    initialVideoWaitPeriod_ = PER_SINK_TIME_THRESHOLD_MAX;
+    auto syncCenter = syncCenter_.lock();
+    FALSE_RETURN_NOLOG(syncCenter != nullptr);
+    double initialVideoFrameRate = syncCenter->GetInitialVideoFrameRate();
+    MEDIA_LOG_I("VideoSink initialFrameRate is " PUBLIC_LOG_D64, static_cast<int64_t>(initialVideoFrameRate));
+    FALSE_RETURN_NOLOG(initialVideoFrameRate > 1e-9); // frameRate > 0
+    initialVideoWaitPeriod_ = static_cast<int64_t>(US_PER_SECOND
+                                                   / (2 * initialVideoFrameRate)); // max delay 2 times frame interval
+    MEDIA_LOG_I("VideoSink intial initialVideoWaitPerild_ is >> " PUBLIC_LOG_D64, initialVideoWaitPeriod_);
+    initialVideoWaitPeriod_ = std::min(initialVideoWaitPeriod_, PER_SINK_TIME_THRESHOLD_MAX);
+    initialVideoWaitPeriod_ = std::max(initialVideoWaitPeriod_, PER_SINK_TIME_THRESHOLD_MIN);
+    MEDIA_LOG_I("VideoSink final initialVideoWaitPerild_ is << " PUBLIC_LOG_D64, initialVideoWaitPeriod_);
 }
 
 void VideoSink::SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver)
