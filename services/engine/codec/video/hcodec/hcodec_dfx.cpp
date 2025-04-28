@@ -140,6 +140,38 @@ void HCodec::ReduceOwner(bool isInput, BufferOwner owner)
     CountTrace(HITRACE_TAG_ZMEDIA, ownerStr[owner], arr[owner]);
 }
 
+void HCodec::PrintInputStatistic(BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now)
+{
+    lastInPts_ = info.omxBuffer->pts;
+    if (inTotalCnt_ == 0) {
+        firstInTime_ = now;
+    }
+    inTotalCnt_++;
+    if (inTotalCnt_ % PRINT_PER_FRAME == 0) {
+        PrintStatistic(info.isInput, now);
+        firstInTime_ = now;
+        inputHoldTimeRecord_.fill({0, 0});
+        inputWaitFenceCostUs_ = 0;
+        inputDiscardCnt_ = 0;
+    }
+}
+ 
+void HCodec::PrintOutputStatistic(BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now)
+{
+    lastOutPts_ = info.omxBuffer->pts;
+    if (outRecord_.totalCnt == 0) {
+        firstOutTime_ = now;
+    }
+    outRecord_.totalCnt++;
+    if (outRecord_.totalCnt % PRINT_PER_FRAME == 0) {
+        PrintStatistic(info.isInput, now);
+        firstOutTime_ = now;
+        outputHoldTimeRecord_.fill({0, 0});
+        outputWaitFenceCostUs_ = 0;
+        outputDiscardCnt_ = 0;
+    }
+}
+
 void HCodec::PrintStatistic(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now)
 {
     int64_t fromFirstToNow = chrono::duration_cast<chrono::microseconds>(
@@ -204,32 +236,10 @@ void HCodec::ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner)
     info.owner = newOwner;
 
     if (info.isInput && oldOwner == OWNED_BY_US && newOwner == OWNED_BY_OMX) {
-        lastInPts_ = info.omxBuffer->pts;
-        if (inTotalCnt_ == 0) {
-            firstInTime_ = now;
-        }
-        inTotalCnt_++;
-        if (inTotalCnt_ % PRINT_PER_FRAME == 0) {
-            PrintStatistic(info.isInput, now);
-            firstInTime_ = now;
-            inputHoldTimeRecord_.fill({0, 0});
-            inputWaitFenceCostUs_ = 0;
-            inputDiscardCnt_ = 0;
-        }
+        PrintInputStatistic(info, now);
     }
     if (!info.isInput && oldOwner == OWNED_BY_US && newOwner == OWNED_BY_USER) {
-        lastOutPts_ = info.omxBuffer->pts;
-        if (outRecord_.totalCnt == 0) {
-            firstOutTime_ = now;
-        }
-        outRecord_.totalCnt++;
-        if (outRecord_.totalCnt % PRINT_PER_FRAME == 0) {
-            PrintStatistic(info.isInput, now);
-            firstOutTime_ = now;
-            outputHoldTimeRecord_.fill({0, 0});
-            outputWaitFenceCostUs_ = 0;
-            outputDiscardCnt_ = 0;
-        }
+        PrintOutputStatistic(info, now);
     }
 }
 

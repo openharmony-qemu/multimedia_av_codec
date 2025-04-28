@@ -44,6 +44,14 @@ private:
         int32_t repeatTimes = 0;    // may change
     };
 
+    struct WaterMarkInfo {
+        bool enableWaterMark = false;
+        int32_t x = 0;
+        int32_t y = 0;
+        int32_t w = 0;
+        int32_t h = 0;
+    };
+
 private:
     // configure
     int32_t OnConfigure(const Format &format) override;
@@ -60,6 +68,7 @@ private:
     static std::optional<uint32_t> GetSQRFactorFromUser(const Format &format);
     static std::optional<uint32_t> GetSQRMaxBitrateFromUser(const Format &format);
     static std::optional<uint32_t> GetCRFtagetQpFromUser(const Format &format);
+    static int32_t GetWaterMarkInfo(std::shared_ptr<AVBuffer> buffer, WaterMarkInfo &info);
     int32_t SetupAVCEncoderParameters(const Format &format, std::optional<double> frameRate);
     void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, int32_t iFrameInterval, double frameRate);
     int32_t SetupHEVCEncoderParameters(const Format &format, std::optional<double> frameRate);

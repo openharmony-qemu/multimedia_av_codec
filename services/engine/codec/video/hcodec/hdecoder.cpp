@@ -1212,6 +1212,22 @@ void HDecoder::ConsumeFreeList(BufferOperationMode mode)
     }
 }
 
+void HDecoder::ClassifyOutputBufferOwners(vector<size_t>& ownedByUs,
+                                          map<int64_t, size_t>& ownedBySurfaceFlushTime2BufferIndex)
+{
+    for (size_t i = 0; i < outputBufferPool_.size(); i++) {
+        BufferInfo& info = outputBufferPool_[i];
+        if (info.surfaceBuffer == nullptr) {
+            continue;
+        }
+        if (info.owner == OWNED_BY_SURFACE) {
+            ownedBySurfaceFlushTime2BufferIndex[info.lastFlushTime] = i;
+        } else if (info.owner == OWNED_BY_US) {
+            ownedByUs.push_back(i);
+        }
+    }
+}
+
 void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     const MsgInfo &msg, BufferOperationMode mode)
 {
@@ -1241,17 +1257,7 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     ConsumeFreeList(mode);
     map<int64_t, size_t> ownedBySurfaceFlushTime2BufferIndex;
     vector<size_t> ownedByUs;
-    for (size_t i = 0; i < outputBufferPool_.size(); i++) {
-        BufferInfo& info = outputBufferPool_[i];
-        if (info.surfaceBuffer == nullptr) {
-            continue;
-        }
-        if (info.owner == OWNED_BY_SURFACE) {
-            ownedBySurfaceFlushTime2BufferIndex[info.lastFlushTime] = i;
-        } else if (info.owner == OWNED_BY_US) {
-            ownedByUs.push_back(i);
-        }
-    }
+    ClassifyOutputBufferOwners(ownedByUs, ownedBySurfaceFlushTime2BufferIndex);
 
     SurfaceItem oldSurface = currSurface_;
     currSurface_ = SurfaceItem(newSurface);
