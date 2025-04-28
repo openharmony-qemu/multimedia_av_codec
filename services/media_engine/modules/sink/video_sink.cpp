@@ -301,18 +301,17 @@ void VideoSink::InitWaitPeriod()
 {
     FALSE_RETURN_NOLOG(initialVideoWaitPeriod_ <= 0);
     initialVideoWaitPeriod_ = PER_SINK_TIME_THRESHOLD_MAX;
-    MEDIA_LOG_D("VideoSink default initialVideoWaitPeriod_ is " PUBLIC_LOG_D64, initialVideoWaitPeriod_);
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN_NOLOG(syncCenter != nullptr);
     double initialVideoFrameRate = syncCenter->GetInitialVideoFrameRate();
-    MEDIA_LOG_D("VideoSink initialFrameRate is " PUBLIC_LOG_D64, static_cast<int64_t>(initialVideoFrameRate));
+    MEDIA_LOG_I("VideoSink initialFrameRate is " PUBLIC_LOG_D64, static_cast<int64_t>(initialVideoFrameRate));
     FALSE_RETURN_NOLOG(initialVideoFrameRate > 1e-9); // frameRate > 0
     initialVideoWaitPeriod_ = static_cast<int64_t>(US_PER_SECOND
                                                    / (2 * initialVideoFrameRate)); // max delay 2 times frame interval
-    MEDIA_LOG_D("VideoSink intial initialVideoWaitPerild_ is " PUBLIC_LOG_D64, initialVideoWaitPeriod_);
+    MEDIA_LOG_I("VideoSink intial initialVideoWaitPerild_ is >> " PUBLIC_LOG_D64, initialVideoWaitPeriod_);
     initialVideoWaitPeriod_ = std::min(initialVideoWaitPeriod_, PER_SINK_TIME_THRESHOLD_MAX);
     initialVideoWaitPeriod_ = std::max(initialVideoWaitPeriod_, PER_SINK_TIME_THRESHOLD_MIN);
-    MEDIA_LOG_D("VideoSink final initialVideoWaitPerild_ is " PUBLIC_LOG_D64, initialVideoWaitPeriod_);
+    MEDIA_LOG_I("VideoSink final initialVideoWaitPerild_ is << " PUBLIC_LOG_D64, initialVideoWaitPeriod_);
 }
 
 void VideoSink::SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver)
