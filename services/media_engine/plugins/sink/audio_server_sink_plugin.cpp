@@ -1193,6 +1193,7 @@ void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::OnWriteData(size_t l
 Status AudioServerSinkPlugin::MuteAudioBuffer(uint8_t *addr, size_t offset, size_t length)
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audioRender_ is nullptr");
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::MuteAudioBuffer");
     int32_t ret = audioRenderer_->MuteAudioBuffer(addr, offset, length, rendererOptions_.streamInfo.format);
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "MuteAudioBuffer failed, ret=" PUBLIC_LOG_D32, ret);

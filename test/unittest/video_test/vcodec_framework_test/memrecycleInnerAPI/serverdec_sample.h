@@ -1,0 +1,156 @@
+/*
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef SERVICEDEC_SAMPLE_H
+#define SERVICEDEC_SAMPLE_H
+
+#include <iostream>
+#include <cstdio>
+#include <unistd.h>
+#include <atomic>
+#include <fstream>
+#include <thread>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include "securec.h"
+#include "avcodec_video_decoder.h"
+#include "nocopyable.h"
+#include "buffer/avbuffer.h"
+#include "meta/format.h"
+#include "avcodec_errors.h"
+#include "media_description.h"
+#include "av_common.h"
+#include "avcodec_common.h"
+#include "surface/window.h"
+#include "hevc_decoder.h"
+#include "fcodec.h"
+#include "codecbase.h"
+
+namespace OHOS {
+namespace MediaAVCodec {
+class VDecInnerSignal {
+public:
+    std::mutex inMutex_;
+    std::mutex outMutex_;
+    std::condition_variable inCond_;
+    std::condition_variable outCond_;
+    std::queue<uint32_t> inIdxQueue_;
+    std::queue<uint32_t> outIdxQueue_;
+    std::queue<std::shared_ptr<AVBuffer>> inBufferQueue_;
+    std::queue<std::shared_ptr<AVBuffer>> outBufferQueue_;
+};
+
+class VDecInnerCallback : public MediaCodecCallback, public NoCopyable {
+public:
+    explicit VDecInnerCallback(std::shared_ptr<VDecInnerSignal> signal);
+    ~VDecInnerCallback() = default;
+
+    void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
+    void OnOutputFormatChanged(const Format& format) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+
+private:
+    std::shared_ptr<VDecInnerSignal> innersignal_;
+};
+
+class VDecNdkInnerSample : public NoCopyable {
+public:
+    VDecNdkInnerSample() = default;
+    ~VDecNdkInnerSample();
+
+    int64_t GetSystemTimeUs();
+    int32_t CreateByMime(const std::string &mime);
+    int32_t CreateByName(const std::string &name);
+    int32_t Configure();
+    int32_t Prepare();
+    int32_t Start();
+    int32_t Stop();
+    int32_t Flush();
+    int32_t Reset();
+    int32_t Release();
+    int32_t QueueInputBuffer(uint32_t index);
+    int32_t GetOutputFormat(Format &format);
+    int32_t ReleaseOutputBuffer(uint32_t index);
+    int32_t SetParameter(const Format &format);
+    int32_t SetCallback();
+
+    int32_t StartVideoDecoder();
+    int32_t StartErrorVideoDecoder();
+    int32_t RunHEVCVideoDecoder(const std::string &codeName);  // 后续重命名为HEVC
+    int32_t RunHEVCErrorVideoDecoder(const std::string &codeName);
+    int32_t RunFcodecVideoDecoder(const std::string &codeName);
+    int32_t RunFcodecErrorVideoDecoder(const std::string &codeName);
+    int32_t PushData(std::shared_ptr<AVBuffer> buffer, uint32_t index);
+    int32_t SendData(uint32_t bufferSize, uint32_t index, std::shared_ptr<AVBuffer> buffer);
+    int32_t StateEOS();
+    void RepeatStartBeforeEOS();
+    void SetEOS(uint32_t index, std::shared_ptr<AVBuffer> buffer);
+    void WaitForEOS();
+    void OpenFileFail();
+    void InputFunc();
+    void InputErrorFunc();
+    void OutputFunc();
+    void ProcessOutputData(std::shared_ptr<AVBuffer> buffer, uint32_t index);
+    void FlushBuffer();
+    void StopInloop();
+    void StopOutloop();
+    void ReleaseInFile();
+    void CreateSurface();
+    bool MdCompare(unsigned char *buffer, int len, const char *source[]);
+
+    const char *inputDir = "/data/test/media/720_1280_25_avcc.h265";
+    const char *outputDir = "/data/test/media/VDecTest.yuv";
+    sptr<Surface> cs[2] = {};
+    sptr<Surface> ps[2] = {};
+    NativeWindow *nativeWindow[2] = {};
+    uint32_t defaultWidth = 1920;
+    uint32_t defaultHeight = 1080;
+    uint32_t defaultBitrate = 10000000;
+    double defaultFrameRate = 30.0;
+    uint32_t repeatStartStopBeforeEos = 0;
+    uint32_t repeatStartFlushBeforeEos = 0;
+    bool sfOutput = false;
+    bool beforeEosInput = false;
+    bool beforeEosInputInput = false;
+    bool afterEosDestoryCodec = true;
+
+    uint32_t errCount = 0;
+    uint32_t outCount = 0;
+    uint32_t frameCount = 0;
+    bool sleepOnFPS = false;
+    bool repeatRun = false;
+    bool enableRandomEos = false;
+    const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",
+                                        "32", "C3", "FE", "58", "FC", "BC", "51", "FD", "70", "C7", "D4", "E7", "4D",
+                                        "5C", "76", "E7", "71", "8A", "B3", "C0", "51", "84", "0A", "FA", "AF", "FA",
+                                        "DC", "7B", "C5", "26", "D1", "9A", "CA", "00", "DE", "FC", "C8", "4E", "34",
+                                        "C5", "9A", "43", "59", "85", "DC", "AC", "97", "A3", "FB", "23", "51"};
+
+private:
+    std::atomic<bool> isRunning_ { false };
+    std::unique_ptr<std::ifstream> inFile_;
+    std::unique_ptr<std::thread> inputLoop_;
+    std::unique_ptr<std::thread> outputLoop_;
+    std::shared_ptr<CodecBase> vdec_;
+    std::shared_ptr<VDecInnerSignal> signal_;
+    std::shared_ptr<VDecInnerCallback> cb_;
+};
+} // namespace MediaAVCodec
+} // namespace OHOS
+
+#endif // SERVICEDEC_SAMPLE_H

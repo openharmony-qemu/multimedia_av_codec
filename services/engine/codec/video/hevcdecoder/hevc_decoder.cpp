@@ -56,7 +56,6 @@ constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 1920;
 constexpr int32_t DEFAULT_VIDEO_WIDTH = 1920;
 constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
-constexpr uint32_t DEFAULT_TRY_REQ_TIME = 10;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
@@ -71,6 +70,8 @@ constexpr struct {
     {AVCodecCodecName::VIDEO_DECODER_HEVC_NAME, CodecMimeType::VIDEO_HEVC},
 };
 constexpr uint32_t SUPPORT_HEVC_DECODER_NUM = sizeof(SUPPORT_HEVC_DECODER) / sizeof(SUPPORT_HEVC_DECODER[0]);
+static std::map<uint64_t, int32_t> g_surfaceCntMap;
+static std::mutex g_surfaceMapMutex;
 } // namespace
 using namespace OHOS::Media;
 HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(State::UNINITIALIZED)
@@ -366,7 +367,7 @@ void HevcDecoder::InitBuffers()
     }
     if (buffers_[INDEX_INPUT].size() > 0) {
         for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
-            buffers_[INDEX_INPUT][i]->owner_ = HBuffer::Owner::OWNED_BY_USER;
+            buffers_[INDEX_INPUT][i]->owner_ = Owner::OWNED_BY_USER;
             callback_->OnInputBufferAvailable(i, buffers_[INDEX_INPUT][i]->avBuffer);
             AVCODEC_LOGI("OnInputBufferAvailable frame index = %{public}d, owner = %{public}d", i,
                          buffers_[INDEX_INPUT][i]->owner_.load());
@@ -375,24 +376,24 @@ void HevcDecoder::InitBuffers()
     if (buffers_[INDEX_OUTPUT].size() <= 0) {
         return;
     }
+    InitHevcParams();
     if (sInfo_.surface == nullptr) {
         for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
-            buffers_[INDEX_OUTPUT][i]->owner_ = HBuffer::Owner::OWNED_BY_CODEC;
+            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
             codecAvailQue_->Push(i);
         }
-    } else {
-        for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
-            std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][i]->sMemory;
-            if (surfaceMemory->GetSurfaceBuffer() == nullptr) {
-                buffers_[INDEX_OUTPUT][i]->owner_ = HBuffer::Owner::OWNED_BY_SURFACE;
-                renderAvailQue_->Push(i);
-            } else {
-                buffers_[INDEX_OUTPUT][i]->owner_ = HBuffer::Owner::OWNED_BY_CODEC;
-                codecAvailQue_->Push(i);
-            }
+        return;
+    }
+    for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
+        std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][i]->sMemory;
+        if (surfaceMemory->isAttached && surfaceMemory->owner == Owner::OWNED_BY_SURFACE) {
+            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_SURFACE;
+            renderAvailQue_->Push(i);
+        } else {
+            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
+            codecAvailQue_->Push(i);
         }
     }
-    InitHevcParams();
 }
 
 void HevcDecoder::InitHevcParams()
@@ -506,6 +507,10 @@ int32_t HevcDecoder::Flush()
     }
 
     ResetBuffers();
+    int32_t ret = 0;
+    while (ret == 0 && hevcDecoderFlushFrameFunc_ != nullptr) {
+        ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
+    }
     state_ = State::FLUSHED;
     AVCODEC_LOGI("Flush codec successful, state: Flushed");
     return AVCS_ERR_OK;
@@ -692,7 +697,7 @@ int32_t HevcDecoder::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize
     return AVCS_ERR_OK;
 }
 
-int32_t HevcDecoder::SetSurfaceCfg(int32_t bufferCnt)
+int32_t HevcDecoder::SetSurfaceCfg()
 {
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
@@ -706,12 +711,13 @@ int32_t HevcDecoder::SetSurfaceCfg(int32_t bufferCnt)
     sInfo_.requestConfig.height = height_;
     sInfo_.requestConfig.format = surfacePixelFmt;
     if (sInfo_.surface != nullptr) {
-        CHECK_AND_RETURN_RET_LOG(sInfo_.surface->SetQueueSize(bufferCnt) == OHOS::SurfaceError::SURFACE_ERROR_OK,
-                                 AVCS_ERR_NO_MEMORY, "Surface set QueueSize=%{public}d failed", bufferCnt);
-
-        format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32);
+        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
+                                     val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
+                                 AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
         sInfo_.scalingMode = static_cast<ScalingMode>(val32);
-        format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32);
+        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
+                                     val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
+                                 AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
         sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
     }
     return AVCS_ERR_OK;
@@ -732,13 +738,10 @@ void HevcDecoder::RequestSurfaceBufferThread()
         auto index = requestSurfaceBufferQue_->Front();
         requestSurfaceBufferQue_->Pop();
         std::shared_ptr<HBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
-        if (outputBuffer->sMemory == nullptr) {
-            outputBuffer->sMemory = std::make_shared<FSurfaceMemory>(&sInfo_);
-        }
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
         sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         if (surfaceBuffer == nullptr) {
-            AVCODEC_LOGE("GetSurfaceBuffer failed.");
+            AVCODEC_LOGE("Get surface buffer failed, index=%{public}u", index);
         }
         requestBufferFinished_ = true;
         requestBufferOnceDoneCV_.notify_one();
@@ -781,15 +784,6 @@ bool HevcDecoder::RequestSurfaceBufferOnce(uint32_t index)
             AVCODEC_LOGE("output surface memory %{public}u allocate fail", index);
             return false;
         }
-        if (outputBuffer->avBuffer == nullptr) {
-            outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
-            outputBuffer->avBuffer = AVBuffer::CreateAVBuffer(outputBuffer->sMemory->GetBase(),
-                                                              outputBuffer->sMemory->GetSize());
-            AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}u, size=%{public}d, "
-                         "stride=%{public}d", index, outputBuffer->sMemory->GetSize(),
-                         outputBuffer->sMemory->GetSurfaceBufferStride());
-            return outputBuffer->avBuffer != nullptr;
-        }
         return true;
     }
     return false;
@@ -797,38 +791,23 @@ bool HevcDecoder::RequestSurfaceBufferOnce(uint32_t index)
 
 int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
 {
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface == nullptr, AVCS_ERR_UNKNOWN, "Not in buffer mode!");
+    int32_t ret = SetSurfaceCfg();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface cfg failed!");
     int32_t valBufferCnt = 0;
-    CHECK_AND_RETURN_RET_LOG(SetSurfaceCfg(bufferCnt) == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "SetSurfaceCfg failed");
-
-    if (sInfo_.surface != nullptr) {
-        sInfo_.surface->CleanCache();
-        requestSurfaceBufferQue_->Clear();
-        requestSurfaceBufferQue_->SetActive(true);
-        StartRequestSurfaceBufferThread();
-    }
     for (int i = 0; i < bufferCnt; i++) {
         std::shared_ptr<HBuffer> buf = std::make_shared<HBuffer>();
         buf->width = width_;
         buf->height = height_;
-        if (sInfo_.surface == nullptr) {
-            std::shared_ptr<AVAllocator> allocator =
-                AVAllocatorFactory::CreateSurfaceAllocator(sInfo_.requestConfig);
-            CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
-            buf->avBuffer = AVBuffer::CreateAVBuffer(allocator, 0);
-            if (buf->avBuffer != nullptr) {
-                AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d", i,
-                             buf->avBuffer->memory_->GetCapacity());
-            }
-            CHECK_AND_CONTINUE_LOG(buf->avBuffer != nullptr, "Allocate output buffer failed, index=%{public}d", i);
-            buffers_[INDEX_OUTPUT].emplace_back(buf);
-        } else {
-            buffers_[INDEX_OUTPUT].emplace_back(buf);
-            if (!RequestSurfaceBufferOnce(valBufferCnt)) {
-                AVCODEC_LOGE("output surface memory %{public}d create fail", i);
-                buffers_[INDEX_OUTPUT].pop_back();
-                continue;
-            }
+        std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSurfaceAllocator(sInfo_.requestConfig);
+        CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
+        buf->avBuffer = AVBuffer::CreateAVBuffer(allocator, 0);
+        if (buf->avBuffer != nullptr) {
+            AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d", i,
+                         buf->avBuffer->memory_->GetCapacity());
         }
+        CHECK_AND_CONTINUE_LOG(buf->avBuffer != nullptr, "Allocate output buffer failed, index=%{public}d", i);
+        buffers_[INDEX_OUTPUT].emplace_back(buf);
         valBufferCnt++;
     }
     if (valBufferCnt < DEFAULT_MIN_BUFFER_CNT) {
@@ -837,6 +816,56 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
         buffers_[INDEX_OUTPUT].clear();
         return AVCS_ERR_NO_MEMORY;
     }
+    return AVCS_ERR_OK;
+}
+
+int32_t HevcDecoder::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, int32_t bufferCnt)
+{
+    surface->Connect();
+    surface->CleanCache(); // clean cache will work only if the surface is connected by us.
+    int32_t ret = SetQueueSize(surface, bufferCnt);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface queue size failed!");
+    ret = SetSurfaceCfg();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface cfg failed!");
+    CHECK_AND_RETURN_RET_LOGD(buffers_[INDEX_OUTPUT].size() > 0u, AVCS_ERR_OK, "Set surface cfg & queue size success.");
+    int32_t valBufferCnt = 0;
+    for (auto &it : buffers_[INDEX_OUTPUT]) {
+        std::shared_ptr<FSurfaceMemory> surfaceMemory = it->sMemory;
+        surfaceMemory->isAttached = false;
+        valBufferCnt++;
+    }
+    CHECK_AND_RETURN_RET_LOG(valBufferCnt == bufferCnt, AVCS_ERR_UNKNOWN, "Outbuf cnt(%{public}d) != %{public}d",
+                             valBufferCnt, bufferCnt);
+    return AVCS_ERR_OK;
+}
+
+int32_t HevcDecoder::AllocateOutputBuffersFromSurface(int32_t bufferCnt)
+{
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Not in surface mode!");
+    int32_t ret = ClearSurfaceAndSetQueueSize(sInfo_.surface, bufferCnt);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Clean surface and set queue size failed!");
+    requestSurfaceBufferQue_->Clear();
+    requestSurfaceBufferQue_->SetActive(true);
+    StartRequestSurfaceBufferThread();
+    for (int32_t i = 0; i < bufferCnt; i++) {
+        std::shared_ptr<FSurfaceMemory> surfaceMemory = std::make_shared<FSurfaceMemory>(&sInfo_);
+        CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Creata surface memory failed!");
+        ret = surfaceMemory->AllocSurfaceBuffer();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Alloc surface buffer failed!");
+        std::shared_ptr<HBuffer> buf = std::make_shared<HBuffer>();
+        CHECK_AND_RETURN_RET_LOG(buf != nullptr, AVCS_ERR_UNKNOWN, "Creata output buffer failed!");
+        buf->sMemory = surfaceMemory;
+        buf->height = height_;
+        buf->width = width_;
+        outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
+        buf->avBuffer = AVBuffer::CreateAVBuffer(buf->sMemory->GetBase(), buf->sMemory->GetSize());
+        AVCODEC_LOGI("Allocate output surface buffer success, index=%{public}d, size=%{public}d, stride=%{public}d", i,
+                     buf->sMemory->GetSize(), buf->sMemory->GetSurfaceBufferStride());
+        buffers_[INDEX_OUTPUT].emplace_back(buf);
+    }
+    int32_t outputBufferNum = static_cast<int32_t>(buffers_[INDEX_OUTPUT].size());
+    CHECK_AND_RETURN_RET_LOG(outputBufferNum == bufferCnt, AVCS_ERR_UNKNOWN,
+                             "Only alloc %{public}d buffers, less %{public}d", outputBufferNum, bufferCnt);
     return AVCS_ERR_OK;
 }
 
@@ -849,19 +878,18 @@ int32_t HevcDecoder::AllocateBuffers()
     if (sInfo_.surface != nullptr && isOutBufSetted_ == false) {
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, DEFAULT_OUT_SURFACE_CNT);
     }
-    int32_t inputBufferCnt = 0;
-    int32_t outputBufferCnt = 0;
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, inputBufferCnt);
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt);
-    inputAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("inputAvailQue", inputBufferCnt);
-    codecAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("codecAvailQue", outputBufferCnt);
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, inputBufferCnt_);
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt_);
+    inputAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("inputAvailQue", inputBufferCnt_);
+    codecAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("codecAvailQue", outputBufferCnt_);
     if (sInfo_.surface != nullptr) {
-        renderAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("renderAvailQue", outputBufferCnt);
-        requestSurfaceBufferQue_ = std::make_shared<BlockQueue<uint32_t>>("requestSurfaceBufferQue", outputBufferCnt);
+        renderAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("renderAvailQue", outputBufferCnt_);
+        requestSurfaceBufferQue_ = std::make_shared<BlockQueue<uint32_t>>("requestSurfaceBufferQue", outputBufferCnt_);
     }
-    CHECK_AND_RETURN_RET_LOG(AllocateInputBuffer(inputBufferCnt, inputBufferSize_) == AVCS_ERR_OK &&
-                             AllocateOutputBuffer(outputBufferCnt) == AVCS_ERR_OK,
-                             AVCS_ERR_UNKNOWN, "Allocate buffers failed!");
+    int32_t ret = AllocateInputBuffer(inputBufferCnt_, inputBufferSize_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Allocate input buffers failed!");
+    ret = sInfo_.surface ? AllocateOutputBuffersFromSurface(outputBufferCnt_) : AllocateOutputBuffer(outputBufferCnt_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Allocate output buffers failed!");
     return AVCS_ERR_OK;
 }
 
@@ -879,7 +907,7 @@ int32_t HevcDecoder::UpdateOutputBuffer(uint32_t index)
         AVCODEC_LOGI("update output buffer success: index=%{public}d, size=%{public}d", index,
                      outputBuffer->avBuffer->memory_->GetCapacity());
 
-        outputBuffer->owner_ = HBuffer::Owner::OWNED_BY_CODEC;
+        outputBuffer->owner_ = Owner::OWNED_BY_CODEC;
         outputBuffer->width = width_;
         outputBuffer->height = height_;
         outputBuffer->bitDepth = bitDepth_;
@@ -895,26 +923,30 @@ int32_t HevcDecoder::UpdateSurfaceMemory(uint32_t index)
     oLock.unlock();
     if (width_ != outputBuffer->width || height_ != outputBuffer->height || bitDepth_ != outputBuffer->bitDepth) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
-        while (state_ == State::RUNNING) {
-            std::unique_lock<std::mutex> sLock(surfaceMutex_);
-            if (surfaceMemory->GetBase() != nullptr) {
-                surfaceMemory->SetNeedRender(false);
-                surfaceMemory->ReleaseSurfaceBuffer();
-            }
-            RequestSurfaceBufferOnce(index);
-            sLock.unlock();
-            if (surfaceMemory->GetBase() != nullptr) {
-                break;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_REQ_TIME));
+        CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Surface memory is nullptr!");
+        AVCODEC_LOGI("Update surface memory, width=%{public}d, height=%{public}d", width_, height_);
+        std::lock_guard<std::mutex> sLock(surfaceMutex_);
+        if (surfaceMemory->isAttached) {
+            sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+            CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get surface buffer failed!");
+            int32_t ret = Detach(surfaceBuffer);
+            CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Surface buffer detach failed!");
+            surfaceMemory->isAttached = false;
         }
+        surfaceMemory->ReleaseSurfaceBuffer();
+        int32_t ret = surfaceMemory->AllocSurfaceBuffer();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Alloc surface buffer failed!");
+        sptr<SurfaceBuffer> newSurfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+        CHECK_AND_RETURN_RET_LOG(newSurfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Alloc surface buffer failed!");
+        ret = Attach(newSurfaceBuffer);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Surface buffer attach failed!");
+        surfaceMemory->isAttached = true;
         outputBuffer->avBuffer =
             AVBuffer::CreateAVBuffer(outputBuffer->sMemory->GetBase(), outputBuffer->sMemory->GetSize());
         outputBuffer->width = width_;
         outputBuffer->height = height_;
         outputBuffer->bitDepth = bitDepth_;
     }
-
     return AVCS_ERR_OK;
 }
 
@@ -993,6 +1025,7 @@ void HevcDecoder::ReleaseBuffers()
 
     inputAvailQue_->Clear();
     buffers_[INDEX_INPUT].clear();
+    inputBufferCnt_ = 0;
 
     std::unique_lock<std::mutex> oLock(outputMutex_);
     codecAvailQue_->Clear();
@@ -1003,17 +1036,18 @@ void HevcDecoder::ReleaseBuffers()
         renderSurfaceBufferMap_.clear();
         for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
             std::shared_ptr<HBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
-            if (outputBuffer->owner_ == HBuffer::Owner::OWNED_BY_CODEC) {
+            if (outputBuffer->owner_ == Owner::OWNED_BY_CODEC) {
                 std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
-                surfaceMemory->SetNeedRender(false);
                 surfaceMemory->ReleaseSurfaceBuffer();
-                outputBuffer->owner_ = HBuffer::Owner::OWNED_BY_SURFACE;
+                outputBuffer->owner_ = Owner::OWNED_BY_SURFACE;
             }
         }
         sInfo_.surface->CleanCache();
         AVCODEC_LOGI("surface cleancache success");
     }
     buffers_[INDEX_OUTPUT].clear();
+    outputBufferCnt_ = 0;
+    outAVBuffer4Surface_.clear();
     oLock.unlock();
     isBufferAllocated_ = false;
 }
@@ -1027,10 +1061,10 @@ int32_t HevcDecoder::QueueInputBuffer(uint32_t index)
                              "Queue input buffer failed with bad index, index=%{public}u, buffer_size=%{public}zu",
                              index, buffers_[INDEX_INPUT].size());
     std::shared_ptr<HBuffer> inputBuffer = buffers_[INDEX_INPUT][index];
-    CHECK_AND_RETURN_RET_LOG(inputBuffer->owner_ == HBuffer::Owner::OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
+    CHECK_AND_RETURN_RET_LOG(inputBuffer->owner_ == Owner::OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
                              "Queue input buffer failed: buffer with index=%{public}u is not available", index);
 
-    inputBuffer->owner_ = HBuffer::Owner::OWNED_BY_CODEC;
+    inputBuffer->owner_ = Owner::OWNED_BY_CODEC;
     inputAvailQue_->Push(index);
     return AVCS_ERR_OK;
 }
@@ -1086,7 +1120,7 @@ void HevcDecoder::SendFrame()
     }
 
     inputAvailQue_->Pop();
-    inputBuffer->owner_ = HBuffer::Owner::OWNED_BY_USER;
+    inputBuffer->owner_ = Owner::OWNED_BY_USER;
     callback_->OnInputBufferAvailable(index, inputAVBuffer);
 }
 
@@ -1181,7 +1215,7 @@ void HevcDecoder::FramePostProcess(std::shared_ptr<HBuffer> &frameBuffer, uint32
 {
     if (status == AVCS_ERR_OK) {
         codecAvailQue_->Pop();
-        frameBuffer->owner_ = HBuffer::Owner::OWNED_BY_USER;
+        frameBuffer->owner_ = Owner::OWNED_BY_USER;
         if (sInfo_.surface) {
             outAVBuffer4Surface_[index]->pts_ = frameBuffer->avBuffer->pts_;
             outAVBuffer4Surface_[index]->flag_ = frameBuffer->avBuffer->flag_;
@@ -1321,7 +1355,7 @@ void HevcDecoder::RequestBufferFromConsumer()
         outputBuffer->height = height_;
         FindAvailIndex(curIndex);
     }
-    buffers_[INDEX_OUTPUT][curIndex]->owner_ = HBuffer::Owner::OWNED_BY_CODEC;
+    buffers_[INDEX_OUTPUT][curIndex]->owner_ = Owner::OWNED_BY_CODEC;
     codecAvailQue_->Push(curIndex);
     if (renderSurfaceBufferMap_.count(curIndex)) {
         renderSurfaceBufferMap_.erase(curIndex);
@@ -1344,10 +1378,24 @@ GSError HevcDecoder::BufferReleasedByConsumer(uint64_t surfaceId)
 
 int32_t HevcDecoder::UnRegisterListenerToSurface(const sptr<Surface> &surface)
 {
-    GSError err = surface->UnRegisterReleaseListener();
-    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN,
-                             "surface %{public}" PRIu64 ", UnRegisterReleaseListener failed, GSError=%{public}d",
-                             surface->GetUniqueId(), err);
+    CHECK_AND_RETURN_RET_LOGD(surface != nullptr, AVCS_ERR_OK, "Surface is null, not need to unregister listener.");
+    uint64_t surfaceId = surface->GetUniqueId();
+    std::lock_guard<std::mutex> gLock(g_surfaceMapMutex);
+    if (g_surfaceCntMap.count(surfaceId) > 0) {
+        if (g_surfaceCntMap[surfaceId] > 1) {
+            g_surfaceCntMap[surfaceId] -= 1;
+            AVCODEC_LOGI("Surface(%{public}" PRIu64 ") not need to unregister listener.", surfaceId);
+            return AVCS_ERR_OK;
+        }
+        CHECK_AND_RETURN_RET_LOGD(g_surfaceCntMap[surfaceId] == 1, AVCS_ERR_OK,
+                                  "Surface(%{public}" PRIu64 ") not need to unregister listener.", surfaceId);
+        GSError err = surface->UnRegisterReleaseListener();
+        CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, err,
+                                 "Surface(%{public}" PRIu64 ") UnRegisterReleaseListener failed, GSError=%{public}d",
+                                 surfaceId, err);
+        g_surfaceCntMap.erase(surfaceId);
+        AVCODEC_LOGI("Surface(%{public}" PRIu64 ") UnRegisterReleaseListener success.", surfaceId);
+    }
     return AVCS_ERR_OK;
 }
 
@@ -1366,6 +1414,12 @@ GSError HevcDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
     if (err == GSERROR_OK) {
         StartRequestSurfaceBufferThread();
     }
+    std::lock_guard<std::mutex> gLock(g_surfaceMapMutex);
+    if (g_surfaceCntMap.count(surfaceId) == 0) {
+        g_surfaceCntMap.emplace(surfaceId, 1);
+    } else {
+        g_surfaceCntMap[surfaceId] += 1;
+    }
     return err;
 }
 
@@ -1377,8 +1431,8 @@ int32_t HevcDecoder::ReleaseOutputBuffer(uint32_t index)
                              "Failed to release output buffer: invalid index");
     std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
     oLock.unlock();
-    if (frameBuffer->owner_ == HBuffer::Owner::OWNED_BY_USER) {
-        frameBuffer->owner_ = HBuffer::Owner::OWNED_BY_CODEC;
+    if (frameBuffer->owner_ == Owner::OWNED_BY_USER) {
+        frameBuffer->owner_ = Owner::OWNED_BY_CODEC;
         codecAvailQue_->Push(index);
         return AVCS_ERR_OK;
     } else {
@@ -1387,14 +1441,35 @@ int32_t HevcDecoder::ReleaseOutputBuffer(uint32_t index)
     }
 }
 
+int32_t HevcDecoder::Attach(sptr<SurfaceBuffer> surfaceBuffer)
+{
+    int32_t err = sInfo_.surface->AttachBufferToQueue(surfaceBuffer);
+    CHECK_AND_RETURN_RET_LOG(
+        err == 0, err, "Surface(%{public}" PRIu64 "), attach buffer(%{public}u) to queue failed, GSError=%{public}d",
+        sInfo_.surface->GetUniqueId(), surfaceBuffer->GetSeqNum(), err);
+    return AVCS_ERR_OK;
+}
+
+int32_t HevcDecoder::Detach(sptr<SurfaceBuffer> surfaceBuffer)
+{
+    int32_t err = sInfo_.surface->DetachBufferFromQueue(surfaceBuffer);
+    CHECK_AND_RETURN_RET_LOG(
+        err == 0, err, "Surface(%{public}" PRIu64 "), detach buffer(%{public}u) to queue failed, GSError=%{public}d",
+        sInfo_.surface->GetUniqueId(), surfaceBuffer->GetSeqNum(), err);
+    return AVCS_ERR_OK;
+}
+
 int32_t HevcDecoder::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index)
 {
     sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
-    CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_INVALID_VAL,
-                             "Failed to update surface memory: surface buffer is NULL");
+    CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get surface buffer failed!");
+    if (!surfaceMemory->isAttached) {
+        int32_t ret = Attach(surfaceBuffer);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Surface buffer attach failed!");
+        surfaceMemory->isAttached = true;
+    }
     OHOS::BufferFlushConfig flushConfig = {{0, 0, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight()},
         outAVBuffer4Surface_[index]->pts_, -1};
-    surfaceMemory->SetNeedRender(true);
     surfaceMemory->UpdateSurfaceBufferScaleMode();
     if (outAVBuffer4Surface_[index]->meta_->Find(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP) !=
         outAVBuffer4Surface_[index]->meta_->end()) {
@@ -1403,14 +1478,22 @@ int32_t HevcDecoder::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surface
         outAVBuffer4Surface_[index]->meta_->Remove(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP);
     }
     auto res = sInfo_.surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
+    if (res == GSERROR_BUFFER_NOT_INCACHE) {
+        AVCODEC_LOGW("Surface(%{public}" PRIu64 "), flush buffer(seq=%{public}u) failed, try to recover",
+                     sInfo_.surface->GetUniqueId(), surfaceBuffer->GetSeqNum());
+        int32_t ret = ClearSurfaceAndSetQueueSize(sInfo_.surface, outputBufferCnt_);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Clean surface and set queue size failed!");
+        ret = Attach(surfaceBuffer);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Surface buffer attach failed!");
+        surfaceMemory->isAttached = true;
+        res = sInfo_.surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
+    }
+    surfaceMemory->owner = Owner::OWNED_BY_SURFACE;
     if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
         AVCODEC_LOGW("Failed to update surface memory: %{public}d", res);
-        surfaceMemory->SetNeedRender(false);
-        surfaceMemory->ReleaseSurfaceBuffer();
         return AVCS_ERR_UNKNOWN;
     }
     renderSurfaceBufferMap_[index] = std::make_pair(surfaceBuffer, flushConfig);
-    surfaceMemory->ReleaseSurfaceBuffer();
     return AVCS_ERR_OK;
 }
 
@@ -1418,22 +1501,22 @@ int32_t HevcDecoder::RenderOutputBuffer(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNSUPPORT,
-                             "RenderOutputBuffer fail, surface is nullptr");
+                             "Render output buffer failed, surface is nullptr!");
     std::unique_lock<std::mutex> oLock(outputMutex_);
     CHECK_AND_RETURN_RET_LOG(index < buffers_[INDEX_OUTPUT].size(), AVCS_ERR_INVALID_VAL,
                              "Failed to render output buffer: invalid index");
     std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
     oLock.unlock();
     std::lock_guard<std::mutex> sLock(surfaceMutex_);
-    if (frameBuffer->owner_ == HBuffer::Owner::OWNED_BY_USER) {
+    if (frameBuffer->owner_ == Owner::OWNED_BY_USER) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = frameBuffer->sMemory;
         int32_t ret = FlushSurfaceMemory(surfaceMemory, index);
         if (ret != AVCS_ERR_OK) {
-            AVCODEC_LOGW("Update surface memory failed: %{public}d", static_cast<int32_t>(ret));
+            AVCODEC_LOGW("Flush surface memory(index=%{public}u) failed: %{public}d", index, ret);
         } else {
-            AVCODEC_LOGD("Update surface memory successful");
+            AVCODEC_LOGD("Flush surface memory(index=%{public}u) successful.", index);
         }
-        frameBuffer->owner_ = HBuffer::Owner::OWNED_BY_SURFACE;
+        frameBuffer->owner_ = Owner::OWNED_BY_SURFACE;
         renderAvailQue_->Push(index);
         AVCODEC_LOGD("render output buffer with index, index=%{public}u", index);
         return AVCS_ERR_OK;
@@ -1450,14 +1533,13 @@ int32_t HevcDecoder::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
     sptr<Surface> curSurface = sInfo_.surface;
     uint64_t oldId = curSurface->GetUniqueId();
     uint64_t newId = newSurface->GetUniqueId();
-    AVCODEC_LOGI("surface %{public}" PRIu64 " -> %{public}" PRIu64 "", oldId, newId);
+    AVCODEC_LOGI("Begin to switch surface %{public}" PRIu64 " -> %{public}" PRIu64 ".", oldId, newId);
     if (oldId == newId) {
         return AVCS_ERR_OK;
     }
     GSError err = RegisterListenerToSurface(newSurface);
-    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN,
-                             "surface %{public}" PRIu64 ", RegisterListenerToSurface failed, GSError=%{public}d",
-                             newSurface->GetUniqueId(), err);
+    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, err,
+        "surface %{public}" PRIu64 ", RegisterListenerToSurface failed, GSError=%{public}d", newId, err);
     int32_t outputBufferCnt = 0;
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt);
     int32_t ret = SetQueueSize(newSurface, outputBufferCnt);
@@ -1470,21 +1552,22 @@ int32_t HevcDecoder::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
     if (ret != AVCS_ERR_OK) {
         UnRegisterListenerToSurface(newSurface);
         sInfo_.surface = curSurface;
+        CombineConsumerUsage();
         return ret;
     }
     sLock.unlock();
+    AVCODEC_LOGI("Switch surface %{public}" PRIu64 " -> %{public}" PRIu64 ".", oldId, newId);
     return AVCS_ERR_OK;
 }
 
 int32_t HevcDecoder::SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize)
 {
+    uint64_t surfaceId = surface->GetUniqueId();
     int32_t err = surface->SetQueueSize(targetSize);
-    if (err != 0) {
-        AVCODEC_LOGE("surface %{public}" PRIu64 ", SetQueueSize to %{public}u failed, GSError=%{public}d",
-            surface->GetUniqueId(), targetSize, err);
-        return AVCS_ERR_UNKNOWN;
-    }
-    AVCODEC_LOGI("surface %{public}" PRIu64 ", SetQueueSize to %{public}u succ", surface->GetUniqueId(), targetSize);
+    CHECK_AND_RETURN_RET_LOG(err == 0, err,
+                             "Surface(%{public}" PRIu64 ") set queue size %{public}u failed, GSError=%{public}d",
+                             surfaceId, targetSize, err);
+    AVCODEC_LOGI("Surface(%{public}" PRIu64 ") set queue size %{public}u succss.", surfaceId, targetSize);
     return AVCS_ERR_OK;
 }
 
@@ -1501,15 +1584,13 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
             continue;
         }
         sptr<SurfaceBuffer> surfaceBuffer = nullptr;
-        if (buffers_[INDEX_OUTPUT][index]->owner_ == HBuffer::Owner::OWNED_BY_SURFACE) {
+        if (buffers_[INDEX_OUTPUT][index]->owner_ == Owner::OWNED_BY_SURFACE) {
             if (renderSurfaceBufferMap_.count(index)) {
                 surfaceBuffer = renderSurfaceBufferMap_[index].first;
                 ownedBySurfaceBufferIndex.push_back(index);
             }
         } else {
-            if (surfaceMemory->GetBase() == nullptr) {
-                RequestSurfaceBufferOnce(index);
-            }
+            RequestSurfaceBufferOnce(index);
             surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         }
         if (surfaceBuffer == nullptr) {
@@ -1522,20 +1603,19 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
                 newId, surfaceBuffer->GetSeqNum(), err);
             return AVCS_ERR_UNKNOWN;
         }
+        buffers_[INDEX_OUTPUT][index]->sMemory->isAttached = true;
     }
     int32_t videoRotation = 0;
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, videoRotation);
     newSurface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(videoRotation)));
     sInfo_.surface = newSurface;
-
+    CombineConsumerUsage();
     for (uint32_t index: ownedBySurfaceBufferIndex) {
         int32_t ret = RenderNewSurfaceWithOldBuffer(newSurface, index);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Old surface buffer render failed!");
     }
-
     int32_t ret = UnRegisterListenerToSurface(curSurface);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Unregister old surface listener failed!");
-
     curSurface->CleanCache(true); // make sure old surface is empty and go black
     return AVCS_ERR_OK;
 }
@@ -1545,15 +1625,25 @@ int32_t HevcDecoder::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurfa
     std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory;
     sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index].first;
     OHOS::BufferFlushConfig flushConfig = renderSurfaceBufferMap_[index].second;
-    surfaceMemory->SetNeedRender(true);
     newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), sInfo_.scalingMode);
     auto res = newSurface->FlushBuffer(surfaceBuffer, -1, flushConfig);
     if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
         AVCODEC_LOGE("Failed to update surface memory: %{public}d", res);
-        surfaceMemory->SetNeedRender(false);
         return AVCS_ERR_UNKNOWN;
     }
     return AVCS_ERR_OK;
+}
+
+void HevcDecoder::CombineConsumerUsage()
+{
+    uint64_t defaultUsage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
+    uint64_t consumerUsage = sInfo_.surface->GetDefaultUsage();
+    uint64_t cfgedUsage = sInfo_.requestConfig.usage;
+    uint64_t finalUsage = defaultUsage | consumerUsage | cfgedUsage;
+    sInfo_.requestConfig.usage = finalUsage;
+    AVCODEC_LOGI("Usage: default(0x%{public}" PRIu64 ") | consumer(0x%{public}" PRIu64 ") | cfged(0x%{public}" PRIu64
+                 ") -> final(0x%{public}" PRIu64 ").",
+                 defaultUsage, consumerUsage, cfgedUsage, finalUsage);
 }
 
 int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
@@ -1572,10 +1662,14 @@ int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
     if (state_ == State::FLUSHED || state_ == State::RUNNING || state_ == State::EOS) {
         return ReplaceOutputSurfaceWhenRunning(surface);
     }
+    int32_t ret = UnRegisterListenerToSurface(sInfo_.surface);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Unregister listener to surface failed, ret=%{public}d", ret);
+    uint64_t surfaceId = surface->GetUniqueId();
     sInfo_.surface = surface;
+    CombineConsumerUsage();
     GSError err = RegisterListenerToSurface(sInfo_.surface);
-    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN,
-                             "surface %{public}" PRIu64 ", RegisterListenerToSurface failed, GSError=%{public}d",
+    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, err,
+                             "surface(%{public}" PRIu64 ") register listener to surface failed, GSError=%{public}d",
                              sInfo_.surface->GetUniqueId(), err);
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE,
@@ -1585,7 +1679,7 @@ int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE,
                             static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_0));
     }
-    AVCODEC_LOGI("Set surface success");
+    AVCODEC_LOGI("Set surface(%{public}" PRIu64 ") success.", surfaceId);
     return AVCS_ERR_OK;
 }
 
@@ -1753,16 +1847,16 @@ bool HevcDecoder::CanSwapOut(bool isOutputBuffer, std::shared_ptr<HBuffer> &hBuf
         AVCODEC_LOGE("Current buffers unsupport.");
         return false;
     }
-    HBuffer::Owner ownerValue = hBuffer->owner_.load();
+    Owner ownerValue = hBuffer->owner_.load();
     AVCODEC_LOGD("Buffer type: [%{public}u], hBuffer->owner_: [%{public}d], hBuffer->hasSwapedOut: [%{public}d].",
                  isOutputBuffer, ownerValue, hBuffer->hasSwapedOut);
     std::shared_ptr<FSurfaceMemory> surfaceMemory = hBuffer->sMemory;
     CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
     sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
     if (surfaceBuffer) {
-        return !(ownerValue == HBuffer::Owner::OWNED_BY_SURFACE || hBuffer->hasSwapedOut || surfaceBuffer == nullptr);
+        return !(ownerValue == Owner::OWNED_BY_SURFACE || hBuffer->hasSwapedOut || surfaceBuffer == nullptr);
     } else {
-        return !(ownerValue == HBuffer::Owner::OWNED_BY_SURFACE || ownerValue == HBuffer::Owner::OWNED_BY_USER ||
+        return !(ownerValue == Owner::OWNED_BY_SURFACE || ownerValue == Owner::OWNED_BY_USER ||
                  hBuffer->hasSwapedOut || surfaceBuffer == nullptr);
     }
 }

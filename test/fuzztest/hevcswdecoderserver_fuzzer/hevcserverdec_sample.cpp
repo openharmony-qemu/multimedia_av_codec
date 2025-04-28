@@ -33,6 +33,24 @@ constexpr int32_t TIME = 12345;
 constexpr int32_t MAX_SEND_FRAMES = 10;
 } // namespace
 
+class TestConsumerListener : public IBufferConsumerListener {
+public:
+    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
+    ~TestConsumerListener() {}
+    void OnBufferAvailable() override
+    {
+        sptr<SurfaceBuffer> buffer;
+        int32_t flushFence;
+        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
+        cs->ReleaseBuffer(buffer, -1);
+    }
+
+private:
+    int64_t timestamp = 0;
+    Rect damage = {};
+    sptr<Surface> cs {nullptr};
+};
+
 void VDecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
     tester->Flush();
@@ -88,6 +106,16 @@ int32_t VDecServerSample::SetCallback()
     return codec_->SetCallback(cb);
 }
 
+void VDecServerSample::CreateSurface()
+{
+    cs[0] = Surface::CreateSurfaceAsConsumer();
+    sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs[0], outDIR);
+    cs[0]->RegisterConsumerListener(listener);
+    auto p = cs[0]->GetProducer();
+    ps[0] = Surface::CreateSurfaceAsProducer(p);
+    nativeWindow[0] = CreateNativeWindowFromSurface(&ps[0]);
+}
+
 void VDecServerSample::RunVideoServerDecoder()
 {
     CreateHevcDecoderByName("OH.Media.Codec.Decoder.Video.HEVC", codec_);
@@ -96,6 +124,45 @@ void VDecServerSample::RunVideoServerDecoder()
         return;
     }
     int32_t err = ConfigServerDecoder();
+    if (err != AVCS_ERR_OK) {
+        cout << "ConfigServerDecoder failed" << endl;
+        return;
+    }
+    signal_ = new VDecSignal();
+    if (signal_ == nullptr) {
+        cout << "Failed to new VDecSignal" << endl;
+        return;
+    }
+    err = SetCallback();
+    if (err != AVCS_ERR_OK) {
+        cout << "SetCallback failed" << endl;
+        return;
+    }
+    err = codec_->Start();
+    if (err != AVCS_ERR_OK) {
+        cout << "Start failed" << endl;
+        return;
+    }
+    isRunning_.store(true);
+    inputLoop_ = make_unique<thread>(&VDecServerSample::InputFunc, this);
+    if (inputLoop_ == nullptr) {
+        cout << "Failed to create input loop" << endl;
+        isRunning_.store(false);
+    }
+}
+
+void VDecServerSample::RunVideoServerSurfaceDecoder()
+{
+    int32_t err;
+    CreateSurface();
+    CreateHevcDecoderByName("OH.Media.Codec.Decoder.Video.HEVC", codec_);
+    if (codec_ == nullptr) {
+        cout << "Create failed" << endl;
+        return;
+    }
+    std::vector<CapabilityData> caps;
+    err = GetHevcDecoderCapabilityList(caps);
+    err = ConfigServerDecoder();
     if (err != AVCS_ERR_OK) {
         cout << "ConfigServerDecoder failed" << endl;
         return;
@@ -199,6 +266,16 @@ void VDecServerSample::Reset()
     int32_t err = codec_->Reset();
     if (err != AVCS_ERR_OK) {
         cout << "Reset fail" << endl;
+        isRunning_.store(false);
+        signal_->inCond_.notify_all();
+    }
+}
+
+void VDecServerSample::Stop()
+{
+    int32_t err = codec_->Stop();
+    if (err != AVCS_ERR_OK) {
+        cout << "Stop fail" << endl;
         isRunning_.store(false);
         signal_->inCond_.notify_all();
     }

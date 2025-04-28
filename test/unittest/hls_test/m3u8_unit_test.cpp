@@ -481,4 +481,77 @@ HWTEST_F(M3u8UnitTest, GetLiveUpdateGap001, TestSize.Level1)
     time = m3u8.GetLiveUpdateGap();
     EXPECT_EQ(0, time);
 }
+
+HWTEST_F(M3u8UnitTest, UPDATE_MEDIA_PLAYLIST_001, TestSize.Level1)
+{
+    std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    master->isDecryptAble_ = true;
+    master->keyLen_ = 1;
+    master->UpdateMediaPlaylist();
+    EXPECT_EQ(master->isSimple_, true);
+}
+
+HWTEST_F(M3u8UnitTest, CHOOSE_STREAM_BY_RESOLUTION_001, TestSize.Level1)
+{
+    std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    auto stream = std::make_shared<M3U8VariantStream>("test", "https://example.com/key",
+        std::make_shared<M3U8>("https://example.com/key", "test"));
+    stream->bandWidth_ = 1000;
+    stream->width_ = 480;
+    stream->height_ = 640;
+    master->variants_.emplace_back(stream);
+    master->variants_.emplace_back(nullptr);
+    auto stream1 = std::make_shared<M3U8VariantStream>("test", "https://example.com/key",
+        std::make_shared<M3U8>("https://example.com/key", "test"));
+    stream1->bandWidth_ = 2000;
+    stream1->width_ = 480;
+    stream1->height_ = 640;
+    master->variants_.emplace_back(stream1);
+    auto stream2 = std::make_shared<M3U8VariantStream>("test", "https://example.com/key",
+        std::make_shared<M3U8>("https://example.com/key", "test"));
+    stream2->bandWidth_ = 2000;
+    stream2->width_ = 720;
+    stream2->height_ = 1080;
+    master->variants_.emplace_back(stream2);
+    auto stream4 = std::make_shared<M3U8VariantStream>("test", "https://example.com/key",
+        std::make_shared<M3U8>("https://example.com/key", "test"));
+    stream4->bandWidth_ = 3000;
+    stream4->width_ = 720;
+    stream4->height_ = 1080;
+    master->variants_.emplace_back(stream4);
+    auto stream5 = std::make_shared<M3U8VariantStream>("test", "https://example.com/key",
+        std::make_shared<M3U8>("https://example.com/key", "test"));
+    stream4->bandWidth_ = 3000;
+    stream4->width_ = 1080;
+    stream4->height_ = 1920;
+    master->variants_.emplace_back(stream4);
+    master->defaultVariant_ = stream;
+    master->ChooseStreamByResolution();
+    uint32_t resolution = 480 * 720;
+    master->initResolution_ = resolution;
+    master->ChooseStreamByResolution();
+    resolution = 720 * 1080;
+    master->initResolution_ = resolution;
+    master->ChooseStreamByResolution();
+    resolution = 1080 * 1920;
+    master->initResolution_ = resolution;
+    master->ChooseStreamByResolution();
+    EXPECT_EQ(master->defaultVariant_->width_, 1080);
+    EXPECT_EQ(master->defaultVariant_->height_, 1920);
+}
+
+HWTEST_F(M3u8UnitTest, DOWNLOAD_STATUS_001, TestSize.Level1)
+{
+    M3U8 m3u8(testUri, "");
+    std::shared_ptr<Downloader> downloader = std::make_shared<Downloader>("hlsPlayList");
+    std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
+    m3u8.OnDownloadStatus(DownloadStatus::PARTTAL_DOWNLOAD, downloader, request);
+    request->clientError_ = 52;
+    m3u8.OnDownloadStatus(DownloadStatus::PARTTAL_DOWNLOAD, downloader, request);
+    request->serverError_ = 403;
+    m3u8.OnDownloadStatus(DownloadStatus::PARTTAL_DOWNLOAD, downloader, request);
+    request->clientError_ = 0;
+    m3u8.OnDownloadStatus(DownloadStatus::PARTTAL_DOWNLOAD, downloader, request);
+    EXPECT_EQ(request->serverError_, 403);
+}
 }

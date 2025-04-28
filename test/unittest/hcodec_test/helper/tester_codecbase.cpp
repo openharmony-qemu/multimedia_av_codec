@@ -196,6 +196,9 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.maxBitrate.has_value()) {
         fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, opt_.maxBitrate.value());
     }
+    if (opt_.targetQp.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, opt_.targetQp.value());
+    }
     if (opt_.layerCnt.has_value()) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
         int32_t temporalGopSize = 0;
@@ -233,6 +236,9 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.paramsFeedback == 1) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PARAMS_FEEDBACK, opt_.paramsFeedback);
     }
+    if (opt_.enableQPMap == 1) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, opt_.enableQPMap);
+    }
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
     if (err != AVCS_ERR_OK) {
@@ -260,6 +266,9 @@ bool TesterCodecBase::SetEncoderParameter(const SetParameterParams& param)
     }
     if (param.frameRate.has_value()) {
         fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, param.frameRate.value());
+    }
+    if (param.targetQp.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, param.targetQp.value());
     }
     if (param.qpRange.has_value()) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, static_cast<int32_t>(param.qpRange->qpMin));
@@ -308,6 +317,15 @@ bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, static_cast<int32_t>(param.ebrParam->maxQp));
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_START, static_cast<int32_t>(param.ebrParam->startQp));
         meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_SKIP, static_cast<bool>(param.ebrParam->isSkip));
+    }
+    if (param.absQpMap.has_value() && param.qpMapValue.has_value()) {
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_ABS_QP_MAP, param.absQpMap.value());
+
+        size_t widthInBlock = (opt_.dispW - 1) / 16 + 1; // divide by 16x16 block
+        size_t heightInBlock = (opt_.dispH - 1) / 16 + 1; // divide by 16x16 block
+        vector<uint8_t> qpMap (widthInBlock * heightInBlock,
+                               static_cast<uint8_t>(param.qpMapValue.value()));
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_QP_MAP, qpMap);
     }
     return true;
 }

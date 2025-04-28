@@ -110,6 +110,11 @@ private:
         uint32_t sizeLimit {0};
         int32_t readSizeCnt {0};
     };
+    
+    bool SelectedVideo();
+    bool NeedDropAfterSeek(uint32_t trackId, int64_t pts);
+    std::atomic<int64_t> seekTime_ = AV_NOPTS_VALUE;
+    std::atomic<SeekMode> seekMode_ = SeekMode::SEEK_NEXT_SYNC;
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
     int64_t GetStreamDuration(const AVStream& avStream);
@@ -190,6 +195,7 @@ private:
     std::vector<uint32_t> selectedTrackIds_;
     BlockQueuePool cacheQueue_;
     MediaInfo mediaInfo_;
+    FileType fileType_ = FileType::UNKNOW;
 
     std::shared_ptr<AVInputFormat> pluginImpl_ {nullptr};
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};

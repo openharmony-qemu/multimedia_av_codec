@@ -28,6 +28,13 @@ constexpr int32_t SURFACE_STRIDE_ALIGN = 8;
 constexpr int32_t TIMEOUT = 0;
 } // namespace
 
+enum class Owner {
+    OWNED_BY_US,
+    OWNED_BY_CODEC,
+    OWNED_BY_USER,
+    OWNED_BY_SURFACE,
+};
+
 struct SurfaceControl {
     sptr<Surface> surface = nullptr;
     BufferRequestConfig requestConfig = {.width = 0,
@@ -43,24 +50,26 @@ class FSurfaceMemory {
 public:
     FSurfaceMemory(SurfaceControl *sInfo) : sInfo_(sInfo)
     {
-        AllocSurfaceBuffer();
+        isAttached = false;
     }
     ~FSurfaceMemory();
-    void AllocSurfaceBuffer();
+    int32_t AllocSurfaceBuffer();
     void ReleaseSurfaceBuffer();
     sptr<SurfaceBuffer> GetSurfaceBuffer();
     int32_t GetSurfaceBufferStride();
     sptr<SyncFence> GetFence();
     void UpdateSurfaceBufferScaleMode();
-    void SetNeedRender(bool needRender);
     uint8_t *GetBase() const;
     int32_t GetSize() const;
+    bool isAttached = false;
+    Owner owner = Owner::OWNED_BY_US;
 
 private:
+    void SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner);
+    int32_t RequestSurfaceBuffer();
     sptr<SurfaceBuffer> surfaceBuffer_ = nullptr;
     sptr<SyncFence> fence_ = nullptr;
     int32_t stride_ = 0;
-    bool needRender_ = false;
     SurfaceControl *sInfo_ = nullptr;
 };
 } // namespace MediaAVCodec

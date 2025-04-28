@@ -72,7 +72,6 @@ private:
     std::shared_mutex mutex_ {};
 };
 
-// } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
 #endif // SUPER_RESOLUTION_POST_PROCESSOR_H

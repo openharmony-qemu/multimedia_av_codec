@@ -115,6 +115,7 @@ private:
     int64_t retryTimes_ {0};
     int64_t lastReadTime_ {0};
     bool isEnableFdCache_{ true };
+    int loc_ {0};
 };
 } // namespace FileSource
 } // namespace Plugins

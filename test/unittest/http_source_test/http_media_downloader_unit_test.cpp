@@ -786,4 +786,146 @@ HWTEST_F(HttpMediaDownloaderUnitTest, CHECK_AUTO_SELECT_BITRATE_001, TestSize.Le
     httpMediaDownloader->downloadSpeeds_.push_back(3200);
     EXPECT_EQ(httpMediaDownloader->CheckAutoSelectBitrate(), false);
 }
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GetReadTimeOut, TestSize.Level1)
+{
+    bool ret = MP4httpMediaDownloader->GetReadTimeOut(false);
+    ret = MP4httpMediaDownloader->GetReadTimeOut(true);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, StopBufferring, TestSize.Level1)
+{
+    MP4httpMediaDownloader->StopBufferring(false);
+    EXPECT_GE(MP4httpMediaDownloader->StopBufferring(true), Status::OK);
+}
+
+
+HWTEST_F(HttpMediaDownloaderUnitTest, ClearHasReadBuffer, TestSize.Level1)
+{
+    MP4httpMediaDownloader->isFirstFrameArrived_ = true;
+    MP4httpMediaDownloader->isNeedClearHasRead_ = true;
+    EXPECT_FALSE(MP4httpMediaDownloader->ClearHasReadBuffer());
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, RestartAndClearBuffer, TestSize.Level1)
+{
+    FLVhttpMediaDownloader->RestartAndClearBuffer();
+    MP4httpMediaDownloader->RestartAndClearBuffer();
+    EXPECT_TRUE(FLVhttpMediaDownloader->isRingBuffer_);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, ClearCacheBuffer, TestSize.Level1)
+{
+    FLVhttpMediaDownloader->ClearCacheBuffer();
+    MP4httpMediaDownloader->ClearCacheBuffer();
+    EXPECT_TRUE(FLVhttpMediaDownloader->isRingBuffer_);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, IsFlvLive, TestSize.Level1)
+{
+    bool ret = FLVhttpMediaDownloader->IsFlvLive();
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GetPlayable, TestSize.Level1)
+{
+    MP4httpMediaDownloader->isBuffering_ = true;
+    EXPECT_FALSE(MP4httpMediaDownloader->GetPlayable());
+
+    MP4httpMediaDownloader->isBuffering_ = false;
+    MP4httpMediaDownloader->isFirstFrameArrived_ = true;
+    MP4httpMediaDownloader->GetPlayable();
+    
+    MP4httpMediaDownloader->isBuffering_ = false;
+    MP4httpMediaDownloader->isFirstFrameArrived_ = false;
+    MP4httpMediaDownloader->GetPlayable();
+    MP4httpMediaDownloader->SetAppUid(1);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GetCacheDuration, TestSize.Level1)
+{
+    float num = MP4httpMediaDownloader->GetCacheDuration(1);
+    num = MP4httpMediaDownloader->GetCacheDuration(0);
+    EXPECT_EQ(num, 5.0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, IsAutoSelectConditionOk_1, TestSize.Level1)
+{
+    FLVhttpMediaDownloader->downloadSpeeds_.clear();
+ 
+    EXPECT_FALSE(FLVhttpMediaDownloader->IsAutoSelectConditionOk());
+    EXPECT_FALSE(FLVhttpMediaDownloader->CheckAutoSelectBitrate());
+
+    FLVhttpMediaDownloader->ClearBuffer();
+    MP4httpMediaDownloader->ClearBuffer();
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, IsAutoSelectConditionOk_2, TestSize.Level1)
+{
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
+        std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 5, nullptr);
+    std::map<std::string, std::string> httpHeader;
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader->SetStatusCallback(statusCallback);
+    httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    httpMediaDownloader->callback_ = sourceCallback;
+    MediaStreamList mediaStreams;
+    std::shared_ptr<PlayMediaStream> mediaStreamA = std::make_shared<PlayMediaStream>();
+    mediaStreamA->width = 480;
+    mediaStreamA->height = 360;
+    mediaStreamA->bitrate = 3200;
+    mediaStreamA->url = FLV_SEGMENT_BASE;
+    mediaStreams.push_back(mediaStreamA);
+    std::shared_ptr<PlayMediaStream> mediaStreamB = std::make_shared<PlayMediaStream>();
+    mediaStreamB->width = 640;
+    mediaStreamB->height = 480;
+    mediaStreamB->bitrate = 4800;
+    mediaStreamB->url = FLV_SEGMENT_BASE;
+    mediaStreams.push_back(mediaStreamB);
+    std::shared_ptr<PlayMediaStream> mediaStreamC = std::make_shared<PlayMediaStream>();
+    mediaStreamC->width = 640;
+    mediaStreamC->height = 480;
+    mediaStreamC->bitrate = 4000;
+    mediaStreamC->url = FLV_SEGMENT_BASE;
+    mediaStreams.push_back(mediaStreamC);
+    std::sort(mediaStreams.begin(), mediaStreams.end(),
+        [](const std::shared_ptr<PlayMediaStream>& streamA, const std::shared_ptr<PlayMediaStream>& streamB) {
+            return (streamA->bitrate < streamB->bitrate) ||
+                (streamA->bitrate == streamB->bitrate &&
+                    streamA->width * streamA->height < streamB->width * streamB->height);
+    });
+    httpMediaDownloader->SetMediaStreams(mediaStreams);
+    httpMediaDownloader->SelectBitRate(4000);
+    
+    EXPECT_FALSE(httpMediaDownloader->IsAutoSelectConditionOk());
+    httpMediaDownloader->isSelectingBitrate_ = true;
+    EXPECT_FALSE(httpMediaDownloader->IsAutoSelectConditionOk());
+    httpMediaDownloader->defaultStream_ = nullptr;
+
+    EXPECT_FALSE(httpMediaDownloader->IsAutoSelectConditionOk());
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, IsAutoSelectConditionOk, TestSize.Level1)
+{
+    FLVhttpMediaDownloader->isAutoSelectBitrate_.store(false);
+    EXPECT_FALSE(FLVhttpMediaDownloader->IsAutoSelectConditionOk());
+
+    FLVhttpMediaDownloader->isAutoSelectBitrate_ = true;
+    FLVhttpMediaDownloader->isRingBuffer_ = false;
+    EXPECT_FALSE(FLVhttpMediaDownloader->IsAutoSelectConditionOk());
+
+    FLVhttpMediaDownloader->isAutoSelectBitrate_ = true;
+    FLVhttpMediaDownloader->isRingBuffer_ = true;
+    FLVhttpMediaDownloader->isSelectingBitrate_ = true;
+    EXPECT_FALSE(FLVhttpMediaDownloader->IsAutoSelectConditionOk());
+
+    FLVhttpMediaDownloader->isAutoSelectBitrate_ = true;
+    FLVhttpMediaDownloader->isRingBuffer_ = true;
+    FLVhttpMediaDownloader->isSelectingBitrate_ = false;
+    FLVhttpMediaDownloader->downloadSpeeds_.clear();
+    EXPECT_FALSE(FLVhttpMediaDownloader->IsAutoSelectConditionOk());
+}
 }

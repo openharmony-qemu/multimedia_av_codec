@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1136,6 +1136,63 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3900, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_002
+ * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_002, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVErrCode ret = AV_ERR_OK;
+        OH_AVRange range;
+        memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, -1, &range);
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_004
+ * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_004, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVErrCode ret = AV_ERR_OK;
+        OH_AVRange range;
+        memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 9999, &range);
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_005
+ * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_005, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVErrCode ret = AV_ERR_OK;
+        OH_AVRange range;
+        memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 2, nullptr);
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
+}
+
+/**
  * @tc.number    : VIDEO_SWDEC_CAP_API_4000
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param correct
  * @tc.desc      : api test
@@ -1237,6 +1294,82 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4200, TestSize.Level2)
             OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, nullptr);
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_007
+ * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_007, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVErrCode ret = AV_ERR_OK;
+        OH_AVRange range;
+        memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, -1, &range);
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_008
+ * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_008, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVErrCode ret = AV_ERR_OK;
+        OH_AVRange range;
+        memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 0, &range);
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_009
+ * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_009, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVErrCode ret = AV_ERR_OK;
+        OH_AVRange range;
+        memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 9999, &range);
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_010
+ * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_010, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVErrCode ret = AV_ERR_OK;
+        OH_AVRange range;
+        memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 9999, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
     }
 }
@@ -1773,6 +1906,63 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6100, TestSize.Level2)
             OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, DEFAULT_WIDTH, 0, &range);
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_012
+ * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_012, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVErrCode ret = AV_ERR_OK;
+        OH_AVRange range;
+        memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, -1, -1, &range);
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_013
+ * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_013, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVErrCode ret = AV_ERR_OK;
+        OH_AVRange range;
+        memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 0, 0, &range);
+        ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_014
+ * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_014, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        OH_AVErrCode ret = AV_ERR_OK;
+        OH_AVRange range;
+        memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        ASSERT_NE(nullptr, capability);
+        ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 9999, 9999, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
     }
 }

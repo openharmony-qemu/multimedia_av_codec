@@ -50,6 +50,14 @@ void AppendToVector(std::vector<uint8_t>& vec, const T& param)
     std::copy(p, p + sizeof(T), vec.begin() + beforeSize);
 }
 
+inline void AppendArrayToVector(std::vector<uint8_t>& vec, const std::vector<uint8_t>& param)
+{
+    size_t beforeSize = vec.size();
+    size_t afterSize = beforeSize + param.size();
+    vec.resize(afterSize);
+    vec.insert(vec.begin() + beforeSize, param.begin(), param.end());
+}
+
 struct BinaryReader {
     BinaryReader(uint8_t* data, size_t size) : mData(data), mSize(size) {}
 

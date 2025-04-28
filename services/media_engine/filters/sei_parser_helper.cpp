@@ -293,7 +293,7 @@ void SeiParserListener::OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer)
 
 void SeiParserListener::FlowLimit(const std::shared_ptr<AVBuffer> &avBuffer)
 {
-    FALSE_RETURN(isFlowLimited_ && syncCenter_ != nullptr);
+    FALSE_RETURN_NOLOG(isFlowLimited_ && syncCenter_ != nullptr);
     MediaAVCodec::AVCodecTrace trace("ParseSeiPayload FlowLimit");
 
     if (startPts_ == 0) {

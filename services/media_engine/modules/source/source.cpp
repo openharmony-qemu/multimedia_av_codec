@@ -122,7 +122,7 @@ Status Source::SetStartPts(int64_t startPts)
     return plugin_->SetStartPts(startPts);
 }
 
-Status Source::SetExtraCache(int64_t cacheDuration)
+Status Source::SetExtraCache(uint64_t cacheDuration)
 {
     if (plugin_ == nullptr) {
         MEDIA_LOG_E("SetExtraCache failed, plugin_ is nullptr");

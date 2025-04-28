@@ -151,6 +151,7 @@ public:
         const uint32_t index, uint64_t &relativePresentationTimeUs);
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
+    Status SetTranscoderMode();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     void WaitForBufferingEnd();
@@ -235,6 +236,7 @@ private:
     bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
     void HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackId);
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
+    void UpdateThreadPriority(uint32_t trackId);
     bool IsNeedMapToInnerTrackID();
     int64_t GetReadLoopRetryUs(uint32_t trackId);
     uint64_t GetSampleQueueDuration();
@@ -266,10 +268,12 @@ private:
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
     Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
     Status HandleHlsRebootPlugin();
+    Status HandleSeekChangeStream(int32_t currentStreamId, int32_t newStreamId, int32_t trackId);
     bool IsSubtitleMime(const std::string& mime);
     void HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
     void InitPtsInfo();
     void InitMediaStartPts();
+    void TranscoderInitMediaStartPts();
     void UpdateBufferQueueListener(int32_t trackId);
     bool IsOpenGopBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     void UpdateSyncFrameInfo(std::shared_ptr<AVBuffer> sample, uint32_t trackId, bool isDiscardable = false);
@@ -279,6 +283,7 @@ private:
         const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample);
     Status HandleTrackEos(uint32_t trackId);
     void SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer);
+    void TranscoderUpdateOutputBufferPts(uint32_t trackId, std::shared_ptr<AVBuffer> &outputBuffer);
 
     Status AddSampleBufferQueue(uint32_t trackId);
     int64_t SampleConsumerLoop(uint32_t trackId);
@@ -292,7 +297,7 @@ private:
     Status NotifySampleQueueBufferConsume(uint32_t queueId);
     Status HandleSelectBitrateBySampleQueue(int64_t startPts, uint32_t bitrate);
     bool IsIgonreBuffering();
-    int64_t demuxerCacheDuration_ = 0;
+    uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
     int64_t lastClockTimeMs_ = 0;
 
@@ -387,10 +392,12 @@ private:
     bool isAutoMaintainPts_ = false;
     std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
     int64_t mediaStartPts_ {HST_TIME_NONE};
+    int64_t transcoderStartPts_ {HST_TIME_NONE};
     bool isEnableReselectVideoTrack_ {false};
     uint32_t targetVideoTrackId_ {TRACK_ID_DUMMY};
     SyncFrameInfo syncFrameInfo_ {};
     std::mutex syncFrameInfoMutex_ {};
+    bool isTranscoderMode_ {false};
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
     int32_t apiVersion_ {0};

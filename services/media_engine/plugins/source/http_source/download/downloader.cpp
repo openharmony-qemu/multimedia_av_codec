@@ -46,6 +46,7 @@ constexpr int REQUEST_OFTEN_ERROR_CODE = 500;
 constexpr int SLEEP_TEN_MICRO_SEC = 10; // 10ms
 constexpr int APP_OPEN_RETRY_TIMES = 10;
 constexpr int32_t REDIRECT_CODE = 302;
+constexpr uint32_t MAX_LOOP_TIMES = 100;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -645,6 +646,7 @@ void Downloader::HandleRedirect(Status& ret)
         currentRequest_->clientError_ = 0;
         currentRequest_->serverError_ = REDIRECT_CODE;
         ret = Status::ERROR_SERVER;
+        currentRequest_->url_ = currentRequest_->location_;
         currentRequest_->haveRedirectRetry_.store(true);
         currentRequest_->headerInfo_.contentLen = 0;
     }
@@ -923,7 +925,8 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_);
     MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                      mediaDownloader->currentRequest_->startPos_);
-    mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + writeLen;
+    mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ +
+                                                  static_cast<int64_t>(writeLen);
     UpdateRequestSize(mediaDownloader);
  
     if (writeLen != dataLen) {
@@ -961,8 +964,7 @@ char* StringTrim(char* str)
 
 bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
-    if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
-        !strncmp(key, "content-range", strlen("content-range"))) {
+    if (!strncmp(key, "content-range", strlen("content-range"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
         char* strRange = StringTrim(token);
@@ -984,12 +986,12 @@ bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, siz
 bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size_t headerSize,
                                    Downloader* mediaDownloader)
 {
-    if (!strncmp(key, "Content-Type", strlen("Content-Type"))) {
+    if (!strncmp(key, "content-type", strlen("content-type"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
         char* type = StringTrim(token);
         std::string tokenStr = (std::string)token;
-        MEDIA_LOG_I("Content-Type: " PUBLIC_LOG_S, tokenStr.c_str());
+        MEDIA_LOG_I("content-type: " PUBLIC_LOG_S, tokenStr.c_str());
         NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, strlen(type)));
     }
     return true;
@@ -997,12 +999,11 @@ bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size
 
 bool Downloader::HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
-    if (!strncmp(key, "Content-Encode", strlen("Content-Encode")) ||
-        !strncmp(key, "content-encode", strlen("content-encode"))) {
+    if (!strncmp(key, "content-encode", strlen("content-encode"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
         std::string tokenStr = (std::string)token;
-        MEDIA_LOG_I("Content-Encode: " PUBLIC_LOG_S, tokenStr.c_str());
+        MEDIA_LOG_I("content-encode: " PUBLIC_LOG_S, tokenStr.c_str());
     }
     return true;
 }
@@ -1010,8 +1011,7 @@ bool Downloader::HandleContentEncode(HeaderInfo* info, char* key, char* next, si
 bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader)
 {
     FALSE_RETURN_V(key != nullptr, false);
-    if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
-        !strncmp(key, "content-length", strlen("content-length"))) {
+    if (!strncmp(key, "content-length", strlen("content-length"))) {
         FALSE_RETURN_V(next != nullptr, false);
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
@@ -1029,26 +1029,35 @@ bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Do
 // Check if this server supports range download. (HTTP)
 bool Downloader::HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
-    if (!strncmp(key, "Accept-Ranges", strlen("Accept-Ranges")) ||
-        !strncmp(key, "accept-ranges", strlen("accept-ranges"))) {
+    if (!strncmp(key, "accept-ranges", strlen("accept-ranges"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
         if (!strncmp(StringTrim(token), "bytes", strlen("bytes"))) {
             info->isServerAcceptRange = true;
-            MEDIA_LOG_I("Accept-Ranges: bytes");
+            MEDIA_LOG_I("accept-ranges: bytes");
         }
     }
-    if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
-        !strncmp(key, "content-range", strlen("content-range"))) {
+    if (!strncmp(key, "content-range", strlen("content-range"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
         std::string tokenStr = (std::string)token;
         if (tokenStr.find("bytes") != std::string::npos) {
             info->isServerAcceptRange = true;
-            MEDIA_LOG_I("Content-Range: " PUBLIC_LOG_S, tokenStr.c_str());
+            MEDIA_LOG_I("content-range: " PUBLIC_LOG_S, tokenStr.c_str());
         }
     }
     return true;
+}
+
+void Downloader::ToLower(char* str)
+{
+    FALSE_RETURN(str != nullptr);
+    for (int i = 0; str[i] != '\0'; ++i) {
+        if (i > MAX_LOOP_TIMES) {
+            break;
+        }
+        str[i] = tolower(static_cast<unsigned char>(str[i]));
+    }
 }
 
 size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam)
@@ -1062,9 +1071,9 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     char* next = nullptr;
     char* key = strtok_s(reinterpret_cast<char*>(buffer), ":", &next);
     FALSE_RETURN_V(key != nullptr, size * nitems);
+    ToLower(key);
 
-    if (!strncmp(key, "Transfer-Encoding", strlen("Transfer-Encoding")) ||
-        !strncmp(key, "transfer-encoding", strlen("transfer-encoding"))) {
+    if (!strncmp(key, "transfer-encoding", strlen("transfer-encoding"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
         if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
@@ -1076,11 +1085,10 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
                 info->contentLen = 0;
             }
             std::string tokenStr = (std::string)token;
-            MEDIA_LOG_I("Transfer-Encoding: " PUBLIC_LOG_S, tokenStr.c_str());
+            MEDIA_LOG_I("transfer-encoding: " PUBLIC_LOG_S, tokenStr.c_str());
         }
     }
-    if (!strncmp(key, "Location", strlen("Location")) ||
-        !strncmp(key, "location", strlen("location"))) {
+    if (!strncmp(key, "location", strlen("location"))) {
         FALSE_RETURN_V(next != nullptr, size * nitems);
         char* location = StringTrim(next);
         MEDIA_LOG_I("location: " PUBLIC_LOG_S, location);

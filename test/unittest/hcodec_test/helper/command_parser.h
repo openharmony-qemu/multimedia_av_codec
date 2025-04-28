@@ -65,6 +65,7 @@ struct SetParameterParams {
     std::optional<QPRange> qpRange;
     std::optional<VideoRotation> rotate;
     std::optional<OH_ScalingMode> scaleMode;
+    std::optional<uint32_t> targetQp;
 };
 
 struct PerFrameParams {
@@ -73,6 +74,8 @@ struct PerFrameParams {
     std::optional<LTRParam> ltrParam;
     std::optional<bool> discard;
     std::optional<EBRParam> ebrParam;
+    std::optional<bool> absQpMap;
+    std::optional<int32_t> qpMapValue;
 };
 
 struct ResourceParams {
@@ -126,8 +129,10 @@ struct CommandOpt {
     std::optional<int32_t> isVrrEnable;
     std::optional<int32_t> sqrFactor;
     std::optional<int32_t> maxBitrate;
+    std::optional<uint32_t> targetQp;
     WaterMarkParam waterMark;
     bool paramsFeedback;
+    bool enableQPMap = false;
 
     // decoder only
     bool decThenEnc = false;

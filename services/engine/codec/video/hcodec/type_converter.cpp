@@ -240,6 +240,7 @@ vector<BitrateModeMapping> g_bitrateModeTable {
     {CBR_VIDEOCALL, static_cast<OMX_VIDEO_CONTROLRATETYPE>(OMX_Video_ControlRateConstantWithRlambda)},
     {CQ, static_cast<OMX_VIDEO_CONTROLRATETYPE>(OMX_Video_ControlRateConstantWithCQ)},
     {SQR, static_cast<OMX_VIDEO_CONTROLRATETYPE>(OMX_Video_ControlRateConstantWithSQR)},
+    {CRF, static_cast<OMX_VIDEO_CONTROLRATETYPE>(OMX_Video_ControlRateConstantWithCRF)},
 };
 
 optional<AVCodecType> TypeConverter::HdiCodecTypeToInnerCodecType(CodecHDI::CodecType type)

@@ -526,7 +526,7 @@ Status HttpSourcePlugin::SetStartPts(int64_t startPts)
     return Status::OK;
 }
 
-Status HttpSourcePlugin::SetExtraCache(int64_t cacheDuration)
+Status HttpSourcePlugin::SetExtraCache(uint64_t cacheDuration)
 {
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     downloader_->SetExtraCache(cacheDuration);

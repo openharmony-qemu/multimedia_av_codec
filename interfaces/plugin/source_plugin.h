@@ -179,7 +179,7 @@ public:
         return Status::OK;
     }
 
-    virtual Status SetExtraCache(int64_t cacheDuration)
+    virtual Status SetExtraCache(uint64_t cacheDuration)
     {
         return Status::OK;
     }

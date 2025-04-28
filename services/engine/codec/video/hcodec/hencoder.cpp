@@ -78,6 +78,10 @@ int32_t HEncoder::OnConfigure(const Format &format)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+    ret = EnableFrameQPMap(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     (void)EnableEncoderParamsFeedback(format);
     return AVCS_ERR_OK;
 }
@@ -171,6 +175,28 @@ int32_t HEncoder::EnableEncoderParamsFeedback(const Format &format)
         return AVCS_ERR_INVALID_VAL;
     }
     HLOGI("configure encoder params feedback[%d] success", enableParamsFeedback);
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::EnableFrameQPMap(const Format &format)
+{
+    int32_t enableQPMap = false;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, enableQPMap)) {
+        return AVCS_ERR_OK;
+    }
+    if (!caps_.port.video.isSupportQPMap) {
+        HLOGE("this device dont support qp map");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = enableQPMap ? OMX_TRUE : OMX_FALSE;
+    if (!SetParameter(OMX_IndexParamEnableQPMap, param)) {
+        HLOGE("enable encoder frame qp map[%d] failed", enableQPMap);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    HLOGI("enable encoder frame qp map[%d] success", enableQPMap);
+    enableQPMap_ = true;
     return AVCS_ERR_OK;
 }
 
@@ -500,6 +526,16 @@ std::optional<uint32_t> HEncoder::GetSQRMaxBitrateFromUser(const Format &format)
     return nullopt;
 }
 
+std::optional<uint32_t> HEncoder::GetCRFtagetQpFromUser(const Format &format)
+{
+    int32_t targetQp;
+    if (format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, targetQp) && targetQp > 0) {
+        LOGI("user set CRF target_qp %d", targetQp);
+        return static_cast<uint32_t>(targetQp);
+    }
+    return nullopt;
+}
+
 std::optional<VideoEncodeBitrateMode> HEncoder::GetBitRateModeFromUser(const Format &format)
 {
     VideoEncodeBitrateMode mode;
@@ -507,6 +543,22 @@ std::optional<VideoEncodeBitrateMode> HEncoder::GetBitRateModeFromUser(const For
         return mode;
     }
     return nullopt;
+}
+
+int32_t HEncoder::SetCRFMode(int32_t targetQp)
+{
+    ControlQualitytargetQp bitrateType;
+    InitOMXParamExt(bitrateType);
+    bitrateType.portIndex = OMX_DirOutput;
+    bitrateType.targetQp = static_cast<uint32_t>(targetQp);
+    if (!SetParameter(OMX_IndexParamControlRateCRF, bitrateType)) {
+        HLOGE("failed to set OMX_IndexParamControlRateCRF");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("set CRF mode and target quality %u succ", bitrateType.targetQp);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CRF);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, targetQp);
+    return AVCS_ERR_OK;
 }
 
 int32_t HEncoder::SetConstantQualityMode(int32_t quality)
@@ -573,23 +625,30 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
         return AVCS_ERR_UNKNOWN;
     }
     optional<VideoEncodeBitrateMode> bitRateMode = GetBitRateModeFromUser(format);
-    int32_t quality;
-    if (bitRateMode.has_value() && bitRateMode.value() == CQ &&
-        format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) && quality >= 0) {
-        return SetConstantQualityMode(quality);
-    }
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) &&
-        (bitRateMode.has_value() && bitRateMode.value() == SQR)) {
-        return SetSQRMode(format);
-    }
-    optional<uint32_t> bitRate = GetBitRateFromUser(format);
-    if (bitRate.has_value()) {
-        bitrateType.nTargetBitrate = bitRate.value();
-    }
-    if (bitRateMode.has_value() && bitRateMode.value() != SQR && bitRateMode.value() != CQ) {
-        auto omxBitrateMode = TypeConverter::InnerModeToOmxBitrateMode(bitRateMode.value());
-        if (omxBitrateMode.has_value()) {
-            bitrateType.eControlRate = omxBitrateMode.value();
+    if (bitRateMode.has_value()) {
+        int32_t quality;
+        if (bitRateMode.value() == CQ &&
+            format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) && quality >= 0) {
+            return SetConstantQualityMode(quality);
+        }
+        int32_t targetQp;
+        if (bitRateMode.value() == CRF &&
+            format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, targetQp) && targetQp >= 0) {
+            return SetCRFMode(targetQp);
+        }
+        if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) &&
+            bitRateMode.value() == SQR) {
+            return SetSQRMode(format);
+        }
+        optional<uint32_t> bitRate = GetBitRateFromUser(format);
+        if (bitRate.has_value()) {
+            bitrateType.nTargetBitrate = bitRate.value();
+        }
+        if (bitRateMode.value() != SQR && bitRateMode.value() != CQ) {
+            auto omxBitrateMode = TypeConverter::InnerModeToOmxBitrateMode(bitRateMode.value());
+            if (omxBitrateMode.has_value()) {
+                bitrateType.eControlRate = omxBitrateMode.value();
+            }
         }
     }
     if (!SetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
@@ -770,6 +829,18 @@ int32_t HEncoder::OnSetParameters(const Format &format)
         bitrateCfgType.nPortIndex = OMX_DirOutput;
         bitrateCfgType.nEncodeBitrate = bitRate.value();
         if (!SetParameter(OMX_IndexConfigVideoBitrate, bitrateCfgType, true)) {
+            HLOGW("failed to config OMX_IndexConfigVideoBitrate");
+        }
+    }
+
+    optional<VideoEncodeBitrateMode> bitRateMode = GetBitRateModeFromUser(*outputFormat_);
+    optional<uint32_t> targetQp = GetCRFtagetQpFromUser(format);
+    if (targetQp.has_value() && bitRateMode.has_value() && bitRateMode.value() == CRF) {
+        ControlQualitytargetQp bitrateType;
+        InitOMXParamExt(bitrateType);
+        bitrateType.portIndex = OMX_DirOutput;
+        bitrateType.targetQp = targetQp.value();
+        if (!SetParameter(OMX_IndexParamControlRateCRF, bitrateType, true)) {
             HLOGW("failed to config OMX_IndexConfigVideoBitrate");
         }
     }
@@ -975,6 +1046,7 @@ void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffe
     WrapQPRangeParamIntoOmxBuffer(omxBuffer, meta);
     WrapStartQPIntoOmxBuffer(omxBuffer, meta);
     WrapIsSkipFrameIntoOmxBuffer(omxBuffer, meta);
+    WrapQPMapParamIntoOmxBuffer(omxBuffer, meta);
     meta->Clear();
 }
 
@@ -1010,6 +1082,31 @@ void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodec
     params.IntraRefreshVOP = OMX_TRUE;
     AppendToVector(omxBuffer->alongParam, params);
     HLOGI("pts=%" PRId64 ", requestIFrame", omxBuffer->pts);
+}
+
+void HEncoder::WrapQPMapParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                           const shared_ptr<Media::Meta> &meta)
+{
+    if (!enableQPMap_) {
+        return;
+    }
+    bool isAbsQp;
+    if (!meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_ABS_QP_MAP, isAbsQp)) {
+        isAbsQp = false;
+    }
+    vector<uint8_t> qpMap;
+    if (!meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_QP_MAP, qpMap) || qpMap.empty()) {
+        return;
+    }
+    AppendToVector(omxBuffer->alongParam, OMX_IndexParamBlockQP);
+    CodecBlockQpParam param;
+    InitOMXParamExt(param);
+    param.blockQpAddr = nullptr;
+    param.blockQpSize = static_cast<uint32_t>(qpMap.size());
+    param.blockQpSetByUser = true;
+    param.absQp = isAbsQp;
+    AppendToVector(omxBuffer->alongParam, param);
+    AppendArrayToVector(omxBuffer->alongParam, qpMap);
 }
 
 void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,

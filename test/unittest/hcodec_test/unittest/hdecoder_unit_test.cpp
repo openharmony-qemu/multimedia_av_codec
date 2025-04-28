@@ -21,6 +21,7 @@
 #include "media_description.h" // foundation/multimedia/player_framework/interfaces/inner_api/native
 #include "tester_common.h"
 #include "meta/meta_key.h" // foundation/multimedia/histreamer/interface/inner_api/
+#include "syspara/parameters.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -1161,6 +1162,117 @@ HWTEST_F(HDecoderUserCallingUnitTest, queue_input_buffer_ok, TestSize.Level1)
     ret = testObj->QueueInputBuffer(bufferIndex);
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
+    ret = testObj->Release();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+}
+/* ============================ BACKGROUND ============================ */
+HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_configured_invalid_001, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t ret = testObj->Init(meta);
+    ASSERT_TRUE(ret == AVCS_ERR_OK);
+ 
+    ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
+    ASSERT_TRUE(SetCallbackToDecoder(testObj));
+    ASSERT_TRUE(ConfigureDecoder(testObj));
+ 
+    bool isSupportFreeze = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
+    if (isSupportFreeze) {
+        ret = testObj->NotifyMemoryRecycle();
+        EXPECT_NE(AVCS_ERR_OK, ret);
+    }
+ 
+    ret = testObj->Release();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+}
+ 
+HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_invalid_002, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+ 
+    ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
+    ASSERT_TRUE(SetCallbackToDecoder(testObj));
+    ASSERT_TRUE(ConfigureDecoder(testObj));
+ 
+    int32_t ret = testObj->Start();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+ 
+    bool isSupportFreeze = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
+    if (isSupportFreeze) {
+        OHOS::system::SetParameter("hcodec.dmaswap.disable", "1");
+        ret = testObj->NotifyMemoryRecycle();
+        EXPECT_EQ(AVCS_ERR_OK, ret);
+    }
+ 
+    ret = testObj->Release();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_valid_002, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+ 
+    ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
+    ASSERT_TRUE(SetCallbackToDecoder(testObj));
+    ASSERT_TRUE(ConfigureDecoder(testObj));
+ 
+    int32_t ret = testObj->Start();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+ 
+    bool isSupportFreeze = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
+    if (isSupportFreeze) {
+        OHOS::system::SetParameter("hcodec.dmaswap.disable", "0");
+        ret = testObj->NotifyMemoryRecycle();
+        EXPECT_EQ(AVCS_ERR_OK, ret);
+ 
+        ret = testObj->NotifyMemoryWriteBack();
+        EXPECT_EQ(AVCS_ERR_OK, ret);
+    }
+ 
+    ret = testObj->Release();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+}
+ 
+HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_valid_003, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+ 
+    ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
+    ASSERT_TRUE(SetCallbackToDecoder(testObj));
+    ASSERT_TRUE(ConfigureDecoder(testObj));
+ 
+    int32_t ret = testObj->Start();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+ 
+    bool isSupportFreeze = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
+    if (isSupportFreeze) {
+        OHOS::system::SetParameter("hcodec.dmaswap.disable", "0");
+        ret = testObj->NotifyMemoryRecycle();
+        EXPECT_EQ(AVCS_ERR_OK, ret);
+ 
+        Format format;
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 60); // 60 frame rate
+        ret = testObj->SetParameter(format);
+        EXPECT_EQ(AVCS_ERR_OK, ret);
+ 
+        ret = testObj->NotifyMemoryWriteBack();
+        EXPECT_EQ(AVCS_ERR_OK, ret);
+    }
+ 
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }

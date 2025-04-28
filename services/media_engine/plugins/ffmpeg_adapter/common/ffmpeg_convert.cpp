@@ -31,7 +31,7 @@ Status Resample::Init(const ResamplePara &resamplePara)
     if (resamplePara_.bitsPerSample != 8 && resamplePara_.bitsPerSample != 24) { // 8 24
         auto destFrameSize = av_samples_get_buffer_size(nullptr, resamplePara_.channels,
                                                         resamplePara_.destSamplesPerFrame, resamplePara_.destFmt, 0);
-        cacheSize_ = destFrameSize;
+        cacheSize_ = static_cast<size_t>(destFrameSize);
         resampleCache_.reserve(destFrameSize);
         resampleChannelAddr_.reserve(resamplePara_.channels);
         auto tmp = resampleChannelAddr_.data();
@@ -108,7 +108,8 @@ void Resample::ConvertCommon(const uint8_t *srcBuffer, const size_t srcLength,
         }
     }
     auto samples = lineSize / static_cast<size_t>(av_get_bytes_per_sample(resamplePara_.srcFfFmt));
-    size_t destSize = samples * av_get_bytes_per_sample(resamplePara_.destFmt) * resamplePara_.channels;
+    size_t destSize =
+        samples * static_cast<size_t>(av_get_bytes_per_sample(resamplePara_.destFmt)) * resamplePara_.channels;
     if (cacheSize_ < destSize) {
         cacheSize_ = destSize;
         resampleCache_.reserve(cacheSize_);

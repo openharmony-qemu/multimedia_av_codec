@@ -63,6 +63,7 @@ protected:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
 private:
+    Status UpdateParameterToConfigure(const std::shared_ptr<Meta> &meta);
     std::string name_;
     FilterType filterType_;
 

@@ -109,7 +109,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_API_0010, TestSize.Level0
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
             codecInfo->GetSupportedMaxBitrate().maxVal + 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -117,7 +117,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_API_0010, TestSize.Level0
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
             codecInfo->GetSupportedMaxBitrate().minVal - 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -155,7 +155,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_API_0020, TestSize.Level1
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal + 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -163,7 +163,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_API_0020, TestSize.Level1
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().minVal - 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -213,7 +213,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0010, TestSize.Level
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
             codecInfo->GetSupportedMaxBitrate().maxVal + 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
     }
 }
@@ -246,7 +246,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0020, TestSize.Level
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal + 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
     }
 }
@@ -283,7 +283,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0030, TestSize.Level
             codecInfo->GetSupportedMaxBitrate().maxVal);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal + 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -293,7 +293,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0030, TestSize.Level
             codecInfo->GetSupportedMaxBitrate().maxVal + 1);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -303,7 +303,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0030, TestSize.Level
             codecInfo->GetSupportedMaxBitrate().maxVal + 1);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal + 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
     }
 }
@@ -334,7 +334,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0040, TestSize.Level
         ASSERT_NE(nullptr, venc_);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
             codecInfo->GetSupportedMaxBitrate().maxVal + 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
     }
 }
@@ -365,7 +365,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0050, TestSize.Level
         ASSERT_NE(nullptr, venc_);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal + 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
     }
 }
@@ -399,7 +399,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0060, TestSize.Level
             codecInfo->GetSupportedMaxBitrate().maxVal);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal + 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -408,7 +408,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0060, TestSize.Level
             codecInfo->GetSupportedMaxBitrate().maxVal + 1);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -417,7 +417,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0060, TestSize.Level
             codecInfo->GetSupportedMaxBitrate().maxVal + 1);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal + 1);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
     }
 }
@@ -467,7 +467,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0080, TestSize.Level
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VBR);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
     }
 }
@@ -494,17 +494,218 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0090, TestSize.Level
             codecInfo->GetSupportedMaxBitrate().maxVal);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
     }
 }
 
 /**
  * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0100
- * @tc.name      : 能使SQR,不能使SQR,其他模式参数,confige
+ * @tc.name      : 使能CBR_max_bitrate,confige
  * @tc.desc      : api test
  */
 HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0100, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, CBR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0110
+ * @tc.name      : 使能CBR_factor,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0110, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, CBR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0120
+ * @tc.name      : 使能CBR_max_bitrate_factor,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0120, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, CBR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0130
+ * @tc.name      : 使能CQ_max_bitrate,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0130, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, CQ)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CQ);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0140
+ * @tc.name      : 使能CQ_factor,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0140, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, CQ)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CQ);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0150
+ * @tc.name      : 使能CQ_max_bitrate_factor,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0150, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, CQ)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CQ);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0160
+ * @tc.name      : 使能SQR,其他模式参数quality,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0160, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    Format fmt;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, SQR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 30);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 30);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_OK);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 30);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal+1);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0170
+ * @tc.name      : 不使能SQR,其他模式参数quality,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0170, TestSize.Level2)
 {
     std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
     CapabilityData *capabilityData = nullptr;
@@ -517,7 +718,158 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0100, TestSize.Level
         ASSERT_NE(nullptr, venc_);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-        format.PutIntValue(OH_MD_KEY_QUALITY, 30);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 30);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 30);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0180
+ * @tc.name      : 使能SQR,其他模式参数BITRATE,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0180, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    Format fmt;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, SQR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 10000000);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 10000000);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0190
+ * @tc.name      : 使能SQR,其他模式参数BITRATE,factor_max_bitrate
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0190, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, SQR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 10000000);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 10000000);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal+1);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0200
+ * @tc.name      : 不使能SQR,其他模式参数BITRATE,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0200, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    Format fmt;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, SQR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 10000000);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 10000000);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0210
+ * @tc.name      : 不使能SQR,其他模式参数quality错误,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0210, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    Format fmt;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, SQR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, -1);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
             codecInfo->GetSupportedMaxBitrate().maxVal);
         ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
@@ -527,25 +879,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0100, TestSize.Level
         ASSERT_NE(nullptr, venc_);
         fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
         fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-        fmt.PutIntValue(OH_MD_KEY_QUALITY, 30);
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
-            codecInfo->GetSupportedSqrFactor().maxVal);
-        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_CODEC_PARAM_INCORRECT);
-        venc_->Release();
-
-        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
-        ASSERT_NE(nullptr, venc_);
-        format.PutIntValue(OH_MD_KEY_QUALITY, 30);
-        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
-        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
-            codecInfo->GetSupportedMaxBitrate().maxVal);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
-        venc_->Release();
-
-        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
-        ASSERT_NE(nullptr, venc_);
-        fmt.PutIntValue(OH_MD_KEY_QUALITY, 30);
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, -1);
         fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal);
         ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_CODEC_PARAM_INCORRECT);
@@ -554,11 +888,75 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0100, TestSize.Level
 }
 
 /**
- * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0110
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0220
+ * @tc.name      : 使能SQR,其他模式参数BITRATE错误,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0220, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format fmt;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, SQR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal+1);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0230
+ * @tc.name      : 不使能SQR,其他模式参数BITRATE错误,confige
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0230, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    Format fmt;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (IsEncoderBitrateModeSupported(capabilityData, SQR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0240
  * @tc.name      : 不支持平台，使能SQR，confige
  * @tc.desc      : api test
  */
-HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0110, TestSize.Level2)
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0240, TestSize.Level2)
 {
     std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
     CapabilityData *capabilityData = nullptr;
@@ -575,7 +973,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0110, TestSize.Level
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
             codecInfo->GetSupportedMaxBitrate().maxVal);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -585,7 +983,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0110, TestSize.Level
         format1.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal);
         format1.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
-        ASSERT_EQ(venc_->Configure(format1), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format1), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -597,17 +995,17 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0110, TestSize.Level
             codecInfo->GetSupportedSqrFactor().maxVal);
         format2.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
             codecInfo->GetSupportedMaxBitrate().maxVal);
-        ASSERT_EQ(venc_->Configure(format2), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format2), AVCS_ERR_OK);
         venc_->Release();
     }
 }
 
 /**
- * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0120
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0250
  * @tc.name      : 不支持平台，不使能SQR，confige
  * @tc.desc      : api test
  */
-HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0120, TestSize.Level2)
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0250, TestSize.Level2)
 {
     std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
     CapabilityData *capabilityData = nullptr;
@@ -632,7 +1030,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0120, TestSize.Level
         format1.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         format1.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal);
-        ASSERT_EQ(venc_->Configure(format1), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format1), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -643,17 +1041,17 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0120, TestSize.Level
             codecInfo->GetSupportedSqrFactor().maxVal);
         format2.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
             codecInfo->GetSupportedMaxBitrate().maxVal);
-        ASSERT_EQ(venc_->Configure(format2), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format2), AVCS_ERR_OK);
         venc_->Release();
     }
 }
 
 /**
- * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0130
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0260
  * @tc.name      : 不支持平台，使能VBR,config
  * @tc.desc      : api test
  */
-HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0130, TestSize.Level2)
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0260, TestSize.Level2)
 {
     std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
     CapabilityData *capabilityData = nullptr;
@@ -680,7 +1078,7 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0130, TestSize.Level
         format1.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VBR);
         format1.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal);
-        ASSERT_EQ(venc_->Configure(format1), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format1), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
@@ -692,16 +1090,16 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0130, TestSize.Level
             codecInfo->GetSupportedSqrFactor().maxVal);
         format2.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
             codecInfo->GetSupportedMaxBitrate().maxVal);
-        ASSERT_EQ(venc_->Configure(format2), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format2), AVCS_ERR_OK);
         venc_->Release();
     }
 }
 /**
- * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0140
- * @tc.name      : 不支持平台，配置其他模式参数
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0270
+ * @tc.name      : 不支持平台，配置其他模式参数quality
  * @tc.desc      : api test
  */
-HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0140, TestSize.Level2)
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0270, TestSize.Level2)
 {
     std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
     CapabilityData *capabilityData = nullptr;
@@ -712,28 +1110,28 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0140, TestSize.Level
     if (!IsEncoderBitrateModeSupported(capabilityData, SQR)) {
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, venc_);
-        format.PutIntValue(OH_MD_KEY_QUALITY, 30);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 30);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
             codecInfo->GetSupportedMaxBitrate().maxVal);
-        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, venc_);
         format1.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
         format1.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-        format1.PutIntValue(OH_MD_KEY_QUALITY, 30);
+        format1.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 30);
         format1.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal);
-        ASSERT_EQ(venc_->Configure(format1), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        ASSERT_EQ(venc_->Configure(format1), AVCS_ERR_OK);
         venc_->Release();
 
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, venc_);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
-        format.PutIntValue(OH_MD_KEY_QUALITY, 30);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 30);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
             codecInfo->GetSupportedMaxBitrate().maxVal);
         ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
@@ -742,10 +1140,202 @@ HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0140, TestSize.Level
         venc_ = VideoEncoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, venc_);
         format1.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
-        format1.PutIntValue(OH_MD_KEY_QUALITY, 30);
+        format1.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 30);
         format1.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
             codecInfo->GetSupportedSqrFactor().maxVal);
         ASSERT_EQ(venc_->Configure(format1), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0280
+ * @tc.name      : 不支持平台，使能SQR，其他模式参数BITRATE
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0280, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    Format fmt;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (!IsEncoderBitrateModeSupported(capabilityData, SQR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 10000000);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_OK);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 10000000);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0290
+ * @tc.name      : 不支持平台, 使能SQR,其他模式参数BITRATE, factor_max_bitrate
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0290, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format fmt;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (!IsEncoderBitrateModeSupported(capabilityData, SQR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 10000000);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_OK);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal+1);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_OK);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal+1);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_OK);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal+1);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal+1);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_OK);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0300
+ * @tc.name      : 不支持平台, 使能SQR, 其他模式参数BITRATE错误
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0300, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format format;
+    Format fmt;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (!IsEncoderBitrateModeSupported(capabilityData, SQR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(format), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        venc_->Release();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_CAPABILITY_FUNC_0310
+ * @tc.name      : 不支持平台, 使能SQR,其他模式参数BITRATE错误,factor_max_bitrate
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerCapNdkTest, VIDEO_ENCODE_CAPABILITY_FUNC_0310, TestSize.Level2)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    Format fmt;
+    capabilityData = codecCapability->GetCapability(g_codecMime, true, AVCodecCategory::AVCODEC_HARDWARE);
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData);
+    if (!IsEncoderBitrateModeSupported(capabilityData, SQR)) {
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal+1);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal+1);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_CODEC_PARAM_INCORRECT);
+        venc_->Release();
+
+        venc_ = VideoEncoderFactory::CreateByName(g_codecName);
+        ASSERT_NE(nullptr, venc_);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR,
+            codecInfo->GetSupportedSqrFactor().maxVal+1);
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            codecInfo->GetSupportedMaxBitrate().maxVal+1);
+        ASSERT_EQ(venc_->Configure(fmt), AVCS_ERR_CODEC_PARAM_INCORRECT);
         venc_->Release();
     }
 }

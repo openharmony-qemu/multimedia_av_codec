@@ -73,14 +73,6 @@ private:
     public:
         FBuffer() = default;
         ~FBuffer() = default;
-
-        enum class Owner {
-            OWNED_BY_US,
-            OWNED_BY_CODEC,
-            OWNED_BY_USER,
-            OWNED_BY_SURFACE,
-        };
-
         std::shared_ptr<AVBuffer> avBuffer_ = nullptr;
         std::shared_ptr<FSurfaceMemory> sMemory_ = nullptr;
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
@@ -135,6 +127,8 @@ private:
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
     int32_t AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize);
+    int32_t ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, int32_t bufferCnt);
+    int32_t AllocateOutputBuffersFromSurface(int32_t bufferCnt);
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
@@ -143,7 +137,10 @@ private:
     int32_t SwitchBetweenSurface(const sptr<Surface> &newSurface);
     int32_t RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index);
-    int32_t SetSurfaceCfg(int32_t bufferCnt);
+    int32_t SetSurfaceCfg();
+    int32_t Attach(sptr<SurfaceBuffer> surfaceBuffer);
+    int32_t Detach(sptr<SurfaceBuffer> surfaceBuffer);
+    void CombineConsumerUsage();
     // surface listener callback
     void RequestBufferFromConsumer();
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
@@ -169,6 +166,8 @@ private:
     int32_t height_ = 0;
     int32_t inputBufferSize_ = 0;
     int32_t outputBufferSize_ = 0;
+    int32_t inputBufferCnt_ = 0;
+    int32_t outputBufferCnt_ = 0;
     // INIT
     std::shared_ptr<AVCodec> avCodec_ = nullptr;
     // Config
