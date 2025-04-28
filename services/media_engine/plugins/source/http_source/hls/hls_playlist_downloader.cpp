@@ -168,7 +168,7 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr
     playInfo.duration_ = file->duration_;
     playInfo.offset_ = file->offset_;
     playInfo.length_ = file->length_;
-    if (master_ && currentVariant_ && master_->isFmp4_.load()) {
+    if (master_ && currentVariant_ && (master_->isFmp4_.load() || master_->isPureByteRange_.load())) {
         playInfo.url_ = std::to_string(playInfo.offset_) + "_" + std::to_string(playInfo.length_) + "_"
                         + "_" + file->uri_;
         playInfo.rangeUrl_ = file->uri_;
@@ -238,6 +238,7 @@ void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
     master_->duration_ = currentVariant_->m3u8_->GetDuration();
     master_->segmentOffsets_ = currentVariant_->m3u8_->segmentOffsets_;
     master_->hasDiscontinuity_ = currentVariant_->m3u8_->hasDiscontinuity_;
+    master_->isPureByteRange_.store(currentVariant_->m3u8_->isPureByteRange_.load());
     isParseFinished_ = isPreParse ? false : true;
 }
 
@@ -477,6 +478,14 @@ void HlsPlayListDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
 bool HlsPlayListDownloader::IsHlsFmp4()
 {
     if (master_ && master_->isFmp4_) {
+        return true;
+    }
+    return false;
+}
+
+bool HlsPlayListDownloader::IsPureByteRange()
+{
+    if (master_ && master_->isPureByteRange_.load()) {
         return true;
     }
     return false;
