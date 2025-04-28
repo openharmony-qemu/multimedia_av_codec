@@ -1210,7 +1210,6 @@ Status AudioServerSinkPlugin::EnqueueBufferDesc(const AudioStandard::BufferDesc 
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "Enqueue audioRender_ is nullptr");
     int32_t ret = 0;
-    ret = audioRenderer_->Enqueue(bufferDesc);
     if (bufferDesc.dataLength == 0) {
         if (enqueueNumber_++ < ON_WRITE_ZERO_COUNT && ((enqueueNumber_ & (LOG_PRINT_LIMIT - 1)) == 0)) {
             MEDIA_LOG_I("dataLength = 0, count:" PUBLIC_LOG_U64, enqueueNumber_);
@@ -1218,6 +1217,7 @@ Status AudioServerSinkPlugin::EnqueueBufferDesc(const AudioStandard::BufferDesc 
     } else {
         enqueueNumber_ = 0;
     }
+    ret = audioRenderer_->Enqueue(bufferDesc);
     MEDIA_LOG_D("EnqueueBufferDesc out");
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "Enqueue BufferDesc failed, ret=" PUBLIC_LOG_D32, ret);
