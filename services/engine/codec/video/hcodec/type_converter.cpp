@@ -50,6 +50,13 @@ vector<PixelFmt> g_pixelFmtTable = {
     {GRAPHIC_PIXEL_FMT_RGBA_8888,       VideoPixelFormat::RGBA,     "RGBA"},
     {GRAPHIC_PIXEL_FMT_YCBCR_P010,      VideoPixelFormat::NV12,     "NV12_10bit"},
     {GRAPHIC_PIXEL_FMT_YCRCB_P010,      VideoPixelFormat::NV21,     "NV21_10bit"},
+    {GRAPHIC_PIXEL_FMT_RGBA_1010102,    VideoPixelFormat::RGBA,     "RGBA1010102"},
+};
+
+vector<PixelFmt> g_pixelFmtTable10Bit = {
+    {GRAPHIC_PIXEL_FMT_YCBCR_P010,      VideoPixelFormat::NV12,     "NV12_10bit"},
+    {GRAPHIC_PIXEL_FMT_YCRCB_P010,      VideoPixelFormat::NV21,     "NV21_10bit"},
+    {GRAPHIC_PIXEL_FMT_RGBA_1010102,    VideoPixelFormat::RGBA,     "RGBA1010102"},
 };
 
 struct AVCProfileMapping {
@@ -305,12 +312,13 @@ std::optional<PixelFmt> TypeConverter::InnerFmtToFmt(VideoPixelFormat format)
     return nullopt;
 }
 
-std::optional<GraphicPixelFormat> TypeConverter::InnerFmtToDisplayFmt(VideoPixelFormat format)
+std::optional<GraphicPixelFormat> TypeConverter::InnerFmtToDisplayFmt(VideoPixelFormat format, bool is10Bit)
 {
-    auto it = find_if(g_pixelFmtTable.begin(), g_pixelFmtTable.end(), [format](const PixelFmt& p) {
+    const auto &table = is10Bit ? g_pixelFmtTable10Bit : g_pixelFmtTable;
+    auto it = find_if(table.begin(), table.end(), [format](const PixelFmt& p) {
         return p.innerFmt == format;
     });
-    if (it != g_pixelFmtTable.end()) {
+    if (it != table.end()) {
         return it->graphicFmt;
     }
     LOGW("unknown VideoPixelFormat %d", format);
