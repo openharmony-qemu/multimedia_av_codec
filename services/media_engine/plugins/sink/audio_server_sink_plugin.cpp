@@ -32,6 +32,7 @@
 #include "osal/utils/steady_clock.h"
 #include "plugin/plugin_time.h"
 #include "param_wrapper.h"
+#include "scoped_timer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
@@ -39,6 +40,10 @@ using namespace OHOS::Media::Plugins;
 constexpr int TUPLE_SECOND_ITEM_INDEX = 2;
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
 constexpr int32_t WRITE_WAIT_TIME = 5;
+constexpr int64_t ON_WRITE_WARNING_MS = 15; // Reference value, Modify as needed
+constexpr int64_t GET_AUDIO_POSITION_WARNING_MS = 10; // Reference value, Modify as needed
+constexpr int32_t LOG_PRINT_LIMIT = 8; // Reference value, Modify as needed
+constexpr int32_t ON_WRITE_ZERO_COUNT = 500; // Reference value, Modify as needed
 
 const std::pair<AudioInterruptMode, OHOS::AudioStandard::InterruptMode> g_auInterruptMap[] = {
     {AudioInterruptMode::SHARE_MODE, OHOS::AudioStandard::InterruptMode::SHARE_MODE},
@@ -1185,6 +1190,7 @@ AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::AudioRendererWriteCallbac
 
 void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::OnWriteData(size_t length)
 {
+    ScopedTimer timer("OnWriteData", ON_WRITE_WARNING_MS);
     auto cb = callback_.lock();
     FALSE_RETURN_MSG(cb != nullptr, "AudioServerSinkPlugin OnWriteData callback is nullptr");
     cb->OnWriteData(length, isAudioVivid_);
@@ -1204,6 +1210,13 @@ Status AudioServerSinkPlugin::EnqueueBufferDesc(const AudioStandard::BufferDesc 
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "Enqueue audioRender_ is nullptr");
     int32_t ret = 0;
+    if (bufferDesc.dataLength == 0) {
+        if (enqueueNumber_++ < ON_WRITE_ZERO_COUNT && ((enqueueNumber_ & (LOG_PRINT_LIMIT - 1)) == 0)) {
+            MEDIA_LOG_I("dataLength = 0, count:" PUBLIC_LOG_U64, enqueueNumber_);
+        }
+    } else {
+        enqueueNumber_ = 0;
+    }
     ret = audioRenderer_->Enqueue(bufferDesc);
     MEDIA_LOG_D("EnqueueBufferDesc out");
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
@@ -1252,6 +1265,7 @@ Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<Audio
 
 bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosition)
 {
+    ScopedTimer timer("GetAudioPosition", GET_AUDIO_POSITION_WARNING_MS);
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, false, "GetAudioPosition audioRender_ is nullptr");
     AudioStandard::Timestamp audioPositionTimestamp;
     bool ret = audioRenderer_->GetAudioPosition(audioPositionTimestamp,
