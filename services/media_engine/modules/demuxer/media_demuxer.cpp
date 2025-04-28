@@ -2344,6 +2344,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
 
 Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::InnerReadSample pts: " + std::to_string(sample->pts_));
     MEDIA_LOG_D("In, track " PUBLIC_LOG_U32, trackId);
 
     int32_t innerTrackID = static_cast<int32_t>(trackId);
