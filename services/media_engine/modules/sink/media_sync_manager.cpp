@@ -106,6 +106,16 @@ void MediaSyncManager::SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackI
     }
 }
 
+void MediaSyncManager::SetInitialVideoFrameRate(double frameRate)
+{
+    videoInitialFrameRate_ = frameRate;
+}
+
+double MediaSyncManager::GetInitialVideoFrameRate()
+{
+    return videoInitialFrameRate_;
+}
+
 void MediaSyncManager::SetAllSyncShouldWaitNoLock()
 {
     if (!alreadySetSyncersShouldWait_) {
