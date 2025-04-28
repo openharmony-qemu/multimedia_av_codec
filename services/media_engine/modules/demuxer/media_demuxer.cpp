@@ -741,6 +741,12 @@ Status MediaDemuxer::AddDemuxerCopyTaskByTrack(uint32_t trackId, DemuxerTrackTyp
     return Status::OK;
 }
 
+void MediaDemuxer::AddDemuxerCopyTaskByTrackIfFilter(uint32_t trackId, DemuxerTrackType type)
+{
+    FALSE_RETURN_NOLOG(isCreatedByFilter_);
+    AddDemuxerCopyTaskByTrack(trackId, type);
+}
+
 Status MediaDemuxer::InnerPrepare()
 {
     Plugins::MediaInfo mediaInfo;
@@ -754,9 +760,7 @@ Status MediaDemuxer::InnerPrepare()
         }
         InitMediaStartPts();
         if (videoTrackId_ != TRACK_ID_DUMMY) {
-            if (isCreatedByFilter_) {
-                AddDemuxerCopyTaskByTrack(videoTrackId_, DemuxerTrackType::VIDEO);
-            }
+            AddDemuxerCopyTaskByTrackIfFilter(videoTrackId_, DemuxerTrackType::VIDEO);
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, videoTrackId_, -1);
             int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
             streamDemuxer_->SetNewVideoStreamID(streamId);
@@ -768,9 +772,7 @@ Status MediaDemuxer::InnerPrepare()
             targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
         }
         if (audioTrackId_ != TRACK_ID_DUMMY) {
-            if (isCreatedByFilter_) {
-                AddDemuxerCopyTaskByTrack(audioTrackId_, DemuxerTrackType::AUDIO);
-            }
+            AddDemuxerCopyTaskByTrackIfFilter(audioTrackId_, DemuxerTrackType::AUDIO);
             demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, audioTrackId_, -1);
             int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(audioTrackId_);
             streamDemuxer_->SetNewAudioStreamID(streamId);
@@ -784,9 +786,7 @@ Status MediaDemuxer::InnerPrepare()
             }
         }
         if (subtitleTrackId_ != TRACK_ID_DUMMY) {
-            if (isCreatedByFilter_) {
-                AddDemuxerCopyTaskByTrack(subtitleTrackId_, DemuxerTrackType::SUBTITLE);
-            }
+            AddDemuxerCopyTaskByTrackIfFilter(subtitleTrackId_, DemuxerTrackType::SUBTITLE);
             demuxerPluginManager_->UpdateTempTrackMapInfo(subtitleTrackId_, subtitleTrackId_, -1);
             int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(subtitleTrackId_);
             streamDemuxer_->SetNewSubtitleStreamID(streamId);
