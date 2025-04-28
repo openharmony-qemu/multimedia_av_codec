@@ -112,15 +112,14 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     audioCaptureModule_ = std::make_shared<AudioCaptureModule::AudioCaptureModule>();
     std::shared_ptr<AudioCaptureModule::AudioCaptureModuleCallback> cb =
         std::make_shared<AudioCaptureModuleCallbackImpl>(receiver_);
+    FALSE_RETURN_MSG(audioCaptureModule_ != nullptr, "AudioCaptureFilter audioCaptureModule_ is nullptr, Init fail.");
     Status cbError = audioCaptureModule_->SetAudioInterruptListener(cb);
     if (cbError != Status::OK) {
         MEDIA_LOG_E("audioCaptureModule_ SetAudioInterruptListener failed.");
     }
-    if (audioCaptureModule_) {
-        audioCaptureModule_->SetAudioSource(sourceType_);
-        audioCaptureModule_->SetParameter(audioCaptureConfig_);
-        audioCaptureModule_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
-    }
+    audioCaptureModule_->SetAudioSource(sourceType_);
+    audioCaptureModule_->SetParameter(audioCaptureConfig_);
+    audioCaptureModule_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
     Status err = audioCaptureModule_->Init();
     if (err != Status::OK) {
         MEDIA_LOG_E("Init audioCaptureModule fail");
