@@ -37,7 +37,7 @@ struct MsgInfo {
 class MsgHandleLoop {
 protected:
     MsgHandleLoop();
-    ~MsgHandleLoop();
+    virtual ~MsgHandleLoop();
     void SendAsyncMsg(MsgType type, const ParamSP &msg, uint32_t delayUs = 0);
     bool SendSyncMsg(MsgType type, const ParamSP &msg, ParamSP &reply, uint32_t waitMs = 0);
     virtual void OnMsgReceived(const MsgInfo &info) = 0;
