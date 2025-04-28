@@ -39,6 +39,7 @@ protected:
 constexpr int START_POS = 10;
 constexpr int ONE_KILO = 1024;
 constexpr int FIR_BUFFER = 128;
+constexpr long LIVE_CONTENT_LENGTH = 2147483646;
 
 void DownloaderUnitTest::SetUpTestCase(void)
 {
@@ -892,6 +893,302 @@ HWTEST_F(DownloaderUnitTest, HandleRetErrorCode001, TestSize.Level1)
     downloader->currentRequest_->serverError_ = 500;
     downloader->HandleRetErrorCode();
     EXPECT_NE(downloader->client_, nullptr);
+}
+HWTEST_F(DownloaderUnitTest, IsChunkedInterrupt, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+
+    bool isInterruptNeeded = true;
+    EXPECT_EQ(Request_->IsChunked(isInterruptNeeded), Seekable::INVALID);
+}
+
+HWTEST_F(DownloaderUnitTest, IsChunkedIsChunk, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+
+    bool isInterruptNeeded = false;
+    Request_->headerInfo_.isChunked = true;
+    Request_->headerInfo_.fileContentLen = LIVE_CONTENT_LENGTH;
+    EXPECT_EQ(Request_->IsChunked(isInterruptNeeded), Seekable::SEEKABLE);
+}
+
+HWTEST_F(DownloaderUnitTest, GetBitRateError01, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+
+    Request_->downloadDoneTime_ = 0;
+    EXPECT_EQ(Request_->GetBitRate(), 0);
+}
+
+HWTEST_F(DownloaderUnitTest, GetBitRateError02, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+
+    Request_->downloadStartTime_ = 1;
+    Request_->downloadDoneTime_ = 1;
+    Request_->realRecvContentLen_ = 1;
+    EXPECT_EQ(Request_->GetBitRate(), 0);
+}
+
+HWTEST_F(DownloaderUnitTest, IsM3u8Request, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+
+    Request_->protocolType_ = RequestProtocolType::HLS;
+    EXPECT_TRUE(Request_->IsM3u8Request());
+}
+
+HWTEST_F(DownloaderUnitTest, IsServerAcceptRange, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+
+    Request_->headerInfo_.isChunked = true;
+    EXPECT_FALSE(Request_->IsServerAcceptRange());
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadInterrupt, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+
+    Request_->isInterruptNeeded_ = true;
+    int32_t waitMs = 0;
+    downloader->Download(Request_, waitMs);
+    EXPECT_NE(downloader->client_, nullptr);
+}
+
+HWTEST_F(DownloaderUnitTest, Download002, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+
+    Request_->isInterruptNeeded_ = false;
+    int32_t waitMs = -1;
+    downloader->Download(Request_, waitMs);
+    downloader->Pause();
+    OSAL::SleepFor(1 * 1000);
+    Request_->requestSize_ = Request_->GetFileContentLength() + 1;
+    Request_->startPos_ = Request_->GetFileContentLength() - 1;
+    downloader->Resume();
+    Request_->retryTimes_ = 1;
+    downloader->Cancel();
+
+    EXPECT_NE(downloader->client_, nullptr);
+}
+
+HWTEST_F(DownloaderUnitTest, Seek001, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+
+    downloader->downloadRequestSize_ = 1;
+    Request_->retryTimes_ = 1;
+    EXPECT_FALSE(downloader->Seek(1));
+}
+
+HWTEST_F(DownloaderUnitTest, HttpDownloadLoop001, TestSize.Level1)
+{
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<DownloadRequest> Request_ =
+        std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+
+    downloader->shouldStartNextRequest.store(true);
+    downloader->requestQue_->Push(Request_, static_cast<int>(-1));
+    downloader->isInterruptNeeded_ = true;
+    EXPECT_NE(downloader->client_, nullptr);
+}
+
+class SourceLoader : public IMediaSourceLoader {
+public:
+    ~SourceLoader() {};
+
+    int32_t Init(std::shared_ptr<IMediaSourceLoadingRequest> &request)
+    {
+        return 1;
+    };
+    
+    int64_t Open(const std::string &url, const std::map<std::string, std::string> &header)
+    {
+        return 1;
+    };
+
+    int32_t Read(int64_t uuid, int64_t requestedOffset, int64_t requestedLength)
+    {
+        return 1;
+    };
+
+    int32_t Close(int64_t uuid)
+    {
+        return 1;
+    };
+};
+
+HWTEST_F(DownloaderUnitTest, OPEN_APP_URI_001, TestSize.Level1)
+{
+    std::string testPath = "http://127.0.0.1:46666/test_cbr/720_1M/video_720.m3u8";
+    std::shared_ptr<SourceLoader> loader = std::make_shared<SourceLoader>();
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader =
+        std::make_shared<MediaSourceLoaderCombinations>(loader);
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<Downloader> downloader1 = std::make_shared<Downloader>("test", sourceLoader);
+    downloader1->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader1->appPreviousRequestUrl_ = testPath;
+    EXPECT_NE(downloader1->client_, nullptr);
+    EXPECT_NE(downloader1->sourceLoader_, nullptr);
+    EXPECT_NE(downloader1->currentRequest_, nullptr);
+    EXPECT_EQ(downloader1->uuid_, 0);
+    downloader1->OpenAppUri();
+    EXPECT_NE(downloader1->uuid_, 0);
+    downloader1->sourceLoader_ = nullptr;
+    downloader1->OpenAppUri();
+    EXPECT_NE(downloader1->uuid_, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, DROP_RETRY_DATA_001, TestSize.Level1)
+{
+    std::string testPath = "http://127.0.0.1:46666/test_cbr/720_1M/video_720.m3u8";
+    std::shared_ptr<SourceLoader> loader = std::make_shared<SourceLoader>();
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader =
+        std::make_shared<MediaSourceLoaderCombinations>(loader);
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                  std::shared_ptr<DownloadRequest>& request) {
+    };
+    auto saveData =  [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<Downloader> downloader1 = std::make_shared<Downloader>("test", sourceLoader);
+    downloader1->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader1->appPreviousRequestUrl_ = testPath;
+    downloader1->OpenAppUri();
+    EXPECT_NE(downloader1->client_, nullptr);
+    EXPECT_NE(downloader1->sourceLoader_, nullptr);
+    EXPECT_NE(downloader1->currentRequest_, nullptr);
+    uint8_t * buffer = new uint8_t[1000];
+
+    downloader1->currentRequest_->startPos_ = 0;
+    downloader1->DropRetryData(buffer, 1000, downloader1.get());
+    
+    downloader1->currentRequest_->startPos_ = 1000;
+    EXPECT_EQ(downloader1->DropRetryData(buffer, 500, downloader1.get()), 500);
+    EXPECT_EQ(downloader1->DropRetryData(buffer, 500, downloader1.get()), 500);
 }
 }
 }
