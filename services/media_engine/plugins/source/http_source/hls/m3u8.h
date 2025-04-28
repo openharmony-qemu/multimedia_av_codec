@@ -127,6 +127,7 @@ struct M3U8 {
     std::shared_ptr<Downloader> downloaderHeader_;
     DataSaveFunc dataSaveHeader_;
     std::atomic<bool> isHeaderReady_ {false};
+    std::atomic<bool> isPureByteRange_ {false};
     uint32_t downloadHeaderLen_ {0};
     std::shared_ptr<DownloadRequest> downloadHeaderRequest_;
     uint32_t offset_ {0};
@@ -190,6 +191,7 @@ struct M3U8MasterPlaylist {
     uint32_t initResolution_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
     std::atomic<bool> isFmp4_ {false};
+    std::atomic<bool> isPureByteRange_ {false};
     uint32_t defaultStreamId_ {0};
 };
 }

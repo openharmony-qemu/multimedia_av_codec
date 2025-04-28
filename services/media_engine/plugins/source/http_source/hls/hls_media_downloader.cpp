@@ -599,9 +599,9 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
     readDataInfo.realReadLength_ = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
     readOffset_ += readDataInfo.realReadLength_;
     ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
-    if (IsHlsFmp4() && readDataInfo.streamId_ > 0 && keyLen_ > 0) {
+    if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         size_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
-        if (remain > 0 && remain < DECRYPT_UNIT_LEN) {
+        if (remain > 0 && remain < DECRYPT_UNIT_LEN && keyLen_ > 0) {
             size_t readRemain = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
             readOffset_ += readRemain;
             ffmpegOffset_ += readRemain;
@@ -639,7 +639,10 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
 
 void HlsMediaDownloader::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (IsHlsFmp4() && readDataInfo.streamId_ > 0 && readDataInfo.realReadLength_ > 0 && keyLen_ > 0) {
+    if (keyLen_ <= 0 || readDataInfo.realReadLength_ < 1) {
+        return;
+    }
+    if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         size_t endValue = buff[readDataInfo.realReadLength_ - 1];
         size_t paddingStart = readDataInfo.realReadLength_ > endValue ?
                               readDataInfo.realReadLength_ - endValue : 0;
@@ -813,7 +816,9 @@ void HlsMediaDownloader::PlaylistBackup(const PlayInfo& fragment)
         }
         return;
     }
-    backPlayList_.push_back(fragment);
+    if (playlistDownloader_->IsParseFinished()) {
+        backPlayList_.push_back(fragment);
+    }
 }
 
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
@@ -2186,6 +2191,14 @@ bool HlsMediaDownloader::IsHlsFmp4()
 {
     if (playlistDownloader_) {
         return playlistDownloader_->IsHlsFmp4();
+    }
+    return false;
+}
+
+bool HlsMediaDownloader::IsPureByteRange()
+{
+    if (playlistDownloader_) {
+        return playlistDownloader_->IsPureByteRange();
     }
     return false;
 }
