@@ -468,7 +468,7 @@ bool TesterCommon::ReturnInputSurfaceBuffer(BufInfo& buf)
         },
         .timestamp = buf.attr.pts,
     };
-    if (is10Bit) {  
+    if (is10Bit) {
         vector<uint8_t> vec(sizeof(CM_ColorSpaceInfo));
         CM_ColorSpaceInfo* info = (CM_ColorSpaceInfo*)vec.data();
         info->primaries = COLORPRIMARIES_BT2020;
