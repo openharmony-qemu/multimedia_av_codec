@@ -219,7 +219,8 @@ vector<int32_t> HCodecList::GetSupportedFormat(const CodecVideoPortCap& hdiVideo
     for (int32_t fmt : hdiVideoCap.supportPixFmts) {
         optional<VideoPixelFormat> innerFmt =
             TypeConverter::DisplayFmtToInnerFmt(static_cast<GraphicPixelFormat>(fmt));
-        if (innerFmt.has_value()) {
+        if (innerFmt.has_value() &&
+            find(vec.begin(), vec.end(), static_cast<int32_t>(innerFmt.value())) == vec.end()) {
             vec.push_back(static_cast<int32_t>(innerFmt.value()));
         }
     }
