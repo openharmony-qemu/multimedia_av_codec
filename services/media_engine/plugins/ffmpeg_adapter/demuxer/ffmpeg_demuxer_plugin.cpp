@@ -326,7 +326,7 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
     avbsfContext_ = nullptr;
     streamParser_ = nullptr;
     referenceParser_ = nullptr;
-    parserRefFormatContext_ = nullptr;
+    parserRefCtx_ = nullptr;
     selectedTrackIds_.clear();
     if (firstFrame_ != nullptr) {
         av_packet_free(&firstFrame_);

@@ -64,6 +64,9 @@ public:
     void SetLastVideoBufferPts(int64_t bufferPts) override;
     Status SetPlaybackRate(float rate) override;
 
+    void SetInitialVideoFrameRate(double frameRate);
+    double GetInitialVideoFrameRate() override;
+
     void ResetMediaStartPts() override;
     Status Reset() override;
     Status Pause();
@@ -127,6 +130,8 @@ private:
     std::atomic<int64_t> lastVideoBufferPts_ {0};
     std::atomic<int64_t> lastReportMediaTime_ {HST_TIME_NONE};
     std::atomic<bool> isFrameAfterSeeked_ {false};
+
+    double videoInitialFrameRate_ {-1.0};
 
     OHOS::Media::Mutex clockMutex_ {};
     float playRate_ {1.0f};

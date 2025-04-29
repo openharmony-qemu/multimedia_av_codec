@@ -170,6 +170,8 @@ protected:
     void PrintAllBufferInfo();
     void PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now);
     void PrintStatistic(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now);
+    void PrintInputStatistic(BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
+    void PrintOutputStatistic(BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
     std::string OnGetHidumperInfo();
     void UpdateOwner();
     void UpdateOwner(bool isInput);

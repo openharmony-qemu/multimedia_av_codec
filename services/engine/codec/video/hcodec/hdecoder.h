@@ -97,6 +97,8 @@ private:
     void SwitchBetweenSurface(const sptr<Surface> &newSurface,
         const MsgInfo &msg, BufferOperationMode mode);
     void ConsumeFreeList(BufferOperationMode mode);
+    void ClassifyOutputBufferOwners(std::vector<size_t>& ownedByUs,
+                                    std::map<int64_t, size_t>& ownedBySurfaceFlushTime2BufferIndex);
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
