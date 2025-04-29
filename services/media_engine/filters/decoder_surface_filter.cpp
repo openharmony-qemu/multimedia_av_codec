@@ -87,6 +87,7 @@ private:
 const std::unordered_map<VideoScaleType, OHOS::ScalingMode> SCALEMODE_MAP = {
     { VideoScaleType::VIDEO_SCALE_TYPE_FIT, OHOS::SCALING_MODE_SCALE_TO_WINDOW },
     { VideoScaleType::VIDEO_SCALE_TYPE_FIT_CROP, OHOS::SCALING_MODE_SCALE_CROP},
+    { VideoScaleType::VIDEO_SCALE_TYPE_FIT_ASPECT, OHOS::SCALING_MODE_SCALE_FIT},
 };
 
 class FilterVideoPostProcessorCallback : public PostProcessorCallback {
@@ -616,9 +617,15 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     if (parameter->Find(Tag::VIDEO_SCALE_TYPE) != parameter->end()) {
         int32_t scaleType;
         parameter->Get<Tag::VIDEO_SCALE_TYPE>(scaleType);
-        int32_t codecScalingMode = static_cast<int32_t>(ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType)));
-        format.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
-        configFormat_.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
+        OHOS::ScalingMode scalingMode = ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType));
+        if(videoSurface_) {
+            GSError err = videoSurface_->SetScalingMode(scalingMode);
+            if (err != GSERROR_OK) {
+                MEDIA_LOG_W("set ScalingMode %{public}d to surface failed", static_cast<int>(scalingMode));
+                return;
+            }
+            MEDIA_LOG_D("set ScalingMode %{public}d to surface success", static_cast<int>(scalingMode));
+        }
     }
     if (parameter->Find(Tag::VIDEO_FRAME_RATE) != parameter->end()) {
         double rate = 0.0;
