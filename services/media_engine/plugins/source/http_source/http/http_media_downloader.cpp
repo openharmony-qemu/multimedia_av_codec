@@ -49,7 +49,7 @@ constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int32_t DEFAULT_BIT_RATE = 1638400;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
-constexpr size_t MIN_WATER_LINE_ABOVE = 10 * 1024;
+constexpr size_t MIN_WATER_LINE_ABOVE = 100 * 1024;
 constexpr int32_t ONE_SECONDS = 1000;
 constexpr int32_t TWO_SECONDS = 2000;
 constexpr int32_t TEN_MILLISECONDS = 10;
@@ -643,6 +643,7 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = static_cast<double>(readTotalBytes_ * BYTES_TO_BIT) / readDuration; // bps
             currentBitrate_ = static_cast<uint64_t>(readSpeed);     // bps
+            currentBitRate_ = static_cast<int32_t>(readSpeed);     // bps
             size_t curBufferSize = GetCurrentBufferSize();
             MEDIA_LOG_D("HTTP Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
             " KByte", static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
@@ -1352,9 +1353,9 @@ Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("HTTP SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
     if (bitRate <= 0) {
-        currentBitRate_ = DEFAULT_BIT_RATE;
+        videoBitrate_ = DEFAULT_BIT_RATE;
     } else {
-        currentBitRate_ = std::max(currentBitRate_, bitRate);
+        videoBitrate_ = std::max(currentBitRate_, bitRate);
     }
     return Status::OK;
 }
@@ -1451,6 +1452,7 @@ void HttpMediaDownloader::UpdateWaterLineAbove()
         return;
     }
     size_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
+    currentBitRate_ = std::max(currentBitRate_, static_cast<int32_t>(videoBitrate_));
     if (currentBitRate_ > 0) {
         float cacheTime = 0;
         uint64_t writeBitrate = writeBitrateCaculator_->GetWriteBitrate();

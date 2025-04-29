@@ -259,6 +259,7 @@ private:
     FairMutex sleepMutex_;
     std::atomic<bool> isAutoSelectBitrate_ {true};
     std::deque<uint32_t> downloadSpeeds_;
+    uint32_t videoBitrate_ {0};
 };
 }
 }
