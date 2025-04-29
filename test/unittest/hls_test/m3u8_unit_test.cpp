@@ -554,4 +554,36 @@ HWTEST_F(M3u8UnitTest, DOWNLOAD_STATUS_001, TestSize.Level1)
     m3u8.OnDownloadStatus(DownloadStatus::PARTTAL_DOWNLOAD, downloader, request);
     EXPECT_EQ(request->serverError_, 403);
 }
+
+HWTEST_F(M3u8UnitTest, PARSE_MAP_001, TestSize.Level1)
+{
+    std::shared_ptr<AttributesTag> tag =
+        std::make_shared<AttributesTag>(HlsTag::EXTXMAP, "#EXT-X-MAP:URI=\"main.mp4\",BYTERANGE=\"718@0\"");
+    M3U8 m3u8(testUri, "");
+    m3u8.isInterruptNeeded_ = true;
+    m3u8.isHeaderReady_ = false;
+    m3u8.ParseMap(tag);
+    EXPECT_NE(m3u8.fmp4Header_, nullptr);
+
+    M3U8 m3u81(testUri, "");
+    m3u81.isHeaderReady_ = true;
+    m3u81.ParseMap(tag);
+    EXPECT_EQ(m3u81.fmp4Header_, nullptr);
+
+    std::shared_ptr<AttributesTag> tag2 = std::make_shared<AttributesTag>(HlsTag::EXTXMAP, "#EXT-X-MAP:");
+    M3U8 m3u82(testUri, "");
+    m3u82.ParseMap(tag2);
+    EXPECT_EQ(m3u82.fmp4Header_, nullptr);
+}
+
+HWTEST_F(M3u8UnitTest, IS_NEAR_TO_INIT_RESOLUTION_001, TestSize.Level1)
+{
+    std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    auto m3u8 = std::make_shared<M3U8>(testUri, "");
+    auto choosedStream = std::make_shared<M3U8VariantStream>(testUri, testUri, m3u8);
+    auto currentStream = std::make_shared<M3U8VariantStream>(testUri, testUri, m3u8);
+    EXPECT_EQ(master->IsNearToInitResolution(choosedStream, currentStream), false);
+    EXPECT_EQ(master->IsNearToInitResolution(choosedStream, nullptr), false);
+    EXPECT_EQ(master->IsNearToInitResolution(nullptr, nullptr), false);
+}
 }
