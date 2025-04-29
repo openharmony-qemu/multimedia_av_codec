@@ -1393,7 +1393,6 @@ int32_t FCodec::RenderOutputBuffer(uint32_t index)
         std::shared_ptr<FSurfaceMemory> surfaceMemory = frameBuffer->sMemory_;
         int32_t ret = FlushSurfaceMemory(surfaceMemory, index);
         EXPECT_AND_LOGW(ret != AVCS_ERR_OK, "Flush surface memory(index=%{public}u) failed: %{public}d", index, ret);
-        AVCODEC_LOGD("Flush surface memory(index=%{public}u) successful.", index);
         frameBuffer->owner_ = Owner::OWNED_BY_SURFACE;
         renderAvailQue_->Push(index);
         AVCODEC_LOGD("Render output buffer with index, index=%{public}u", index);

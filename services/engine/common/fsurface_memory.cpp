@@ -61,7 +61,6 @@ int32_t FSurfaceMemory::RequestSurfaceBuffer()
 
 void FSurfaceMemory::ReleaseSurfaceBuffer()
 {
-    CHECK_AND_RETURN_LOG(surfaceBuffer_ != nullptr, "Surface buffer is nullptr!");
     surfaceBuffer_ = nullptr;
 }
 
