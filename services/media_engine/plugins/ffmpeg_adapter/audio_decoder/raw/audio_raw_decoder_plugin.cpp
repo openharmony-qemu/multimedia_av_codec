@@ -249,11 +249,7 @@ Status AudioRawDecoderPlugin::ConvertF64BEToF32LE(const uint8_t *ptr, int32_t &s
     constexpr int32_t bytesF32LESize = sizeof(float);
     float *inputData = reinterpret_cast<float *>(inputBuffer_.data());
     for (int32_t i = 0; i < size / bytesF64BESize; i++) {
-        Status ret = F64BEToF32LE(ptr + i * bytesF64BESize, inputData + i);
-        if (ret != Status::OK) {
-            AVCODEC_LOGE("F64BEToF32LE failed");
-            return ret;
-        }
+        F64BEToF32LE(ptr + i * bytesF64BESize, inputData + i);
     }
     size /= (bytesF64BESize / bytesF32LESize);
     return Status::OK;
@@ -280,10 +276,7 @@ Status AudioRawDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &
         maxInputSize_ = size;
     }
     if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_F64BE) {
-        if (ConvertF64BEToF32LE(ptr, size) != Status::OK) {
-            AVCODEC_LOGE("ConvertF64BEToF32LE failed");
-            return Status::ERROR_UNKNOWN;
-        }
+        ConvertF64BEToF32LE(ptr, size);
     } else {
         for (int32_t i = 0; i < size / bytesSize; i++) {
             for (int32_t j = 0; j < bytesSize; j++) {

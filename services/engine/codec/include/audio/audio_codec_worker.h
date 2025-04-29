@@ -37,8 +37,6 @@ public:
 
     bool PushInputData(const uint32_t &index);
 
-    bool Configure();
-
     bool Start();
 
     bool Stop();
