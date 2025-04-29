@@ -127,6 +127,7 @@ public:
     virtual bool SetSourceInitialBufferSize(int32_t offset, int32_t size);
     void SetSourceType(SourceType type);
     bool GetIsDataSrcNoSeek();
+    bool GetIsDataSrc();
 protected:
     std::shared_ptr<Source> source_;
     std::shared_ptr<TypeFinder> typeFinder_;
@@ -145,6 +146,7 @@ public:
 private:
     bool isDash_ = {false};
     bool isDataSrcNoSeek_ = {false};
+    bool isDataSrc_ = {false};
     SourceType sourceType_ = {SourceType::SOURCE_TYPE_FD};
     std::atomic<int32_t> newVideoStreamID_ = -1;
     std::atomic<int32_t> newAudioStreamID_ = -1;

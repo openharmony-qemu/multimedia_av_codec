@@ -59,6 +59,7 @@ void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
     source_->GetSize(mediaDataSize_);
     seekable_ = source_->GetSeekable();
     isDataSrcNoSeek_ = (seekable_ == Plugins::Seekable::UNSEEKABLE && sourceType_ == SourceType::SOURCE_TYPE_STREAM);
+    isDataSrc_ = sourceType_ == SourceType::SOURCE_TYPE_STREAM;
     MEDIA_LOG_I("mediaDataSize_: " PUBLIC_LOG_U64 ", seekable_: " PUBLIC_LOG_D32 ", source_->GetSourceType(): "
         PUBLIC_LOG_D32 ", isDataSrcNoSeek_: " PUBLIC_LOG_D32, mediaDataSize_, seekable_, sourceType_, isDataSrcNoSeek_);
 }
@@ -66,6 +67,11 @@ void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
 bool BaseStreamDemuxer::GetIsDataSrcNoSeek()
 {
     return isDataSrcNoSeek_;
+}
+
+bool BaseStreamDemuxer::GetIsDataSrc()
+{
+    return isDataSrc_;
 }
 
 void BaseStreamDemuxer::SetSourceType(SourceType type)
