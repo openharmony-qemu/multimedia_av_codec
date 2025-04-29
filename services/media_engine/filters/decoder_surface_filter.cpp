@@ -48,6 +48,7 @@ static const uint32_t TASK_DELAY_TOLERANCE = 5 * 1000 * 1000; // task delay tole
 static const int64_t MAX_DEBUG_LOG = 10;
 static const int32_t MAX_ADVANCE_US = 80000; // max advance us at render time
 static const int64_t OVERTIME_WARNING_MS = 50;
+static const double DEFAULT_FRAME_RATE = 30.0; // 30.0 is the hisi default frame rate.
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -629,7 +630,7 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
             }
         }
         if (rate <= 0) {
-            rate = 30.0; // 30.0 is the hisi default frame rate.
+            rate = DEFAULT_FRAME_RATE;
         }
         format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, rate);
     }
@@ -1360,6 +1361,25 @@ Status DecoderSurfaceFilter::SetVideoWindowSize(int32_t width, int32_t height)
     FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
 
     return postProcessor_->SetVideoWindowSize(width, height);
+}
+
+Status DecoderSurfaceFilter::SetSpeed(float speed)
+{
+    FALSE_RETURN_V(videoDecoder_ != nullptr, Status::ERROR_INVALID_OPERATION);
+    MEDIA_LOG_D("SetSpeed in");
+    double frameRate = 0.0;
+    configFormat_.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate);
+    if (frameRate <= 0) {
+        frameRate = DEFAULT_FRAME_RATE;
+    }
+    double frameRateWithSpeed = speed >= 1.0 ? frameRate * speed : frameRate;
+    MEDIA_LOG_I("frameRate: %{public}f, speed: %{public}f, frameRateWithSpeed: %{public}f",
+        frameRate, speed, frameRateWithSpeed);
+
+    Format format;
+    format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, frameRateWithSpeed);
+    videoDecoder_->SetParameter(format);
+    return Status::OK;
 }
 } // namespace Pipeline
 } // namespace MEDIA
