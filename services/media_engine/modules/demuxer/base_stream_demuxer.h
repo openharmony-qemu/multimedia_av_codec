@@ -127,7 +127,7 @@ public:
     virtual bool SetSourceInitialBufferSize(int32_t offset, int32_t size);
     void SetSourceType(SourceType type);
     bool GetIsDataSrcNoSeek();
-    inline bool GetIsDataSrc() const { return isDataSrc_; };
+    inline bool GetIsDataSrc() const { return isDataSrc_; }
 protected:
     std::shared_ptr<Source> source_;
     std::shared_ptr<TypeFinder> typeFinder_;
