@@ -104,6 +104,10 @@ private:
         uint32_t initDownloadDataSize {0};
         std::atomic<bool> initCompleted {false};
         DumpMode dumpMode {DUMP_NONE};
+        bool isLimit {false};
+        bool isLimitType {false};
+        uint32_t sizeLimit {0};
+        int32_t readSizeCnt {0};
     };
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
@@ -247,6 +251,8 @@ private:
     Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
     Status ParserRefCheckVideoValid(const AVStream *videoStream);
     bool IsMultiVideoTrack();
+    int AVReadFrameLimit(AVPacket *pkt);
+    Status SetAVReadFrameLimit();
 };
 
 typedef struct DtsFinder {
