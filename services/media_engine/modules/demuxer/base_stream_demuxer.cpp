@@ -69,11 +69,6 @@ bool BaseStreamDemuxer::GetIsDataSrcNoSeek()
     return isDataSrcNoSeek_;
 }
 
-bool BaseStreamDemuxer::GetIsDataSrc()
-{
-    return isDataSrc_;
-}
-
 void BaseStreamDemuxer::SetSourceType(SourceType type)
 {
     sourceType_ = type;
