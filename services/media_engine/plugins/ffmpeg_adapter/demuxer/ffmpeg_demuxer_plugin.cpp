@@ -1271,8 +1271,8 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
             if (width * height > 0) {
                 uint32_t limitSize = width * height * DEFAULT_CHANNEL_CNT * FLV_READ_SIZE_LIMIT_FACTOR;
                 ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, limitSize);
-                MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
-                    " limit " PUBLIC_LOG_U32, trackIndex, width, height, limitSize);
+                MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
+                    " limit " PUBLIC_LOG_U32, trackIndex, height, width, limitSize);
             }
         }
     }
