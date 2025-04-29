@@ -65,15 +65,14 @@ constexpr struct {
     const std::string_view codecName;
     const std::string_view mimeType;
     const char *ffmpegCodec;
-    const bool isEncoder;
 } SUPPORT_VCODEC[] = {
-    {AVCodecCodecName::VIDEO_DECODER_AVC_NAME, CodecMimeType::VIDEO_AVC, "h264", false},
-    {AVCodecCodecName::VIDEO_DECODER_H263_NAME, CodecMimeType::VIDEO_H263, "h263", false},
-    {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video", false},
-    {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4", false},
+    {AVCodecCodecName::VIDEO_DECODER_AVC_NAME, CodecMimeType::VIDEO_AVC, "h264"},
+    {AVCodecCodecName::VIDEO_DECODER_H263_NAME, CodecMimeType::VIDEO_H263, "h263"},
+    {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video"},
+    {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4"},
 #ifdef SUPPORT_CODEC_RV
-    {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30", false},
-    {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40", false},
+    {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30"},
+    {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40"},
 #endif
 };
 constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
@@ -1393,14 +1392,11 @@ int32_t FCodec::RenderOutputBuffer(uint32_t index)
     if (frameBuffer->owner_ == Owner::OWNED_BY_USER) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = frameBuffer->sMemory_;
         int32_t ret = FlushSurfaceMemory(surfaceMemory, index);
-        if (ret != AVCS_ERR_OK) {
-            AVCODEC_LOGW("Flush surface memory(index=%{public}u) failed: %{public}d", index, ret);
-        } else {
-            AVCODEC_LOGD("Flush surface memory(index=%{public}u) successful.", index);
-        }
+        EXPECT_AND_LOGW(ret != AVCS_ERR_OK, "Flush surface memory(index=%{public}u) failed: %{public}d", index, ret);
+        AVCODEC_LOGD("Flush surface memory(index=%{public}u) successful.", index);
         frameBuffer->owner_ = Owner::OWNED_BY_SURFACE;
         renderAvailQue_->Push(index);
-        AVCODEC_LOGD("render output buffer with index, index=%{public}u", index);
+        AVCODEC_LOGD("Render output buffer with index, index=%{public}u", index);
         return AVCS_ERR_OK;
     } else {
         AVCODEC_LOGE("Failed to render output buffer with bad index, index=%{public}u", index);
@@ -1971,7 +1967,7 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         CapabilityData capsData;
         capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[i].codecName);
         capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[i].mimeType);
-        capsData.codecType = SUPPORT_VCODEC[i].isEncoder ? AVCODEC_TYPE_VIDEO_ENCODER : AVCODEC_TYPE_VIDEO_DECODER;
+        capsData.codecType = AVCODEC_TYPE_VIDEO_DECODER;
         capsData.isVendor = false;
         capsData.maxInstance = VIDEO_INSTANCE_SIZE;
         capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
@@ -1990,12 +1986,6 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
         capsData.blockSize.width = VIDEO_ALIGN_SIZE;
         capsData.blockSize.height = VIDEO_ALIGN_SIZE;
-        if (SUPPORT_VCODEC[i].isEncoder) {
-            capsData.complexity.minVal = 0;
-            capsData.complexity.maxVal = 0;
-            capsData.encodeQuality.minVal = 0;
-            capsData.encodeQuality.maxVal = 0;
-        }
         capsData.pixFormat = {
             static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
