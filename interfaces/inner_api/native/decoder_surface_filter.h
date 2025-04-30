@@ -114,6 +114,7 @@ public:
     void SetPostProcessorType(VideoPostProcessorType type);
     Status SetPostProcessorOn(bool isSuperResolutionOn);
     Status SetVideoWindowSize(int32_t width, int32_t height);
+    Status SetSpeed(float speed);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
