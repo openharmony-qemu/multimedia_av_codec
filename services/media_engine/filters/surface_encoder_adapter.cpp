@@ -590,6 +590,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         MEDIA_LOG_D("OnOutputBufferAvailable buffer->flag_" PUBLIC_LOG_U32, buffer->flag_);
         mappingTime = startBufferTime_ + buffer->pts_;
     }
+    FALSE_RETURN_MSG(buffer->memory_ != nullptr, "buffer->memory_ is nullptr, OnOutputBufferAvailable fail");
     int32_t size = buffer->memory_->GetSize();
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
