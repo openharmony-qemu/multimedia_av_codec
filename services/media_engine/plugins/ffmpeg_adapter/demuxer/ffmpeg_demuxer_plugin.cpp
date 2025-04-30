@@ -60,6 +60,9 @@ const int64_t INIT_TIME_THRESHOLD = 1000;
 const uint32_t ID3V2_HEADER_SIZE = 10;
 const int32_t MS_TO_NS = 1000 * 1000;
 const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000;
+const int DEFAULT_CHANNEL_CNT = 3;
+const int FLV_READ_SIZE_LIMIT_FACTOR = 2;
+const int FLV_READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -702,6 +705,19 @@ void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(const AVPacket *pkt)
     }
 }
 
+int FFmpegDemuxerPlugin::AVReadFrameLimit(AVPacket *pkt)
+{
+    if (!ioContext_.isLimitType) {
+        return av_read_frame(formatContext_.get(), pkt);
+    }
+
+    ioContext_.isLimit = true;
+    int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
+    ioContext_.isLimit = false;
+    ioContext_.readSizeCnt = 0;
+    return ffmpegRet;
+}
+
 Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -714,7 +730,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
         }
         std::unique_lock<std::mutex> sLock(syncMutex_);
-        int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
+        int ffmpegRet = AVReadFrameLimit(pkt);
         sLock.unlock();
         if (ffmpegRet == AVERROR_EOF) { // eos
             WebvttMP4EOSProcess(pkt);
@@ -803,6 +819,15 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
         if (static_cast<size_t>(ioContext->offset + bufSize) > ioContext->fileSize) {
             bufSize = static_cast<int64_t>(ioContext->fileSize) - ioContext->offset;
         }
+    }
+
+    if (ioContext->isLimit) {
+        if (bufSize > ioContext->sizeLimit - ioContext->readSizeCnt) {
+            MEDIA_LOG_E("Read limit cur: " PUBLIC_LOG_D32 ", limit: " PUBLIC_LOG_U32 ", read: " PUBLIC_LOG_D32,
+                ioContext->readSizeCnt, ioContext->sizeLimit, bufSize);
+            return ret;
+        }
+        ioContext->readSizeCnt += bufSize;
     }
     return 0;
 }
@@ -1052,6 +1077,10 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     InitParser();
 
+    GetMediaInfo();
+
+    SetAVReadFrameLimit();
+
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Out");
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
@@ -1105,21 +1134,59 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
 
 Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
 {
-    MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetMediaInfo");
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    mediaInfo = mediaInfo_;
+    return Status::OK;
+}
 
+Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    if (FFmpegFormatHelper::GetFileTypeByName(*formatContext_) != FileType::FLV) {
+        return Status::OK;
+    }
+
+    ioContext_.isLimitType = true;
+    ioContext_.sizeLimit = FLV_READ_SIZE_LIMIT_DEFAULT;
+    FALSE_RETURN_V_MSG_E(static_cast<size_t>(formatContext_->nb_streams) == mediaInfo_.tracks.size(), Status::OK,
+        "mediaInfo size is error");
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        if (formatContext_->streams[trackIndex] == nullptr) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " info is nullptr", trackIndex);
+            continue;
+        }
+        if (formatContext_->streams[trackIndex]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            int width = 0;
+            int height = 0;
+            Meta &format = mediaInfo_.tracks[trackIndex];
+            format.GetData(Tag::VIDEO_WIDTH, width);
+            format.GetData(Tag::VIDEO_HEIGHT, height);
+            if (width * height > 0) {
+                uint32_t limitSize = width * height * DEFAULT_CHANNEL_CNT * FLV_READ_SIZE_LIMIT_FACTOR;
+                ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, limitSize);
+                MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
+                    " limit " PUBLIC_LOG_U32, trackIndex, height, width, limitSize);
+            }
+        }
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::GetMediaInfo()
+{
+    MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetMediaInfo");
     Status ret = GetSeiInfo();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSeiInfo failed");
 
-    FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo.general);
-    DemuxerLogCompressor::StringifyMeta(mediaInfo.general, -1); // source meta
+    FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo_.general);
+    DemuxerLogCompressor::StringifyMeta(mediaInfo_.general, -1); // source meta
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         Meta meta;
         auto avStream = formatContext_->streams[trackIndex];
         if (avStream == nullptr) {
             MEDIA_LOG_W("Track " PUBLIC_LOG_D32 " info is nullptr", trackIndex);
-            mediaInfo.tracks.push_back(meta);
+            mediaInfo_.tracks.push_back(meta);
             continue;
         }
         FFmpegFormatHelper::ParseTrackInfo(*avStream, meta, *formatContext_);
@@ -1140,7 +1207,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
             avStream->codecpar->codec_id == AV_CODEC_ID_VVC) {
             ConvertCsdToAnnexb(*avStream, meta);
         }
-        mediaInfo.tracks.push_back(meta);
+        mediaInfo_.tracks.push_back(meta);
         DemuxerLogCompressor::StringifyMeta(meta, trackIndex);
     }
     return Status::OK;
