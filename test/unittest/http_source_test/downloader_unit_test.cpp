@@ -15,6 +15,7 @@
 
 #include "download/downloader.h"
 #include "monitor/download_monitor.h"
+#include "http/http_media_downloader.h"
 #include "utils/media_cached_buffer.h"
 #include "download/network_client/http_curl_client.h"
 #include "gtest/gtest.h"
@@ -1189,6 +1190,92 @@ HWTEST_F(DownloaderUnitTest, DROP_RETRY_DATA_001, TestSize.Level1)
     downloader1->currentRequest_->startPos_ = 1000;
     EXPECT_EQ(downloader1->DropRetryData(buffer, 500, downloader1.get()), 500);
     EXPECT_EQ(downloader1->DropRetryData(buffer, 500, downloader1.get()), 500);
+}
+class SourceCallback : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {}
+};
+
+HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_001, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    downloader->NotifyError(52, 403);
+    std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
+    request->clientError_ = 992;
+    EXPECT_EQ(downloader->NeedRetry(request), false);
+    downloader->GetDownloadInfo();
+    downloader->GetBufferSize();
+    downloader->GetBufferingTimeOut();
+    downloader->GetReadTimeOut(true);
+    downloader->GetSegmentOffset();
+    downloader->GetHLSDiscontinuity();
+    downloader->StopBufferring(true);
+    int32_t serverCode = 0;
+    downloader->GetServerMediaServiceErrorCode(400, serverCode);
+    downloader->GetServerMediaServiceErrorCode(101, serverCode);
+    downloader->GetCachedDuration();
+    downloader->RestartAndClearBuffer();
+    downloader->IsFlvLive();
+    downloader->SetStartPts(1);
+    downloader->SetExtraCache(1);
+    downloader->GetMemorySize();
+    downloader->SetCurrentBitRate(1, 1);
+    downloader->SetPlayStrategy(nullptr);
+    DownloadInfo downloadInfo;
+    downloader->GetDownloadInfo(downloadInfo);
+    PlaybackInfo playbackInfo;
+    downloader->GetPlaybackInfo(playbackInfo);
+    downloader->SetAppUid(1);
+    downloader->GetPlayable();
+    EXPECT_NE(downloader->downloader_, nullptr);
+}
+
+HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->downloader_ = nullptr;
+    downloader->callback_ = sourceCallback;
+    downloader->NotifyError(52, 403);
+    std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
+    request->clientError_ = 992;
+    EXPECT_EQ(downloader->NeedRetry(request), false);
+    downloader->GetDownloadInfo();
+    downloader->GetBufferSize();
+    downloader->GetBufferingTimeOut();
+    downloader->GetReadTimeOut(true);
+    downloader->GetSegmentOffset();
+    downloader->GetHLSDiscontinuity();
+    downloader->StopBufferring(true);
+    downloader->WaitForBufferingEnd();
+    int32_t serverCode = 0;
+    downloader->GetServerMediaServiceErrorCode(400, serverCode);
+    downloader->GetServerMediaServiceErrorCode(101, serverCode);
+    downloader->GetCachedDuration();
+    downloader->RestartAndClearBuffer();
+    downloader->IsFlvLive();
+    downloader->SetStartPts(1);
+    downloader->SetExtraCache(1);
+    downloader->GetMemorySize();
+    downloader->SetCurrentBitRate(1, 1);
+    downloader->SetPlayStrategy(nullptr);
+    DownloadInfo downloadInfo;
+    downloader->GetDownloadInfo(downloadInfo);
+    PlaybackInfo playbackInfo;
+    downloader->GetPlaybackInfo(playbackInfo);
+    downloader->SetAppUid(1);
+    downloader->GetPlayable();
+    EXPECT_EQ(downloader->downloader_, nullptr);
+    downloader->callback_ = nullptr;
+    downloader->NotifyError(52, 403);
+    downloader->NotifyError(52, 0);
+    downloader->NotifyError(0, 0);
+    EXPECT_EQ(downloader->callback_, nullptr);
 }
 }
 }
