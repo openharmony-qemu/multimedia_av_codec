@@ -565,11 +565,12 @@ Status HttpMediaDownloader::HandleRingBuffer(unsigned char* buff, ReadDataInfo& 
         isTimeoutErrorNotified_.store(true);
         return Status::END_OF_STREAM;
     }
-    if (isBuffering_ && CheckBufferingOneSeconds() && !downloadRequest_->IsChunkedVod()) {
+    bool isNeedErrorAgain = GetCurrentBufferSize() <= 0;
+    if (isBuffering_ && CheckBufferingOneSeconds() && !downloadRequest_->IsChunkedVod() && isNeedErrorAgain) {
         MEDIA_LOG_I("HTTP Return error again.");
         return Status::ERROR_AGAIN;
     }
-    if (StartBuffering(readDataInfo.wantReadLength_)) {
+    if (StartBuffering(readDataInfo.wantReadLength_) && isNeedErrorAgain) {
         return Status::ERROR_AGAIN;
     }
     return ReadRingBuffer(buff, readDataInfo);
@@ -1675,6 +1676,9 @@ bool HttpMediaDownloader::IsNeedBufferForPlaying()
         bufferingEndCond_.NotifyAll();
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;
+        if (isRingBuffer_ && callback_) {
+            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        }
         return false;
     }
     return true;
