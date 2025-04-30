@@ -38,7 +38,7 @@ constexpr double CACHE_RELEASE_FACTOR_DEFAULT = 10;
 constexpr double TO_PERCENT = 100;
 constexpr int64_t MAX_TOTAL_READ_SIZE = 2000000;
 constexpr int64_t UP_LIMIT_MAX_TOTAL_READ_SIZE = 3000000;
-constexpr int64_t ACCESS_OFFSET_MAX_LENGTH = 8 * 1024;
+constexpr int64_t ACCESS_OFFSET_MAX_LENGTH = 2 * 1024;
 
 inline constexpr bool BoundedIntervalComp(int64_t mid, uint64_t start, int64_t end)
 {
