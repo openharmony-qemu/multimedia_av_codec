@@ -61,14 +61,6 @@ int32_t FSurfaceMemory::RequestSurfaceBuffer()
 
 void FSurfaceMemory::ReleaseSurfaceBuffer()
 {
-    CHECK_AND_RETURN_LOG(surfaceBuffer_ != nullptr, "Surface buffer is nullptr!");
-    if (isAttached && owner == Owner::OWNED_BY_SURFACE) {
-        auto ret = sInfo_->surface->CancelBuffer(surfaceBuffer_);
-        if (ret != OHOS::SurfaceError::SURFACE_ERROR_OK) {
-            AVCODEC_LOGE("Surface(%{public}" PRIu64 ") cancel buffer(%{public}u) failed, ret=%{public}" PRIu64,
-                         sInfo_->surface->GetUniqueId(), surfaceBuffer_->GetSeqNum(), static_cast<uint64_t>(ret));
-        }
-    }
     surfaceBuffer_ = nullptr;
 }
 
