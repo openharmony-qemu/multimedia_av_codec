@@ -1210,7 +1210,13 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
 
     ioContext_.isLimitType = true;
     ioContext_.sizeLimit = FLV_READ_SIZE_LIMIT_DEFAULT;
+    FALSE_RETURN_V_MSG_E(static_cast<size_t>(formatContext_->nb_streams) == mediaInfo_.tracks.size(), Status::OK,
+        "mediaInfo size is error");
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        if (formatContext_->streams[trackIndex] == nullptr) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " info is nullptr", trackIndex);
+            continue;
+        }
         if (formatContext_->streams[trackIndex]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             int width = 0;
             int height = 0;
