@@ -57,7 +57,7 @@ private:
     int32_t OnConfigure(const Format &format) override;
     int32_t OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t ConfigureBufferType();
-    int32_t SetupPort(const Format &format, std::optional<double> frameRate);
+    int32_t SetupPort(const Format &format, std::optional<double> &frameRate);
     void ConfigureProtocol(const Format &format, std::optional<double> frameRate);
     void CalcInputBufSize(PortInfo& info, VideoPixelFormat pixelFmt);
     int32_t UpdateInPortFormat() override;

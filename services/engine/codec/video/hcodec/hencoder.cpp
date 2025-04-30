@@ -382,7 +382,7 @@ void HEncoder::CalcInputBufSize(PortInfo &info, VideoPixelFormat pixelFmt)
     info.inputBufSize = inSize;
 }
 
-int32_t HEncoder::SetupPort(const Format &format, std::optional<double> frameRate)
+int32_t HEncoder::SetupPort(const Format &format, std::optional<double> &frameRate)
 {
     constexpr int32_t MAX_ENCODE_WIDTH = 10000;
     constexpr int32_t MAX_ENCODE_HEIGHT = 10000;
