@@ -135,6 +135,7 @@ private:
     float GetCacheDuration(float ratio);
     void HandleDownloadWaterLine();
     void UpdateMinAndMaxReadOffset();
+    bool IsStartDurationOfFlvMultiStream();
     bool StartBufferingCheck(unsigned int& wantReadLength);
     bool ClearHasReadBuffer();
     void ClearCacheBuffer();

@@ -77,6 +77,7 @@ ohos_unittest("media_demuxer_ext_unit_test") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",

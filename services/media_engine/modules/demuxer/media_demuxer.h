@@ -300,9 +300,18 @@ private:
     Status NotifySampleQueueBufferConsume(uint32_t queueId);
     Status HandleSelectBitrateBySampleQueue(int64_t startPts, uint32_t bitrate);
     bool IsIgonreBuffering();
+    void InitEnableSampleQueueFlag();
+    inline bool GetEnableSampleQueueFlag() const;
+    Status StartTaskWithSampleQueue(int32_t trackId);
+    Status PushBufferToQueue(uint32_t trackId, std::shared_ptr<AVBuffer>& buffer, bool available);
+    void StartTaskInner(uint32_t trackId);
+    void InitAudioTrack();
+    void InitVideoTrack();
+    void InitSubtitleTrack();
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
     int64_t lastClockTimeMs_ = 0;
+    bool enableSampleQueue_ = false;
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
