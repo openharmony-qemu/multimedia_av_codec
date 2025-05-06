@@ -140,6 +140,7 @@ public:
 
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
+    Status SetTranscoderMode();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     void WaitForBufferingEnd();
@@ -235,6 +236,7 @@ private:
     Status InnerPrepare();
     Status HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status InitPtsInfo();
+    void TranscoderInitMediaStartPts();
     void UpdateBufferQueueListener(int32_t trackId);
     bool IsOpenGopBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     void UpdateSyncFrameInfo(std::shared_ptr<AVBuffer> sample, uint32_t trackId, bool isDiscardable = false);
@@ -244,6 +246,7 @@ private:
         const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample);
     Status HandleTrackEos(uint32_t trackId);
     void SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer);
+    void TranscoderUpdateOutputBufferPts(uint32_t trackId, std::shared_ptr<AVBuffer> &outputBuffer);
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -322,10 +325,12 @@ private:
     std::atomic<bool> isInterruptNeeded_ {false};
     bool isAutoMaintainPts_ = false;
     std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
+    int64_t transcoderStartPts_ {HST_TIME_NONE};
     bool isEnableReselectVideoTrack_ {false};
     uint32_t targetVideoTrackId_ {TRACK_ID_DUMMY};
     SyncFrameInfo syncFrameInfo_ {};
     std::mutex syncFrameInfoMutex_ {};
+    bool isTranscoderMode_ {false};
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
     int32_t apiVersion_ {0};
