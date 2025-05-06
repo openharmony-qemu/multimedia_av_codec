@@ -84,7 +84,7 @@ private:
 
     static void ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format);
 
-    static void ParseInfoFromMetadata(const AVDictionary* metadata, const TagType key, Meta &format);
+    static void ParseInfoFromMetadata(const AVDictionary* metadata, Meta &format);
     static void PutInfoToFormat(const Tag key, int32_t value, Meta &format);
     static void PutInfoToFormat(const Tag key, int64_t value, Meta &format);
     static void PutInfoToFormat(const Tag key, float value, Meta &format);
