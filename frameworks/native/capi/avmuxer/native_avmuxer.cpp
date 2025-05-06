@@ -120,22 +120,81 @@ static void SeparateMeta(std::shared_ptr<Meta> meta, std::shared_ptr<Meta> &defi
     }
 }
 
+static void SetCreationTimeMeta(std::shared_ptr<Meta> definedMeta, std::shared_ptr<Meta>& param,
+                                bool& isMetaAvailable, bool& isValid)
+{
+    isMetaAvailable = (definedMeta->Find(Tag::MEDIA_CREATION_TIME) != definedMeta->end());
+    isValid = true;
+
+    if (!isMetaAvailable) return;
+
+    AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_CREATION_TIME);
+    std::string value;
+    definedMeta->Get<Tag::MEDIA_CREATION_TIME>(value);
+
+    std::regex pattern(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(.\d{1,6})?((\+|-\d{4})?)Z?)");
+    std::smatch match;
+
+    if (!std::regex_match(value, match, pattern)) {
+        AVCODEC_LOGE("format defined key %{public}s, value invalid", Tag::MEDIA_CREATION_TIME);
+        isValid = false;
+        return;
+    }
+
+    param->Set<Tag::MEDIA_CREATION_TIME>(value);
+    isValid = true;
+}
+
+static void SetCommentMeta(std::shared_ptr<Meta> definedMeta, std::shared_ptr<Meta>& param,
+                                bool& isMetaAvailable, bool& isValid)
+{
+    isMetaAvailable = (definedMeta->Find(Tag::MEDIA_COMMENT) != definedMeta->end());
+    isValid = true;
+
+    if (!isMetaAvailable) return;
+
+    AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_COMMENT);
+    std::string comment;
+    definedMeta->Get<Tag::MEDIA_COMMENT>(comment);
+
+    std::regex pattern(R"(^.{1,256}$)");
+    std::smatch match;
+
+    if (!std::regex_match(comment, match, pattern)) {
+        AVCODEC_LOGE("format defined key %{public}s, comment invalid", Tag::MEDIA_COMMENT);
+        isValid = false;
+        return;
+    }
+
+    param->Set<Tag::MEDIA_COMMENT>(comment);
+    isValid = true;
+}
+
 static OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMuxerObject *object)
 {
     std::shared_ptr<Meta> param = std::make_shared<Meta>();
-    if (definedMeta->Find(Tag::MEDIA_CREATION_TIME) != definedMeta->end()) {
-        AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_CREATION_TIME);
-        std::string value;
-        definedMeta->Get<Tag::MEDIA_CREATION_TIME>(value);
-        std::regex pattern(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(.\d{1,6})?((\+|-\d{4})?)Z?)");
-        std::smatch match;
-        CHECK_AND_RETURN_RET_LOG(std::regex_match(value, match, pattern), AV_ERR_INVALID_VAL,
-            "format defined key %{public}s, value invalid", Tag::MEDIA_CREATION_TIME);
-        param->Set<Tag::MEDIA_CREATION_TIME>(value);
-    } else {
-        AVCODEC_LOGW("input format does not have a valid key!");
-        return AV_ERR_OK;
+    OH_AVErrCode errorCode = AV_ERR_OK;
+    
+    bool hasCreationTime = false;
+    bool validCreationTime = true;
+    SetCreationTimeMeta(definedMeta, param, hasCreationTime, validCreationTime);
+
+    bool hasComment = false;
+    bool validComment = true;
+    SetCommentMeta(definedMeta, param, hasComment, validComment);
+
+    const bool CreationTimeErr = hasCreationTime && !validCreationTime;
+    const bool CommentErr = hasComment && !validComment;
+    if (CreationTimeErr || CommentErr) {
+        errorCode = AV_ERR_INVALID_VAL;
     }
+    
+    if (!hasCreationTime && !hasComment) {
+        AVCODEC_LOGE("input format does not have %{public}s or %{public}s",
+            Tag::MEDIA_CREATION_TIME, Tag::MEDIA_COMMENT);
+    }
+
+    CHECK_AND_RETURN_RET_LOG(errorCode == AV_ERR_OK, errorCode, "defined format key invalid");
     int32_t ret = object->muxer_->SetParameter(param);
     return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
 }
