@@ -42,10 +42,13 @@ void SurfaceDecoderMockUnitTest::SetUp(void)
 
 void SurfaceDecoderMockUnitTest::TearDown(void)
 {
+    if (mockInputBufferQueueConsumer_) {
+        delete mockInputBufferQueueConsumer_;
+        mockInputBufferQueueConsumer_ = nullptr;
+    }
     surfaceDecoderAdapter_ = nullptr;
     mockCodecServer_ = nullptr;
     mockDecoderAdapterCallback_ = nullptr;
-    mockInputBufferQueueConsumer_ = nullptr;
 }
 
 /**
