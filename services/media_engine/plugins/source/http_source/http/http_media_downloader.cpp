@@ -41,6 +41,7 @@ constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t PLAY_WATER_LINE = 5 * 1024;
+constexpr size_t FLV_PLAY_WATER_LINE = 20 * 1024;
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 48 * 10 * 1024;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int32_t ONE_HUNDRED_MILLIONSECOND = 100;
@@ -357,6 +358,9 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
     size_t fileRemain = 0;
     size_t fileContenLen = downloadRequest_->GetFileContentLength();
     cacheWaterLine = std::max(static_cast<size_t>(wantReadLength), PLAY_WATER_LINE);
+    if (isRingBuffer_) {
+        cacheWaterLine = std::max(static_cast<size_t>(wantReadLength), FLV_PLAY_WATER_LINE);
+    }
     if (fileContenLen > readOffset_) {
         fileRemain = fileContenLen - readOffset_;
         cacheWaterLine = std::min(fileRemain, cacheWaterLine);
@@ -557,11 +561,12 @@ Status HttpMediaDownloader::HandleRingBuffer(unsigned char* buff, ReadDataInfo& 
         isTimeoutErrorNotified_.store(true);
         return Status::END_OF_STREAM;
     }
-    if (isBuffering_ && !downloadRequest_->IsChunkedVod() && CheckBufferingOneSeconds()) {
+    bool isNeedErrorAgain = GetCurrentBufferSize() <= 0;
+    if (isBuffering_ && CheckBufferingOneSeconds() && !downloadRequest_->IsChunkedVod() && isNeedErrorAgain) {
         MEDIA_LOG_I("HTTP Return error again.");
         return Status::ERROR_AGAIN;
     }
-    if (StartBuffering(readDataInfo.wantReadLength_)) {
+    if (StartBuffering(readDataInfo.wantReadLength_) && isNeedErrorAgain) {
         return Status::ERROR_AGAIN;
     }
     return ReadRingBuffer(buff, readDataInfo);
@@ -1636,6 +1641,9 @@ bool HttpMediaDownloader::IsNeedBufferForPlaying()
         isBuffering_.store(false);
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;
+        if (isRingBuffer_ && callback_) {
+            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        }
         return false;
     }
     return true;
