@@ -139,6 +139,12 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     demuxer_->SetPlayerId(groupId_);
 }
 
+Status DemuxerFilter::SetTranscoderMode()
+{
+    FALSE_RETURN_V(demuxer_ != nullptr, Status::ERROR_NULL_POINTER);
+    return demuxer_->SetTranscoderMode();
+}
+
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SetDataSource");
