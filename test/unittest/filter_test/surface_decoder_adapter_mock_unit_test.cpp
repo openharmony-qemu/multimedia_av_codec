@@ -103,6 +103,9 @@ HWTEST_F(SurfaceDecoderMockUnitTest, FailBranchsCover_0200, TestSize.Level1)
     buffer->meta_ = std::make_shared<Meta>();
     EXPECT_CALL(*(mockInputBufferQueueConsumer_), IsBufferInQueue(_)).WillRepeatedly(testing::Return(true));
     EXPECT_CALL(*(mockInputBufferQueueConsumer_), ReleaseBuffer(_)).WillRepeatedly(testing::Return(Status::OK));
+    EXPECT_CALL(*(mockInputBufferQueueConsumer_), GetQueueSize()).WillRepeatedly(testing::Return(0));
+    EXPECT_CALL(*(mockInputBufferQueueConsumer_), SetQueueSize(_)).WillRepeatedly(testing::Return(Status::OK));
+    EXPECT_CALL(*(mockInputBufferQueueConsumer_), AttachBuffer(_, _)).WillRepeatedly(testing::Return(Status::OK));
     surfaceDecoderAdapter_->inputBufferQueueConsumer_ = mockInputBufferQueueConsumer_;
     surfaceDecoderAdapter_->OnInputBufferAvailable(index, buffer);
     uint32_t ret = 0;
