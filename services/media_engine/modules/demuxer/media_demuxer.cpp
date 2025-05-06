@@ -848,14 +848,14 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     streamDemuxer_->SetSource(source_);
     streamDemuxer_->Init(uri_);
 
-    ret = InnerPrepare();
+    res = InnerPrepare();
     source_->NotifyInitSuccess();
     ProcessDrmInfos();
     FALSE_RETURN_V_NOLOG(eventReceiver_ != nullptr, res);
     eventReceiver_->OnMemoryUsageEvent({"SOURCE",
         DfxEventType::DFX_INFO_MEMORY_USAGE, source_->GetMemorySize()});
     MEDIA_LOG_I("Out");
-    return ret;
+    return res;
 }
 
 bool MediaDemuxer::IsSubtitleMime(const std::string& mime)
