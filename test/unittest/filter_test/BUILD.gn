@@ -106,6 +106,7 @@ ohos_unittest("filter_unit_test") {
       "./surface_encoder_adapter_unit_test.cpp",
       "./video_capture_filter_unit_test.cpp",
       "./video_resize_filter_unit_test.cpp",
+      "./surface_decoder_adapter_mock_unit_test.cpp",
     ]
   }
 
