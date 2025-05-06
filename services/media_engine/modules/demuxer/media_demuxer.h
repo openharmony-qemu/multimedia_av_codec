@@ -151,6 +151,7 @@ public:
         const uint32_t index, uint64_t &relativePresentationTimeUs);
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
+    Status SetTranscoderMode();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     void WaitForBufferingEnd();
