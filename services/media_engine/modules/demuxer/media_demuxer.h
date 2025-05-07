@@ -208,6 +208,7 @@ private:
     Status AddDemuxerCopyTask(uint32_t trackId, TaskType type);
     Status AddDemuxerCopyTaskByTrack(uint32_t trackId, DemuxerTrackType type);
     void AddDemuxerCopyTaskByTrackIfFilter(uint32_t trackId, DemuxerTrackType type);
+    void AddDemuxerCopyTaskIfFilter(uint32_t trackId, TaskType type);
 
     Status StopAllTask();
     Status PauseAllTask();
