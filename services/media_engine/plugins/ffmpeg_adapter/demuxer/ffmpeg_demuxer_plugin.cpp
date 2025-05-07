@@ -58,6 +58,7 @@ const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 const int64_t INIT_TIME_THRESHOLD = 1000;
 const uint32_t ID3V2_HEADER_SIZE = 10;
+const int32_t MS_TO_US = 1000;
 const int32_t MS_TO_NS = 1000 * 1000;
 const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000;
 const int DEFAULT_CHANNEL_CNT = 3;
@@ -729,6 +730,44 @@ void FFmpegDemuxerPlugin::ResetContext()
     ioContext_.retry = false;
 }
 
+bool FFmpegDemuxerPlugin::SelectedVideo()
+{
+    for (uint32_t index : selectedTrackIds_) {
+        FALSE_RETURN_V_NOLOG(
+            formatContext_ != nullptr &&
+            index < formatContext_->nb_streams &&
+            formatContext_->streams[index] != nullptr &&
+            formatContext_->streams[index]->codecpar != nullptr, false);
+
+        if (formatContext_->streams[index]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool FFmpegDemuxerPlugin::NeedDropAfterSeek(uint32_t trackId, int64_t pts)
+{
+    FALSE_RETURN_V_NOLOG(seekTime_ != AV_NOPTS_VALUE && seekMode_ == SeekMode::SEEK_NEXT_SYNC, false);
+    FALSE_RETURN_V_NOLOG(formatContext_ != nullptr && trackId < formatContext_->nb_streams, false);
+    FALSE_RETURN_V_NOLOG(fileType_ != FileType::OGG && fileType_ != FileType::UNKNOW, false);
+    AVStream *avStream = formatContext_->streams[trackId];
+    FALSE_RETURN_V_NOLOG(avStream != nullptr && avStream->codecpar != nullptr, false);
+    FALSE_RETURN_V_NOLOG(avStream->start_time != AV_NOPTS_VALUE, false);
+    if (avStream->start_time < 0) {
+        FALSE_RETURN_V_NOLOG(pts <= INT64_MAX + avStream->start_time, false);
+    } else if (avStream->start_time > 0) {
+        FALSE_RETURN_V_NOLOG(pts >= INT64_MIN + avStream->start_time, false);
+    }
+    if (!SelectedVideo() && avStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && // audio seek
+        AvTime2Us(ConvertTimeFromFFmpeg(pts - avStream->start_time, avStream->time_base)) < seekTime_ * MS_TO_US) {
+        MEDIA_LOG_W("Seek frame behind time, drop");
+        return true;
+    }
+    seekTime_ = AV_NOPTS_VALUE;
+    return false;
+}
+
 int FFmpegDemuxerPlugin::AVReadFrameLimit(AVPacket *pkt)
 {
     if (!ioContext_.isLimitType) {
@@ -775,7 +814,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             return Status::ERROR_UNKNOWN;
         }
         auto trackId = pkt->stream_index;
-        if (!TrackIsSelected(trackId)) {
+        if (!TrackIsSelected(trackId) || NeedDropAfterSeek(trackId, pkt->pts)) {
             av_packet_unref(pkt);
             continue;
         }
@@ -1118,6 +1157,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Out");
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
+    fileType_ = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
     return Status::OK;
 }
 
@@ -1526,6 +1566,8 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
     }
+    seekTime_ = seekTime;
+    seekMode_ = flag == AVSEEK_FLAG_BACKWARD ? SeekMode::SEEK_PREVIOUS_SYNC : mode;
     return Status::OK;
 }
 
