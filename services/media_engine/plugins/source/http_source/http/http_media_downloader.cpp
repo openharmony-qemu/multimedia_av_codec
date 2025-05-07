@@ -337,11 +337,16 @@ void HttpMediaDownloader::HandleWaterline()
     }
 }
 
+bool HttpMediaDownloader::IsStartDurationOfFlvMultiStream()
+{
+    return isRingBuffer_ && playMediaStreams_.size() > 0 &&
+        (steadyClock_.ElapsedMilliseconds() - openTime_) < IGNORE_BUFFERING_WITH_START_TIME_MS;
+}
+
 bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
 {
     AutoLock lk(savedataMutex_);
-    if (!isFirstFrameArrived_ ||
-        (isRingBuffer_ && (steadyClock_.ElapsedMilliseconds() - openTime_) < IGNORE_BUFFERING_WITH_START_TIME_MS)) {
+    if (!isFirstFrameArrived_ || IsStartDurationOfFlvMultiStream()) {
         if (GetCurrentBufferSize() >= wantReadLength || HandleBreak()) {
             return false;
         } else {
@@ -399,8 +404,7 @@ bool HttpMediaDownloader::StartBuffering(unsigned int& wantReadLength)
         ClearCacheBuffer();
         canWrite_ = true;
     }
-
-    if (isRingBuffer_ && (steadyClock_.ElapsedMilliseconds() - openTime_) < IGNORE_BUFFERING_WITH_START_TIME_MS) {
+    if (IsStartDurationOfFlvMultiStream()) {
         return false;
     }
     isBuffering_ = true;

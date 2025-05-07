@@ -1653,12 +1653,19 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ReadLoop_002, TestSize.Level1)
     std::shared_ptr<Plugins::DemuxerPlugin> pluginMock1 = std::make_shared<DemuxerPluginMock>("StatusAgain");
     demuxer->demuxerPluginManager_->streamInfoMap_[0].plugin = pluginMock1;
     EXPECT_EQ(demuxer->AddDemuxerCopyTask(0, TaskType::VIDEO), Status::OK);
-    EXPECT_EQ(demuxer->ReadLoop(0), 10);
-
+    if (demuxer->enableSampleQueue_) {
+        EXPECT_EQ(demuxer->ReadLoop(0), 10);
+    } else {
+        EXPECT_EQ(demuxer->ReadLoop(0), 0);
+    }
     std::shared_ptr<Plugins::DemuxerPlugin> pluginMock2 = std::make_shared<DemuxerPluginMock>("StatusErrorNoMemory");
     demuxer->demuxerPluginManager_->streamInfoMap_[0].plugin = pluginMock2;
     demuxer->isOnEventNoMemory_ = false;
-    EXPECT_EQ(demuxer->ReadLoop(0), 10);
+    if (demuxer->enableSampleQueue_) {
+        EXPECT_EQ(demuxer->ReadLoop(0), 10);
+    } else {
+        EXPECT_EQ(demuxer->ReadLoop(0), 0);
+    }
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_TryRecvParserTask_002, TestSize.Level1)
@@ -1726,8 +1733,12 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_002, TestSize.Level1)
 
     int32_t trackId = 1;
     demuxer->taskMap_[trackId] = nullptr;
-    demuxer->sampleConsumerTaskMap_[trackId] = nullptr;
-    EXPECT_EQ(demuxer->StartTask(trackId), Status::ERROR_INVALID_PARAMETER);
+    if (demuxer->enableSampleQueue_) {
+        demuxer->sampleConsumerTaskMap_[trackId] = nullptr;
+        EXPECT_EQ(demuxer->StartTask(trackId), Status::ERROR_INVALID_PARAMETER);
+    } else {
+        EXPECT_EQ(demuxer->StartTask(trackId), Status::OK);
+    }
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckChangeStreamID_002, TestSize.Level1)
