@@ -539,7 +539,7 @@ FragmentIterator CacheMediaChunkBufferImpl::EraseFragmentCache(const FragmentIte
 inline size_t WriteOneChunkData(CacheChunk& chunkInfo, uint8_t* src, uint64_t offset, size_t writeSize)
 {
     uint64_t copyBegin = offset > chunkInfo.offset ? offset - chunkInfo.offset : 0;
-    if (copyBegin < 0 || copyBegin > chunkInfo.chunkSize) {
+    if (copyBegin > chunkInfo.chunkSize) {
         return 0;
     }
     size_t writePerOne = static_cast<size_t>(chunkInfo.chunkSize - static_cast<size_t>(copyBegin));

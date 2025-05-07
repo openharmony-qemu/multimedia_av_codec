@@ -2081,7 +2081,7 @@ void HlsMediaDownloader::SetIsReportedErrorCode()
 bool HlsMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
 {
     AutoLock lock(initCacheMutex_);
-    bool isInitBufferSizeOk = IsCachedInitSizeReady(size) >= size || CheckBreakCondition();
+    bool isInitBufferSizeOk = IsCachedInitSizeReady(size) || CheckBreakCondition();
     if (isInitBufferSizeOk || !downloader_ || !downloadRequest_ || isTimeoutErrorNotified_.load()) {
         MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize ok.");
         return false;

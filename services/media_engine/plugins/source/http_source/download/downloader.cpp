@@ -608,7 +608,9 @@ void Downloader::OpenAppUri()
 {
     {
         AutoLock lock(closeMutex_);
-        appPreviousRequestUrl_ = currentRequest_->GetUrl();
+        if (currentRequest_ != nullptr) {
+            appPreviousRequestUrl_ = currentRequest_->GetUrl();
+        }
         if (sourceLoader_ != nullptr && currentRequest_ != nullptr) {
             if (uuid_ != 0) {
                 sourceLoader_->Close(uuid_);
