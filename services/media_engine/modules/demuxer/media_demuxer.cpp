@@ -756,6 +756,12 @@ void MediaDemuxer::AddDemuxerCopyTaskByTrackIfFilter(uint32_t trackId, DemuxerTr
     AddDemuxerCopyTaskByTrack(trackId, type);
 }
 
+void MediaDemuxer::AddDemuxerCopyTaskIfFilter(uint32_t trackId, TaskType type)
+{
+    FALSE_RETURN_NOLOG(isCreatedByFilter_);
+    AddDemuxerCopyTask(trackId, type);
+}
+
 Status MediaDemuxer::InnerPrepare()
 {
     Plugins::MediaInfo mediaInfo;
@@ -780,10 +786,12 @@ Status MediaDemuxer::InnerPrepare()
 void MediaDemuxer::InitVideoTrack()
 {
     FALSE_RETURN_NOLOG(videoTrackId_ != TRACK_ID_DUMMY);
-    GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrack(videoTrackId_, DemuxerTrackType::VIDEO)
-                            : AddDemuxerCopyTask(videoTrackId_, TaskType::VIDEO);
-    demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, videoTrackId_, -1);
-    int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
+    FALSE_RETURN_MSG(videoTrackId_ <= INT32_MAX, "videoTrackId_ is larger than int32 max");
+    int32_t videoTrackIdInner = static_cast<int32_t>(videoTrackId_);
+    GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrackIfFilter(videoTrackId_, DemuxerTrackType::VIDEO)
+                            : AddDemuxerCopyTaskIfFilter(videoTrackId_, TaskType::VIDEO);
+    demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackIdInner, videoTrackIdInner, -1);
+    int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackIdInner);
     streamDemuxer_->SetNewVideoStreamID(streamId);
     streamDemuxer_->SetChangeFlag(true);
     streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
@@ -796,10 +804,12 @@ void MediaDemuxer::InitVideoTrack()
 void MediaDemuxer::InitAudioTrack()
 {
     FALSE_RETURN_NOLOG(audioTrackId_ != TRACK_ID_DUMMY);
-    GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrack(audioTrackId_, DemuxerTrackType::AUDIO)
-                            : AddDemuxerCopyTask(audioTrackId_, TaskType::AUDIO);
-    demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, audioTrackId_, -1);
-    int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(audioTrackId_);
+    FALSE_RETURN_MSG(audioTrackId_ <= INT32_MAX, "audioTrackId_ is larger than int32 max");
+    int32_t audioTrackIdInner = static_cast<int32_t>(audioTrackId_);
+    GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrackIfFilter(audioTrackId_, DemuxerTrackType::AUDIO)
+                            : AddDemuxerCopyTaskIfFilter(audioTrackId_, TaskType::AUDIO);
+    demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackIdInner, audioTrackIdInner, -1);
+    int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(audioTrackIdInner);
     streamDemuxer_->SetNewAudioStreamID(streamId);
     streamDemuxer_->SetChangeFlag(true);
     streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
@@ -814,10 +824,12 @@ void MediaDemuxer::InitAudioTrack()
 void MediaDemuxer::InitSubtitleTrack()
 {
     FALSE_RETURN_NOLOG(subtitleTrackId_ != TRACK_ID_DUMMY);
-    GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrack(subtitleTrackId_, DemuxerTrackType::SUBTITLE)
-                            : AddDemuxerCopyTask(subtitleTrackId_, TaskType::SUBTITLE);
-    demuxerPluginManager_->UpdateTempTrackMapInfo(subtitleTrackId_, subtitleTrackId_, -1);
-    int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(subtitleTrackId_);
+    FALSE_RETURN_MSG(subtitleTrackId_ <= INT32_MAX, "subtitleTrackId_ is larger than int32 max");
+    int32_t subtitleTrackIdInner = static_cast<int32_t>(subtitleTrackId_);
+    GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrackIfFilter(subtitleTrackId_, DemuxerTrackType::SUBTITLE)
+                            : AddDemuxerCopyTaskIfFilter(subtitleTrackId_, TaskType::SUBTITLE);
+    demuxerPluginManager_->UpdateTempTrackMapInfo(subtitleTrackIdInner, subtitleTrackIdInner, -1);
+    int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(subtitleTrackIdInner);
     streamDemuxer_->SetNewSubtitleStreamID(streamId);
     streamDemuxer_->SetChangeFlag(true);
     streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
