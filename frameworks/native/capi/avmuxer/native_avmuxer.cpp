@@ -121,7 +121,7 @@ static void SeparateMeta(std::shared_ptr<Meta> meta, std::shared_ptr<Meta> &defi
 }
 
 static void SetCreationTimeMeta(std::shared_ptr<Meta> definedMeta, std::shared_ptr<Meta> &param,
-                                bool &isMetaAvailable, bool &isValid)
+    bool &isMetaAvailable, bool &isValid)
 {
     isMetaAvailable = (definedMeta->Find(Tag::MEDIA_CREATION_TIME) != definedMeta->end());
     
@@ -144,7 +144,7 @@ static void SetCreationTimeMeta(std::shared_ptr<Meta> definedMeta, std::shared_p
 }
 
 static void SetCommentMeta(std::shared_ptr<Meta> definedMeta, std::shared_ptr<Meta>& param,
-                            bool& isMetaAvailable, bool& isValid)
+    bool& isMetaAvailable, bool& isValid)
 {
     isMetaAvailable = (definedMeta->Find(Tag::MEDIA_COMMENT) != definedMeta->end());
     
@@ -177,7 +177,7 @@ static OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMux
     SetCommentMeta(definedMeta, param, hasMeta, isValid);
 
     CHECK_AND_RETURN_RET_LOG(hasMeta == true, AV_ERR_INVALID_VAL, "input format does not have %{public}s or %{public}s",
-                                Tag::MEDIA_CREATION_TIME, Tag::MEDIA_COMMENT);
+        Tag::MEDIA_CREATION_TIME, Tag::MEDIA_COMMENT);
     if (!isValid) {
         AVCODEC_LOGE("input format is invalid");
         return AV_ERR_INVALID_VAL;
