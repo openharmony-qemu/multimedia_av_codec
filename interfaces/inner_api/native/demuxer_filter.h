@@ -56,6 +56,7 @@ public:
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
 
+    Status SetTranscoderMode();
     Status SetDataSource(const std::shared_ptr<MediaSource> source);
     Status SetSubtitleSource(const std::shared_ptr<MediaSource> source);
     void SetBundleName(const std::string& bundleName);

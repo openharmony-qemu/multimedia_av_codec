@@ -635,6 +635,10 @@ Status MediaDemuxer::InnerPrepare()
     if (ret == Status::OK) {
         InitMediaMetaData(mediaInfo);
         InitDefaultTrack(mediaInfo, videoTrackId_, audioTrackId_, subtitleTrackId_, videoMime_);
+        if (isTranscoderMode_) {
+            TranscoderInitMediaStartPts();
+            MEDIA_LOG_I("Media startTime: " PUBLIC_LOG_D64, transcoderStartPts_);
+        }
         if (videoTrackId_ != TRACK_ID_DUMMY) {
             AddDemuxerCopyTask(videoTrackId_, TaskType::VIDEO);
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, videoTrackId_, -1);
@@ -1862,6 +1866,7 @@ Status MediaDemuxer::HandleReadSample(uint32_t trackId)
         if (fileType_ == FileType::AVI && trackId == videoTrackId_) {
             SetOutputBufferPts(bufferMap_[trackId]);
         }
+        TranscoderUpdateOutputBufferPts(trackId, bufferMap_[trackId]);
         ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
     } else {
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
@@ -1888,6 +1893,14 @@ void MediaDemuxer::SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer)
     FALSE_RETURN_MSG(outputBuffer != nullptr, "outputBuffer is nullptr.");
     MEDIA_LOG_D("OutputBuffer PTS: " PUBLIC_LOG_D64 " DTS: " PUBLIC_LOG_D64, outputBuffer->pts_, outputBuffer->dts_);
     outputBuffer->pts_ = outputBuffer->dts_;
+}
+
+void MediaDemuxer::TranscoderUpdateOutputBufferPts(uint32_t trackId, std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    FALSE_RETURN_NOLOG(isTranscoderMode_);
+    if (transcoderStartPts_ > 0 && outputBuffer != nullptr) {
+        outputBuffer->pts_ -= transcoderStartPts_;
+    }
 }
 
 bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
@@ -2384,6 +2397,12 @@ Status MediaDemuxer::PauseDemuxerReadLoop()
     }
     isDemuxerLoopExecuting_ = false;
     return PauseAllTask();
+}
+
+Status MediaDemuxer::SetTranscoderMode()
+{
+    isTranscoderMode_ = true;
+    return Status::OK;
 }
 
 void MediaDemuxer::SetCacheLimit(uint32_t limitSize)
