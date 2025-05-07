@@ -126,7 +126,7 @@ config("av_codec_client_public_config") {
 
 config("av_codec_suspend_client_pubilc_config") {
   include_dirs = [
-    "./"
+    "./",
     "$av_codec_root_dir/frameworks/native/avcodec",
     "$av_codec_root_dir/frameworks/native/avcodeclist",
     "$av_codec_root_dir/frameworks/native/avdemuxer",
