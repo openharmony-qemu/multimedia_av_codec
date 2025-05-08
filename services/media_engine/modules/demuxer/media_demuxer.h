@@ -312,7 +312,7 @@ private:
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
     int64_t lastClockTimeMs_ = 0;
-    bool enableSampleQueue_ = false;
+    bool enableSampleQueue_ = true;
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
