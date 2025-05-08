@@ -124,7 +124,7 @@ config("av_codec_client_public_config") {
   }
 }
 
-config("av_codec_suspend_client_pubilc_config") {
+config("av_codec_suspend_client_public_config") {
   include_dirs = [
     "./",
     "$av_codec_root_dir/frameworks/native/avcodec",
@@ -348,7 +348,7 @@ ohos_shared_library("av_codec_suspend_client") {
   public_configs = [
     ":av_codec_client_local_config",
     ":av_codec_client_ipc_config",
-    ":av_codec_client_public_config",
+    ":av_codec_suspend_client_public_config",
     ":av_codec_packege_include",
     ":av_codec_client_codec_config",
   ]
