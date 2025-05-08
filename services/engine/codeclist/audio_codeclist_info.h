@@ -45,6 +45,8 @@ public:
     CapabilityData GetVividDecoderCapability();
     CapabilityData GetAmrnbEncoderCapability();
     CapabilityData GetAmrwbEncoderCapability();
+    CapabilityData GetL2hcEncoderCapability();
+    CapabilityData GetL2hcDecoderCapability();
 #endif
 #ifdef SUPPORT_CODEC_COOK
     CapabilityData GetCookDecoderCapability();

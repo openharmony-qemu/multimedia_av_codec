@@ -80,6 +80,10 @@ const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000
 constexpr int MIN_BIT_RATE_VIVID_DECODER = 16000;
 constexpr int MAX_BIT_RATE_VIVID_DECODER = 3075000;
 constexpr int MAX_CHANNEL_COUNT_VIVID = 16;
+const std::vector<int32_t> AUDIO_L2HC_SAMPLE_RATE = {44100, 48000, 88200, 96000, 176400, 192000};
+constexpr int MIN_BITRATE_L2HC = 40000;
+constexpr int MAX_BITRATE_L2HC = 60000000;
+constexpr int MAX_CHANNEL_COUNT_L2HC = 12;
 #endif
 #ifdef SUPPORT_CODEC_COOK
 constexpr int MAX_BIT_RATE_COOK = 510000;
@@ -312,6 +316,34 @@ CapabilityData AudioCodeclistInfo::GetLbvcEncoderCapability()
     return audioLbvcCapability;
 }
 
+CapabilityData AudioCodeclistInfo::GetL2hcEncoderCapability()
+{
+    CapabilityData l2hcEncodeCapability;
+    l2hcEncodeCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_L2HC_NAME;
+    l2hcEncodeCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
+    l2hcEncodeCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_L2HC;
+    l2hcEncodeCapability.isVendor = false;
+    l2hcEncodeCapability.bitrate = Range(MIN_BITRATE_L2HC, MAX_BITRATE_L2HC);
+    l2hcEncodeCapability.channels = Range(1, MAX_CHANNEL_COUNT_L2HC);
+    l2hcEncodeCapability.sampleRate = AUDIO_L2HC_SAMPLE_RATE;
+    l2hcEncodeCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return l2hcEncodeCapability;
+}
+
+CapabilityData AudioCodeclistInfo::GetL2hcDecoderCapability()
+{
+    CapabilityData l2hcDecodeCapability;
+    l2hcDecodeCapability.codecName = AVCodecCodecName::AUDIO_DECODER_L2HC_NAME;
+    l2hcDecodeCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    l2hcDecodeCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_L2HC;
+    l2hcDecodeCapability.isVendor = false;
+    l2hcDecodeCapability.bitrate = Range(0, 0);
+    l2hcDecodeCapability.channels = Range(1, MAX_CHANNEL_COUNT_L2HC);
+    l2hcDecodeCapability.sampleRate = AUDIO_L2HC_SAMPLE_RATE;
+    l2hcDecodeCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return l2hcDecodeCapability;
+}
+
 CapabilityData AudioCodeclistInfo::GetVendorAacEncoderCapability()
 {
     std::unique_ptr<std::ifstream> libFile = std::make_unique<std::ifstream>(VENDOR_AAC_LIB_PATH, std::ios::binary);
@@ -461,7 +493,8 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetAPEDecoderCapability(),   GetMP3EncoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
-                          GetLbvcDecoderCapability(),  GetLbvcEncoderCapability(),
+                          GetLbvcDecoderCapability(),  GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
+                          GetL2hcDecoderCapability(),
 #endif
 #ifdef SUPPORT_CODEC_COOK
     GetCookDecoderCapability(),
