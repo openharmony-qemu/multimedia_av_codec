@@ -140,9 +140,15 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
     {"webvtt", FileType::VTT},
+#ifdef SUPPORT_CODEC_LRC
     {"lrc", FileType::LRC},
+#endif
+#ifdef SUPPORT_CODEC_SAMI
     {"sami", FileType::SAMI},
+#endif
+#ifdef SUPPORT_CODEC_ASS 
     {"ass", FileType::ASS},
+#endif
 };
 
 static std::map<std::string, TagType> g_formatToString = {
