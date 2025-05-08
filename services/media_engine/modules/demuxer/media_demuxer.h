@@ -417,6 +417,10 @@ private:
     bool isHlsFmp4_ {false};
 
     bool isCreatedByFilter_ {false};
+
+    int64_t videoSeekTime_ {0};
+    bool isInSeekDropAudio_ {false};
+    static constexpr uint32_t MS_TO_US = 1000;
 };
 } // namespace Media
 } // namespace OHOS

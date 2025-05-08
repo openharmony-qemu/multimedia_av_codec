@@ -2716,7 +2716,6 @@ void MediaDemuxer::OnSeekReadyEvent(const Plugins::PluginEvent &event)
 
 void MediaDemuxer::OnDashSeekReadyEvent(const Plugins::PluginEvent &event)
 {
-    FALSE_RETURN_NOLOG(event.type == PluginEventType::DASH_SEEK_READY);
     MEDIA_LOG_D("Onevent dash seek ready");
     std::unique_lock<std::mutex> lock(rebootPluginMutex_);
     Format param = AnyCast<Format>(event.param);
@@ -2726,8 +2725,16 @@ void MediaDemuxer::OnDashSeekReadyEvent(const Plugins::PluginEvent &event)
     param.GetIntValue("isEOS", isEOS);
     int32_t currentStreamId = -1;
     param.GetIntValue("currentStreamId", currentStreamId);
-    MEDIA_LOG_D("HandleDashSeekReady, streamType: " PUBLIC_LOG_D32 " streamId: " PUBLIC_LOG_D32
-        " isEos: " PUBLIC_LOG_D32, currentStreamType, currentStreamId, isEOS);
+    int64_t seekTimeMs = -1;
+    param.GetLongValue("seekTime", seekTimeMs);
+
+    if (HasVideo()) {
+        videoSeekTime_ = seekTimeMs * MS_TO_US + videoStartTime_;
+        isInSeekDropAudio_ = true;
+    }
+
+    MEDIA_LOG_D("HandleDashSeekReady, streamType: " PUBLIC_LOG_D32 " streamId: " PUBLIC_LOG_D32 " isEos: "
+        PUBLIC_LOG_D32 " seekTimeMs: " PUBLIC_LOG_D64, currentStreamType, currentStreamId, isEOS, seekTimeMs);
     switch (currentStreamType) {
         case static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_VID):
             seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = std::make_pair(currentStreamId, isEOS);
@@ -2808,6 +2815,15 @@ Status MediaDemuxer::SetFrameRate(double framerate, uint32_t trackId)
 bool MediaDemuxer::CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId)
 {
     if (trackId == audioTrackId_) {
+        if (isInSeekDropAudio_) {
+            MEDIA_LOG_D("mylog pts: " PUBLIC_LOG_D64 "seektime: " PUBLIC_LOG_D64, sample->pts_, videoSeekTime_);
+            if (sample->pts_ < videoSeekTime_) {
+                MEDIA_LOG_I("isInSeekDropAudio_ Drop audio buffer pts " PUBLIC_LOG_D64, sample->pts_);
+                return true;
+            } else {
+                isInSeekDropAudio_ = false;
+            }
+        }
         if (shouldCheckAudioFramePts_ == false) {
             lastAudioPts_ = sample->pts_;
             MEDIA_LOG_I("Set last audio pts " PUBLIC_LOG_D64, lastAudioPts_);
