@@ -120,68 +120,53 @@ static void SeparateMeta(std::shared_ptr<Meta> meta, std::shared_ptr<Meta> &defi
     }
 }
 
-static void SetCreationTimeMeta(std::shared_ptr<Meta> definedMeta, std::shared_ptr<Meta> &param,
-    bool &isMetaAvailable, bool &isValid)
+static OH_AVErrCode SetCreationTimeMeta(std::shared_ptr<Meta> definedMeta, std::shared_ptr<Meta> &param)
 {
-    isMetaAvailable = (definedMeta->Find(Tag::MEDIA_CREATION_TIME) != definedMeta->end());
+    if (definedMeta->Find(Tag::MEDIA_CREATION_TIME) == definedMeta->end()) {
+        return AV_ERR_OK;
+    }
     
-    CHECK_AND_RETURN_LOG(isMetaAvailable == true, "creation time is unavailable");
-
     AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_CREATION_TIME);
     std::string value;
     definedMeta->Get<Tag::MEDIA_CREATION_TIME>(value);
-
     std::regex pattern(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(.\d{1,6})?((\+|-\d{4})?)Z?)");
     std::smatch match;
-    
-    if (!std::regex_match(value, match, pattern)) {
-        AVCODEC_LOGE("format defined key %{public}s, value invalid", Tag::MEDIA_CREATION_TIME);
-        isValid = false;
-        return;
-    }
+    CHECK_AND_RETURN_LOG(std::regex_match(value, match, pattern), AV_ERR_INVALID_VAL, "creation time is invalid");
 
     param->Set<Tag::MEDIA_CREATION_TIME>(value);
+    return AV_ERR_OK;
 }
 
-static void SetCommentMeta(std::shared_ptr<Meta> definedMeta, std::shared_ptr<Meta>& param,
-    bool& isMetaAvailable, bool& isValid)
+static OH_AVErrCode SetCommentMeta(std::shared_ptr<Meta> definedMeta, std::shared_ptr<Meta> &param)
 {
-    isMetaAvailable = (definedMeta->Find(Tag::MEDIA_COMMENT) != definedMeta->end());
+    if (definedMeta->Find(Tag::MEDIA_COMMENT) == definedMeta->end()) {
+        return AV_ERR_OK;
+    }
     
-    CHECK_AND_RETURN_LOG(isMetaAvailable == true, "comment is unavailable");
-
     AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_COMMENT);
     std::string comment;
     definedMeta->Get<Tag::MEDIA_COMMENT>(comment);
-
     std::regex pattern(R"(^.{1,256}$)");
     std::smatch match;
-
-    if (!std::regex_match(comment, match, pattern)) {
-        AVCODEC_LOGE("format defined key %{public}s, comment invalid", Tag::MEDIA_COMMENT);
-        isValid = false;
-        return;
-    }
+    CHECK_AND_RETURN_LOG(std::regex_match(comment, match, pattern), AV_ERR_INVALID_VAL, "comment is invalid");
 
     param->Set<Tag::MEDIA_COMMENT>(comment);
+    return AV_ERR_OK;
 }
 
 static OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMuxerObject* object)
 {
     std::shared_ptr<Meta> param = std::make_shared<Meta>();
 
-    bool hasMeta  = false;
-    bool isValid = true;
+    OH_AVErrCode metaRet = SetCreationTimeMeta(definedMeta, param);
+    CHECK_AND_RETURN_RET_LOG(metaRet == AV_ERR_OK, AV_ERR_INVALID_VAL, "input format is invalid");
+    metaRet = SetCommentMeta(definedMeta, param);
+    CHECK_AND_RETURN_RET_LOG(metaRet == AV_ERR_OK, AV_ERR_INVALID_VAL, "input format is invalid");
 
-    SetCreationTimeMeta(definedMeta, param, hasMeta, isValid);
-    SetCommentMeta(definedMeta, param, hasMeta, isValid);
-
-    CHECK_AND_RETURN_RET_LOG(hasMeta == true, AV_ERR_INVALID_VAL, "input format does not have %{public}s or %{public}s",
-        Tag::MEDIA_CREATION_TIME, Tag::MEDIA_COMMENT);
-    if (!isValid) {
-        AVCODEC_LOGE("input format is invalid");
-        return AV_ERR_INVALID_VAL;
+    if (param->Empty()) {
+        AVCODEC_LOGW("input format does not have a valid key");
     }
+
     int32_t ret = object->muxer_->SetParameter(param);
     return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
 }
@@ -210,8 +195,11 @@ OH_AVErrCode OH_AVMuxer_SetFormat(OH_AVMuxer *muxer, OH_AVFormat *format)
     CHECK_AND_RETURN_RET_LOG(meta != nullptr, AV_ERR_INVALID_VAL, "input format is nullptr!");
     SeparateMeta(meta, definedMeta, userMeta);
 
-    OH_AVErrCode ret = SetDefinedMetaParam(definedMeta, object);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "muxer_ SetFormat SetDefinedMetaParam failed!");
+    OH_AVErrCode ret = AV_ERR_OK;
+    if (definedMeta != nullptr && !definedMeta->Empty()) {
+        ret = SetDefinedMetaParam(definedMeta, object);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "muxer_ SetFormat SetDefinedMetaParam failed!");
+    }
 
     if (userMeta != nullptr && !userMeta->Empty()) {
         ret = SetUserMetaParam(userMeta, object);
