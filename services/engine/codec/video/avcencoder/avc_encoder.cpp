@@ -1235,6 +1235,14 @@ int32_t AvcEncoder::RenderOutputBuffer(uint32_t index)
     return AVCS_ERR_OK;
 }
 
+void AvcEncoder::ReleaseSurfaceBufferByAVBuffer(std::shared_ptr<AVBuffer> &buffer)
+{
+    CHECK_AND_RETURN_LOG(buffer != nullptr, "input buffer nullptr");
+    CHECK_AND_RETURN_LOG(buffer->memory_ != nullptr, "input buffer memory nullptr");
+    auto surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
+    inputSurface_->ReleaseBuffer(surfaceBuffer, -1);
+}
+
 void AvcEncoder::NotifyUserToProcessBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer)
 {
     callback_->OnOutputBufferAvailable(index, buffer);
@@ -1245,12 +1253,11 @@ void AvcEncoder::NotifyUserToFillBuffer(uint32_t index, std::shared_ptr<AVBuffer
     if (inputSurface_ == nullptr) {
         callback_->OnInputBufferAvailable(index, buffer);
     } else {
+        ReleaseSurfaceBufferByAVBuffer(buffer);
         std::unique_lock<std::mutex> listLock(freeListMutex_);
         freeList_.emplace_back(index);
         listLock.unlock();
         surfaceRecvCv_.notify_one();
-        auto surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
-        inputSurface_->ReleaseBuffer(surfaceBuffer, -1);
     }
 }
 
@@ -1570,7 +1577,6 @@ void AvcEncoder::EncoderAvcTailer()
 void AvcEncoder::SendFrame()
 {
     CHECK_AND_RETURN_LOG(state_ != State::STOPPING && state_ != State::FLUSHING, "Invalid state");
-
     if (state_ != State::RUNNING || isSendEos_) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_ENCODE_TIME));
         return;
@@ -1581,6 +1587,7 @@ void AvcEncoder::SendFrame()
     CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
+    CHECK_AND_RETURN_LOG(inputAVBuffer != nullptr, "input buffer nullptr");
     if (inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
         std::unique_lock<std::mutex> sendLock(sendMutex_);
         isSendEos_ = true;
@@ -1591,6 +1598,7 @@ void AvcEncoder::SendFrame()
         return;
     }
 
+    CHECK_AND_RETURN_LOG(inputAVBuffer->memory_ != nullptr, "input buffer memory nullptr");
     ret = FillAvcEncoderInArgs(inputAVBuffer, avcEncInputArgs_);
     if (ret != AVCS_ERR_OK) {
         AVCODEC_LOGE("convert buffer to encodec error: %{public}d", ret);
