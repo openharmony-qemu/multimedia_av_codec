@@ -3414,7 +3414,7 @@ void MediaDemuxer::InitEnableSampleQueueFlag()
 {
     const std::string sampleQueueTag = "debug.media_service.enable_samplequeue";
     std::string enableSampleQueue;
-    int32_t enableSampleQueueRes = OHOS::system::GetStringParameter(sampleQueueTag, enableSampleQueue, "false");
+    int32_t enableSampleQueueRes = OHOS::system::GetStringParameter(sampleQueueTag, enableSampleQueue, "true");
     enableSampleQueue_ = (enableSampleQueue == "true");
     MEDIA_LOG_I("InitEnableSampleQueueFlag, enableSampleQueueRes: " PUBLIC_LOG_D32
         ", enableSampleQueue_: " PUBLIC_LOG_D32, enableSampleQueueRes, enableSampleQueue_);
