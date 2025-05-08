@@ -106,7 +106,7 @@ private:
         DumpMode dumpMode {DUMP_NONE};
         bool isLimit {false};
         bool isLimitType {false};
-        uint32_t sizeLimit {UINT32_MAX};
+        int32_t sizeLimit {0};
         int32_t readSizeCnt {0};
     };
 
