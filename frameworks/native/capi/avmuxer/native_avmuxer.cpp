@@ -131,7 +131,7 @@ static OH_AVErrCode SetCreationTimeMeta(std::shared_ptr<Meta> definedMeta, std::
     definedMeta->Get<Tag::MEDIA_CREATION_TIME>(value);
     std::regex pattern(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(.\d{1,6})?((\+|-\d{4})?)Z?)");
     std::smatch match;
-    CHECK_AND_RETURN_LOG(std::regex_match(value, match, pattern), AV_ERR_INVALID_VAL, "creation time is invalid");
+    CHECK_AND_RETURN_RET_LOG(std::regex_match(value, match, pattern), AV_ERR_INVALID_VAL, "creation time is invalid");
 
     param->Set<Tag::MEDIA_CREATION_TIME>(value);
     return AV_ERR_OK;
@@ -148,7 +148,7 @@ static OH_AVErrCode SetCommentMeta(std::shared_ptr<Meta> definedMeta, std::share
     definedMeta->Get<Tag::MEDIA_COMMENT>(comment);
     std::regex pattern(R"(^.{1,256}$)");
     std::smatch match;
-    CHECK_AND_RETURN_LOG(std::regex_match(comment, match, pattern), AV_ERR_INVALID_VAL, "comment is invalid");
+    CHECK_AND_RETURN_RET_LOG(std::regex_match(comment, match, pattern), AV_ERR_INVALID_VAL, "comment is invalid");
 
     param->Set<Tag::MEDIA_COMMENT>(comment);
     return AV_ERR_OK;
@@ -165,6 +165,7 @@ static OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMux
 
     if (param->Empty()) {
         AVCODEC_LOGW("input format does not have a valid key");
+        return AV_ERR_OK;
     }
 
     int32_t ret = object->muxer_->SetParameter(param);
