@@ -180,6 +180,7 @@ struct CapabilityData {
     int32_t rank = 0;
     Range maxBitrate;
     Range sqrFactor;
+    int32_t maxVersion = 0;
 };
 
 struct LevelParams {
@@ -294,6 +295,12 @@ public:
      * @version 5.0
      */
     int32_t GetFeatureProperties(AVCapabilityFeature feature, Format &format);
+
+    /**
+     * @brief Get codec max supported version
+     * @return Returns codec max supported version.
+     */
+    int32_t GetMaxSupportedVersion();
 
 private:
     bool IsFeatureValid(AVCapabilityFeature feature);
@@ -595,6 +602,7 @@ public:
     static constexpr std::string_view VIDEO_RV30 = "video/rv30";
     static constexpr std::string_view VIDEO_RV40 = "video/rv40";
     static constexpr std::string_view VIDEO_VVC = "video/vvc";
+    static constexpr std::string_view AUDIO_MIMETYPE_L2HC = "audio/l2hc";
     static constexpr std::string_view AUDIO_AMR_NB = "audio/3gpp";
     static constexpr std::string_view AUDIO_AMR_WB = "audio/amr-wb";
     static constexpr std::string_view AUDIO_MPEG = "audio/mpeg";
