@@ -119,6 +119,7 @@ private:
     void WaitForInBuffer();
     void FillEncodedBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
 
+    void ReleaseSurfaceBufferByAVBuffer(std::shared_ptr<AVBuffer> &buffer);
     void NotifyUserToProcessBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer);
     void NotifyUserToFillBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer);
 
