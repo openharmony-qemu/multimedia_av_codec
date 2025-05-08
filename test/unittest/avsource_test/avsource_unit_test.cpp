@@ -2084,7 +2084,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3004, TestSize.Level1)
 }
 #endif
 
-#ifdef SUPPORT_CODEC_SAMI
+#ifdef SUPPORT_CODEC_ASS
 /**
  * @tc.name: AVSource_GetFormat_3005
  * @tc.desc: get format when the file is ass
