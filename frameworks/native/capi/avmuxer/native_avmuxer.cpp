@@ -125,7 +125,7 @@ static OH_AVErrCode SetCreationTimeMeta(std::shared_ptr<Meta> definedMeta, std::
     if (definedMeta->Find(Tag::MEDIA_CREATION_TIME) == definedMeta->end()) {
         return AV_ERR_OK;
     }
-    
+
     AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_CREATION_TIME);
     std::string value;
     definedMeta->Get<Tag::MEDIA_CREATION_TIME>(value);
@@ -142,7 +142,7 @@ static OH_AVErrCode SetCommentMeta(std::shared_ptr<Meta> definedMeta, std::share
     if (definedMeta->Find(Tag::MEDIA_COMMENT) == definedMeta->end()) {
         return AV_ERR_OK;
     }
-    
+
     AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_COMMENT);
     std::string comment;
     definedMeta->Get<Tag::MEDIA_COMMENT>(comment);
