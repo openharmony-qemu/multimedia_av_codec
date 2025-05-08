@@ -2728,9 +2728,12 @@ void MediaDemuxer::OnDashSeekReadyEvent(const Plugins::PluginEvent &event)
     int64_t seekTimeMs = -1;
     param.GetLongValue("seekTime", seekTimeMs);
 
-    if (HasVideo()) {
-        videoSeekTime_ = seekTimeMs * MS_TO_US + videoStartTime_;
-        isInSeekDropAudio_ = true;
+    if (seekTimeMs >= 0 && HasVideo()) {
+        Plugins::Ms2Us(seekTimeMs, videoSeekTime_);
+        if (videoStartTime_ <= 0 || INT64_MAX - videoStartTime_ >= videoSeekTime_) {
+            videoSeekTime_ += videoStartTime_;
+            isInSeekDropAudio_ = true;
+        }
     }
 
     MEDIA_LOG_D("HandleDashSeekReady, streamType: " PUBLIC_LOG_D32 " streamId: " PUBLIC_LOG_D32 " isEos: "
@@ -2816,7 +2819,6 @@ bool MediaDemuxer::CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_
 {
     if (trackId == audioTrackId_) {
         if (isInSeekDropAudio_) {
-            MEDIA_LOG_D("mylog pts: " PUBLIC_LOG_D64 "seektime: " PUBLIC_LOG_D64, sample->pts_, videoSeekTime_);
             if (sample->pts_ < videoSeekTime_) {
                 MEDIA_LOG_I("isInSeekDropAudio_ Drop audio buffer pts " PUBLIC_LOG_D64, sample->pts_);
                 return true;
