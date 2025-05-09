@@ -2050,7 +2050,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3003, TestSize.Level1)
 }
 #endif
 
-#ifdef SUPPORT_CODEC_LRC
+#ifdef SUPPORT_DEMUXER_LRC
 /**
  * @tc.name: Demuxer_ReadSample_3004
  * @tc.desc: copy current sample to buffer(lrc)
@@ -2077,7 +2077,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3004, TestSize.Level1)
 }
 #endif
 
-#ifdef SUPPORT_CODEC_SAMI
+#ifdef SUPPORT_DEMUXER_SAMI
 /**
  * @tc.name: Demuxer_ReadSample_3005
  * @tc.desc: copy current sample to buffer(sami)
@@ -2104,7 +2104,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3005, TestSize.Level1)
 }
 #endif
 
-#ifdef SUPPORT_CODEC_ASS
+#ifdef SUPPORT_DEMUXER_ASS
 /**
  * @tc.name: Demuxer_ReadSample_3006
  * @tc.desc: copy current sample to buffer(ass)
@@ -2235,7 +2235,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3003, TestSize.Level1)
 }
 #endif
 
-#ifdef SUPPORT_CODEC_LRC
+#ifdef SUPPORT_DEMUXER_LRC
 /**
  * @tc.name: Demuxer_SeekToTime_3004
  * @tc.desc: seek to the specified time(lrc)
@@ -2271,7 +2271,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3004, TestSize.Level1)
 }
 #endif
 
-#ifdef SUPPORT_CODEC_SAMI
+#ifdef SUPPORT_DEMUXER_SAMI
 /**
  * @tc.name: Demuxer_SeekToTime_3005
  * @tc.desc: seek to the specified time(sami)
@@ -2307,7 +2307,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3005, TestSize.Level1)
 }
 #endif
 
-#ifdef SUPPORT_CODEC_ASS
+#ifdef SUPPORT_DEMUXER_ASS
 /**
  * @tc.name: Demuxer_SeekToTime_3006
  * @tc.desc: seek to the specified time(ass)

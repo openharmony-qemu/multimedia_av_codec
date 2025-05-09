@@ -2004,7 +2004,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3002, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "text/vtt");
 }
 
-#ifdef SUPPORT_CODEC_LRC
+#ifdef SUPPORT_DEMUXER_LRC
 /**
  * @tc.name: AVSource_GetFormat_3003
  * @tc.desc: get format when the file is lrc
@@ -2044,7 +2044,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3003, TestSize.Level1)
 }
 #endif
 
-#ifdef SUPPORT_CODEC_SAMI
+#ifdef SUPPORT_DEMUXER_SAMI
 /**
  * @tc.name: AVSource_GetFormat_3004
  * @tc.desc: get format when the file is sami
@@ -2084,7 +2084,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3004, TestSize.Level1)
 }
 #endif
 
-#ifdef SUPPORT_CODEC_ASS
+#ifdef SUPPORT_DEMUXER_ASS
 /**
  * @tc.name: AVSource_GetFormat_3005
  * @tc.desc: get format when the file is ass

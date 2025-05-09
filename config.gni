@@ -42,9 +42,9 @@ declare_args() {
   av_codec_enable_codec_rv = false
   av_codec_enable_codec_cook = false
   av_codec_enable_codec_ac3 = false
-  av_codec_enable_codec_lrc = false
-  av_codec_enable_codec_sami = false
-  av_codec_enable_codec_ass = false
+  av_codec_enable_demuxer_lrc = false
+  av_codec_enable_demuxer_sami = false
+  av_codec_enable_demuxer_ass = false
 }
 av_codec_sanitize = {
   boundary_sanitize = true
@@ -159,14 +159,14 @@ if (av_codec_enable_codec_ac3) {
   av_codec_defines += [ "SUPPORT_CODEC_AC3" ]
 }
 
-if (av_codec_enable_codec_lrc) {
-  av_codec_defines += [ "SUPPORT_CODEC_LRC" ]
+if (av_codec_enable_demuxer_lrc) {
+  av_codec_defines += [ "SUPPORT_DEMUXER_LRC" ]
 }
 
-if (av_codec_enable_codec_sami) {
-  av_codec_defines += [ "SUPPORT_CODEC_SAMI" ]
+if (av_codec_enable_demuxer_sami) {
+  av_codec_defines += [ "SUPPORT_DEMUXER_SAMI" ]
 }
 
-if (av_codec_enable_codec_ass) {
-  av_codec_defines += [ "SUPPORT_CODEC_ASS" ]
+if (av_codec_enable_demuxer_ass) {
+  av_codec_defines += [ "SUPPORT_DEMUXER_ASS" ]
 }
