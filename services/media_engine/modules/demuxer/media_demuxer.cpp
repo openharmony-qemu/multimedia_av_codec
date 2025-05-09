@@ -2728,9 +2728,11 @@ void MediaDemuxer::OnDashSeekReadyEvent(const Plugins::PluginEvent &event)
     int64_t seekTimeMs = -1;
     param.GetLongValue("seekTime", seekTimeMs);
 
-    if (seekTimeMs >= 0 && HasVideo()) {
+    bool isValidVideoSeek = seekTimeMs >= 0 && HasVideo();
+    if (isValidVideoSeek) {
         Plugins::Ms2Us(seekTimeMs, videoSeekTime_);
-        if (videoStartTime_ <= 0 || INT64_MAX - videoStartTime_ >= videoSeekTime_) {
+        bool isValidVideoSeekTime = videoStartTime_ <= 0 || INT64_MAX - videoStartTime_ >= videoSeekTime_;
+        if (isValidVideoSeekTime) {
             videoSeekTime_ += videoStartTime_;
             isInSeekDropAudio_ = true;
         }
