@@ -71,11 +71,6 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
     }
     AVStream *videoStream = GetVideoStream();
     FALSE_RETURN_MSG(videoStream != nullptr, "Video stream is nullptr");
-    if (videoStream->avg_frame_rate.den == 0 || videoStream->avg_frame_rate.num == 0) {
-        fps_ = videoStream->r_frame_rate.num / (double)videoStream->r_frame_rate.den;
-    } else {
-        fps_ = videoStream->avg_frame_rate.num / (double)videoStream->avg_frame_rate.den;
-    }
     struct KeyFrameNode *keyFramePosInfo = nullptr;
     if (av_get_key_frame_pos_from_stream(videoStream, &keyFramePosInfo) == 0) {
         struct KeyFrameNode *cur = keyFramePosInfo;
@@ -85,22 +80,24 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
         }
         av_destory_key_frame_pos_list(keyFramePosInfo);
     }
+    startPts_ = AvTime2Us(ConvertTimeFromFFmpeg(videoStream->start_time, videoStream->time_base));
     FALSE_RETURN_MSG(GetPresentationTimeUsFromFfmpegMOV(
-        GET_ALL_FRAME_PTS, parserRefVideoStreamIdx_, 0, 0) == Status::OK, "get all frame pts failed.");
-    MEDIA_LOG_I("Success parse, fps: " PUBLIC_LOG_F ", IFramePos size: " PUBLIC_LOG_ZU, fps_, IFramePos_.size());
+        GET_ALL_FRAME_PTS, parserRefIdx_, 0, 0) == Status::OK, "get all frame pts failed.");
+    MEDIA_LOG_I("Success parse, start pts:" PUBLIC_LOG_D64 ", IFramePos size: " PUBLIC_LOG_ZU,
+        startPts_, IFramePos_.size());
 }
 
 AVStream *FFmpegDemuxerPlugin::GetVideoStream()
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, nullptr, "AVFormatContext is nullptr");
-    if (parserRefVideoStreamIdx_ < 0 || parserRefVideoStreamIdx_ >= static_cast<int32_t>(formatContext_->nb_streams)) {
+    if (parserRefIdx_ < 0 || parserRefIdx_ >= static_cast<int32_t>(formatContext_->nb_streams)) {
         int32_t streamIdx = av_find_best_stream(formatContext_.get(), AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
         FALSE_RETURN_V_MSG_E(streamIdx >= 0 && streamIdx < static_cast<int32_t>(formatContext_->nb_streams), nullptr,
             "Can not find video stream, streamIdx " PUBLIC_LOG_D32 ", nb_streams " PUBLIC_LOG_U32,
             streamIdx, formatContext_->nb_streams);
-        parserRefVideoStreamIdx_ = streamIdx;
+        parserRefIdx_ = streamIdx;
     }
-    return formatContext_->streams[static_cast<uint32_t>(parserRefVideoStreamIdx_)];
+    return formatContext_->streams[static_cast<uint32_t>(parserRefIdx_)];
 }
 
 bool FFmpegDemuxerPlugin::IsMultiVideoTrack()
@@ -125,8 +122,8 @@ bool FFmpegDemuxerPlugin::IsMultiVideoTrack()
 
 bool FFmpegDemuxerPlugin::IsRefParserSupported()
 {
-    std::shared_ptr<AVFormatContext> formatContext = parserRefFormatContext_ != nullptr ?
-        parserRefFormatContext_ : formatContext_;
+    std::shared_ptr<AVFormatContext> formatContext = parserRefCtx_ != nullptr ?
+        parserRefCtx_ : formatContext_;
     FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
     FileType type = FFmpegFormatHelper::GetFileTypeByName(*formatContext);
     FALSE_RETURN_V_MSG_W(type == FileType::MP4 || type == FileType::MOV, false,
@@ -181,7 +178,7 @@ Status FFmpegDemuxerPlugin::InitIoContext()
 Status FFmpegDemuxerPlugin::ParserRefCheckVideoValid(const AVStream *videoStream)
 {
     if (videoStream == nullptr || videoStream->codecpar == nullptr) {
-        MEDIA_LOG_D("videoStream or codecpar is nullptr: video track id " PUBLIC_LOG_D32, parserRefVideoStreamIdx_);
+        MEDIA_LOG_D("videoStream or codecpar is nullptr: video track id " PUBLIC_LOG_D32, parserRefIdx_);
         return Status::ERROR_UNKNOWN;
     }
     FALSE_RETURN_V_MSG_E(
@@ -197,14 +194,14 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
     std::string suffix = std::to_string(parserRefStartTime_) + "_" + std::to_string(IFramePos_.size());
     MediaAVCodec::AVCodecTrace trace("ParserRefCost_1_" + suffix);
     MEDIA_LOG_I("Parser ref start time: " PUBLIC_LOG_D64, parserRefStartTime_);
-    FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0 && fps_ > 0, Status::ERROR_UNKNOWN,
-                         "Init failed, IFramePos size:" PUBLIC_LOG_ZU ", fps:" PUBLIC_LOG_F, IFramePos_.size(), fps_);
+    FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0, Status::ERROR_UNKNOWN,
+        "Init failed, IFramePos size:" PUBLIC_LOG_ZU, IFramePos_.size());
     FALSE_RETURN_V_MSG_E(InitIoContext() == Status::OK, Status::ERROR_UNKNOWN, "Init IOContext failed");
-    parserRefFormatContext_ = InitAVFormatContext(&parserRefIoContext_);
-    FALSE_RETURN_V_MSG_E(parserRefFormatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
+    parserRefCtx_ = InitAVFormatContext(&parserRefIoContext_);
+    FALSE_RETURN_V_MSG_E(parserRefCtx_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(IsRefParserSupported(), Status::ERROR_UNSUPPORTED_FORMAT, "Unsupported ref parser");
-    for (uint32_t trackIndex = 0; trackIndex < parserRefFormatContext_->nb_streams; trackIndex++) {
-        AVStream *stream = parserRefFormatContext_->streams[trackIndex];
+    for (uint32_t trackIndex = 0; trackIndex < parserRefCtx_->nb_streams; trackIndex++) {
+        AVStream *stream = parserRefCtx_->streams[trackIndex];
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_UNKNOWN,
             "AVStream or codecpar is nullptr, track " PUBLIC_LOG_U32, trackIndex);
         if (stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
@@ -242,24 +239,24 @@ static void InsertIframePtsMap(AVPacket *pkt, int32_t gopId, int32_t trackIdx,
 Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId)
 {
     std::unique_lock<std::mutex> sLock(syncMutex_);
-    int ffmpegRet = av_read_frame(parserRefFormatContext_.get(), pkt);
+    int ffmpegRet = av_read_frame(parserRefCtx_.get(), pkt);
     sLock.unlock();
     if (ffmpegRet < 0 && ffmpegRet != AVERROR_EOF) {
         MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry:" PUBLIC_LOG_D32,
                     AVStrError(ffmpegRet).c_str(), int(parserRefIoContext_.retry));
         if (parserRefIoContext_.retry) {
-            parserRefFormatContext_->pb->eof_reached = 0;
-            parserRefFormatContext_->pb->error = 0;
+            parserRefCtx_->pb->eof_reached = 0;
+            parserRefCtx_->pb->error = 0;
             parserRefIoContext_.retry = false;
             return Status::ERROR_AGAIN;
         }
         return Status::ERROR_UNKNOWN;
     }
-    InsertIframePtsMap(pkt, parserCurGopId_, parserRefVideoStreamIdx_, iFramePtsMap_);
-    FALSE_RETURN_V_MSG_D(pkt->stream_index == parserRefVideoStreamIdx_ || ffmpegRet == AVERROR_EOF, Status::OK,
+    InsertIframePtsMap(pkt, parserCurGopId_, parserRefIdx_, iFramePtsMap_);
+    FALSE_RETURN_V_MSG_D(pkt->stream_index == parserRefIdx_ || ffmpegRet == AVERROR_EOF, Status::OK,
                          "eos or not video");
     int64_t dts = AvTime2Us(
-        ConvertTimeFromFFmpeg(pkt->dts, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base));
+        ConvertTimeFromFFmpeg(pkt->dts, parserRefCtx_->streams[parserRefIdx_]->time_base));
     Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
     FALSE_RETURN_V_MSG_E(result == Status::OK, Status::ERROR_UNKNOWN, "parse nal units error!");
     int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
@@ -294,7 +291,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
 Status FFmpegDemuxerPlugin::GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId)
 {
     FALSE_RETURN_V_MSG_E(seekMs >= 0L, Status::ERROR_INVALID_PARAMETER, "SeekMs is less than 0");
-    AVStream *st = parserRefFormatContext_->streams[parserRefVideoStreamIdx_];
+    AVStream *st = parserRefCtx_->streams[parserRefIdx_];
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_UNKNOWN, "AVStream is nullptr");
     uint32_t frameId = 0U;
     Status ret = SeekMs2FrameId(seekMs, frameId);
@@ -308,7 +305,7 @@ Status FFmpegDemuxerPlugin::GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId)
 
 Status FFmpegDemuxerPlugin::SelectProGopId()
 {
-    AVStream *st = parserRefFormatContext_->streams[parserRefVideoStreamIdx_];
+    AVStream *st = parserRefCtx_->streams[parserRefIdx_];
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_UNKNOWN, "AVStream is nullptr");
     if (pendingSeekMsTime_ >= 0) {
         FALSE_RETURN_V_MSG_E(GetGopIdFromSeekPos(pendingSeekMsTime_, parserCurGopId_) == Status::OK,
@@ -330,7 +327,7 @@ Status FFmpegDemuxerPlugin::SelectProGopId()
         }
         MEDIA_LOG_D("get I frame pts from simulated dts");
     }
-    auto ret = av_seek_frame(parserRefFormatContext_.get(), parserRefVideoStreamIdx_, ptsSeek, AVSEEK_FLAG_BACKWARD);
+    auto ret = av_seek_frame(parserRefCtx_.get(), parserRefIdx_, ptsSeek, AVSEEK_FLAG_BACKWARD);
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
                          "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ret).c_str());
     return Status::OK;
@@ -345,9 +342,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
         if (ret == Status::END_OF_STREAM) {
             return Status::OK;
         }
-        if (ret != Status::OK) {
-            return Status::ERROR_UNKNOWN;
-        }
+        FALSE_RETURN_V(ret == Status::OK, Status::ERROR_UNKNOWN);
     }
     int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count() - parserRefStartTime_;
@@ -374,7 +369,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
             parserState_ = true;
             return rlt;
         }
-        if (pkt->stream_index == parserRefVideoStreamIdx_) {
+        if (pkt->stream_index == parserRefIdx_) {
             curStreamId++;
         }
         av_packet_unref(pkt);
@@ -422,7 +417,7 @@ Status FFmpegDemuxerPlugin::GetIFramePos(std::vector<uint32_t> &IFramePos)
 Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "formatContext_ is nullptr");
-    auto avStream = formatContext_->streams[parserRefVideoStreamIdx_];
+    auto avStream = formatContext_->streams[parserRefIdx_];
     int64_t ffTimeDts = ConvertTimeToFFmpegByUs(dts, avStream->time_base);
     int32_t tmpFrameId = av_index_search_timestamp(avStream, ffTimeDts, AVSEEK_FLAG_ANY);
     FALSE_RETURN_V_MSG_E(tmpFrameId >= 0, Status::ERROR_OUT_OF_RANGE, "find nearest frame failed");
@@ -435,7 +430,7 @@ Status FFmpegDemuxerPlugin::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
 {
     FALSE_RETURN_V_MSG_E(seekMs >= 0L, Status::ERROR_INVALID_PARAMETER, "SeekMs is less than 0");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "formatContext_ is nullptr");
-    auto avStream = formatContext_->streams[parserRefVideoStreamIdx_];
+    auto avStream = formatContext_->streams[parserRefIdx_];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
     FALSE_RETURN_V_MSG_E(avStream->stts_data != nullptr && avStream->stts_count != 0,
         Status::ERROR_NULL_POINTER, "AVStream->stts_data is empty");
@@ -444,24 +439,25 @@ Status FFmpegDemuxerPlugin::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
     if (iter != pts2DtsMap_.begin()) {
         --iter;
     }
-    int64_t dts = iter->second;
-    MEDIA_LOG_D("seekMs " PUBLIC_LOG_D64 ", pts " PUBLIC_LOG_D64 ", mapSize " PUBLIC_LOG_ZU ", dts " PUBLIC_LOG_D64,
-        seekMs, pts, pts2DtsMap_.size(), dts);
+    int64_t dts = iter->second + startPts_;
+    MEDIA_LOG_D("seekMs " PUBLIC_LOG_D64 ", pts " PUBLIC_LOG_D64 ", mapSize " PUBLIC_LOG_ZU ", dts " PUBLIC_LOG_D64
+        ", startPts " PUBLIC_LOG_D64, seekMs, pts, pts2DtsMap_.size(), dts, startPts_);
     return Dts2FrameId(dts, frameId);
 }
 
 Status FFmpegDemuxerPlugin::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "formatContext_ is nullptr");
-    AVStream *st = formatContext_->streams[parserRefVideoStreamIdx_];
+    AVStream *st = formatContext_->streams[parserRefIdx_];
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
     int64_t ffTimeDts = CalculateTimeByFrameIndex(st, static_cast<int32_t>(frameId));
-    int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(ffTimeDts, st->time_base));
+    int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(ffTimeDts, st->time_base)) - startPts_;
     auto it = std::find_if(pts2DtsMap_.begin(), pts2DtsMap_.end(), DtsFinder(dts));
     FALSE_RETURN_V_MSG_E(it != pts2DtsMap_.end(), Status::ERROR_UNKNOWN, "find pts failed, frameId "
         PUBLIC_LOG_U32 ", dts " PUBLIC_LOG_D64, frameId, dts);
     seekMs = it->first / 1000; // 1000 for ms to us
-    MEDIA_LOG_D("frameId " PUBLIC_LOG_U32 ", dts " PUBLIC_LOG_D64 ", seekMs " PUBLIC_LOG_D64, frameId, dts, seekMs);
+    MEDIA_LOG_D("frameId " PUBLIC_LOG_U32 ", dts " PUBLIC_LOG_D64 ", seekMs " PUBLIC_LOG_D64 ", startPts "
+        PUBLIC_LOG_D64, frameId, dts, seekMs, startPts_);
     return Status::OK;
 }
 

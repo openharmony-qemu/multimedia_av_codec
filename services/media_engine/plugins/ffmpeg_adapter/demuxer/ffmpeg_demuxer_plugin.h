@@ -208,16 +208,16 @@ private:
 
     std::atomic<bool> parserState_ = true;
     IOContext parserRefIoContext_;
-    std::shared_ptr<AVFormatContext> parserRefFormatContext_{nullptr};
-    int parserRefVideoStreamIdx_ = -1;
+    std::shared_ptr<AVFormatContext> parserRefCtx_{nullptr};
+    int parserRefIdx_ = -1;
     std::shared_ptr<ReferenceParserManager> referenceParser_{nullptr};
     int32_t parserCurGopId_ = 0;
     int64_t pendingSeekMsTime_ = -1;
     int64_t parserRefStartTime_ = -1;
     std::list<uint32_t> processingIFrame_;
     std::vector<uint32_t> IFramePos_;
-    double fps_{0};
     int64_t minPts_ = 0;
+    int64_t startPts_ = 0;
     uint32_t ptsCnt_ = 0;
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
