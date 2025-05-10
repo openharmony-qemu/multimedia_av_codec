@@ -440,7 +440,7 @@ bool FileFdSourcePlugin::HasCacheData(size_t bufferSize, uint64_t offset)
     HmdfsHasCache ioctlData;
     ioctlData.offset = static_cast<int64_t>(offset);
     ioctlData.readSize = static_cast<int64_t>(bufferSize);
-    int32_t ioResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData);
+    int32_t ioResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData); // 0 has, -1 hasnot
 
     ioctlData.offset = static_cast<int64_t>(cachePosition_);
     ioctlData.readSize = static_cast<int64_t>(PER_CACHE_SIZE);
