@@ -32,6 +32,17 @@
 namespace OHOS {
 namespace Media {
 namespace Plugins {
+class ScopedTimer {
+public:
+    explicit ScopedTimer(const std::string& name, int64_t timeoutMs = 20);
+ 
+    ~ScopedTimer();
+ 
+private:
+    std::string name_;
+    int64_t timeoutMs_;
+    int64_t start_;
+};
 class AudioServerSinkPlugin : public Plugins::AudioSinkPlugin {
 public:
     explicit AudioServerSinkPlugin(std::string name);
@@ -256,6 +267,7 @@ private:
     std::condition_variable writeCond_;
     std::shared_ptr<AudioStandard::AudioRendererWriteCallback> audioRenderWriteCallback_ {nullptr};
     OHOS::Media::Mutex releaseRendererMutex_{};
+    uint64_t enqueueNumber_ {0};
 };
 } // namespace Plugin
 } // namespace Media
