@@ -716,6 +716,7 @@ void MediaCodec::HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingN
         ret = Status::ERROR_INVALID_STATE;
         return;
     }
+    uint32_t flag = filledInputBuffer->flag_;
     int8_t retryCount = 0;
     do {
         if (drmDecryptor_ != nullptr) {
@@ -741,7 +742,7 @@ void MediaCodec::HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingN
         return;
     }
     isProcessingNeeded = true;
-    eosStatus = filledInputBuffer->flag_;
+    eosStatus = flag;
 }
 
 #ifdef SUPPORT_DRM
