@@ -128,11 +128,6 @@ config("av_codec_suspend_client_public_config") {
   include_dirs = [
     "./",
     "$av_codec_root_dir/frameworks/native/avcodec",
-    "$av_codec_root_dir/frameworks/native/avcodeclist",
-    "$av_codec_root_dir/frameworks/native/avdemuxer",
-    "$av_codec_root_dir/frameworks/native/avmuxer",
-    "$av_codec_root_dir/frameworks/native/avsource",
-    "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/utils/include/",
