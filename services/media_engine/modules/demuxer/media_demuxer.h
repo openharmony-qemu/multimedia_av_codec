@@ -43,12 +43,14 @@
 
 namespace OHOS {
 namespace Media {
-using MediaSource = OHOS::Media::Plugins::MediaSource;
-using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
-using FileType = OHOS::Media::Plugins::FileType;
 class BaseStreamDemuxer;
 class DemuxerPluginManager;
 class Source;
+
+using MediaSource = OHOS::Media::Plugins::MediaSource;
+using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
+using FileType = OHOS::Media::Plugins::FileType;
+using funcPreReadSample = std::function<int64_t(uint32_t trackId)>;
 
 class AVBufferQueueProducer;
 enum class DemuxerTrackType : uint32_t {
@@ -258,6 +260,8 @@ private:
     std::shared_ptr<Source> subtitleSource_;
     MediaMetaData mediaMetaData_;
 
+    int64_t DoBeforeEachLoop(uint32_t trackId);
+    int64_t DoBeforeSubtitleTrackReadLoop(uint32_t trackId);
     int64_t ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
@@ -322,6 +326,7 @@ private:
     // memoryUsage
     std::unordered_map<uint32_t, uint32_t> trackMemoryUsages_;
     std::unordered_map<uint32_t, uint32_t> memoryReportLimitCount_;
+    std::unordered_map<uint32_t, funcPreReadSample> funcBeforeReadSampleMap_;
 
     std::map<uint32_t, std::shared_ptr<SampleQueue>> sampleQueueMap_;
     std::map<uint32_t, bool> eosMap_;
