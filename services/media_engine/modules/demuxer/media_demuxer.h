@@ -167,6 +167,8 @@ public:
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
     bool IsFlvLive();
+
+    void SetIsCreatedByFilter(bool isCreatedByFilter);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -203,6 +205,7 @@ private:
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
     Status AddDemuxerCopyTask(uint32_t trackId, TaskType type);
     Status AddDemuxerCopyTaskByTrack(uint32_t trackId, DemuxerTrackType type);
+    void AddDemuxerCopyTaskByTrackIfFilter(uint32_t trackId, DemuxerTrackType type);
 
     Status StopAllTask();
     Status PauseAllTask();
@@ -392,6 +395,8 @@ private:
     int32_t apiVersion_ {0};
     bool isHlsFmp4_ {false};
     std::mutex changeStreamMutex_ {};
+    
+    bool isCreatedByFilter_ {false};
 };
 } // namespace Media
 } // namespace OHOS
