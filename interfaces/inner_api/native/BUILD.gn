@@ -124,6 +124,32 @@ config("av_codec_client_public_config") {
   }
 }
 
+config("av_codec_suspend_client_public_config") {
+  include_dirs = [
+    "./",
+    "$av_codec_root_dir/frameworks/native/avcodec",
+    "$av_codec_root_dir/services/dfx/include",
+    "$av_codec_root_dir/services/include",
+    "$av_codec_root_dir/services/utils/include/",
+  ]
+
+  defines = []
+
+  if (target_cpu == "arm64" || is_emulator) {
+    av_codec_plugin_path = "\"/system/lib64/media/av_codec_plugins\""
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_plugin_path = "\"/system/lib/media/av_codec_plugins\""
+    av_codec_path = "\"/system/lib\""
+  }
+
+  defines += [
+    "AV_CODEC_PLUGIN_PATH=${av_codec_plugin_path}",
+    "AV_CODEC_PLUGIN_FILE_TAIL=\".z.so\"",
+    "AV_CODEC_PATH=${av_codec_path}",
+  ]
+}
+
 config("av_codec_client_codec_config") {
   include_dirs = [
     "$av_codec_root_dir/interfaces/inner_api/native",
@@ -301,6 +327,60 @@ ohos_shared_library("av_codec_client") {
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
   }
+
+  innerapi_tags = [
+    "platformsdk",
+    "sasdk",
+  ]
+
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}
+
+ohos_shared_library("av_codec_suspend_client") {
+  branch_protector_ret = "pac_ret"
+  install_enable = true
+  public_configs = [
+    ":av_codec_client_local_config",
+    ":av_codec_client_ipc_config",
+    ":av_codec_suspend_client_public_config",
+    ":av_codec_packege_include",
+    ":av_codec_client_codec_config",
+  ]
+
+  public_external_deps = [
+    "media_foundation:media_foundation",
+  ]
+  sanitize = av_codec_sanitize
+
+  configs = [
+    ":av_codec_packege_include",
+    ":av_codec_client_compile_config",
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules_config",
+  ]
+
+  sources = [
+    "$av_codec_root_dir/frameworks/native/avcodec/avcodec_suspend.cpp",
+    "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
+    "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",
+    "$av_codec_root_dir/services/services/common/avsharedmemory_ipc.cpp",
+    "$av_codec_root_dir/services/services/sa_avcodec/client/avcodec_client.cpp",
+    "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_listener_stub.cpp",
+    "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_parcel.cpp",
+    "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_service_proxy.cpp",
+  ]
+
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "samgr:samgr_proxy",
+  ]
 
   innerapi_tags = [
     "platformsdk",
