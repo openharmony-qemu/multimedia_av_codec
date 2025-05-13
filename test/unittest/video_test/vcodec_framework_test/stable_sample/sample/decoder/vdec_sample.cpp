@@ -395,11 +395,11 @@ int32_t VideoDecSample::Configure()
     }
     if (scaleMode_) {
         setFormatRet = setFormatRet &&
-            OH_AVFormat_SetIntValue(format, OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP)；
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP);
     }
     if (lowLatency_) {
         setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
-        setFormatRet = setFormatRet && OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 1000000);
+        setFormatRet = setFormatRet && OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 1000000); // 1000000
     }
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
 
@@ -563,7 +563,7 @@ int32_t VideoDecSample::ReleaseOutputData(std::shared_ptr<CodecBufferInfo> buffe
         ret = OH_VideoDecoder_RenderOutputBuffer(codec_, bufferInfo->GetIndex());
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_RenderOutputBuffer failed");
     } else if (!isAVBufferMode_ && !isSurfaceMode_) {
-        if (releaseOtherBuffer_ && bufferInfo->GetIndex() !=0) {
+        if (releaseOtherBuffer_ && bufferInfo->GetIndex() != 0) {
             ret = OH_VideoDecoder_FreeOutputData(codec_, 0);
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret != AV_ERR_OK, AV_ERR_UNKNOWN,
                 "OH_VideoDecoder_FreeOutputData failed");
