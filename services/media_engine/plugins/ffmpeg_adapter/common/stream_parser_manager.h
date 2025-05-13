@@ -38,7 +38,7 @@ public:
     StreamParserManager(const StreamParserManager &) = delete;
     StreamParserManager operator=(const StreamParserManager &) = delete;
     ~StreamParserManager();
-    static bool Init(VideoStreamType streamType);
+    static bool Init(VideoStreamType videoStreamType);
 
     void ParseExtraData(const uint8_t *sample, int32_t size, uint8_t **extraDataBuf, int32_t *extraDataSize);
     bool IsHdrVivid();
