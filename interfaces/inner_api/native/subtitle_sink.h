@@ -63,6 +63,8 @@ private:
         int64_t duration_;
         std::shared_ptr<AVBuffer> buffer_ {nullptr};
 
+        SubtitleInfo(std::string text, int64_t pts, int64_t duration) : text_(text), pts_(pts), duration_(duration) {}
+
         SubtitleInfo(std::string text, int64_t pts, int64_t duration, std::shared_ptr<AVBuffer> buffer) :
             text_(text), pts_(pts), duration_(duration), buffer_(buffer) {}
 
