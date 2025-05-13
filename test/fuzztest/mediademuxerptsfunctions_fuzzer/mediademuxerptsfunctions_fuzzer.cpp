@@ -23,6 +23,7 @@
 #include <iostream>
 
 #include "media_demuxer.h"
+#include "media_demuxer_pts_functions.cpp"
 #define FUZZ_PROJECT_NAME "mediademuxerptsfunctions_fuzzer"
 using namespace std;
 using namespace OHOS::Media;
@@ -66,10 +67,16 @@ bool MediaDemuxerPtsFunctionsFuzzTest(const uint8_t *data, size_t size)
         Media::AVBufferQueue::Create(size, Media::MemoryType::SHARED_MEMORY, "InnerDemo");  // 4
     sptr<AVBufferQueueProducer> producer = implBufferQueue_->GetProducer();
     mediaDemuxer->SetOutputBufferQueue(trackId, producer);
-
+    
     mediaDemuxer->Start();
+    mediaDemuxer->InitPtsInfo();
+    mediaDemuxer->InitMediaStartPts();
+    mediaDemuxer->TranscoderInitMediaStartPts();
+
     mediaDemuxer->SetSubtitleSource(std::make_shared<MediaSource>(MP4_PATH));
     mediaDemuxer->SetTranscoderMode();
+    std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
+    mediaDemuxer->HandleAutoMaintainPts(trackId, sample);
     int ret = remove(MP4_PATH);
     if (ret != 0) {
         return false;
