@@ -367,11 +367,11 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
+    vdec->setSurfaceParam_ = true;
+    vdec->releaseOtherBuffer_ = true;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = "hevcdecoder.dump";
     vdec->dumpValue_ = "11";
-    vdec->setSurfaceParam_ = true;
-    vdec->releaseOtherBuffer_ = true;
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -426,6 +426,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     EXPECT_EQ(vdec->SetParameter(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetParameter(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
@@ -470,7 +471,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(true), AV_ERR_OK) << SAMPLE_ID;
-    
+
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
@@ -480,15 +481,15 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
  * @tc.desc: 1. 2 codec use same surface;
  */
 HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_006, TestSize.Level1,
-    VideoDecSample::threadNum_)
+          VideoDecSample::threadNum_)
 {
     auto vdec1 = make_shared<VideoDecSample>();
-    auto signal1 = make_shared<VCodecSignal>(vdec1);
-    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec1);
+    auto vdec2 = make_shared<VideoDecSample>();
     vdec1->frameCount_ = 21; // 21: input frame num
     vdec1->skipOutFrameHalfCheck_ = true;
     vdec1->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
-    vdec1->inPath_ = "720_1280_25_avcc.hdr.h265";
+    vdec1->inPath_ = "720_1280_25_avcc.h265";
     vdec1->sampleWidth_ = 720;
     vdec1->sampleHeight_ = 1080;
     vdec1->outPath_ = GetTestName();
@@ -498,9 +499,9 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     vdec2->frameCount_ = 21; // 21: input frame num
     vdec2->skipOutFrameHalfCheck_ = true;
     vdec2->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
-    vdec2->inPath_ = "720_1280_25_avcc.hdr.h265";
+    vdec2->inPath_ = "720_1280_25_avcc.h265";
     vdec2->sampleWidth_ = 720;
-    vdec2->sampleHeight_ = 1080;
+    vdec2->sampleHeight_ = 1280;
     vdec2->outPath_ = GetTestName();
     vdec2->dumpKey_ = "hevcdecoder.dump";
     vdec2->dumpValue_ = "0";
@@ -517,12 +518,13 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     cb2.onNeedInputBuffer = InBufferHandle;
     cb2.onNewOutputBuffer = OutBufferHandle;
     signal->isRunning_ = true;
-    EXPECT_EQ(vdec1->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
+    EXPECT_EQ(vdec1->RegisterCallback(cb1, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
     EXPECT_EQ(vdec1->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
     EXPECT_EQ(vdec1->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
-    EXPECT_EQ(vdec2->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
+    EXPECT_EQ(vdec2->RegisterCallback(cb2, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
     EXPECT_EQ(vdec2->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
     EXPECT_EQ(vdec2->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
+    EXPECT_EQ(vdec1->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
     EXPECT_TRUE(vdec1->WaitForEos()) << "[SAMPLE_ID]:" << vdec1->sampleId_;
 
     EXPECT_EQ(vdec2->SetOutputSurface(vdec1->GetSurfaceWindow(false)), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
