@@ -23,7 +23,7 @@
 #include <iostream>
 
 #include "media_demuxer.h"
-#include "media_demuxer_pts_functions.cpp"
+
 #define FUZZ_PROJECT_NAME "mediademuxerptsfunctions_fuzzer"
 using namespace std;
 using namespace OHOS::Media;
