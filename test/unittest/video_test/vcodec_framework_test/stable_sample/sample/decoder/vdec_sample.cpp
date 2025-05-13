@@ -371,13 +371,14 @@ int32_t VideoDecSample::Configure()
     }
 
     if (setSurfaceParam_) {
-        setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_KEY_ROTATION, defaultRotation_)
-                       && OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP)
-                       && OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_MAX_OUTPUT_BUFFER_COUNT, defaultBufferCount_)
-                       && OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_MAX_INPUT_BUFFER_COUNT, defaultBufferCount_)
-                       && OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_KEY_BITRATE, 1000000); // 1000000WW
+        setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_KEY_ROTATION, defaultRotation_) &&
+            OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP) &&
+            OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_MAX_OUTPUT_BUFFER_COUNT, defaultBufferCount_) &&
+            OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_MAX_INPUT_BUFFER_COUNT, defaultBufferCount_) &&
+            OH_AVFormat_SetLongValue(dyFormat_.get(), OH_MD_KEY_BITRATE, 1000000); // 1000000
         if (setPixelFormat_) {
-            setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_KEY_PIXEL_FORMAT, smaplePixel_);
+            setFormatRet = setFormatRet &&
+                OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_KEY_PIXEL_FORMAT, samplePixel_);
         }
     }
 
@@ -385,17 +386,20 @@ int32_t VideoDecSample::Configure()
         setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, defaultRotation_);
     }
     if (maxOutputBufferCount_) {
-        setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_MAX_OUTPUT_BUFFER_COUNT, defaultBufferCount_);
+        setFormatRet = setFormatRet &&
+            OH_AVFormat_SetIntValue(format, OH_MD_MAX_OUTPUT_BUFFER_COUNT, defaultBufferCount_);
     }
     if (maxInputBufferCount_) {
-        setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_MAX_INPUT_BUFFER_COUNT, defaultBufferCount_);
+        setFormatRet = setFormatRet &&
+            OH_AVFormat_SetIntValue(format, OH_MD_MAX_INPUT_BUFFER_COUNT, defaultBufferCount_);
     }
     if (scaleMode_) {
-        setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP)；
+        setFormatRet = setFormatRet &&
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP)；
     }
     if (lowLatency_) {
         setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
-        setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, 1000000);
+        setFormatRet = setFormatRet && OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 1000000);
     }
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
 
@@ -561,14 +565,16 @@ int32_t VideoDecSample::ReleaseOutputData(std::shared_ptr<CodecBufferInfo> buffe
     } else if (!isAVBufferMode_ && !isSurfaceMode_) {
         if (releaseOtherBuffer_ && bufferInfo->GetIndex() !=0) {
             ret = OH_VideoDecoder_FreeOutputData(codec_, 0);
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret != AV_ERR_OK, AV_ERR_UNKNOWN, "OH_VideoDecoder_FreeOutputData failed");
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret != AV_ERR_OK, AV_ERR_UNKNOWN,
+                "OH_VideoDecoder_FreeOutputData failed");
         }
         ret = OH_VideoDecoder_FreeOutputData(codec_, bufferInfo->GetIndex());
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_FreeOutputData failed");
     } else if (!isAVBufferMode_ && isSurfaceMode_) {
         if (releaseOtherBuffer_ && bufferInfo->GetIndex() != 0) {
             ret = OH_VideoDecoder_RenderOutputData(codec_, 0);
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret != AV_ERR_OK, AV_ERR_UNKNOWN, "OH_VideoDecoder_RenderOutputData failed");
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret != AV_ERR_OK, AV_ERR_UNKNOWN,
+                "OH_VideoDecoder_RenderOutputData failed");
         }
         ret = OH_VideoDecoder_RenderOutputData(codec_, bufferInfo->GetIndex());
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_RenderOutputData failed");
