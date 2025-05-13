@@ -348,7 +348,7 @@ HWTEST(TestSubtitleSink, do_sync_write_two_frames_case8, TestSize.Level1)
     sink->SetSyncCenter(syncCenter);
     sink->Prepare();
     sink->subtitleInfoVec_.push_back({"test", 1, 1});
-    SubtitleSink::SubtitleInfo tempSubtitleInfo = {{"test", 2, 2}};
+    SubtitleSink::SubtitleInfo tempSubtitleInfo = {{"test", 2, 2, nullptr}};
     sink->NotifyRender(tempSubtitleInfo);
  
     sink->CalcWaitTime(tempSubtitleInfo);

@@ -194,6 +194,9 @@ MediaDemuxer::MediaDemuxer()
 {
     MEDIA_LOG_D("In");
     InitEnableSampleQueueFlag();
+
+    funcBeforeReadSampleMap_.emplace(TrackType::TRACK_SUBTITLE,
+        [this](uint32_t trackId) { return DoBeforeSubtitleTrackReadLoop(trackId); });
 }
 
 MediaDemuxer::~MediaDemuxer()
@@ -2540,6 +2543,34 @@ int64_t MediaDemuxer::GetReadLoopRetryUs(uint32_t trackId)
     return static_cast<int64_t>(sampleDuration >> SAMPLE_FLOW_CONTROL_RATE_POW);
 }
 
+int64_t MediaDemuxer::DoBeforeEachLoop(uint32_t trackId)
+{
+    FALSE_RETURN_V_NOLOG(demuxerPluginManager_ != nullptr, 0);
+    auto trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
+    auto hasRegisteredFunc = funcBeforeReadSampleMap_.find(trackType) != funcBeforeReadSampleMap_.end();
+    FALSE_RETURN_V_NOLOG(hasRegisteredFunc, 0);
+    return funcBeforeReadSampleMap_[trackType](trackId);
+}
+
+int64_t MediaDemuxer::DoBeforeSubtitleTrackReadLoop(uint32_t trackId)
+{
+    FALSE_RETURN_V_NOLOG(!demuxerPluginManager_->IsDash() && subStreamDemuxer_ == nullptr, static_cast<int64_t>(0));
+    auto subtitleStreamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+    auto subtitleDemuxerPlugin = demuxerPluginManager_->GetPluginByStreamID(subtitleStreamId);
+    FALSE_RETURN_V_MSG_E(subtitleDemuxerPlugin != nullptr, RETRY_DELAY_TIME_US,
+        "Invalid demuxer plugin, unabled to read subtitle sample");
+    uint32_t cacheSize = 0;
+    auto res = subtitleDemuxerPlugin->GetCurrentCacheSize(trackId, cacheSize);
+    // Only if demuxer plugin has subtitle cache can read subtitle sample
+    if (res == Status::OK && cacheSize > 0) {
+        MEDIA_LOG_D("Demuxer plugin has cached subtitle data size " PUBLIC_LOG_U32, cacheSize);
+        return static_cast<int64_t>(0);
+    }
+    MEDIA_LOG_D("Invalid cache size for subtitle track GetCurrentCacheSize res " PUBLIC_LOG_D32
+                " size " PUBLIC_LOG_U32, static_cast<int32_t>(res), cacheSize);
+    return RETRY_DELAY_TIME_US;
+}
+
 int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
 {
     if (streamDemuxer_->GetIsIgnoreParse() || isStopped_ || isPaused_ || isSeekError_) {
@@ -2547,6 +2578,8 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
         perfRecorder_.Reset();
         return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
     } else {
+        auto resPreReadSample = DoBeforeEachLoop(trackId);
+        FALSE_RETURN_V_NOLOG(resPreReadSample == 0, resPreReadSample);
         Status ret = CopyFrameToUserQueue(trackId);
         // when read failed, or request always failed in 1min, send error event
         bool ignoreError = isStopped_ || isPaused_ || isInterruptNeeded_.load();
