@@ -115,6 +115,7 @@ public:
     void SetPostProcessorType(VideoPostProcessorType type);
     Status SetPostProcessorOn(bool isSuperResolutionOn);
     Status SetVideoWindowSize(int32_t width, int32_t height);
+    Status SetSpeed(float speed);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -195,6 +196,7 @@ private:
     std::atomic<bool> prerollDone_ {true};
     std::atomic<bool> eosNext_ {false};
     bool isFirstFrameAfterResume_ {true};
+    bool hasSetHighSpeed_ {false};
 
     int32_t appUid_ = -1;
     int32_t appPid_ = -1;
