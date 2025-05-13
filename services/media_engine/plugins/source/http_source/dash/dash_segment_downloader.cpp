@@ -663,7 +663,7 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
     if (isCleanAll) {
         MEDIA_LOG_I("CleanAllSegmentBuffer clean all");
         isCleaningBuffer_.store(true);
-        close(false, true);
+        Close(false, true);
         std::lock_guard<std::mutex> lock(segmentMutex_);
         isAllSegmentFinished_.store(false);
         for (const auto &it: segmentList_) {
@@ -720,7 +720,7 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
 
     if (clearTail > 0) {
         isCleaningBuffer_.store(true);
-        close(false, false);
+        Close(false, false);
         std::lock_guard<std::mutex> lock(segmentMutex_);
         isAllSegmentFinished_.store(false);
         segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
@@ -792,7 +792,7 @@ void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, si
 
 bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd)
 {
-    close(false, false);
+    Close(false, false);
     std::lock_guard<std::mutex> lock(segmentMutex_);
     remainLastNumberSeq = -1;
     size_t clearTail = 0;
