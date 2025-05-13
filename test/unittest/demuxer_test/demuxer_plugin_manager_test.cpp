@@ -760,7 +760,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0014, TestSize.
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
-    ASSERT_EQ(ResultAssert(0, 0, 0, 0), true);
+    ASSERT_EQ(ResultAssert(5, 0, 5, 0), true);
     RemoveValue();
 }
 
