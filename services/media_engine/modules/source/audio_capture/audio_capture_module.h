@@ -61,6 +61,7 @@ public:
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
+    Status SetWillMuteWhenInterrupted(bool muteWhenInterrupted);
 
 private:
     Status DoDeinit();

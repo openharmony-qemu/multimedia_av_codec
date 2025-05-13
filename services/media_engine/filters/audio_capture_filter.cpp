@@ -502,6 +502,16 @@ int32_t AudioCaptureFilter::GetMaxAmplitude()
     return audioCaptureModule_->GetMaxAmplitude();
 }
 
+Status AudioCaptureFilter::SetWillMuteWhenInterrupted(bool muteWhenInterrupted)
+{
+    MEDIA_LOG_I("SetWillMuteWhenInterrupted");
+    if (audioCaptureModule_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot SetWillMuteWhenInterrupted");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return audioCaptureModule_->SetWillMuteWhenInterrupted(muteWhenInterrupted);
+}
+
 void AudioCaptureFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnLinkedResult");
