@@ -50,7 +50,7 @@ static const std::string DEMUXER_PLUGIN_NAME_APE = "avdemux_ape";
 static const std::string DEMUXER_PLUGIN_NAME_FLAC = "avdemux_flac";
 static const std::string DEMUXER_PLUGIN_NAME_FLV = "avdemux_flv";
 static const std::string DEMUXER_PLUGIN_NAME_MATROSKA = "avdemux_matroska,webm";
-static const std::string DEMUXER_PLUGIN_NAME_MOV = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+static const std::string DEMUXER_PLUGIN_NAME_MOV_S = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
 static const std::string DEMUXER_PLUGIN_NAME_MP3 = "avdemux_mp3";
 static const std::string DEMUXER_PLUGIN_NAME_MPEG = "avdemux_mpeg";
 static const std::string DEMUXER_PLUGIN_NAME_MPEGTS = "avdemux_mpegts";
@@ -71,7 +71,10 @@ static const string TEST_FILE_URI_APE = TEST_FILE_PATH + "ape_test.ape";
 static const string TEST_FILE_URI_FLAC = TEST_FILE_PATH + "audio/flac_48000_1_cover.flac";
 static const string TEST_FILE_URI_FLV = TEST_FILE_PATH + "h264.flv";
 static const string TEST_FILE_URI_MATROSKA = TEST_FILE_PATH + "h264_opus_4sec.mkv";
-static const string TEST_FILE_URI_MOV = TEST_FILE_PATH + "5_1_4_16bit_32000Hz_704kbps.mp4";
+static const string TEST_FILE_URI_MOV = TEST_FILE_PATH + "h264_aac.mov";
+static const string TEST_FILE_URI_MP4 = TEST_FILE_PATH + "5_1_4_16bit_32000Hz_704kbps.mp4";
+static const string TEST_FILE_URI_FMP4 = TEST_FILE_PATH + "h265_fmp4.mp4";
+static const string TEST_FILE_URI_M4A = TEST_FILE_PATH + "audio/h264_fmp4.m4a";
 static const string TEST_FILE_URI_MP3 = TEST_FILE_PATH + "audio/mp3_48000_1_cover.mp3";
 static const string TEST_FILE_URI_MPEG = TEST_FILE_PATH + "mpeg_h264_mp2.mpeg";
 static const string TEST_FILE_URI_MPEGTS = TEST_FILE_PATH + "test_mpeg2_Gop25_4sec.ts";
@@ -710,10 +713,10 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0008, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0009, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV, TEST_FILE_URI_MOV), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MOV), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
-    ASSERT_EQ(ResultAssert(1875, 0, 1875, 0), true);
+    ASSERT_EQ(ResultAssert(602, 434, 3, 434), true);
     RemoveValue();
 }
 
@@ -793,6 +796,34 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0018, TestSize.
 {
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_RM, TEST_FILE_URI_RM), false);
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AC3, TEST_FILE_URI_AC3), false);
+}
+
+
+HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0019, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    ASSERT_EQ(PluginReadAllSample(), true);
+    ASSERT_EQ(ResultAssert(1875, 0, 1875, 0), true);
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0020, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_FMP4), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    ASSERT_EQ(PluginReadAllSample(), true);
+    ASSERT_EQ(ResultAssert(604, 433, 3, 433), true);
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0021, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_M4A), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    ASSERT_EQ(PluginReadAllSample(), true);
+    ASSERT_EQ(ResultAssert(433, 0, 433, 0), true);
+    RemoveValue();
 }
 
 }
