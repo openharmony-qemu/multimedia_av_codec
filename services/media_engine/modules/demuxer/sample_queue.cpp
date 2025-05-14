@@ -62,8 +62,8 @@ public:
             sampleQueue->OnBufferAvailable();
         } else {
             MEDIA_LOG_E("prodecer listener: Invalid sampleQueue instance.");
-         }
-     }
+        }
+    }
 
 private:
     std::weak_ptr<SampleQueue> sampleQueue_;
