@@ -70,6 +70,8 @@ private:
     std::shared_ptr<Task> taskPtr_{nullptr};
     int32_t RelativeSleep(int64_t nanoTime);
     void GetCurrentTime(int64_t &currentTime);
+    void CalculateAVTime();
+    void FillLostFrame(int32_t lostCount);
     void RecordCachedData();
     void RecordAudioFrame();
     std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_{nullptr};
@@ -87,6 +89,10 @@ private:
     int32_t appUid_ {0};
     int32_t appPid_ {0};
     bool withVideo_ {true};
+    int64_t mStartTime {0};
+    int64_t mPauseTime {0};
+    int64_t mStopTime {0};
+    int64_t mCurrentTime {0};
     std::atomic<int64_t> firstAudioFramePts_{-1};
     std::atomic<int64_t> firstVideoFramePts_{-1};
     std::deque<std::shared_ptr<uint8_t>> cachedAudioData_;

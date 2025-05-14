@@ -366,7 +366,7 @@ Status AudioCaptureModule::Read(uint8_t *cacheAudioData, size_t expectedLen)
     return Status::OK;
 }
 
-void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime)
+void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime, bool isFirstFrame)
 {
     MEDIA_LOG_I("AudioCaptureModule GetAudioTime");
     int32_t ret = true;
@@ -375,12 +375,18 @@ void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime)
         FALSE_RETURN_MSG(audioCapturer_ != nullptr, "Audio capture is null");
         FALSE_RETURN_MSG(audioCapturer_->GetStatus() == AudioStandard::CAPTURER_RUNNING,
             "Audio capture Status error");
+        AudioStandard::Timestamp timestamp{};
+        audioCapturer_->GetTimeStampInfo(timestamp, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
 
-        AudioStandard::Timestamp timestamp;
-        ret = audioCapturer_->GetAudioTimestampInfo(timestamp, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
-        FALSE_RETURN_MSG(ret == static_cast<int32_t>(Status::OK), "audioCapturer GetAudioTime fail");
         audioDataTime = static_cast<int64_t>(timestamp.time.tv_sec) * AUDIO_NS_PER_SECOND
             + static_cast<int64_t>(timestamp.time.tv_nsec);
+
+        if (isFirstFrame) {
+            uint64_t readPos = timestamp.framePosition;
+            audioDataTime -= (readPos - lastReadPos) * AUDIO_NS_PER_SECOND /
+                static_cast<int64_t>(options_.streamInfo.samplingRate);
+        }
+        lastReadPos = timestamp.framePosition;
     }
 }
 
