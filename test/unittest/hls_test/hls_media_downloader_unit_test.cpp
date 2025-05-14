@@ -1128,7 +1128,10 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SET_INITIAL_BUFFERSIZE_001, TestSize.Level1
     PlayInfo playInfo;
     playInfo.url_ = testUrl;
     downloader->PutRequestIntoDownloader(playInfo);
-    EXPECT_EQ(downloader->SetInitialBufferSize(0, 0), false);
+    downloader->backPlayList_.push_back(playInfo);
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    EXPECT_EQ(downloader->SetInitialBufferSize(0, 50000), false);
+    downloader->cacheMediaBuffer_ = nullptr;
     downloader->isBuffering_ = false;
     EXPECT_EQ(downloader->SetInitialBufferSize(0, 20000000), true);
 }
