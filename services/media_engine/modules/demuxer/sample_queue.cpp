@@ -41,9 +41,29 @@ public:
         if (auto sampleQueue = sampleQueue_.lock()) {
             sampleQueue->OnBufferConsumer();
         } else {
-            MEDIA_LOG_E("Invalid sampleQueue instance.");
+            MEDIA_LOG_E("consumer listener: Invalid sampleQueue instance.");
         }
     }
+
+private:
+    std::weak_ptr<SampleQueue> sampleQueue_;
+};
+
+class SampleBufferProducerListener : public IRemoteStub<IProducerListener> {
+public:
+    explicit SampleBufferProducerListener(std::shared_ptr<SampleQueue> sampleQueue)
+        : sampleQueue_(std::move(sampleQueue))
+    {}
+    virtual ~SampleBufferProducerListener() = default;
+
+    void OnBufferAvailable() override
+    {
+        if (auto sampleQueue = sampleQueue_.lock()) {
+            sampleQueue->OnBufferAvailable();
+        } else {
+            MEDIA_LOG_E("prodecer listener: Invalid sampleQueue instance.");
+         }
+     }
 
 private:
     std::weak_ptr<SampleQueue> sampleQueue_;
@@ -63,6 +83,9 @@ Status SampleQueue::Init(const Config& config)
     }
     
     sampleBufferQueueProducer_ = sampleBufferQueue_->GetProducer();
+    sptr<IProducerListener> producerListener = OHOS::sptr<SampleBufferProducerListener>::MakeSptr(shared_from_this());
+    FALSE_RETURN_V_MSG_E(producerListener != nullptr, Status::ERROR_NO_MEMORY, "SampleBufferProducerListener nullptr");
+    sampleBufferQueueProducer_->SetBufferAvailableListener(producerListener);
 
     sampleBufferQueueConsumer_ = sampleBufferQueue_->GetConsumer();
     sptr<IConsumerListener> consumerListener = new(std::nothrow) SampleBufferConsumerListener(shared_from_this());
@@ -195,9 +218,6 @@ Status SampleQueue::AcquireCopyToDstBuffer(std::shared_ptr<AVBuffer>& dstBuffer)
     UpdateLastOutSamplePts(dstBuffer->pts_);
 
     ret = ReleaseBuffer(srcBuffer);
-    if (ret == Status::OK) {
-        OnBufferAvailable();
-    }
     MEDIA_LOG_D(PUBLIC_LOG_S " AcquireCopyToDstBuffer out", config_.queueName_.c_str());
     return ret;
 }
