@@ -385,11 +385,6 @@ void AudioCaptureFilter::ReadLoop()
             firstAudioFramePts_.store(audioDataTime);
             MEDIA_LOG_I("firstAudioFramePts: " PUBLIC_LOG_D64, firstAudioFramePts_.load());
         }
-        {
-            int64_t tmpTime = 0;
-            GetCurrentTime(tmpTime);
-            MEDIA_LOG_I("tmh_debug[audio] CurrentTime: " PUBLIC_LOG_D64, tmpTime);
-        }
         cachedAudioData_.push_back(cacheAudioData);
     } else {
         if (!cachedAudioData_.empty() && withVideo_) {
