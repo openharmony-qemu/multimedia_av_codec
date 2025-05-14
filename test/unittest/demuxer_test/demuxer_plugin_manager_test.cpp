@@ -30,23 +30,23 @@ namespace OHOS {
 namespace Media {
 
 #ifndef FALSE_RETURN
-#define FALSE_RETURN(exec)                                                                                             \
-    do {                                                                                                               \
-        bool returnValue = (exec);                                                                                     \
-        if (!returnValue) {                                                                                            \
-            printf("FALSE_RETURN:" #exec);                                                                             \
-            return returnValue;                                                                                        \
-        }                                                                                                              \
+#define FALSE_RETURN(exec)                     \
+    do {                                       \
+        bool returnValue = (exec);             \
+        if (!returnValue) {                    \
+            printf("FALSE_RETURN:" #exec"\n"); \
+            return returnValue;                \
+        }                                      \
     } while (0);
 #endif
+
+static const int BUFFER_PADDING_SIZE = 1024;
 
 static const std::string DEMUXER_PLUGIN_NAME_AAC = "avdemux_aac";
 static const std::string DEMUXER_PLUGIN_NAME_AMR = "avdemux_amr";
 static const std::string DEMUXER_PLUGIN_NAME_AMRNB = "avdemux_amrnb";
 static const std::string DEMUXER_PLUGIN_NAME_AMRWB = "avdemux_amrwb";
 static const std::string DEMUXER_PLUGIN_NAME_APE = "avdemux_ape";
-static const std::string DEMUXER_PLUGIN_NAME_ASF = "avdemux_asf";
-static const std::string DEMUXER_PLUGIN_NAME_ASF_O = "avdemux_asf_o";
 static const std::string DEMUXER_PLUGIN_NAME_FLAC = "avdemux_flac";
 static const std::string DEMUXER_PLUGIN_NAME_FLV = "avdemux_flv";
 static const std::string DEMUXER_PLUGIN_NAME_MATROSKA = "avdemux_matroska,webm";
@@ -68,8 +68,6 @@ static const string TEST_FILE_URI_AMR = TEST_FILE_PATH + "audio/amr_nb_8000_1.am
 static const string TEST_FILE_URI_AMRNB = TEST_FILE_PATH + "audio/amr_nb_8000_1.amr";
 static const string TEST_FILE_URI_AMRWB = TEST_FILE_PATH + "audio/amr_wb_16000_1.amr";
 static const string TEST_FILE_URI_APE = TEST_FILE_PATH + "ape_test.ape";
-static const string TEST_FILE_URI_ASF = TEST_FILE_PATH + "";
-static const string TEST_FILE_URI_ASF_O = TEST_FILE_PATH + "";
 static const string TEST_FILE_URI_FLAC = TEST_FILE_PATH + "audio/flac_48000_1_cover.flac";
 static const string TEST_FILE_URI_FLV = TEST_FILE_PATH + "h264.flv";
 static const string TEST_FILE_URI_MATROSKA = TEST_FILE_PATH + "h264_opus_4sec.mkv";
@@ -553,7 +551,7 @@ bool DemuxerPluginManagerUnitTest::PluginReadSample(uint32_t idx, uint32_t& flag
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     demuxerPlugin->GetNextSampleSize(idx, bufSize);
     if (bufSize > buffer_.size()) {
-        buffer_.resize(bufSize);
+        buffer_.resize(bufSize + BUFFER_PADDING_SIZE);
     }
 
     auto avBuf = AVBuffer::CreateAVBuffer(buffer_.data(), bufSize, bufSize);
@@ -790,5 +788,12 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0017, TestSize.
     ASSERT_EQ(ResultAssert(704, 0, 704, 0), true);
     RemoveValue();
 }
+
+HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0018, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_RM, TEST_FILE_URI_RM), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AC3, TEST_FILE_URI_AC3), false);
+}
+
 }
 }

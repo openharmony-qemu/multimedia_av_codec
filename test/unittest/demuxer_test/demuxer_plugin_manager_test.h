@@ -54,7 +54,7 @@ private:
     std::map<uint32_t, uint32_t> keyFrames_;
     std::map<uint32_t, bool> eosFlag_;
     std::vector<uint32_t> selectedTrackIds_;
-    std::vector<uint8_t> buffer_{std::vector<uint8_t>(1024)};
+    std::vector<uint8_t> buffer_;
 
     std::shared_ptr<Media::StreamDemuxer> realStreamDemuxer_{ nullptr };
     std::shared_ptr<Media::MediaSource> mediaSource_{ nullptr };
