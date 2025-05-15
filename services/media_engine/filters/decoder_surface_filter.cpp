@@ -733,9 +733,9 @@ void DecoderSurfaceFilter::InitPostProcessorType()
         std::string enhanceflag;
         meta_->GetData(ENHANCE_FLAG, enhanceflag);
         MEDIA_LOG_D("enhanceflag: %{public}s", enhanceflag.c_str());
-        if (enableCameraPostprocessing_.load() && enhanceflag == "1" && fdsanFd_ != nullptr && fdsanFd_->Get() >= 0) {
-            postProcessorType_ = VideoPostProcessorType::CAMERA_INSERT_FRAME;
-        }
+        FALSE_RETURN_NOLOG(
+            enableCameraPostprocessing_.load() && enhanceflag == "1" && fdsanFd_ != nullptr && fdsanFd_->Get() >= 0);
+        postProcessorType_ = VideoPostProcessorType::CAMERA_INSERT_FRAME;
         std::string videoId;
         meta_->GetData(VIDEO_ID, videoId);
         MEDIA_LOG_D("videoId: %{public}s", videoId.c_str());
@@ -958,10 +958,6 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     MEDIA_LOG_D("DrainOutputBuffer, pts:" PUBLIC_LOG_D64, outputBuffer->pts_);
     if ((outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS))) {
         MEDIA_LOG_I("DrainOutputBuffer output EOS");
-    } else if ((postProcessorType_ == VideoPostProcessorType::SUPER_RESOLUTION ||
-                   postProcessorType_ == VideoPostProcessorType::CAMERA_INSERT_FRAME) &&
-               outputBuffer->pts_ >= eosPts_) {
-        outputBuffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     }
     std::unique_lock<std::mutex> lock(mutex_);
     FALSE_RETURN_NOLOG(!DrainSeekContinuous(index, outputBuffer));
