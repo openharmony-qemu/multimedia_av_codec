@@ -632,8 +632,8 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
         if (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_) {
             AutoLock lock(sleepMutex_);
             if (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_) {
-                MEDIA_LOG_I("HTTP wait for CacheBufferInit begin " PUBILC_LOG_D32, isCacheBufferInited_);
-                sleepCond.WaitFor(lock, MAX_BUFFERING_TIME_OUT, [this]() {
+                MEDIA_LOG_I("HTTP wait for CacheBufferInit begin " PUBLIC_LOG_D32, isCacheBufferInited_);
+                sleepCond_.WaitFor(lock, MAX_BUFFERING_TIME_OUT, [this]() {
                     return isInterruptNeeded_.load() || isCacheBufferInited_;
                 });
                 MEDIA_LOG_I("HTTP wait for CacheBufferInit end " PUBLIC_LOG_D32, isCacheBufferInited_); 
