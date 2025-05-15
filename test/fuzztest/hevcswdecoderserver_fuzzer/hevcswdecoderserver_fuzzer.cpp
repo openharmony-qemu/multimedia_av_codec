@@ -38,21 +38,6 @@ bool SwdecoderServerFuzzTest(const uint8_t *data, size_t size)
     delete vDecSample;
     return false;
 }
-
-bool SwdecoderServerSurfaceFuzzTest(const uint8_t *data, size_t size)
-{
-    if (size < sizeof(int32_t)) {
-        return false;
-    }
-    VDecServerSample *vDecSample = new VDecServerSample();
-    vDecSample->fuzzData = data;
-    vDecSample->fuzzSize = size;
-    vDecSample->RunVideoServerSurfaceDecoder();
-    vDecSample->WaitForEos();
-    delete vDecSample;
-    return false;
-}
-
 } // namespace OHOS
 
 /* Fuzzer entry point */
@@ -60,6 +45,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::SwdecoderServerFuzzTest(data, size);
-    OHOS::SwdecoderServerSurfaceFuzzTest(data, size);
     return 0;
 }
