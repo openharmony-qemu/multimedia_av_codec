@@ -46,7 +46,7 @@ bool CheckDataValidity(const uint8_t *data, size_t size)
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size - EXPECT_SIZE);
+    int len = write(fd, data, size);
     if (len <= 0) {
         close(fd);
         return false;
@@ -84,11 +84,10 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     params.channelCount = fdp.ConsumeIntegral<uint8_t>();
     params.setVideoHeight = fdp.ConsumeIntegral<uint8_t>();
     params.setVideoWidth = fdp.ConsumeIntegral<uint8_t>();
-    uint8_t *dataConver = const_cast<uint8_t *>(data);
-    uint32_t *createSize = reinterpret_cast<uint32_t *>(dataConver + size - STRIDE);
+    uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = AAC_PATH;
-    demuxerSample->RunNormalDemuxerApi11(*createSize, uri, setLanguage, params);
+    demuxerSample->RunNormalDemuxerApi11(createSize, uri, setLanguage, params);
     delete[] uri;
     delete[] setLanguage;
     int ret = remove(AAC_PATH);

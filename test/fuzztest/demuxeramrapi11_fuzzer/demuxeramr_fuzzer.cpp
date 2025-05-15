@@ -45,7 +45,7 @@ bool CheckDataValidity(const uint8_t *data, size_t size)
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size - EXPECT_SIZE);
+    int len = write(fd, data, size);
     if (len <= 0) {
         close(fd);
         return false;
