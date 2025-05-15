@@ -32,6 +32,7 @@ FdsanFd::FdsanFd(FdsanFd &&move)
 {
     *this = std::move(move);
 }
+
 FdsanFd &FdsanFd::operator=(FdsanFd &&move)
 {
     if (this == &move) {

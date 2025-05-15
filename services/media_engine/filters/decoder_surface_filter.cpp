@@ -1456,10 +1456,8 @@ Status DecoderSurfaceFilter::SetPostProcessorFd(int32_t postProcessorFd)
     } else {
         fdsanFd_->Reset(dupFd);
     }
-    FALSE_RETURN_V(isPostProcessorSupported_, Status::ERROR_UNSUPPORTED_FORMAT);
-    FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
     FALSE_RETURN_V(fdsanFd_ && (fdsanFd_->Get() >= 0), Status::ERROR_INVALID_PARAMETER);
-    return postProcessor_->SetFd(fdsanFd_->Get());
+    return Status::OK;
 }
  
 void DecoderSurfaceFilter::SetContinousSeekTime(int64_t seekTimeUs)
