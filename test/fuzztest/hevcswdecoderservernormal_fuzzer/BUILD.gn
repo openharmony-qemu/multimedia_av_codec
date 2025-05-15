@@ -60,7 +60,7 @@ group("fuzztest") {
   deps = []
   deps += [
     # deps file
-    ":HevcSwdecoderServerFuzzTest",  #引用测试套
+    ":HevcSwdecoderServerNormalFuzzTest",  #引用测试套
   ]
 }
 ###############################################################################

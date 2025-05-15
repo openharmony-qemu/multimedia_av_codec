@@ -36,6 +36,8 @@ class VDecSignal {
 public:
     std::mutex inMutex_;
     std::condition_variable inCond_;
+    std::mutex outMutex_;
+    std::condition_variable endCond_;
     std::queue<uint32_t> inIdxQueue_;
     std::queue<std::shared_ptr<AVBuffer>> inBufferQueue_;
 };
@@ -66,7 +68,7 @@ public:
     void WaitForEos();
     int32_t SetOutputSurface();
     std::shared_ptr<VDecSignal> signal_;
-    bool repeateRun = false;
+    bool repeatRun = false;
     bool isSurfMode = false;
     std::atomic<bool> isEOS_ { false };
     std::vector<sptr<Surface>> cs_vector;
@@ -86,15 +88,14 @@ protected:
     private:
         VDecServerSample* tester;
     };
-};
 private:
     int64_t GetSystemTimeUs();
     void ReleaseInFile();
-    void Stopinloop();
+    void StopInloop();
     void SetEOS(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, std::shared_ptr<AVBuffer> buffer);
     int32_t ReadData(uint32_t index, std::shared_ptr<AVBuffer> buffer);
-    int32_t SendData(uint32_t bufferSize, uint32 index, std::shared_ptr<AVBuffer> buffer);
+    int32_t SendData(uint32_t bufferSize, uint32_t index, std::shared_ptr<AVBuffer> buffer);
 };
 
 class ConsumerListener : public IBufferConsumerListener {

@@ -159,12 +159,12 @@ void VDecServerSample::RunVideoServerSurfaceDecoder()
     }
     err = SetOutputSurface();
     if (err != AVCS_ERR_OK) {
-        cout << "Start SetOutputSurface" << endl;
+        cout << "SetOutputSurface 2 failed" << endl;
         return;
     }
     err = SetParameter();
     if (err != AVCS_ERR_OK) {
-        cout << "Start SetParameter" << endl;
+        cout << "SetParameter failed" << endl;
         return;
     }
     GetOutputFormat();

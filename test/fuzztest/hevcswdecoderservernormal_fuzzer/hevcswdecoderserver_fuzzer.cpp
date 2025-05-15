@@ -33,7 +33,7 @@ bool SwdecoderServerNormalFuzzTest(const uint8_t *data, size_t size)
     if (size < EXPECT_SIZE) {
         return false;
     }
-    VDecFuzzSample *vDecSample = new VDecFuzzSample();
+    VDecServerSample *vDecSample = new VDecServerSample();
     vDecSample->defaultWidth = data[size - WIDTH_SIZE];
     vDecSample->defaultHeight = data[size - HEIGHT_SIZE];
     vDecSample->defaultFrameRate = data[size - FRAME_RATE_SIZE];
@@ -45,14 +45,14 @@ bool SwdecoderServerNormalFuzzTest(const uint8_t *data, size_t size)
         vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.hdr.h265";
     }
     if (vDecSample->defaultPixelFormat % 2 == 0) {
-        vDecSample->isSurfMode = false;
+        vDecSample->isSurfMode = true;
     } else {
         vDecSample->isSurfMode = false;
     }
     vDecSample->RunVideoServerDecoder();
-    vDecSample->WaitForEOS();
+    vDecSample->WaitForEos();
     delete vDecSample;
-    return result;
+    return false;
 }
 
 } // namespace OHOS

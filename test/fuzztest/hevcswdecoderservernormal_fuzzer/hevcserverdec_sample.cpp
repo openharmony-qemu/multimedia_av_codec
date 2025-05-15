@@ -35,7 +35,7 @@ namespace {
     constexpr uint8_t PPS = 8;
     constexpr uint32_t START_CODE_SIZE = 4;
     constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
-    constexpr uint8_t H264_NALU_TYPE = 0x1f;
+    constexpr uint8_t H265_NALU_TYPE = 0x1f;
     constexpr int64_t NANOS_IN_SECOND = 1000000000L;
     constexpr int64_t NANOS_IN_MICRO = 1000L;
     typedef enum OH_AVCodecBufferFlags {
@@ -93,7 +93,7 @@ void VDecServerSample::CallBack::OnInputBufferAvailable(uint32_t index, std::sha
 void VDecServerSample::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     if (buffer->flag_ == AVCODEC_BUFFER_FLAGS_EOS) {
-        tester->isEos_.store(true);
+        tester->isEOS_.store(true);
         tester->signal_->endCond_.notify_all();
         cout << " get eos output " << endl;
     }
@@ -166,7 +166,6 @@ void VDecServerSample::RunVideoServerDecoder()
         err = SetOutputSurface();
         if (err != AVCS_ERR_OK) {
             cout << "SetOutputSurface failed" << endl;
-            return;
         }
     }
     err = codec_->Start();
@@ -248,11 +247,14 @@ void VDecServerSample::Reset()
 
 void VDecServerSample::Stop()
 {
+    StopInloop();
+    ReleaseInFile();
     int32_t err = codec_->Stop();
     if (err != AVCS_ERR_OK) {
         cout << "Stop fail" << endl;
         isRunning_.store(false);
         signal_->inCond_.notify_all();
+        signal_->endCond_.notify_all();
     }
 }
 
@@ -302,7 +304,7 @@ int32_t VDecServerSample::ReadData(uint32_t index, std::shared_ptr<AVBuffer> buf
         cout << "repeat" << endl;
         return 0;
     } else if (inFile_->eof()) {
-        SetEOS(index);
+        SetEOS(index, buffer);
         return 1;
     }
     uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
@@ -310,8 +312,7 @@ int32_t VDecServerSample::ReadData(uint32_t index, std::shared_ptr<AVBuffer> buf
     return SendData(bufferSize, index, buffer);
 }
 
-
-uint32_t VDecServerSample::SendData(uint32_t bufferSize, uint32_t index, std::shared_ptr<AVBuffer> buffer)
+int32_t VDecServerSample::SendData(uint32_t bufferSize, uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     uint8_t *frameBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
     (void)inFile_->read(reinterpret_cast<char *>(frameBuffer + START_CODE_SIZE), bufferSize);
@@ -319,7 +320,8 @@ uint32_t VDecServerSample::SendData(uint32_t bufferSize, uint32_t index, std::sh
     CopyStartCode(frameBuffer, bufferSize, buffer);
     if (size < (bufferSize + START_CODE_SIZE)) {
         delete[] frameBuffer;
-        cout << "ERROR:AVMemory not enough, buffer size" << attr.size << "   AVMemory Size " << size << endl;
+        cout << "ERROR:AVMemory not enough, buffer size " << (bufferSize + START_CODE_SIZE) <<\
+                " AVMemory Size " << size << endl;
         isRunning_.store(false);
         return 1;
     }
@@ -384,14 +386,14 @@ void VDecServerSample::StopInloop()
         signal_->inCond_.notify_all();
         isEOS_.store(true);
         signal_->endCond_.notify_all();
-        isEOS_.unlock();
+        lock.unlock();
 
         inputLoop_->join();
         inputLoop_.reset();
     }
 }
 
-void VDecServerSample::StopInloop()
+void VDecServerSample::ReleaseInFile()
 {
     if (inFile_ != nullptr) {
         if (inFile_->is_open()) {
