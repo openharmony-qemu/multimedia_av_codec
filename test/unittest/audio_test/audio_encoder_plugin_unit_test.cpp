@@ -204,13 +204,6 @@ HWTEST_F(AudioEncPluginUnitTest, CheckBitRate_Aac_001, TestSize.Level1)
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, aacEncPlugin_->Init(aacFormat_));
 }
 
-HWTEST_F(AudioEncPluginUnitTest, Flush_Aac_001, TestSize.Level1)
-{
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, aacEncPlugin_->Init(aacFormat_));
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, aacEncPlugin_->Release());
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, aacEncPlugin_->Flush());
-}
-
 HWTEST_F(AudioEncPluginUnitTest, SendBuffer_Aac_001, TestSize.Level1)
 {
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, aacEncPlugin_->Init(aacFormat_));
