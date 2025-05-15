@@ -41,6 +41,13 @@ public:
 enum VideoPostProcessorType {
     NONE,
     SUPER_RESOLUTION,
+    CAMERA_INSERT_FRAME,
+};
+
+enum NotifySeekType {
+    CLOSEST_SEEK = 1,
+    NORMAL_SEEK,
+    CONTINOUS_SEEK,
 };
 
 class BaseVideoPostProcessor {
@@ -50,6 +57,7 @@ public:
     MOCK_METHOD(Status, Stop, (), ());
     MOCK_METHOD(Status, Start, (), ());
     MOCK_METHOD(Status, Release, (), ());
+    MOCK_METHOD(Status, Pause, (), ());
     MOCK_METHOD(Status, NotifyEos, (), ());
 
     MOCK_METHOD(sptr<Surface>, GetInputSurface, (), ());
@@ -64,6 +72,14 @@ public:
     MOCK_METHOD(Status, SetParameter, (const Format &format), ());
     MOCK_METHOD(Status, SetPostProcessorOn, (bool isPostProcessorOn), ());
     MOCK_METHOD(Status, SetVideoWindowSize, (int32_t width, int32_t height), ());
+
+    MOCK_METHOD(Status, StartSeekContinous, (), ());
+    MOCK_METHOD(Status, StopSeekContinous, (), ());
+    MOCK_METHOD(Status, SetFd, (int32_t fd), ());
+    MOCK_METHOD(Status, NotifyEos, (int64_t eosPts), ());
+    MOCK_METHOD(void, SetSeekTime, (int64_t seekTimeUs, NotifySeekType notifySeekType), ());
+    MOCK_METHOD(void, ResetSeekInfo, (), ());
+    MOCK_METHOD(Status, SetSpeed, (float speed), ());
 };
 
 } // namespace Media

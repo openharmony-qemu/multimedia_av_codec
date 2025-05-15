@@ -39,6 +39,13 @@ public:
 enum VideoPostProcessorType {
     NONE,
     SUPER_RESOLUTION,
+    CAMERA_INSERT_FRAME,
+};
+
+enum NotifySeekType {
+    CLOSEST_SEEK = 1,
+    NORMAL_SEEK,
+    CONTINOUS_SEEK,
 };
 
 class BaseVideoPostProcessor {
@@ -51,6 +58,7 @@ public:
     virtual Status Stop() = 0;
     virtual Status Start() = 0;
     virtual Status Release() = 0;
+    virtual Status Pause() = 0;
     virtual Status NotifyEos()
     {
         return Status::OK;
@@ -68,6 +76,14 @@ public:
     virtual Status SetParameter(const Format &format) = 0;
     virtual Status SetPostProcessorOn(bool isPostProcessorOn) = 0;
     virtual Status SetVideoWindowSize(int32_t width, int32_t height) = 0;
+
+    virtual Status StartSeekContinous() = 0;
+    virtual Status StopSeekContinous() = 0;
+    virtual Status SetFd(int32_t fd) = 0;
+    virtual Status NotifyEos(int64_t eosPts) = 0;
+    virtual void SetSeekTime(int64_t seekTimeUs, NotifySeekType notifySeekType) = 0;
+    virtual void ResetSeekInfo() = 0;
+    virtual Status SetSpeed(float speed);
 };
 
 } // namespace Media

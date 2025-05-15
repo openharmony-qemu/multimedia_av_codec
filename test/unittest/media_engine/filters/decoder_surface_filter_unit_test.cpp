@@ -411,6 +411,43 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_IsPostProcessorSuppo
 }
 #endif
 
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_IsPostProcessorSupported_CameraInsertFrame, TestSize.Level1)
+{
+    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::CAMERA_INSERT_FRAME;
+
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 1280);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 1920);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_IS_HDR_VIVID, false);
+    decoderSurfaceFilter_->meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, false);
+    EXPECT_EQ(decoderSurfaceFilter_->IsPostProcessorSupported(), false);
+
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 3840);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 2160);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_IS_HDR_VIVID, false);
+    decoderSurfaceFilter_->meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, false);
+    EXPECT_EQ(decoderSurfaceFilter_->IsPostProcessorSupported(), true);
+
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 0);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 0);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_IS_HDR_VIVID, false);
+    decoderSurfaceFilter_->meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, false);
+    EXPECT_EQ(decoderSurfaceFilter_->IsPostProcessorSupported(), false);
+
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 3840);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 2160);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_IS_HDR_VIVID, true);
+    decoderSurfaceFilter_->meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, false);
+    EXPECT_EQ(decoderSurfaceFilter_->IsPostProcessorSupported(), false);
+
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 3840);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 2160);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_IS_HDR_VIVID, false);
+    decoderSurfaceFilter_->meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, true);
+    EXPECT_EQ(decoderSurfaceFilter_->IsPostProcessorSupported(), false);
+}
+#endif
+
 HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetPostProcessorOn, TestSize.Level1)
 {
     decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::SUPER_RESOLUTION;
@@ -477,6 +514,64 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetVideoSurface, Tes
     EXPECT_CALL(*postProcessor, SetOutputSurface(_)).WillRepeatedly(Return(Status::ERROR_UNKNOWN));
     ret = decoderSurfaceFilter_->SetVideoSurface(surface);
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_InitPostProcessorType, TestSize.Level1)
+{
+    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::NONE;
+    decoderSurfaceFilter_->meta_->SetData(ENHANCE_FLAG, "1");
+    decoderSurfaceFilter_->meta_->SetData(VIDEO_ID, "1111");
+    decoderSurfaceFilter_->InitPostProcessorType();
+    EXPECT_EQ(decoderSurfaceFilter_->postProcessorType_, VideoPostProcessorType::CAMERA_INSERT_FRAME);
+
+    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::NONE;
+    decoderSurfaceFilter_->meta_->SetData(ENHANCE_FLAG, "0");
+    decoderSurfaceFilter_->InitPostProcessorType();
+    EXPECT_EQ(decoderSurfaceFilter_->postProcessorType_, VideoPostProcessorType::NONE);
+
+    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::SUPER_RESOLUTION;
+    decoderSurfaceFilter_->meta_->SetData(ENHANCE_FLAG, "1");
+    decoderSurfaceFilter_->meta_->SetData(VIDEO_ID, "1111");
+    decoderSurfaceFilter_->InitPostProcessorType();
+    EXPECT_EQ(decoderSurfaceFilter_->postProcessorType_, VideoPostProcessorType::SUPER_RESOLUTION);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetPostProcessorFd, TestSize.Level1)
+{
+    int32_t postProcessorFd = -1;
+    auto ret = decoderSurfaceFilter_->SetPostProcessorFd(postProcessorFd);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+
+    postProcessorFd = 999;
+    ret = decoderSurfaceFilter_->SetPostProcessorFd(postProcessorFd);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetSpeed, TestSize.Level1)
+{
+    float speed = 1.0;
+    decoderSurfaceFilter_->postProcessor_ = nullptr;
+    auto ret = decoderSurfaceFilter_->SetSpeed(speed);
+    EXPECT_EQ(ret, Status::OK);
+
+    std::shared_ptr<BaseVideoPostProcessor> postProcessor = std::make_shared<BaseVideoPostProcessor>();
+    decoderSurfaceFilter_->postProcessor_ = postProcessor;
+    EXPECT_CALL(*postProcessor, SetSpeed(_)).WillRepeatedly(Return(Status::OK));
+    ret = decoderSurfaceFilter_->SetSpeed(speed);
+    EXPECT_EQ(ret, Status::OK);
+    
+    EXPECT_CALL(*postProcessor, SetSpeed(_)).WillRepeatedly(Return(Status::ERROR_UNKNOWN));
+    ret = decoderSurfaceFilter_->SetSpeed(speed);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_EnableCameraPostprocessing, TestSize.Level1)
+{
+    auto ret = decoderSurfaceFilter_->EnableCameraPostprocessing(true);
+    EXPECT_EQ(ret, Status::OK);
+
+    ret = decoderSurfaceFilter_->EnableCameraPostprocessing(false);
+    EXPECT_EQ(ret, Status::OK);
 }
 
 }  // namespace Pipeline
