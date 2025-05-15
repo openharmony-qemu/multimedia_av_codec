@@ -103,7 +103,7 @@ void HttpMediaDownloader::InitCacheBuffer(uint32_t expectBufferDuration)
     int totalBufferSize = CURRENT_BIT_RATE * static_cast<int32_t>(expectBufferDuration);
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
     if (cacheMediaBuffer_ == nullptr) {
-        MEDIA_LOG_I("HTTP CacheBuffer create faild.");
+        MEDIA_LOG_I("HTTP CacheBuffer create failed.");
         return;
     }
     if (totalBufferSize < RING_BUFFER_SIZE) {
@@ -640,6 +640,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
             }
         }
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
+        FALSE_RETURN_V_MSG(isCacheBufferInited_, Status::END_OF_STREAM, "CacheBufferInit fail");
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
         return HandleCacheBuffer(buff, readDataInfo);
     }
@@ -978,14 +979,14 @@ uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len, bo
 uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     if (!isRingBuffer_ && (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_)) {
-        FALSE_RETURN_V_MSG(downloadRequest_ != nullptr, 0, "downloadRequet_ nullptr");
+        FALSE_RETURN_V_MSG(downloadRequest_ != nullptr, 0, "downloadRequest_ nullptr");
         if (cacheMediaBuffer_ == nullptr) {
             cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
         }
         if (cacheMediaBuffer_ == nullptr) {
             isCacheBufferInited_ = false;
             sleepCond_.NotifyAll();
-            MEDIA_LOG_I("HTTP cachebuffer create failed.");
+            MEDIA_LOG_I("HTTP CacheBuffer create failed.");
             return false;
         }
         size_t fileContenLen = downloadRequest_->GetFileContentLength();
