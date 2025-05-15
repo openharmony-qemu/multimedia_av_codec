@@ -23,6 +23,8 @@
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "v3_0/codec_ext_types.h"
+#include <algorithm>
+#include <regex>
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -1052,6 +1054,7 @@ void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffe
     WrapQPRangeParamIntoOmxBuffer(omxBuffer, meta);
     WrapStartQPIntoOmxBuffer(omxBuffer, meta);
     WrapIsSkipFrameIntoOmxBuffer(omxBuffer, meta);
+    WrapRoiParamIntoOmxBuffer(omxBuffer, meta);
     WrapQPMapParamIntoOmxBuffer(omxBuffer, meta);
     meta->Clear();
 }
@@ -1153,6 +1156,63 @@ void HEncoder::WrapIsSkipFrameIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer>
     }
     AppendToVector(omxBuffer->alongParam, OMX_IndexParamSkipFrame);
     AppendToVector(omxBuffer->alongParam, isSkip);
+}
+
+void HEncoder::ParseRoiStringValid(const std::string &roiValue, shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer)
+{
+    AppendToVector(omxBuffer->alongParam, OMX_IndexParamRoi);
+    CodecRoiParam param;
+    InitOMXParamExt(param);
+    if (roiValue.empty()) { // roiValue string is empty, canceling historical roi configurations!
+        AppendToVector(omxBuffer->alongParam, param);
+        return;
+    }
+    // step1 parse the string
+    // method regex roi: Top1,Left1-Bottom1,Right1=Offset1(option);Top2,Left2-Bottom2,Right2=Offset2;...
+    std::regex pattern(R"((-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=(-?\d+))?(?:;|$))");
+    std::smatch match;
+    std::string temp = roiValue;
+    size_t vaildCount = 0;
+    constexpr int TOP_INDEX = 1;
+    constexpr int LEFT_INDEX = 2;
+    constexpr int BOTTOM_INDEX = 3;
+    constexpr int RIGHT_INDEX = 4;
+    constexpr int QPOFFSET_INDEX = 5;
+    constexpr int defaultOffset = -3; // default roi qp
+    while (std::regex_search(temp, match, pattern) && vaildCount < roiNum) {
+        int32_t qpOffset, left, top, right, bottom;
+        top = std::clamp(std::stoi(match[TOP_INDEX].str()), 0, static_cast<int>(height_));
+        left = std::clamp(std::stoi(match[LEFT_INDEX].str()), 0, static_cast<int>(width_));
+        bottom = std::clamp(std::stoi(match[BOTTOM_INDEX].str()), 0, static_cast<int>(height_));
+        right = std::clamp(std::stoi(match[RIGHT_INDEX].str()), 0, static_cast<int>(width_));
+        if (match[QPOFFSET_INDEX].matched) {
+            qpOffset = std::stoi(match[QPOFFSET_INDEX].str());
+        } else {
+            qpOffset = defaultOffset;
+        }
+        temp = match.suffix().str();
+        int32_t roiWidth = right - left;
+        int32_t roiHeight = bottom - top;
+        param.roiInfo[vaildCount].regionEnable = true;
+        param.roiInfo[vaildCount].absQp = 0;
+        param.roiInfo[vaildCount].roiQp = static_cast<int32_t>(qpOffset);
+        param.roiInfo[vaildCount].roiStartX = static_cast<uint32_t>(left);
+        param.roiInfo[vaildCount].roiStartY = static_cast<uint32_t>(top);
+        param.roiInfo[vaildCount].roiWidth = static_cast<int32_t>(roiWidth);
+        param.roiInfo[vaildCount].roiHeight = static_cast<int32_t>(roiHeight);
+        vaildCount++;
+    }
+    AppendToVector(omxBuffer->alongParam, param);
+}
+
+void HEncoder::WrapRoiParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                         const shared_ptr<Media::Meta> &meta)
+{
+    std::string roiValue;
+    if (!meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiValue)) { // historical configuration
+        return;
+    }
+    ParseRoiStringValid(roiValue, omxBuffer);
 }
 
 void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)
