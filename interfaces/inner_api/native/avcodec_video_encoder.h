@@ -260,6 +260,45 @@ public:
      * @since 5.0
      */
     virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) = 0;
+
+    virtual int32_t QueryInputParameterWithAttr(uint32_t &index, int64_t timeoutUs)
+    {
+        (void)index;
+        (void)timeoutUs;
+        return 0;
+    }
+    virtual int32_t QueryInputBuffer(uint32_t &index, int64_t timeoutUs)
+    {
+        (void)index;
+        (void)timeoutUs;
+        return 0;
+    }
+    virtual int32_t QueryOutputBuffer(uint32_t &index, int64_t timeoutUs)
+    {
+        (void)index;
+        (void)timeoutUs;
+        return 0;
+    }
+    virtual std::shared_ptr<Format> GetInputParameter(uint32_t index)
+    {
+        (void)index;
+        return nullptr;
+    }
+    virtual std::shared_ptr<Format> GetInputAttribute(uint32_t index)
+    {
+        (void)index;
+        return nullptr;
+    }
+    virtual std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index)
+    {
+        (void)index;
+        return nullptr;
+    }
+    virtual std::shared_ptr<AVBuffer> GetOutputBuffer(uint32_t index)
+    {
+        (void)index;
+        return nullptr;
+    }
 };
 
 class __attribute__((visibility("default"))) VideoEncoderFactory {

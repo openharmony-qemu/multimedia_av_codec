@@ -146,6 +146,8 @@ const char *OH_MD_KEY_ENABLE_MOOV_FRONT = "fast_start";
 const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL = "video_encoder_enable_pts_based_ratecontrol";
 const char *OH_MD_KEY_VIDEO_ENCODER_MAX_B_FRAME = "video_encoder_max_b_frame";
 const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME = "video_encoder_enable_b_frame";
+const char *OH_MD_KEY_ENABLE_SYNC_MODE = "av_codec_enable_sync_mode";
+const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE = "video_encoder_enable_input_parameter_sync_mode";
 #ifdef __cplusplus
 }
 #endif

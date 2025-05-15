@@ -436,6 +436,150 @@ OH_AVErrCode OH_VideoEncoder_PushInputParameter(OH_AVCodec *codec, uint32_t inde
 OH_AVErrCode OH_VideoEncoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index);
 
 /**
+ * @brief Get index of next available input parameter.
+ *
+ * It's necessary to use {@link OH_VideoEncoder_GetInputParameter} to get the parameter handle, and then
+ * use {@link OH_VideoEncoder_PushInputParameter} to pass to the encoder.\n
+ * It's only used in synchronous mode.\n
+ * It's optional only for input surface
+ * and it's necessary to configure {@link OH_MD_KEY_VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE}.\n
+ *
+ * @syscap SystemCapability.Multimedia.Media.VideoEncoder
+ * @param codec Pointer to an OH_AVCodec instance
+ * @param index The index value corresponding to the input buffer
+ * @param timeoutUs the query timeout time, in microseconds.
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, internal errors in the input encode instance, such as an abnormal NULL.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permitted in asynchronous mode.
+ * {@link AV_ERR_VIDEO_STREAM_CHANGED}, the stream is changed, call {@link OH_VideoEncoder_GetOutputDescription} to
+ * retrieve steam information.
+ * {@link AV_ERR_VIDEO_TRY_AGAIN_LATER}, query failed，recommended to wait for a while and try the query again.
+ * @since 20
+ */
+OH_AVErrCode OH_VideoEncoder_QueryInputParameter(struct OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs);
+
+/**
+ * @brief Get the input parameter handle.
+ *
+ * It's only used in synchronous mode.\n
+ *
+ * @syscap SystemCapability.Multimedia.Media.VideoEncoder
+ * @param codec Pointer to an OH_AVCodec instance
+ * @param index The index value corresponding to the input buffer,
+ * should be given by {@link OH_VideoEncoder_QueryInputParameter}.
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, internal errors in the input encode instance, such as an abnormal NULL.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permitted in asynchronous mode.
+ * @since 20
+ */
+OH_AVFormat *OH_VideoEncoder_GetInputParameter(struct OH_AVCodec *codec, uint32_t index);
+
+/**
+ * @brief Get index of next available input buffer.
+ *
+ * It's necessary to use {@link OH_VideoEncoder_GetInputBuffer} to get the buffer handle, and then
+ * use {@link OH_VideoEncoder_PushInputBuffer} to pass to the encoder.\n
+ * It's only used in synchronous mode.\n
+ *
+ * @syscap SystemCapability.Multimedia.Media.VideoEncoder
+ * @param codec Pointer to an OH_AVCodec instance
+ * @param index The index value corresponding to the input buffer
+ * @param timeoutUs the query timeout time, in microseconds.
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, internal errors in the input encode instance, such as an abnormal NULL.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permitted in asynchronous mode.
+ * {@link AV_ERR_VIDEO_STREAM_CHANGED}, the stream is changed, call {@link OH_VideoEncoder_GetOutputDescription} to
+
+ * retrieve steam information.
+ * {@link AV_ERR_VIDEO_TRY_AGAIN_LATER}, query failed，recommended to wait for a while and try the query again.
+ * @since 20
+ */
+OH_AVErrCode OH_VideoEncoder_QueryInputBuffer(struct OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs);
+
+/**
+ * @brief Get the available input buffer handle.
+ *
+ * It's only used in synchronous mode.\n
+ *
+ * @syscap SystemCapability.Multimedia.Media.VideoEncoder
+ * @param codec Pointer to an OH_AVCodec instance
+ * @param index The index value corresponding to the input buffer,
+ * should be given by {@link OH_VideoEncoder_QueryInputBuffer}.
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, internal errors in the input encode instance, such as an abnormal NULL.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permitted in asynchronous mode.
+ * @since 20
+ */
+OH_AVBuffer *OH_VideoEncoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t index);
+
+/**
+ * @brief Get index of next available output buffer.
+ *
+ * It's necessary to use {@link OH_VideoEncoder_GetOutputBuffer} to get the buffer handle, and then
+ * use {@link OH_VideoEncoder_FreeOutputBuffer} to return the buffer to the encoder.\n
+ * It's only used in synchronous mode.\n
+ *
+ * @syscap SystemCapability.Multimedia.Media.VideoEncoder
+ * @param codec Pointer to an OH_AVCodec instance
+ * @param index The index value corresponding to the output buffer
+ * @param timeoutUs the query timeout time, in microseconds.
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, internal errors in the input encode instance, such as an abnormal NULL.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permitted in asynchronous mode.
+ * {@link AV_ERR_VIDEO_STREAM_CHANGED}, the stream is changed, call {@link OH_VideoEncoder_GetOutputDescription} to
+ * retrieve steam information.
+ * {@link AV_ERR_VIDEO_TRY_AGAIN_LATER}, query failed，recommended to wait for a while and try the query again.
+ * @since 20
+ */
+OH_AVErrCode OH_VideoEncoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs);
+
+/**
+ * @brief Get the available Output buffer handle.
+ *
+ * It's only used in synchronous mode.\n
+ *
+ * @syscap SystemCapability.Multimedia.Media.VideoEncoder
+ * @param codec Pointer to an OH_AVCodec instance
+ * @param index The index value corresponding to the input buffer,
+ * should be given by {@link OH_VideoEncoder_QueryOutputBuffer}.
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, internal errors in the input encode instance, such as an abnormal NULL.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permitted in asynchronous mode.
+ * @since 20
+ */
+OH_AVBuffer *OH_VideoEncoder_GetOutputBuffer(struct OH_AVCodec *codec, uint32_t index);
+
+/**
  * @brief Description information of the image received by the encoder after call {@OH_VideoEncoder_Configure},
  * refer to {@link OH_AVFormat} for details. It should be noted that the life cycle of the OH_AVFormat
  * instance pointed to by the return value needs to be released by {@link OH_AVFormat_Destroy}.

@@ -231,6 +231,7 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_audio_encoder_impl.cpp",
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_video_decoder_impl.cpp",
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_video_encoder_impl.cpp",
+      "$av_codec_root_dir/services/services/codec/client/codec_buffer_circular.cpp",
       "$av_codec_root_dir/services/services/codec/client/codec_client.cpp",
       "$av_codec_root_dir/services/services/codec/ipc/buffer_converter.cpp",
       "$av_codec_root_dir/services/services/codec/ipc/codec_listener_stub.cpp",

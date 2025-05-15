@@ -860,6 +860,32 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL;
 extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
 extern const char *OH_MD_KEY_TRACK_DESCRIPTION;
 extern const char *OH_MD_KEY_REFERENCE_TRACK_IDS;
+/**
+ * @brief Key to enable synchronous mode, value type is (0 or 1):1 is enabled, 0 otherwise.
+ *
+ * This is an optional key, default is 0.\n
+ * If enabled, the caller should not set callbacks for the decoder or encoder but should query buffers instead.\n
+ * It is used in configure.\n
+ * This is an optional key that applies only to video encoder, default is 0.
+ * If enabled, the PTS information must be carried in each video frame and sent to the encoder.
+ * It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_MD_KEY_ENABLE_SYNC_MODE;
+/**
+ * @brief Key to enable to set input parameters per frame for video encoder,
+ * value type is (0 or 1):1 is enabled, 0 otherwise.
+ *
+ * This is an optional key, default is 0. Only use in synchronous mode.\n
+ * If enabled, the caller will set parameters for input surface of the encoder.\n
+ * It is used in configure.\n
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE;
 
 /**
  * @brief Media type.
