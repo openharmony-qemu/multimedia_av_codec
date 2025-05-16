@@ -74,6 +74,7 @@ constexpr uint64_t RESUME_FREE_SIZE_THRESHOLD = 2 * 1024 * 1024;
 constexpr size_t STORP_WRITE_BUFFER_REDUNDANCY = 1 * 1024 * 1024;
 constexpr int MAX_RETRY = 10;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
+constexpr uint64_t MAX_EXPECT_DURATION = 19;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -82,6 +83,7 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, const std::map<
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
     expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
+    expectDuration_ = std::min(expectDuration_, MAX_EXPECT_DURATION);
     userDefinedBufferDuration_ = true;
     totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
     httpHeader_ = httpHeader;
