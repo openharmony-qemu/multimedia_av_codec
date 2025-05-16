@@ -488,9 +488,6 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
         }
     }
     AVCODEC_LOGI("CheckSampleFormat AudioSampleFormat:%{public}" PRId32, sampleFormat);
-    if (channels == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {
-        return true;
-    }
     auto destFmt = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(sampleFormat);
     if (destFmt == AV_SAMPLE_FMT_NONE) {
         AVCODEC_LOGE("Convert format failed, avSampleFormat not found");
