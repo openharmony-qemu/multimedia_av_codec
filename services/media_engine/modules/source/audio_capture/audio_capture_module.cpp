@@ -382,7 +382,7 @@ void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime, bool isFirstFrame)
         audioDataTime = static_cast<int64_t>(timestamp.time.tv_sec) * AUDIO_NS_PER_SECOND
             + static_cast<int64_t>(timestamp.time.tv_nsec);
 
-        if (isFirstFrame) {
+        if (isFirstFrame && options_.streamInfo.samplingRate != 0) {
             uint64_t readPos = timestamp.framePosition;
             audioDataTime -= (readPos - lastReadPos_) * AUDIO_NS_PER_SECOND /
                 static_cast<int64_t>(options_.streamInfo.samplingRate);
