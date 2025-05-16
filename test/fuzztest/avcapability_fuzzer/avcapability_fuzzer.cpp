@@ -24,8 +24,8 @@ bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     size_t maxSize = std::numeric_limits<size_t>::max();
     string mimeStr = fdp.ConsumeRandomLengthString(maxSize);
-    bool isEncoder = data[0] >> sizeof(uint8_t);
-    OH_AVCodecCategory category = static_cast<OH_AVCodecCategory>(data[0] >> sizeof(uint8_t));
+    bool isEncoder = fdp.ConsumeBool();
+    OH_AVCodecCategory category = static_cast<OH_AVCodecCategory>(fdp.ConsumeIntegral<uint8_t>());
     OH_AVCodec_GetCapability(mimeStr.c_str(), isEncoder);
     OH_AVCodec_GetCapabilityByCategory(mimeStr.c_str(), isEncoder, category);
     return true;
