@@ -2535,7 +2535,6 @@ Status MediaDemuxer::SetPerfRecEnabled(bool isPerfRecEnabled)
 
 int64_t MediaDemuxer::GetReadLoopRetryUs(uint32_t trackId)
 {
-
     FALSE_RETURN_V_NOLOG(GetEnableSampleQueueFlag(), 0);
     FALSE_RETURN_V_NOLOG(isFlvLiveStream_, NEXT_DELAY_TIME_US);
     FALSE_RETURN_V_MSG_E(sampleQueueMap_.count(trackId) > 0 && sampleQueueMap_[trackId] != nullptr, NEXT_DELAY_TIME_US,
@@ -3285,7 +3284,7 @@ Status MediaDemuxer::SelectBitrateForNonSQ(int64_t startPts, uint32_t bitRate)
     MEDIA_LOG_I("SelectBitrateForNonSQ startPts=" PUBLIC_LOG_D64 " bitRate=" PUBLIC_LOG_U32, startPts, bitRate);
     FALSE_RETURN_V_MSG_E(handleFlvSelectBitrateTask_ != nullptr, Status::ERROR_NULL_POINTER,
         "handleFlvSelectBitrateTask_ is nullptr");
-    FALSE_RETURN_V_MSG_I(!isFlvLiveSelectingBitRate_.load(), Status::ERROR_PERMISSION_DENIED,
+    FALSE_RETURN_V_MSG_I(!isFlvLiveSelectingBitRate_.load(), Status::OK,
         "isFlvLiveSelectingBitRate, ignore this request");
     isFlvLiveSelectingBitRate_.store(true);
     PauseAllTask();
