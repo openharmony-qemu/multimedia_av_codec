@@ -364,13 +364,13 @@ void AudioCaptureFilter::ReadLoop()
             firstVideoFramePts_.store(0);
             return;
         }
-        auto cacheAudioData = std::shared_ptr<uint8_t>(new uint8_t[bufferSize],
+        auto cachedAudioData = std::shared_ptr<uint8_t>(new uint8_t[bufferSize],
             std::default_delete<uint8_t[]>());
-        if (cacheAudioData == nullptr) {
-            MEDIA_LOG_W("create cacheAudioData fail");
+        if (cachedAudioData == nullptr) {
+            MEDIA_LOG_W("create cachedAudioData fail");
             return;
         }
-        ret = audioCaptureModule_->Read(cacheAudioData.get(), bufferSize);
+        ret = audioCaptureModule_->Read(cachedAudioData.get(), bufferSize);
         if (ret != Status::OK) {
             MEDIA_LOG_E("audioCaptureModule read return again");
             RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
@@ -385,7 +385,7 @@ void AudioCaptureFilter::ReadLoop()
             firstAudioFramePts_.store(audioDataTime);
             MEDIA_LOG_I("firstAudioFramePts: " PUBLIC_LOG_D64, firstAudioFramePts_.load());
         }
-        cachedAudioData_.push_back(cacheAudioData);
+        cachedAudioData_.push_back(cachedAudioData);
     } else {
         if (!cachedAudioData_.empty() && withVideo_) {
             CalculateAVTime();
@@ -439,13 +439,13 @@ void AudioCaptureFilter::FillLostFrame(int32_t lostCount)
     uint64_t bufferSize = 0;
     audioCaptureModule_->GetSize(bufferSize);
     while (lostCount > 0) {
-        auto cacheAudioData = std::shared_ptr<uint8_t>(new uint8_t[bufferSize]{0},
+        auto cachedAudioData = std::shared_ptr<uint8_t>(new uint8_t[bufferSize]{0},
             std::default_delete<uint8_t[]>());
         if (cacheAudioData == nullptr) {
-            MEDIA_LOG_W("create cacheAudioData fail");
+            MEDIA_LOG_W("create cachedAudioData fail");
             continue;
         }
-        cachedAudioData_.push_front(cacheAudioData);
+        cachedAudioData_.push_front(cachedAudioData);
         --lostCount;
     }
 }
