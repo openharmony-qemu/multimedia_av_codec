@@ -74,7 +74,6 @@ ohos_unittest("media_engine_filter_unit_test") {
 
   if (av_codec_support_test) {
     sources = [
-      "$av_codec_root_dir/services/media_engine/filters/fdsan_fd.cpp",
       "$av_codec_root_dir/services/media_engine/filters/sei_parser_helper.cpp",
       "./decoder_surface_filter_unit_test.cpp",
     ]

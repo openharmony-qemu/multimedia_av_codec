@@ -38,7 +38,7 @@
 #include "sei_parser_helper.h"
 #include "post_processor/base_video_post_processor.h"
 #include "post_processor/video_post_processor_factory.h"
-#include "fdsan_fd.h"
+#include "common/fdsan_fd.h"
 
 namespace OHOS {
 namespace Media {
@@ -93,7 +93,7 @@ public:
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
-    void SetSeekTime(int64_t seekTimeUs);
+    void SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode = PlayerSeekMode::SEEK_CLOSEST);
     void ResetSeekInfo();
     Status HandleInputBuffer();
     void OnDumpInfo(int32_t fd);
@@ -119,9 +119,7 @@ public:
     void NotifyAudioComplete();
     Status SetSpeed(float speed);
     Status SetPostProcessorFd(int32_t postProcessorFd);
-    void SetNormalSeekTime(int64_t seekTimeUs);
-    void SetContinousSeekTime(int64_t seekTimeUs);
-    Status EnableCameraPostprocessing(bool enable);
+    Status SetCameraPostprocessing(bool enable);
     void NotifyPause();
 
 protected:

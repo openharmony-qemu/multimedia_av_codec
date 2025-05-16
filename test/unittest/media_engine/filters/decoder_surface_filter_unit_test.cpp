@@ -508,12 +508,12 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetSpeed, TestSize.L
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
 }
 
-HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_EnableCameraPostprocessing, TestSize.Level1)
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetCameraPostprocessing, TestSize.Level1)
 {
-    auto ret = decoderSurfaceFilter_->EnableCameraPostprocessing(true);
+    auto ret = decoderSurfaceFilter_->SetCameraPostprocessing(true);
     EXPECT_EQ(ret, Status::OK);
 
-    ret = decoderSurfaceFilter_->EnableCameraPostprocessing(false);
+    ret = decoderSurfaceFilter_->SetCameraPostprocessing(false);
     EXPECT_EQ(ret, Status::OK);
 }
 

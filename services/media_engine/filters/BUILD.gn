@@ -75,7 +75,6 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "codec_capability_adapter.cpp",
     "decoder_surface_filter.cpp",
     "demuxer_filter.cpp",
-    "fdsan_fd.cpp",
     "metadata_filter.cpp",
     "muxer_filter.cpp",
     "sei_parser_filter.cpp",

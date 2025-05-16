@@ -38,8 +38,7 @@ public:
     Status Stop() override;
     Status Start() override;
     Status Release() override;
-    Status Pause() override;
-    Status NotifyEos() override;
+    Status NotifyEos(int64_t eosPts = 0) override;
 
     sptr<Surface> GetInputSurface() override;
     Status SetOutputSurface(sptr<Surface> surface) override;
@@ -50,14 +49,6 @@ public:
     Status SetParameter(const Format &format) override;
     Status SetPostProcessorOn(bool isPostProcessorOn) override;
     Status SetVideoWindowSize(int32_t width, int32_t height) override;
-
-    Status StartSeekContinous() override;
-    Status StopSeekContinous() override;
-    Status SetFd(int32_t fd) override;
-    Status NotifyEos(int64_t eosPts) override;
-    void SetSeekTime(int64_t seekTimeUs, NotifySeekType notifySeekType) override;
-    void ResetSeekInfo() override;
-    Status SetSpeed(float speed) override;
 
     Status ReleaseOutputBuffer(uint32_t index, bool render) override;
     Status RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs) override;
@@ -79,8 +70,6 @@ private:
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_ {nullptr};
 
     std::shared_mutex mutex_ {};
-    int32_t fd_ {-1};
-    int64_t seekTimeUs_{0};
 };
 
 } // namespace Media

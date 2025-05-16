@@ -192,13 +192,7 @@ Status SuperResolutionPostProcessor::Release()
     return Status::OK;
 }
 
-Status SuperResolutionPostProcessor::Pause()
-{
-    MEDIA_LOG_D("Pause in");
-    return Status::OK;
-}
-
-Status SuperResolutionPostProcessor::NotifyEos()
+Status SuperResolutionPostProcessor::NotifyEos(int64_t eosPts)
 {
     MEDIA_LOG_D("Notify eos");
     std::shared_lock<std::shared_mutex> lock(mutex_);
@@ -336,39 +330,6 @@ Status SuperResolutionPostProcessor::SetVideoWindowSize(int32_t width, int32_t h
     return Status::OK;
 }
 
-Status SuperResolutionPostProcessor::StartSeekContinous()
-{
-    return Status::OK;
-}
- 
-Status SuperResolutionPostProcessor::StopSeekContinous()
-{
-    return Status::OK;
-}
- 
-Status SuperResolutionPostProcessor::SetFd(int32_t fd)
-{
-    fd_ = fd;
-    return Status::OK;
-}
- 
-Status SuperResolutionPostProcessor::NotifyEos(int64_t eosPts)
-{
-    return Status::OK;
-}
- 
-void SuperResolutionPostProcessor::SetSeekTime(int64_t seekTimeUs, NotifySeekType notifySeekType)
-{
-    if (notifySeekType == NotifySeekType::CLOSEST_SEEK) {
-        seekTimeUs_ = seekTimeUs;
-    }
-}
- 
-void SuperResolutionPostProcessor::ResetSeekInfo()
-{
-    seekTimeUs_ = 0;
-}
-
 void SuperResolutionPostProcessor::OnError(VPEAlgoErrCode errorCode)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
@@ -391,11 +352,6 @@ void SuperResolutionPostProcessor::OnSuperResolutionChanged(bool enable)
     if (eventReceiver_ != nullptr) {
         eventReceiver_->OnEvent({"SuperResolutionPostProcessor", EventType::EVENT_SUPER_RESOLUTION_CHANGED, enable});
     }
-}
-
-Status SuperResolutionPostProcessor::SetSpeed(float speed)
-{
-    return Status::OK;
 }
 
 } // namespace Media
