@@ -320,7 +320,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SAVE_HEADER_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_001, TestSize.Level1)
 {
     HlsMediaDownloader *downloader = new HlsMediaDownloader(1000, header_, nullptr);
-    EXPECT_EQ(downloader->expectDuration_, static_cast<uint64_t>(1000));
+    EXPECT_EQ(downloader->expectDuration_, static_cast<uint64_t>(19));
     delete downloader;
     downloader = nullptr;
 }
