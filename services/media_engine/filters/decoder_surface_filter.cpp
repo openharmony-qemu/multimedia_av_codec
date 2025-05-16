@@ -979,7 +979,6 @@ void DecoderSurfaceFilter::DecoderDrainOutputBuffer(uint32_t index, std::shared_
         if (postProcessor_ != nullptr) {
             postProcessor_->NotifyEos(eosPts_);
         }
-        postProcessor_->NotifyEos();
     }
     prevDecoderPts_ = outputBuffer->pts_;
     FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
