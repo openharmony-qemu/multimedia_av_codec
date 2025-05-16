@@ -102,10 +102,7 @@ void HttpMediaDownloader::InitCacheBuffer(uint32_t expectBufferDuration)
 {
     int totalBufferSize = CURRENT_BIT_RATE * static_cast<int32_t>(expectBufferDuration);
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
-    if (cacheMediaBuffer_ == nullptr) {
-        MEDIA_LOG_I("HTTP CacheBuffer create failed.");
-        return;
-    }
+    FALSE_RETURN_MSG(cacheMediaBuffer_ != nullptr, "HTTP CacheBuffer create failed.");
     if (totalBufferSize < RING_BUFFER_SIZE) {
         MEDIA_LOG_I("HTTP Failed setting cache buffer size: " PUBLIC_LOG_D32
                     ". already lower than the min buffer size: " PUBLIC_LOG_D32
@@ -124,9 +121,7 @@ void HttpMediaDownloader::InitCacheBuffer(uint32_t expectBufferDuration)
         totalBufferSize_ = totalBufferSize;
         MEDIA_LOG_I("HTTP Success setted cache buffer size: " PUBLIC_LOG_D32, totalBufferSize);
     }
-    if (!isCacheBufferInited_) {
-        MEDIA_LOG_W("HTTP CacheBufferInit error");
-    }
+    FALSE_RETURN_MSG(isCacheBufferInited_, "HTTP CacheBufferInit error");
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferDuration,
@@ -984,7 +979,10 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
             cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
         }
         if (cacheMediaBuffer_ == nullptr) {
-            isCacheBufferInited_ = false;
+            {
+                AutoLock lock(sleepMutex_);
+                isCacheBufferInited_ = false;
+            }
             sleepCond_.NotifyAll();
             MEDIA_LOG_I("HTTP CacheBuffer create failed.");
             return false;
@@ -1003,9 +1001,7 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
             isCacheBufferInited_ = cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
         }
         sleepCond_.NotifyAll();
-        if (!isCacheBufferInited_) {
-            MEDIA_LOG_I("HTTP CacheBufferInit failed");
-        }
+        FALSE_RETURN_V_MSG(isCacheBufferInited_, 0, "HTTP CacheBufferInit failed");
     }
 
     if (cacheMediaBuffer_ == nullptr && ringBuffer_ == nullptr) {
