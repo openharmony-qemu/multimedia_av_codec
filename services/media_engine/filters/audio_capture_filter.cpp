@@ -22,8 +22,9 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "AudioCaptureFilter" };
 static constexpr uint64_t AUDIO_NS_PER_SECOND = 1000000000;
+static constexpr uint64_t AUDIO_UNREGULAR_DETLA_TIME = 100000000;
 static constexpr int64_t AUDIO_CAPTURE_READ_FAILED_WAIT_TIME = 20000000; // 20000000 us 20ms
-static constexpr int64_t AUDIO_CAPTURE_READ_FRAME_TIME = 21333333; // 21333333 ns 21ms
+static constexpr int64_t AUDIO_CAPTURE_READ_FRAME_TIME = 20000000; // 20000000 ns 20ms
 static constexpr int32_t AUDIO_CAPTURE_MAX_CACHED_FRAMES = 256;
 }
 
@@ -200,7 +201,11 @@ Status AudioCaptureFilter::DoPause()
     }
     firstAudioFramePts_.store(-1);
     firstVideoFramePts_.store(-1);
-    if (!cachedAudioData_.empty()) {
+    GetCurrentTime(pauseTime_);
+    MEDIA_LOG_I("[audio] pauseTime: " PUBLIC_LOG_D64, pauseTime_);
+    if (currentTime_ != 0 && currentTime_ < pauseTime_ && withVideo_) {
+        int32_t lostCount = (pauseTime_ - currentTime_) / AUDIO_CAPTURE_READ_FRAME_TIME;
+        FillLostFrame(lostCount);
         RecordCachedData();
     }
     return ret;
@@ -315,11 +320,15 @@ Status AudioCaptureFilter::SendEos()
 {
     MEDIA_LOG_I("SendEos");
     Status ret = Status::OK;
-    // send cached data before
-    if (!cachedAudioData_.empty()) {
-        RecordCachedData();
-    }
+    GetCurrentTime(stopTime_);
+    MEDIA_LOG_I("[audio] stopTime: " PUBLIC_LOG_D64, stopTime_);
     if (outputBufferQueue_) {
+        if (currentTime_ != 0 && currentTime_ < stopTime_ && withVideo_) {
+            int32_t lostCount = (stopTime_ - currentTime_) / AUDIO_CAPTURE_READ_FRAME_TIME;
+            FillLostFrame(lostCount);
+            RecordCachedData();
+        }
+
         std::shared_ptr<AVBuffer> buffer;
         AVBufferConfig avBufferConfig;
         ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
@@ -349,14 +358,19 @@ void AudioCaptureFilter::ReadLoop()
         return;
     }
 
-    if ((firstVideoFramePts_.load() == -1 || firstAudioFramePts_.load() == -1) && withVideo_) {
+    if ((firstVideoFramePts_.load() < 0 || firstAudioFramePts_.load() < 0) && withVideo_) {
         if (cachedAudioData_.size() > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
             MEDIA_LOG_E("audioCapture cached frame over maxnum");
-            RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
+            firstVideoFramePts_.store(0);
             return;
         }
-        auto cacheAudioData = std::shared_ptr<uint8_t>(new uint8_t[bufferSize], [](uint8_t *p) { delete[] p; });
-        ret = audioCaptureModule_->Read(cacheAudioData.get(), bufferSize);
+        auto cachedAudioData = std::shared_ptr<uint8_t>(new uint8_t[bufferSize],
+            std::default_delete<uint8_t[]>());
+        if (cachedAudioData == nullptr) {
+            MEDIA_LOG_W("create cachedAudioData fail");
+            return;
+        }
+        ret = audioCaptureModule_->Read(cachedAudioData.get(), bufferSize);
         if (ret != Status::OK) {
             MEDIA_LOG_E("audioCaptureModule read return again");
             RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
@@ -364,17 +378,75 @@ void AudioCaptureFilter::ReadLoop()
         }
         if (firstAudioFramePts_.load() < 0) {
             int64_t audioDataTime = 0;
-            audioCaptureModule_->GetAudioTime(audioDataTime);
+            audioCaptureModule_->GetAudioTime(audioDataTime, true);
+            if (audioDataTime == 0) {
+                GetCurrentTime(audioDataTime);
+            }
             firstAudioFramePts_.store(audioDataTime);
             MEDIA_LOG_I("firstAudioFramePts: " PUBLIC_LOG_D64, firstAudioFramePts_.load());
         }
-        cachedAudioData_.push_back(cacheAudioData);
+        cachedAudioData_.push_back(cachedAudioData);
     } else {
-        if (!cachedAudioData_.empty()) {
+        if (!cachedAudioData_.empty() && withVideo_) {
+            CalculateAVTime();
             RecordCachedData();
         } else {
             RecordAudioFrame();
         }
+    }
+}
+
+void AudioCaptureFilter::CalculateAVTime()
+{
+    uint64_t bufferSize = 0;
+    audioCaptureModule_->GetSize(bufferSize);
+
+    if (firstAudioFramePts_.load() > firstVideoFramePts_.load()) {
+        // audio frame is later than video frame, add zeros to the front of the cache queue.
+        int32_t diffCount = static_cast<int32_t>((firstAudioFramePts_.load() - firstVideoFramePts_.load())
+            / AUDIO_CAPTURE_READ_FRAME_TIME);
+        if (diffCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
+            // video time is abnormal, do not fill data frame.
+            startTime_ = firstAudioFramePts_.load();
+        } else {
+            startTime_ = firstAudioFramePts_.load() - diffCount * AUDIO_CAPTURE_READ_FRAME_TIME;
+            MEDIA_LOG_I("Audio late, diffCount: " PUBLIC_LOG_D32, diffCount);
+            FillLostFrame(diffCount);
+        }
+    } else {
+        // audio frame is faster than video frame, crop frames of the cache queue.
+        int32_t diffCount = static_cast<int32_t>((firstVideoFramePts_.load() - firstAudioFramePts_.load())
+            / AUDIO_CAPTURE_READ_FRAME_TIME);
+        if (diffCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
+            // video time is abnormal, do not crop data frame.
+            startTime_ = firstAudioFramePts_.load();
+        } else {
+            startTime_ = firstAudioFramePts_.load() + diffCount * AUDIO_CAPTURE_READ_FRAME_TIME;
+            MEDIA_LOG_I("Video late, diffCount: " PUBLIC_LOG_D32, diffCount);
+            while (diffCount > 0) {
+                if (!cachedAudioData_.empty()) {
+                    cachedAudioData_.pop_front();
+                }
+                --diffCount;
+            }
+        }
+    }
+    currentTime_ = startTime_;
+}
+
+void AudioCaptureFilter::FillLostFrame(int32_t lostCount)
+{
+    uint64_t bufferSize = 0;
+    audioCaptureModule_->GetSize(bufferSize);
+    while (lostCount > 0) {
+        auto cachedAudioData = std::shared_ptr<uint8_t>(new uint8_t[bufferSize]{0},
+            std::default_delete<uint8_t[]>());
+        if (cachedAudioData == nullptr) {
+            MEDIA_LOG_W("create cachedAudioData fail");
+            continue;
+        }
+        cachedAudioData_.push_front(cachedAudioData);
+        --lostCount;
     }
 }
 
@@ -383,33 +455,8 @@ void AudioCaptureFilter::RecordCachedData()
     uint64_t bufferSize = 0;
     audioCaptureModule_->GetSize(bufferSize);
 
-    if (firstAudioFramePts_.load() > firstVideoFramePts_.load()) {
-        // audio frame is later than video frame, add zeros to the front of the cache queue.
-        // diffCount less than AUDIO_CAPTURE_MAX_CACHED_FRAMES
-        int32_t diffCount = std::min(AUDIO_CAPTURE_MAX_CACHED_FRAMES, static_cast<int32_t>(
-            (firstAudioFramePts_.load() - firstVideoFramePts_.load()) / AUDIO_CAPTURE_READ_FRAME_TIME));
-        MEDIA_LOG_I("Audio late, diffCount: " PUBLIC_LOG_D32, diffCount);
-        while (diffCount > 0) {
-            auto cacheAudioData = std::shared_ptr<uint8_t>(new uint8_t[bufferSize]{0}, [](uint8_t *p) { delete[] p; });
-            cachedAudioData_.push_front(cacheAudioData);
-            --diffCount;
-        }
-    } else {
-        // audio frame is faster than video frame, crop frames of the cache queue.
-        // diffCount less than AUDIO_CAPTURE_MAX_CACHED_FRAMES
-        int32_t diffCount = std::min(AUDIO_CAPTURE_MAX_CACHED_FRAMES, static_cast<int32_t>(
-            (firstVideoFramePts_.load() - firstAudioFramePts_.load()) / AUDIO_CAPTURE_READ_FRAME_TIME));
-        MEDIA_LOG_I("Video late, diffCount: " PUBLIC_LOG_D32, diffCount);
-        while (diffCount > 0) {
-            if (!cachedAudioData_.empty()) {
-                cachedAudioData_.pop_front();
-            }
-            --diffCount;
-        }
-    }
-
     MEDIA_LOG_I("cachedAudioDataList count: " PUBLIC_LOG_D32, static_cast<int32_t>(cachedAudioData_.size()));
-    while (!cachedAudioData_.empty()) {
+    while (!cachedAudioData_.empty() && outputBufferQueue_) {
         auto tmpData = cachedAudioData_.front();
         cachedAudioData_.pop_front();
 
@@ -431,8 +478,8 @@ void AudioCaptureFilter::RecordCachedData()
             RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
             continue;
         }
+        currentTime_ += AUDIO_CAPTURE_READ_FRAME_TIME;
     }
-    MEDIA_LOG_I("recordCachedData end");
 }
 
 void AudioCaptureFilter::RecordAudioFrame()
@@ -459,6 +506,16 @@ void AudioCaptureFilter::RecordAudioFrame()
         RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
         return;
     }
+    {
+        int64_t audioDataTime = 0;
+        audioCaptureModule_->GetAudioTime(audioDataTime, false);
+        if (audioDataTime > currentTime_ && (audioDataTime - currentTime_) > AUDIO_UNREGULAR_DETLA_TIME && withVideo_) {
+            int32_t lostCount = (audioDataTime - AUDIO_CAPTURE_READ_FRAME_TIME - currentTime_)
+                / AUDIO_CAPTURE_READ_FRAME_TIME;
+            FillLostFrame(lostCount);
+            RecordCachedData();
+        }
+    }
     buffer->memory_->SetSize(bufferSize);
     ret = outputBufferQueue_->PushBuffer(buffer, true);
     if (ret != Status::OK) {
@@ -466,6 +523,7 @@ void AudioCaptureFilter::RecordAudioFrame()
         RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
         return;
     }
+    currentTime_ += AUDIO_CAPTURE_READ_FRAME_TIME;
 }
 
 void AudioCaptureFilter::GetCurrentTime(int64_t &currentTime)
