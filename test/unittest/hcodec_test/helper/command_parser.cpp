@@ -141,7 +141,7 @@ void ShowUsage()
     std::cout << " --timeout            thread timeout(ms). -1 means wait forever" << std::endl;
     std::cout << " --isHighPerfMode     0 is normal mode, 1 is high perf mode" << std::endl;
     std::cout << " --setParameter       eg. 11:frameRate,60 or 24:requestIdr,1" << std::endl;
-    std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40 or 25:discard,1 or 30:ebr,16,30,25,0"
+    std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40 or 25:discard,1 or 30:ebr,16,30,25,0 or 30:roiParams,Top1,Left1-Bottom1,Right1=Offset1;Top2,Left2-Bottom2,Right2=Offset2;..."
               << std::endl;
     std::cout << " --setResource        eg. 11:/data/test/a.yuv,1280,720,2" << std::endl;
     std::cout << " [encoder only]" << std::endl;
@@ -421,6 +421,11 @@ void CommandOpt::ParsePerFrameParam(uint32_t frameNo, const string &s)
         value >> ebrParam.minQp >> c >> ebrParam.maxQp >> c >> ebrParam.startQp >> c >> ebrParam.isSkip;
         perFrameParamsMap[frameNo].ebrParam = ebrParam;
     }
+    if (key == "roiParams") {
+        string roiParams;
+        value >> roiParams;
+        perFrameParamsMap[frameNo].roiParams = roiParams;
+    }
     if (key == "isAbsQpMap") {
         bool absQp;
         value >> absQp;
@@ -519,6 +524,9 @@ void CommandOpt::Print() const
     if (qpRange.has_value()) {
         TLOGI("qpRange %u~%u", qpRange->qpMin, qpRange->qpMax);
     }
+    if (roiParams.has_value()) {
+        TLOGI("roiParams: %s",roiParams->c_str());
+    }
     if (waterMark.isSet) {
         TLOGI("dstX %d, dstY %d, dstW %d, dstH %d",
               waterMark.dstX, waterMark.dstY, waterMark.dstW, waterMark.dstH);
@@ -558,6 +566,9 @@ void CommandOpt::Print() const
         if (perFrame.absQpMap.has_value() && perFrame.qpMapValue.has_value()) {
             TLOGI("    qpMap, type %d (0: delta qp, 1: abs qp), value %d",
                   perFrame.absQpMap.value(), perFrame.qpMapValue.value());
+        }
+        if (perFrame.roiParams.has_value()) {
+            TLOGI("roiParams:  %s", perFrame.roiParams.value().c_str());
         }
     }
     for (const auto &[frameNo, resourceParam] : resourceParamsMap) {

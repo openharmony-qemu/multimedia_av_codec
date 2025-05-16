@@ -318,6 +318,9 @@ bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_START, static_cast<int32_t>(param.ebrParam->startQp));
         meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_SKIP, static_cast<bool>(param.ebrParam->isSkip));
     }
+    if (param.roiParams.has_value()) {
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_ROI_PARAMS, param.roiParams.value());
+    }
     if (param.absQpMap.has_value() && param.qpMapValue.has_value()) {
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_ABS_QP_MAP, param.absQpMap.value());
 
