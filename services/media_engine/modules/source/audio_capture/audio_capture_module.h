@@ -86,7 +86,7 @@ private:
     bool isTrackMaxAmplitude {false};
     std::string bundleName_;
     uint64_t instanceId_{0};
-    uint64_t lastReadPos{0};
+    uint64_t lastReadPos_{0};
 };
 } // namespace AudioCaptureModule
 } // namespace Media
