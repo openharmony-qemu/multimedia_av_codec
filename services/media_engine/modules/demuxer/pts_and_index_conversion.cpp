@@ -447,7 +447,7 @@ Status TimeAndIndexConversion::GetRelativePresentationTimeUsByIndex(const uint32
         static_cast<int64_t>(relativePresentationTimeUs), index);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Get pts failed");
 
-    GetPresentationTimeUsFromFfmpegMOV(INDEX_TO_RELATIVEPTS, trackIndex,
+    ret = GetPresentationTimeUsFromFfmpegMOV(INDEX_TO_RELATIVEPTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Get pts failed");
 

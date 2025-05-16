@@ -1773,7 +1773,7 @@ std::pair<int32_t, int32_t> HlsMediaDownloader::GetDownloadRateAndSpeed()
 Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("HLS SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
-    if (bitRate <= 0) {
+    if (bitRate <= 0 && currentBitRate_ == 0) {
         currentBitRate_ = -1; // -1
     } else {
         int32_t playlistBitrate = static_cast<int32_t>(playlistDownloader_->GetCurBitrate());

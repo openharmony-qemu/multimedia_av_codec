@@ -122,7 +122,7 @@ public:
     Seekable GetSeekable() const;
     std::vector<uint32_t> GetBitRates() const;
     std::vector<uint32_t> GetBitRatesByHdr(bool isHdr) const;
-    void SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg) const;
+    int64_t SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg) const;
     void UpdateDownloadFinished(const std::string &url);
     int GetInUseVideoStreamId() const;
     DashMpdGetRet GetNextSegmentByStreamId(int streamId, std::shared_ptr<DashSegment> &seg);

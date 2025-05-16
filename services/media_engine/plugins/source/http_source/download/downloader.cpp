@@ -807,10 +807,10 @@ bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
 size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader)
 {
     auto currentRequest_ = mediaDownloader->currentRequest_;
+    int64_t needDropLen = currentRequest_->startPos_ - currentRequest_->dropedDataLen_;
     int64_t writeOffSet = -1;
-    if (currentRequest_->startPos_ > 0) {
-        writeOffSet = currentRequest_->startPos_ >= static_cast<int64_t>(dataLen) ?
-            0 : currentRequest_->startPos_; // 0:drop all
+    if (needDropLen > 0) {
+        writeOffSet = needDropLen >= static_cast<int64_t>(dataLen) ? 0 : needDropLen; // 0:drop all
     }
     bool dropRet = false;
     uint32_t writeLen = 0;

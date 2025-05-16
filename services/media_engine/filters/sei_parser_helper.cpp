@@ -249,7 +249,7 @@ SeiParserListener::SeiParserListener(const std::string &mimeType, sptr<AVBufferQ
 {
     seiParserHelper_ = SeiParserHelperFactory::CreateHelper(mimeType);
     FALSE_RETURN_MSG(seiParserHelper_ != nullptr, "Create SeiParserHelper failed for %{public}s", mimeType.c_str());
-
+    FALSE_RETURN_MSG(producer_ != nullptr, "buffer queue producer is nullptr");
     sptr<IBrokerListener> tmpListener = this;
     producer_->SetBufferFilledListener(tmpListener);
 }

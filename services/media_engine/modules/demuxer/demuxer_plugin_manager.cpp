@@ -931,6 +931,21 @@ bool DemuxerPluginManager::IsSubtitleMime(const std::string& mime)
     if (mime == "application/x-subrip" || mime == "text/vtt") {
         return true;
     }
+#ifdef SUPPORT_DEMUXER_LRC
+    if (mime == "text/plain") {
+        return true;
+    }
+#endif
+#ifdef SUPPORT_DEMUXER_SAMI
+    if (mime == "application/x-sami") {
+        return true;
+    }
+#endif
+#ifdef SUPPORT_DEMUXER_ASS
+    if (mime == "text/x-ass") {
+        return true;
+    }
+#endif
     return false;
 }
 
