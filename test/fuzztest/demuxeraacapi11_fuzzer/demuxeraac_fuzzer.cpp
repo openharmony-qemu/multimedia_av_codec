@@ -36,7 +36,6 @@ const char FLAG = '\0';
 const size_t LANGUAGE_SIZE = 31;
 const size_t LANGUAGE_BUFFER_SIZE = 3;
 const size_t LANGUAGE_COUNT = 2;
-const size_t STRIDE = 4;
 bool CheckDataValidity(const uint8_t *data, size_t size)
 {
     if (size <= EXPECT_SIZE) {
