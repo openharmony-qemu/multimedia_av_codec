@@ -241,7 +241,6 @@ void HDecoder::SubmitBuffersToNextOwner()
     for (BufferInfo& info : inputBufferPool_) {
         if (info.nextStepOwner == BufferOwner::OWNED_BY_OMX) {
             HLOGI("bufferId = %d, input buffer next owner is omx", info.bufferId);
-            OnQueueInputBuffer(RESUBMIT_BUFFER, &info);
         } else if (info.nextStepOwner == BufferOwner::OWNED_BY_USER) {
             HLOGI("bufferId = %d, input buffer next owner is user", info.bufferId);
             if (!inputPortEos_) {
