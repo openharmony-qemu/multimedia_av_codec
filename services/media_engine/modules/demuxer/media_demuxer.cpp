@@ -740,15 +740,6 @@ Status MediaDemuxer::AddDemuxerCopyTaskByTrack(uint32_t trackId, DemuxerTrackTyp
     FALSE_RETURN_V_MSG_W(listener != nullptr, Status::ERROR_NULL_POINTER,
         "Create listener failed, track:" PUBLIC_LOG_U32 ", type:" PUBLIC_LOG_D32, trackId, trackType);
     trackMap_.emplace(trackId, std::make_shared<TrackWrapper>(trackId, listener, shared_from_this()));
-
-    if (isFlvLiveStream_ && type == DemuxerTrackType::VIDEO) {
-        notifyBitrateTask_ =
-            std::make_unique<Task>(taskName + "BN", playerId_, TaskType::DEMUXER, TaskPriority::NORMAL, false);
-        if (!notifyBitrateTask_) {
-            MEDIA_LOG_W("Create notifyBitrateTask_ failed, track:" PUBLIC_LOG_U32 ", type:" PUBLIC_LOG_D32,
-                trackId, trackType);
-        }
-    }
     MEDIA_LOG_I("create tasks done: trackId=" PUBLIC_LOG_U32 ",type=" PUBLIC_LOG_U32, trackId, trackType);
     return Status::OK;
 }
@@ -763,6 +754,15 @@ void MediaDemuxer::AddDemuxerCopyTaskIfFilter(uint32_t trackId, TaskType type)
 {
     FALSE_RETURN_NOLOG(isCreatedByFilter_);
     AddDemuxerCopyTask(trackId, type);
+}
+
+void MediaDemuxer::AddHandleFlvSelectBitrateTask()
+{
+    TaskType type = GetEnableSampleQueueFlag() ? TaskType::DEMUXER : TaskType::VIDEO;
+    std::string taskName = GetEnableSampleQueueFlag() ? "DemFlv" : "DemVFlv";
+    handleFlvSelectBitrateTask_ = std::make_unique<Task>(taskName, playerId_, type, TaskPriority::NORMAL, false);
+    FALSE_RETURN_MSG_W(handleFlvSelectBitrateTask_ != nullptr,
+        "Create handleFlvSelectBitrateTask_ failed, type:" PUBLIC_LOG_D32, type);
 }
 
 Status MediaDemuxer::InnerPrepare()
@@ -793,6 +793,9 @@ void MediaDemuxer::InitVideoTrack()
     int32_t videoTrackIdInner = static_cast<int32_t>(videoTrackId_);
     GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrackIfFilter(videoTrackId_, DemuxerTrackType::VIDEO)
                             : AddDemuxerCopyTaskIfFilter(videoTrackId_, TaskType::VIDEO);
+    if (isFlvLiveStream_) {
+        AddHandleFlvSelectBitrateTask();
+    }
     demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackIdInner, videoTrackIdInner, -1);
     int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackIdInner);
     streamDemuxer_->SetNewVideoStreamID(streamId);
@@ -1481,13 +1484,14 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
     MEDIA_LOG_I("In");
 
     if (isFlvLiveStream_ && IsRightMediaTrack(videoTrackId_, DemuxerTrackType::VIDEO)) {
-        auto sqIt = sampleQueueMap_.find(videoTrackId_);
-        FALSE_RETURN_V_MSG_E(sqIt != sampleQueueMap_.end() && sqIt->second, Status::ERROR_WRONG_STATE,
-            "sampleQueue is nullptr");
         FALSE_RETURN_V_NOLOG(!isManualBitRateSetting_.load() || !isAutoSelect, Status::ERROR_UNKNOWN);
         if (!isManualBitRateSetting_.load() && !isAutoSelect) {
             isManualBitRateSetting_.store(true);
         }
+        FALSE_RETURN_V_NOLOG(GetEnableSampleQueueFlag(), SelectBitrateForNonSQ(0, bitRate));
+        auto sqIt = sampleQueueMap_.find(videoTrackId_);
+        FALSE_RETURN_V_MSG_E(sqIt != sampleQueueMap_.end() && sqIt->second, Status::ERROR_WRONG_STATE,
+            "sampleQueue is nullptr");
         return sqIt->second->ReadySwitchBitrate(bitRate);
     }
     if (demuxerPluginManager_->IsDash()) {
@@ -2531,9 +2535,9 @@ Status MediaDemuxer::SetPerfRecEnabled(bool isPerfRecEnabled)
 
 int64_t MediaDemuxer::GetReadLoopRetryUs(uint32_t trackId)
 {
-    if (!isFlvLiveStream_) {
-        return GetEnableSampleQueueFlag() ? NEXT_DELAY_TIME_US : 0;
-    }
+
+    FALSE_RETURN_V_NOLOG(GetEnableSampleQueueFlag(), 0);
+    FALSE_RETURN_V_NOLOG(isFlvLiveStream_, NEXT_DELAY_TIME_US);
     FALSE_RETURN_V_MSG_E(sampleQueueMap_.count(trackId) > 0 && sampleQueueMap_[trackId] != nullptr, NEXT_DELAY_TIME_US,
         "sampleQueue " PUBLIC_LOG_D32 " is nullptr", trackId);
     uint64_t sampleDuration = sampleQueueMap_[trackId]->GetCacheDuration();
@@ -2573,7 +2577,7 @@ int64_t MediaDemuxer::DoBeforeSubtitleTrackReadLoop(uint32_t trackId)
 
 int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    if (streamDemuxer_->GetIsIgnoreParse() || isStopped_ || isPaused_ || isSeekError_) {
+    if (streamDemuxer_->GetIsIgnoreParse() || isStopped_ || isPaused_ || isSeekError_ || isFlvLiveSelectingBitRate_) {
         MEDIA_LOG_D("ReadLoop pausing or error, track " PUBLIC_LOG_U32, trackId);
         perfRecorder_.Reset();
         return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
@@ -3276,13 +3280,31 @@ void MediaDemuxer::UpdateLastVideoBufferAbsPts(uint32_t trackId)
     }
 }
 
+Status MediaDemuxer::SelectBitrateForNonSQ(int64_t startPts, uint32_t bitRate)
+{
+    MEDIA_LOG_I("SelectBitrateForNonSQ startPts=" PUBLIC_LOG_D64 " bitRate=" PUBLIC_LOG_U32, startPts, bitRate);
+    FALSE_RETURN_V_MSG_E(handleFlvSelectBitrateTask_ != nullptr, Status::ERROR_NULL_POINTER,
+        "handleFlvSelectBitrateTask_ is nullptr");
+    FALSE_RETURN_V_MSG_I(!isFlvLiveSelectingBitRate_.load(), Status::ERROR_PERMISSION_DENIED,
+        "isFlvLiveSelectingBitRate, ignore this request");
+    isFlvLiveSelectingBitRate_.store(true);
+    PauseAllTask();
+    handleFlvSelectBitrateTask_->SubmitJobOnce([this, startPts, bitRate] {
+        HandleSelectBitrateForFlvLive(startPts, bitRate);
+        isFlvLiveSelectingBitRate_.store(false);
+    });
+    ResumeAllTask();
+    return Status::OK;
+}
+
 // now only for the flv living streaming case, callback by SampleQueue
 Status MediaDemuxer::OnSelectBitrateOk(int64_t startPts, uint32_t bitRate)
 {
     MEDIA_LOG_I("OnSelectBitrateOk startPts=" PUBLIC_LOG_D64 " bitRate=" PUBLIC_LOG_U32, startPts, bitRate);
-    FALSE_RETURN_V_MSG_E(notifyBitrateTask_ != nullptr, Status::ERROR_NULL_POINTER, "notifyBitrateTask_ is nullptr");
-    notifyBitrateTask_->SubmitJobOnce([this, startPts, bitRate] {
-        HandleSelectBitrateBySampleQueue(startPts, bitRate);
+    FALSE_RETURN_V_MSG_E(handleFlvSelectBitrateTask_ != nullptr, Status::ERROR_NULL_POINTER,
+        "handleFlvSelectBitrateTask_ is nullptr");
+    handleFlvSelectBitrateTask_->SubmitJobOnce([this, startPts, bitRate] {
+        HandleSelectBitrateForFlvLive(startPts, bitRate);
     });
     return Status::OK;
 }
@@ -3342,9 +3364,9 @@ Status MediaDemuxer::NotifySampleQueueBufferConsume(uint32_t queueId)
     return Status::OK;
 }
 
-Status MediaDemuxer::HandleSelectBitrateBySampleQueue(int64_t startPts, uint32_t bitrate)
+Status MediaDemuxer::HandleSelectBitrateForFlvLive(int64_t startPts, uint32_t bitrate)
 {
-    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::HandleSelectBitrateBySampleQueue");
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::HandleSelectBitrateForFlvLive");
     MEDIA_LOG_I("In bitrate=" PUBLIC_LOG_U32 " startPts=" PUBLIC_LOG_D64, bitrate, startPts);
     FALSE_RETURN_V(source_ != nullptr && demuxerPluginManager_ != nullptr && streamDemuxer_ != nullptr,
         Status::ERROR_NULL_POINTER);
@@ -3358,7 +3380,7 @@ Status MediaDemuxer::HandleSelectBitrateBySampleQueue(int64_t startPts, uint32_t
     }
     MEDIA_LOG_I("source SelectBitrate bitrate=" PUBLIC_LOG_U32 " startPts=" PUBLIC_LOG_D64, bitrate, startPts);
 
-    {
+    if (GetEnableSampleQueueFlag()) {
         AutoLock lock(mapMutex_);
         for (auto &sqIt : sampleQueueMap_) {
             FALSE_RETURN_V_MSG_E(
