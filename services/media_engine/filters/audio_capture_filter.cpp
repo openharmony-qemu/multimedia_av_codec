@@ -201,10 +201,10 @@ Status AudioCaptureFilter::DoPause()
     }
     firstAudioFramePts_.store(-1);
     firstVideoFramePts_.store(-1);
-    GetCurrentTime(mPauseTime);
-    MEDIA_LOG_I("[audio] pauseTime: " PUBLIC_LOG_D64, mPauseTime);
-    if (mCurrentTime != 0 && mCurrentTime < mPauseTime && withVideo_) {
-        int32_t lostCount = (mPauseTime - mCurrentTime) / AUDIO_CAPTURE_READ_FRAME_TIME;
+    GetCurrentTime(pauseTime_);
+    MEDIA_LOG_I("[audio] pauseTime: " PUBLIC_LOG_D64, pauseTime_);
+    if (currentTime_ != 0 && currentTime_ < pauseTime_ && withVideo_) {
+        int32_t lostCount = (pauseTime_ - currentTime_) / AUDIO_CAPTURE_READ_FRAME_TIME;
         FillLostFrame(lostCount);
         RecordCachedData();
     }
@@ -320,11 +320,11 @@ Status AudioCaptureFilter::SendEos()
 {
     MEDIA_LOG_I("SendEos");
     Status ret = Status::OK;
-    GetCurrentTime(mStopTime);
-    MEDIA_LOG_I("[audio] stopTime: " PUBLIC_LOG_D64, mStopTime);
+    GetCurrentTime(stopTime_);
+    MEDIA_LOG_I("[audio] stopTime: " PUBLIC_LOG_D64, stopTime_);
     if (outputBufferQueue_) {
-        if (mCurrentTime != 0 && mCurrentTime < mStopTime && withVideo_) {
-            int32_t lostCount = (mStopTime - mCurrentTime) / AUDIO_CAPTURE_READ_FRAME_TIME;
+        if (currentTime_ != 0 && currentTime_ < stopTime_ && withVideo_) {
+            int32_t lostCount = (stopTime_ - currentTime_) / AUDIO_CAPTURE_READ_FRAME_TIME;
             FillLostFrame(lostCount);
             RecordCachedData();
         }
@@ -407,9 +407,9 @@ void AudioCaptureFilter::CalculateAVTime()
             / AUDIO_CAPTURE_READ_FRAME_TIME);
         if (diffCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
             // video time is abnormal, do not fill data frame.
-            mStartTime = firstAudioFramePts_.load();
+            startTime_ = firstAudioFramePts_.load();
         } else {
-            mStartTime = firstAudioFramePts_.load() - diffCount * AUDIO_CAPTURE_READ_FRAME_TIME;
+            startTime_ = firstAudioFramePts_.load() - diffCount * AUDIO_CAPTURE_READ_FRAME_TIME;
             MEDIA_LOG_I("Audio late, diffCount: " PUBLIC_LOG_D32, diffCount);
             FillLostFrame(diffCount);
         }
@@ -419,9 +419,9 @@ void AudioCaptureFilter::CalculateAVTime()
             / AUDIO_CAPTURE_READ_FRAME_TIME);
         if (diffCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
             // video time is abnormal, do not crop data frame.
-            mStartTime = firstAudioFramePts_.load();
+            startTime_ = firstAudioFramePts_.load();
         } else {
-            mStartTime = firstAudioFramePts_.load() + diffCount * AUDIO_CAPTURE_READ_FRAME_TIME;
+            startTime_ = firstAudioFramePts_.load() + diffCount * AUDIO_CAPTURE_READ_FRAME_TIME;
             MEDIA_LOG_I("Video late, diffCount: " PUBLIC_LOG_D32, diffCount);
             while (diffCount > 0) {
                 if (!cachedAudioData_.empty()) {
@@ -431,7 +431,7 @@ void AudioCaptureFilter::CalculateAVTime()
             }
         }
     }
-    mCurrentTime = mStartTime;
+    currentTime_ = startTime_;
 }
 
 void AudioCaptureFilter::FillLostFrame(int32_t lostCount)
@@ -478,7 +478,7 @@ void AudioCaptureFilter::RecordCachedData()
             RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
             continue;
         }
-        mCurrentTime += AUDIO_CAPTURE_READ_FRAME_TIME;
+        currentTime_ += AUDIO_CAPTURE_READ_FRAME_TIME;
     }
 }
 
@@ -509,8 +509,8 @@ void AudioCaptureFilter::RecordAudioFrame()
     {
         int64_t audioDataTime = 0;
         audioCaptureModule_->GetAudioTime(audioDataTime, false);
-        if (audioDataTime > mCurrentTime && (audioDataTime - mCurrentTime) > AUDIO_UNREGULAR_DETLA_TIME && withVideo_) {
-            int32_t lostCount = (audioDataTime - AUDIO_CAPTURE_READ_FRAME_TIME - mCurrentTime)
+        if (audioDataTime > currentTime_ && (audioDataTime - currentTime_) > AUDIO_UNREGULAR_DETLA_TIME && withVideo_) {
+            int32_t lostCount = (audioDataTime - AUDIO_CAPTURE_READ_FRAME_TIME - currentTime_)
                 / AUDIO_CAPTURE_READ_FRAME_TIME;
             FillLostFrame(lostCount);
             RecordCachedData();
@@ -523,7 +523,7 @@ void AudioCaptureFilter::RecordAudioFrame()
         RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
         return;
     }
-    mCurrentTime += AUDIO_CAPTURE_READ_FRAME_TIME;
+    currentTime_ += AUDIO_CAPTURE_READ_FRAME_TIME;
 }
 
 void AudioCaptureFilter::GetCurrentTime(int64_t &currentTime)
