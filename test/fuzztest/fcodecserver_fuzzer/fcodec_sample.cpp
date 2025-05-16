@@ -16,6 +16,7 @@
 #include <sys/time.h>
 #include <utility>
 #include "fcodec_sample.h"
+#include "native_avbuffer_info.h"
 #include <iostream>
 #include <chrono>
 using namespace OHOS;
@@ -43,6 +44,7 @@ void FCodecServerSample::CallBack::OnOutputFormatChanged(const Format &format)
 void FCodecServerSample::CallBack::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     unique_lock<mutex> lock(tester->signal_->inMutex_);
+    tester->GetOutputFormat();
     tester->signal_->inIdxQueue_.push(index);
     tester->signal_->inBufferQueue_.push(buffer);
     tester->signal_->inCond_.notify_all();
@@ -172,6 +174,9 @@ void FCodecServerSample::InputFunc()
         }
         if (memcpy_s(bufferAddr, bufferSize, fuzzData, fuzzSize) != EOK) {
             break;
+        }
+        if (fuzzSize % 2u == 0u) {
+            buffer->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
         }
         buffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
         int32_t err = fcodec_->QueueInputBuffer(index);

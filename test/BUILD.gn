@@ -34,6 +34,7 @@ group("av_codec_unit_test") {
         "unittest/audio_encoder_filter_test:audio_encoder_filter_unitest",
         "unittest/audio_test:audio_codec_inner_avbuffer_unit_test",
         "unittest/audio_test:audio_decoder_plugin_unit_test",
+        "unittest/audio_test:audio_encoder_plugin_unit_test",
         "unittest/audio_test:audio_ffmpeg_base_codec_unit_test",
         "unittest/audio_test:audio_g711mu_encoder_plugin_unit_test",
         "unittest/audio_test:audio_hdi_codec_inner_unit_test",
