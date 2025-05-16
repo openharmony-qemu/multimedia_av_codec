@@ -146,6 +146,7 @@ public:
     bool isAVBufferMode_ = false;
     bool isTemporalScalabilitySyncIdr_ = false;
     bool isDiscardFrame_ = false;
+    std::string roiRects_ = "";
 
 private:
     void FlushInner();
