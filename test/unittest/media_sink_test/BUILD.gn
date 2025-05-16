@@ -60,6 +60,7 @@ ohos_unittest("av_audio_sink_unit_test") {
       "./mock/src/media_sync_center_mock.cpp",
       "./subtitle_sink_test.cpp",
       "./sync_manager_test.cpp",
+      "./video_sink_mock_test.cpp",
       "./video_sink_test.cpp",
     ]
 
