@@ -357,6 +357,8 @@ extern const char *OH_MD_KEY_CODEC_MIME;
 extern const char *OH_MD_KEY_DURATION;
 /* Key for bitrate, value type is int64_t. */
 extern const char *OH_MD_KEY_BITRATE;
+/* Key for max bitrate, value type is int64_t. */
+extern const char *OH_MD_KEY_MAX_BITRATE;
 /* Key for setting the max decode input size, value type is int32_t. */
 extern const char *OH_MD_KEY_MAX_INPUT_SIZE;
 /* Key for video width, value type is int32_t */
@@ -413,6 +415,10 @@ extern const char *OH_MD_KEY_REQUEST_I_FRAME;
  * can be obtained based on the capability query interface @OH_AVCapability_GetEncoderQualityRange, this key is only
  * supported for encoders that are configured in constant quality mode */
 extern const char *OH_MD_KEY_QUALITY;
+/* key for the desired encoding quality, the value type is int32_t, the range of encoding scene values in H264 and H265
+ * can be obtained based on the capability query interface @OH_AVCapability_GetEncoderSQRFactor, this key is only
+ * supported for encoders that are configured in stable quality rate control mode */
+extern const char *OH_MD_KEY_SQR_FACTOR;
 /* Key of the codec specific data, value type is a uint8_t pointer.
  * In video, SPS/PPS is transferred. In audio, extraData is transferred. */
 extern const char *OH_MD_KEY_CODEC_CONFIG;
@@ -1332,7 +1338,9 @@ typedef enum OH_BitrateMode {
     /* Variable Bit rate mode. */
     BITRATE_MODE_VBR = 1,
     /* Constant Quality mode. */
-    BITRATE_MODE_CQ = 2
+    BITRATE_MODE_CQ = 2,
+    /* Stable Quality Rate Control Mode. */
+    BITRATE_MODE_SQR = 4
 } OH_BitrateMode;
 
 /**
