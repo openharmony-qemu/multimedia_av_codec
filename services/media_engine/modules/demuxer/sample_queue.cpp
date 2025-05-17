@@ -564,6 +564,7 @@ uint64_t SampleQueue::GetCacheDuration() const
 
 uint32_t SampleQueue::GetMemoryUsage()
 {
+    FALSE_RETURN_V_MSG_E(sampleBufferQueue_ != nullptr, 0, "bufferQueue nullptr");
     return sampleBufferQueue_->GetMemoryUsage();
 }
 
