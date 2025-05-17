@@ -178,6 +178,19 @@ bool OH_AVCapability_IsEncoderBitrateModeSupported(OH_AVCapability *capability, 
 OH_AVErrCode OH_AVCapability_GetEncoderQualityRange(OH_AVCapability *capability, OH_AVRange *qualityRange);
 
 /**
+ * @brief Get the encoder's supported sqr factor range.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param capability Encoder capability pointer. If a decoder capability pointer is given,
+ * undefined behavior occurs
+ * @param qualityRange Output parameter. Encoder sqr factor range
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, or the sqrFactorRange is nullptr.
+ * @since 10
+ */
+OH_AVErrCode OH_AVCapability_GetEncoderSQRFactor(OH_AVCapability *capability, OH_AVRange *sqrFactorRange);
+
+/**
  * @brief Get the encoder's supported encoder complexity range.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @param capability Encoder capability pointer. If a decoder capability pointer is given,
