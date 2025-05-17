@@ -188,7 +188,7 @@ OH_AVErrCode OH_AVCapability_GetEncoderQualityRange(OH_AVCapability *capability,
  * {@link AV_ERR_INVALID_VAL}, the capability is invalid, or the sqrFactorRange is nullptr.
  * @since 10
  */
-OH_AVErrCode OH_AVCapability_GetEncoderSQRFactor(OH_AVCapability *capability, OH_AVRange *sqrFactorRange);
+OH_AVErrCode OH_AVCapability_GetEncoderSQRFactorRange(OH_AVCapability *capability, OH_AVRange *sqrFactorRange);
 
 /**
  * @brief Get the encoder's supported encoder complexity range.
