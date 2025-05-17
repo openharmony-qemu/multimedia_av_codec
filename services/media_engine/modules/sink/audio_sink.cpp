@@ -241,6 +241,7 @@ Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
 
 Status AudioSink::GetParameter(std::shared_ptr<Meta>& meta)
 {
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     return plugin_->GetParameter(meta);
 }
 
@@ -266,6 +267,7 @@ Status AudioSink::Start()
     Status ret = Status::OK;
     {
         ScopedTimer timer("AudioSinkPlugin Start", OVERTIME_WARNING_MS);
+        FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
         ret = plugin_->Start();
     }
     if (ret != Status::OK) {
@@ -285,6 +287,7 @@ Status AudioSink::Stop()
     std::lock_guard<std::mutex> lockPlugin(pluginMutex_);
     playRangeStartTime_ = DEFAULT_PLAY_RANGE_VALUE;
     playRangeEndTime_ = DEFAULT_PLAY_RANGE_VALUE;
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     Status ret = plugin_->Stop();
     underrunDetector_.Reset();
     lagDetector_.Reset();
@@ -305,6 +308,7 @@ Status AudioSink::Pause()
     Status ret = Status::OK;
     underrunDetector_.Reset();
     lagDetector_.Reset();
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     if (appUid_ == BOOT_APP_UID) {
         if (eosTask_  != nullptr) {
             eosTask_->SubmitJobOnce([this] {
@@ -339,6 +343,7 @@ Status AudioSink::Pause()
 Status AudioSink::Resume()
 {
     lagDetector_.Reset();
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     Status ret = plugin_->Resume();
     if (ret != Status::OK) {
         MEDIA_LOG_I("AudioSink resume error " PUBLIC_LOG_D32, ret);
@@ -371,6 +376,7 @@ Status AudioSink::Flush()
         eosDraining_ = false;
     }
     Status ret = Status::OK;
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     ret = plugin_->Flush();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "plugin flush failed");
     ResetInfo();
@@ -382,6 +388,7 @@ Status AudioSink::Release()
     underrunDetector_.Reset();
     lagDetector_.Reset();
     ResetInfo();
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     return plugin_->Deinit();
 }
 
@@ -416,6 +423,7 @@ Status AudioSink::SetVolume(float volume)
 int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
 {
     MEDIA_LOG_I("SetVolumeWithRamp");
+    FALSE_RETURN_V(plugin_ != nullptr, static_cast<int32_t>(Status::ERROR_NULL_POINTER));
     return plugin_->SetVolumeWithRamp(targetVolume, duration);
 }
 
@@ -610,6 +618,7 @@ void AudioSink::ClearInputBuffer()
 int32_t AudioSink::GetSampleFormatBytes()
 {
     int32_t format = 0;
+    FALSE_RETURN_V(plugin_ != nullptr, static_cast<int32_t>(Status::ERROR_NULL_POINTER));
     switch (plugin_->GetSampleFormat()) {
         case AudioSampleFormat::SAMPLE_U8:
             format = AUDIO_SAMPLE_8_BIT;
@@ -642,6 +651,8 @@ bool AudioSink::IsBufferAvailable(std::shared_ptr<AVBuffer> &buffer, size_t &cac
 bool AudioSink::CopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
     size_t &size, size_t &cacheBufferSize, int64_t &bufferPts)
 {
+    FALSE_RETURN_V_MSG(bufferDesc.buffer != nullptr, false, "Audio bufferDesc is nullptr");
+    FALSE_RETURN_V_MSG(buffer != nullptr && buffer->memory_ != nullptr, false, "AVBuffer is nullptr");
     size_t availableSize = cacheBufferSize > size ? size : cacheBufferSize;
     auto ret = memcpy_s(bufferDesc.buffer + bufferDesc.dataLength, availableSize,
         buffer->memory_->GetAddr() + currentQueuedBufferOffset_, availableSize);
@@ -662,6 +673,8 @@ bool AudioSink::CopyBufferData(AudioStandard::BufferDesc &bufferDesc, std::share
 bool AudioSink::CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
     size_t &size, size_t &cacheBufferSize, int64_t &bufferPts)
 {
+    FALSE_RETURN_V_MSG(bufferDesc.buffer != nullptr, false, "Audio bufferDesc is nullptr");
+    FALSE_RETURN_V_MSG(buffer != nullptr && buffer->memory_ != nullptr, false, "AVBuffer is nullptr");
     auto ret = memcpy_s(bufferDesc.buffer + bufferDesc.dataLength, cacheBufferSize,
         buffer->memory_->GetAddr() + currentQueuedBufferOffset_, cacheBufferSize);
     FALSE_RETURN_V_MSG(ret == 0, false, "copy from cache buffer may fail.");
@@ -774,6 +787,7 @@ void AudioSink::UpdateRenderInfo()
     timespec time;
     uint32_t position;
     MediaAVCodec::AVCodecTrace trace("AudioSink::UpdateRenderInfo");
+    FALSE_RETURN(plugin_ != nullptr);
     FALSE_RETURN_MSG(plugin_->GetAudioPosition(time, position), "GetAudioPosition from audioRender failed");
     int64_t currentRenderClockTime = time.tv_sec * SEC_TO_US + time.tv_nsec / US_TO_MS; // convert to us
     FALSE_RETURN(sampleRate_ > 0);
@@ -869,6 +883,7 @@ bool AudioSink::IsTimeAnchorNeedUpdate()
 void AudioSink::SyncWriteByRenderInfo()
 {
     auto syncCenter = syncCenter_.lock();
+    FALSE_RETURN(syncCenter != nullptr);
     if (firstPts_ == HST_TIME_NONE) {
         if (syncCenter && syncCenter->GetMediaStartPts() != HST_TIME_NONE) {
             firstPts_ = syncCenter->GetMediaStartPts();
@@ -1015,6 +1030,7 @@ std::shared_ptr<AVBuffer> AudioSink::CopyBuffer(const std::shared_ptr<AVBuffer> 
 void AudioSink::WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer)
 {
     FALSE_RETURN(DropApeBuffer(filledOutputBuffer) == false);
+    FALSE_RETURN(filledOutputBuffer != nullptr);
     if (IsEosBuffer(filledOutputBuffer)) {
         HandleEosBuffer(filledOutputBuffer);
         return;
@@ -1038,11 +1054,13 @@ void AudioSink::WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer)
     lagDetector_.CalcLag(filledOutputBuffer);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
+    FALSE_RETURN(inputBufferQueueConsumer_ != nullptr);
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
 }
 
 bool AudioSink::IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer)
 {
+    FALSE_RETURN_V(filledOutputBuffer != nullptr, false);
     return (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) ||
         ((playRangeEndTime_ != DEFAULT_PLAY_RANGE_VALUE) &&
         (filledOutputBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNITS));
@@ -1248,6 +1266,7 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
 {
     bool render = true; // audio sink always report time anchor and do not drop
     auto syncCenter = syncCenter_.lock();
+    FALSE_RETURN_V(syncCenter != nullptr, -1);
     if (firstPts_ == HST_TIME_NONE) {
         if (syncCenter && syncCenter->GetMediaStartPts() != HST_TIME_NONE) {
             firstPts_ = syncCenter->GetMediaStartPts();
