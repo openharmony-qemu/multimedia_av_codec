@@ -223,7 +223,7 @@ OH_AVErrCode OH_AVCapability_GetEncoderQualityRange(OH_AVCapability *capability,
     return AV_ERR_OK;
 }
 
-OH_AVErrCode OH_AVCapability_GetEncoderSQRFactor(OH_AVCapability *capability, OH_AVRange *sqrFactorRange)
+OH_AVErrCode OH_AVCapability_GetEncoderSQRFactorRange(OH_AVCapability *capability, OH_AVRange *sqrFactorRange)
 {
     CHECK_AND_RETURN_RET_LOG(sqrFactorRange != nullptr, AV_ERR_INVALID_VAL, "Get encoder quality failed: null input");
     sqrFactorRange->minVal = 0;
