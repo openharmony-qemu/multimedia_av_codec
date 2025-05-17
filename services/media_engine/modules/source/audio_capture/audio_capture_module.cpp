@@ -369,7 +369,7 @@ Status AudioCaptureModule::Read(uint8_t *cacheAudioData, size_t expectedLen)
 void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime, bool isFirstFrame)
 {
     MEDIA_LOG_I("AudioCaptureModule GetAudioTime");
-    int32_t ret = true;
+    bool ret = true;
     {
         AutoLock lock(captureMutex_);
         FALSE_RETURN_MSG(audioCapturer_ != nullptr, "Audio capture is null");
