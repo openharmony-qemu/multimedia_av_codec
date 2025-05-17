@@ -403,7 +403,7 @@ void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     }
 #else
     MEDIA_LOG_E("no VPE module");
-    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "no eventReceiver_");
+    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "no eventReceiver");
     eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
 #endif
 }

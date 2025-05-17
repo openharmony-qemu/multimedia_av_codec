@@ -146,7 +146,7 @@ Status MuxerFilter::DoStart()
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Start");
     
     CHECK_AND_RETURN_RET_LOG(!isStarted, Status::OK, "MuxerFilter has started");
-    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "mediaDemuxer_ is nullptr");
+    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "MediaMuxer is nullptr.");
     Status ret = mediaMuxer_->Start();
     if (ret != Status::OK) {
         SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
@@ -272,7 +272,7 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
             meta->Set<Tag::TIMED_METADATA_SRC_TRACK>(sourceTrackIndex);
         }
     }
-    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "mediaDemuxer_ is nullptr");
+    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "MediaMuxer is nullptr.");
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
     if (ret != Status::OK && eventReceiver_ != nullptr) {
         if (isTransCoderMode) {

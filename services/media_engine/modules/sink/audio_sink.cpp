@@ -1050,7 +1050,7 @@ bool AudioSink::IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer)
 
 void AudioSink::HandleEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer)
 {
-    FALSE_RETURN(filledOutputBuffer != nullptr);
+    FALSE_RETURN(inputBufferQueueConsumer_ != nullptr);
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
     AutoLock eosLock(eosMutex_);
     // avoid submit handle eos task multiple times
