@@ -416,7 +416,7 @@ extern const char *OH_MD_KEY_REQUEST_I_FRAME;
  * supported for encoders that are configured in constant quality mode */
 extern const char *OH_MD_KEY_QUALITY;
 /* key for the desired encoding quality, the value type is int32_t, the range of encoding scene values in H264 and H265
- * can be obtained based on the capability query interface @OH_AVCapability_GetEncoderSQRFactor, this key is only
+ * can be obtained based on the capability query interface @OH_AVCapability_GetEncoderSQRFactorRange, this key is only
  * supported for encoders that are configured in stable quality rate control mode */
 extern const char *OH_MD_KEY_SQR_FACTOR;
 /* Key of the codec specific data, value type is a uint8_t pointer.
