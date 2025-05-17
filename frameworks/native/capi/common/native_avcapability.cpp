@@ -223,6 +223,24 @@ OH_AVErrCode OH_AVCapability_GetEncoderQualityRange(OH_AVCapability *capability,
     return AV_ERR_OK;
 }
 
+OH_AVErrCode OH_AVCapability_GetEncoderSQRFactor(OH_AVCapability *capability, OH_AVRange *sqrFactorRange)
+{
+    CHECK_AND_RETURN_RET_LOG(sqrFactorRange != nullptr, AV_ERR_INVALID_VAL, "Get encoder quality failed: null input");
+    sqrFactorRange->minVal = 0;
+    sqrFactorRange->maxVal = 0;
+    CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
+        AV_ERR_INVALID_VAL, "Invalid parameter");
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isEncoder(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the encoder capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
+    const auto &sqrFactor = codecInfo->GetSupportedSqrFactor();
+    sqrFactorRange->minVal = sqrFactor.minVal;
+    sqrFactorRange->maxVal = sqrFactor.maxVal;
+    return AV_ERR_OK;
+}
+
 OH_AVErrCode OH_AVCapability_GetEncoderComplexityRange(OH_AVCapability *capability, OH_AVRange *complexityRange)
 {
     CHECK_AND_RETURN_RET_LOG(complexityRange != nullptr, AV_ERR_INVALID_VAL,
