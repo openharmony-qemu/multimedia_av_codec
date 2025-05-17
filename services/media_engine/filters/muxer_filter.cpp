@@ -146,12 +146,8 @@ Status MuxerFilter::DoStart()
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Start");
     
     CHECK_AND_RETURN_RET_LOG(!isStarted, Status::OK, "MuxerFilter has started");
-    Status ret = Status::OK;
-    if (mediaMuxer_ != nullptr) {
-        ret = mediaMuxer_->Start();
-    } else {
-        ret = Status::ERROR_NULL_POINTER;
-    }
+    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "mediaDemuxer_ is nullptr");
+    Status ret = mediaMuxer_->Start();
     if (ret != Status::OK) {
         SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
     } else {
@@ -276,12 +272,7 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
             meta->Set<Tag::TIMED_METADATA_SRC_TRACK>(sourceTrackIndex);
         }
     }
-    if (mediaMuxer_ == nullptr) {
-        if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
-        }
-        return Status::ERROR_NULL_POINTER;
-    }
+    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "mediaDemuxer_ is nullptr");
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
     if (ret != Status::OK && eventReceiver_ != nullptr) {
         if (isTransCoderMode) {
@@ -294,10 +285,8 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     }
     trackIndexMap_.emplace(std::make_pair(mimeType, trackIndex));
     sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
-    if (callback != nullptr) {
-        MEDIA_LOG_I("callback OnLinkedResult");
-        callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
-    }
+    FALSE_RETURN_V_MSG(callback != nullptr, Status::ERROR_NULL_POINTER, "callback is nullptr");
+    callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
     sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex,
         inType, inputBufferQueue);
     inputBufferQueue->SetBufferFilledListener(listener);

@@ -364,8 +364,8 @@ void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
     bool isEos = false;
-    if (parameter != nullptr &&
-        parameter->Find(Tag::MEDIA_END_OF_STREAM) != parameter->end() &&
+    FALSE_RETURN_MSG(parameter != nullptr, "parameter is nullptr");
+    if (parameter->Find(Tag::MEDIA_END_OF_STREAM) != parameter->end() &&
         parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos) &&
         parameter->Get<Tag::USER_FRAME_PTS>(eosPts_) &&
         parameter->Get<Tag::USER_PUSH_DATA_TIME>(frameNum_)) {
