@@ -377,7 +377,7 @@ void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime, bool isFirstFrame)
             "Audio capture Status error");
         AudioStandard::Timestamp timestamp{};
         ret = audioCapturer_->GetTimeStampInfo(timestamp, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
-        FALSE_RETURN_MSG(ret == true, "audioCapturer GetAudioTime fail");
+        FALSE_RETURN_MSG(ret, "audioCapturer GetAudioTime fail");
 
         audioDataTime = static_cast<int64_t>(timestamp.time.tv_sec) * AUDIO_NS_PER_SECOND
             + static_cast<int64_t>(timestamp.time.tv_nsec);
