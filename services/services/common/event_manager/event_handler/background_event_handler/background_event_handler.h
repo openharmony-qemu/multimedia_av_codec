@@ -28,7 +28,7 @@ public:
     void NotifyFrozen(const std::vector<int32_t> &pidList);
     void NotifyActive(const std::vector<int32_t> &pidList);
     void NotifyActiveAll();
-    void ClearPid(pid_t pid);
+    // void ClearPid(pid_t pid);
 
 private:
     BackGroundEventHandler();

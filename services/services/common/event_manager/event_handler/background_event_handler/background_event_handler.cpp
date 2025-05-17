@@ -94,17 +94,17 @@ void BackGroundEventHandler::NotifyActiveAll()
     return;
 }
 
-void BackGroundEventHandler::ClearPid(pid_t pid)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto it = frozenPidList_.find(pid);
-    if (it != frozenPidList_.end()) {
-        frozenPidList_.erase(it);
-        AVCODEC_LOGI("Cleared pid: %{public}d from frozenPidList_, remain size: %{public}zu", pid, frozenPidList_.size());
-    } else {
-        AVCODEC_LOGI("Pid: %{public}d not found in frozenPidList_", pid);
-    }
-}
+// void BackGroundEventHandler::ClearPid(pid_t pid)
+// {
+//     std::lock_guard<std::mutex> lock(mutex_);
+//     auto it = frozenPidList_.find(pid);
+//     if (it != frozenPidList_.end()) {
+//         frozenPidList_.erase(it);
+//         AVCODEC_LOGI("Cleared pid: %{public}d from frozenPidList_, remain size: %{public}zu", pid, frozenPidList_.size());
+//     } else {
+//         AVCODEC_LOGI("Pid: %{public}d not found in frozenPidList_", pid);
+//     }
+// }
 
 BackGroundEventHandler &BackGroundEventHandler::GetInstance()
 {
