@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -146,7 +146,12 @@ Status MuxerFilter::DoStart()
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Start");
     
     CHECK_AND_RETURN_RET_LOG(!isStarted, Status::OK, "MuxerFilter has started");
-    Status ret = mediaMuxer_->Start();
+    Status ret = Status::OK;
+    if (mediaMuxer_ != nullptr) {
+        ret = mediaMuxer_->Start();
+    } else {
+        ret = Status::ERROR_NULL_POINTER;
+    }
     if (ret != Status::OK) {
         SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
     } else {
@@ -271,6 +276,12 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
             meta->Set<Tag::TIMED_METADATA_SRC_TRACK>(sourceTrackIndex);
         }
     }
+    if (mediaMuxer_ == nullptr) {
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        }
+        return Status::ERROR_NULL_POINTER;
+    }
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
     if (ret != Status::OK && eventReceiver_ != nullptr) {
         if (isTransCoderMode) {
@@ -283,7 +294,10 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     }
     trackIndexMap_.emplace(std::make_pair(mimeType, trackIndex));
     sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
-    callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
+    if (callback != nullptr) {
+        MEDIA_LOG_I("callback OnLinkedResult");
+        callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
+    }
     sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex,
         inType, inputBufferQueue);
     inputBufferQueue->SetBufferFilledListener(listener);

@@ -481,6 +481,7 @@ void AudioSink::SetThreadGroupId(const std::string& groupId)
 
 void AudioSink::HandleEosInner(bool drain)
 {
+    FALSE_RETURN(plugin_ != nullptr);
     AutoLock lock(eosMutex_);
     eosDraining_ = true; // start draining task
     switch (eosInterruptType_) {
@@ -522,6 +523,7 @@ void AudioSink::HandleEosInner(bool drain)
 
 void AudioSink::DrainAndReportEosEvent()
 {
+    FALSE_RETURN(plugin_ != nullptr);
     plugin_->Drain();
     eosInterruptType_ = EosInterruptState::NONE;
     eosDraining_ = false; // finish draining task
@@ -1048,6 +1050,7 @@ bool AudioSink::IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer)
 
 void AudioSink::HandleEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer)
 {
+    FALSE_RETURN(filledOutputBuffer != nullptr);
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
     AutoLock eosLock(eosMutex_);
     // avoid submit handle eos task multiple times
