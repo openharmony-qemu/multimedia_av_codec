@@ -979,8 +979,8 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
 Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer> &inputBuffer)
 {
     MEDIA_LOG_D_SHORT("Write buffer to audio framework");
-    FALSE_RETURN_V_MSG_W(inputBuffer != nullptr && inputBuffer->memory_->GetSize() != 0, Status::OK,
-                         "Receive empty buffer."); // return ok
+    FALSE_RETURN_V_MSG_W(inputBuffer != nullptr && inputBuffer->memory_ != nullptr &&
+        inputBuffer->memory_->GetSize() != 0, Status::OK, "Receive empty buffer."); // return ok
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write, bufferSize: "
         + std::to_string(inputBuffer->memory_->GetSize()));
     if (mimeType_ == MimeType::AUDIO_AVS3DA) {
@@ -1200,6 +1200,7 @@ Status AudioServerSinkPlugin::MuteAudioBuffer(uint8_t *addr, size_t offset, size
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audioRender_ is nullptr");
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::MuteAudioBuffer");
+    FALSE_RETURN_V_MSG(addr != nullptr, Status::ERROR_UNKNOWN, "addr is nullptr");
     int32_t ret = audioRenderer_->MuteAudioBuffer(addr, offset, length, rendererOptions_.streamInfo.format);
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "MuteAudioBuffer failed, ret=" PUBLIC_LOG_D32, ret);
