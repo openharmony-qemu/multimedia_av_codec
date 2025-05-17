@@ -95,7 +95,7 @@ private:
     int64_t currentTime_ {0};
     std::atomic<int64_t> firstAudioFramePts_{-1};
     std::atomic<int64_t> firstVideoFramePts_{-1};
-    std::deque<std::shared_ptr<uint8_t>> cachedAudioData_;
+    std::deque<std::shared_ptr<uint8_t>> cachedAudioDataDeque_;
 };
 } // namespace Pipeline
 } // namespace Media
