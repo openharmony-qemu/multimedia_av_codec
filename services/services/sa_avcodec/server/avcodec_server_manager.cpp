@@ -236,6 +236,8 @@ void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
     if (codecStubMap_.size() == 0) {
         SetCritical(false);
     }
+
+    BackGroundEventHandler::GetInstance().ClearPid(pid);
 }
 
 void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
