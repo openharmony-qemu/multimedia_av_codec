@@ -292,7 +292,7 @@ Status StreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size,
         }
         MEDIA_LOG_DD("TotalSize_: " PUBLIC_LOG_U64, totalSize);
     }
-    if (position_ != offset) {
+    if (position_ != offset || GetIsDataSrc()) {
         err = source_->SeekTo(offset);
         FALSE_RETURN_V_MSG_E(err == Status::OK, err, "Seek to " PUBLIC_LOG_U64 " fail", offset);
         position_ = offset;
