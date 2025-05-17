@@ -18,6 +18,9 @@
 #include "hevcserverdec_sample.h"
 #include <iostream>
 #include "hevc_decoder_api.h"
+#include "window.h"
+#include "window_manager.h"
+#include "window_option.h"
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
@@ -28,28 +31,10 @@ constexpr int32_t WIDTH = 1920;
 constexpr int32_t HIGHT = 1080;
 constexpr int32_t FORMAT = 2;
 constexpr int32_t ANGLE = 0;
-constexpr int32_t FORMAT_RATE = 30;
+constexpr int32_t FRAME_RATE = 30;
 constexpr int32_t TIME = 12345;
 constexpr int32_t MAX_SEND_FRAMES = 10;
 } // namespace
-
-class TestConsumerListener : public IBufferConsumerListener {
-public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
-    ~TestConsumerListener() {}
-    void OnBufferAvailable() override
-    {
-        sptr<SurfaceBuffer> buffer;
-        int32_t flushFence;
-        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
-        cs->ReleaseBuffer(buffer, -1);
-    }
-
-private:
-    int64_t timestamp = 0;
-    Rect damage = {};
-    sptr<Surface> cs {nullptr};
-};
 
 void VDecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
@@ -83,10 +68,6 @@ VDecServerSample::~VDecServerSample()
         HevcDecoder *codec = reinterpret_cast<HevcDecoder*>(codec_.get());
         codec->DecStrongRef(codec);
     }
-    if (signal_ != nullptr) {
-        delete signal_;
-        signal_ = nullptr;
-    }
 }
 
 int32_t VDecServerSample::ConfigServerDecoder()
@@ -95,8 +76,9 @@ int32_t VDecServerSample::ConfigServerDecoder()
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, WIDTH);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, HIGHT);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, FORMAT);
-    fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, FORMAT_RATE);
+    fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, FRAME_RATE);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, ANGLE);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, ScalingMode::SCALING_MODE_SCALE_TO_WINDOW);
     return codec_->Configure(fmt);
 }
 
@@ -104,16 +86,6 @@ int32_t VDecServerSample::SetCallback()
 {
     shared_ptr<CallBack> cb = make_shared<CallBack>(this);
     return codec_->SetCallback(cb);
-}
-
-void VDecServerSample::CreateSurface()
-{
-    cs[0] = Surface::CreateSurfaceAsConsumer();
-    sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs[0], outDIR);
-    cs[0]->RegisterConsumerListener(listener);
-    auto p = cs[0]->GetProducer();
-    ps[0] = Surface::CreateSurfaceAsProducer(p);
-    nativeWindow[0] = CreateNativeWindowFromSurface(&ps[0]);
 }
 
 void VDecServerSample::RunVideoServerDecoder()
@@ -128,46 +100,7 @@ void VDecServerSample::RunVideoServerDecoder()
         cout << "ConfigServerDecoder failed" << endl;
         return;
     }
-    signal_ = new VDecSignal();
-    if (signal_ == nullptr) {
-        cout << "Failed to new VDecSignal" << endl;
-        return;
-    }
-    err = SetCallback();
-    if (err != AVCS_ERR_OK) {
-        cout << "SetCallback failed" << endl;
-        return;
-    }
-    err = codec_->Start();
-    if (err != AVCS_ERR_OK) {
-        cout << "Start failed" << endl;
-        return;
-    }
-    isRunning_.store(true);
-    inputLoop_ = make_unique<thread>(&VDecServerSample::InputFunc, this);
-    if (inputLoop_ == nullptr) {
-        cout << "Failed to create input loop" << endl;
-        isRunning_.store(false);
-    }
-}
-
-void VDecServerSample::RunVideoServerSurfaceDecoder()
-{
-    int32_t err;
-    CreateSurface();
-    CreateHevcDecoderByName("OH.Media.Codec.Decoder.Video.HEVC", codec_);
-    if (codec_ == nullptr) {
-        cout << "Create failed" << endl;
-        return;
-    }
-    std::vector<CapabilityData> caps;
-    err = GetHevcDecoderCapabilityList(caps);
-    err = ConfigServerDecoder();
-    if (err != AVCS_ERR_OK) {
-        cout << "ConfigServerDecoder failed" << endl;
-        return;
-    }
-    signal_ = new VDecSignal();
+    signal_ = std::make_shared<VDecSignal>();
     if (signal_ == nullptr) {
         cout << "Failed to new VDecSignal" << endl;
         return;
