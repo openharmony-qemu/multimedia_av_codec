@@ -251,7 +251,7 @@ Status AudioCaptureFilter::DoStop()
     }
     firstAudioFramePts_.store(-1);
     firstVideoFramePts_.store(-1);
-    if (!cachedAudioData_.empty()) {
+    if (!cachedAudioDataDeque_.empty()) {
         RecordCachedData();
     }
     return ret;
@@ -369,7 +369,7 @@ void AudioCaptureFilter::ReadLoop()
     }
 
     if ((firstVideoFramePts_.load() < 0 || firstAudioFramePts_.load() < 0) && withVideo_) {
-        if (cachedAudioData_.size() > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
+        if (cachedAudioDataDeque_.size() > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
             MEDIA_LOG_E("audioCapture cached frame over maxnum");
             firstVideoFramePts_.store(0);
             return;
@@ -395,9 +395,9 @@ void AudioCaptureFilter::ReadLoop()
             firstAudioFramePts_.store(audioDataTime);
             MEDIA_LOG_I("firstAudioFramePts: " PUBLIC_LOG_D64, firstAudioFramePts_.load());
         }
-        cachedAudioData_.push_back(cachedAudioData);
+        cachedAudioDataDeque_.push_back(cachedAudioData);
     } else {
-        if (!cachedAudioData_.empty() && withVideo_) {
+        if (!cachedAudioDataDeque_.empty() && withVideo_) {
             CalculateAVTime();
             RecordCachedData();
         } else {
@@ -434,8 +434,8 @@ void AudioCaptureFilter::CalculateAVTime()
             startTime_ = firstAudioFramePts_.load() + diffCount * AUDIO_CAPTURE_READ_FRAME_TIME;
             MEDIA_LOG_I("Video late, diffCount: " PUBLIC_LOG_D32, diffCount);
             while (diffCount > 0) {
-                if (!cachedAudioData_.empty()) {
-                    cachedAudioData_.pop_front();
+                if (!cachedAudioDataDeque_.empty()) {
+                    cachedAudioDataDeque_.pop_front();
                 }
                 --diffCount;
             }
@@ -455,7 +455,7 @@ void AudioCaptureFilter::FillLostFrame(int32_t lostCount)
             MEDIA_LOG_W("create cachedAudioData fail");
             continue;
         }
-        cachedAudioData_.push_front(cachedAudioData);
+        cachedAudioDataDeque_.push_front(cachedAudioData);
         --lostCount;
     }
 }
@@ -465,10 +465,10 @@ void AudioCaptureFilter::RecordCachedData()
     uint64_t bufferSize = 0;
     audioCaptureModule_->GetSize(bufferSize);
 
-    MEDIA_LOG_I("cachedAudioDataList count: " PUBLIC_LOG_D32, static_cast<int32_t>(cachedAudioData_.size()));
-    while (!cachedAudioData_.empty() && outputBufferQueue_) {
-        auto tmpData = cachedAudioData_.front();
-        cachedAudioData_.pop_front();
+    MEDIA_LOG_I("cachedAudioDataList count: " PUBLIC_LOG_D32, static_cast<int32_t>(cachedAudioDataDeque_.size()));
+    while (!cachedAudioDataDeque_.empty() && outputBufferQueue_) {
+        auto tmpData = cachedAudioDataDeque_.front();
+        cachedAudioDataDeque_.pop_front();
 
         std::shared_ptr<AVBuffer> buffer;
         AVBufferConfig avBufferConfig;
