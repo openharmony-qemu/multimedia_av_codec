@@ -481,7 +481,6 @@ void AudioSink::SetThreadGroupId(const std::string& groupId)
 
 void AudioSink::HandleEosInner(bool drain)
 {
-    FALSE_RETURN(plugin_ != nullptr);
     AutoLock lock(eosMutex_);
     eosDraining_ = true; // start draining task
     switch (eosInterruptType_) {
@@ -499,6 +498,7 @@ void AudioSink::HandleEosInner(bool drain)
             eosDraining_ = false; // abort draining task
             return;
     }
+    FALSE_RETURN(plugin_ != nullptr);
     if (drain || !plugin_->IsOffloading()) {
         MEDIA_LOG_I("Drain audiosink and report EOS");
         DrainAndReportEosEvent();
