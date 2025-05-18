@@ -1041,6 +1041,7 @@ void AudioSink::WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer)
 
 bool AudioSink::IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer)
 {
+    FALSE_RETURN_V(filledOutputBuffer != nullptr, false);
     return (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) ||
         ((playRangeEndTime_ != DEFAULT_PLAY_RANGE_VALUE) &&
         (filledOutputBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNITS));

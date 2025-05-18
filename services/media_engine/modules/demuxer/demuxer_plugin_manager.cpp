@@ -91,12 +91,14 @@ Status DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, s
 
 Status DataSourceImpl::GetSize(uint64_t& size)
 {
+    FALSE_RETURN_V(stream_ != nullptr, Status::ERROR_WRONG_STATE);
     size = stream_->mediaDataSize_;
     return (size > 0) ? Status::OK : Status::ERROR_WRONG_STATE;
 }
 
 Plugins::Seekable DataSourceImpl::GetSeekable()
 {
+    FALSE_RETURN_V(stream_ != nullptr, Plugins::Seekable::INVALID);
     return stream_->seekable_;
 }
 
