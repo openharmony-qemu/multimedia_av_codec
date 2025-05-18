@@ -36,7 +36,6 @@ using namespace Ffmpeg;
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
 std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav", "adts"};
-constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
 constexpr float LONGITUDE_MIN = -180.0f;
@@ -46,6 +45,14 @@ const std::string TIMED_METADATA_HANDLER_NAME = "timed_metadata";
 constexpr int32_t MAX_USERMETA_STRING_LENGTH = 256;
 const std::string LOG_INFO_KEY_STRING = "com.openharmony.video.sei.h_log";
 constexpr uint32_t CODE_LEN = 4;
+constexpr uint32_t SHORT_STARTCODELEN = 3;
+constexpr uint32_t LONG_STARTCODELEN = 4;
+constexpr uint32_t EDGE_PROTECT_THREE = 3;
+constexpr uint32_t EDGE_PROTECT_FOUR = 4;
+constexpr uint32_t MAIN_MATCH_STRIDE = 4;
+constexpr uint32_t NAL_START_PATTERN = 0x01000100;
+constexpr uint32_t BITWISE_NOT_NAL_START_PATTERN = ~0x01000100;
+constexpr uint32_t NAL_MATCH_MASK = 0x80008000U;
 
 bool IsMuxerSupported(const char *name)
 {
@@ -1080,16 +1087,53 @@ std::vector<uint8_t> FFmpegMuxerPlugin::TransAnnexbToMp4(const uint8_t *sample, 
 
 uint8_t *FFmpegMuxerPlugin::FindNalStartCode(const uint8_t *buf, const uint8_t *end, int32_t &startCodeLen)
 {
-    startCodeLen = sizeof(START_CODE);
-    auto *iter = std::search(buf, end, START_CODE, START_CODE + startCodeLen);
-    if (iter != end) {
-        if (iter > buf && *(iter - 1) == 0x00) {
-            ++startCodeLen;
-            return const_cast<uint8_t *>(iter - 1);
+    if (end - buf < EDGE_PROTECT_THREE) {
+        startCodeLen = SHORT_STARTCODELEN;
+        return const_cast<uint8_t*>(end);
+    }
+    const uint8_t *p = buf;
+    const uint8_t *alignedP = p + (EDGE_PROTECT_FOUR - ((uintptr_t)p & 0x3)); // 0x3: fetch the last 2 bits
+    for (end -= EDGE_PROTECT_THREE; p < alignedP && p < end; ++p) {
+        if (p[0] == 0 && p[1] == 0 && p[2] == 1) { // 2 is the second byte index
+            startCodeLen = (p > buf && *(p - 1) == 0) ? LONG_STARTCODELEN : SHORT_STARTCODELEN;
+            return const_cast<uint8_t*>(p - (startCodeLen - SHORT_STARTCODELEN));
         }
     }
-
-    return const_cast<uint8_t *>(iter);
+    for (end -= EDGE_PROTECT_THREE; p < end; p += MAIN_MATCH_STRIDE) {
+        uint32_t x = *(const uint32_t*)p;
+        uint32_t y = x < NAL_START_PATTERN ? (x + (BITWISE_NOT_NAL_START_PATTERN + 1)) : (x - NAL_START_PATTERN);
+        if (y & (~x) & NAL_MATCH_MASK == 0) {
+            continue;
+        }
+        if (p[1] == 0) {
+            if (p[0] == 0 && p[2] == 1) { // 2 is the second byte index
+                startCodeLen = (p > buf && *(p - 1) == 0) ? LONG_STARTCODELEN : SHORT_STARTCODELEN;
+                return const_cast<uint8_t*>(p - (startCodeLen - SHORT_STARTCODELEN));
+            }
+            if (p[2] == 0 && p[3] == 1) { // 2， 3 is byte index
+                startCodeLen = (p[0] == 0) ? LONG_STARTCODELEN : SHORT_STARTCODELEN;
+                return const_cast<uint8_t*>(p + 1 - (startCodeLen - SHORT_STARTCODELEN));
+            }
+        }
+        if (p[3] == 0) { // 3 is the third byte index
+            if (p[2] == 0 && p[4] == 1) { // 2， 4 is byte index
+                startCodeLen = (p[1] == 0) ? LONG_STARTCODELEN : SHORT_STARTCODELEN;
+                return const_cast<uint8_t*>(p + 2 - (startCodeLen - SHORT_STARTCODELEN));
+            }
+            if (p[4] == 0 && p[5] == 1) { // 4， 5 is byte index
+                startCodeLen = (p[2] == 0) ? LONG_STARTCODELEN : SHORT_STARTCODELEN; // 2 is the second byte index
+                return const_cast<uint8_t*>(p + 3 - (startCodeLen - SHORT_STARTCODELEN));
+            }
+        }
+    }
+    for (end += EDGE_PROTECT_THREE; p < end; ++p) {
+        if (p[0] == 0 && p[1] == 0 && p[2] == 1) { // 2 is the second byte index
+            startCodeLen = (p > buf && *(p - 1) == 0) ? LONG_STARTCODELEN : SHORT_STARTCODELEN;
+            return const_cast<uint8_t*>(p - (startCodeLen - SHORT_STARTCODELEN));
+        }
+    }
+    startCodeLen = SHORT_STARTCODELEN;
+    return const_cast<uint8_t*>(end + SHORT_STARTCODELEN); // reset and return original end
 }
 
 bool FFmpegMuxerPlugin::IsAvccSample(const uint8_t* sample, int32_t size, int32_t nalSizeLen)
