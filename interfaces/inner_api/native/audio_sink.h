@@ -65,6 +65,7 @@ public:
     void SetThreadGroupId(const std::string& groupId);
     Status SetIsTransitent(bool isTransitent);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    Status HandleFormatChange(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status SetMuted(bool isMuted);
     virtual void OnInterrupted(bool isInterruptNeeded) override;
 
@@ -139,7 +140,9 @@ private:
     void GetAvailableOutputBuffers();
     void ClearAvailableOutputBuffers();
     void DriveBufferCircle();
+    void WaitForAllBufferConsumed();
     std::shared_ptr<AVBuffer> CopyBuffer(const std::shared_ptr<AVBuffer> buffer);
+    Status MuteAudioBuffer(size_t size, AudioStandard::BufferDesc &bufferDesc, bool isEos);
 
     class UnderrunDetector {
     public:
@@ -265,6 +268,10 @@ private:
     std::mutex eosCbMutex_ {};
     bool hangeOnEosCb_ {false};
     std::condition_variable eosCbCond_ {};
+
+    std::atomic<bool> formatChange_ {false};
+    std::mutex formatChangeMutex_ {};
+    std::condition_variable formatChangeCond_ {};
     class AudioDataSynchroizer {
         public:
             void UpdateCurrentBufferInfo(int64_t bufferPts, int64_t bufferDuration);

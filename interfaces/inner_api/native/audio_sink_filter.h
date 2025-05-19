@@ -84,6 +84,8 @@ public:
 
     Status ChangeTrack(std::shared_ptr<Meta>& meta);
 
+    Status HandleFormatChange(std::shared_ptr<Meta>& meta) override;
+
     Status SetMuted(bool isMuted) override;
 
     Status SetSeekTime(int64_t seekTime);

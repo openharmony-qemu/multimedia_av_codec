@@ -549,6 +549,27 @@ bool AudioServerSinkPlugin::AssignSampleFmtIfSupported(Plugins::AudioSampleForma
     return fmtSupported_;
 }
 
+bool AudioServerSinkPlugin::IsFormatSupported(const std::shared_ptr<Meta> &meta)
+{
+    FALSE_RETURN_V_MSG_E(meta != nullptr, false, "Audio format is nullptr");
+
+    int32_t sampleRate = 0;
+    FALSE_RETURN_V(meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate), false);
+    FALSE_RETURN_V_MSG_E(AssignSampleRateIfSupported(static_cast<uint32_t>(sampleRate)), false,
+        "UnSupported sampleRate %{public}d", sampleRate);
+
+    int32_t channels = 0;
+    FALSE_RETURN_V(meta->GetData(Tag::AUDIO_CHANNEL_COUNT, channels), false);
+    FALSE_RETURN_V_MSG_E(AssignChannelNumIfSupported(static_cast<uint32_t>(channels)), false,
+        "UnSupported channel count %{public}d", channels);
+
+    int32_t sampleFormat = 0;
+    FALSE_RETURN_V(meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat), false);
+    FALSE_RETURN_V_MSG_E(AssignSampleFmtIfSupported(static_cast<Plugins::AudioSampleFormat>(sampleFormat)), false,
+        "UnSupported sampleFormat %{public}d", sampleFormat);
+    return true;
+}
+
 void AudioServerSinkPlugin::SetInterruptMode(AudioStandard::InterruptMode interruptMode)
 {
     if (audioRenderer_) {

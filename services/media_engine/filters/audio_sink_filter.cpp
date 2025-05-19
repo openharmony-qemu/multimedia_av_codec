@@ -327,6 +327,12 @@ Status AudioSinkFilter::ChangeTrack(std::shared_ptr<Meta>& meta)
     return audioSink_->ChangeTrack(meta, eventReceiver_);
 }
 
+Status AudioSinkFilter::HandleFormatChange(std::shared_ptr<Meta>& meta)
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->HandleFormatChange(meta, eventReceiver_);
+}
+
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
     const std::shared_ptr<FilterLinkCallback>& callback)
 {
