@@ -703,5 +703,12 @@ int32_t AVCodecInfo::GetFeatureProperties(AVCapabilityFeature feature, Format &f
     format = itr->second;
     return AVCS_ERR_OK;
 }
+
+int32_t AVCodecInfo::GetMaxSupportedVersion()
+{
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, AVCS_ERR_INVALID_VAL, "data is null");
+    return data_->maxVersion;
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -67,6 +67,7 @@ bool CodecListParcel::Marshalling(MessageParcel &parcel, CapabilityData &capabil
     (void)parcel.WriteInt32(capabilityData.maxBitrate.maxVal);
     (void)parcel.WriteInt32(capabilityData.sqrFactor.minVal);
     (void)parcel.WriteInt32(capabilityData.sqrFactor.maxVal);
+    (void)parcel.WriteInt32(capabilityData.maxVersion);
     AVCODEC_LOGD("success to Marshalling capabilityDataArray");
 
     return true;
@@ -151,6 +152,7 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, CapabilityData &capab
     capabilityData.maxBitrate.maxVal = parcel.ReadInt32();
     capabilityData.sqrFactor.minVal = parcel.ReadInt32();
     capabilityData.sqrFactor.maxVal = parcel.ReadInt32();
+    capabilityData.maxVersion = parcel.ReadInt32();
     AVCODEC_LOGD("success to Unmarshalling capabilityDataArray");
     return true;
 }
