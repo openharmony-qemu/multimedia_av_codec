@@ -41,6 +41,7 @@ namespace Media {
 #endif
 
 static const int BUFFER_PADDING_SIZE = 1024;
+static const int DEF_PROB_SIZE = 16 * 1024;
 
 static const std::string DEMUXER_PLUGIN_NAME_AAC = "avdemux_aac";
 static const std::string DEMUXER_PLUGIN_NAME_AMR = "avdemux_amr";
@@ -498,7 +499,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, SnifferMediaType_Timeout, TestSize.Level1
     ASSERT_NE(demuxerPluginManager_->LoadDemuxerPlugin(streamId, streamDemuxer_), Status::OK);
 }
 
-bool DemuxerPluginManagerUnitTest::CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath)
+bool DemuxerPluginManagerUnitTest::CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath, int probSize)
 {
     mediaSource_ = std::make_shared<MediaSource>(filePath);
     realSource_ = std::make_shared<Source>();
@@ -519,7 +520,7 @@ bool DemuxerPluginManagerUnitTest::CreateDemuxerPluginByName(const std::string& 
     FALSE_RETURN(pluginBase_ != nullptr);
 
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    FALSE_RETURN(demuxerPlugin->SetDataSource(dataSourceImpl_) == Status::OK);
+    FALSE_RETURN(demuxerPlugin->SetDataSourceByName(dataSourceImpl_, typeName, probSize) == Status::OK);
 
     realStreamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
 
@@ -641,7 +642,7 @@ bool DemuxerPluginManagerUnitTest::PluginReadAllSample()
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0001, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AAC, TEST_FILE_URI_AAC), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AAC, TEST_FILE_URI_AAC, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(1293, 0, 1293, 0), true);
@@ -650,7 +651,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0001, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0002, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMR), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMR, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(1501, 0, 1501, 0), true);
@@ -659,7 +660,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0002, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0003, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMRNB, TEST_FILE_URI_AMRNB), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMRNB, TEST_FILE_URI_AMRNB, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(1503, 0, 1503, 0), true);
@@ -668,7 +669,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0003, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0004, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMRWB, TEST_FILE_URI_AMRWB), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMRWB, TEST_FILE_URI_AMRWB, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(1509, 0, 1509, 0), true);
@@ -677,7 +678,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0004, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0005, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_APE, TEST_FILE_URI_APE), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_APE, TEST_FILE_URI_APE, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(7, 0, 7, 0), true);
@@ -686,7 +687,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0005, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0006, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLAC, TEST_FILE_URI_FLAC), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLAC, TEST_FILE_URI_FLAC, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(313, 0, 313, 0), true);
@@ -695,7 +696,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0006, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0007, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(76, 113, 1, 113), true);
@@ -704,7 +705,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0007, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0008, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_URI_MATROSKA), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_URI_MATROSKA, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(240, 199, 4, 199), true);
@@ -713,7 +714,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0008, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0009, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MOV), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MOV, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(602, 434, 3, 434), true);
@@ -722,7 +723,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0009, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0010, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_URI_MP3), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_URI_MP3, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(1251, 0, 1251, 0), true);
@@ -731,7 +732,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0010, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0011, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_MPEG), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_MPEG, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(1253, 2164, 19, 2164), true);
@@ -740,7 +741,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0011, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0012, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(103, 174, 5, 174), true);
@@ -749,7 +750,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0012, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0013, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AVI, TEST_FILE_URI_AVI), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AVI, TEST_FILE_URI_AVI, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(602, 433, 3, 433), true);
@@ -758,7 +759,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0013, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0014, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(5, 0, 5, 0), true);
@@ -767,7 +768,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0014, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0015, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(4, 0, 4, 0), true);
@@ -776,7 +777,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0015, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0016, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_OGG, TEST_FILE_URI_OGG), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_OGG, TEST_FILE_URI_OGG, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(1598, 0, 1598, 0), true);
@@ -785,7 +786,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0016, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0017, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_URI_WAV), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_URI_WAV, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(704, 0, 704, 0), true);
@@ -794,14 +795,14 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0017, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0018, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_RM, TEST_FILE_URI_RM), false);
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AC3, TEST_FILE_URI_AC3), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_RM, TEST_FILE_URI_RM, DEF_PROB_SIZE), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AC3, TEST_FILE_URI_AC3, DEF_PROB_SIZE), false);
 }
 
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0019, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(1875, 0, 1875, 0), true);
@@ -810,7 +811,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0019, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0020, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_FMP4), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_FMP4, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(604, 433, 3, 433), true);
@@ -819,10 +820,28 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0020, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0021, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_M4A), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_M4A, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
     ASSERT_EQ(ResultAssert(433, 0, 433, 0), true);
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0022, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, 0), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, 4), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, 512), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, DEF_PROB_SIZE), true);
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0023, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(TEST_FILE_URI_AAC, TEST_FILE_URI_AMR, DEF_PROB_SIZE), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(TEST_FILE_URI_AMR, TEST_FILE_URI_APE, DEF_PROB_SIZE), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(TEST_FILE_URI_MP3, TEST_FILE_URI_MP4, DEF_PROB_SIZE), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(TEST_FILE_URI_MP4, TEST_FILE_URI_FLV, DEF_PROB_SIZE), false);
     RemoveValue();
 }
 

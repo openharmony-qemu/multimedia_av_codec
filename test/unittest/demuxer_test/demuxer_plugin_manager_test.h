@@ -40,7 +40,7 @@ protected:
     std::shared_ptr<MockBaseStreamDemuxer> streamDemuxer_{ nullptr };
 
 private:
-    bool CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath);
+    bool CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath, int probSize);
     bool PluginSelectTracks();
     bool PluginReadSample(uint32_t idx, uint32_t& flag);
     void CountFrames(uint32_t index, uint32_t flag);

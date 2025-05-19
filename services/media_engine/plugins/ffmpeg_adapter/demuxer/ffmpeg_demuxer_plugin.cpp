@@ -50,6 +50,8 @@ namespace Ffmpeg {
 const uint32_t DEFAULT_READ_SIZE = 4096;
 const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
+const int32_t DEF_PROBE_SCORE_LIMIT = 50;
+const int32_t AMR_PROBE_SCORE_LIMIT = 26;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
 const uint32_t NAL_START_CODE_SIZE = 4;
@@ -88,6 +90,7 @@ std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 std::mutex g_mtx;
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource);
+int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dataSource, int probSize);
 
 Status RegisterPlugins(const std::shared_ptr<Register>& reg);
 
@@ -1171,6 +1174,31 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     return Status::OK;
 }
 
+static int CheckProbScore(const std::string& pluginName, const int probScore)
+{
+    if ((probScore >= DEF_PROBE_SCORE_LIMIT) ||
+        (pluginName.find("mp3") != std::string::npos && probScore >= MP3_PROBE_SCORE_LIMIT) ||
+        (pluginName.find("amr") != std::string::npos && probScore >= AMR_PROBE_SCORE_LIMIT)) {
+        return true;
+    }
+    return false;
+}
+
+Status FFmpegDemuxerPlugin::SetDataSourceByName(const std::shared_ptr<DataSource>& source,
+    const std::string& pluginName, const int probSize)
+{
+    std::unique_lock<std::shared_mutex> lock(sharedMutex_);
+    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
+    FALSE_RETURN_V_MSG_E(probSize >= 0, Status::ERROR_INVALID_PARAMETER, "probSize is invalid");
+    
+    int probScore = SniffWithSize(pluginName, source, probSize);
+    FALSE_RETURN_V_MSG_E(CheckProbScore(pluginName, probScore), Status::ERROR_WRONG_STATE, "No match inputformat");
+    lock.unlock();
+
+    return SetDataSource(source);
+}
+
 bool FFmpegDemuxerPlugin::HasCodecParameters()
 {
     int32_t param;
@@ -2026,9 +2054,8 @@ int GetID3TagLen(const uint8_t *buf)
 }
 
 int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& pluginName,
-    std::shared_ptr<DataSource> dataSource, size_t &getData)
+    std::shared_ptr<DataSource> dataSource, size_t &getData, size_t bufferSize)
 {
-    size_t bufferSize = DEFAULT_SNIFF_SIZE;
     uint64_t fileSize = 0;
     Status getFileSize = dataSource->GetSize(fileSize);
     if (getFileSize == Status::OK) {
@@ -2080,7 +2107,33 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
         "Get plugin for " PUBLIC_LOG_S " failed", pluginName.c_str());
     size_t getData = 0;
-    int confidence = GetConfidence(plugin, pluginName, dataSource, getData);
+    int confidence = GetConfidence(plugin, pluginName, dataSource, getData, DEFAULT_SNIFF_SIZE);
+    if (confidence < 0) {
+        return 0;
+    }
+    if (StartWith(plugin->name, "mp3") && confidence > 0 && confidence <= MP3_PROBE_SCORE_LIMIT) {
+        MEDIA_LOG_W("Score " PUBLIC_LOG_D32 " is too low", confidence);
+        confidence = 0;
+    }
+    if (getData < DEFAULT_SNIFF_SIZE || confidence > 0) {
+        MEDIA_LOG_I("Sniff:" PUBLIC_LOG_S "[" PUBLIC_LOG_ZU "/" PUBLIC_LOG_D32 "]", plugin->name, getData, confidence);
+    }
+    return confidence;
+}
+
+int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dataSource, int probSize)
+{
+    FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
+    FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "DataSource is nullptr");
+    std::shared_ptr<AVInputFormat> plugin;
+    {
+        std::lock_guard<std::mutex> lock(g_mtx);
+        plugin = g_pluginInputFormat[pluginName];
+    }
+    FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
+        "Get plugin for " PUBLIC_LOG_S " failed", pluginName.c_str());
+    size_t getData = 0;
+    int confidence = GetConfidence(plugin, pluginName, dataSource, getData, probSize);
     if (confidence < 0) {
         return 0;
     }

@@ -174,6 +174,8 @@ struct DemuxerPlugin : public PluginBase {
     virtual void SetCacheLimit(uint32_t limitSize) = 0;
     virtual Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size) { return Status::OK; };
     virtual bool GetProbeSize(int32_t &offset, int32_t &size) { return false; };
+    virtual Status SetDataSourceByName(const std::shared_ptr<DataSource>& source,
+        const std::string& pluginName, const int probSize) = 0;
 };
 
 /// Demuxer plugin api major number.

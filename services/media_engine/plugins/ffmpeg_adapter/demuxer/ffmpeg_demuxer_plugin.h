@@ -83,6 +83,8 @@ public:
     Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size) override;
     bool GetProbeSize(int32_t &offset, int32_t &size) override;
     void SetInterruptState(bool isInterruptNeeded) override;
+    Status SetDataSourceByName(const std::shared_ptr<DataSource>& source,
+        const std::string& pluginName, const int probSize) override;
 private:
     enum DumpMode : unsigned long {
         DUMP_NONE = 0,

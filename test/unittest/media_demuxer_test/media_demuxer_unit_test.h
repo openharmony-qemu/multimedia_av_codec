@@ -73,6 +73,11 @@ public:
     {
         return mapStatus_[name_];
     }
+    Status SetDataSourceByName(const std::shared_ptr<DataSource>& source,
+        const std::string& pluginName, const int probSize) override
+    {
+        return mapStatus_[name_];
+    }
     Status GetMediaInfo(MediaInfo& mediaInfo) override
     {
         return mapStatus_[name_];
