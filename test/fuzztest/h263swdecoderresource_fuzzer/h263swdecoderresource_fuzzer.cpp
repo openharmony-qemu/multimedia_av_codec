@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "native_avcodec_base.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_averrors.h"
@@ -27,18 +28,16 @@ using namespace OHOS;
 using namespace OHOS::Media;
 
 static VDecFuzzSample *vDecSample = nullptr;
-constexpr uint32_t DEFAULT_WIDTH = 1920;
-constexpr uint32_t DEFAULT_HEIGHT = 1080;
-constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 namespace OHOS {
 bool H263SwdecoderFuzzTest(const uint8_t *data, size_t size)
 {
+    FuzzedDataProvider fdp(data, size);
     if (!vDecSample) {
         vDecSample = new VDecFuzzSample();
-        vDecSample->defaultWidth = DEFAULT_WIDTH;
-        vDecSample->defaultHeight = DEFAULT_HEIGHT;
-        vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
+        vDecSample->defaultWidth = fdp.ConsumeIntegral<uint32_t>();
+        vDecSample->defaultHeight = fdp.ConsumeIntegral<uint32_t>();
+        vDecSample->defaultFrameRate = fdp.ConsumeFloatingPoint<double>();
         vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.H263");
         vDecSample->ConfigureVideoDecoder();
         vDecSample->SetVideoDecoderCallback();
