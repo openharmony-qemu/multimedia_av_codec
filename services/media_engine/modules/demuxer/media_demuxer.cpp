@@ -3551,5 +3551,10 @@ void MediaDemuxer::ReportMemoryUsage(uint32_t trackId, std::shared_ptr<Plugins::
     memoryUsage = sampleIter->second->GetMemoryUsage();
     eventReceiver_->OnMemoryUsageEvent({"SAMPLE_QUEUE", DfxEventType::DFX_INFO_MEMORY_USAGE, memoryUsage});
 }
+
+bool MediaDemuxer::IsSeekToTimeSupported()
+{
+    return source_ != nullptr && source_->IsSeekToTimeSupported();
+}
 } // namespace Media
 } // namespace OHOS

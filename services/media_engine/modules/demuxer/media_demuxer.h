@@ -171,6 +171,7 @@ public:
     bool IsFlvLive();
     bool HasVideo();
     bool HasAudio();
+    bool IsSeekToTimeSupported();
 
     void SetIsCreatedByFilter(bool isCreatedByFilter);
 private:
