@@ -146,6 +146,8 @@ private:
     int32_t maxInputSize_;
     int32_t maxOutputSize_;
     FILE *outfile;
+    bool isEosFlush_ = false;
+    int32_t initPadding_ = 0;
 };
 } // namespace Ffmpeg
 } // namespace Plugins
