@@ -249,6 +249,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/hdrmuxer_fuzzer:HdrMuxerFuzzTest",
       "fuzztest/hevcswdecoderconfigure_fuzzer:HevcSwdecoderConfigureFuzzTest",
       "fuzztest/hevcswdecoderserver_fuzzer:HevcSwdecoderServerFuzzTest",
+      "fuzztest/hevcswdecoderservermemrecycle_fuzzer:HevcSwdecoderServerMemrecycleFuzzTest",
       "fuzztest/hevcswdecoderservernormal_fuzzer:HevcSwdecoderServerNormalFuzzTest",
       "fuzztest/hevcswdecoderserversurface_fuzzer:HevcSwdecoderServerSurfaceFuzzTest",
       "fuzztest/hevcswdecodersetparameter_fuzzer:HevcSwdecoderSetParameterFuzzTest",
