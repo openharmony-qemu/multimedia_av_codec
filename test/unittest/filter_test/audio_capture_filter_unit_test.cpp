@@ -449,6 +449,19 @@ HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SetCallingInfo_001, Test
     EXPECT_EQ(audioCaptureFilter_->audioCaptureModule_->instanceId_, testInstanceId);
 }
 
+/**
+ * @tc.name: AudioCaptureFilter_SetWillMuteWhenInterrupted_001
+ * @tc.desc: SetWillMuteWhenInterrupted
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SetWillMuteWhenInterrupted_001, TestSize.Level1)
+{
+    ASSERT_NE(audioCaptureFilter_, nullptr);
+    audioCaptureFilter_->audioCaptureModule_ = nullptr;
+    Status result = audioCaptureFilter_->SetWillMuteWhenInterrupted(true);
+    EXPECT_EQ(result, Status::ERROR_INVALID_OPERATION);
+}
+
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
