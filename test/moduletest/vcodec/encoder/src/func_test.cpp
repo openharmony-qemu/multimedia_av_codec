@@ -830,36 +830,6 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_CAPABILITY_8500, TestSize.Level2)
 }
 
 /**
- * @tc.number    : VIDEO_ENCODE_CAPABILITY_9100
- * @tc.name      : OH_AVCapability_IsEncoderBitrateModeSupported param correct
- * @tc.desc      : api test
- */
-HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_CAPABILITY_9100, TestSize.Level2)
-{
-    OH_AVCapability *capa = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
-    ASSERT_NE(nullptr, capa);
-    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
-        venc_ = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-        ASSERT_NE(nullptr, venc_);
-        format = OH_AVFormat_Create();
-        ASSERT_NE(nullptr, format);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-        (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_SQR_FACTOR, DEFAULT_SQR_FACTOR);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_BITRATE, DEFAULT_MAX_BITRATE);
-        bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(capa, BITRATE_MODE_SQR);
-        EXPECT_EQ(isSupported, true);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, BITRATE_MODE_SQR);
-        EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
-    } else {
-        bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(capa, BITRATE_MODE_SQR);
-        EXPECT_EQ(isSupported, false);
-    }
-}
-
-/**
  * @tc.number    : VIDEO_ENCODE_CAPABILITY_8600
  * @tc.name      : OH_AVCapability_IsEncoderBitrateModeSupported param correct
  * @tc.desc      : api test
@@ -1769,63 +1739,6 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_CAPABILITY_8300, TestSize.Level2)
 }
 
 /**
- * @tc.number    : VIDEO_ENCODE_CAPABILITY_9200
- * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param error
- * @tc.desc      : api test
- */
-HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_CAPABILITY_9200, TestSize.Level2)
-{
-    OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVRange range;
-    ret = OH_AVCapability_GetEncoderSQRFactorRange(nullptr, &range);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-}
-
-/**
- * @tc.number    : VIDEO_ENCODE_CAPABILITY_9300
- * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param error
- * @tc.desc      : api test
- */
-HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_CAPABILITY_9300, TestSize.Level2)
-{
-    OH_AVErrCode ret = AV_ERR_OK;
-    ret = OH_AVCapability_GetEncoderSQRFactorRange(nullptr, nullptr);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-}
-
-/**
- * @tc.number    : VIDEO_ENCODE_CAPABILITY_9400
- * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param error
- * @tc.desc      : api test
- */
-HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_CAPABILITY_9400, TestSize.Level2)
-{
-    OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
-    ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetEncoderSQRFactorRange(capability, nullptr);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-}
-
-/**
- * @tc.number    : VIDEO_ENCODE_CAPABILITY_9500
- * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param correct
- * @tc.desc      : api test
- */
-HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_CAPABILITY_9500, TestSize.Level2)
-{
-    OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVRange range;
-    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
-    ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetEncoderSQRFactorRange(capability, &range);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(range.minVal, 0);
-    ASSERT_EQ(range.maxVal, MAX_SQR_FACTOR);
-}
-
-/**
  * @tc.number    : VIDEO_ENCODE_HEVC_CAPABILITY_0100
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : api test
@@ -2030,6 +1943,64 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6000, TestSize.Level2)
     } else {
         bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(capa, BITRATE_MODE_SQR);
         EXPECT_EQ(isSupported, false);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_HEVC_CAPABILITY_6100
+ * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6100, TestSize.Level2)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVRange range;
+    ret = OH_AVCapability_GetEncoderSQRFactorRange(nullptr, &range);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_HEVC_CAPABILITY_6200
+ * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6200, TestSize.Level2)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    ret = OH_AVCapability_GetEncoderSQRFactorRange(nullptr, nullptr);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_HEVC_CAPABILITY_6300
+ * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6300, TestSize.Level2)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetEncoderSQRFactorRange(capability, nullptr);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_HEVC_CAPABILITY_6400
+ * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6400, TestSize.Level2)
+{
+    OH_AVRange range;
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    if (OH_AVCapability_IsEncoderBitrateModeSupported(capability, BITRATE_MODE_SQR)) {
+        OH_AVErrCode ret = OH_AVCapability_GetEncoderSQRFactorRange(capability, &range);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(range.minVal, 0);
+        ASSERT_EQ(range.maxVal, MAX_SQR_FACTOR);
     }
 }
 
