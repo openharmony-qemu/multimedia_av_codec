@@ -53,6 +53,7 @@ private:
     void UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
         const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void PerfRecord(int64_t waitTime);
+    void InitWaitPeriod();
 
     class VideoLagDetector : public LagDetector {
     public:
@@ -78,6 +79,8 @@ private:
     int64_t lastBufferRelativePts_ {HST_TIME_NONE};
     int64_t lastBufferAnchoredClockTime_ {HST_TIME_NONE};
     int64_t deltaTimeAccu_ {0};
+
+    int64_t initialVideoWaitPeriod_ {0};
 
     std::shared_ptr<OHOS::Media::Task> frameRateTask_ {nullptr};
     std::atomic<uint64_t> renderFrameCnt_ {0};
