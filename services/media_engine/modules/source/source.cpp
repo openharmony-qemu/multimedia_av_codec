@@ -143,6 +143,13 @@ void Source::SetDemuxerState(int32_t streamId)
     plugin_->SetDemuxerState(streamId);
 }
 
+std::string Source::GetContentType()
+{
+    FALSE_RETURN_V(plugin_ != nullptr, "");
+    MEDIA_LOG_I("In");
+    return plugin_->GetContentType();
+}
+
 Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::InitPlugin");
