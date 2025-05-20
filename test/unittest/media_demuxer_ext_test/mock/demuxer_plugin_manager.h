@@ -99,6 +99,7 @@ public:
     MOCK_METHOD1(SetCacheLimit, Status(uint32_t limitSize));
     MOCK_METHOD1(SetInterruptState, void(bool isInterruptNeeded));
     MOCK_METHOD1(CheckTrackIsActive, bool(int32_t trackId));
+    MOCK_METHOD1(GetPluginName, bool(const std::string& pluginName));
     MOCK_METHOD0(AddExternalSubtitle, int32_t());
     MOCK_METHOD1(localSubtitleSeekTo, Status(int64_t seekTime));
     MOCK_METHOD1(NotifyInitialBufferingEnd, void(bool isInitialBufferingSucc));
