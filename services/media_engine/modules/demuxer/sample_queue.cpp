@@ -344,8 +344,9 @@ Status SampleQueue::Clear()
         rollbackBufferQueue_.pop_front();
         ReleaseBuffer(sampleBuffer);
     }
-    sampleBufferQueueProducer_->Clear();
-
+    if (sampleBufferQueueProducer_ != nullptr) {
+        sampleBufferQueueProducer_->Clear();
+    }
     std::lock_guard<std::mutex> ptsLock(ptsMutex_);
     keyFramePtsSet_.clear();
     return Status::OK;
@@ -564,6 +565,7 @@ uint64_t SampleQueue::GetCacheDuration() const
 
 uint32_t SampleQueue::GetMemoryUsage()
 {
+    FALSE_RETURN_V_MSG_E(sampleBufferQueue_ != nullptr, 0, "bufferQueue nullptr");
     return sampleBufferQueue_->GetMemoryUsage();
 }
 

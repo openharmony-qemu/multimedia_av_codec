@@ -135,6 +135,7 @@ const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_ENABLE_VRR = "video_decoder_output_en
 const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER = "video_encoder_repeat_previous_frame_after";
 const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT = "video_encoder_repeat_previous_max_count";
 const char *OH_MD_KEY_CREATION_TIME = "creation_time";
+const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS = "video_encoder_roi_params";
 #ifdef __cplusplus
 }
 #endif

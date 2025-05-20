@@ -49,6 +49,8 @@ static const int64_t MAX_DEBUG_LOG = 10;
 static const int32_t MAX_ADVANCE_US = 80000; // max advance us at render time
 static const int64_t OVERTIME_WARNING_MS = 50;
 static const double DEFAULT_FRAME_RATE = 30.0; // 30.0 is the hisi default frame rate.
+static const std::string ENHANCE_FLAG = "com.openharmony.deferredVideoEnhanceFlag";
+static const std::string VIDEO_ID = "com.openharmony.videoId";
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -88,6 +90,7 @@ private:
 const std::unordered_map<VideoScaleType, OHOS::ScalingMode> SCALEMODE_MAP = {
     { VideoScaleType::VIDEO_SCALE_TYPE_FIT, OHOS::SCALING_MODE_SCALE_TO_WINDOW },
     { VideoScaleType::VIDEO_SCALE_TYPE_FIT_CROP, OHOS::SCALING_MODE_SCALE_CROP},
+    { VideoScaleType::VIDEO_SCALE_TYPE_FIT_ASPECT, OHOS::SCALING_MODE_SCALE_FIT},
 };
 
 class FilterVideoPostProcessorCallback : public PostProcessorCallback {
@@ -500,6 +503,7 @@ Status DecoderSurfaceFilter::DoFlush()
 {
     MEDIA_LOG_I("Flush");
     lastRenderTimeNs_ = HST_TIME_NONE;
+    eosPts_ = INT64_MAX;
     videoDecoder_->Flush();
     if (postProcessor_) {
         postProcessor_->Flush();
@@ -617,9 +621,15 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     if (parameter->Find(Tag::VIDEO_SCALE_TYPE) != parameter->end()) {
         int32_t scaleType;
         parameter->Get<Tag::VIDEO_SCALE_TYPE>(scaleType);
-        int32_t codecScalingMode = static_cast<int32_t>(ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType)));
-        format.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
-        configFormat_.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
+        OHOS::ScalingMode scalingMode = ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType));
+        if(videoSurface_) {
+            GSError err = videoSurface_->SetScalingMode(scalingMode);
+            if (err != GSERROR_OK) {
+                MEDIA_LOG_W("set ScalingMode %{public}d to surface failed", static_cast<int>(scalingMode));
+                return;
+            }
+            MEDIA_LOG_D("set ScalingMode %{public}d to surface success", static_cast<int>(scalingMode));
+        }
     }
     if (parameter->Find(Tag::VIDEO_FRAME_RATE) != parameter->end()) {
         double rate = 0.0;
@@ -724,6 +734,22 @@ bool DecoderSurfaceFilter::IsPostProcessorSupported()
     return VideoPostProcessorFactory::Instance().IsPostProcessorSupported(postProcessorType_, meta_);
 }
 
+void DecoderSurfaceFilter::InitPostProcessorType()
+{
+    FALSE_RETURN_NOLOG(postProcessorType_ == VideoPostProcessorType::NONE && meta_ != nullptr);
+    std::string enhanceflag;
+    meta_->GetData(ENHANCE_FLAG, enhanceflag);
+    MEDIA_LOG_D("enhanceflag: %{public}s", enhanceflag.c_str());
+    FALSE_RETURN_NOLOG(
+        enableCameraPostprocessing_.load() && enhanceflag == "1" && fdsanFd_ != nullptr && fdsanFd_->Get() >= 0);
+    postProcessorType_ = VideoPostProcessorType::CAMERA_INSERT_FRAME;
+    std::string videoId;
+    meta_->GetData(VIDEO_ID, videoId);
+    MEDIA_LOG_D("videoId: %{public}s", videoId.c_str());
+    FALSE_RETURN_NOLOG(!videoId.empty());
+    configFormat_.PutStringValue(VIDEO_ID, videoId);
+}
+
 Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
@@ -733,6 +759,9 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
 
     meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, isDrmProtected_);
+    if (isCameraPostProcessorSupported_) {
+        InitPostProcessorType();
+    }
     isPostProcessorSupported_ = IsPostProcessorSupported();
     if (!isPostProcessorSupported_ || CreatePostProcessor() == nullptr) {
         isPostProcessorSupported_ = false;
@@ -953,8 +982,12 @@ void DecoderSurfaceFilter::DecoderDrainOutputBuffer(uint32_t index, std::shared_
     MEDIA_LOG_D("DecoderDrainOutputBuffer pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
     if (outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)) {
         MEDIA_LOG_I("Decoder output EOS");
-        postProcessor_->NotifyEos();
+        eosPts_ = prevDecoderPts_;
+        if (postProcessor_ != nullptr) {
+            postProcessor_->NotifyEos(eosPts_);
+        }
     }
+    prevDecoderPts_ = outputBuffer->pts_;
     FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
     videoDecoder_->ReleaseOutputBuffer(index, true, outputBuffer->pts_);
 }
@@ -1090,11 +1123,15 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     return Status::OK;
 }
 
-void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
+void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode)
 {
     MEDIA_LOG_I("SetSeekTime");
-    isSeek_ = true;
-    seekTimeUs_ = seekTimeUs;
+    if (mode == PlayerSeekMode::SEEK_CLOSEST) {
+        isSeek_ = true;
+        seekTimeUs_ = seekTimeUs;
+    }
+    FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
+    postProcessor_->SetSeekTime(seekTimeUs, mode);
 }
 
 void DecoderSurfaceFilter::ResetSeekInfo()
@@ -1102,6 +1139,8 @@ void DecoderSurfaceFilter::ResetSeekInfo()
     MEDIA_LOG_I("ResetSeekInfo");
     isSeek_ = false;
     seekTimeUs_ = 0;
+    FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
+    postProcessor_->ResetSeekInfo();
 }
 
 void DecoderSurfaceFilter::ParseDecodeRateLimit()
@@ -1197,6 +1236,8 @@ void DecoderSurfaceFilter::RegisterVideoFrameReadyCallback(std::shared_ptr<Video
     isInSeekContinous_ = true;
     FALSE_RETURN(callback != nullptr);
     videoFrameReadyCallback_ = callback;
+    FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
+    postProcessor_->StartSeekContinous();
 }
 
 void DecoderSurfaceFilter::DeregisterVideoFrameReadyCallback()
@@ -1204,6 +1245,8 @@ void DecoderSurfaceFilter::DeregisterVideoFrameReadyCallback()
     std::unique_lock<std::mutex> draggingLock(draggingMutex_);
     isInSeekContinous_ = false;
     videoFrameReadyCallback_ = nullptr;
+    FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
+    postProcessor_->StopSeekContinous();
 }
 
 Status DecoderSurfaceFilter::StartSeekContinous()
@@ -1314,6 +1357,11 @@ Status DecoderSurfaceFilter::InitPostProcessor()
     postProcessor_->SetEventReceiver(eventReceiver_);
     postProcessor_->SetVideoWindowSize(postProcessorTargetWidth_, postProcessorTargetHeight_);
     postProcessor_->SetPostProcessorOn(isPostProcessorOn_);
+    postProcessor_->SetParameter(configFormat_);
+    if (fdsanFd_) {
+        postProcessor_->SetFd(fdsanFd_->Get());
+        fdsanFd_->Reset();
+    }
     auto ret = postProcessor_->Init();
     if (ret != Status::OK) {
         MEDIA_LOG_E("Init postProcessor fail ret = %{public}d", ret);
@@ -1379,7 +1427,38 @@ Status DecoderSurfaceFilter::SetSpeed(float speed)
     Format format;
     format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, frameRateWithSpeed);
     videoDecoder_->SetParameter(format);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
+    return postProcessor_->SetSpeed(speed);
+}
+
+Status DecoderSurfaceFilter::SetPostProcessorFd(int32_t postProcessorFd)
+{
+    FALSE_RETURN_V_MSG_E(postProcessorFd >= 0, Status::ERROR_INVALID_PARAMETER, "Invalid input fd.");
+    int32_t dupFd = dup(postProcessorFd);
+    FALSE_RETURN_V_MSG_E(dupFd >= 0, Status::ERROR_INVALID_PARAMETER, "Dup fd failed.");
+    std::lock_guard<std::mutex> lock(fdMutex_);
+    if (!fdsanFd_) {
+        fdsanFd_ = std::make_unique<FdsanFd>(dupFd);
+    } else {
+        fdsanFd_->Reset(dupFd);
+    }
+    FALSE_RETURN_V(fdsanFd_ && (fdsanFd_->Get() >= 0), Status::ERROR_INVALID_PARAMETER);
     return Status::OK;
+}
+ 
+Status DecoderSurfaceFilter::SetCameraPostprocessing(bool enable)
+{
+    MEDIA_LOG_I("SetCameraPostprocessing enter. %{public}d", enable);
+    enableCameraPostprocessing_.store(enable);
+    return Status::OK;
+}
+ 
+void DecoderSurfaceFilter::NotifyPause()
+{
+    MEDIA_LOG_D("NotifyPause enter.");
+    FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
+    auto ret = postProcessor_->Pause();
+    FALSE_RETURN_MSG(ret == Status::OK, "postProcessor pause error");
 }
 } // namespace Pipeline
 } // namespace MEDIA

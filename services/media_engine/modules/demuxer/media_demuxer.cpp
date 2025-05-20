@@ -997,12 +997,11 @@ void MediaDemuxer::OnInterrupted(bool isInterruptNeeded)
 
 void MediaDemuxer::SetBundleName(const std::string& bundleName)
 {
-    if (source_ != nullptr) {
-        MEDIA_LOG_I("BundleName: " PUBLIC_LOG_S, bundleName.c_str());
-        bundleName_ = bundleName;
-        streamDemuxer_->SetBundleName(bundleName);
-        source_->SetBundleName(bundleName);
-    }
+    FALSE_RETURN(source_ != nullptr && streamDemuxer_ != nullptr);
+    MEDIA_LOG_I("BundleName: " PUBLIC_LOG_S, bundleName.c_str());
+    bundleName_ = bundleName;
+    streamDemuxer_->SetBundleName(bundleName);
+    source_->SetBundleName(bundleName);
 }
 
 Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer)
@@ -1494,6 +1493,7 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
             "sampleQueue is nullptr");
         return sqIt->second->ReadySwitchBitrate(bitRate);
     }
+    FALSE_RETURN_V(demuxerPluginManager_ != nullptr && streamDemuxer_ != nullptr, Status::ERROR_WRONG_STATE);
     if (demuxerPluginManager_->IsDash()) {
         if (streamDemuxer_->CanDoChangeStream() == false) {
             MEDIA_LOG_W("Wrong state: selecting");
@@ -2535,7 +2535,6 @@ Status MediaDemuxer::SetPerfRecEnabled(bool isPerfRecEnabled)
 
 int64_t MediaDemuxer::GetReadLoopRetryUs(uint32_t trackId)
 {
-
     FALSE_RETURN_V_NOLOG(GetEnableSampleQueueFlag(), 0);
     FALSE_RETURN_V_NOLOG(isFlvLiveStream_, NEXT_DELAY_TIME_US);
     FALSE_RETURN_V_MSG_E(sampleQueueMap_.count(trackId) > 0 && sampleQueueMap_[trackId] != nullptr, NEXT_DELAY_TIME_US,
@@ -2658,7 +2657,7 @@ void MediaDemuxer::HandleEvent(const Plugins::PluginEvent &event)
     switch (event.type) {
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
-            MEDIA_LOG_E("HandleEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
+            MEDIA_LOG_E("HandleEvent CLIENT/SERVER_ERROR");
             FALSE_RETURN(demuxerPluginManager_ != nullptr);
             demuxerPluginManager_->NotifyInitialBufferingEnd(false);
             break;
@@ -2687,11 +2686,14 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
     switch (event.type) {
         case PluginEventType::SOURCE_DRM_INFO_UPDATE: {
             MEDIA_LOG_D("OnEvent source drmInfo update");
-            HandleSourceDrmInfoEvent(AnyCast<std::multimap<std::string, std::vector<uint8_t>>>(event.param));
+            if (Any::IsSameTypeWith<std::multimap<std::string, std::vector<uint8_t>>>(event.param)) {
+                HandleSourceDrmInfoEvent(AnyCast<std::multimap<std::string, std::vector<uint8_t>>>(event.param));
+            }
             break;
         }
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
+            FALSE_RETURN(Any::IsSameTypeWith<int32_t>(event.param));
             MEDIA_LOG_E("OnEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
             eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
             break;
@@ -2770,6 +2772,7 @@ void MediaDemuxer::OnDashSeekReadyEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("Onevent dash seek ready");
     std::unique_lock<std::mutex> lock(rebootPluginMutex_);
+    FALSE_RETURN(Any::IsSameTypeWith<Format>(event.param));
     Format param = AnyCast<Format>(event.param);
     int32_t currentStreamType = -1;
     param.GetIntValue("currentStreamType", currentStreamType);
@@ -2812,6 +2815,7 @@ void MediaDemuxer::OnHlsSeekReadyEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("Onevent hls seek ready");
     std::unique_lock<std::mutex> lock(rebootPluginMutex_);
+    FALSE_RETURN(Any::IsSameTypeWith<Format>(event.param));
     Format param = AnyCast<Format>(event.param);
     int32_t currentStreamType = -1;
     param.GetIntValue("currentStreamType", currentStreamType);
@@ -3285,7 +3289,7 @@ Status MediaDemuxer::SelectBitrateForNonSQ(int64_t startPts, uint32_t bitRate)
     MEDIA_LOG_I("SelectBitrateForNonSQ startPts=" PUBLIC_LOG_D64 " bitRate=" PUBLIC_LOG_U32, startPts, bitRate);
     FALSE_RETURN_V_MSG_E(handleFlvSelectBitrateTask_ != nullptr, Status::ERROR_NULL_POINTER,
         "handleFlvSelectBitrateTask_ is nullptr");
-    FALSE_RETURN_V_MSG_I(!isFlvLiveSelectingBitRate_.load(), Status::ERROR_PERMISSION_DENIED,
+    FALSE_RETURN_V_MSG_I(!isFlvLiveSelectingBitRate_.load(), Status::OK,
         "isFlvLiveSelectingBitRate, ignore this request");
     isFlvLiveSelectingBitRate_.store(true);
     PauseAllTask();
@@ -3546,6 +3550,11 @@ void MediaDemuxer::ReportMemoryUsage(uint32_t trackId, std::shared_ptr<Plugins::
     FALSE_RETURN_NOLOG(sampleIter != sampleQueueMap_.end());
     memoryUsage = sampleIter->second->GetMemoryUsage();
     eventReceiver_->OnMemoryUsageEvent({"SAMPLE_QUEUE", DfxEventType::DFX_INFO_MEMORY_USAGE, memoryUsage});
+}
+
+bool MediaDemuxer::IsSeekToTimeSupported()
+{
+    return source_ != nullptr && source_->IsSeekToTimeSupported();
 }
 } // namespace Media
 } // namespace OHOS

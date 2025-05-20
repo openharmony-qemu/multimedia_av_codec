@@ -338,30 +338,35 @@ HWTEST_F(M3u8UnitTest, SET_DRM_INFOS, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, TestPlaylistStartWithEXTM3U, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("#EXTM3U", "uri");
+    playlist.StartParsing();
     EXPECT_EQ(playlist.playList_, "#EXTM3U");
 }
 
 HWTEST_F(M3u8UnitTest, TestPlaylistNotStartWithEXTM3U, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("playlist", "uri");
+    playlist.StartParsing();
     EXPECT_EQ(playlist.playList_, "playlist");
 }
 
 HWTEST_F(M3u8UnitTest, TestPlaylistContainsEXTINF, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("\n#EXTM3U:", "uri");
+    playlist.StartParsing();
     EXPECT_EQ(playlist.playList_, "\n#EXTM3U:");
 }
 
 HWTEST_F(M3u8UnitTest, TestPlaylistNotContainsEXTINF, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("playlist", "uri");
+    playlist.StartParsing();
     EXPECT_EQ(playlist.playList_, "playlist");
 }
 
 HWTEST_F(M3u8UnitTest, UpdateMediaPlaylistTest, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("playlist", "uri");
+    playlist.StartParsing();
     playlist.UpdateMediaPlaylist();
 
     // test variants contains new stream
@@ -383,6 +388,7 @@ HWTEST_F(M3u8UnitTest, UpdateMediaPlaylistTest, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, UpdateMasterPlaylist_default, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("test", "http://test.com/test");
+    playlist.StartParsing();
     playlist.UpdateMediaPlaylist();
     EXPECT_EQ(playlist.defaultVariant_, playlist.variants_.front());
 }
@@ -485,6 +491,7 @@ HWTEST_F(M3u8UnitTest, GetLiveUpdateGap001, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, UPDATE_MEDIA_PLAYLIST_001, TestSize.Level1)
 {
     std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    master->StartParsing();
     master->isDecryptAble_ = true;
     master->keyLen_ = 1;
     master->UpdateMediaPlaylist();
@@ -494,6 +501,7 @@ HWTEST_F(M3u8UnitTest, UPDATE_MEDIA_PLAYLIST_001, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, CHOOSE_STREAM_BY_RESOLUTION_001, TestSize.Level1)
 {
     std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    master->StartParsing();
     auto stream = std::make_shared<M3U8VariantStream>("test", "https://example.com/key",
         std::make_shared<M3U8>("https://example.com/key", "test"));
     stream->bandWidth_ = 1000;
@@ -579,6 +587,7 @@ HWTEST_F(M3u8UnitTest, PARSE_MAP_001, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, IS_NEAR_TO_INIT_RESOLUTION_001, TestSize.Level1)
 {
     std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    master->StartParsing();
     auto m3u8 = std::make_shared<M3U8>(testUri, "");
     auto choosedStream = std::make_shared<M3U8VariantStream>(testUri, testUri, m3u8);
     auto currentStream = std::make_shared<M3U8VariantStream>(testUri, testUri, m3u8);

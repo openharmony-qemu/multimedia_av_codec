@@ -35,7 +35,7 @@ std::map<VideoStreamType, DestroyFunc> StreamParserManager::destroyFuncMap_ {};
 
 StreamParserManager::StreamParserManager()
 {
-    videoStreamType_= VideoStreamType::HEVC;
+    videoStreamType_ = VideoStreamType::HEVC;
 }
 
 StreamParserManager::~StreamParserManager()

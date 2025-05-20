@@ -24,11 +24,6 @@ using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "swdecoderconfigure_fuzzer"
 const size_t EXPECT_SIZE = 6;
-const size_t WIDTH_SIZE = 1;
-const size_t HEIGHT_SIZE = 2;
-const size_t FRAME_RATE_SIZE = 3;
-const size_t ROTATION_SIZE = 4;
-const size_t PIXELFORMAT_SIZE = 5;
 namespace OHOS {
 bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
@@ -39,11 +34,11 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
     vDecSample->inpDir = "/data/test/media/1280_720_30_10Mb.h264";
-    vDecSample->defaultWidth = data[size - WIDTH_SIZE];
-    vDecSample->defaultHeight = data[size - HEIGHT_SIZE];
-    vDecSample->defaultFrameRate = data[size - FRAME_RATE_SIZE];
-    vDecSample->defaultRotation = data[size - ROTATION_SIZE];
-    vDecSample->defaultPixelFormat = data[size - PIXELFORMAT_SIZE];
+    vDecSample->defaultWidth = fdp.ConsumeIntegral<uint32_t>();
+    vDecSample->defaultHeight = fdp.ConsumeIntegral<uint32_t>();
+    vDecSample->defaultFrameRate = fdp.ConsumeIntegral<uint32_t>();
+    vDecSample->defaultRotation = fdp.ConsumeIntegral<uint32_t>();
+    vDecSample->defaultPixelFormat = fdp.ConsumeIntegral<uint32_t>();
     size_t maxSize = std::numeric_limits<size_t>::max();
     vDecSample->randomName = fdp.ConsumeRandomLengthString(maxSize);
     vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxSize);

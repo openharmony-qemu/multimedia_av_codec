@@ -477,6 +477,7 @@ int32_t AvcEncoder::ConfigureContext(const Format &format)
     GetQpRangeFromUser(format);
     GetColorAspects(format);
     CheckIfEnableCb(format);
+    GetPixelFmtFromUser(format);
     int32_t ret = SetupPort(format);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "config format error");
     return AVCS_ERR_OK;
@@ -518,7 +519,7 @@ void AvcEncoder::GetBitRateFromUser(const Format &format)
     return;
 }
 
-bool AvcEncoder::GetPixelFmtFromUser(const Format &format)
+void AvcEncoder::GetPixelFmtFromUser(const Format &format)
 {
     VideoPixelFormat innerFmt;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, *(int *)&innerFmt) &&
@@ -528,7 +529,7 @@ bool AvcEncoder::GetPixelFmtFromUser(const Format &format)
     } else {
         AVCODEC_LOGI("user don't set pixel fmt, use default nv21");
     }
-    return true;
+    return;
 }
 
 void AvcEncoder::GetFrameRateFromUser(const Format &format)
@@ -694,9 +695,6 @@ int32_t AvcEncoder::SetupPort(const Format &format)
     encWidth_ = width;
     encHeight_ = height;
     AVCODEC_LOGI("user set width %{public}d, height %{public}d", width, height);
-    if (!GetPixelFmtFromUser(format)) {
-        return AVCS_ERR_INVALID_VAL;
-    }
     return AVCS_ERR_OK;
 }
 

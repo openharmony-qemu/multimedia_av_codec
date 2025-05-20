@@ -14,6 +14,7 @@
  */
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "hevcserverdec_sample.h"
 using namespace std;
 using namespace OHOS;
@@ -21,24 +22,20 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "hevcswdecoderconfigure_fuzzer"
 const size_t EXPECT_SIZE = 6;
-const size_t WIDTH_SIZE = 1;
-const size_t HEIGHT_SIZE = 2;
-const size_t FRAME_RATE_SIZE = 3;
-const size_t ROTATION_SIZE = 4;
-const size_t PIXELFORMAT_SIZE = 5;
 namespace OHOS {
 bool HevcSwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < EXPECT_SIZE) {
         return false;
     }
+    FuzzedDataProvider fdp(data, size);
     bool result = false;
     VDecServerSample *vDecSample = new VDecServerSample();
-    vDecSample->kWidth = data[size - WIDTH_SIZE];
-    vDecSample->kHeight = data[size - HEIGHT_SIZE];
-    vDecSample->kFormat = data[size - PIXELFORMAT_SIZE];
-    vDecSample->kRotation = data[size - ROTATION_SIZE];
-    vDecSample->kFormatRate = data[size - FRAME_RATE_SIZE];
+    vDecSample->kWidth = fdp.ConsumeIntegral<int32_t>();
+    vDecSample->kHeight = fdp.ConsumeIntegral<int32_t>();
+    vDecSample->kFormat = fdp.ConsumeIntegral<int32_t>();
+    vDecSample->kRotation = fdp.ConsumeIntegral<int32_t>();
+    vDecSample->kFormatRate = fdp.ConsumeIntegral<int32_t>();
     vDecSample->RunVideoServerDecoder();
     vDecSample->WaitForEos();
 
