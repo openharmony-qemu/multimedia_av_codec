@@ -285,6 +285,7 @@ sptr<AVBufferQueueProducer> MediaCodec::GetOutputBufferQueueProducer()
 
 void MediaCodec::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
 {
+    FALSE_RETURN_MSG(inputBufferQueueConsumer_ != nullptr, "inputBufferQueueConsumer is nullptr!");
     MEDIA_LOG_D("ProcessInputBufferInnerr isTriggeredByOutPort:" PUBLIC_LOG_D32 ", isFlushed:" PUBLIC_LOG_D32
         ", isOutputBufferAvailable:" PUBLIC_LOG_D32 ", inputBufferQueueSize:" PUBLIC_LOG_U32
         ", inputBufferEosStatus:" PUBLIC_LOG_U32, isTriggeredByOutPort, isFlushed, isOutputBufferAvailable_.load(),

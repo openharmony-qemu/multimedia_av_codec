@@ -66,6 +66,7 @@ sptr<ICodecComponentManager> HdiCodec::GetComponentManager()
 
 std::vector<CodecCompCapability> HdiCodec::GetCapabilityList()
 {
+    CHECK_AND_RETURN_RET_LOG(compMgr_ != nullptr, {}, "compMgr is nullptr!");
     int32_t compCount = 0;
     int32_t ret = compMgr_->GetComponentNum(compCount);
     CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, {}, "GetComponentNum failed, ret=%{public}d", ret);
@@ -112,6 +113,7 @@ void HdiCodec::InitParameter(AudioCodecOmxParam &param)
 
 Status HdiCodec::GetParameter(uint32_t index, AudioCodecOmxParam &param)
 {
+    CHECK_AND_RETURN_RET_LOG(compNode_ != nullptr, Status::ERROR_NULL_POINTER, "compNode is nullptr!");
     int8_t *p = reinterpret_cast<int8_t *>(&param);
     std::vector<int8_t> inParamVec(p, p + sizeof(param));
     std::vector<int8_t> outParamVec;
@@ -127,6 +129,7 @@ Status HdiCodec::GetParameter(uint32_t index, AudioCodecOmxParam &param)
 
 Status HdiCodec::SetParameter(uint32_t index, const std::vector<int8_t> &paramVec)
 {
+    CHECK_AND_RETURN_RET_LOG(compNode_ != nullptr, Status::ERROR_NULL_POINTER, "compNode is nullptr!");
     int32_t ret = compNode_->SetParameter(index, paramVec);
     CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_INVALID_PARAMETER, "SetParameter failed!");
     return Status::OK;
@@ -146,6 +149,7 @@ Status HdiCodec::InitBuffers(uint32_t bufferSize)
 
 Status HdiCodec::InitBuffersByPort(PortIndex portIndex, uint32_t bufferSize)
 {
+    CHECK_AND_RETURN_RET_LOG(compNode_ != nullptr, Status::ERROR_NULL_POINTER, "compNode is nullptr!");
     auto avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(avAllocator, bufferSize);
     if (avBuffer == nullptr) {
@@ -191,6 +195,7 @@ Status HdiCodec::InitBuffersByPort(PortIndex portIndex, uint32_t bufferSize)
 Status HdiCodec::SendCommand(CodecCommandType cmd, uint32_t param)
 {
     std::unique_lock lock(inMutex_);
+    CHECK_AND_RETURN_RET_LOG(compNode_ != nullptr, Status::ERROR_NULL_POINTER, "compNode is nullptr!");
     event_ = CODEC_EVENT_ERROR;
     int32_t ret = compNode_->SendCommand(cmd, param, {});
     CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_INVALID_DATA, "SendCommand failed");
@@ -206,6 +211,7 @@ Status HdiCodec::SendCommand(CodecCommandType cmd, uint32_t param)
 Status HdiCodec::EmptyThisBuffer(const std::shared_ptr<AVBuffer> &buffer)
 {
     std::unique_lock lock(inMutex_);
+    CHECK_AND_RETURN_RET_LOG(compNode_ != nullptr, Status::ERROR_NULL_POINTER, "compNode is nullptr!");
     omxInBufferInfo_->omxBuffer->filledLen = static_cast<uint32_t>(buffer->memory_->GetSize());
     omxInBufferInfo_->omxBuffer->offset = static_cast<uint32_t>(buffer->memory_->GetOffset());
     omxInBufferInfo_->omxBuffer->pts = buffer->pts_;
@@ -226,6 +232,7 @@ Status HdiCodec::EmptyThisBuffer(const std::shared_ptr<AVBuffer> &buffer)
 Status HdiCodec::FillThisBuffer(std::shared_ptr<AVBuffer> &buffer)
 {
     std::unique_lock lock(outMutex_);
+    CHECK_AND_RETURN_RET_LOG(compNode_ != nullptr, Status::ERROR_NULL_POINTER, "compNode is nullptr!");
     outputOmxBuffer_ = nullptr;
     int32_t ret = compNode_->FillThisBuffer(*omxOutBufferInfo_->omxBuffer.get());
     CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_INVALID_DATA, "FillThisBuffer failed!");
