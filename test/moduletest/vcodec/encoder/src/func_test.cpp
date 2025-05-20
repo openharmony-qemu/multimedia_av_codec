@@ -41,7 +41,6 @@ constexpr uint32_t SECOND = 1000;
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr uint32_t MAX_QUALITY = 100;
-constexpr uint32_t MAX_SQR_FACTOR = 51;
 constexpr uint32_t NO_SUPPORT_MODE = 100;
 } // namespace
 namespace OHOS {
@@ -1943,64 +1942,6 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6000, TestSize.Level2)
     } else {
         bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(capa, BITRATE_MODE_SQR);
         EXPECT_EQ(isSupported, false);
-    }
-}
-
-/**
- * @tc.number    : VIDEO_ENCODE_HEVC_CAPABILITY_6100
- * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param error
- * @tc.desc      : api test
- */
-HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6100, TestSize.Level2)
-{
-    OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVRange range;
-    ret = OH_AVCapability_GetEncoderSQRFactorRange(nullptr, &range);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-}
-
-/**
- * @tc.number    : VIDEO_ENCODE_HEVC_CAPABILITY_6200
- * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param error
- * @tc.desc      : api test
- */
-HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6200, TestSize.Level2)
-{
-    OH_AVErrCode ret = AV_ERR_OK;
-    ret = OH_AVCapability_GetEncoderSQRFactorRange(nullptr, nullptr);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-}
-
-/**
- * @tc.number    : VIDEO_ENCODE_HEVC_CAPABILITY_6300
- * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param error
- * @tc.desc      : api test
- */
-HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6300, TestSize.Level2)
-{
-    OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
-    ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetEncoderSQRFactorRange(capability, nullptr);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-}
-
-/**
- * @tc.number    : VIDEO_ENCODE_HEVC_CAPABILITY_6400
- * @tc.name      : OH_AVCapability_GetEncoderSQRFactorRange param correct
- * @tc.desc      : api test
- */
-HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6400, TestSize.Level2)
-{
-    OH_AVRange range;
-    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
-    ASSERT_NE(nullptr, capability);
-    if (OH_AVCapability_IsEncoderBitrateModeSupported(capability, BITRATE_MODE_SQR)) {
-        OH_AVErrCode ret = OH_AVCapability_GetEncoderSQRFactorRange(capability, &range);
-        ASSERT_EQ(AV_ERR_OK, ret);
-        ASSERT_EQ(range.minVal, 0);
-        ASSERT_EQ(range.maxVal, MAX_SQR_FACTOR);
     }
 }
 

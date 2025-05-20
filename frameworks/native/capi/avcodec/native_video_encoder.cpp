@@ -487,6 +487,20 @@ OH_AVErrCode OH_VideoEncoder_Configure(struct OH_AVCodec *codec, struct OH_AVFor
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
 
+    int32_t bitrateMode = -1;
+    if (OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, &bitrateMode) &&
+        bitrateMode == SQR) {
+        int64_t bitrate;
+        int64_t maxBitrate;
+        bool bitrateExist = OH_AVFormat_GetLongValue(format, OH_MD_KEY_BITRATE, &bitrate);
+        bool maxBitrateExist = OH_AVFormat_GetLongValue(format, OH_MD_KEY_MAX_BITRATE, &maxBitrate);
+        if (bitrateExist && !maxBitrateExist) {
+            AVCODEC_LOGW("In SQR bitrate mode, param %{public}s is not set, param %{public}s will be used instead",
+                OH_MD_KEY_MAX_BITRATE, OH_MD_KEY_BITRATE);
+                OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_MAX_BITRATE, bitrate);
+        }
+    }
+
     int32_t ret = videoEncObj->videoEncoder_->Configure(format->format_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder configure failed!");
