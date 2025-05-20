@@ -242,6 +242,7 @@ DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType t
 DecoderSurfaceFilter::~DecoderSurfaceFilter()
 {
     MEDIA_LOG_I("~DecoderSurfaceFilter()");
+    Filter::StopFilterTask();
     ON_SCOPE_EXIT(0) {
         DoRelease();
         MEDIA_LOG_I("~DecoderSurfaceFilter() exit.");
