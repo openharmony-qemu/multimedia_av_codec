@@ -475,7 +475,7 @@ typedef enum OH_VideoEncodeBitrateMode {
     /* constant quality mode. */
     CQ = 2,
     /* stable quality rate control mode. */
-    SQR = 4,
+    SQR = 3,
 } OH_VideoEncodeBitrateMode;
 
 #ifdef __cplusplus

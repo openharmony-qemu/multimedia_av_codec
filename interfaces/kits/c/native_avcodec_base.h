@@ -1340,7 +1340,7 @@ typedef enum OH_BitrateMode {
     /* Constant Quality mode. */
     BITRATE_MODE_CQ = 2,
     /* Stable Quality Rate Control Mode. */
-    BITRATE_MODE_SQR = 4
+    BITRATE_MODE_SQR = 3
 } OH_BitrateMode;
 
 /**
