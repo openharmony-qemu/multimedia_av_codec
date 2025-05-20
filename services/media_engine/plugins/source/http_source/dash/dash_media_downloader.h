@@ -72,6 +72,7 @@ public:
     bool GetBufferingTimeOut() override;
     void NotifyInitSuccess() override;
     uint64_t GetMemorySize() override;
+    std::string GetContentType() override;
 
 private:
     void ReceiveMpdStreamInitEvent();
