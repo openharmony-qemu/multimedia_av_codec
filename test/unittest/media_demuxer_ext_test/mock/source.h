@@ -117,6 +117,7 @@ public:
     MOCK_METHOD(bool, IsFlvLive, (), ());
     MOCK_METHOD(bool, IsFlvLiveStream, (), (const));
     MOCK_METHOD(uint64_t, GetMemorySize, (), ());
+    MOCK_METHOD(std::string, GetContentType, (), ());
     MOCK_METHOD(bool, IsHlsFmp4, (), ());
 };
 }  // namespace Media
