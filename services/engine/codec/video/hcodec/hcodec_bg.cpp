@@ -366,6 +366,7 @@ void HCodec::FrozenState::OnActive(const MsgInfo &info)
 
 void HCodec::FrozenState::OnShutDown(const MsgInfo &info)
 {
+    (void)codec_->ActiveBuffers();
     codec_->isShutDownFromRunning_ = true;
     codec_->notifyCallerAfterShutdownComplete_ = true;
     codec_->keepComponentAllocated_ = (info.type == MsgWhat::STOP);
