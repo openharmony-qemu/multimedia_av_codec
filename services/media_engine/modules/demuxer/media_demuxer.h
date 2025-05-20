@@ -301,7 +301,7 @@ private:
     bool IsRightMediaTrack(uint32_t trackId, DemuxerTrackType type) const;
     int64_t GetLastVideoBufferAbsPts(uint32_t trackId) const;
     void UpdateLastVideoBufferAbsPts(uint32_t trackId);
-    std::string InferDemuxerPluginNameByContent();
+    std::string InferDemuxerPluginNameByContentType();
     bool IsHitPlugin(std::string& plugin, std::string& contentType);
     Status OnSelectBitrateOk(int64_t startPts, uint32_t bitRate) override;
     Status SelectBitrateForNonSQ(int64_t startPts, uint32_t bitRate);
