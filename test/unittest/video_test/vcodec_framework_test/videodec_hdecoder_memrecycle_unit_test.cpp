@@ -21,8 +21,11 @@
 #include "avcodec_suspend.h"
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
-#include "vdec_sample.h"
-
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+#include "vdec_async_sample.h"
+#else
+#include "vdec_sync_sample.h"
+#endif
 #define TEST_SUIT VideoHDecoderMemoryRecyleTest
 
 using namespace std;
@@ -50,7 +53,11 @@ public:
     void CreateExecutingDecoder();
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
-    std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+    std::shared_ptr<OHOS::MediaAVCodec::VideoDecAsyncSample> videoDec_ = nullptr;
+#else
+    std::shared_ptr<OHOS::MediaAVCodec::VideoDecSyncSample> videoDec_ = nullptr;
+#endif
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
     std::shared_ptr<VDecCallbackTestExt> vdecCallbackExt_ = nullptr;
@@ -73,8 +80,11 @@ void TEST_SUIT::SetUp(void)
 
     vdecCallbackExt_ = std::make_shared<VDecCallbackTestExt>(vdecSignal);
     ASSERT_NE(nullptr, vdecCallbackExt_);
-
-    videoDec_ = std::make_shared<VideoDecSample>(vdecSignal);
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+    videoDec_ = std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+#else
+    videoDec_ = std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+#endif
     ASSERT_NE(nullptr, videoDec_);
 
     format_ = FormatMockFactory::CreateFormat();
@@ -166,6 +176,9 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+#ifdef VIDEODEC_SYNC_UNIT_TEST
+    format_->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+#endif
 }
 
 void TEST_SUIT::CreateExecutingDecoder()
@@ -244,8 +257,8 @@ void DestroyMultiHardwareDecoder(const std::vector<int> pidList)
     }
 }
 
-void CreateByNameWithParam(int32_t param, std::shared_ptr<VDecCallbackTest> vdecCallback,
-                           std::shared_ptr<VideoDecSample> videoDec)
+template <typename T>
+void CreateByNameWithParam(int32_t param, std::shared_ptr<VDecCallbackTest> vdecCallback, T& videoDec)
 {
     std::string codecName = "";
     if (param == VCodecTestCode::HW_AVC) {
@@ -269,9 +282,13 @@ void SetFormatWithParam(std::shared_ptr<FormatMock> format)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+#ifdef VIDEODEC_SYNC_UNIT_TEST
+    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+#endif
 }
 
-void PrepareSource(int32_t param, std::shared_ptr<VideoDecSample> videoDec, string fileName)
+template <typename T>
+void PrepareSource(int32_t param, T& videoDec, string fileName)
 {
     std::string sourcePath = decSourcePathMap_.at(param);
     if (param == VCodecTestCode::HW_HEVC) {
@@ -289,10 +306,17 @@ void CreateARunningHardwareAvcDecoder()
     const string fileName = "CreateARunningHardwareAvcDecoder";
     std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
     std::shared_ptr<VDecCallbackTest> vdecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
-    std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+    std::shared_ptr<VideoDecAsyncSample> videoDec =
+        std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+#else
+    std::shared_ptr<VideoDecSyncSample> videoDec =
+        std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+#endif
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
     if (!vdecCallback || !videoDec || !format) {
         std::cout << "create a running hadware avc decoder failed" << std::endl;
+        return;
     }
 
     CreateByNameWithParam(VCodecTestCode::HW_AVC, vdecCallback, videoDec);
@@ -313,10 +337,17 @@ void CreateARunningHardwareHevcDecoder()
     const string fileName = "CreateARunningHardwareHevcDecoder";
     std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
     std::shared_ptr<VDecCallbackTest> vdecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
-    std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+    std::shared_ptr<VideoDecAsyncSample> videoDec =
+        std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+#else
+    std::shared_ptr<VideoDecSyncSample> videoDec =
+        std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+#endif
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
     if (!vdecCallback || !videoDec || !format) {
         std::cout << "create a running hadware avc decoder failed" << std::endl;
+        return;
     }
 
     CreateByNameWithParam(VCodecTestCode::HW_HEVC, vdecCallback, videoDec);
@@ -936,6 +967,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Freeze_003, TestSize.Level1)
     PrepareSource(VCodecTestCode::HW_HDR);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+#ifdef VIDEODEC_SYNC_UNIT_TEST
+    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+#endif
 
     ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
     ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
@@ -959,6 +993,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Freeze_010, TestSize.Level1)
     PrepareSource(VCodecTestCode::HW_HDR);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+#ifdef VIDEODEC_SYNC_UNIT_TEST
+    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+#endif
     videoDec_->isKeepExecuting_ = true;
 
     ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
@@ -982,6 +1019,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Active_All_003, TestSize.Level1)
     PrepareSource(VCodecTestCode::HW_HDR);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+#ifdef VIDEODEC_SYNC_UNIT_TEST
+    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+#endif
 
     ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
     ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
@@ -1006,6 +1046,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Active_All_007, TestSize.Level1)
     PrepareSource(VCodecTestCode::HW_HDR);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+#ifdef VIDEODEC_SYNC_UNIT_TEST
+    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+#endif
     videoDec_->isKeepExecuting_ = true;
 
     ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
@@ -1030,6 +1073,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Active_003, TestSize.Level1)
     PrepareSource(VCodecTestCode::HW_HDR);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+#ifdef VIDEODEC_SYNC_UNIT_TEST
+    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+#endif
 
     ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
     ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
@@ -1054,6 +1100,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Active_011, TestSize.Level1)
     PrepareSource(VCodecTestCode::HW_HDR);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+#ifdef VIDEODEC_SYNC_UNIT_TEST
+    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+#endif
     videoDec_->isKeepExecuting_ = true;
 
     ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
@@ -1078,7 +1127,11 @@ int main(int argc, char **argv)
             CreateARunningHardwareHevcDecoder();
             return 0;
         } else if (strcmp(argv[i], "--need_dump") == 0) {
-            VideoDecSample::needDump_ = true;
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+            VideoDecAsyncSample::needDump_ = true;
+#else
+            VideoDecSyncSample::needDump_ = true;
+#endif
             DecArgv(i, argc, argv);
         }
     }

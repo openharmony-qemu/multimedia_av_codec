@@ -216,7 +216,7 @@ bool VideoDecSample::Create()
 {
     TITLE_LOG;
 
-    isH264Stream_ = inPath_.find("h264") != std::string::npos;
+    isAvcStream_ = inPath_.find("h264") != std::string::npos;
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
@@ -237,7 +237,7 @@ bool VideoDecSample::CreateByMime()
 {
     TITLE_LOG;
 
-    isH264Stream_ = inPath_.find("h264") != std::string::npos;
+    isAvcStream_ = inPath_.find("h264") != std::string::npos;
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
@@ -277,7 +277,7 @@ int32_t VideoDecSample::CreateAvccReader()
 {
     std::shared_ptr<AvccReaderInfo> info = std::make_shared<AvccReaderInfo>();
     info->inPath = inPath_;
-    info->isH264Stream = isH264Stream_;
+    info->isAvcStream = isAvcStream_;
 
     signal_->reader_ = std::make_shared<AvccReader>();
     int32_t ret = std::static_pointer_cast<AvccReader>(signal_->reader_)->Init(info);

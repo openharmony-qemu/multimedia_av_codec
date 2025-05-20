@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "vdec_sample.h"
+#include "vdec_async_sample.h"
 #include <gtest/gtest.h>
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
@@ -22,7 +22,15 @@ using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 using namespace OHOS::MediaAVCodec;
 
-namespace {
+namespace OHOS {
+namespace MediaAVCodec {
+std::unordered_map<std::string, int32_t> fileTypeMap = {
+    {"h263", H263_STREAM},
+    {"h264", AVC_STREAM},
+    {"h265", HEVC_STREAM},
+    {"m2v", MPEG2_STREAM},
+    {"m4v", MPEG4_STREAM}
+};
 constexpr uint8_t FRAME_HEAD_LEN = 4;
 constexpr uint8_t OFFSET_8 = 8;
 constexpr uint8_t OFFSET_16 = 16;
@@ -54,10 +62,6 @@ constexpr uint8_t SHA_H263[SHA512_DIGEST_LENGTH] = {
 uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 std::atomic<uint32_t> g_shaBufferCount = 0;
 SHA512_CTX g_ctxTest;
-} // namespace
-
-namespace OHOS {
-namespace MediaAVCodec {
 VDecCallbackTest::VDecCallbackTest(std::shared_ptr<VDecSignal> signal) : signal_(signal) {}
 
 VDecCallbackTest::~VDecCallbackTest() {}
@@ -181,15 +185,15 @@ void TestConsumerListener::OnBufferAvailable()
 
     cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
-    if ((VideoDecSample::needDump_) && (outFile_ != nullptr) && (outFile_->is_open())) {
+    if ((VideoDecAsyncSample::needDump_) && (outFile_ != nullptr) && (outFile_->is_open())) {
         (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
     }
     cs_->ReleaseBuffer(buffer, -1);
 }
 
-VideoDecSample::VideoDecSample(std::shared_ptr<VDecSignal> signal) : signal_(signal) {}
+VideoDecAsyncSample::VideoDecAsyncSample(std::shared_ptr<VDecSignal> signal) : signal_(signal) {}
 
-VideoDecSample::~VideoDecSample()
+VideoDecAsyncSample::~VideoDecAsyncSample()
 {
     FlushInner();
     consumer_ = nullptr;
@@ -205,20 +209,20 @@ VideoDecSample::~VideoDecSample()
     }
 }
 
-bool VideoDecSample::CreateVideoDecMockByMime(const std::string &mime)
+bool VideoDecAsyncSample::CreateVideoDecMockByMime(const std::string &mime)
 {
     videoDec_ = VCodecMockFactory::CreateVideoDecMockByMime(mime);
     return videoDec_ != nullptr;
 }
 
-bool VideoDecSample::needDump_ = false;
-bool VideoDecSample::CreateVideoDecMockByName(const std::string &name)
+bool VideoDecAsyncSample::needDump_ = false;
+bool VideoDecAsyncSample::CreateVideoDecMockByName(const std::string &name)
 {
     videoDec_ = VCodecMockFactory::CreateVideoDecMockByName(name);
     return videoDec_ != nullptr;
 }
 
-int32_t VideoDecSample::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
+int32_t VideoDecAsyncSample::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -228,7 +232,7 @@ int32_t VideoDecSample::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
     return ret;
 }
 
-int32_t VideoDecSample::SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb)
+int32_t VideoDecAsyncSample::SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb)
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -238,7 +242,7 @@ int32_t VideoDecSample::SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb)
     return ret;
 }
 
-int32_t VideoDecSample::SetOutputSurface()
+int32_t VideoDecAsyncSample::SetOutputSurface()
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -256,7 +260,7 @@ int32_t VideoDecSample::SetOutputSurface()
     return ret;
 }
 
-int32_t VideoDecSample::Configure(std::shared_ptr<FormatMock> format)
+int32_t VideoDecAsyncSample::Configure(std::shared_ptr<FormatMock> format)
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -264,7 +268,7 @@ int32_t VideoDecSample::Configure(std::shared_ptr<FormatMock> format)
     return videoDec_->Configure(format);
 }
 
-int32_t VideoDecSample::Prepare()
+int32_t VideoDecAsyncSample::Prepare()
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -272,35 +276,37 @@ int32_t VideoDecSample::Prepare()
     return videoDec_->Prepare();
 }
 
-int32_t VideoDecSample::Start()
+int32_t VideoDecAsyncSample::CreateReader(const std::string& inPath) {
+    int32_t dataProducerType = AVC_STREAM;
+    for (const auto& [key, fileType] : fileTypeMap) {
+        if (inPath.find(key) != std::string::npos) {
+            dataProducerType = fileType;
+            break;
+        }
+    }
+
+    switch (dataProducerType)
+    {
+        case H263_STREAM:
+            return CreateH263Reader();
+        case AVC_STREAM:
+        case HEVC_STREAM:
+            return CreateAvccReader();
+        case MPEG2_STREAM:
+        case MPEG4_STREAM:
+            return CreateMpegReader();
+        default:
+            return CreateAvccReader();
+    }
+}
+
+int32_t VideoDecAsyncSample::Start()
 {
     if (signal_ == nullptr || videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
-
-    if (inPath_.find("h263") != std::string::npos) {
-        int32_t ret = CreateH263Reader();
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: CreateH263Reader fail");
-        PrepareInner();
-        ret = videoDec_->Start();
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
-        if (isAVBufferMode_) {
-            RunInnerExt();
-        } else {
-            RunInner();
-        }
-        WaitForEos();
-        return ret;
-    }
-
-    isMpegStream_ = (inPath_.find("m2v") != std::string::npos) ||
-        (inPath_.find("m4v") != std::string::npos);
-    if (isMpegStream_) {
-        isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
-    }
-    int32_t ret = isMpegStream_ ? CreateMpegReader() : CreateAvccReader();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: CreateAvccReader fail");
-
+    int32_t ret = CreateReader(inPath_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: CreateReader fail");
     PrepareInner();
     ret = videoDec_->Start();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
@@ -313,7 +319,7 @@ int32_t VideoDecSample::Start()
     return ret;
 }
 
-int32_t VideoDecSample::Stop()
+int32_t VideoDecAsyncSample::Stop()
 {
     FlushInner();
     if (videoDec_ == nullptr) {
@@ -322,7 +328,7 @@ int32_t VideoDecSample::Stop()
     return videoDec_->Stop();
 }
 
-int32_t VideoDecSample::Flush()
+int32_t VideoDecAsyncSample::Flush()
 {
     FlushInner();
     if (videoDec_ == nullptr) {
@@ -331,7 +337,7 @@ int32_t VideoDecSample::Flush()
     return videoDec_->Flush();
 }
 
-int32_t VideoDecSample::Reset()
+int32_t VideoDecAsyncSample::Reset()
 {
     FlushInner();
     if (videoDec_ == nullptr) {
@@ -340,7 +346,7 @@ int32_t VideoDecSample::Reset()
     return videoDec_->Reset();
 }
 
-int32_t VideoDecSample::Release()
+int32_t VideoDecAsyncSample::Release()
 {
     FlushInner();
     if (videoDec_ == nullptr) {
@@ -349,7 +355,7 @@ int32_t VideoDecSample::Release()
     return videoDec_->Release();
 }
 
-std::shared_ptr<FormatMock> VideoDecSample::GetOutputDescription()
+std::shared_ptr<FormatMock> VideoDecAsyncSample::GetOutputDescription()
 {
     if (videoDec_ == nullptr) {
         return nullptr;
@@ -357,7 +363,7 @@ std::shared_ptr<FormatMock> VideoDecSample::GetOutputDescription()
     return videoDec_->GetOutputDescription();
 }
 
-int32_t VideoDecSample::SetParameter(std::shared_ptr<FormatMock> format)
+int32_t VideoDecAsyncSample::SetParameter(std::shared_ptr<FormatMock> format)
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -365,7 +371,7 @@ int32_t VideoDecSample::SetParameter(std::shared_ptr<FormatMock> format)
     return videoDec_->SetParameter(format);
 }
 
-int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
+int32_t VideoDecAsyncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -374,7 +380,7 @@ int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr
     return videoDec_->PushInputData(index, attr);
 }
 
-int32_t VideoDecSample::RenderOutputData(uint32_t index)
+int32_t VideoDecAsyncSample::RenderOutputData(uint32_t index)
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -382,7 +388,7 @@ int32_t VideoDecSample::RenderOutputData(uint32_t index)
     return videoDec_->RenderOutputData(index);
 }
 
-int32_t VideoDecSample::FreeOutputData(uint32_t index)
+int32_t VideoDecAsyncSample::FreeOutputData(uint32_t index)
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -390,7 +396,7 @@ int32_t VideoDecSample::FreeOutputData(uint32_t index)
     return videoDec_->FreeOutputData(index);
 }
 
-int32_t VideoDecSample::PushInputBuffer(uint32_t index)
+int32_t VideoDecAsyncSample::PushInputBuffer(uint32_t index)
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -399,7 +405,7 @@ int32_t VideoDecSample::PushInputBuffer(uint32_t index)
     return videoDec_->PushInputBuffer(index);
 }
 
-int32_t VideoDecSample::RenderOutputBuffer(uint32_t index)
+int32_t VideoDecAsyncSample::RenderOutputBuffer(uint32_t index)
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -407,7 +413,7 @@ int32_t VideoDecSample::RenderOutputBuffer(uint32_t index)
     return videoDec_->RenderOutputBuffer(index);
 }
 
-int32_t VideoDecSample::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+int32_t VideoDecAsyncSample::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -415,7 +421,7 @@ int32_t VideoDecSample::RenderOutputBufferAtTime(uint32_t index, int64_t renderT
     return videoDec_->RenderOutputBufferAtTime(index, renderTimestampNs);
 }
 
-int32_t VideoDecSample::FreeOutputBuffer(uint32_t index)
+int32_t VideoDecAsyncSample::FreeOutputBuffer(uint32_t index)
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -423,7 +429,7 @@ int32_t VideoDecSample::FreeOutputBuffer(uint32_t index)
     return videoDec_->FreeOutputBuffer(index);
 }
 
-bool VideoDecSample::IsValid()
+bool VideoDecAsyncSample::IsValid()
 {
     if (videoDec_ == nullptr) {
         return false;
@@ -431,45 +437,45 @@ bool VideoDecSample::IsValid()
     return videoDec_->IsValid();
 }
 
-void VideoDecSample::SetOutPath(const std::string &path)
+void VideoDecAsyncSample::SetOutPath(const std::string &path)
 {
     outPath_ = path + ".yuv";
     outSurfacePath_ = path + ".rgba";
 }
 
-void VideoDecSample::SetSource(const std::string &path)
+void VideoDecAsyncSample::SetSource(const std::string &path)
 {
     inPath_ = path;
 }
 
-void VideoDecSample::SetSourceType(bool isH264Stream)
+void VideoDecAsyncSample::SetSourceType(bool isAvcStream)
 {
-    isH264Stream_ = isH264Stream;
+    dataProducerType_ = isAvcStream;
 }
 
-int32_t VideoDecSample::CreateAvccReader()
+int32_t VideoDecAsyncSample::CreateAvccReader()
 {
     std::shared_ptr<AvccReaderInfo> info = std::make_shared<AvccReaderInfo>();
     info->inPath = inPath_;
-    info->isH264Stream = isH264Stream_;
+    info->isAvcStream = (dataProducerType_ == AVC_STREAM);
 
     avccReader_ = std::make_shared<AvccReader>();
     int32_t ret = avccReader_->Init(info);
     return ret;
 }
 
-int32_t VideoDecSample::CreateMpegReader()
+int32_t VideoDecAsyncSample::CreateMpegReader()
 {
     std::shared_ptr<MpegReaderInfo> info = std::make_shared<MpegReaderInfo>();
     info->inPath = inPath_;
-    info->isMpeg2Stream = isMpeg2Stream_;
+    info->isMpeg2Stream = (dataProducerType_ == MPEG2_STREAM);
 
     mpegReader_ = std::make_shared<MpegReader>();
     int32_t ret = mpegReader_->Init(info);
     return ret;
 }
 
-int32_t VideoDecSample::CreateH263Reader()
+int32_t VideoDecAsyncSample::CreateH263Reader()
 {
     std::shared_ptr<H263ReaderInfo> info = std::make_shared<H263ReaderInfo>();
     info->inPath = inPath_;
@@ -479,7 +485,7 @@ int32_t VideoDecSample::CreateH263Reader()
     return ret;
 }
 
-void VideoDecSample::FlushInner()
+void VideoDecAsyncSample::FlushInner()
 {
     if (signal_ == nullptr) {
         return;
@@ -519,39 +525,39 @@ void VideoDecSample::FlushInner()
     }
 }
 
-void VideoDecSample::RunInner()
+void VideoDecAsyncSample::RunInner()
 {
     if (signal_ == nullptr) {
         return;
     }
     signal_->isPreparing_.store(false);
     signal_->isRunning_.store(true);
-    inputLoop_ = make_unique<thread>(&VideoDecSample::InputLoopFunc, this);
+    inputLoop_ = make_unique<thread>(&VideoDecAsyncSample::InputLoopFunc, this);
     ASSERT_NE(inputLoop_, nullptr);
     signal_->inCond_.notify_all();
 
-    outputLoop_ = make_unique<thread>(&VideoDecSample::OutputLoopFunc, this);
+    outputLoop_ = make_unique<thread>(&VideoDecAsyncSample::OutputLoopFunc, this);
     ASSERT_NE(outputLoop_, nullptr);
     signal_->outCond_.notify_all();
 }
 
-void VideoDecSample::RunInnerExt()
+void VideoDecAsyncSample::RunInnerExt()
 {
     if (signal_ == nullptr) {
         return;
     }
     signal_->isPreparing_.store(false);
     signal_->isRunning_.store(true);
-    inputLoop_ = make_unique<thread>(&VideoDecSample::InputLoopFuncExt, this);
+    inputLoop_ = make_unique<thread>(&VideoDecAsyncSample::InputLoopFuncExt, this);
     ASSERT_NE(inputLoop_, nullptr);
     signal_->inCond_.notify_all();
 
-    outputLoop_ = make_unique<thread>(&VideoDecSample::OutputLoopFuncExt, this);
+    outputLoop_ = make_unique<thread>(&VideoDecAsyncSample::OutputLoopFuncExt, this);
     ASSERT_NE(outputLoop_, nullptr);
     signal_->outCond_.notify_all();
 }
 
-void VideoDecSample::WaitForEos()
+void VideoDecAsyncSample::WaitForEos()
 {
     unique_lock<mutex> lock(signal_->mutex_);
     auto lck = [this]() { return !signal_->isRunning_.load(); };
@@ -568,7 +574,7 @@ void VideoDecSample::WaitForEos()
     FlushInner();
 }
 
-void VideoDecSample::PrepareInner()
+void VideoDecAsyncSample::PrepareInner()
 {
     if (signal_ == nullptr) {
         return;
@@ -589,7 +595,7 @@ void VideoDecSample::PrepareInner()
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
-void VideoDecSample::InputLoopFunc()
+void VideoDecAsyncSample::InputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
@@ -609,24 +615,25 @@ void VideoDecSample::InputLoopFunc()
     }
 }
 
-bool VideoDecSample::IsCodecData(const uint8_t *const bufferAddr)
+bool VideoDecAsyncSample::IsCodecData(const uint8_t *const bufferAddr)
 {
-    uint8_t naluType = isH264Stream_ ? (bufferAddr[FRAME_HEAD_LEN] & H264_NALU_TYPE_MASK)
-                                     : ((bufferAddr[FRAME_HEAD_LEN] & H265_NALU_TYPE_MASK) >> 1);
-    if ((isH264Stream_ && ((naluType == H264_SPS) || (naluType == H264_PPS))) ||
-        (!isH264Stream_ && ((naluType == H265_VPS) || (naluType == H265_SPS) || (naluType == H265_PPS)))) {
+    bool isAvcStream = (dataProducerType_ == AVC_STREAM);
+    uint8_t naluType = isAvcStream ? (bufferAddr[FRAME_HEAD_LEN] & H264_NALU_TYPE_MASK)
+                                    : ((bufferAddr[FRAME_HEAD_LEN] & H265_NALU_TYPE_MASK) >> 1);
+    if ((isAvcStream && ((naluType == H264_SPS) || (naluType == H264_PPS))) ||
+        (!isAvcStream && ((naluType == H265_VPS) || (naluType == H265_SPS) || (naluType == H265_PPS)))) {
         return true;
     }
     return false;
 }
 
-int32_t VideoDecSample::ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags)
+int32_t VideoDecAsyncSample::ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags)
 {
     char ch[FRAME_HEAD_LEN] = {};
     (void)inFile_->read(ch, FRAME_HEAD_LEN);
     uint32_t bufferSize =
         static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << OFFSET_8) | ((ch[1] & 0xFF) << OFFSET_16) |
-                              ((ch[0] & 0xFF) << OFFSET_24)); // 0 1 2 3: avcc frame head offset
+                            ((ch[0] & 0xFF) << OFFSET_24)); // 0 1 2 3: avcc frame head offset
 
     (void)inFile_->read(reinterpret_cast<char *>(bufferAddr + FRAME_HEAD_LEN), bufferSize);
     bufferAddr[0] = 0;
@@ -640,7 +647,7 @@ int32_t VideoDecSample::ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags)
     return bufferSize + FRAME_HEAD_LEN;
 }
 
-void VideoDecSample::CheckSHA()
+void VideoDecAsyncSample::CheckSHA()
 {
     const uint8_t *sha = nullptr;
     switch (testParam_) {
@@ -668,7 +675,7 @@ void VideoDecSample::CheckSHA()
     cout << std::dec << "\n========================================\n";
 }
 
-void VideoDecSample::UpdateSHA(const char *addr, int32_t size)
+void VideoDecAsyncSample::UpdateSHA(const char *addr, int32_t size)
 {
     if (needCheckSHA_) {
         ++g_shaBufferCount;
@@ -690,12 +697,12 @@ void VideoDecSample::UpdateSHA(const char *addr, int32_t size)
     }
 }
 
-int32_t VideoDecSample::InputLoopInner()
+int32_t VideoDecAsyncSample::InputLoopInner()
 {
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVMemoryMock> buffer = signal_->inMemoryQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
-                                      AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
+                                    AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (h263Reader_ != nullptr) {
         h263Reader_->FillBuffer(buffer->GetAddr(), attr);
@@ -708,7 +715,7 @@ int32_t VideoDecSample::InputLoopInner()
     return PushInputData(index, attr);
 }
 
-void VideoDecSample::OutputLoopFunc()
+void VideoDecAsyncSample::OutputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
@@ -739,10 +746,10 @@ void VideoDecSample::OutputLoopFunc()
     signal_->cond_.notify_all();
 }
 
-int32_t VideoDecSample::OutputLoopInner()
+int32_t VideoDecAsyncSample::OutputLoopInner()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_ || isSurfaceMode_, AV_ERR_INVALID_VAL,
-                                      "can not dump output file");
+                                    "can not dump output file");
     struct OH_AVCodecBufferAttr attr = signal_->outAttrQueue_.front();
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
@@ -753,7 +760,7 @@ int32_t VideoDecSample::OutputLoopInner()
             cout << "output data fail" << endl;
         } else {
             UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                              "Fatal: GetOutputBuffer fail, exit. index: %d", index);
+                                            "Fatal: GetOutputBuffer fail, exit. index: %d", index);
             outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
         }
     }
@@ -779,7 +786,7 @@ int32_t VideoDecSample::OutputLoopInner()
     return AV_ERR_OK;
 }
 
-void VideoDecSample::OutputLoopFuncExt()
+void VideoDecAsyncSample::OutputLoopFuncExt()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
@@ -808,7 +815,7 @@ void VideoDecSample::OutputLoopFuncExt()
     signal_->cond_.notify_all();
 }
 
-void VideoDecSample::CheckFormatKey()
+void VideoDecAsyncSample::CheckFormatKey()
 {
     std::shared_ptr<FormatMock> format = videoDec_->GetOutputDescription();
     int32_t pictureWidth = 0;
@@ -818,15 +825,15 @@ void VideoDecSample::CheckFormatKey()
     format->Destroy();
 }
 
-int32_t VideoDecSample::OutputLoopInnerExt()
+int32_t VideoDecAsyncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_ || isSurfaceMode_, AV_ERR_INVALID_VAL,
-                                      "can not dump output file");
-    uint32_t index = signal_->outIndexQueue_.front();
+                                    "can not dump output file");
+    uint32_t index = -1;
     uint32_t ret;
     auto buffer = signal_->outBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                      "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+                                    "Fatal: GetOutputBuffer fail, exit, index: %d", index);
     CheckFormatKey();
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
@@ -836,7 +843,7 @@ int32_t VideoDecSample::OutputLoopInnerExt()
             testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263) ?
             attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
-                                          "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+                                        "Fatal: GetOutputBuffer fail, exit, index: %d", index);
         UpdateSHA(bufferAddr, size);
         ret = FreeOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
@@ -867,7 +874,7 @@ int32_t VideoDecSample::OutputLoopInnerExt()
     return AV_ERR_OK;
 }
 
-void VideoDecSample::InputLoopFuncExt()
+void VideoDecAsyncSample::InputLoopFuncExt()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
@@ -887,12 +894,12 @@ void VideoDecSample::InputLoopFuncExt()
     }
 }
 
-int32_t VideoDecSample::InputLoopInnerExt()
+int32_t VideoDecAsyncSample::InputLoopInnerExt()
 {
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVBufferMock> buffer = signal_->inBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
-                                      AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
+                                    AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (h263Reader_ != nullptr) {
         h263Reader_->FillBuffer(buffer->GetAddr(), attr);
@@ -906,7 +913,7 @@ int32_t VideoDecSample::InputLoopInnerExt()
     return PushInputBuffer(index);
 }
 
-int32_t VideoDecSample::SetVideoDecryptionConfig()
+int32_t VideoDecAsyncSample::SetVideoDecryptionConfig()
 {
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;

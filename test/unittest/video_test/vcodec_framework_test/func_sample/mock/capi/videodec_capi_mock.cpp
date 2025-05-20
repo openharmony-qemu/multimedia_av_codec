@@ -235,9 +235,37 @@ int32_t VideoDecCapiMock::SetParameter(std::shared_ptr<FormatMock> format)
     return OH_VideoDecoder_SetParameter(codec_, formatMock->GetFormat());
 }
 
+int32_t VideoDecCapiMock::QueryInputBuffer(uint32_t& index, int64_t timeoutUs)
+{
+    return OH_VideoDecoder_QueryInputBuffer(codec_, &index, timeoutUs);
+}
+
+std::shared_ptr<AVBufferMock> VideoDecCapiMock::GetInputBuffer(uint32_t index)
+{
+    auto data = OH_VideoDecoder_GetInputBuffer(codec_, index);
+    std::shared_ptr<AVBufferMock> bufMock = (data == nullptr)
+                                            ? nullptr
+                                            : std::make_shared<AVBufferCapiMock>(data);
+    return bufMock;
+}
+
 int32_t VideoDecCapiMock::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
 {
     return OH_VideoDecoder_PushInputData(codec_, index, attr);
+}
+
+int32_t VideoDecCapiMock::QueryOutputBuffer(uint32_t& index, int64_t timeoutUs)
+{
+    return OH_VideoDecoder_QueryOutputBuffer(codec_, &index, timeoutUs);
+}
+
+std::shared_ptr<AVBufferMock> VideoDecCapiMock::GetOutputBuffer(uint32_t index)
+{
+    auto data = OH_VideoDecoder_GetOutputBuffer(codec_, index);
+    std::shared_ptr<AVBufferMock> bufMock = (data == nullptr)
+                                            ? nullptr
+                                            : std::make_shared<AVBufferCapiMock>(data);
+    return bufMock;
 }
 
 int32_t VideoDecCapiMock::RenderOutputData(uint32_t index)

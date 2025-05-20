@@ -1,5 +1,10 @@
 #ifndef VIDEODEC_FUNC_TEST_SUIT_H
 #define VIDEODEC_FUNC_TEST_SUIT_H
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+#include "vdec_async_sample.h"
+#else
+#include "vdec_sync_sample.h"
+#endif
 
 namespace VFTSUIT {
 
@@ -78,7 +83,11 @@ public:
 
 protected:
     std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
-    std::shared_ptr<OHOS::MediaAVCodec::VideoDecSample> videoDec_ = nullptr;
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+    std::shared_ptr<OHOS::MediaAVCodec::VideoDecAsyncSample> videoDec_ = nullptr;
+#else
+    std::shared_ptr<OHOS::MediaAVCodec::VideoDecSyncSample> videoDec_ = nullptr;
+#endif
     std::shared_ptr<OHOS::MediaAVCodec::FormatMock> format_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::VDecCallbackTest> vdecCallback_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::VDecCallbackTestExt> vdecCallbackExt_ = nullptr;
@@ -98,7 +107,11 @@ void TEST_SUIT::SetUp(void)
     vdecCallbackExt_ = std::make_shared<OHOS::MediaAVCodec::VDecCallbackTestExt>(vdecSignal);
     ASSERT_NE(nullptr, vdecCallbackExt_);
 
-    videoDec_ = std::make_shared<OHOS::MediaAVCodec::VideoDecSample>(vdecSignal);
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+    videoDec_ = std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+#else
+    videoDec_ = std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+#endif
     ASSERT_NE(nullptr, videoDec_);
 
     format_ = OHOS::MediaAVCodec::FormatMockFactory::CreateFormat();

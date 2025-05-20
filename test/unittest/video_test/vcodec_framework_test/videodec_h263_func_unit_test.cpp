@@ -17,7 +17,12 @@
 #include <gtest/hwext/gtest-multithread.h>
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
-#include "vdec_sample.h"
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+#include "vdec_async_sample.h"
+#else
+#include "vdec_sync_sample.h"
+#endif
+
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videodec_capi_mock.h"
@@ -79,6 +84,9 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_H263);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_H263);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+#ifdef VIDEODEC_SYNC_UNIT_TEST
+    format_->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+#endif
 }
 
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(SW_H263));
@@ -95,7 +103,13 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_001, TestSize.Level1)
         std::shared_ptr<VDecCallbackTest> adecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
         ASSERT_NE(nullptr, adecCallback);
 
-        std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+        std::shared_ptr<VideoDecAsyncSample> videoDec =
+            std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+#else
+        std::shared_ptr<VideoDecSyncSample> videoDec =
+            std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+#endif
         ASSERT_NE(nullptr, videoDec);
 
         EXPECT_LE(g_vdecCount.load(), 100); // 100: max instances supported
@@ -125,7 +139,13 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_002, TestSize.Level1)
 {
     auto func = []() {
         std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
-        std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+        std::shared_ptr<VideoDecAsyncSample> videoDec =
+            std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+#else
+        std::shared_ptr<VideoDecSyncSample> videoDec =
+            std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+#endif
         ASSERT_NE(nullptr, videoDec);
         if (videoDec->CreateVideoDecMockByMime(CodecMimeType::VIDEO_H263.data())) {
             g_vdecCount++;
@@ -197,7 +217,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_003, TestSize.Level1)
 {
     ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
     ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
+#endif
 }
 
 /**
@@ -209,7 +231,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_004, TestSize.Level1)
 {
     ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
     ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
+#endif
 }
 
 #ifdef VIDEODEC_CAPI_UNIT_TEST
@@ -482,6 +506,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Configure_003, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, -2); // invalid width size -2
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_H263);
+#ifdef VIDEODEC_SYNC_UNIT_TEST
+    format_->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+#endif
     EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
 }
 
@@ -495,6 +522,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Configure_004, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_H263);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, -2); // invalid height size -2
+#ifdef VIDEODEC_SYNC_UNIT_TEST
+    format_->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+#endif
     EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
 }
 
@@ -1165,7 +1195,11 @@ int main(int argc, char **argv)
     for (int i = 0; i < argc; ++i) {
         cout << argv[i] << endl;
         if (strcmp(argv[i], "--need_dump") == 0) {
-            VideoDecSample::needDump_ = true;
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+            VideoDecAsyncSample::needDump_ = true;
+#else
+            VideoDecSyncSample::needDump_ = true;
+#endif
             DecArgv(i, argc, argv);
         }
     }
