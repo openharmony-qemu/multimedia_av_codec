@@ -2329,6 +2329,7 @@ Status MediaDemuxer::PushBufferToQueue(uint32_t trackId, std::shared_ptr<AVBuffe
 Status MediaDemuxer::HandleRead(uint32_t trackId)
 {
     Status ret = InnerReadSample(trackId, bufferMap_[trackId]);
+    bool isBufferSizeValid = bufferMap_[trackId] != nullptr ? isBufferSizeValid = bufferMap_[trackId]->GetConfig().size > 0 : true;
     if (IsRightMediaTrack(trackId, DemuxerTrackType::VIDEO)) {
         std::unique_lock<std::mutex> draggingLock(draggingMutex_);
         if (VideoStreamReadyCallback_ != nullptr) {
@@ -2341,7 +2342,7 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
             draggingLock.unlock();
             bool isDiscardable = videoStreamReadyCallback->IsVideoStreamDiscardable(bufferMap_[trackId]);
             UpdateSyncFrameInfo(bufferMap_[trackId], trackId, isDiscardable);
-            PushBufferToQueue(trackId, bufferMap_[trackId], !isDiscardable);
+            PushBufferToQueue(trackId, bufferMap_[trackId], !isDiscardable && isBufferSizeValid);
             return Status::OK;
         }
     }
@@ -2367,7 +2368,7 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
             SetOutputBufferPts(bufferMap_[trackId]);
         }
         TranscoderUpdateOutputBufferPts(trackId, bufferMap_[trackId]);
-        PushBufferToQueue(trackId, bufferMap_[trackId], !isDroppable);
+        PushBufferToQueue(trackId, bufferMap_[trackId], !isDroppable && isBufferSizeValid);
     } else {
         PushBufferToQueue(trackId, bufferMap_[trackId], false);
         MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_U32 ", ret:" PUBLIC_LOG_D32, trackId, (int32_t)(ret));
