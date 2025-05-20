@@ -67,6 +67,12 @@ DashMpdDownloader::~DashMpdDownloader() noexcept
     streamDescriptions_.clear();
 }
 
+std::string DashMpdDownloader::GetContentType()
+{
+    FALSE_RETURN_V(downloader_ != nullptr, "");
+    return downloader_->GetContentType();
+}
+
 static int64_t ParseStartNumber(const std::string &numberStr)
 {
     int64_t startNum = 1;
