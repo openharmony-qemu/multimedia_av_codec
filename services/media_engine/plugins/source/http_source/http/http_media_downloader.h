@@ -100,6 +100,7 @@ public:
     void RestartAndClearBuffer() override;
     bool IsFlvLive() override;
     uint64_t GetMemorySize() override;
+    std::string GetContentType() override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void ClearBuffer() override;
 
