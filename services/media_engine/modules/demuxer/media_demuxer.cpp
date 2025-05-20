@@ -34,6 +34,7 @@
 #include "osal/utils/dump_buffer.h"
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_buffer.h"
+#include "plugin/plugin_list.h"
 #include "source/source.h"
 #include "stream_demuxer.h"
 #include "media_core.h"
@@ -48,6 +49,8 @@ namespace {
 const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
+const std::string DEMUXER_PLUGIN_NAME_HEADER = "avdemux_";
+const char DEMUXER_PLUGIN_NAME_DELIMITER = ',';
 static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
 static constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 static constexpr int32_t SKIP_NEXT_OPEN_GOP_CNT = 2;
@@ -890,14 +893,55 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     streamDemuxer_->SetSource(source_);
     streamDemuxer_->Init(uri_);
 
+    std::string interPluginName = InterDemuxerPluginNameByContentType();
     res = InnerPrepare();
+    std::string snifferPluginName;
+    bool isGotPlugin = demuxerPluginManager_->GetPluginName(snifferPluginName);
     source_->NotifyInitSuccess();
     ProcessDrmInfos();
     FALSE_RETURN_V_NOLOG(eventReceiver_ != nullptr, res);
     eventReceiver_->OnMemoryUsageEvent({"SOURCE",
         DfxEventType::DFX_INFO_MEMORY_USAGE, source_->GetMemorySize()});
+    if (!interPluginName.empty() && isGotPlugin) {
+        eventReceiver_->OnDfxEvent({"DEMUX", DfxEventType::DFX_INFO_PLAYER_EOS_SEEK,
+            static_cast<int32_t>(snifferPluginName == interPluginName)});
+    }
     MEDIA_LOG_I("Out");
     return res;
+}
+
+std::string MediaDemuxer::InferDemuxerPluginNameByContentType()
+{
+    FALSE_RETURN_V(source_ != nullptr, "");
+    std::string contentType = source_->GetContentType();
+    FALSE_RETURN_V_NOLOG(!contentType.empty(), "");
+    FALSE_RETURN_V(demuxerPluginManager_ != nullptr, "");
+    std::vector<Plugins::PluginDescription> matchedPluginsDescriptions =
+        Plugins::PluginList::GetInstance().GetPluginsByType(Plugins::PluginType::DEMUXER);
+    for (auto& iter : matchedPluginsDescriptions) {
+        if (IsHitPlugin(iter.pluginName, contentType)) {
+            MEDIA_LOG_I("ContentType: " PUBLIC_LOG_S ", pluginName: " PUBLIC_LOG_S,
+                contentType.c_str(), iter.pluginName.c_str());
+            return iter.pluginName;
+        }
+    }
+    return "";
+}
+
+bool MediaDemuxer::IsHitPlugin(std::string& pluginName, std::string& contentType)
+{
+    std::stringstream ss(pluginName);
+    std::string token;
+    while (std::getline(ss, token, DEMUXER_PLUGIN_NAME_DELIMITER)) {
+        size_t pos = 0;
+        if ((pos = token.find(DEMUXER_PLUGIN_NAME_HEADER, pos)) != std::string npos) {
+            token.erase(pos, DEMUXER_PLUGIN_NAME_HEADER.size());
+        }
+        if (!token.empty() && contentType.find(token) != std::string::npos) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool MediaDemuxer::IsSubtitleMime(const std::string& mime)
