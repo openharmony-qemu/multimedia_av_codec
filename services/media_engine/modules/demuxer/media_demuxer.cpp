@@ -893,7 +893,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     streamDemuxer_->SetSource(source_);
     streamDemuxer_->Init(uri_);
 
-    std::string interPluginName = InterDemuxerPluginNameByContentType();
+    std::string inferPluginName = InferDemuxerPluginNameByContentType();
     res = InnerPrepare();
     std::string snifferPluginName;
     bool isGotPlugin = demuxerPluginManager_->GetPluginName(snifferPluginName);
@@ -902,9 +902,9 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     FALSE_RETURN_V_NOLOG(eventReceiver_ != nullptr, res);
     eventReceiver_->OnMemoryUsageEvent({"SOURCE",
         DfxEventType::DFX_INFO_MEMORY_USAGE, source_->GetMemorySize()});
-    if (!interPluginName.empty() && isGotPlugin) {
+    if (!inferPluginName.empty() && isGotPlugin) {
         eventReceiver_->OnDfxEvent({"DEMUX", DfxEventType::DFX_INFO_PLAYER_EOS_SEEK,
-            static_cast<int32_t>(snifferPluginName == interPluginName)});
+            static_cast<int32_t>(snifferPluginName == inferPluginName)});
     }
     MEDIA_LOG_I("Out");
     return res;
