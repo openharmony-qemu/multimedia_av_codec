@@ -934,7 +934,7 @@ bool MediaDemuxer::IsHitPlugin(std::string& pluginName, std::string& contentType
     std::string token;
     while (std::getline(ss, token, DEMUXER_PLUGIN_NAME_DELIMITER)) {
         size_t pos = 0;
-        if ((pos = token.find(DEMUXER_PLUGIN_NAME_HEADER, pos)) != std::string npos) {
+        if ((pos = token.find(DEMUXER_PLUGIN_NAME_HEADER, pos)) != std::string::npos) {
             token.erase(pos, DEMUXER_PLUGIN_NAME_HEADER.size());
         }
         if (!token.empty() && contentType.find(token) != std::string::npos) {
