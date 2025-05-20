@@ -152,6 +152,7 @@ int32_t CodecClient::Configure(const Format &format)
     if (enableParameterSyncMode) {
         codecMode_ |= CODEC_ENABLE_PARAMETER;
     }
+    AVCODEC_LOGI_WITH_TAG("%{public}s", format.Stringify().c_str());
     AVCODEC_LOGI_WITH_TAG("%{public}s mode.%{public}s", enableSyncMode ? "Sync" : "Async",
                           AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;
@@ -222,6 +223,7 @@ int32_t CodecClient::Stop()
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
         circular_.SetIsRunning(false);
+        circular_.ClearCaches();
     }
     AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;
@@ -239,6 +241,7 @@ int32_t CodecClient::Flush()
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
         circular_.SetIsRunning(false);
+        circular_.ClearCaches();
     }
     AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;
@@ -270,6 +273,7 @@ int32_t CodecClient::Reset()
         }
         UpdateGeneration();
         circular_.SetIsRunning(false);
+        circular_.ClearCaches();
         circular_.ResetFlag();
     }
     AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());

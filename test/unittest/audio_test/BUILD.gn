@@ -539,7 +539,7 @@ ohos_unittest("audio_lbvc_plugin_unit_test") {
     "-D_FORTIFY_SOURCE=2",
     "-Wformat=2",
     "-Wdate-time",
-]
+  ]
 
   cflags_cc = cflags
 
@@ -840,7 +840,7 @@ ohos_unittest("audio_raw_decoder_plugin_unit_test") {
     "-D_FORTIFY_SOURCE=2",
     "-Wformat=2",
     "-Wdate-time",
-]
+  ]
 
   cflags_cc = cflags
 
@@ -901,7 +901,7 @@ ohos_unittest("audio_ffmpeg_base_codec_unit_test") {
     "-D_FORTIFY_SOURCE=2",
     "-Wformat=2",
     "-Wdate-time",
-]
+  ]
 
   cflags_cc = cflags
 

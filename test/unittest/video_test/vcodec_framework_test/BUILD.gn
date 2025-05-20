@@ -69,9 +69,9 @@ group("vcodec_framework_test") {
         ":videoenc_repeat_previous_frame_capi_unit_test",
         ":videoenc_repeat_previous_frame_inner_unit_test",
         ":videoenc_stable_unit_test",
+        ":videoenc_state_unit_test",
         ":videoenc_temporal_scalability_capi_unit_test",
         ":videoenc_temporal_scalability_inner_unit_test",
-        ":videoenc_state_unit_test",
       ]
     }
   }

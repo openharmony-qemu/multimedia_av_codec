@@ -349,9 +349,7 @@ ohos_shared_library("av_codec_suspend_client") {
     ":av_codec_client_codec_config",
   ]
 
-  public_external_deps = [
-    "media_foundation:media_foundation",
-  ]
+  public_external_deps = [ "media_foundation:media_foundation" ]
   sanitize = av_codec_sanitize
 
   configs = [
@@ -371,9 +369,7 @@ ohos_shared_library("av_codec_suspend_client") {
     "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_service_proxy.cpp",
   ]
 
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",

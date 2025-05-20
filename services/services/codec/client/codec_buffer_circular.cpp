@@ -64,6 +64,8 @@ int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<MediaCodecCallbac
 
 int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)
 {
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(attrCb_ == nullptr, AVCS_ERR_INVALID_STATE,
+                                      "Already set parameter with atrribute callback!");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(CanSetIsAsyncMode(true), AVCS_ERR_INVALID_OPERATION, "Enable async mode failed");
     paramCb_ = callback;
     SetIsAsyncMode(true);
@@ -72,6 +74,7 @@ int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<MediaCodecParamet
 
 int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback)
 {
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(paramCb_ == nullptr, AVCS_ERR_INVALID_STATE, "Already set parameter callback!");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(CanSetIsAsyncMode(true), AVCS_ERR_INVALID_OPERATION, "Enable async mode failed");
     attrCb_ = callback;
     SetIsAsyncMode(true);
@@ -578,6 +581,9 @@ std::shared_ptr<Format> CodecBufferCircular::GetInputParameter(uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_SYNC, nullptr, "Not support async mode");
     std::lock_guard<std::mutex> lock(inMutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, nullptr, "Not in running state");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_ERROR), nullptr, "%{public}s",
+                                      AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());
     BufferCacheIter iter = inCache_.find(index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter != inCache_.end(), nullptr, "Index is invalid %{publlic}u", index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter->second.owner == OWNED_BY_USER, nullptr, "Invalid ownership:%{public}s",
@@ -589,6 +595,9 @@ std::shared_ptr<Format> CodecBufferCircular::GetInputAttribute(uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_SYNC, nullptr, "Not support async mode");
     std::lock_guard<std::mutex> lock(inMutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, nullptr, "Not in running state");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_ERROR), nullptr, "%{public}s",
+                                      AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());
     BufferCacheIter iter = inCache_.find(index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter != inCache_.end(), nullptr, "Index is invalid %{publlic}u", index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter->second.owner == OWNED_BY_USER, nullptr, "Invalid ownership:%{public}s",
@@ -600,6 +609,9 @@ std::shared_ptr<AVBuffer> CodecBufferCircular::GetInputBuffer(uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_SYNC, nullptr, "Not support async mode");
     std::lock_guard<std::mutex> lock(inMutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, nullptr, "Not in running state");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_ERROR), nullptr, "%{public}s",
+                                      AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());
     BufferCacheIter iter = inCache_.find(index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter != inCache_.end(), nullptr, "Index is invalid %{publlic}u", index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter->second.owner == OWNED_BY_USER, nullptr, "Invalid ownership:%{public}s",
@@ -611,6 +623,9 @@ std::shared_ptr<AVBuffer> CodecBufferCircular::GetOutputBuffer(uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_SYNC, nullptr, "Not support async mode");
     std::lock_guard<std::mutex> lock(outMutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, nullptr, "Not in running state");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_ERROR), nullptr, "%{public}s",
+                                      AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());
     BufferCacheIter iter = outCache_.find(index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter != outCache_.end(), nullptr, "Index is invalid %{publlic}u", index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter->second.owner == OWNED_BY_USER, nullptr, "Invalid ownership:%{public}s",
