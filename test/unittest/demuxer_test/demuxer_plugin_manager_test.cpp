@@ -62,6 +62,7 @@ static const std::string DEMUXER_PLUGIN_NAME_OGG = "avdemux_ogg";
 static const std::string DEMUXER_PLUGIN_NAME_WAV = "avdemux_wav";
 static const std::string DEMUXER_PLUGIN_NAME_RM = "avdemux_rm";
 static const std::string DEMUXER_PLUGIN_NAME_AC3 = "avdemux_ac3";
+static const std::string DEMUXER_PLUGIN_NAME_ERR = "avdemux_err";
 
 static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_FILE_URI_AAC = TEST_FILE_PATH + "audio/aac_44100_1.aac";
@@ -838,10 +839,16 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0022, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0023, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(TEST_FILE_URI_AAC, TEST_FILE_URI_AMR, DEF_PROB_SIZE), false);
-    ASSERT_EQ(CreateDemuxerPluginByName(TEST_FILE_URI_AMR, TEST_FILE_URI_APE, DEF_PROB_SIZE), false);
-    ASSERT_EQ(CreateDemuxerPluginByName(TEST_FILE_URI_MP3, TEST_FILE_URI_MP4, DEF_PROB_SIZE), false);
-    ASSERT_EQ(CreateDemuxerPluginByName(TEST_FILE_URI_MP4, TEST_FILE_URI_FLV, DEF_PROB_SIZE), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AAC, TEST_FILE_URI_AMR, DEF_PROB_SIZE), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_APE, DEF_PROB_SIZE), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_URI_MP4, DEF_PROB_SIZE), false);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_FLV, DEF_PROB_SIZE), false);
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0024, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_ERR, TEST_FILE_URI_AAC, DEF_PROB_SIZE), false);
     RemoveValue();
 }
 

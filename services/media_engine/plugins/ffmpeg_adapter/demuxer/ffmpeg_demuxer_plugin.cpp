@@ -1190,10 +1190,11 @@ Status FFmpegDemuxerPlugin::SetDataSourceByName(const std::shared_ptr<DataSource
     std::unique_lock<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
+    FALSE_RETURN_V_MSG_E(pluginName != "", Status::ERROR_INVALID_PARAMETER, "pluginName is empty");
     FALSE_RETURN_V_MSG_E(probSize >= 0, Status::ERROR_INVALID_PARAMETER, "probSize is invalid");
     
     int probScore = SniffWithSize(pluginName, source, probSize);
-    FALSE_RETURN_V_MSG_E(CheckProbScore(pluginName, probScore), Status::ERROR_WRONG_STATE, "No match inputformat");
+    FALSE_RETURN_V_MSG_E(CheckProbScore(pluginName, probScore), Status::ERROR_INVALID_PARAMETER, "No match inputformat");
     lock.unlock();
 
     return SetDataSource(source);
