@@ -621,6 +621,7 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     if (parameter->Find(Tag::VIDEO_SCALE_TYPE) != parameter->end()) {
         int32_t scaleType;
         parameter->Get<Tag::VIDEO_SCALE_TYPE>(scaleType);
+        preScaleType_ = scaleType;
         OHOS::ScalingMode scalingMode = ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType));
         if(videoSurface_) {
             GSError err = videoSurface_->SetScalingMode(scalingMode);
@@ -630,6 +631,7 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
             }
             MEDIA_LOG_D("set ScalingMode %{public}d to surface success", static_cast<int>(scalingMode));
         }
+        parameter->Remove(Tag::VIDEO_SCALE_TYPE);
     }
     if (parameter->Find(Tag::VIDEO_FRAME_RATE) != parameter->end()) {
         double rate = 0.0;
@@ -1077,6 +1079,12 @@ Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
         return Status::ERROR_INVALID_PARAMETER;
     }
     videoSurface_ = videoSurface;
+    OHOS::ScalingMode scalingMode = ConvertMediaScaleType(static_cast<VideoScaleType>(preScaleType_));
+    GSError err = videoSurface_->SetScalingMode(scalingMode);
+    if (err != GSERROR_OK) {
+        MEDIA_LOG_W("set ScalingMode %{public}d to surface failed", static_cast<int>(scalingMode));
+    }
+    MEDIA_LOG_D("set ScalingMode %{public}d to surface success", static_cast<int>(scalingMode));
     if (postProcessor_ != nullptr) {
         MEDIA_LOG_I("postProcessor_ SetOutputSurface in");
         Status res = postProcessor_->SetOutputSurface(videoSurface_);
