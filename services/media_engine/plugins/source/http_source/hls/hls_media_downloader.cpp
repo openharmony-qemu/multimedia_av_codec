@@ -159,6 +159,13 @@ size_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
     return static_cast<size_t>(offset64);
 }
 
+std::string HlsMediaDownloader::GetContentType()
+{
+    FALSE_RETURN_V(downloader_ != nullptr, "");
+    MEDIA_LOG_I("In");
+    return downloader_->GetContentType();
+}
+
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
 {
     if (fragmentDownloadStart[playInfo.url_]) {
