@@ -97,7 +97,6 @@ public:
     Status SetParameter(const std::shared_ptr<Meta> &parameter);
     std::shared_ptr<Meta> GetOutputFormat();
     void TransCoderOnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
-    int64_t GetMappingTime(std::shared_ptr<AVBuffer> buffer);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
@@ -117,6 +116,7 @@ private:
     void ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     bool CheckFrames(int64_t currentPts, int64_t &checkFramesPauseTime);
     void GetCurrentTime(int64_t &currentTime);
+    int64_t GetMappingTime(std::shared_ptr<AVBuffer> buffer);
     void AddStartPts(int64_t currentPts);
     void AddStopPts();
     bool AddPauseResumePts(int64_t currentPts);
