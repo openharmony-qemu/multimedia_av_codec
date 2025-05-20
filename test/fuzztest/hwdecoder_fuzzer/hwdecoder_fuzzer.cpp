@@ -87,8 +87,8 @@ bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
     int data0 = fdp.ConsumeIntegral<int32_t>();
     if (!g_vDecSample) {
         g_vDecSample = new VDecFuzzSample();
-        g_vDecSample->defaultWidth = DEFAULT_WIDTH;
-        g_vDecSample->defaultHeight = DEFAULT_HEIGHT;
+        g_vDecSample->defaultWidth = fdp.ConsumeIntegral<int32_t>();
+        g_vDecSample->defaultHeight = fdp.ConsumeIntegral<int32_t>();
         int32_t ret = g_vDecSample->CreateVideoDecoder();
         if (ret != 0) {
             delete g_vDecSample;
