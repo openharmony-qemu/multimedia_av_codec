@@ -93,6 +93,8 @@ public:
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
 
     void OnError(CodecErrorType errorType, int32_t errorCode);
+
+    void OnOutputFormatChanged(const Format& format);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

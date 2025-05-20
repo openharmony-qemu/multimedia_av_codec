@@ -137,6 +137,8 @@ public:
     Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc) override;
  
     Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc) override;
+
+    bool IsFormatSupported(const std::shared_ptr<Meta>& meta) override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
