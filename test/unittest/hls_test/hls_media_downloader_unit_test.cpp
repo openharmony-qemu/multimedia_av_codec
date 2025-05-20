@@ -1684,9 +1684,12 @@ HWTEST_F(HlsMediaDownloaderUnitTest, READ_DELEGATE_001, TestSize.Level1)
     downloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
     downloader->GetStreamInfo(streams);
+    OSAL::SleepFor(3 * 1000);
+    downloader->cacheMediaBuffer_->Clear();
+    downloader->writeTsIndex_ = 0;
     
     EXPECT_NE(downloader->GetDuration(), 0);
-    EXPECT_EQ(downloader->CheckReadStatus(), false);
+    EXPECT_EQ(downloader->CheckReadStatus(), true);
     EXPECT_EQ(downloader->GetBufferSize(), 0);
     unsigned char * buffer = new unsigned char[1 * 1024 * 1024];
     ReadDataInfo readDataInfo;
