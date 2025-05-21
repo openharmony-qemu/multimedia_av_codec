@@ -2156,9 +2156,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_4000, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1601, TestSize.Level1)
 {
-    if (access(g_mp4VvcPath.c_str(), F_OK) != 0) {
-        return;
-    }
+    ASSERT_EQ(access(g_mp4VvcPath.c_str(), F_OK), 0);
     fd_ = OpenFile(g_mp4VvcPath);
     size_ = GetFileSize(g_mp4VvcPath);
     printf("---- %s ------\n", g_mp4VvcPath.c_str());
@@ -2323,9 +2321,7 @@ HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1004, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1800, TestSize.Level1)
 {
-    if (access(g_rmvbPath.c_str(), F_OK) != 0) {
-        return;
-    }
+    ASSERT_EQ(access(g_rmvbPath.c_str(), F_OK), 0);
     fd_ = OpenFile(g_rmvbPath);
     size_ = GetFileSize(g_rmvbPath);
     printf("---- %s ----\n", g_rmvbPath.c_str());
@@ -2356,9 +2352,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1800, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1801, TestSize.Level1)
 {
-    if (access(g_rmvbPath.c_str(), F_OK) != 0) {
-        return;
-    }
+    ASSERT_EQ(access(g_rmvbPath.c_str(), F_OK), 0);
     fd_ = OpenFile(g_rmvbPath);
     size_ = GetFileSize(g_rmvbPath);
     printf("---- %s ------\n", g_rmvbPath.c_str());
@@ -2407,9 +2401,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1801, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1802, TestSize.Level1)
 {
-    if (access(g_ac3Path.c_str(), F_OK) != 0) {
-        return;
-    }
+    ASSERT_EQ(access(g_ac3Path.c_str(), F_OK), 0);
     fd_ = OpenFile(g_ac3Path);
     size_ = GetFileSize(g_ac3Path);
     printf("---- %s ----\n", g_ac3Path.c_str());
@@ -2440,9 +2432,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1802, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1803, TestSize.Level1)
 {
-    if (access(g_ac3Path.c_str(), F_OK) != 0) {
-        return;
-    }
+    ASSERT_EQ(access(g_ac3Path.c_str(), F_OK), 0);
     fd_ = OpenFile(g_ac3Path);
     size_ = GetFileSize(g_ac3Path);
     printf("---- %s ------\n", g_ac3Path.c_str());

@@ -1192,9 +1192,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3001, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1611, TestSize.Level1)
 {
-    if (access(g_mp4VvcPath.c_str(), F_OK) != 0) {
-        return;
-    }
+    ASSERT_EQ(access(g_mp4VvcPath.c_str(), F_OK), 0);
     printf("---- %s ------\n", g_mp4VvcUri.data());
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4VvcUri.data()));
     ASSERT_NE(source_, nullptr);
