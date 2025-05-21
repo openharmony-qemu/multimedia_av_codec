@@ -62,6 +62,7 @@ AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
 AudioSinkFilter::~AudioSinkFilter()
 {
     MEDIA_LOG_I("dtor called");
+    Filter::StopFilterTask();
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,

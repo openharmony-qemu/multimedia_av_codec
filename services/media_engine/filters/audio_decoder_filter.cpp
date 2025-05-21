@@ -141,6 +141,7 @@ AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filte
 
 AudioDecoderFilter::~AudioDecoderFilter()
 {
+    Filter::StopFilterTask();
     {
         std::lock_guard<std::mutex> lock(releaseMutex_);
         if (isReleased_.load()) {
