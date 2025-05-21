@@ -1285,7 +1285,7 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
 {
     bool render = true; // audio sink always report time anchor and do not drop
     auto syncCenter = syncCenter_.lock();
-    FALSE_RETURN_V(syncCenter != nullptr, -1);
+    FALSE_RETURN_V(syncCenter != nullptr, 0);
     if (firstPts_ == HST_TIME_NONE) {
         if (syncCenter && syncCenter->GetMediaStartPts() != HST_TIME_NONE) {
             firstPts_ = syncCenter->GetMediaStartPts();
