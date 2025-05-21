@@ -497,7 +497,7 @@ OH_AVErrCode OH_VideoEncoder_Configure(struct OH_AVCodec *codec, struct OH_AVFor
         if (bitrateExist && !maxBitrateExist) {
             AVCODEC_LOGW("In SQR bitrate mode, param %{public}s is not set, param %{public}s will be used instead",
                 OH_MD_KEY_MAX_BITRATE, OH_MD_KEY_BITRATE);
-                OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_MAX_BITRATE, bitrate);
+                OH_AVFormat_SetLongValue(format, OH_MD_KEY_MAX_BITRATE, bitrate);
         }
     }
 
