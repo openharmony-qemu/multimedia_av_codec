@@ -105,6 +105,15 @@ size_t DownloadRequest::GetFileContentLength() const
     return headerInfo_.GetFileContentLength();
 }
 
+std::string DownloadRequest::GetFileContentType()
+{
+    FALSE_RETURN_V_NOLOG(contentType_.empty(), contentType_);
+    WaitHeaderUpdated();
+    std::string contentType(headerInfo_.contentType, sizeof(headerInfo_.contentType));
+    contentType_ = contentType;
+    return contentType_;
+}
+
 size_t DownloadRequest::GetFileContentLengthNoWait() const
 {
     return headerInfo_.fileContentLen;
@@ -338,6 +347,14 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
         return true;
     }
     return requestQue_->Push(request, static_cast<int>(waitMs));
+}
+
+std::string Downloader::GetContentType()
+{
+    FALSE_RETURN_V(currentRequest_ != nullptr, "");
+    std::string ret = currentRequest_->GetFileContentType();
+    MEDIA_LOG_I("ContentType: %{public}s", ret.c_str());
+    return ret;
 }
 
 void Downloader::Start()

@@ -60,6 +60,13 @@ bool DashMediaDownloader::Open(const std::string& url, const std::map<std::strin
     return true;
 }
 
+std::string DashMediaDownloader::GetContentType()
+{
+    FALSE_RETURN_V(mpdDownloader_ != nullptr, "");
+    MEDIA_LOG_I("In");
+    return mpdDownloader_->GetContentType();
+}
+
 void DashMediaDownloader::Close(bool isAsync)
 {
     mpdDownloader_->Close(isAsync);

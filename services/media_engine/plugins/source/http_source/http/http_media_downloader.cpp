@@ -161,6 +161,13 @@ HttpMediaDownloader::~HttpMediaDownloader()
     Close(false);
 }
 
+std::string HttpMediaDownloader::GetContentType()
+{
+    FALSE_RETURN_V(downloader_ != nullptr, "");
+    MEDIA_LOG_I("In");
+    return downloader_->GetContentType();
+}
+
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     MEDIA_LOG_I("HTTP Open download");

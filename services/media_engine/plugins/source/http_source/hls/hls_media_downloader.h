@@ -113,6 +113,7 @@ public:
     uint64_t GetMemorySize() override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     bool IsHlsFmp4() override;
+    std::string GetContentType() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);

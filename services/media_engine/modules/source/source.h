@@ -130,6 +130,7 @@ public:
     void RestartAndClearBuffer();
     bool IsFlvLive();
     uint64_t GetMemorySize();
+    std::string GetContentType();
     bool IsHlsFmp4();
 
 private:

@@ -71,6 +71,12 @@ HttpSourcePlugin::~HttpSourcePlugin()
     CloseUri();
 }
 
+std::string HttpSourcePlugin::GetContentType()
+{
+    FALSE_RETURN_V(downloader_ != nullptr, "");
+    return downloader_->GetContentType();
+}
+
 Status HttpSourcePlugin::Init()
 {
     MEDIA_LOG_D("Init enter.");
