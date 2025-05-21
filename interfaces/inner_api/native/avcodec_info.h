@@ -903,17 +903,17 @@ enum VideoEncodeBitrateMode : int32_t {
      */
     CQ = 2,
     /**
-     * constant rate factor mode
-     */
-    CRF = 3,
-    /**
      * stable quality rate control mode.
      */
-    SQR = 4,
+    SQR = 3,
     /**
      * constant bit rate mode for video call or meeting scene
      */
     CBR_VIDEOCALL = 10,
+    /**
+     * constant rate factor mode
+     */
+    CRF = 11,
 };
 
 /**
