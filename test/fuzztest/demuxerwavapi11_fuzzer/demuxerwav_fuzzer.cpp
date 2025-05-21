@@ -60,17 +60,17 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     }
     FuzzedDataProvider fdp(data, size);
     struct Params params;
-    params.time = fdp.ConsumeIntegral<uint8_t>();
+    params.time = fdp.ConsumeIntegral<int64_t>();
     char *uri = new char[URI_BUFFER_SIZE];
     if (memcpy_s(uri, URI_BUFFER_SIZE, data  + size - URI_SIZE, URI_COUNT) != 0) {
         delete[] uri;
         return false;
     }
     uri[URI_COUNT] = FLAG;
-    params.setTrackType = fdp.ConsumeIntegral<uint8_t>();
-    params.setDuration = fdp.ConsumeIntegral<uint8_t>();
-    params.setHeight = fdp.ConsumeIntegral<uint8_t>();
-    params.setFrameRate = fdp.ConsumeIntegral<uint8_t>();
+    params.setTrackType = fdp.ConsumeIntegral<int64_t>();
+    params.setDuration = fdp.ConsumeIntegral<int64_t>();
+    params.setHeight = fdp.ConsumeIntegral<int64_t>();
+    params.setFrameRate = fdp.ConsumeIntegral<int64_t>();
     char *setLanguage = new char[LANGUAGE_BUFFER_SIZE];
     if (memcpy_s(setLanguage, LANGUAGE_BUFFER_SIZE, data + size - LANGUAGE_SIZE, LANGUAGE_COUNT) != 0) {
         delete[] uri;
@@ -79,10 +79,10 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     }
     setLanguage[LANGUAGE_COUNT] = FLAG;
     params.setCodecConfigSize = fdp.ConsumeIntegral<uint8_t>();
-    params.sampleRate = fdp.ConsumeIntegral<uint8_t>();
-    params.channelCount = fdp.ConsumeIntegral<uint8_t>();
-    params.setVideoHeight = fdp.ConsumeIntegral<uint8_t>();
-    params.setVideoWidth = fdp.ConsumeIntegral<uint8_t>();
+    params.sampleRate = fdp.ConsumeIntegral<int32_t>();
+    params.channelCount = fdp.ConsumeIntegral<int32_t>();
+    params.setVideoHeight = fdp.ConsumeIntegral<int32_t>();
+    params.setVideoWidth = fdp.ConsumeIntegral<int32_t>();
     uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = WAV_PATH;
