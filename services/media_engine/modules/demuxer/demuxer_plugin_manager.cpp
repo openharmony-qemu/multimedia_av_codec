@@ -141,7 +141,6 @@ size_t DemuxerPluginManager::GetStreamCount() const
 
 bool DemuxerPluginManager::GetPluginName(std::string& pluginName)
 {
-    MEDIA_LOG_I("In");
     FALSE_RETURN_V_NOLOG(!pluginName_.empty(), false);
     pluginName = pluginName_;
     return true;
@@ -300,7 +299,7 @@ Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr
         ScopedTimer timer("SnifferMediaType", SNIFF_WARNING_MS);
         type = streamDemuxer->SnifferMediaType(streamID);
         if (!type.empty() && pluginName_.empty()) {
-            MEDIA_LOG_I("PluginName: " PUBLIC_LOG_S, pluginName_.c_str());
+            MEDIA_LOG_I("PluginName: " PUBLIC_LOG_S, type.c_str());
             pluginName_ = type;
         }
     }
