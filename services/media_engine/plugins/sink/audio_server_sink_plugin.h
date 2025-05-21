@@ -173,10 +173,10 @@ private:
     };
     class AudioRendererWriteCallbackImpl : public AudioStandard::AudioRendererWriteCallback {
     public:
-        explicit AudioRendererWriteCallbackImpl(const std::shared_ptr<AudioServerSinkPlugin> &plugin);
+        explicit AudioRendererWriteCallbackImpl(const std::weak_ptr<AudioServerSinkPlugin> &plugin);
         void OnWriteData(size_t length) override;
     private:
-        std::shared_ptr<AudioServerSinkPlugin> plugin_;
+        std::weak_ptr<AudioServerSinkPlugin> plugin_;
     };
     void ReleaseRender();
     __attribute__((no_sanitize("cfi"))) void ReleaseFile();
@@ -262,7 +262,7 @@ private:
     std::shared_ptr<AudioStandard::AudioRendererWriteCallback> audioRenderWriteCallback_ {nullptr};
     std::mutex releaseRenderMutex_;
     bool isReleasingRender_ {false};
-    std::shared_ptr<AudioSinkDataCallback> audioSinkDataCallback_ {nullptr};
+    std::weak_ptr<AudioSinkDataCallback> audioSinkDataCallback_;
     bool isAudioVivid_ {false};
     uint64_t enqueueNumber_ {0};
 };

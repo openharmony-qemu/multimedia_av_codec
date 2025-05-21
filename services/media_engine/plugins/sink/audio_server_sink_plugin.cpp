@@ -42,6 +42,7 @@ constexpr int32_t DEFAULT_BUFFER_NUM = 8;
 constexpr int32_t WRITE_WAIT_TIME = 5;
 constexpr int64_t ON_WRITE_WARNING_MS = 15; // Reference value, Modify as needed
 constexpr int64_t GET_AUDIO_POSITION_WARNING_MS = 10; // Reference value, Modify as needed
+constexpr int64_t RELEASE_RENDER_WARNING_MS = 10; // Reference value, Modify as needed
 constexpr int32_t LOG_PRINT_LIMIT = 8; // Reference value, Modify as needed
 constexpr int32_t ON_WRITE_ZERO_COUNT = 500; // Reference value, Modify as needed
 
@@ -324,6 +325,7 @@ AudioSampleFormat AudioServerSinkPlugin::GetSampleFormat()
 void AudioServerSinkPlugin::ReleaseRender()
 {
     std::unique_lock<std::mutex> lock(releaseRenderMutex_);
+    ScopedTimer timer("ReleaseRender", RELEASE_RENDER_WARNING_MS);
     if (audioRenderer_ != nullptr && audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_RELEASED) {
         MEDIA_LOG_I_T("AudioRenderer::Release start");
         // ensure OnWriteData callback untied
@@ -1216,19 +1218,21 @@ void AudioServerSinkPlugin::OnWriteData(size_t length)
     FALSE_RETURN_MSG(!isReleasingRender_, "AudioServerSinkPlugin OnWriteData is releasing ");
     
     ScopedTimer timer("OnWriteData", ON_WRITE_WARNING_MS);
-    FALSE_RETURN_MSG(audioSinkDataCallback_ != nullptr, "AudioServerSinkPlugin OnWriteData callback is nullptr");
-    audioSinkDataCallback_->OnWriteData(length, isAudioVivid_);
+    auto cb = audioSinkDataCallback_.lock();
+    FALSE_RETURN_MSG(cb != nullptr, "AudioServerSinkPlugin OnWriteData callback is nullptr");
+    cb->OnWriteData(length, isAudioVivid_);
 }
 
 AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::AudioRendererWriteCallbackImpl(
-    const std::shared_ptr<AudioServerSinkPlugin> &plugin): plugin_(plugin)
+    const std::weak_ptr<AudioServerSinkPlugin> &plugin): plugin_(plugin)
 {
 }
 
 void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::OnWriteData(size_t length)
 {
-    FALSE_RETURN_MSG(plugin_ != nullptr, "AudioServerSinkPlugin OnWriteData plugin_ is nullptr");
-    plugin_->OnWriteData(length);
+    auto plugin = plugin_.lock();
+    FALSE_RETURN_MSG(plugin != nullptr, "AudioServerSinkPlugin OnWriteData plugin_ is nullptr");
+    plugin->OnWriteData(length);
 }
 
 Status AudioServerSinkPlugin::MuteAudioBuffer(uint8_t *addr, size_t offset, size_t length)
