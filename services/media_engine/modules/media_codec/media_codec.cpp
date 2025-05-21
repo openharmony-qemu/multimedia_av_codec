@@ -469,11 +469,13 @@ int32_t MediaCodec::SetParameter(const std::shared_ptr<Meta> &parameter)
 
 void MediaCodec::SetDumpInfo(bool isDump, uint64_t instanceId)
 {
-    if (isDump && instanceId == 0) {
-        MEDIA_LOG_W("Cannot dump with instanceId 0.");
+    (void)instanceId;
+    auto tid = gettid();
+    if (isDump && tid <= 0) {
+        MEDIA_LOG_W("Cannot dump with tid <= 0.");
         return;
     }
-    dumpPrefix_ = std::to_string(instanceId);
+    dumpPrefix_ = std::to_string(tid);
     isDump_ = isDump;
 }
 

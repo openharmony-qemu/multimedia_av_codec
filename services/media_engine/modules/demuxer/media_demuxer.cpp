@@ -524,8 +524,13 @@ void MediaDemuxer::SetPlayerId(std::string playerId)
 
 void MediaDemuxer::SetDumpInfo(bool isDump, uint64_t instanceId)
 {
-    FALSE_RETURN_MSG(!isDump || instanceId != 0, "Can not dump with instanceId 0");
-    dumpPrefix_ = std::to_string(instanceId);
+    (void)instanceId;
+    auto tid = gettid();
+    if (isDump && tid <= 0) {
+        MEDIA_LOG_W("Cannot dump with tid <= 0.");
+        return;
+    }
+    dumpPrefix_ = std::to_string(tid);
     isDump_ = isDump;
 }
 
