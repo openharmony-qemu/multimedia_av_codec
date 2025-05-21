@@ -500,7 +500,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, SnifferMediaType_Timeout, TestSize.Level1
     ASSERT_NE(demuxerPluginManager_->LoadDemuxerPlugin(streamId, streamDemuxer_), Status::OK);
 }
 
-bool DemuxerPluginManagerUnitTest::CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath, int probSize)
+bool DemuxerPluginManagerUnitTest::CreateDataSource(const std::string& filePath)
 {
     mediaSource_ = std::make_shared<MediaSource>(filePath);
     realSource_ = std::make_shared<Source>();
@@ -511,19 +511,24 @@ bool DemuxerPluginManagerUnitTest::CreateDemuxerPluginByName(const std::string& 
     realStreamDemuxer_->SetSource(realSource_);
     realStreamDemuxer_->Init(filePath);
 
-    int streamId = 0;
-    realStreamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
-    dataSourceImpl_ = std::make_shared<DataSourceImpl>(realStreamDemuxer_, streamId);
+    realStreamDemuxer_->SetDemuxerState(streamId_, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
+    dataSourceImpl_ = std::make_shared<DataSourceImpl>(realStreamDemuxer_, streamId_);
     dataSourceImpl_->stream_ = realStreamDemuxer_;
     realSource_->NotifyInitSuccess();
 
+    return true;
+}
+
+bool DemuxerPluginManagerUnitTest::CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath, int probSize)
+{
+    FALSE_RETURN(CreateDataSource(filePath));
     pluginBase_ = Plugins::PluginManagerV2::Instance().CreatePluginByName(typeName);
     FALSE_RETURN(pluginBase_ != nullptr);
 
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    FALSE_RETURN(demuxerPlugin->SetDataSourceByName(dataSourceImpl_, typeName, probSize) == Status::OK);
+    FALSE_RETURN(demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, probSize) == Status::OK);
 
-    realStreamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+    realStreamDemuxer_->SetDemuxerState(streamId_, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
 
     return true;
 }
@@ -661,19 +666,19 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0002, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0003, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMRNB, TEST_FILE_URI_AMRNB, DEF_PROB_SIZE), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMRNB, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
-    ASSERT_EQ(ResultAssert(1503, 0, 1503, 0), true);
+    ASSERT_EQ(ResultAssert(1501, 0, 1501, 0), true);
     RemoveValue();
 }
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0004, TestSize.Level1)
 {
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMRWB, TEST_FILE_URI_AMRWB, DEF_PROB_SIZE), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMRWB, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
-    ASSERT_EQ(ResultAssert(1509, 0, 1509, 0), true);
+    ASSERT_EQ(ResultAssert(1500, 0, 1500, 0), true);
     RemoveValue();
 }
 
@@ -849,6 +854,14 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0023, TestSize.
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0024, TestSize.Level1)
 {
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_ERR, TEST_FILE_URI_AAC, DEF_PROB_SIZE), false);
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0025, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AAC, TEST_FILE_URI_AAC, DEF_PROB_SIZE), true);
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    ASSERT_EQ(demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, DEF_PROB_SIZE), Status::ERROR_WRONG_STATE);
     RemoveValue();
 }
 

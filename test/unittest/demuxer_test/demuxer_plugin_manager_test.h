@@ -40,6 +40,7 @@ protected:
     std::shared_ptr<MockBaseStreamDemuxer> streamDemuxer_{ nullptr };
 
 private:
+    bool CreateDataSource(const std::string& filePath);
     bool CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath, int probSize);
     bool PluginSelectTracks();
     bool PluginReadSample(uint32_t idx, uint32_t& flag);
@@ -50,6 +51,7 @@ private:
     bool ResultAssert(uint32_t frames0, uint32_t frames1, uint32_t keyFrames0, uint32_t keyFrames1);
     bool PluginReadAllSample();
 
+    int streamId_ = 0;
     std::map<uint32_t, uint32_t> frames_;
     std::map<uint32_t, uint32_t> keyFrames_;
     std::map<uint32_t, bool> eosFlag_;
