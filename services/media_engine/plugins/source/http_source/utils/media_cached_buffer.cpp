@@ -905,7 +905,8 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::SplitFragmentCacheBuffer(FragmentIte
     totalReadSize_ += newReadSizeInit;
     newFragmentPos->readTime = Clock::now();
     newFragmentPos->accessPos = newFragmentPos->chunks.begin();
-    currFragmentIter->dataLength = static_cast<int64_t>(offset > diff ? offset - diff : 0);
+    currFragmentIter->dataLength = static_cast<int64_t>(offset > currFragmentIter->offsetBegin ?
+                                        offset - currFragmentIter->offsetBegin : 0);
     currFragmentIter = newFragmentPos;
     lruCache_.Refer(newFragmentPos->offsetBegin, newFragmentPos);
     return newFragmentPos->accessPos;
