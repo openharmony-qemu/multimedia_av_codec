@@ -605,6 +605,7 @@ void HevcDecoder::SetSurfaceParameter(const Format &format, const std::string_vi
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
         sInfo_.scalingMode = val;
+        sInfo_.surface->SetScalingMode(scaleMode);
     } else {
         AVCODEC_LOGW("Set parameter failed: %{public}s", formatKey.data());
         return;
@@ -715,6 +716,7 @@ int32_t HevcDecoder::SetSurfaceCfg()
                                  val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
                                  AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
         sInfo_.scalingMode = val32;
+        sInfo_.surface->SetScalingMode(static_cast<ScalingMode>(val32));
     }
     if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
@@ -1472,7 +1474,6 @@ int32_t HevcDecoder::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surface
     }
     OHOS::BufferFlushConfig flushConfig = {{0, 0, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight()},
         outAVBuffer4Surface_[index]->pts_, -1};
-    surfaceMemory->UpdateSurfaceBufferScaleMode();
     if (outAVBuffer4Surface_[index]->meta_->Find(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP) !=
         outAVBuffer4Surface_[index]->meta_->end()) {
         outAVBuffer4Surface_[index]->meta_->Get<OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP>(

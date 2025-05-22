@@ -58,7 +58,6 @@ public:
     sptr<SurfaceBuffer> GetSurfaceBuffer();
     int32_t GetSurfaceBufferStride();
     sptr<SyncFence> GetFence();
-    void UpdateSurfaceBufferScaleMode();
     uint8_t *GetBase() const;
     int32_t GetSize() const;
     bool isAttached = false;
