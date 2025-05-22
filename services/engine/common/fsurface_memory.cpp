@@ -95,7 +95,7 @@ sptr<SyncFence> FSurfaceMemory::GetFence()
 void FSurfaceMemory::UpdateSurfaceBufferScaleMode()
 {
     CHECK_AND_RETURN_LOG(surfaceBuffer_ != nullptr, "Surface buffer is nullptr!");
-    CHECK_AND_RETURN_LOGD(sInfo_->scalingMode, "Surface scaling mode not set!");
+    CHECK_AND_RETURN_LOGD(sInfo_->scalingMode >= 0, "Surface scaling mode not set!");
     ScalingMode scalingMode = static_cast<ScalingMode>(sInfo_->scalingMode);
     auto ret = sInfo_->surface->SetScalingMode(surfaceBuffer_->GetSeqNum(), scalingMode);
     if (ret != OHOS::SurfaceError::SURFACE_ERROR_OK) {

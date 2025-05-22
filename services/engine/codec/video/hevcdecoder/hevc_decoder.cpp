@@ -1614,6 +1614,7 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
                                  AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
         sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
     }
+    sInfo_.surface = newSurface;
     CombineConsumerUsage();
     for (uint32_t index: ownedBySurfaceBufferIndex) {
         int32_t ret = RenderNewSurfaceWithOldBuffer(newSurface, index);
