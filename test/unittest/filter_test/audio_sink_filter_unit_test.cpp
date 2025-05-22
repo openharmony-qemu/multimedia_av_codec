@@ -189,7 +189,7 @@ HWTEST_F(AudioSinkFilterUnitTest, AudioSinkFilter_HandleFormatChange_0200, TestS
 {
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     audioSinkFilter_->audioSink_->plugin_ = nullptr;
-    EXPECT_EQ(audioSinkFilter_->HandleFormatChange(meta), Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(audioSinkFilter_->HandleFormatChange(meta), Status::ERROR_INVALID_STATE);
 }
 
 /**

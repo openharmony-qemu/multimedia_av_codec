@@ -564,7 +564,7 @@ bool AudioServerSinkPlugin::IsFormatSupported(const std::shared_ptr<Meta> &meta)
         "UnSupported sampleRate %{public}d", sampleRate);
 
     int32_t channels = 0;
-    FALSE_RETURN_V(meta->GetData(Tag::AUDIO_CHANNEL_COUNT, channels), false);
+    FALSE_RETURN_V(meta->GetData(Tag::AUDIO_OUTPUT_CHANNELS, channels), false);
     FALSE_RETURN_V_MSG_E(AssignChannelNumIfSupported(static_cast<uint32_t>(channels)), false,
         "UnSupported channel count %{public}d", channels);
 

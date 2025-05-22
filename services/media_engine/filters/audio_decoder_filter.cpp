@@ -564,7 +564,7 @@ void AudioDecoderFilter::OnOutputFormatChanged(const Format& format)
     MediaAVCodec::AVCodecTrace trace(formatChangeInfo);
     MEDIA_LOG_I("%s", formatChangeInfo.c_str());
     meta_->SetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
-    meta_->SetData(Tag::AUDIO_CHANNEL_COUNT, channels);
+    meta_->SetData(Tag::AUDIO_OUTPUT_CHANNELS, channels);
     meta_->SetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
     nextFilter_->HandleFormatChange(meta_);
 }
