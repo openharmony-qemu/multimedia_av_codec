@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -44,6 +44,7 @@ public:
 
     void InitResource(const std::string &path, bool local);
     void ReadSample(const std::string &path, bool local, bool checkBufferInfo = false);
+    bool CheckCache(uint32_t readTrackId, uint32_t times, uint32_t checkTrackId, uint32_t expect, bool exist = true);
 
 protected:
     std::shared_ptr<AVSourceMock> source_ = nullptr;
