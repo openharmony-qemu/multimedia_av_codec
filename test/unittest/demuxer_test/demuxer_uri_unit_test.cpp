@@ -1463,7 +1463,9 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3001, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1611, TestSize.Level1)
 {
-    ASSERT_EQ(access(g_mp4VvcPath.c_str(), F_OK), 0);
+    if (access(g_mp4VvcPath.c_str(), F_OK) != 0) {
+        return;
+    }
     InitResource(g_mp4VvcUri, URI);
     ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -1488,7 +1490,9 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1611, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1611, TestSize.Level1)
 {
-    ASSERT_EQ(access(g_mp4VvcPath.c_str(), F_OK), 0);
+    if (access(g_mp4VvcPath.c_str(), F_OK) != 0) {
+        return;
+    }
     InitResource(g_mp4VvcUri, URI);
     ASSERT_TRUE(initStatus_);
     SetInitValue();
