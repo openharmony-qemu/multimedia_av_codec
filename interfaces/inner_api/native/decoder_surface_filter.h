@@ -245,6 +245,7 @@ private:
     int64_t prevDecoderPts_ {INT64_MAX};
     std::mutex fdMutex_ {};
     std::unique_ptr<FdsanFd> fdsanFd_ = nullptr;
+    int32_t preScaleType_ {0};
 };
 } // namespace Pipeline
 } // namespace Media
