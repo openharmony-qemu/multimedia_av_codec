@@ -96,7 +96,8 @@ void FSurfaceMemory::UpdateSurfaceBufferScaleMode()
 {
     CHECK_AND_RETURN_LOG(surfaceBuffer_ != nullptr, "Surface buffer is nullptr!");
     CHECK_AND_RETURN_LOGD(sInfo_->scalingMode, "Surface scaling mode not set!");
-    auto ret = sInfo_->surface->SetScalingMode(surfaceBuffer_->GetSeqNum(), static_cast<ScalingMode>(sInfo_->scalingMode));
+    ScalingMode scalingMode = static_cast<ScalingMode>(sInfo_->scalingMode);
+    auto ret = sInfo_->surface->SetScalingMode(surfaceBuffer_->GetSeqNum(), scalingMode);
     if (ret != OHOS::SurfaceError::SURFACE_ERROR_OK) {
         AVCODEC_LOGE("Update surface buffer scaling mode failed, ret=%{public}" PRIu64, static_cast<uint64_t>(ret));
     }
