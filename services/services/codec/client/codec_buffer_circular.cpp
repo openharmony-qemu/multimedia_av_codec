@@ -198,12 +198,13 @@ void CodecBufferCircular::PrintCaches(bool isOutput)
 int32_t CodecBufferCircular::HandleInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     // Api9
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_ASYNC, AVCS_ERR_INVALID_OPERATION, "Not support sync mode");
     std::lock_guard<std::mutex> lock(inMutex_);
     BufferCacheIter iter = inCache_.find(index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, AVCS_ERR_INVALID_STATE, "Not in running state");
     if (iter == inCache_.end()) {
         AVCODEC_LOGW_WITH_TAG("Index is invalid %{publlic}u", index);
-        return (flag_ & FLAG_IS_SYNC) ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
+        return AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
     item.owner = OWNED_BY_SERVER;

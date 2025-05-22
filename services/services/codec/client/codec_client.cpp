@@ -140,8 +140,8 @@ int32_t CodecClient::Configure(const Format &format)
     // video encoder set parameter
     CHECK_AND_RETURN_RET_LOG_WITH_TAG((enableParameterSyncMode && enableSyncMode) || !enableParameterSyncMode,
                                       AVCS_ERR_INVALID_OPERATION, "Set parameter sync mode failed");
-    int32_t isSetParameterCb = (codecMode_ & CODEC_ENABLE_PARAMETER) || enableParameterSyncMode;
-    const_cast<Format &>(format).PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
+    bool isSetInputParameter = (codecMode_ & CODEC_ENABLE_PARAMETER) || enableParameterSyncMode;
+    const_cast<Format &>(format).PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetInputParameter);
 
     int32_t ret = codecProxy_->Configure(format);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s",
@@ -337,6 +337,8 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ == BUFFER_CALLBACK || !circular_.GetIsAsyncMode(),
                                       AVCS_ERR_INVALID_STATE, "The callback of AVBuffer is invalid!");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecMode_ & CODEC_ENABLE_PARAMETER), AVCS_ERR_INVALID_OPERATION,
+                                      "Not support with enable input parameter");
     int32_t ret = circular_.HandleInputBuffer(index);
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputBuffer(index);
