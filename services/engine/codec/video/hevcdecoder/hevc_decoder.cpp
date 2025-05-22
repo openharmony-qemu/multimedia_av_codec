@@ -604,7 +604,7 @@ void HevcDecoder::SetSurfaceParameter(const Format &format, const std::string_vi
                              "Set parameter failed: scale type value %{public}d invalid", val);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
-        sInfo_.scalingMode = scaleMode;
+        sInfo_.scalingMode = val;
     } else {
         AVCODEC_LOGW("Set parameter failed: %{public}s", formatKey.data());
         return;
@@ -714,7 +714,7 @@ int32_t HevcDecoder::SetSurfaceCfg()
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
                                      val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
                                  AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
-        sInfo_.scalingMode = static_cast<ScalingMode>(val32);
+        sInfo_.scalingMode = val32;
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
                                      val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
                                  AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
@@ -1625,7 +1625,9 @@ int32_t HevcDecoder::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurfa
     std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory;
     sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index].first;
     OHOS::BufferFlushConfig flushConfig = renderSurfaceBufferMap_[index].second;
-    newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), sInfo_.scalingMode);
+    if (sInfo_.scalingMode >= 0) {
+        newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), static_cast<ScalingMode>(sInfo_.scalingMode));
+    }
     auto res = newSurface->FlushBuffer(surfaceBuffer, -1, flushConfig);
     if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
         AVCODEC_LOGE("Failed to update surface memory: %{public}d", res);

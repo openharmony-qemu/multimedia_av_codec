@@ -43,7 +43,7 @@ struct SurfaceControl {
                                          .format = 0,
                                          .usage = USAGE,
                                          .timeout = TIMEOUT};
-    ScalingMode scalingMode = ScalingMode::SCALING_MODE_SCALE_TO_WINDOW;
+    int32_t scalingMode = -1;
 };
 
 class FSurfaceMemory {
