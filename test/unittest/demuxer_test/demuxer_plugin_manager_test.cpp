@@ -360,7 +360,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetCurrentBitRate_001, TestSize.Level1)
 HWTEST_F(DemuxerPluginManagerUnitTest, RebootPlugin_001, TestSize.Level1)
 {
     int32_t streamId = 0;
-    int32_t newStreamID = 1;
     TrackType trackType = TRACK_AUDIO;
     bool isRebooted;
     demuxerPluginManager_->streamInfoMap_[0] = MediaStreamInfo();
