@@ -1483,12 +1483,6 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         buffers_[INDEX_OUTPUT][index]->sMemory_->isAttached = true;
     }
     int32_t val32 = 0;
-    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
-        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
-                                 val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
-                                 AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
-        sInfo_.scalingMode = val32;
-    }
     if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
                                  val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
