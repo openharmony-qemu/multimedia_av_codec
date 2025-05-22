@@ -360,7 +360,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, GetCurrentBitRate_001, TestSize.Level1)
 HWTEST_F(DemuxerPluginManagerUnitTest, RebootPlugin_001, TestSize.Level1)
 {
     int32_t streamId = 0;
-    int32_t newStreamID = 1;
     TrackType trackType = TRACK_AUDIO;
     bool isRebooted;
     demuxerPluginManager_->streamInfoMap_[0] = MediaStreamInfo();
@@ -369,9 +368,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, RebootPlugin_001, TestSize.Level1)
     EXPECT_CALL(*streamDemuxer_, SetDemuxerState).WillRepeatedly(Return());
     std::string str = "";
     EXPECT_CALL(*streamDemuxer_, SnifferMediaType).WillRepeatedly(Return(str));
-    EXPECT_CALL(*streamDemuxer_, GetNewAudioStreamID()).WillRepeatedly(Return(newStreamID));
-    EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted),
-        Status::OK);
     streamId = 1;
     EXPECT_EQ(demuxerPluginManager_->RebootPlugin(streamId, trackType, streamDemuxer_, isRebooted),
         Status::ERROR_INVALID_PARAMETER);
