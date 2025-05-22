@@ -710,13 +710,15 @@ int32_t HevcDecoder::SetSurfaceCfg()
     sInfo_.requestConfig.width = width_;
     sInfo_.requestConfig.height = height_;
     sInfo_.requestConfig.format = surfacePixelFmt;
-    if (sInfo_.surface != nullptr) {
+    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
-                                     val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
+                                 val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
                                  AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
         sInfo_.scalingMode = val32;
+    }
+    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
-                                     val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
+                                 val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
                                  AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
         sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
     }
@@ -1605,10 +1607,13 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         }
         buffers_[INDEX_OUTPUT][index]->sMemory->isAttached = true;
     }
-    int32_t videoRotation = 0;
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, videoRotation);
-    newSurface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(videoRotation)));
-    sInfo_.surface = newSurface;
+    int32_t val32 = 0;
+    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
+        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
+                                 val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
+                                 AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
+        sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+    }
     CombineConsumerUsage();
     for (uint32_t index: ownedBySurfaceBufferIndex) {
         int32_t ret = RenderNewSurfaceWithOldBuffer(newSurface, index);
@@ -1673,14 +1678,6 @@ int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, err,
                              "surface(%{public}" PRIu64 ") register listener to surface failed, GSError=%{public}d",
                              sInfo_.surface->GetUniqueId(), err);
-    if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE,
-                            static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_TO_WINDOW));
-    }
-    if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE,
-                            static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_0));
-    }
     AVCODEC_LOGI("Set surface(%{public}" PRIu64 ") success.", surfaceId);
     return AVCS_ERR_OK;
 }
