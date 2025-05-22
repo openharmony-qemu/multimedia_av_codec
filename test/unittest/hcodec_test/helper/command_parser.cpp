@@ -66,6 +66,7 @@ enum ShortOption {
     OPT_IS_ABS_QP_MAP,
     OPT_QP_MAP_VALUE,
     OPT_TARGET_QP,
+    OPT_GOP_B_MODE,
     // decoder only
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
@@ -115,6 +116,7 @@ static struct option g_longOptions[] = {
     {"enableQPMap",     required_argument,  nullptr, OPT_ENABLE_QP_MAP},
     {"isAbsQpMap",       required_argument,  nullptr, OPT_IS_ABS_QP_MAP},
     {"qpMapValue",      required_argument,  nullptr, OPT_QP_MAP_VALUE},
+    {"gopBMode",        required_argument,  nullptr, OPT_GOP_B_MODE},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
@@ -167,6 +169,7 @@ void ShowUsage()
     std::cout << " --repeatMaxCnt       repeat previous frame up to target times" << std::endl;
     std::cout << " --layerCnt           target encode layerCnt, H264:2, H265:2 and 3" << std::endl;
     std::cout << " --waterMark          eg. /data/test/a.rgba,1280,720,2:16,16,1280,720" << std::endl;
+    std::cout << " --gopBMode           gop mode for b frame. 1(adaptive-b mode), 2(h3b mode)" << std::endl;
     std::cout << " [decoder only]" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --paramsFeedback     0 means don't feedback, 1 means feedback" << std::endl;
@@ -300,6 +303,9 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_ENABLE_QP_MAP:
                 opt.enableQPMap = stol(optarg);
+                break;
+            case OPT_GOP_B_MODE:
+                opt.gopBMode = stol(optarg);
                 break;
             // decoder only
             case OPT_DEC_THEN_ENC:
@@ -482,6 +488,9 @@ void CommandOpt::Print() const
     TLOGI("repeat %u times, timeout = %d", repeatCnt, timeout);
     TLOGI("enableHighPerfMode : %s", isHighPerfMode ? "yes" : "no");
 
+    if (gopBMode.has_value()) {
+        TLOGI("gopBMode : %d", gopBMode.value());
+    }
     if (mockFrameCnt.has_value()) {
         TLOGI("mockFrameCnt %u", mockFrameCnt.value());
     }

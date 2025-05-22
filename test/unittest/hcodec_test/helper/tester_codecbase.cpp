@@ -239,6 +239,9 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.enableQPMap == 1) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, opt_.enableQPMap);
     }
+    if (opt_.gopBMode.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, opt_.gopBMode.value());
+    }
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
     if (err != AVCS_ERR_OK) {

@@ -65,6 +65,7 @@ enum class AVCapabilityFeature : int32_t {
     VIDEO_RPR = 4,
     VIDEO_ENCODER_QP_MAP = 5,
     VIDEO_DECODER_SEEK_WITHOUT_FLUSH = 6,
+    VIDEO_ENCODER_B_FRAME = 7,
     MAX_VALUE
 };
 

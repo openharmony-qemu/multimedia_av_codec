@@ -43,6 +43,10 @@ int32_t HEncoder::OnConfigure(const Format &format)
     }
 
     optional<double> frameRate = GetFrameRateFromUser(format);
+    ret = ConfigBEncodeMode(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     ret = SetupPort(format, frameRate);
     if (ret != AVCS_ERR_OK) {
         return ret;
@@ -199,6 +203,37 @@ int32_t HEncoder::EnableFrameQPMap(const Format &format)
     }
     HLOGI("enable encoder frame qp map[%d] success", enableQPMap);
     enableQPMap_ = true;
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::ConfigBEncodeMode(const Format &format)
+{
+    Media::Plugins::VideoEncodeBFrameGopMode gopMode;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, *reinterpret_cast<int *>(&gopMode))) {
+        return AVCS_ERR_OK;
+    }
+    if (gopMode == Media::Plugins::VIDEO_ENCODE_GOP_DEFAULT_P_MODE) {
+        HLOGI("encoder use default p mode");
+        return AVCS_ERR_OK;
+    }
+
+    CodecEncGopMode param {};
+    InitOMXParamExt(param);
+    if (gopMode == Media::Plugins::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE) {
+        HLOGI("encoder use adaptive-b");
+        param.gopMode = OMX_ENCODE_GOP_ADAPTIVE_B_MODE;
+    } else if (gopMode == Media::Plugins::VIDEO_ENCODE_GOP_H3B_MODE) {
+        HLOGI("encoder use h3b");
+        param.gopMode = OMX_ENCODE_GOP_H3B_MODE;
+    } else {
+        HLOGE("invalid gop mode");
+        return AVCS_ERR_UNSUPPORT;
+    }
+
+    if (!SetParameter(OMX_IndexParamEncBFrameMode, param)) {
+        HLOGE("config b gop mode [%d] failed", gopMode);
+        return AVCS_ERR_INVALID_VAL;
+    }
     return AVCS_ERR_OK;
 }
 
@@ -634,23 +669,19 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
     }
     optional<VideoEncodeBitrateMode> bitRateMode = GetBitRateModeFromUser(format);
     if (bitRateMode.has_value()) {
-        int32_t quality;
-        if (bitRateMode.value() == CQ &&
-            format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) && quality >= 0) {
-            return SetConstantQualityMode(quality);
-        }
-        int32_t targetQp;
+        int32_t metaValue;
         if (bitRateMode.value() == CRF &&
-            format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, targetQp) && targetQp >= 0) {
-            return SetCRFMode(targetQp);
+            format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, metaValue) && metaValue >= 0) {
+            return SetCRFMode(metaValue);
         }
-        if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) &&
-            bitRateMode.value() == SQR) {
-            return SetSQRMode(format);
-        }
-        optional<uint32_t> bitRate = GetBitRateFromUser(format);
-        if (bitRate.has_value()) {
-            bitrateType.nTargetBitrate = bitRate.value();
+        if (format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, metaValue)) {
+            if (bitRateMode.value() == CQ && metaValue >= 0) {
+                return SetConstantQualityMode(metaValue);
+            }
+        } else {
+            if (bitRateMode.value() == SQR) {
+                return SetSQRMode(format);
+            }
         }
         if (bitRateMode.value() != SQR && bitRateMode.value() != CQ) {
             auto omxBitrateMode = TypeConverter::InnerModeToOmxBitrateMode(bitRateMode.value());
@@ -658,6 +689,10 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
                 bitrateType.eControlRate = omxBitrateMode.value();
             }
         }
+    }
+    optional<uint32_t> bitRate = GetBitRateFromUser(format);
+    if (bitRate.has_value()) {
+        bitrateType.nTargetBitrate = bitRate.value();
     }
     if (!SetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
         HLOGE("failed to set OMX_IndexParamVideoBitrate");

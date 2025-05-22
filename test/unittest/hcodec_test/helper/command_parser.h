@@ -135,6 +135,7 @@ struct CommandOpt {
     WaterMarkParam waterMark;
     bool paramsFeedback;
     bool enableQPMap = false;
+    std::optional<int32_t> gopBMode;
 
     // decoder only
     bool decThenEnc = false;
