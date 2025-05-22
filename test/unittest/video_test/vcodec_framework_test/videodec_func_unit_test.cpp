@@ -102,7 +102,7 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 #ifdef VIDEODEC_SYNC_UNIT_TEST
-    format_->PutIntValue(OHOS::Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+    format_->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
 #endif
 }
 

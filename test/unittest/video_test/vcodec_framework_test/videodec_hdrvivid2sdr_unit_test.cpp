@@ -60,9 +60,9 @@ public:
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
-    std::shared_ptr<OHOS::MediaAVCodec::VideoDecAsyncSample> videoDec_ = nullptr;
+    std::shared_ptr<VideoDecAsyncSample> videoDec_ = nullptr;
 #else
-    std::shared_ptr<OHOS::MediaAVCodec::VideoDecSyncSample> videoDec_ = nullptr;
+    std::shared_ptr<VideoDecSyncSample> videoDec_ = nullptr;
 #endif
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
@@ -89,9 +89,9 @@ void TEST_SUIT::SetUp(void)
     ASSERT_NE(nullptr, vdecCallbackExt_);
 
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
-    videoDec_ = std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+    videoDec_ = std::make_shared<VideoDecAsyncSample>(vdecSignal);
 #else
-    videoDec_ = std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+    videoDec_ = std::make_shared<VideoDecSyncSample>(vdecSignal);
 #endif
     ASSERT_NE(nullptr, videoDec_);
 

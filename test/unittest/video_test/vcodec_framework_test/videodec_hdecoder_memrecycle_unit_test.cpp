@@ -54,9 +54,9 @@ public:
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
-    std::shared_ptr<OHOS::MediaAVCodec::VideoDecAsyncSample> videoDec_ = nullptr;
+    std::shared_ptr<VideoDecAsyncSample> videoDec_ = nullptr;
 #else
-    std::shared_ptr<OHOS::MediaAVCodec::VideoDecSyncSample> videoDec_ = nullptr;
+    std::shared_ptr<VideoDecSyncSample> videoDec_ = nullptr;
 #endif
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
@@ -81,9 +81,9 @@ void TEST_SUIT::SetUp(void)
     vdecCallbackExt_ = std::make_shared<VDecCallbackTestExt>(vdecSignal);
     ASSERT_NE(nullptr, vdecCallbackExt_);
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
-    videoDec_ = std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+    videoDec_ = std::make_shared<VideoDecAsyncSample>(vdecSignal);
 #else
-    videoDec_ = std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+    videoDec_ = std::make_shared<VideoDecSyncSample>(vdecSignal);
 #endif
     ASSERT_NE(nullptr, videoDec_);
 
@@ -308,10 +308,10 @@ void CreateARunningHardwareAvcDecoder()
     std::shared_ptr<VDecCallbackTest> vdecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
     std::shared_ptr<VideoDecAsyncSample> videoDec =
-        std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+        std::make_shared<VideoDecAsyncSample>(vdecSignal);
 #else
     std::shared_ptr<VideoDecSyncSample> videoDec =
-        std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+        std::make_shared<VideoDecSyncSample>(vdecSignal);
 #endif
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
     if (!vdecCallback || !videoDec || !format) {
@@ -339,10 +339,10 @@ void CreateARunningHardwareHevcDecoder()
     std::shared_ptr<VDecCallbackTest> vdecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
     std::shared_ptr<VideoDecAsyncSample> videoDec =
-        std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+        std::make_shared<VideoDecAsyncSample>(vdecSignal);
 #else
     std::shared_ptr<VideoDecSyncSample> videoDec =
-        std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+        std::make_shared<VideoDecSyncSample>(vdecSignal);
 #endif
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
     if (!vdecCallback || !videoDec || !format) {

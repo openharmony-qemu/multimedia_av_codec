@@ -1115,7 +1115,6 @@ void VideoEncAsyncSample::PerformEosFrameAndVerifiedSHA()
         CheckSHA();
     }
     cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
-    cout << "Input Frame, frameCount = " << frameInputCount_ << endl;
     cout << "Get EOS Frame, output func exit" << endl;
     unique_lock<mutex> lock(signal_->mutex_);
     EXPECT_LE(frameOutputCount_, frameInputCount_);

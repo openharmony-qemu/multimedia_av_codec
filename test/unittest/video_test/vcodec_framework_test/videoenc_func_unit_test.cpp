@@ -224,11 +224,12 @@ bool TEST_SUIT::CreateVideoCodecByMime(const std::string &encMime)
 bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
 {
     if (videoEnc_->isAVBufferMode_) {
-        if (videoEnc_->CreateVideoEncMockByName(name) == false) {
+        if (videoEnc_->CreateVideoEncMockByName(name) == false ||
+            videoEnc_->SetCallback(vencCallbackExt_) != AV_ERR_OK) {
             return false;
         }
     } else {
-        if (videoEnc_->CreateVideoEncMockByName(name) == false) {
+        if (videoEnc_->CreateVideoEncMockByName(name) == false || videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
             return false;
         }
     }

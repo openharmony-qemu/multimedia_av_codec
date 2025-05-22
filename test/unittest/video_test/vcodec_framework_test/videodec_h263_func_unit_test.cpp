@@ -105,10 +105,10 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_001, TestSize.Level1)
 
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
         std::shared_ptr<VideoDecAsyncSample> videoDec =
-            std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+            std::make_shared<VideoDecAsyncSample>(vdecSignal);
 #else
         std::shared_ptr<VideoDecSyncSample> videoDec =
-            std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+            std::make_shared<VideoDecSyncSample>(vdecSignal);
 #endif
         ASSERT_NE(nullptr, videoDec);
 
@@ -141,10 +141,10 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_002, TestSize.Level1)
         std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
         std::shared_ptr<VideoDecAsyncSample> videoDec =
-            std::make_shared<OHOS::MediaAVCodec::VideoDecAsyncSample>(vdecSignal);
+            std::make_shared<VideoDecAsyncSample>(vdecSignal);
 #else
         std::shared_ptr<VideoDecSyncSample> videoDec =
-            std::make_shared<OHOS::MediaAVCodec::VideoDecSyncSample>(vdecSignal);
+            std::make_shared<VideoDecSyncSample>(vdecSignal);
 #endif
         ASSERT_NE(nullptr, videoDec);
         if (videoDec->CreateVideoDecMockByMime(CodecMimeType::VIDEO_H263.data())) {
