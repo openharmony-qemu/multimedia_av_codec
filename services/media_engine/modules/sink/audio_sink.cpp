@@ -1439,10 +1439,13 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
 Status AudioSink::HandleFormatChange(std::shared_ptr<Meta>& meta,
     const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_INVALID_STATE);
     ScopedTimer timer("HandleFormatChange", FORMAT_CHANGE_MS);
     FALSE_RETURN_V_NOLOG(meta && plugin_ && plugin_->IsFormatSupported(meta), Status::ERROR_INVALID_PARAMETER);
     WaitForAllBufferConsumed();
     FALSE_RETURN_V_MSG(!isInterruptNeeded_, Status::OK, "Abandon format change operation becaused of interruption");
+    plugin_->Drain();
+    Flush();
     return ChangeTrack(meta, receiver);
 }
 
