@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,31 +22,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
-int32_t DemuxerInnerMock::Destroy()
-{
-    if (demuxer_ != nullptr) {
-        demuxer_ = nullptr;
-        return AV_ERR_OK;
-    }
-    return AV_ERR_UNKNOWN;
-}
-
-int32_t DemuxerInnerMock::SelectTrackByID(uint32_t trackIndex)
-{
-    if (demuxer_ != nullptr) {
-        return demuxer_->SelectTrackByID(trackIndex);
-    }
-    return AV_ERR_UNKNOWN;
-}
-
-int32_t DemuxerInnerMock::UnselectTrackByID(uint32_t trackIndex)
-{
-    if (demuxer_ != nullptr) {
-        return demuxer_->UnselectTrackByID(trackIndex);
-    }
-    return AV_ERR_UNKNOWN;
-}
-
 int32_t DemuxerInnerMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
     AVCodecBufferInfo *bufferInfo, uint32_t &flag, bool checkBufferInfo)
 {
@@ -85,33 +60,6 @@ int32_t DemuxerInnerMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemo
             }
         }
         return ret;
-    }
-    return AV_ERR_UNKNOWN;
-}
-
-int32_t DemuxerInnerMock::SeekToTime(int64_t mSeconds, SeekMode mode)
-{
-    if (demuxer_ != nullptr) {
-        SeekMode seekMode = static_cast<SeekMode>(mode);
-        return demuxer_->SeekToTime(mSeconds, seekMode);
-    }
-    return AV_ERR_UNKNOWN;
-}
-
-int32_t DemuxerInnerMock::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
-    const uint64_t relativePresentationTimeUs, uint32_t &index)
-{
-    if (demuxer_ != nullptr) {
-        return demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
-    }
-    return AV_ERR_UNKNOWN;
-}
-
-int32_t DemuxerInnerMock::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
-    const uint32_t index, uint64_t &relativePresentationTimeUs)
-{
-    if (demuxer_ != nullptr) {
-        return demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     }
     return AV_ERR_UNKNOWN;
 }

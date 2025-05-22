@@ -104,6 +104,7 @@ public:
     MOCK_METHOD1(NotifyInitialBufferingEnd, void(bool isInitialBufferingSucc));
     MOCK_METHOD1(SetApiVersion, void(int32_t apiVersion));
     MOCK_METHOD1(SetIsHlsFmp4, void(bool isHlsFmp4));
+    MOCK_METHOD2(GetCurrentCacheSize, Status(uint32_t trackId, uint32_t& size));
 };
 }
 }

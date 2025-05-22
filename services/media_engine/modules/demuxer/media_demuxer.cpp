@@ -3556,5 +3556,26 @@ bool MediaDemuxer::IsSeekToTimeSupported()
 {
     return source_ != nullptr && source_->IsSeekToTimeSupported();
 }
+
+Status MediaDemuxer::GetCurrentCacheSize(uint32_t trackId, uint32_t& size)
+{
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
+    if (IsNeedMapToInnerTrackID()) {
+        int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);
+        FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Plugin is nullptr");
+        int32_t innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
+        FALSE_RETURN_V_MSG_E(innerTrackID != INVALID_STREAM_OR_TRACK_ID,
+            Status::ERROR_INVALID_PARAMETER, "Plugin is nullptr");
+        trackId = static_cast<uint32_t>(innerTrackID);
+    } else {
+        int32_t streamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);
+        FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Plugin is nullptr");
+    }
+    return pluginTemp->GetCurrentCacheSize(trackId, size);
+}
 } // namespace Media
 } // namespace OHOS

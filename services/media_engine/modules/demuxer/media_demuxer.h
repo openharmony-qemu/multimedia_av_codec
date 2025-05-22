@@ -174,6 +174,8 @@ public:
     bool IsSeekToTimeSupported();
 
     void SetIsCreatedByFilter(bool isCreatedByFilter);
+
+    Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
