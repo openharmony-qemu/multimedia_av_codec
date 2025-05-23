@@ -301,7 +301,8 @@ private:
     Status readLoopStatus_ = {Status::OK};         //ffmpegReadLoop的循环结果状态
     bool isPauseReadPacket_ = true;                //是否暂停readPacket,PauseFFmpegReadLoop()方法用,false是暂停
     std::unordered_map<int, int> versionMap_;      //老版本的key是0，新版本的key是1
-                  
+    std::mutex seekWaitMutex_;
+    std::condition_variable seekWaitCv_;
 };
 
 typedef struct DtsFinder {

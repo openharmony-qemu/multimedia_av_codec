@@ -1619,7 +1619,11 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         "Seek mode " PUBLIC_LOG_D32 " is not unsupported", static_cast<uint32_t>(mode));
 
     invokerType_ = SEEK;
-    readCbCv_.notify_all();
+    if (readThread_ != nullptr && threadState_ == READING) {
+        readCbCv_.notify_all();
+        std::unique_lock<std::mutex> waitLock(seekWaitMutex_);
+        seekWaitCv_.wait(waitLock, [this] { return threadState_ == WAITING; });
+    }
     int trackIndex = static_cast<int>(selectedTrackIds_[0]);
     for (size_t i = 1; i < selectedTrackIds_.size(); i++) {
         int index = static_cast<int>(selectedTrackIds_[i]);
@@ -1818,6 +1822,7 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
             readId, int(!isPauseReadPacket_));
         if (cacheQueue_.HasCache(readId) || !isPauseReadPacket_) {
             threadState_ = WAITING;
+            seekWaitCv_.notify_all(); // 唤醒 SeekTo
             readLoopCv_.wait(readLock); // 等待被唤醒
             threadState_ = READING;
         }
