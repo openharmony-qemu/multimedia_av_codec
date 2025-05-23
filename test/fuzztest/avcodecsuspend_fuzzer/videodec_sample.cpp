@@ -391,7 +391,7 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
 {
     uint32_t index;
     unique_lock<mutex> lock(signal_->inMutex_);
-    bool condMet = signal_->inCond_.wait(lock, std::chrono::seconds(10), [this]() {
+    bool condMet = signal_->inCond_.wait_for(lock, std::chrono::seconds(10), [this]() {
         if (!isRunning_.load() && g_fuzzError) {
             return true;
         }
