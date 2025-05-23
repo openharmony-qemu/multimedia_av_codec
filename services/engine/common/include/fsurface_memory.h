@@ -43,7 +43,7 @@ struct SurfaceControl {
                                          .format = 0,
                                          .usage = USAGE,
                                          .timeout = TIMEOUT};
-    ScalingMode scalingMode = ScalingMode::SCALING_MODE_SCALE_TO_WINDOW;
+    int32_t scalingMode = -1;
 };
 
 class FSurfaceMemory {
@@ -58,7 +58,6 @@ public:
     sptr<SurfaceBuffer> GetSurfaceBuffer();
     int32_t GetSurfaceBufferStride();
     sptr<SyncFence> GetFence();
-    void UpdateSurfaceBufferScaleMode();
     uint8_t *GetBase() const;
     int32_t GetSize() const;
     bool isAttached = false;
