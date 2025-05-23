@@ -1143,6 +1143,49 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_SetParameter_02, TestSize.Le
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_SetParameter(audioEnc_, format));
 }
 
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_SetParameter_03, TestSize.Level1)
+{
+    inputFilePath_ = AAC_INPUT_FILE_PATH;
+    outputFilePath_ = AAC_OUTPUT_FILE_PATH;
+    frameBytes_ = AAC_DEFAULT_FRAME_BYTES;
+    ProceFunc(CODEC_AAC_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+    isRunning_.store(true);
+
+    inputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::InputFunc, this);
+    EXPECT_NE(nullptr, inputLoop_);
+    outputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::OutputFunc, this);
+    EXPECT_NE(nullptr, outputLoop_);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Start(audioEnc_));
+    while (isRunning_.load()) {
+        sleep(1);
+    }
+
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->inMutex_);
+            signal_->inCond_.notify_all();
+        }
+        inputLoop_->join();
+    }
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->outMutex_);
+            signal_->outCond_.notify_all();
+        }
+        outputLoop_->join();
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+    audioEnc_ = nullptr;
+}
+
 HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Configure_01, TestSize.Level1)
 {
     ProceFunc();

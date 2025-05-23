@@ -99,28 +99,6 @@ bool AudioCodecWorker::PushInputData(const uint32_t &index)
     return true;
 }
 
-bool AudioCodecWorker::Configure()
-{
-    AVCODEC_LOGD("%{public}s Worker Configure enter", name_.data());
-    if (!codec_) {
-        AVCODEC_LOGE("Configure failed in worker, codec is nullptr, please check the codec.");
-        return false;
-    }
-    if (inputTask_ != nullptr) {
-        inputTask_->RegisterHandler([this] { ProduceInputBuffer(); });
-    } else {
-        AVCODEC_LOGE("Configure failed in worker, inputTask_ is nullptr, please check the inputTask_.");
-        return false;
-    }
-    if (outputTask_ != nullptr) {
-        outputTask_->RegisterHandler([this] { ConsumerOutputBuffer(); });
-    } else {
-        AVCODEC_LOGE("Configure failed in worker, outputTask_ is nullptr, please check the outputTask_.");
-        return false;
-    }
-    return true;
-}
-
 bool AudioCodecWorker::Start()
 {
     AVCODEC_SYNC_TRACE;
