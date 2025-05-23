@@ -509,7 +509,6 @@ bool DemuxerPluginManagerUnitTest::CreateDataSource(const std::string& filePath)
 
     realStreamDemuxer_->SetDemuxerState(streamId_, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
     dataSourceImpl_ = std::make_shared<DataSourceImpl>(realStreamDemuxer_, streamId_);
-    dataSourceImpl_->stream_ = realStreamDemuxer_;
     realSource_->NotifyInitSuccess();
 
     return true;
@@ -535,7 +534,7 @@ bool DemuxerPluginManagerUnitTest::PluginSelectTracks()
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     FALSE_RETURN(demuxerPlugin->GetMediaInfo(mediaInfo) == Status::OK);
 
-    for (auto i = 0; i < mediaInfo.tracks.size(); i++) {
+    for (size_t i = 0; i < mediaInfo.tracks.size(); i++) {
         std::string mime;
         mediaInfo.tracks[i].GetData(Tag::MIME_TYPE, mime);
         if (mime.find("video/") == 0 || mime.find("audio/") == 0 ||
@@ -556,7 +555,7 @@ bool DemuxerPluginManagerUnitTest::PluginReadSample(uint32_t idx, uint32_t& flag
     int bufSize = 0;
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     demuxerPlugin->GetNextSampleSize(idx, bufSize);
-    if (bufSize > buffer_.size()) {
+    if (static_cast<uint32_t>(bufSize) > buffer_.size()) {
         buffer_.resize(bufSize + BUFFER_PADDING_SIZE);
     }
 
@@ -630,8 +629,7 @@ bool DemuxerPluginManagerUnitTest::ResultAssert(uint32_t frames0, uint32_t frame
 
 bool DemuxerPluginManagerUnitTest::PluginReadAllSample()
 {
-    while (!isEOS(eosFlag_))
-    {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             uint32_t flag = 0;
             FALSE_RETURN(PluginReadSample(idx, flag));
