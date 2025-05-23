@@ -31,41 +31,6 @@
 using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 using namespace OHOS::MediaAVCodec;
-namespace {
-constexpr int32_t REQUEST_I_FRAME = 1;
-constexpr int32_t REQUEST_I_FRAME_NUM = 13;
-constexpr uint32_t BUFFER_COUNT = 59;
-constexpr uint8_t SHA_AVC[SHA512_DIGEST_LENGTH] = {
-    0x39, 0x2c, 0x3a, 0x78, 0xf0, 0xf7, 0xbe, 0xde, 0xc8, 0x2d, 0x45, 0x19, 0x9d, 0xd8, 0x3e, 0x88,
-    0x5f, 0xf0, 0x0b, 0xf5, 0x14, 0x01, 0x21, 0xea, 0xd2, 0xcf, 0xe3, 0xd9, 0x35, 0x6a, 0x2c, 0x98,
-    0xc6, 0x48, 0xc7, 0x90, 0xca, 0xe7, 0xc1, 0xb0, 0x4e, 0x9c, 0x05, 0x1e, 0xdd, 0x22, 0xd2, 0xe0,
-    0x5e, 0x9a, 0xf8, 0xbc, 0xbe, 0x39, 0x26, 0x46, 0x6e, 0xa3, 0xcd, 0x1b, 0xbb, 0xf5, 0xc8, 0x87};
-constexpr uint8_t SHA_HEVC[SHA512_DIGEST_LENGTH] = {
-    0xb0, 0xca, 0x29, 0xa3, 0x3c, 0x8e, 0x36, 0x3f, 0xbc, 0x30, 0xa8, 0x70, 0x09, 0x29, 0xb5, 0xff,
-    0x8f, 0xe2, 0xf9, 0x58, 0xc5, 0x00, 0x02, 0x7c, 0xa9, 0x05, 0xe0, 0x69, 0x09, 0xa7, 0x2e, 0xb2,
-    0xdf, 0x5d, 0xf4, 0x05, 0xea, 0xde, 0xe9, 0x9b, 0x1e, 0x5b, 0x37, 0x04, 0x2f, 0x3d, 0xe9, 0x2c,
-    0xb2, 0x8c, 0xc3, 0x99, 0xd4, 0xdc, 0xdf, 0xee, 0xb4, 0xd9, 0x0c, 0xd0, 0xee, 0x39, 0x94, 0x3c};
-
-uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
-std::atomic<uint32_t> g_shaBufferCount = 0;
-SHA512_CTX g_ctxTest;
-
-void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA)
-{
-    if (needCheckSHA) {
-        ++g_shaBufferCount;
-    }
-    if (needCheckSHA && g_shaBufferCount < BUFFER_COUNT) {
-        SHA512_Update(&g_ctxTest, addr, size);
-    }
-    if (VideoEncAsyncSample::needDump_) {
-        if (!outFile->is_open()) {
-            cout << "output data fail" << endl;
-        }
-        (void)outFile->write(addr, size);
-    }
-}
-} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -682,6 +647,10 @@ void VideoEncAsyncSample::InputParamLoopFunc()
             format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
         }
 
+        // if (roiRects_ != ""){
+        //     format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+        // }
+
         InputLtrParam(format, frameInputCount_, nullptr);
 
         UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
@@ -960,6 +929,13 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
         UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
         format->Destroy();
     }
+
+    // if (roiRects_ != "") {
+    //     std::shared_ptr<FormatMock> format = buffer->GetParameter();
+    //     format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+    //     buffer->SetParameter(format);
+    //     format->Destroy();
+    // }
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (inFile_->eof()) {
