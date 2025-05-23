@@ -62,6 +62,7 @@ AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
 AudioSinkFilter::~AudioSinkFilter()
 {
     MEDIA_LOG_I("dtor called");
+    Filter::StopFilterTask();
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -325,6 +326,12 @@ Status AudioSinkFilter::ChangeTrack(std::shared_ptr<Meta>& meta)
     MEDIA_LOG_I("AudioSinkFilter::ChangeTrack in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->ChangeTrack(meta, eventReceiver_);
+}
+
+Status AudioSinkFilter::HandleFormatChange(std::shared_ptr<Meta>& meta)
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->HandleFormatChange(meta, eventReceiver_);
 }
 
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,

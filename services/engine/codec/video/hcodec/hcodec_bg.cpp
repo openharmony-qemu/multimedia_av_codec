@@ -241,7 +241,6 @@ void HDecoder::SubmitBuffersToNextOwner()
     for (BufferInfo& info : inputBufferPool_) {
         if (info.nextStepOwner == BufferOwner::OWNED_BY_OMX) {
             HLOGI("bufferId = %d, input buffer next owner is omx", info.bufferId);
-            OnQueueInputBuffer(RESUBMIT_BUFFER, &info);
         } else if (info.nextStepOwner == BufferOwner::OWNED_BY_USER) {
             HLOGI("bufferId = %d, input buffer next owner is user", info.bufferId);
             if (!inputPortEos_) {
@@ -367,6 +366,7 @@ void HCodec::FrozenState::OnActive(const MsgInfo &info)
 
 void HCodec::FrozenState::OnShutDown(const MsgInfo &info)
 {
+    (void)codec_->ActiveBuffers();
     codec_->isShutDownFromRunning_ = true;
     codec_->notifyCallerAfterShutdownComplete_ = true;
     codec_->keepComponentAllocated_ = (info.type == MsgWhat::STOP);

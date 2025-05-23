@@ -50,6 +50,7 @@ const char *OH_MD_KEY_TRACK_TYPE = "track_type";
 const char *OH_MD_KEY_CODEC_MIME = "codec_mime";
 const char *OH_MD_KEY_DURATION = "duration";
 const char *OH_MD_KEY_BITRATE = "bitrate";
+const char *OH_MD_KEY_MAX_BITRATE = "max_bitrate";
 const char *OH_MD_KEY_MAX_INPUT_SIZE = "max_input_size";
 const char *OH_MD_KEY_WIDTH = "width";
 const char *OH_MD_KEY_HEIGHT = "height";
@@ -69,6 +70,7 @@ const char *OH_MD_KEY_COLOR_PRIMARIES = "color_primaries";
 const char *OH_MD_KEY_TRANSFER_CHARACTERISTICS = "transfer_characteristics";
 const char *OH_MD_KEY_MATRIX_COEFFICIENTS = "matrix_coefficients";
 const char *OH_MD_KEY_QUALITY = "quality";
+const char *OH_MD_KEY_SQR_FACTOR = "sqr_factor";
 const char *OH_MD_KEY_CHANNEL_LAYOUT = "channel_layout";
 const char *OH_MD_KEY_BITS_PER_CODED_SAMPLE = "bits_per_coded_sample";
 const char *OH_MD_KEY_AAC_IS_ADTS = "aac_is_adts";
@@ -135,6 +137,7 @@ const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_ENABLE_VRR = "video_decoder_output_en
 const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER = "video_encoder_repeat_previous_frame_after";
 const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT = "video_encoder_repeat_previous_max_count";
 const char *OH_MD_KEY_CREATION_TIME = "creation_time";
+const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS = "video_encoder_roi_params";
 #ifdef __cplusplus
 }
 #endif

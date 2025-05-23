@@ -74,6 +74,7 @@ struct PerFrameParams {
     std::optional<LTRParam> ltrParam;
     std::optional<bool> discard;
     std::optional<EBRParam> ebrParam;
+    std::optional<std::string> roiParams;
     std::optional<bool> absQpMap;
     std::optional<int32_t> qpMapValue;
 };
@@ -129,10 +130,12 @@ struct CommandOpt {
     std::optional<int32_t> isVrrEnable;
     std::optional<int32_t> sqrFactor;
     std::optional<int32_t> maxBitrate;
+    std::optional<std::string> roiParams;
     std::optional<uint32_t> targetQp;
     WaterMarkParam waterMark;
     bool paramsFeedback;
     bool enableQPMap = false;
+    std::optional<int32_t> gopBMode;
 
     // decoder only
     bool decThenEnc = false;

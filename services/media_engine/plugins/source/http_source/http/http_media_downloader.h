@@ -100,6 +100,7 @@ public:
     void RestartAndClearBuffer() override;
     bool IsFlvLive() override;
     uint64_t GetMemorySize() override;
+    std::string GetContentType() override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void ClearBuffer() override;
 
@@ -149,11 +150,6 @@ private:
     bool IsNearToInitResolution(const std::shared_ptr<PlayMediaStream> &choosedStream,
         const std::shared_ptr<PlayMediaStream> &currentStream);
     uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
-    void WaitUntilInterrupt(int64_t timeoutMs, std::function<bool()> pred)
-    {
-        AutoLock lock(sleepMutex_);
-        sleepCond_.WaitFor(lock, timeoutMs, pred);
-    }
     bool CheckAutoSelectBitrate();
     bool IsAutoSelectConditionOk();
 

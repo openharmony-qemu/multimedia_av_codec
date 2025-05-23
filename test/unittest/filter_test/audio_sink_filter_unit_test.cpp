@@ -168,6 +168,66 @@ HWTEST_F(AudioSinkFilterUnitTest, AudioSinkFilter_SetSpeed_0100, TestSize.Level1
 {
     EXPECT_EQ(audioSinkFilter_->SetSpeed(-1), Status::ERROR_INVALID_PARAMETER);
 }
+
+/**
+ * @tc.name: AudioSinkFilter_HandleFormatChange_0100
+ * @tc.desc: HandleFormatChange
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioSinkFilterUnitTest, AudioSinkFilter_HandleFormatChange_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = nullptr;
+    EXPECT_EQ(audioSinkFilter_->HandleFormatChange(meta), Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: AudioSinkFilter_HandleFormatChange_0200
+ * @tc.desc: HandleFormatChange
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioSinkFilterUnitTest, AudioSinkFilter_HandleFormatChange_0200, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    audioSinkFilter_->audioSink_->plugin_ = nullptr;
+    EXPECT_EQ(audioSinkFilter_->HandleFormatChange(meta), Status::ERROR_INVALID_STATE);
+}
+
+/**
+ * @tc.name: AudioSinkFilter_HandleFormatChange_0300
+ * @tc.desc: HandleFormatChange
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioSinkFilterUnitTest, AudioSinkFilter_HandleFormatChange_0300, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    EXPECT_EQ(audioSinkFilter_->HandleFormatChange(meta), Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: AudioSinkFilter_HandleFormatChange_0400
+ * @tc.desc: HandleFormatChange
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioSinkFilterUnitTest, AudioSinkFilter_HandleFormatChange_0400, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->SetData(Tag::AUDIO_SAMPLE_RATE, 0);
+    EXPECT_EQ(audioSinkFilter_->HandleFormatChange(meta), Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: AudioSinkFilter_HandleFormatChange_0500
+ * @tc.desc: HandleFormatChange
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioSinkFilterUnitTest, AudioSinkFilter_HandleFormatChange_0500, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->SetData(Tag::AUDIO_SAMPLE_RATE, 44100);
+    meta->SetData(Tag::AUDIO_CHANNEL_COUNT, 1);
+    meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_NE(audioSinkFilter_->HandleFormatChange(meta), Status::OK);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

@@ -295,6 +295,18 @@ bool CheckBitrateAndQualityParamRange(CapabilityData &capData, Format &format)
     return true;
 }
 
+void ReplaceMaxBitrateWithBitrate(Format &format)
+{
+    int64_t bitrate;
+    bool bitrateExist = format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
+    if (bitrateExist) {
+        AVCODEC_LOGW("Param %{public}s invalid in SQR bitrate mode, param %{public}s will be used instead",
+            MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE.data(),
+            MediaDescriptionKey::MD_KEY_BITRATE.data());
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, bitrate);
+    }
+}
+
 /*
 return
 false: SQR is not set successfully. If the mode is SQR, convert to VBR and ignore sqrfactor、max_bitrate
@@ -336,6 +348,7 @@ bool CheckSqrMode(CapabilityData &capData, Format &format)
                     MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE.data(), static_cast<int32_t>(maxBitrate),
                     capData.maxBitrate.minVal, capData.maxBitrate.maxVal);
                 format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE);
+                ReplaceMaxBitrateWithBitrate(format);
             }
             if (qualityExist) {
                 AVCODEC_LOGW("Param invalid, in SQR mode but set quality!");

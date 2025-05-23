@@ -60,6 +60,14 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     int intData8 = fdp.ConsumeIntegral<int32_t>();
     int longData = fdp.ConsumeIntegral<int64_t>();
     double doubleData = fdp.ConsumeFloatingPoint<double>();
+
+    int intData9 = fdp.ConsumeIntegral<int32_t>();
+    int longData1 = fdp.ConsumeIntegral<int64_t>();
+    double doubleData1 = fdp.ConsumeFloatingPoint<double>();
+    std::string randomIntKey = fdp.ConsumeRandomLengthString();
+    std::string randomLongKey = fdp.ConsumeRandomLengthString();
+    std::string randomDoubleKey = fdp.ConsumeRandomLengthString();
+
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, intData0);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, intData1);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, intData2);
@@ -71,6 +79,10 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, intData8);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, longData);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, doubleData);
+
+    OH_AVFormat_SetIntValue(format, randomIntKey.c_str(), intData9);
+    OH_AVFormat_SetLongValue(format, randomLongKey.c_str(), longData1);
+    OH_AVFormat_SetDoubleValue(format, randomDoubleKey.c_str(), doubleData1);
 
     vEncSample->SetParameter(format);
     OH_AVFormat_Destroy(format);

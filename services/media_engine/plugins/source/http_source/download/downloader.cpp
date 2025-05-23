@@ -105,6 +105,15 @@ size_t DownloadRequest::GetFileContentLength() const
     return headerInfo_.GetFileContentLength();
 }
 
+std::string DownloadRequest::GetFileContentType()
+{
+    FALSE_RETURN_V_NOLOG(contentType_.empty(), contentType_);
+    WaitHeaderUpdated();
+    std::string contentType(headerInfo_.contentType, sizeof(headerInfo_.contentType));
+    contentType_ = contentType;
+    return contentType_;
+}
+
 size_t DownloadRequest::GetFileContentLengthNoWait() const
 {
     return headerInfo_.fileContentLen;
@@ -338,6 +347,14 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
         return true;
     }
     return requestQue_->Push(request, static_cast<int>(waitMs));
+}
+
+std::string Downloader::GetContentType()
+{
+    FALSE_RETURN_V(currentRequest_ != nullptr, "");
+    std::string ret = currentRequest_->GetFileContentType();
+    MEDIA_LOG_I("ContentType: %{public}s", ret.c_str());
+    return ret;
 }
 
 void Downloader::Start()
@@ -608,7 +625,9 @@ void Downloader::OpenAppUri()
 {
     {
         AutoLock lock(closeMutex_);
-        appPreviousRequestUrl_ = currentRequest_->GetUrl();
+        if (currentRequest_ != nullptr) {
+            appPreviousRequestUrl_ = currentRequest_->GetUrl();
+        }
         if (sourceLoader_ != nullptr && currentRequest_ != nullptr) {
             if (uuid_ != 0) {
                 sourceLoader_->Close(uuid_);
@@ -805,10 +824,10 @@ bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
 size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader)
 {
     auto currentRequest_ = mediaDownloader->currentRequest_;
+    int64_t needDropLen = currentRequest_->startPos_ - currentRequest_->dropedDataLen_;
     int64_t writeOffSet = -1;
-    if (currentRequest_->startPos_ > 0) {
-        writeOffSet = currentRequest_->startPos_ >= static_cast<int64_t>(dataLen) ?
-            0 : currentRequest_->startPos_; // 0:drop all
+    if (needDropLen > 0) {
+        writeOffSet = needDropLen >= static_cast<int64_t>(dataLen) ? 0 : needDropLen; // 0:drop all
     }
     bool dropRet = false;
     uint32_t writeLen = 0;

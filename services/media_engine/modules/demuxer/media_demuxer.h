@@ -43,12 +43,14 @@
 
 namespace OHOS {
 namespace Media {
-using MediaSource = OHOS::Media::Plugins::MediaSource;
-using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
-using FileType = OHOS::Media::Plugins::FileType;
 class BaseStreamDemuxer;
 class DemuxerPluginManager;
 class Source;
+
+using MediaSource = OHOS::Media::Plugins::MediaSource;
+using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
+using FileType = OHOS::Media::Plugins::FileType;
+using funcPreReadSample = std::function<int64_t(uint32_t trackId)>;
 
 class AVBufferQueueProducer;
 enum class DemuxerTrackType : uint32_t {
@@ -169,8 +171,11 @@ public:
     bool IsFlvLive();
     bool HasVideo();
     bool HasAudio();
+    bool IsSeekToTimeSupported();
 
     void SetIsCreatedByFilter(bool isCreatedByFilter);
+
+    Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -209,6 +214,7 @@ private:
     Status AddDemuxerCopyTaskByTrack(uint32_t trackId, DemuxerTrackType type);
     void AddDemuxerCopyTaskByTrackIfFilter(uint32_t trackId, DemuxerTrackType type);
     void AddDemuxerCopyTaskIfFilter(uint32_t trackId, TaskType type);
+    void AddHandleFlvSelectBitrateTask();
 
     Status StopAllTask();
     Status PauseAllTask();
@@ -258,6 +264,8 @@ private:
     std::shared_ptr<Source> subtitleSource_;
     MediaMetaData mediaMetaData_;
 
+    int64_t DoBeforeEachLoop(uint32_t trackId);
+    int64_t DoBeforeSubtitleTrackReadLoop(uint32_t trackId);
     int64_t ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
@@ -295,11 +303,14 @@ private:
     bool IsRightMediaTrack(uint32_t trackId, DemuxerTrackType type) const;
     int64_t GetLastVideoBufferAbsPts(uint32_t trackId) const;
     void UpdateLastVideoBufferAbsPts(uint32_t trackId);
+    std::string InferDemuxerPluginNameByContentType();
+    bool IsHitPlugin(std::string& plugin, std::string& contentType);
     Status OnSelectBitrateOk(int64_t startPts, uint32_t bitRate) override;
+    Status SelectBitrateForNonSQ(int64_t startPts, uint32_t bitRate);
     Status OnSampleQueueBufferAvailable(uint32_t queueId) override;
     Status OnSampleQueueBufferConsume(uint32_t queueId) override;
     Status NotifySampleQueueBufferConsume(uint32_t queueId);
-    Status HandleSelectBitrateBySampleQueue(int64_t startPts, uint32_t bitrate);
+    Status HandleSelectBitrateForFlvLive(int64_t startPts, uint32_t bitrate);
     bool IsIgonreBuffering();
     void InitEnableSampleQueueFlag();
     inline bool GetEnableSampleQueueFlag() const;
@@ -309,6 +320,7 @@ private:
     void InitAudioTrack();
     void InitVideoTrack();
     void InitSubtitleTrack();
+    std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
     int64_t lastClockTimeMs_ = 0;
@@ -322,6 +334,7 @@ private:
     // memoryUsage
     std::unordered_map<uint32_t, uint32_t> trackMemoryUsages_;
     std::unordered_map<uint32_t, uint32_t> memoryReportLimitCount_;
+    std::unordered_map<uint32_t, funcPreReadSample> funcBeforeReadSampleMap_;
 
     std::map<uint32_t, std::shared_ptr<SampleQueue>> sampleQueueMap_;
     std::map<uint32_t, bool> eosMap_;
@@ -341,7 +354,7 @@ private:
     std::map<uint32_t, std::unique_ptr<Task>> sampleConsumerTaskMap_;
     std::shared_ptr<MediaSyncManager> syncCenter_;
     bool isFlvLiveStream_ = false;
-    std::unique_ptr<Task> notifyBitrateTask_;
+    std::unique_ptr<Task> handleFlvSelectBitrateTask_;
     std::unique_ptr<Task> notifySampleConsumeTask_;
     std::unique_ptr<Task> notifySampleProduceTask_;
 

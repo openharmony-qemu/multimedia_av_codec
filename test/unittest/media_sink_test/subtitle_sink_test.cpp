@@ -92,7 +92,7 @@ HWTEST(TestSubtitleSink, do_sync_write_two_frames_case1, TestSize.Level1)
     sink->SetSyncCenter(syncCenter);
     sink->Prepare();
     sink->subtitleInfoVec_.push_back({"test", 1, 1});
-    SubtitleSink::SubtitleInfo tempSubtitleInfo = {{"test", 1, 1}};
+    SubtitleSink::SubtitleInfo tempSubtitleInfo = {"test", 1, 1};
     sink->NotifyRender(tempSubtitleInfo);
     sink->isThreadExit_ = true;
     sink->CalcWaitTime(tempSubtitleInfo);
@@ -129,7 +129,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case2, TestSize.Level1
     sink->Prepare();
     sink->subtitleInfoVec_.push_back({"test", 1, 1});
     sink->shouldUpdate_ = true;
-    SubtitleSink::SubtitleInfo tempSubtitleInfo = {{"test", 1, 1}};
+    SubtitleSink::SubtitleInfo tempSubtitleInfo = {"test", 1, 1};
     std::shared_ptr<EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
     sink->SetEventReceiver(testEventReceiver);
     sink->NotifyRender(tempSubtitleInfo);
@@ -314,7 +314,7 @@ HWTEST(TestSubtitleSink, do_sync_write_two_frames_case7, TestSize.Level1)
     sink->SetSyncCenter(syncCenter);
     sink->Prepare();
     sink->subtitleInfoVec_.push_back({"test", 1, 1});
-    SubtitleSink::SubtitleInfo tempSubtitleInfo = {{"test", 1, 1}};
+    SubtitleSink::SubtitleInfo tempSubtitleInfo = {"test", 1, 1};
     sink->NotifyRender(tempSubtitleInfo);
     sink->isThreadExit_ = true;
     sink->CalcWaitTime(tempSubtitleInfo);
@@ -348,7 +348,7 @@ HWTEST(TestSubtitleSink, do_sync_write_two_frames_case8, TestSize.Level1)
     sink->SetSyncCenter(syncCenter);
     sink->Prepare();
     sink->subtitleInfoVec_.push_back({"test", 1, 1});
-    SubtitleSink::SubtitleInfo tempSubtitleInfo = {{"test", 2, 2}};
+    SubtitleSink::SubtitleInfo tempSubtitleInfo = {"test", 2, 2};
     sink->NotifyRender(tempSubtitleInfo);
  
     sink->CalcWaitTime(tempSubtitleInfo);

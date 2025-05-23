@@ -41,7 +41,7 @@ enum struct DownloadStatus {
 };
 
 struct HeaderInfo {
-    char contentType[32]; // 32 chars
+    char contentType[32] = {}; // 32 chars
     size_t fileContentLen {0};
     mutable size_t retryTimes {0};
     const static size_t maxRetryTimes {100};
@@ -98,6 +98,7 @@ public:
     size_t GetFileContentLength() const;
     size_t GetFileContentLengthNoWait() const;
     void SaveHeader(const HeaderInfo* header);
+    std::string GetFileContentType();
     Seekable IsChunked(bool isInterruptNeeded);
     bool IsEos() const;
     int GetRetryTimes() const;
@@ -186,6 +187,7 @@ private:
     bool isM3u8Request_ {false};
     bool isIndexM3u8Request_ {false};
     bool isAuthRequest_ {false};
+    std::string contentType_;
     RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
 };
 
@@ -210,6 +212,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded);
     void SetAppState(bool isAppBackground);
     void StopBufferring();
+    std::string GetContentType();
 
 private:
     bool BeginDownload();

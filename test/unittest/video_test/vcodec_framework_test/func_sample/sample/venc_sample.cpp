@@ -682,6 +682,10 @@ void VideoEncSample::InputParamLoopFunc()
             format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
         }
 
+        if (roiRects_ != ""){
+            format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+        }
+
         InputLtrParam(format, frameInputCount_, nullptr);
 
         UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
@@ -958,6 +962,13 @@ int32_t VideoEncSample::InputLoopInnerExt()
         format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
         buffer->SetParameter(format);
         UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
+        format->Destroy();
+    }
+
+    if (roiRects_ != "") {
+        std::shared_ptr<FormatMock> format = buffer->GetParameter();
+        format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+        buffer->SetParameter(format);
         format->Destroy();
     }
 

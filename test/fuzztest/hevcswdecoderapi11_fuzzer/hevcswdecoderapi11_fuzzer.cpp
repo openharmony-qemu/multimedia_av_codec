@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "native_avcodec_base.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_averrors.h"
@@ -27,18 +28,16 @@ using namespace OHOS;
 using namespace OHOS::Media;
 
 static VDecFuzzSample *g_vDecSample = nullptr;
-constexpr uint32_t DEFAULT_WIDTH = 1920;
-constexpr uint32_t DEFAULT_HEIGHT = 1080;
-constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
+    FuzzedDataProvider fdp(data, size);
     if (!g_vDecSample) {
         g_vDecSample = new VDecFuzzSample();
-        g_vDecSample->defaultWidth = DEFAULT_WIDTH;
-        g_vDecSample->defaultHeight = DEFAULT_HEIGHT;
-        g_vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
+        g_vDecSample->defaultWidth = fdp.ConsumeIntegral<uint32_t>();
+        g_vDecSample->defaultHeight = fdp.ConsumeIntegral<uint32_t>();
+        g_vDecSample->defaultFrameRate = fdp.ConsumeFloatingPoint<double>();
         g_vDecSample->CreateVideoDecoder();
         g_vDecSample->ConfigureVideoDecoder();
         g_vDecSample->SetVideoDecoderCallback();

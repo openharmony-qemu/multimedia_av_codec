@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,9 +19,9 @@
 #ifdef SUPPORT_DRM
 #include "native_drm_common.h"
 #endif
+
 namespace OHOS {
 namespace MediaAVCodec {
-
 #ifdef SUPPORT_DRM
 static void OnMediaKeySystemInfoUpdated(DRM_MediaKeySystemInfo *drmInfo)
 {
@@ -78,33 +78,6 @@ static void OnMediaKeySystemInfoUpdatedWithObj(OH_AVDemuxer *demuxer, DRM_MediaK
 }
 #endif
 
-
-int32_t DemuxerCapiMock::Destroy()
-{
-    if (demuxer_ != nullptr) {
-        int32_t ret = OH_AVDemuxer_Destroy(demuxer_);
-        demuxer_ = nullptr;
-        return ret;
-    }
-    return AV_ERR_UNKNOWN;
-}
-
-int32_t DemuxerCapiMock::SelectTrackByID(uint32_t trackIndex)
-{
-    if (demuxer_ != nullptr) {
-        return OH_AVDemuxer_SelectTrackByID(demuxer_, trackIndex);
-    }
-    return AV_ERR_UNKNOWN;
-}
-
-int32_t DemuxerCapiMock::UnselectTrackByID(uint32_t trackIndex)
-{
-    if (demuxer_ != nullptr) {
-        return OH_AVDemuxer_UnselectTrackByID(demuxer_, trackIndex);
-    }
-    return AV_ERR_UNKNOWN;
-}
-
 int32_t DemuxerCapiMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
     AVCodecBufferInfo *bufferInfo, uint32_t &flag, bool checkBufferInfo)
 {
@@ -119,15 +92,6 @@ int32_t DemuxerCapiMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemor
         bufferInfo->offset = bufferAttr.offset;
         flag = bufferAttr.flags;
         return ret;
-    }
-    return AV_ERR_UNKNOWN;
-}
-
-int32_t DemuxerCapiMock::SeekToTime(int64_t mSeconds, Media::SeekMode mode)
-{
-    if (demuxer_ != nullptr) {
-        OH_AVSeekMode seekMode = static_cast<OH_AVSeekMode>(mode);
-        return OH_AVDemuxer_SeekToTime(demuxer_, mSeconds, seekMode);
     }
     return AV_ERR_UNKNOWN;
 }
@@ -168,18 +132,6 @@ int32_t DemuxerCapiMock::GetMediaKeySystemInfo()
         return OH_AVDemuxer_GetMediaKeySystemInfo(demuxer_, &mediaKeySystemInfo);
 #endif
     }
-    return AV_ERR_OK;
-}
-
-int32_t DemuxerCapiMock::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
-    const uint64_t relativePresentationTimeUs, uint32_t &index)
-{
-    return AV_ERR_OK;
-}
-
-int32_t DemuxerCapiMock::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
-    const uint32_t index, uint64_t &relativePresentationTimeUs)
-{
     return AV_ERR_OK;
 }
 } // namespace MediaAVCodec

@@ -292,6 +292,10 @@ public:
     {
         return 0;
     }
+    virtual std::string GetContentType()
+    {
+        return "";
+    }
     virtual bool IsHlsFmp4()
     {
         return false;

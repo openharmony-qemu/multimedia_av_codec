@@ -109,6 +109,7 @@ ohos_source_set("video_sample") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",

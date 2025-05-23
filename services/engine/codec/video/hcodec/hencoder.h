@@ -86,6 +86,7 @@ private:
     int32_t SetConstantQualityMode(int32_t quality);
     int32_t SetSQRMode(const Format &format);
     int32_t EnableFrameQPMap(const Format &format);
+    int32_t ConfigBEncodeMode(const Format &format);
     int32_t SetCRFMode(int32_t targetQp);
 
     // start
@@ -125,6 +126,9 @@ private:
                                   const std::shared_ptr<Media::Meta> &meta);
     void WrapIsSkipFrameIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                       const std::shared_ptr<Media::Meta> &meta);
+    void ParseRoiStringValid(const std::string &roiValue, std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer);
+    void WrapRoiParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                  const std::shared_ptr<Media::Meta> &meta);
     void BeforeCbOutToUser(BufferInfo &info) override;
     void ExtractPerFrameLTRParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
     void ExtractPerFrameMadParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
@@ -171,6 +175,7 @@ private:
     uint64_t repeatUs_ = 0;      // 0 means user don't set this value
     int32_t repeatMaxCnt_ = 10;  // default repeat 10 times. <0 means repeat forever. =0 means nothing.
     std::optional<int64_t> pts_;
+    static constexpr size_t roiNum = 6;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HENCODER_H

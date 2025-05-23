@@ -66,6 +66,7 @@ enum ShortOption {
     OPT_IS_ABS_QP_MAP,
     OPT_QP_MAP_VALUE,
     OPT_TARGET_QP,
+    OPT_GOP_B_MODE,
     // decoder only
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
@@ -115,6 +116,7 @@ static struct option g_longOptions[] = {
     {"enableQPMap",     required_argument,  nullptr, OPT_ENABLE_QP_MAP},
     {"isAbsQpMap",       required_argument,  nullptr, OPT_IS_ABS_QP_MAP},
     {"qpMapValue",      required_argument,  nullptr, OPT_QP_MAP_VALUE},
+    {"gopBMode",        required_argument,  nullptr, OPT_GOP_B_MODE},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
@@ -141,7 +143,7 @@ void ShowUsage()
     std::cout << " --timeout            thread timeout(ms). -1 means wait forever" << std::endl;
     std::cout << " --isHighPerfMode     0 is normal mode, 1 is high perf mode" << std::endl;
     std::cout << " --setParameter       eg. 11:frameRate,60 or 24:requestIdr,1" << std::endl;
-    std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40 or 25:discard,1 or 30:ebr,16,30,25,0"
+    std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40 or 25:discard,1 or 30:ebr,16,30,25,0 or 30:roiParams,Top1,Left1-Bottom1,Right1=Offset1;Top2,Left2-Bottom2,Right2=Offset2;..."
               << std::endl;
     std::cout << " --setResource        eg. 11:/data/test/a.yuv,1280,720,2" << std::endl;
     std::cout << " [encoder only]" << std::endl;
@@ -167,6 +169,7 @@ void ShowUsage()
     std::cout << " --repeatMaxCnt       repeat previous frame up to target times" << std::endl;
     std::cout << " --layerCnt           target encode layerCnt, H264:2, H265:2 and 3" << std::endl;
     std::cout << " --waterMark          eg. /data/test/a.rgba,1280,720,2:16,16,1280,720" << std::endl;
+    std::cout << " --gopBMode           gop mode for b frame. 1(adaptive-b mode), 2(h3b mode)" << std::endl;
     std::cout << " [decoder only]" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --paramsFeedback     0 means don't feedback, 1 means feedback" << std::endl;
@@ -301,6 +304,9 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_ENABLE_QP_MAP:
                 opt.enableQPMap = stol(optarg);
                 break;
+            case OPT_GOP_B_MODE:
+                opt.gopBMode = stol(optarg);
+                break;
             // decoder only
             case OPT_DEC_THEN_ENC:
                 opt.decThenEnc = stol(optarg);
@@ -421,6 +427,11 @@ void CommandOpt::ParsePerFrameParam(uint32_t frameNo, const string &s)
         value >> ebrParam.minQp >> c >> ebrParam.maxQp >> c >> ebrParam.startQp >> c >> ebrParam.isSkip;
         perFrameParamsMap[frameNo].ebrParam = ebrParam;
     }
+    if (key == "roiParams") {
+        string roiParams;
+        value >> roiParams;
+        perFrameParamsMap[frameNo].roiParams = roiParams;
+    }
     if (key == "isAbsQpMap") {
         bool absQp;
         value >> absQp;
@@ -477,6 +488,9 @@ void CommandOpt::Print() const
     TLOGI("repeat %u times, timeout = %d", repeatCnt, timeout);
     TLOGI("enableHighPerfMode : %s", isHighPerfMode ? "yes" : "no");
 
+    if (gopBMode.has_value()) {
+        TLOGI("gopBMode : %d", gopBMode.value());
+    }
     if (mockFrameCnt.has_value()) {
         TLOGI("mockFrameCnt %u", mockFrameCnt.value());
     }
@@ -519,6 +533,9 @@ void CommandOpt::Print() const
     if (qpRange.has_value()) {
         TLOGI("qpRange %u~%u", qpRange->qpMin, qpRange->qpMax);
     }
+    if (roiParams.has_value()) {
+        TLOGI("roiParams: %s",roiParams->c_str());
+    }
     if (waterMark.isSet) {
         TLOGI("dstX %d, dstY %d, dstW %d, dstH %d",
               waterMark.dstX, waterMark.dstY, waterMark.dstW, waterMark.dstH);
@@ -558,6 +575,9 @@ void CommandOpt::Print() const
         if (perFrame.absQpMap.has_value() && perFrame.qpMapValue.has_value()) {
             TLOGI("    qpMap, type %d (0: delta qp, 1: abs qp), value %d",
                   perFrame.absQpMap.value(), perFrame.qpMapValue.value());
+        }
+        if (perFrame.roiParams.has_value()) {
+            TLOGI("roiParams:  %s", perFrame.roiParams.value().c_str());
         }
     }
     for (const auto &[frameNo, resourceParam] : resourceParamsMap) {

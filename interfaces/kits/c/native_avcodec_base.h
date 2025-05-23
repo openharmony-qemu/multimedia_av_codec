@@ -357,6 +357,13 @@ extern const char *OH_MD_KEY_CODEC_MIME;
 extern const char *OH_MD_KEY_DURATION;
 /* Key for bitrate, value type is int64_t. */
 extern const char *OH_MD_KEY_BITRATE;
+/**
+ * @brief Key for maximum bitrate, value type is int64_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_MAX_BITRATE;
 /* Key for setting the max decode input size, value type is int32_t. */
 extern const char *OH_MD_KEY_MAX_INPUT_SIZE;
 /* Key for video width, value type is int32_t */
@@ -413,6 +420,15 @@ extern const char *OH_MD_KEY_REQUEST_I_FRAME;
  * can be obtained based on the capability query interface @OH_AVCapability_GetEncoderQualityRange, this key is only
  * supported for encoders that are configured in constant quality mode */
 extern const char *OH_MD_KEY_QUALITY;
+/**
+ * @brief Key for the desired encoding quality, value type is int32_t, this key is only
+ * supported for encoders that are configured in Stable Quality RateControl, the higher
+ * values generally result in more efficient(smaller-sized) encoding.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_SQR_FACTOR;
 /* Key of the codec specific data, value type is a uint8_t pointer.
  * In video, SPS/PPS is transferred. In audio, extraData is transferred. */
 extern const char *OH_MD_KEY_CODEC_CONFIG;
@@ -766,6 +782,22 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT;
  * @since 14
  */
 extern const char *OH_MD_KEY_CREATION_TIME;
+/**
+ * @brief Key to set the region of interest(ROI) as QpOffset-Rects, value type is string in the format
+ * "Top1,Left1-Bottom1,Right1=Offset1;Top2,Left2-Bottom2,Right2=Offset2;". Each "Top,Left-Bottom,Right=Offset"
+ * represents the coordinate information and quantization parameter of one ROI. Each "=Offset" in the string
+ * can be omitted, like "Top1,Left1-Bottom1,Right1;Top2,Left2-Bottom2,Right2=Offset2;", the encoder
+ * will use the default quantization parameter to perform the ROI encoding on the first ROI and
+ * use Offset2 on the second ROI.
+ * 
+ * This is an optional key that applies only to video encoder.
+ * It is used in running process and is set with each frame.
+ * In surface mode, it is used in {@link OH_VideoEncoder_OnNeedInputParameter}.
+ * In buffer mode, it is configured via {@link OH_AVBuffer_SetParameter}.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS;
 
 /**
  * @brief Media type.
@@ -1316,7 +1348,9 @@ typedef enum OH_BitrateMode {
     /* Variable Bit rate mode. */
     BITRATE_MODE_VBR = 1,
     /* Constant Quality mode. */
-    BITRATE_MODE_CQ = 2
+    BITRATE_MODE_CQ = 2,
+    /* Stable Quality Rate Control Mode. */
+    BITRATE_MODE_SQR = 3
 } OH_BitrateMode;
 
 /**
