@@ -23,6 +23,7 @@
 #include "common/log.h"
 #include "avcodec_log.h"
 #include "osal/utils/util.h"
+#include "avcodec_common.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -47,6 +48,7 @@ constexpr int32_t NS_PER_US = 1000;
 constexpr int32_t AAC_FRAME_SIZE = 1024;
 constexpr int32_t CORRECTION_SAMPLE_RATE = 8000;
 constexpr int32_t CORRECTION_BIT_RATE = 70000;
+constexpr int64_t US_PER_SECOND = 1000000;
 constexpr int32_t CORRECTION_CHANNEL_COUNT = 2;
 constexpr float Q_SCALE = 1.2f;
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
@@ -222,6 +224,8 @@ Status FFmpegAACEncoderPlugin::Start()
 
     status = OpenContext();
     CHECK_AND_RETURN_RET_LOG(status == Status::OK, status, "Open context failed, status = %{public}d", status);
+    initPadding_ = avCodecContext_->initial_padding;
+    MEDIA_LOG_I("initPadding_: %{public}d", initPadding_);
 
     status = InitFrame();
     CHECK_AND_RETURN_RET_LOG(status == Status::OK, status, "Init frame failed, status = %{public}d", status);
@@ -310,7 +314,8 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) / NS_PER_US;
     // adjust ffmpeg duration with sample rate
     if (ptsMode_ == GENERATE_ENCODE_PTS_BY_INPUT_MODE && isFirstOutputPts_) {
-        outBuffer->pts_ = prevPts_;
+        outBuffer->pts_ = prevPts_ - (initPadding_ * US_PER_SECOND / sampleRate_);
+        MEDIA_LOG_I("corrected outBuffer->pts_: %{public}" PRIu64 ".", outBuffer->pts_);
         isFirstOutputPts_ = false;
     } else if (prevPts_ < 0) {
         outBuffer->pts_ = prevPts_ + outBuffer->duration_;
@@ -355,8 +360,16 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
         MEDIA_LOG_D("SendFrameToFfmpeg no one frame data");
         // last frame mark eos
         if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
+            if (!isEosFlush_) {
+                avcodec_send_frame(avCodecContext_.get(), NULL);
+            }
+            Status tmp = ReceiveBuffer(outputBuffer);
+            if (tmp != Status::END_OF_STREAM) {
+                outputBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_NONE;
+            }
             dataCallback_->OnOutputBufferDone(outBuffer_);
-            return Status::OK;
+            status = ((tmp == Status::OK) ? Status::ERROR_AGAIN : Status::OK);
+            isEosFlush_ = true;
         }
         return status;
     }
@@ -391,6 +404,7 @@ Status FFmpegAACEncoderPlugin::Reset()
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     prevPts_ = 0;
+    isEosFlush_ = false;
     ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     isFirstInputPts_ = true;
     isFirstOutputPts_ = true;
@@ -403,6 +417,7 @@ Status FFmpegAACEncoderPlugin::Release()
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     prevPts_ = 0;
+    isEosFlush_ = false;
     ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     isFirstInputPts_ = true;
     isFirstOutputPts_ = true;
@@ -417,6 +432,7 @@ Status FFmpegAACEncoderPlugin::Flush()
         avcodec_flush_buffers(avCodecContext_.get());
     }
     prevPts_ = 0;
+    isEosFlush_ = false;
     isFirstInputPts_ = true;
     isFirstOutputPts_ = true;
     if (fifo_) {
@@ -506,7 +522,6 @@ Status FFmpegAACEncoderPlugin::InitContext()
         MEDIA_LOG_I("flags:%{public}d global_quality:%{public}d", avCodecContext_->flags,
             avCodecContext_->global_quality);
     }
-
     if (needResample_) {
         avCodecContext_->sample_fmt = avCodec_->sample_fmts[0];
     }

@@ -328,7 +328,6 @@ void AudioEncoderBufferCapiUnitTest::OutputFunc()
                 << index << ", data size:" << avBuffer->buffer_->memory_->GetSize() << endl;
             outputFile_->write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(avBuffer)),
                                avBuffer->buffer_->memory_->GetSize());
-            outputFrameCnt_++;
         }
         if (avBuffer != nullptr &&
             (avBuffer->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || avBuffer->buffer_->memory_->GetSize()== 0)) {
@@ -346,6 +345,8 @@ void AudioEncoderBufferCapiUnitTest::OutputFunc()
             cout << "decode eos" << endl;
             isRunning_.store(false);
             signal_->startCond_.notify_all();
+        } else {
+            outputFrameCnt_++;
         }
     }
     cout << "stop, exit" << endl;
@@ -573,6 +574,7 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, encodeTest_02, TestSize.Level1)
     InitFile(AudioBufferFormatType::TYPE_AAC);
     CreateCodecFunc(AudioBufferFormatType::TYPE_AAC);
     int32_t needOutputCnt = fileSize_ / AAC_DEFAULT_FRAME_BYTES;
+    needOutputCnt++; // 1 frame less than outputFrameCnt_ due to initial_padding
     format = OH_AVFormat_Create();
     EXPECT_NE(nullptr, format);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
