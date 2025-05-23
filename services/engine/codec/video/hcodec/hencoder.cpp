@@ -1413,7 +1413,6 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     if (bufferInfo->avBuffer->memory_ != nullptr && bufferInfo->avBuffer->memory_->GetSize() == 0) {
         bufferInfo->omxBuffer->bufferhandle = nullptr;
         bufferInfo->omxBuffer->filledLen = 0;
-        bufferInfo->surfaceBuffer = nullptr;
     }
     WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
