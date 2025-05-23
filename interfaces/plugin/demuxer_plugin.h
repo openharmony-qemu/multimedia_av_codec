@@ -109,6 +109,23 @@ struct DemuxerPlugin : public PluginBase {
      */
     virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) = 0;
 
+     /**
+     * @brief Reads data frames within @param timeout milliseconds.
+     *
+     * The function is valid only after RUNNING state.
+     *
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @param sample Buffer where store data frames.
+     * @param timeout no result after @param timeout milliseconds, return it.
+     * @return  Execution Status return
+     *  @retval OK: Plugin ReadFrame succeeded.
+     *  @retval ERROR_WAIT_TIMEOUT: Operation timeout.
+     *  @retval END_OF_STREAM: read end. eos.
+     *  @retval ERROR_UNKNOWN: Call av_read_frame failed.
+     *  @retval ERROR_NULL_POINTER: Call av_packet_alloc failed.
+     */
+    virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) = 0;
+
     /**
      * @brief Get next sample size.
      *
@@ -118,6 +135,33 @@ struct DemuxerPlugin : public PluginBase {
      * @return Execution Status
      */
     virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size) = 0;
+
+    /**
+     * @brief Get next sample size within @param timeout milliseconds.
+     *
+     * The function is valid only after RUNNING state.
+     *
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @param timeout no result after @param timeout milliseconds, return it.
+     * @return Execution Status
+     */
+    virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) = 0;
+
+    /**
+     * @brief Pause reading data from ffmpeg in another thread.
+     *
+     * @return Execution Status
+     */
+    virtual Status PauseFFmpegReadLoop() = 0;
+
+    /**
+     * @brief Get the latest PTS by trackId.
+     *
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @param lastPTS the latest PTS.
+     * @return Execution Status
+     */
+    virtual Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) = 0;
 
     /**
      * @brief Seeks for a specified position for the demuxer.

@@ -137,6 +137,7 @@ void BlockQueuePool::ResetQueue(uint32_t queueIndex)
     blockQue->Clear();
     quePool_[queueIndex].dataSize = 0;
     quePool_[queueIndex].isValid = true;
+    quePool_[queueIndex].maxPts = INT64_MIN; // 重置maxPts
     return;
 }
 
@@ -176,6 +177,11 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
     sizeMap_[trackIndex] += 1;
     for (auto pkt : block->pkts) {
         quePool_[pushIndex].dataSize += static_cast<uint32_t>(pkt->size);
+        if (pkt && pkt->pts != AV_NOPTS_VALUE) {
+            if (pkt->pts > quePool_[pushIndex].maxPts) {
+                quePool_[pushIndex].maxPts = pkt->pts; // 更新maxPts
+            }
+        }
     }
     return quePool_[pushIndex].blockQue->Push(block);
 }
@@ -214,6 +220,7 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         }
         if (quePool_[queIndex].blockQue->Empty()) {
             ResetQueue(queIndex);
+            quePool_[queIndex].maxPts = INT64_MIN; // 队列空时重置maxPts
             MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " queue " PUBLIC_LOG_D32 " is empty, will return to pool",
                 trackIndex, queIndex);
             queVector.erase(queVector.begin() + index);
@@ -310,6 +317,27 @@ bool BlockQueuePool::HasQueue(uint32_t trackIndex)
 {
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     return queMap_.count(trackIndex) > 0;
+}
+
+Status BlockQueuePool::GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxPts)
+{
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
+    if (!HasQueue(trackIndex)) {
+        MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
+        return Status::ERROR_NOT_EXISTED;
+    }
+    auto queVector = queMap_[trackIndex];
+    for (auto queIndex : queVector) {
+        if (quePool_[queIndex].blockQue == nullptr) {
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
+            continue;
+        }
+        maxPts = quePool_[queIndex].maxPts; // 获取最大PTS
+        return Status::OK;
+    }
+    MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
+    return Status::ERROR_NOT_EXISTED;
 }
 } // namespace Media
 } // namespace OHOS

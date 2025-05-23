@@ -62,7 +62,11 @@ public:
     Status UnselectTrack(uint32_t trackId) override;
     Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
+    Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
+    Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) override;
+    Status PauseFFmpegReadLoop() override;
+    Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override;
     bool IsRefParserSupported() override;
@@ -84,6 +88,20 @@ public:
     bool GetProbeSize(int32_t &offset, int32_t &size) override;
     void SetInterruptState(bool isInterruptNeeded) override;
 private:
+
+    enum ThreadState : unsigned int {
+        NOT_STARTED,
+        WAITING,
+        READING,
+    };
+   
+    enum InvokerType : unsigned int {
+        INIT,
+        READ,
+        SEEK,
+        DESTORY,
+    };
+
     enum DumpMode : unsigned long {
         DUMP_NONE = 0,
         DUMP_READAT_INPUT = 0b001,
@@ -109,6 +127,7 @@ private:
         bool isLimitType {false};
         int32_t sizeLimit {0};
         int32_t readSizeCnt {0};
+        std::atomic<bool> initErrorAgain {false}; // 初始化时是否发生Again错误
     };
     
     bool SelectedVideo();
@@ -120,6 +139,11 @@ private:
     int64_t GetStreamDuration(const AVStream& avStream);
 
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
+    static int HandleReadOK(IOContext* ioContext, int dataSize);
+    static int HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount, bool& needBlockWait);
+    static int HandleReadEOS(IOContext* ioContext);
+    static int HandleReadError(int result);
+    static void UpdateInitDownloadData(IOContext* ioContext, int dataSize);
     static int AVWritePacket(void* opaque, uint8_t* buf, int bufSize);
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     AVIOContext* AllocAVIOContext(int flags, IOContext *ioContext);
@@ -260,6 +284,24 @@ private:
     bool IsMultiVideoTrack();
     int AVReadFrameLimit(AVPacket *pkt);
     Status SetAVReadFrameLimit();
+    Status WaitForLoop(const uint32_t trackId, const uint32_t timeout);
+    void FFmpegReadLoop();
+    void ReleaseFFmpegReadLoop();
+    std::unique_ptr<std::thread> readThread_ {nullptr};
+    std::condition_variable readLoopCv_;              // 用于控制loop读取线程的条件变量
+    static std::condition_variable readCbCv_;       // 用于控制回调读取线程的条件变量
+    std::condition_variable readCacheCv_;          // 用于控制readSample和GetNextSampleSize读取线程的条件变量
+    static std::mutex readPacketMutex_;           // 用于AVReadPacket条件变量的互斥锁
+    std::mutex getNextSampleMutex_;               // 用于GetNextSampleSize条件变量的互斥锁
+    std::mutex readSampleMutex_;                  // 用于readSample条件变量的互斥锁
+    std::mutex fFmpegReadLoopMutex_;              // 用于FFmpegReadLoop条件变量的互斥锁
+    uint32_t trackId_;
+    ThreadState threadState_ {ThreadState::NOT_STARTED};
+    static InvokerType invokerType_;
+    Status readLoopStatus_ = {Status::OK};         //ffmpegReadLoop的循环结果状态
+    bool isPauseReadPacket_ = true;                //是否暂停readPacket,PauseFFmpegReadLoop()方法用,false是暂停
+    std::unordered_map<int, int> versionMap_;      //老版本的key是0，新版本的key是1
+                  
 };
 
 typedef struct DtsFinder {
