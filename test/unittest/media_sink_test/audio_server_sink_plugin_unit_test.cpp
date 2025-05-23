@@ -109,6 +109,8 @@ public:
     MOCK_METHOD(bool, Mute, (StateChangeCmdType), (const, override));
     MOCK_METHOD(bool, Unmute, (StateChangeCmdType), (const, override));
     MOCK_METHOD(int32_t, GetAudioTimestampInfo, (Timestamp &, Timestamp::Timestampbase), (const, override));
+    MOCK_METHOD(void, SetFastStatusChangeCallback,
+        (const std::shared_ptr<AudioRendererFastStatusChangeCallback> &), (override));
     ~MockAudioRenderer() override {}
 };
 
