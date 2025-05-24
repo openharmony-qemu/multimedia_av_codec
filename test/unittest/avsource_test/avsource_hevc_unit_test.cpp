@@ -919,9 +919,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1403, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1700, TestSize.Level1)
 {
-    if (access(g_mp4265InfoParsePath.c_str(), F_OK) != 0) {
-        return;
-    }
+    ASSERT_EQ(access(g_mp4265InfoParsePath.c_str(), F_OK), 0);
     printf("---- %s ------\n", g_mp4265InfoParsePath.data());
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4265InfoParsePath.data()));
     ASSERT_NE(source_, nullptr);
