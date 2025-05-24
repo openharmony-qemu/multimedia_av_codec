@@ -75,7 +75,8 @@ private:
     Status AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
     Status AddVideoTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover);
     Status AddTimedMetaTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
-    Status AddVideoAuxiliaryTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover);
+    Status AddVideoAuxiliaryTrack(
+        int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover);
     Status WriteNormal(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
     Status WriteVideoSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
     std::vector<uint8_t> TransAnnexbToMp4(const uint8_t *sample, int32_t size);

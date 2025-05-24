@@ -171,7 +171,7 @@ void AVMuxerUnitTest::AuxiliaryWriteSample(int32_t trackId)
 
     bool eosFlag = false;
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+    int32_t ret = WriteSample(trackId, inputFile_, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, inputFile_, eosFlag, flag);
     }

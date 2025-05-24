@@ -818,7 +818,6 @@ typedef enum OH_MediaType {
      * @since 12
      */
     MEDIA_TYPE_SUBTITLE = 2,
-    MEDIA_TYPE_TIMED_METADATA = 5,
     MEDIA_TYPE_AUXILIARY = 6,
 } OH_MediaType;
 

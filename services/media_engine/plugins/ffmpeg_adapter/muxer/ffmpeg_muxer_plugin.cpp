@@ -730,7 +730,7 @@ bool FFmpegMuxerPlugin::CheckReferenceTrackIDS(const std::shared_ptr<Meta> &trac
     if (trackDesc->Find(Tag::REFERENCE_TRACK_IDS) != trackDesc->end()) {
         trackDesc->Get<Tag::REFERENCE_TRACK_IDS>(vTrackIDs);
         int32_t *trackIDs = reinterpret_cast<int32_t*>(vTrackIDs.data());
-        for (uint8_t i = 0; i < vTrackIDs.size() / sizeof(int32_t); i++) {
+        for (int32_t i = 0; i < vTrackIDs.size() / sizeof(int32_t); i++) {
             if (i > 0) {
                 toStringTrackId += ',';
             }
@@ -894,8 +894,8 @@ Status FFmpegMuxerPlugin::AddTimedMetaTrack(
     return Status::NO_ERROR;
 }
 
-Status FFmpegMuxerPlugin::AddVideoAuxiliaryTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc,
-                                        AVCodecID codeID, bool isCover)
+Status FFmpegMuxerPlugin::AddVideoAuxiliaryTrack(
+    int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover)
 {
     constexpr int32_t maxLength = 65535;
     constexpr int32_t maxVideoDelay = 16;
@@ -904,7 +904,7 @@ Status FFmpegMuxerPlugin::AddVideoAuxiliaryTrack(int32_t &trackIndex, const std:
     bool ret = trackDesc->Get<Tag::VIDEO_WIDTH>(width);
     FALSE_RETURN_V_MSG_E(ret && width > 0 && width <= maxLength, Status::ERROR_INVALID_PARAMETER,
         "get video width failed! width:%{public}d", width);
-    ret =  trackDesc->Get<Tag::VIDEO_HEIGHT>(height);
+    ret = trackDesc->Get<Tag::VIDEO_HEIGHT>(height);
     FALSE_RETURN_V_MSG_E((ret && height > 0 && height <= maxLength), Status::ERROR_INVALID_PARAMETER,
         "get video height failed! height:%{public}d", height);
 
