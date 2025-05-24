@@ -1410,7 +1410,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     WrapSurfaceBufferToSlot(*bufferInfo, bufferInfo->surfaceBuffer, bufferInfo->avBuffer->pts_,
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
 
-    if (bufferInfo->avBuffer->memory_ != nullptr && bufferInfo->avBuffer->memory_->GetSize() == 0) {
+    if (!inputSurface_ && bufferInfo->avBuffer->memory_ && bufferInfo->avBuffer->memory_->GetSize() == 0) {
         bufferInfo->omxBuffer->bufferhandle = nullptr;
         bufferInfo->omxBuffer->filledLen = 0;
     }
