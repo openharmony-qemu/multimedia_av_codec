@@ -659,7 +659,7 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         float readDuration = static_cast<float>(readRecordDuringTime_) / SECOND_TO_MILLISECONDS; // s
         if (readDuration > ZERO_THRESHOLD) {
             float readSpeed = static_cast<float>(readTotalBytes_ * BYTES_TO_BIT) / readDuration; // bps
-            currentBitrate_ = static_cast<uint64_t>(readSpeed);     // bps
+            readBitrate_ = static_cast<uint64_t>(readSpeed);     // bps
             currentBitRate_ = readSpeed > 0 ? static_cast<int32_t>(readSpeed) : currentBitRate_;     // bps
             size_t curBufferSize = GetCurrentBufferSize();
             MEDIA_LOG_D("HTTP Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
@@ -1186,8 +1186,8 @@ void HttpMediaDownloader::DownloadReport()
                 std::to_string(downloadRate) + " bit/s, bufferSize: " + std::to_string(remainingBuffer) + " Byte");
             // Remaining playable time: s
             uint64_t bufferDuration = 0;
-            if (currentBitrate_ > 0) {
-                bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / currentBitrate_;
+            if (readBitrate_ > 0) {
+                bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / readBitrate_;
             } else {
                 bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / CURRENT_BIT_RATE;
             }
@@ -1320,8 +1320,8 @@ void HttpMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
         playbackInfo.downloadRate = static_cast<int64_t>(recordData_->downloadRate);
         size_t remainingBuffer = GetCurrentBufferSize();
         uint64_t bufferDuration = 0;
-        if (currentBitrate_ > 0) {
-            bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / currentBitrate_;
+        if (readBitrate_ > 0) {
+            bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / readBitrate_;
         } else {
             bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / CURRENT_BIT_RATE;
         }
@@ -1380,7 +1380,7 @@ Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     } else {
         videoBitrate_ = std::max(currentBitRate_, bitRate);
     }
-    currentBitRate_ =  videoBitrate_;
+    currentBitRate_ =  static_cast<int32_t>(videoBitrate_);
     return Status::OK;
 }
 

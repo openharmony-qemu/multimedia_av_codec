@@ -214,7 +214,7 @@ private:
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
     uint64_t bufferedDuration_ {0};
-    uint64_t currentBitrate_ {1 * 1024 * 1024}; // bps
+    uint64_t readBitrate_ {1 * 1024 * 1024}; // bps
     bool userDefinedBufferDuration_ {false};
     uint64_t expectDuration_ {0};
     bool autoBufferSize_ {true}; // 默认为false

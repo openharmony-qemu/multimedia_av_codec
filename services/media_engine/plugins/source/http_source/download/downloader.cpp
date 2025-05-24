@@ -1075,7 +1075,9 @@ void Downloader::ToLower(char* str)
         if (i > MAX_LOOP_TIMES) {
             break;
         }
-        str[i] = tolower(static_cast<unsigned char>(str[i]));
+        if (str[i] >= 'A' && str[i] <= 'Z') {
+            str[i] = tolower(static_cast<unsigned char>(str[i]));
+        }
     }
 }
 
