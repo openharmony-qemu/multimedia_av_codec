@@ -102,6 +102,7 @@ int32_t CodecServiceStub::InitStub(int32_t instanceId)
     AVCODEC_SYNC_TRACE_WITH_TAG;
     codecServer_ = CodecServer::Create(instanceId);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server create failed");
+    instanceId_ = instanceId;
     return AVCS_ERR_OK;
 }
 

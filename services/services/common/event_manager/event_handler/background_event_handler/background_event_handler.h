@@ -16,25 +16,34 @@
 #ifndef BACKGROUND_EVENT_HANDLER_H
 #define BACKGROUND_EVENT_HANDLER_H
 
-#include <shared_mutex>
-#include <unordered_set>
+#include <mutex>
+#include <unordered_map>
+#include <vector>
+#include "instance_info.h"
 #include "refbase.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+using ObjectList = std::unordered_multimap<pid_t, InstanceId>;
+
 class BackGroundEventHandler {
 public:
     static BackGroundEventHandler &GetInstance();
-    void NotifyFrozen(const std::vector<int32_t> &pidList);
-    void NotifyActive(const std::vector<int32_t> &pidList);
+    void NotifyFrozenByInstanceId(InstanceId instanceId);
+    void NotifyFrozenByPidList(const std::vector<pid_t> &pidList);
+    void NotifyActiveByInstanceId(InstanceId instanceId);
+    void NotifyActiveByPidList(const std::vector<pid_t> &pidList);
     void NotifyActiveAll();
+    void ErasePid(pid_t pid);
+    void EraseInstance(InstanceId instanceId);
 
 private:
-    BackGroundEventHandler();
+    BackGroundEventHandler() {};
     ~BackGroundEventHandler() = default;
 
     std::mutex mutex_;
-    std::unordered_set<pid_t> frozenPidList_;
+    ObjectList memoryRecycleList_;
+    ObjectList suspendList_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

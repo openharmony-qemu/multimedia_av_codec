@@ -100,6 +100,7 @@ private:
     std::shared_mutex mutex_;
     sptr<IStandardCodecListener> listener_ = nullptr;
     bool isFreezedFlag_{false};
+    int32_t instanceId_ = INVALID_INSTANCE_ID;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

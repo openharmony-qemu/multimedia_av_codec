@@ -14,9 +14,8 @@
  */
 
 #include "background_event_handler.h"
+#include <unordered_set>
 #include "avcodec_log.h"
-#include "avcodec_errors.h"
-#include "avcodec_server.h"
 #include "avcodec_server_manager.h"
 #include "codec_service_stub.h"
 #include "syspara/parameters.h"
@@ -24,80 +23,196 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "BackGroundEventHandler"};
 } // namespace
+
 namespace OHOS {
 namespace MediaAVCodec {
-static std::vector<sptr<IRemoteObject>> GetFreezeInfoList(pid_t pid)
+std::vector<CodecInstance> GetDirectInvocationCodecInstanceListByPidList(std::vector<pid_t> pidList)
 {
-    std::vector<sptr<IRemoteObject>> instanceList;
-    std::vector<std::pair<sptr<IRemoteObject>, InstanceInfo>> instanceInfos =
-        AVCodecServerManager::GetInstance().GetInstanceInfoListByPid(pid);
-    for (auto &instance : instanceInfos) {
-        if ((instance.second.caller.pid == pid) && (instance.second.codecType == AVCODEC_TYPE_VIDEO_DECODER)) {
-            instanceList.push_back(instance.first);
+    std::vector<CodecInstance> instanceList;
+    for (auto pid : pidList) {
+        for (const auto &codecInstance : AVCodecServerManager::GetInstance().GetInstanceInfoListByPid(pid)) {
+            if ((codecInstance.second.caller.pid == pid) &&
+                (codecInstance.second.codecType == AVCODEC_TYPE_VIDEO_DECODER)) {
+                instanceList.push_back(codecInstance);
+            }
         }
     }
     return instanceList;
 }
 
-BackGroundEventHandler::BackGroundEventHandler() {}
-
-void BackGroundEventHandler::NotifyFrozen(const std::vector<int32_t> &pidList)
+ObjectList::const_iterator GetObjectFromList(const ObjectList &list, pid_t pid, InstanceId instanceId)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    bool recycleMemory = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
-    if (!recycleMemory) {
+    auto range = list.equal_range(pid);
+    for (auto iter = range.first; iter != range.second; iter++) {
+        if (iter->second == instanceId) {
+            return iter;
+        }
+    }
+    return list.end();
+}
+
+void MemoryRecycleHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance)
+{
+    static bool supportMemoryRecycle = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
+    if (!supportMemoryRecycle) {
         return;
     }
-    for (auto pid : pidList) {
-        std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
-        if (!instanceList.empty()) {
-            frozenPidList_.insert(pid);
-            AVCODEC_LOGI("Freeze pid: %{public}d, frozenPidList_ size: %{public}zu", pid, frozenPidList_.size());
-        }
-        for (auto &instance : instanceList) {
-            CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
-            static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyMemoryRecycle();
-        }
+    auto &[instance, instanceInfo] = codecInstance;
+    CHECK_AND_RETURN_LOG(instance != nullptr, "instance is nullptr");
+    if (GetObjectFromList(list, actualPid, instanceInfo.instanceId) != list.end()) {
+        return;
     }
-    return;
+    list.emplace(actualPid, instanceInfo.instanceId);
+    static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyMemoryRecycle();
+    AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
-void BackGroundEventHandler::NotifyActive(const std::vector<int32_t> &pidList)
+void MemoryWriteBackHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (auto pid : pidList) {
-        std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
-        if (!instanceList.empty()) {
-            frozenPidList_.erase(pid);
-            AVCODEC_LOGI("Active pid: %{public}d, frozenPidList_ size: %{public}zu", pid, frozenPidList_.size());
-        }
-        for (auto &instance : instanceList) {
-            CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
-            static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyMemoryWriteBack();
-        }
+    auto &[instance, instanceInfo] = codecInstance;
+    CHECK_AND_RETURN_LOG(instance != nullptr, "instance is nullptr");
+    auto recordedInfo = GetObjectFromList(list, actualPid, instanceInfo.instanceId);
+    if (recordedInfo == list.end()) {
+        return;
     }
-    return;
+    list.erase(recordedInfo);
+    static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyMemoryWriteBack();
+    AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
-void BackGroundEventHandler::NotifyActiveAll()
+void SuspendHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (auto pid : frozenPidList_) {
-        std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
-        AVCODEC_LOGI("ActiveAll, frozenPidList_ size: %{public}zu", frozenPidList_.size());
-        for (auto &instance : instanceList) {
-            CHECK_AND_CONTINUE_LOG(instance != nullptr, "instance is nullptr");
-            static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyMemoryWriteBack();
-        }
+    auto &[instance, instanceInfo] = codecInstance;
+    CHECK_AND_RETURN_LOG(instance != nullptr, "instance is nullptr");
+    if (GetObjectFromList(list, actualPid, instanceInfo.instanceId) != list.end()) {
+        return;
     }
-    frozenPidList_.clear();
-    return;
+    list.emplace(actualPid, instanceInfo.instanceId);
+    // static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifySuspend();
+    AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
+
+void ResumeHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance)
+{
+    auto &[instance, instanceInfo] = codecInstance;
+    CHECK_AND_RETURN_LOG(instance != nullptr, "instance is nullptr");
+    auto recordedInfo = GetObjectFromList(list, actualPid, instanceInfo.instanceId);
+    if (recordedInfo == list.end()) {
+        return;
+    }
+    list.erase(recordedInfo);
+    // static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyResume();
+    AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
+}
+
+/**************************** BackGroundEventHandler ****************************/
 
 BackGroundEventHandler &BackGroundEventHandler::GetInstance()
 {
     static BackGroundEventHandler instance;
     return instance;
+}
+
+void BackGroundEventHandler::NotifyFrozenByInstanceId(InstanceId instanceId)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto codecInstance = AVCodecServerManager::GetInstance().GetCodecInstanceByInstanceId(instanceId);
+    if (codecInstance == std::nullopt) {
+        return;
+    }
+    auto &callerPid = codecInstance->second.caller.pid;
+    auto &forwardPid = codecInstance->second.forwardCaller.pid;
+    auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
+    MemoryRecycleHandler(memoryRecycleList_, actualPid, codecInstance.value());
+    SuspendHandler(suspendList_, actualPid, codecInstance.value());
+}
+
+void BackGroundEventHandler::NotifyFrozenByPidList(const std::vector<pid_t> &pidList)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (auto &codecInstance : GetDirectInvocationCodecInstanceListByPidList(pidList)) {
+        auto &callerPid = codecInstance.second.caller.pid;
+        auto &forwardPid = codecInstance.second.forwardCaller.pid;
+        auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
+        MemoryRecycleHandler(memoryRecycleList_, actualPid, codecInstance);
+        SuspendHandler(suspendList_, actualPid, codecInstance);
+    }
+}
+
+void BackGroundEventHandler::NotifyActiveByInstanceId(InstanceId instanceId)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto codecInstance = AVCodecServerManager::GetInstance().GetCodecInstanceByInstanceId(instanceId);
+    if (codecInstance == std::nullopt) {
+        return;
+    }
+    auto &callerPid = codecInstance->second.caller.pid;
+    auto &forwardPid = codecInstance->second.forwardCaller.pid;
+    auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
+    MemoryWriteBackHandler(memoryRecycleList_, actualPid, codecInstance.value());
+    ResumeHandler(suspendList_, actualPid, codecInstance.value());
+}
+
+void BackGroundEventHandler::NotifyActiveByPidList(const std::vector<pid_t> &pidList)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (auto &codecInstance : GetDirectInvocationCodecInstanceListByPidList(pidList)) {
+        auto &callerPid = codecInstance.second.caller.pid;
+        auto &forwardPid = codecInstance.second.forwardCaller.pid;
+        auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
+        MemoryWriteBackHandler(memoryRecycleList_, actualPid, codecInstance);
+        ResumeHandler(suspendList_, actualPid, codecInstance);
+    }
+}
+
+void BackGroundEventHandler::NotifyActiveAll()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (memoryRecycleList_.empty() && suspendList_.empty()) {
+        return;
+    }
+    std::unordered_set<pid_t> pidSet;
+    for (const auto &[pid, instanceId] : memoryRecycleList_) {
+        pidSet.insert(pid);
+    }
+    for (const auto &[pid, instanceId] : suspendList_) {
+        pidSet.insert(pid);
+    }
+    std::vector<pid_t> pidList(pidSet.begin(), pidSet.end());
+    NotifyActiveByPidList(pidList);
+    AVCODEC_LOGI("Done");
+}
+
+void BackGroundEventHandler::ErasePid(pid_t pid)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto eraser = [pid](ObjectList &list, std::string_view name) {
+        auto range = list.equal_range(pid);
+        for (auto iter = range.first; iter != range.second; iter++) {
+            list.erase(iter);
+        }
+        EXPECT_AND_LOGI(range.first != range.second, "Erased pid: %{public}d from %{public}s", pid, name.data());
+    };
+    eraser(memoryRecycleList_, "MemoryRecycleList");
+    eraser(suspendList_, "SuspendedList");
+}
+
+void BackGroundEventHandler::EraseInstance(InstanceId instanceId)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto eraser = [instanceId](ObjectList &list, std::string_view name) {
+        for (auto iter = list.begin(); iter != list.end();) {
+            if (iter->second == instanceId) {
+                list.erase(iter);
+                AVCODEC_LOGI("Erased instanceId: %{public}d from %{public}s", instanceId, name.data());
+                break;
+            } else {
+                ++iter;
+            }
+        }
+    };
+    eraser(memoryRecycleList_, "MemoryRecycleList");
+    eraser(suspendList_, "SuspendedList");
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

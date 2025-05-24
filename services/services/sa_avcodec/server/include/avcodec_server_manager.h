@@ -47,6 +47,7 @@ public:
     std::vector<CodecInstance> GetInstanceInfoListByPid(pid_t pid);
     std::vector<CodecInstance> GetInstanceInfoListByActualPid(pid_t pid);
     std::optional<InstanceInfo> GetInstanceInfoByInstanceId(int32_t instanceId);
+    std::optional<CodecInstance> GetCodecInstanceByInstanceId(int32_t instanceId);
     void SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info);
 
 private:

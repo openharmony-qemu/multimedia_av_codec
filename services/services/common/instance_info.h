@@ -25,8 +25,9 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using InstanceId = int32_t;
 constexpr pid_t INVALID_PID = -1;
-constexpr int32_t INVALID_INSTANCE_ID = -1;
+constexpr InstanceId INVALID_INSTANCE_ID = -1;
 
 class EventInfoExtentedKey {
 public:
@@ -52,7 +53,7 @@ struct CallerInfo {
 };
 
 struct InstanceInfo {
-    int32_t instanceId = INVALID_INSTANCE_ID;
+    InstanceId instanceId = INVALID_INSTANCE_ID;
     CallerInfo caller;
     CallerInfo forwardCaller;
     AVCodecType codecType;
