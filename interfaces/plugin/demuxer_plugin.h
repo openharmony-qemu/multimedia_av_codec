@@ -179,7 +179,7 @@ struct DemuxerPlugin : public PluginBase {
     };
     virtual bool GetProbeSize(int32_t &offset, int32_t &size) { return false; };
     virtual Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
-        const int probSize) = 0;
+        const int32_t probSize) = 0;
 };
 
 /// Demuxer plugin api major number.

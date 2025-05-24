@@ -1131,7 +1131,8 @@ void FFmpegDemuxerPlugin::NotifyInitializationCompleted()
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE, "AVFormatContext is not nullptr");
+    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
+        "AVFormatContext has been initialized");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
@@ -1175,7 +1176,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     return Status::OK;
 }
 
-static int CheckProbScore(const std::string& pluginName, const int probScore)
+static bool CheckProbScore(const std::string& pluginName, const int32_t probScore)
 {
     if (probScore >= DEF_PROBE_SCORE_LIMIT) {
         return true;
@@ -1190,16 +1191,17 @@ static int CheckProbScore(const std::string& pluginName, const int probScore)
 }
 
 Status FFmpegDemuxerPlugin::SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
-    const int probSize)
+    const int32_t probSize)
 {
     std::unique_lock<std::shared_mutex> lock(sharedMutex_);
-    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE, "AVFormatContext is not nullptr");
+    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
+        "AVFormatContext has been initialized");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
     FALSE_RETURN_V_MSG_E(probSize >= 0, Status::ERROR_INVALID_PARAMETER, "probSize is invalid");
     
-    int probScore = SniffWithSize(pluginName_, source, probSize);
+    int32_t probScore = SniffWithSize(pluginName_, source, probSize);
     FALSE_RETURN_V_MSG_E(CheckProbScore(pluginName_, probScore), Status::ERROR_INVALID_PARAMETER,
-        "No match inputformat");
+        "source and inputformat mismatch");
     lock.unlock();
 
     return SetDataSource(source);

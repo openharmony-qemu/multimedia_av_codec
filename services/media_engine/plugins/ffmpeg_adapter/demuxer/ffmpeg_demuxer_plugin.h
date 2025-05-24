@@ -84,7 +84,7 @@ public:
     bool GetProbeSize(int32_t &offset, int32_t &size) override;
     void SetInterruptState(bool isInterruptNeeded) override;
     Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
-        const int probSize) override;
+        const int32_t probSize) override;
 private:
     enum DumpMode : unsigned long {
         DUMP_NONE = 0,
