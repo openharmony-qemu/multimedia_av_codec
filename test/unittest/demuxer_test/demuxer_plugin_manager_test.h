@@ -18,6 +18,8 @@
 #include "mock/mock_base_stream_demuxer.h"
 #include "gtest/gtest.h"
 #include "demuxer_plugin_manager.h"
+#include "stream_demuxer.h"
+#include "plugin/plugin_manager_v2.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,6 +38,30 @@ protected:
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_{ nullptr };
     std::shared_ptr<DataSourceImpl> dataSourceImpl_{ nullptr };
     std::shared_ptr<MockBaseStreamDemuxer> streamDemuxer_{ nullptr };
+
+private:
+    bool CreateDataSource(const std::string& filePath);
+    bool CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath, int probSize);
+    bool PluginSelectTracks();
+    bool PluginReadSample(uint32_t idx, uint32_t& flag);
+    void CountFrames(uint32_t index, uint32_t flag);
+    void SetEosValue();
+    bool isEOS(std::map<uint32_t, bool>& countFlag);
+    void RemoveValue();
+    bool ResultAssert(uint32_t frames0, uint32_t frames1, uint32_t keyFrames0, uint32_t keyFrames1);
+    bool PluginReadAllSample();
+
+    int streamId_ = 0;
+    std::map<uint32_t, uint32_t> frames_;
+    std::map<uint32_t, uint32_t> keyFrames_;
+    std::map<uint32_t, bool> eosFlag_;
+    std::vector<uint32_t> selectedTrackIds_;
+    std::vector<uint8_t> buffer_;
+
+    std::shared_ptr<Media::StreamDemuxer> realStreamDemuxer_{ nullptr };
+    std::shared_ptr<Media::MediaSource> mediaSource_{ nullptr };
+    std::shared_ptr<Media::Source> realSource_{ nullptr };
+    std::shared_ptr<Media::PluginBase> pluginBase_{ nullptr };
 };
 }  // namespace Media
 }  // namespace OHOS
