@@ -799,6 +799,10 @@ extern const char *OH_MD_KEY_CREATION_TIME;
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS;
 
+extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
+extern const char *OH_MD_KEY_TRACK_DESCRIPTION;
+extern const char *OH_MD_KEY_REFERENCE_TRACK_IDS;
+
 /**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -814,6 +818,7 @@ typedef enum OH_MediaType {
      * @since 12
      */
     MEDIA_TYPE_SUBTITLE = 2,
+    MEDIA_TYPE_AUXILIARY = 6,
 } OH_MediaType;
 
 /**

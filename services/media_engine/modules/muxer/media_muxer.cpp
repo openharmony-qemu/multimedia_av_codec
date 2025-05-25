@@ -73,6 +73,10 @@ const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
 const std::map<std::string, std::set<std::string>> MUX_MIME_INFO_EXT = {
     {MimeType::AUDIO_AAC, {Tag::AUDIO_AAC_IS_ADTS, Tag::MEDIA_PROFILE}},
 };
+
+const std::set<std::string> MUX_AUXILIARY_TRACK_INFO = {
+    Tag::REFERENCE_TRACK_IDS, Tag::TRACK_REFERENCE_TYPE, Tag::TRACK_DESCRIPTION,
+};
 }
 
 namespace OHOS {
@@ -495,6 +499,25 @@ bool MediaMuxer::CheckKeysExt(const std::string &mimeType, const std::shared_ptr
             if (trackDesc->Find(key.c_str()) == trackDesc->end()) {
                 ret = false;
                 MEDIA_LOG_E("The format key %{public}s not contained.", key.data());
+            }
+        }
+    }
+
+    if (!ret) {
+        return ret;
+    }
+
+    // auxiliary track
+    Plugins::MediaType mediaType = Plugins::MediaType::UNKNOWN;
+    if (!trackDesc->Get<Tag::MEDIA_TYPE>(mediaType)) {
+        MEDIA_LOG_W("missing media type");
+    }
+    
+    if (mediaType == Plugins::MediaType::AUXILIARY) {
+        for (auto &key : MUX_AUXILIARY_TRACK_INFO) {
+            if (trackDesc->Find(key.c_str()) == trackDesc->end()) {
+                ret = false;
+                MEDIA_LOG_E("The auxiliary track key %{public}s not contained.", key.data());
             }
         }
     }

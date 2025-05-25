@@ -36,6 +36,8 @@ using namespace Ffmpeg;
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
 std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav", "adts"};
+const std::set<std::string> SUPPORTED_TRACK_REF_TYPE = {"hint", "cdsc", "font", "hind", "vdep", "vplx",
+    "subt", "thmb", "auxl", "cdtg", "shsc", "aest"};
 constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
 constexpr float LONGITUDE_MIN = -180.0f;
@@ -692,6 +694,78 @@ Status FFmpegMuxerPlugin::CheckAacParam(const std::shared_ptr<Meta> &trackDesc)
     return ret;
 }
 
+bool FFmpegMuxerPlugin::CheckTrackReferenceType(const std::shared_ptr<Meta> &trackDesc, std::string &trackRefType)
+{
+    if (trackDesc->Find(Tag::TRACK_REFERENCE_TYPE) != trackDesc->end()) {
+        trackDesc->Get<Tag::TRACK_REFERENCE_TYPE>(trackRefType);
+        if (SUPPORTED_TRACK_REF_TYPE.count(trackRefType) == 0) {
+            MEDIA_LOG_E(" track reference type is not supported.");
+            return false;
+        }
+    } else {
+        MEDIA_LOG_E("missing track reference type.");
+        return false;
+    }
+    return true;
+}
+
+bool FFmpegMuxerPlugin::CheckTrackDescription(const std::shared_ptr<Meta> &trackDesc, std::string &trackDescription)
+{
+    if (trackDesc->Find(Tag::TRACK_DESCRIPTION) != trackDesc->end()) {
+        trackDesc->Get<Tag::TRACK_DESCRIPTION>(trackDescription);
+        if (trackDescription.compare(0, 16, "com.openharmony.") != 0) { // 16 "com.openharmony." length
+            MEDIA_LOG_E("track description key %{public}s must com.openharmony.xxx!", trackDescription.c_str());
+            return false;
+        }
+    } else {
+        MEDIA_LOG_E("missing track description.");
+        return false;
+    }
+    return true;
+}
+
+bool FFmpegMuxerPlugin::CheckReferenceTrackIDS(const std::shared_ptr<Meta> &trackDesc, std::string &toStringTrackId)
+{
+    std::vector<uint8_t> vTrackIDs;
+    if (trackDesc->Find(Tag::REFERENCE_TRACK_IDS) != trackDesc->end()) {
+        trackDesc->Get<Tag::REFERENCE_TRACK_IDS>(vTrackIDs);
+        int32_t *trackIDs = reinterpret_cast<int32_t*>(vTrackIDs.data());
+        for (int32_t i = 0; i < vTrackIDs.size() / sizeof(int32_t); i++) {
+            if (i > 0) {
+                toStringTrackId += ',';
+            }
+            toStringTrackId += std::to_string(trackIDs[i]);
+        }
+    } else {
+        MEDIA_LOG_E("missing track ids.");
+        return false;
+    }
+    return true;
+}
+
+Status FFmpegMuxerPlugin::SetAuxiliaryMeta(const std::shared_ptr<Meta> &trackDesc, AVStream* st)
+{
+    // Check track reference type
+    std::string trackRefType;
+    bool ret = CheckTrackReferenceType(trackDesc, trackRefType);
+    FALSE_RETURN_V_MSG_E(ret, Status::ERROR_INVALID_PARAMETER, "get track reference type failed.");
+    av_dict_set(&st->metadata, "track_reference_type", trackRefType.c_str(), 0);
+
+    // Check track description
+    std::string trackDescription;
+    ret = CheckTrackDescription(trackDesc, trackDescription);
+    FALSE_RETURN_V_MSG_E(ret, Status::ERROR_INVALID_PARAMETER, "get track description failed.");
+    av_dict_set(&st->metadata, "handler_name", trackDescription.c_str(), 0);
+
+    // Check track IDs
+    std::string trackIDs;
+    ret = CheckReferenceTrackIDS(trackDesc, trackIDs);
+    FALSE_RETURN_V_MSG_E(ret, Status::ERROR_INVALID_PARAMETER, "get track ids failed.");
+    av_dict_set(&st->metadata, "reference_track_ids", trackIDs.c_str(), 0);
+
+    return Status::NO_ERROR;
+}
+
 Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID)
 {
     int32_t sampleRate = 0;
@@ -820,6 +894,60 @@ Status FFmpegMuxerPlugin::AddTimedMetaTrack(
     return Status::NO_ERROR;
 }
 
+Status FFmpegMuxerPlugin::AddVideoAuxiliaryTrack(
+    int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover)
+{
+    constexpr int32_t maxLength = 65535;
+    constexpr int32_t maxVideoDelay = 16;
+    int32_t width = 0;
+    int32_t height = 0;
+    bool ret = trackDesc->Get<Tag::VIDEO_WIDTH>(width);
+    FALSE_RETURN_V_MSG_E(ret && width > 0 && width <= maxLength, Status::ERROR_INVALID_PARAMETER,
+        "get video width failed! width:%{public}d", width);
+    ret = trackDesc->Get<Tag::VIDEO_HEIGHT>(height);
+    FALSE_RETURN_V_MSG_E((ret && height > 0 && height <= maxLength), Status::ERROR_INVALID_PARAMETER,
+        "get video height failed! height:%{public}d", height);
+
+    auto st = avformat_new_stream(formatContext_.get(), nullptr);
+    FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
+    ResetCodecParameter(st->codecpar);
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUXILIARY;
+    st->codecpar->codec_id = codeID;
+    st->codecpar->codec_tag = codeID == AV_CODEC_ID_HEVC ? MKTAG('h', 'v', 'c', '1') : 0;
+    st->codecpar->width = width;
+    st->codecpar->height = height;
+    int32_t videoDelay = 0;
+    if (trackDesc->Find(Tag::VIDEO_DELAY) != trackDesc->end()) {
+        trackDesc->Get<Tag::VIDEO_DELAY>(videoDelay);
+        FALSE_RETURN_V_MSG_E(videoDelay >= 0, Status::ERROR_MISMATCHED_TYPE,
+            "get video delay failed! video delay:%{public}d", videoDelay);
+        st->codecpar->video_delay = videoDelay;
+    }
+
+    SetAuxiliaryMeta(trackDesc, st);
+
+    trackIndex = st->index;
+    if (isCover) {
+        st->disposition = AV_DISPOSITION_ATTACHED_PIC;
+    }
+    double frameRate = 0;
+    if (trackDesc->Find(Tag::VIDEO_FRAME_RATE) != trackDesc->end()) {
+        trackDesc->Get<Tag::VIDEO_FRAME_RATE>(frameRate);
+        FALSE_RETURN_V_MSG_E(frameRate > 0, Status::ERROR_MISMATCHED_TYPE,
+            "get video frame rate failed! video frame rate:%{public}lf", frameRate);
+        st->avg_frame_rate = {static_cast<int32_t>(frameRate), 1};
+    }
+    FALSE_RETURN_V_MSG_E((videoDelay > 0 && videoDelay <= maxVideoDelay && frameRate > 0) || videoDelay == 0,
+        Status::ERROR_MISMATCHED_TYPE, "If the video delayed, the frame rate is required. "
+        "The delay is greater than or equal to 0 and less than or equal to 16.");
+
+    auto retColor = SetCodecParameterColor(st, trackDesc);
+    FALSE_RETURN_V_MSG_E(retColor == Status::NO_ERROR, retColor, "set color failed!");
+    auto retCuva = SetCodecParameterCuva(st, trackDesc);
+    FALSE_RETURN_V_MSG_E(retCuva == Status::NO_ERROR, retCuva, "set cuva failed!");
+    return SetCodecParameterOfVideoTrack(st, trackDesc);
+}
+
 Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc)
 {
     FALSE_RETURN_V_MSG_E(!isWriteHeader_, Status::ERROR_WRONG_STATE, "AddTrack failed! muxer has start!");
@@ -840,12 +968,24 @@ Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr<Me
             "this mimeType do not support! mimeType:%{public}s", mimeType.c_str());
     }
 
+    Plugins::MediaType mediaType = Plugins::MediaType::UNKNOWN;
+    if (trackDesc->Find(Tag::MEDIA_TYPE) != trackDesc->end()) {
+        FALSE_RETURN_V_MSG_E(trackDesc->Get<Tag::MEDIA_TYPE>(mediaType), Status::ERROR_INVALID_DATA,
+            "get mediaType failed.");
+    } else {
+        MEDIA_LOG_E("missing mediaType");
+    }
     if (!mimeType.compare(0, mimeTypeLen, "audio")) {
         ret = AddAudioTrack(trackIndex, trackDesc, codeID);
         FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddAudioTrack failed!");
     } else if (!mimeType.compare(0, mimeTypeLen, "video")) {
-        ret = AddVideoTrack(trackIndex, trackDesc, codeID, false);
-        FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddVideoTrack failed!");
+        if (mediaType == Plugins::MediaType::AUXILIARY) {
+            ret = AddVideoAuxiliaryTrack(trackIndex, trackDesc, codeID, false);
+            FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddVideoAuxiliaryTrack failed!");
+        } else {
+            ret = AddVideoTrack(trackIndex, trackDesc, codeID, false);
+            FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddVideoTrack failed!");
+        }
     } else if (!mimeType.compare(0, mimeTypeLen, "image")) {
         ret = AddVideoTrack(trackIndex, trackDesc, codeID, true);
         FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddCoverTrack failed!");
@@ -887,7 +1027,10 @@ Status FFmpegMuxerPlugin::Start()
     if (rotation_ != VIDEO_ROTATION_0) {
         std::string rotate = std::to_string(rotation_);
         for (uint32_t i = 0; i < formatContext_->nb_streams; i++) {
-            if (formatContext_->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            if (formatContext_->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
+                ((formatContext_->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUXILIARY) &&
+                (formatContext_->streams[i]->codecpar->codec_id == AV_CODEC_ID_H264 ||
+                formatContext_->streams[i]->codecpar->codec_id == AV_CODEC_ID_H265))) {
                 av_dict_set(&formatContext_->streams[i]->metadata, "rotate", rotate.c_str(), 0);
                 FALSE_LOG_MSG(SetDisplayMatrix(formatContext_->streams[i]) == Status::NO_ERROR,
                     "set rotation failed!");
