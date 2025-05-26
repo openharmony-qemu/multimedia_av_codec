@@ -782,6 +782,7 @@ bool HevcDecoder::RequestSurfaceBufferOnce(uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOG(!requestBufferThreadExit_.load(), false, "request surfacebuffer thread exited!");
     std::unique_lock<std::mutex> lck(requestBufferMutex_);
+    requestSucceed_ = false;
     requestBufferFinished_ = false;
     requestSurfaceBufferQue_->Push(index);
     requestBufferCV_.notify_one();
