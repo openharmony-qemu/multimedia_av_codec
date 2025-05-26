@@ -753,8 +753,9 @@ void FCodec::RequestSurfaceBufferThread()
         sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         if (surfaceBuffer == nullptr) {
             AVCODEC_LOGE("Get surface buffer failed, index=%{public}u", index);
+        } else {
+            requestSucceed_ = true;
         }
-        requestSucceed_ = true;
         requestBufferFinished_ = true;
         requestBufferOnceDoneCV_.notify_one();
     }
