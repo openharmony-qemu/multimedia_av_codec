@@ -98,12 +98,14 @@ private:
     void NotifyMemoryWriteBack();
     void NotifySuspend();
     void NotifyResume();
+    void OnActive();
 
     bool isServerReleased_ = false;
     std::shared_ptr<ICodecService> codecServer_ = nullptr;
     std::shared_mutex mutex_;
     sptr<IStandardCodecListener> listener_ = nullptr;
     std::atomic<bool> isMemoryRecycleFlag_{false};
+    std::atomic<bool> suspended_{false};
     int32_t instanceId_ = INVALID_INSTANCE_ID;
 };
 } // namespace MediaAVCodec

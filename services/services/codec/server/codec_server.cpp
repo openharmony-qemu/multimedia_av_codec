@@ -1690,15 +1690,16 @@ void CodecServer::NotifySuspend()
     CHECK_AND_RETURN_LOG(status_ == RUNNING || status_ == FLUSHED || status_ == END_OF_STREAM,
         "No need to suspend, status:%{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "Codecbase is nullptr");
-    codecBase_->NotifySuspend();
+    auto ret = codecBase_->NotifySuspend();
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Failed, ret:%{public}d", ret);
 }
 
 void CodecServer::NotifyResume()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "Codecbase is nullptr");
-    codecBase_->NotifyResume();
+    auto ret = codecBase_->NotifyResume();
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Failed, ret:%{public}d", ret);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
-    

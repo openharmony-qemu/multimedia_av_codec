@@ -338,9 +338,7 @@ int32_t CodecServiceStub::Stop()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
-    if (isMemoryRecycleFlag_ == true) {
-        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
-    }
+    OnActive();
     int32_t ret = codecServer_->Stop();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
@@ -353,9 +351,7 @@ int32_t CodecServiceStub::Flush()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
-    if (isMemoryRecycleFlag_ == true) {
-        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
-    }
+    OnActive();
     int32_t ret = codecServer_->Flush();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
@@ -368,9 +364,7 @@ int32_t CodecServiceStub::Reset()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
-    if (isMemoryRecycleFlag_ == true) {
-        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
-    }
+    OnActive();
     int32_t ret = codecServer_->Reset();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
@@ -382,9 +376,7 @@ int32_t CodecServiceStub::Reset()
 int32_t CodecServiceStub::Release()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    if (isMemoryRecycleFlag_ == true) {
-        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
-    }
+    OnActive();
     return InnerRelease();
 }
 
@@ -781,6 +773,7 @@ void CodecServiceStub::NotifySuspend()
     AVCODEC_SYNC_TRACE_WITH_TAG;
     CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
     std::static_pointer_cast<CodecServer>(codecServer_)->NotifySuspend();
+    suspended_ = true;
 }
 
 void CodecServiceStub::NotifyResume()
@@ -789,6 +782,23 @@ void CodecServiceStub::NotifyResume()
     AVCODEC_SYNC_TRACE_WITH_TAG;
     CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
     std::static_pointer_cast<CodecServer>(codecServer_)->NotifyResume();
+    suspended_ = false;
+}
+
+void CodecServiceStub::OnActive()
+{
+    if (isMemoryRecycleFlag_) {
+        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
+    }
+    if (suspended_) {
+        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyResume();
+    }
+    if (isMemoryRecycleFlag_ || suspended_) {
+        isMemoryRecycleFlag_ = false;
+        suspended_ = false;
+        BackGroundEventHandler::GetInstance().EraseInstance(instanceId_);
+        AVCODEC_LOGI_WITH_TAG("Done");
+    }
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
