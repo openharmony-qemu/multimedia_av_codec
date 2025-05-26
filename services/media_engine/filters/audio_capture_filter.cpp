@@ -327,6 +327,7 @@ Status AudioCaptureFilter::SendEos()
 {
     MEDIA_LOG_I("SendEos");
     Status ret = Status::OK;
+    eos_ = true;
     GetCurrentTime(stopTime_);
     MEDIA_LOG_I("[audio] stopTime: " PUBLIC_LOG_D64, stopTime_);
     if (outputBufferQueue_) {
@@ -353,7 +354,6 @@ Status AudioCaptureFilter::SendEos()
         buffer->flag_ |= BUFFER_FLAG_EOS;
         outputBufferQueue_->PushBuffer(buffer, false);
     }
-    eos_ = true;
     return ret;
 }
 
