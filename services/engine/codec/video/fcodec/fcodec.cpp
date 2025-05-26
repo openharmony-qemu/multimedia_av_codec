@@ -405,12 +405,15 @@ void FCodec::InitBuffers()
     for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][i]->sMemory_;
         if (surfaceMemory->isAttached && surfaceMemory->owner == Owner::OWNED_BY_SURFACE) {
-            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_SURFACE;
-            renderAvailQue_->Push(i);
-        } else {
-            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
-            codecAvailQue_->Push(i);
+            AVCODEC_LOGI("surfacebuffer(%{public}u) is used by surface, try to request", i);
+            if (!RequestSurfaceBufferOnce(i)) {
+                buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_SURFACE;
+                renderAvailQue_->Push(i);
+                continue;
+            }   
         }
+        buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
+        codecAvailQue_->Push(i);
     }
 }
 
@@ -751,6 +754,7 @@ void FCodec::RequestSurfaceBufferThread()
         if (surfaceBuffer == nullptr) {
             AVCODEC_LOGE("Get surface buffer failed, index=%{public}u", index);
         }
+        requestSucceed_ = true;
         requestBufferFinished_ = true;
         requestBufferOnceDoneCV_.notify_one();
     }
@@ -780,21 +784,15 @@ void FCodec::StopRequestSurfaceBufferThread()
 
 bool FCodec::RequestSurfaceBufferOnce(uint32_t index)
 {
-    if (!requestBufferThreadExit_.load()) {
-        std::unique_lock<std::mutex> lck(requestBufferMutex_);
-        requestBufferFinished_ = false;
-        requestSurfaceBufferQue_->Push(index);
-        requestBufferCV_.notify_one();
-        requestBufferOnceDoneCV_.wait(lck, [this]() { return requestBufferFinished_.load(); });
-        std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
-        std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
-        if (surfaceMemory == nullptr || surfaceMemory->GetBase() == nullptr) {
-            AVCODEC_LOGE("Output surface memory %{public}u allocate failed", index);
-            return false;
-        }
-        return true;
-    }
-    return false;
+    CHECK_AND_RETURN_RET_LOG(!requestBufferThreadExit_.load(), false, "request surfacebuffer thread exited!");
+    std::unique_lock<std::mutex> lck(requestBufferMutex_);
+    requestSucceed_ = false;
+    requestBufferFinished_ = false;
+    requestSurfaceBufferQue_->Push(index);
+    requestBufferCV_.notify_one();
+    requestBufferOnceDoneCV_.wait(lck, [this]() { return requestBufferFinished_.load(); });
+    CHECK_AND_RETURN_RET_LOG(requestSucceed_.load(), false, "Output surface memory %{public}u allocate failed", index);
+    return true;
 }
 
 int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
