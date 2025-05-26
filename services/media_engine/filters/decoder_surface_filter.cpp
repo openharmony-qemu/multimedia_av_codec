@@ -756,7 +756,9 @@ void DecoderSurfaceFilter::InitPostProcessorType()
     FALSE_RETURN_NOLOG(
         enableCameraPostprocessing_.load() && enhanceflag == "1" && fdsanFd_ != nullptr && fdsanFd_->Get() >= 0);
     postProcessorType_ = VideoPostProcessorType::CAMERA_INSERT_FRAME;
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
     LoadCameraPostProcessorLib();
+#endif
     std::string videoId;
     meta_->GetData(VIDEO_ID, videoId);
     MEDIA_LOG_D("videoId: %{public}s", videoId.c_str());
