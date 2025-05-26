@@ -410,7 +410,7 @@ void FCodec::InitBuffers()
                 buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_SURFACE;
                 renderAvailQue_->Push(i);
                 continue;
-            }   
+            }
         }
         buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
         codecAvailQue_->Push(i);
