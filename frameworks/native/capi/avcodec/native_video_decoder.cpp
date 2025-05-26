@@ -283,15 +283,20 @@ OH_AVBuffer *VideoDecoderObject::GetTransData(const uint32_t &index, std::shared
 void VideoDecoderObject::ClearBufferList()
 {
     std::lock_guard<std::shared_mutex> lock(objListMutex_);
-    if (inputBufferMap_.size() > 0 || outputBufferMap_.size() > 0) {
+    if (inputBufferMap_.size() > 0) {
         BufferToTempFunc(inputBufferMap_);
-        BufferToTempFunc(outputBufferMap_);
         inputBufferMap_.clear();
+    }
+    if (outputBufferMap_.size() > 0) {
+        BufferToTempFunc(outputBufferMap_);
         outputBufferMap_.clear();
-    } else if (isSetMemoryCallback_) {
+    }
+    if (inputMemoryMap_.size() > 0) {
         MemoryToTempFunc(inputMemoryMap_);
-        MemoryToTempFunc(outputMemoryMap_);
         inputMemoryMap_.clear();
+    }
+    if (outputMemoryMap_.size() > 0) {
+        MemoryToTempFunc(outputMemoryMap_);
         outputMemoryMap_.clear();
     }
     while (tempList_.size() > MAX_TEMPNUM) {

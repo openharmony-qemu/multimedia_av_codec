@@ -132,10 +132,8 @@ int32_t CodecClient::Configure(const Format &format)
     // check sync mode
     int32_t enableSyncMode = 0;
     int32_t enableParameterSyncMode = 0;
-    format.GetIntValue(Tag::AV_CODEC_ENABLE_SYNC_MODE, enableSyncMode);
-    format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE, enableParameterSyncMode);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(circular_.CanSetIsAsyncMode(!enableSyncMode), AVCS_ERR_INVALID_OPERATION,
-                                      "Set %{public}s mode failed", enableSyncMode ? "sync" : "async");
+    (void)format.GetIntValue(Tag::AV_CODEC_ENABLE_SYNC_MODE, enableSyncMode);
+    (void)format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE, enableParameterSyncMode);
 
     // video encoder set parameter
     CHECK_AND_RETURN_RET_LOG_WITH_TAG((enableParameterSyncMode && enableSyncMode) || !enableParameterSyncMode,
@@ -147,14 +145,15 @@ int32_t CodecClient::Configure(const Format &format)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s",
                                       AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     // update client flag
-    circular_.SetIsAsyncMode(!enableSyncMode);
+    if (enableSyncMode) {
+        circular_.EnableSyncMode();
+    }
     isConfigured_ = true;
     if (enableParameterSyncMode) {
         codecMode_ |= CODEC_ENABLE_PARAMETER;
     }
     AVCODEC_LOGI_WITH_TAG("%{public}s", format.Stringify().c_str());
-    AVCODEC_LOGI_WITH_TAG("%{public}s mode.%{public}s", enableSyncMode ? "Sync" : "Async",
-                          AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+    AVCODEC_LOGI_WITH_TAG("success. %{public}s mode", enableSyncMode ? "Sync" : "Async");
     return ret;
 }
 
@@ -275,6 +274,7 @@ int32_t CodecClient::Reset()
         circular_.SetIsRunning(false);
         circular_.ClearCaches();
         circular_.ResetFlag();
+        codecMode_ &= ~CODEC_SURFACE_OUTPUT;
     }
     AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;
@@ -301,7 +301,9 @@ sptr<OHOS::Surface> CodecClient::CreateInputSurface()
 
     auto ret = codecProxy_->CreateInputSurface();
     AVCODEC_LOGI_WITH_TAG("%{public}s", (ret != nullptr) ? "succeed" : "failed");
-    codecMode_ |= CODEC_SURFACE_MODE;
+    if (ret != nullptr) {
+        codecMode_ |= CODEC_SURFACE_INPUT;
+    }
     return ret;
 }
 
@@ -312,7 +314,9 @@ int32_t CodecClient::SetOutputSurface(sptr<Surface> surface)
 
     int32_t ret = codecProxy_->SetOutputSurface(surface);
     AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
-    codecMode_ = CODEC_SURFACE_MODE;
+    if (ret == AVCS_ERR_OK) {
+        codecMode_ |= CODEC_SURFACE_OUTPUT;
+    }
     return ret;
 }
 
@@ -335,10 +339,12 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ == BUFFER_CALLBACK || !circular_.GetIsAsyncMode(),
-                                      AVCS_ERR_INVALID_STATE, "The callback of AVBuffer is invalid!");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ == BUFFER_CALLBACK || circular_.IsSyncMode(),
+                                      AVCS_ERR_INVALID_STATE, "The callback of AVBuffer is invalid in async mode");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecMode_ & CODEC_ENABLE_PARAMETER), AVCS_ERR_INVALID_OPERATION,
                                       "Not support with enable input parameter");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecMode_ & CODEC_SURFACE_INPUT), AVCS_ERR_INVALID_OPERATION,
+                                      "Input is the surface");
     int32_t ret = circular_.HandleInputBuffer(index);
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputBuffer(index);
@@ -352,8 +358,8 @@ int32_t CodecClient::QueueInputParameter(uint32_t index)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecMode_ == CODEC_SURFACE_MODE_WITH_SETPARAMETER, AVCS_ERR_INVALID_STATE,
-                                      "Is in invalid state!");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecMode_ == CODEC_SURFACE_MODE_WITH_SETPARAMETER, AVCS_ERR_INVALID_OPERATION,
+                                      "Need to enable input parameter");
     int32_t ret = circular_.HandleInputBuffer(index);
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputParameter(index);
@@ -390,8 +396,10 @@ int32_t CodecClient::ReleaseOutputBuffer(uint32_t index, bool render)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ != INVALID_CALLBACK || !circular_.GetIsAsyncMode(),
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ != INVALID_CALLBACK || circular_.IsSyncMode(),
                                       AVCS_ERR_INVALID_STATE, "The callback is invalid!");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!render || (codecMode_ & CODEC_SURFACE_OUTPUT), AVCS_ERR_INVALID_OPERATION,
+                                      "Need to set output surface");
     int32_t ret = circular_.HandleOutputBuffer(index);
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->ReleaseOutputBuffer(index, render);
@@ -405,8 +413,10 @@ int32_t CodecClient::RenderOutputBufferAtTime(uint32_t index, int64_t renderTime
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ != INVALID_CALLBACK || !circular_.GetIsAsyncMode(),
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ != INVALID_CALLBACK || circular_.IsSyncMode(),
                                       AVCS_ERR_INVALID_STATE, "The callback is invalid!");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecMode_ & CODEC_SURFACE_OUTPUT, AVCS_ERR_INVALID_OPERATION,
+                                      "Need to set output surface");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(renderTimestampNs >= 0, AVCS_ERR_INVALID_VAL,
                                       "The renderTimestamp:%{public}" PRId64 " value error", renderTimestampNs);
     int32_t ret = circular_.HandleOutputBuffer(index);
@@ -420,42 +430,51 @@ int32_t CodecClient::RenderOutputBufferAtTime(uint32_t index, int64_t renderTime
 
 int32_t CodecClient::QueryInputParameterWithAttr(uint32_t &index, int64_t timeoutUs)
 {
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecMode_ == CODEC_SURFACE_MODE_WITH_SETPARAMETER, AVCS_ERR_INVALID_STATE,
-                                      "Is in invalid state!");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecMode_ == CODEC_SURFACE_MODE_WITH_SETPARAMETER, AVCS_ERR_INVALID_OPERATION,
+                                      "Need to enable input parameter");
     return circular_.QueryInputParameterWithAttr(index, timeoutUs);
 }
 
 int32_t CodecClient::QueryInputBuffer(uint32_t &index, int64_t timeoutUs)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecMode_ & CODEC_SURFACE_INPUT), AVCS_ERR_INVALID_OPERATION,
+                                      "Input is the surface");
     return circular_.QueryInputBuffer(index, timeoutUs);
 }
 
 int32_t CodecClient::QueryOutputBuffer(uint32_t &index, int64_t timeoutUs)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     return circular_.QueryOutputBuffer(index, timeoutUs);
 }
 
 std::shared_ptr<Format> CodecClient::GetInputParameter(uint32_t index)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecMode_ == CODEC_SURFACE_MODE_WITH_SETPARAMETER, nullptr,
-                                      "Is in invalid state!");
+                                      "Need to enable input parameter");
     return circular_.GetInputParameter(index);
 }
 
 std::shared_ptr<Format> CodecClient::GetInputAttribute(uint32_t index)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecMode_ == CODEC_SURFACE_MODE_WITH_SETPARAMETER, nullptr,
-                                      "Is in invalid state!");
+                                      "Need to enable input parameter");
     return circular_.GetInputAttribute(index);
 }
 
 std::shared_ptr<AVBuffer> CodecClient::GetInputBuffer(uint32_t index)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecMode_ & CODEC_SURFACE_INPUT), nullptr, "Input is the surface");
     return circular_.GetInputBuffer(index);
 }
 
 std::shared_ptr<AVBuffer> CodecClient::GetOutputBuffer(uint32_t index)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     return circular_.GetOutputBuffer(index);
 }
 

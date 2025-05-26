@@ -84,22 +84,23 @@ private:
     void UpdateGeneration();
     void UpdateFormat(Format &format);
     void SetNeedListen(const bool needListen);
-    typedef enum : uint32_t {
+    typedef enum : uint8_t {
         MEMORY_CALLBACK = 1,
         BUFFER_CALLBACK,
         INVALID_CALLBACK,
     } CallbackMode;
 
-    typedef enum : uint32_t {
+    typedef enum : uint8_t {
         CODEC_BUFFER_MODE = 0,
-        CODEC_SURFACE_MODE = 1,
-        CODEC_ENABLE_PARAMETER = 1 << 1,
-        CODEC_SURFACE_MODE_WITH_SETPARAMETER = CODEC_SURFACE_MODE | CODEC_ENABLE_PARAMETER,
+        CODEC_SURFACE_INPUT = 1 << 0,
+        CODEC_SURFACE_OUTPUT = 1 << 1,
+        CODEC_ENABLE_PARAMETER = 1 << 2,
+        CODEC_SURFACE_MODE_WITH_SETPARAMETER = CODEC_SURFACE_INPUT | CODEC_ENABLE_PARAMETER,
     } CodecMode;
 
     bool isConfigured_ = false;
-    uint32_t callbackMode_ = INVALID_CALLBACK;
-    uint32_t codecMode_ = CODEC_BUFFER_MODE;
+    uint8_t callbackMode_ = INVALID_CALLBACK;
+    uint8_t codecMode_ = CODEC_BUFFER_MODE;
     AVCodecType type_ = AVCODEC_TYPE_NONE;
     sptr<IStandardCodecService> codecProxy_ = nullptr;
     sptr<CodecListenerStub> listenerStub_ = nullptr;

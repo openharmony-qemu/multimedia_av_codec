@@ -343,10 +343,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_012, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
     SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     OH_AVFormat_Destroy(format);
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
 }
@@ -434,10 +431,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_017, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
     SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     OH_AVFormat_Destroy(format);
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }

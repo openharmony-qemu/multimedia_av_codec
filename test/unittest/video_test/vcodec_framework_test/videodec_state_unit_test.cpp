@@ -271,7 +271,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Initialized_Verify_007, TestSize.Level1)
 
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoDecoder_Configure(videoDec, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
     OH_AVFormat_Destroy(format);
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(videoDec));
 }
