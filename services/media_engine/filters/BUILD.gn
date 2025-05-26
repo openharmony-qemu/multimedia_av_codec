@@ -132,7 +132,11 @@ ohos_shared_library("av_codec_media_engine_filters") {
     } else {
       camera_post_processor_path = "\"/system/lib\""
     }
-    defines += [ "CAMERA_POST_PROCESSOR_PATH=${camera_post_processor_path}" ]
+
+    defines += [
+      "SUPPORT_CAMERA_POST_PROCESSOR",
+      "CAMERA_POST_PROCESSOR_PATH=${camera_post_processor_path}",
+    ]
   }
 
   subsystem_name = "multimedia"

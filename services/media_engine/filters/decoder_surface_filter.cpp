@@ -34,7 +34,7 @@
 #endif
 
 namespace {
-#if defined(CAMERA_POST_PROCESSOR_PATH)
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
 const std::string REFERENCE_LIB_PATH = std::string(CAMERA_POST_PROCESSOR_PATH);
 const std::string FILESEPARATOR = "/";
 const std::string REFERENCE_LIB_NAME = "libcamera_post_processor.z.so";
@@ -67,7 +67,7 @@ static const bool IS_FILTER_ASYNC = system::GetParameter("persist.media_service.
 
 static const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
 
-#if defined(CAMERA_POST_PROCESSOR_PATH)
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
 void *DecoderSurfaceFilter::cameraPostProcessorLibHandle_ = nullptr;
 #endif
 
@@ -764,19 +764,20 @@ void DecoderSurfaceFilter::InitPostProcessorType()
     configFormat_.PutStringValue(VIDEO_ID, videoId);
 }
 
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
 void DecoderSurfaceFilter::LoadCameraPostProcessorLib()
 {
-#if defined(CAMERA_POST_PROCESSOR_PATH)
+    std::lock_guard<std::mutex> loadLibLock(loadLibMutex_);
     FALSE_RETURN_NOLOG(cameraPostProcessorLibHandle_ == nullptr);
-    char path[PATH_MAX] = { 0x00 };
+    char path[PATH_MAX] = {0};
     const char *inputPath = REFENCE_LIB_ABSOLUTE_PATH.c_str();
     if (strlen(inputPath) > PATH_MAX || realpath(inputPath, path) == nullptr) {
         MEDIA_LOG_E("failed due to invalid path");
         return;
     }
     cameraPostProcessorLibHandle_ = ::dlopen(path, RTLD_NOW | RTLD_LOCAL);
-#endif
 }
+#endif
 
 Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
