@@ -714,6 +714,7 @@ int32_t HevcDecoder::SetSurfaceCfg()
     sInfo_.requestConfig.width = width_;
     sInfo_.requestConfig.height = height_;
     sInfo_.requestConfig.format = surfacePixelFmt;
+    CHECK_AND_RETURN_RET_LOGD(sInfo_.surface != nullptr, AVCS_ERR_OK, "Buffer mode not need to set surface config.");
     if (format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
                                  val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
