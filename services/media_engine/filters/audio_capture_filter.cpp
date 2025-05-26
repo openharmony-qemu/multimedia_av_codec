@@ -210,8 +210,10 @@ Status AudioCaptureFilter::DoPause()
             MEDIA_LOG_W("[audio] abnormal time diff, please check");
         } else {
             FillLostFrame(lostCount);
-            RecordCachedData();
         }
+    }
+    if (!cachedAudioDataDeque_.empty()) {
+        RecordCachedData();
     }
     return ret;
 }
@@ -335,8 +337,10 @@ Status AudioCaptureFilter::SendEos()
                 MEDIA_LOG_W("[audio] abnormal time diff, please check");
             } else {
                 FillLostFrame(lostCount);
-                RecordCachedData();
             };
+        }
+        if (!cachedAudioDataDeque_.empty()) {
+            RecordCachedData();
         }
 
         std::shared_ptr<AVBuffer> buffer;
