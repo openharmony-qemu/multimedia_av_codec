@@ -90,12 +90,12 @@ bool AvcodecSuspend002FuzzTest(const uint8_t *data, size_t size)
     MediaAVCodec::AVCodecSuspend::SuspendActiveAll();
     vDecSample->Release();
     delete vDecSample;
+    vDecSample = nullptr;
     return true;
 }
 
 bool AvcodecSuspend003FuzzTest(const uint8_t *data, size_t size)
 {
-    FuzzedDataProvider fdp(data, size);
     std::vector<pid_t> pid;
     pid_t pid0 = getpid();
     pid.push_back(pid0);
@@ -113,6 +113,7 @@ bool AvcodecSuspend003FuzzTest(const uint8_t *data, size_t size)
     vDecSample->Stop();
     vDecSample->Reset();
     delete vDecSample;
+    vDecSample = nullptr;
     return true;
 }
 }
