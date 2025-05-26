@@ -2329,7 +2329,7 @@ Status MediaDemuxer::PushBufferToQueue(uint32_t trackId, std::shared_ptr<AVBuffe
 Status MediaDemuxer::HandleRead(uint32_t trackId)
 {
     Status ret = InnerReadSample(trackId, bufferMap_[trackId]);
-    bool isBufferSizeValid = bufferMap_[trackId] != nullptr ? isBufferSizeValid = bufferMap_[trackId]->GetConfig().size > 0 : true;
+    bool isBufferSizeValid = bufferMap_[trackId] != nullptr ? bufferMap_[trackId]->GetConfig().size > 0 : true;
     if (IsRightMediaTrack(trackId, DemuxerTrackType::VIDEO)) {
         std::unique_lock<std::mutex> draggingLock(draggingMutex_);
         if (VideoStreamReadyCallback_ != nullptr) {
