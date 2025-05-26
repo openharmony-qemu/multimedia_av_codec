@@ -297,7 +297,7 @@ Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
 {
     Status ret = Status::NO_ERROR;
     int32_t dataInt = 0;
-    if (param->GetData("fast_start", dataInt) && dataInt == 1) {
+    if (param->GetData(Tag::MEDIA_ENABLE_MOOV_FRONT, dataInt) && dataInt == 1) {
         isFastStart_ = true;
         MEDIA_LOG_I("fast start for moov");
     }
