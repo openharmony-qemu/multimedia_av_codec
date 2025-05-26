@@ -124,9 +124,10 @@ public:
         const bool svpFlag) override;
 #endif
 
-    // PurgeableMemory
-    void NotifyBackGround();
-    void NotifyForeGround();
+    void NotifyMemoryRecycle();
+    void NotifyMemoryWriteBack();
+    void NotifySuspend();
+    void NotifyResume();
 
 private:
     int32_t InitByName(Meta &callerInfo, API_VERSION apiVersion);
@@ -208,7 +209,6 @@ private:
     std::atomic<bool> decoderIsEOS_{false};
     std::shared_ptr<AVCodecCallback> shareBufCallback_ = nullptr;
     std::shared_ptr<MediaCodecCallback> avBufCallback_ = nullptr;
-    bool isFreezedFlag_{false};
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

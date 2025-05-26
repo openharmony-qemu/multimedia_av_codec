@@ -139,7 +139,7 @@ int32_t AVCodecServer::GetSubSystemAbility(IStandardAVCodecService::AVCodecSyste
 
 int32_t AVCodecServer::SuspendFreeze(const std::vector<pid_t> &pidList)
 {
-    BackGroundEventHandler::GetInstance().NotifyFrozenByPidList(pidList);
+    BackGroundEventHandler::GetInstance().NotifyFreezeByPidList(pidList);
     return AVCS_ERR_OK;
 }
 

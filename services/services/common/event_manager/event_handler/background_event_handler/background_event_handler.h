@@ -29,8 +29,8 @@ using ObjectList = std::unordered_multimap<pid_t, InstanceId>;
 class BackGroundEventHandler {
 public:
     static BackGroundEventHandler &GetInstance();
-    void NotifyFrozenByInstanceId(InstanceId instanceId);
-    void NotifyFrozenByPidList(const std::vector<pid_t> &pidList);
+    void NotifyFreezeByInstanceId(InstanceId instanceId);
+    void NotifyFreezeByPidList(const std::vector<pid_t> &pidList);
     void NotifyActiveByInstanceId(InstanceId instanceId);
     void NotifyActiveByPidList(const std::vector<pid_t> &pidList);
     void NotifyActiveAll();

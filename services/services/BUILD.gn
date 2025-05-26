@@ -150,6 +150,7 @@ ohos_shared_library("av_codec_service") {
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
     "./common/event_manager:event_manager",
     "./sa_avcodec:sa_manager",
+    "./common/event_manager/event_handler/background_event_handler:background_event_handler",
   ]
 
   if (av_codec_support_codeclist) {

@@ -64,9 +64,8 @@ public:
 #endif
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args) override;
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
-    // PurgeableMemory
-    void NotifyMemoryRecycle();
-    void NotifyMemoryWriteBack();
+    int32_t NotifyFreeze();
+    int32_t NotifyActive();
 
 private:
     CodecServiceStub();
@@ -95,11 +94,16 @@ private:
 #endif
     int32_t SetCustomBuffer(MessageParcel &data, MessageParcel &reply);
     int32_t InnerRelease();
+    void NotifyMemoryRecycle();
+    void NotifyMemoryWriteBack();
+    void NotifySuspend();
+    void NotifyResume();
+
     bool isServerReleased_ = false;
     std::shared_ptr<ICodecService> codecServer_ = nullptr;
     std::shared_mutex mutex_;
     sptr<IStandardCodecListener> listener_ = nullptr;
-    bool isFreezedFlag_{false};
+    std::atomic<bool> isMemoryRecycleFlag_{false};
     int32_t instanceId_ = INVALID_INSTANCE_ID;
 };
 } // namespace MediaAVCodec

@@ -17,8 +17,8 @@
 #include <unordered_set>
 #include "avcodec_log.h"
 #include "avcodec_server_manager.h"
-#include "codec_service_stub.h"
 #include "syspara/parameters.h"
+#include "av_codec_service_ipc_interface_code.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "BackGroundEventHandler"};
@@ -63,7 +63,12 @@ void MemoryRecycleHandler(ObjectList &list, pid_t actualPid, CodecInstance &code
         return;
     }
     list.emplace(actualPid, instanceInfo.instanceId);
-    static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyMemoryRecycle();
+
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+    instance->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_MEMORY_RECYCLE),
+        data, reply, option);
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
@@ -76,7 +81,12 @@ void MemoryWriteBackHandler(ObjectList &list, pid_t actualPid, CodecInstance &co
         return;
     }
     list.erase(recordedInfo);
-    static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyMemoryWriteBack();
+
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+    instance->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_MEMORY_WRITE_BACK),
+        data, reply, option);
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
@@ -88,7 +98,12 @@ void SuspendHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInsta
         return;
     }
     list.emplace(actualPid, instanceInfo.instanceId);
-    // static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifySuspend();
+
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+    instance->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_SUSPEND),
+        data, reply, option);
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
@@ -101,7 +116,12 @@ void ResumeHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstan
         return;
     }
     list.erase(recordedInfo);
-    // static_cast<CodecServiceStub *>(instance.GetRefPtr())->NotifyResume();
+
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+    instance->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_RESUME),
+        data, reply, option);
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
@@ -113,7 +133,7 @@ BackGroundEventHandler &BackGroundEventHandler::GetInstance()
     return instance;
 }
 
-void BackGroundEventHandler::NotifyFrozenByInstanceId(InstanceId instanceId)
+void BackGroundEventHandler::NotifyFreezeByInstanceId(InstanceId instanceId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     auto codecInstance = AVCodecServerManager::GetInstance().GetCodecInstanceByInstanceId(instanceId);
@@ -127,7 +147,7 @@ void BackGroundEventHandler::NotifyFrozenByInstanceId(InstanceId instanceId)
     SuspendHandler(suspendList_, actualPid, codecInstance.value());
 }
 
-void BackGroundEventHandler::NotifyFrozenByPidList(const std::vector<pid_t> &pidList)
+void BackGroundEventHandler::NotifyFreezeByPidList(const std::vector<pid_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto &codecInstance : GetDirectInvocationCodecInstanceListByPidList(pidList)) {
