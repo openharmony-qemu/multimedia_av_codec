@@ -1517,7 +1517,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     FALSE_RETURN_V_MSG_E(g_seekModeToFFmpegSeekFlags.count(mode) != 0, Status::ERROR_INVALID_PARAMETER,
         "Seek mode " PUBLIC_LOG_D32 " is not unsupported", static_cast<uint32_t>(mode));
     if (ioContext_.invokerType != SEEK) {
-        std::lock_guard<std::mutex> SeekLock(ioContext_.invorkTypeMutex);
+        std::lock_guard<std::mutex> seekLock(ioContext_.invorkTypeMutex);
         ioContext_.invokerType = SEEK;
     }
     if (readThread_ != nullptr && threadState_ == READING) {
