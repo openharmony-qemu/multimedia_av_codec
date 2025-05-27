@@ -124,24 +124,6 @@ static const std::vector<AVMediaType> g_streamMediaTypeVec = {
     AVMEDIA_TYPE_TIMEDMETA
 };
 
-static std::vector<AVCodecID> g_imageCodecID = {
-    AV_CODEC_ID_MJPEG,
-    AV_CODEC_ID_PNG,
-    AV_CODEC_ID_PAM,
-    AV_CODEC_ID_BMP,
-    AV_CODEC_ID_JPEG2000,
-    AV_CODEC_ID_TARGA,
-    AV_CODEC_ID_TIFF,
-    AV_CODEC_ID_GIF,
-    AV_CODEC_ID_PCX,
-    AV_CODEC_ID_XWD,
-    AV_CODEC_ID_XBM,
-    AV_CODEC_ID_WEBP,
-    AV_CODEC_ID_APNG,
-    AV_CODEC_ID_XPM,
-    AV_CODEC_ID_SVG,
-};
-
 bool HaveValidParser(const AVCodecID codecId)
 {
     return g_streamParserMap.count(codecId) != 0;
