@@ -125,6 +125,20 @@ ohos_shared_library("av_codec_media_engine_filters") {
     external_deps += [ "video_processing_engine:videoprocessingengine" ]
   }
 
+  if (defined(av_codec_support_camera_post_processor) &&
+      av_codec_support_camera_post_processor) {
+    if (target_cpu == "arm64" || is_emulator) {
+      camera_post_processor_path = "\"/system/lib64\""
+    } else {
+      camera_post_processor_path = "\"/system/lib\""
+    }
+
+    defines += [
+      "SUPPORT_CAMERA_POST_PROCESSOR",
+      "CAMERA_POST_PROCESSOR_PATH=${camera_post_processor_path}",
+    ]
+  }
+
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

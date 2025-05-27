@@ -151,6 +151,9 @@ private:
     bool IsPostProcessorSupported();
     std::shared_ptr<BaseVideoPostProcessor> CreatePostProcessor();
     void InitPostProcessorType();
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+    void LoadCameraPostProcessorLib();
+#endif
 
     std::string name_;
     FilterType filterType_;
@@ -246,6 +249,10 @@ private:
     std::mutex fdMutex_ {};
     std::unique_ptr<FdsanFd> fdsanFd_ = nullptr;
     int32_t preScaleType_ {0};
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+    std::mutex loadLibMutex_ {};
+    static void *cameraPostProcessorLibHandle_;
+#endif
 };
 } // namespace Pipeline
 } // namespace Media
