@@ -224,7 +224,7 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
 
 uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
 {
-    std::ifstream thresholdConfigFile("/system/etc/hiview/native_leak_config.json");
+    std::ifstream thresholdConfigFile("etc/reliability/leak_detector_config.json");
     CHECK_AND_RETURN_RET_LOG(thresholdConfigFile.is_open(), UINT32_MAX, "Can not open threshold config json file");
 
     std::string line;
@@ -232,22 +232,18 @@ uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
     while (thresholdConfigFile >> line && configJson.size() < THRESHOLD_CONFIG_FILE_SIZE_MAX) {
         configJson += line;
     }
-    auto json = cJSON_Parse(configJson.c_str());
-    CHECK_AND_RETURN_RET_LOG(json != nullptr, UINT32_MAX, "Can not parse threshold config json");
 
-    auto root = std::shared_ptr<cJSON>(json, cJSON_Delete);
-    auto deviceType = system::GetDeviceType();
-    CHECK_AND_RETURN_RET_LOG(deviceType != "" && deviceType != "unknown", UINT32_MAX, "Can not get device type");
+    auto root = std::shared_ptr<cJSON>(cJSON_Parse(configJson.c_str()), cJSON_Delete);
+    CHECK_AND_RETURN_RET_LOG(root != nullptr, UINT32_MAX, "Can not parse threshold config json");
 
-    auto avcodecConfigItem = cJSON_GetObjectItem(root.get(), "av_codec_config");
-    CHECK_AND_RETURN_RET_LOG(avcodecConfigItem != nullptr,
-        UINT32_MAX, "Can not find av_codec_config from threshold config json");
+    auto commercialConfig = cJSON_GetObjectItem(root.get(), "Commercial");
+    CHECK_AND_RETURN_RET_LOG(!cJSON_IsNull(commercialConfig), UINT32_MAX, "Can not parse commercial config");
 
-    auto thresholdItem = cJSON_GetObjectItem(avcodecConfigItem, deviceType.c_str());
-    CHECK_AND_RETURN_RET_LOG(thresholdItem != nullptr && cJSON_IsNumber(thresholdItem),
-        UINT32_MAX, "Can not find threshold of %{public}s from av_codec_config", deviceType.c_str());
+    auto thresholdItem = cJSON_GetObjectItem(commercialConfig, "av_codec_config");
+    CHECK_AND_RETURN_RET_LOG(!cJSON_IsNull(thresholdItem) && cJSON_IsNumber(thresholdItem),
+        UINT32_MAX, "Can not find threshold from av_codec_config");
 
-    AVCODEC_LOGI("Got threshold of %{public}s, %{public}u KB", deviceType.c_str(), thresholdItem->valueint);
+    AVCODEC_LOGI("Got threshold: %{public}u KB", thresholdItem->valueint);
     return thresholdItem->valueint;
 }
 } // namespace MediaAVCodec
