@@ -377,23 +377,7 @@ void HevcDecoder::InitBuffers()
         return;
     }
     InitHevcParams();
-    if (sInfo_.surface == nullptr) {
-        for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
-            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
-            codecAvailQue_->Push(i);
-        }
-        return;
-    }
     for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
-        std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][i]->sMemory;
-        if (surfaceMemory->isAttached && surfaceMemory->owner == Owner::OWNED_BY_SURFACE) {
-            AVCODEC_LOGI("surfacebuffer(%{public}u) is used by surface, try to request", i);
-            if (!RequestSurfaceBufferOnce(i)) {
-                buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_SURFACE;
-                renderAvailQue_->Push(i);
-                continue;
-            }
-        }
         buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
         codecAvailQue_->Push(i);
     }
@@ -1465,6 +1449,7 @@ int32_t HevcDecoder::Detach(sptr<SurfaceBuffer> surfaceBuffer)
 
 int32_t HevcDecoder::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index)
 {
+    RequestSurfaceBufferOnce(index);
     sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get surface buffer failed!");
     if (!surfaceMemory->isAttached) {
