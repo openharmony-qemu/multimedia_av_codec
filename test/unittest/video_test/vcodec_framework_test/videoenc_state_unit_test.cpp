@@ -44,8 +44,13 @@ private:
 };
 void VideoStateTest::SetUpTestCase(void) {}
 void VideoStateTest::TearDownTestCase(void) {}
-void VideoStateTest::SetUp(void) {}
-void VideoStateTest::TearDown(void) {}
+void VideoStateTest::SetUp(void) {
+    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, videoEnc);    
+}
+void VideoStateTest::TearDown(void) {
+    ASSERT_EQ(AV_ERR_OK,OH_VideoEncoder_Destroy(videoEnc)); 
+}
 std::string mimeDec = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
 uint32_t DEFAULT_WIDTH = 320;
 uint32_t DEFAULT_HEIGHT = 240;
@@ -153,13 +158,9 @@ int32_t GetInputSurface(OH_AVCodec *videoEnc)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_001, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
-
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-    ASSERT_EQ(AV_ERR_OK,OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -169,15 +170,11 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_001, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_002, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
-
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -187,15 +184,11 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_002, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_003, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
-
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync1(format);
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -205,15 +198,11 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_003, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_004, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
-
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    OH_AVFormat_Destroy(format);   
 }
 
 /**.
@@ -223,15 +212,11 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_004, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_005, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
-
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    OH_AVFormat_Destroy(format);   
 }
 
 /**.
@@ -241,11 +226,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_005, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_006, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc)); 
 }
 
 /**.
@@ -255,11 +236,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_006, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_007, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
-
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));  
 }
 
 /**.
@@ -269,25 +246,22 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_007, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_008, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
-
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));   
 }
+
 
 /**.
 * @tc.name: VideoEncoder_Initialized_Verify_009
 * @tc.desc: Encoder state machine verify;
-*           flag:E_IsVideoEncoder
+*           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_009, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc)); 
 }
 
 /**.
@@ -297,14 +271,13 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_009, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_010, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat *format = OH_AVFormat_Create();
+    SetSync0(format);
+    SetParamSync0(format);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -314,16 +287,19 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_010, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_011, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
+    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
+    SetSync1(format);
     SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
+    SetSync1(format);
+    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -333,19 +309,9 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_011, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_012, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 
-    OH_AVFormat *format = OH_AVFormat_Create();
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));  
 }
 
 /**.
@@ -355,27 +321,23 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_012, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_013, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc)); 
 }
 
 /**.
 * @tc.name: VideoEncoder_Initialized_Verify_014
 * @tc.desc: Encoder state machine verify;
-*           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb
+*           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_014, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
 /**.
@@ -385,14 +347,13 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_014, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_015, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc)); 
+    OH_AVFormat *format = OH_AVFormat_Create();
+    SetSync0(format);
+    SetParamSync0(format);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    OH_AVFormat_Destroy(format);   
 }
 
 /**.
@@ -401,17 +362,20 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_015, TestSize.Level1)
 *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_016, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{ 
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
 
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
+    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
+    SetSync1(format);
     SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
+    SetSync1(format);
+    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
+    OH_AVFormat_Destroy(format);   
 }
 
 /**.
@@ -421,19 +385,9 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_016, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_017, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
 
-    OH_AVFormat *format = OH_AVFormat_Create();
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
 /**.
@@ -442,13 +396,10 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_017, TestSize.Level1)
 *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_018, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{ 
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
 
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));  
 }
 
 /**.
@@ -457,28 +408,10 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_018, TestSize.Level1)
 *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_019, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{ 
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
 
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
-}
-
-/**.
-* @tc.name: VideoEncoder_Initialized_Verify_020
-* @tc.desc: Encoder state machine verify;
-*           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb
-*/
-HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_020, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));  
 }
 
 /**.
@@ -488,8 +421,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_020, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_001, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -497,7 +428,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_001, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -506,9 +436,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_001, TestSize.Level1)
 *           flag:E_IsVideoEncoder|E_IsAsync
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_002, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{ 
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -525,7 +453,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_002, TestSize.Level1)
     SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -534,17 +461,14 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_002, TestSize.Level1)
 *           flag:E_IsVideoEncoder|E_IsAsync
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_003, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{ 
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);   
 }
 
 /**.
@@ -554,8 +478,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_003, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_004, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -564,7 +486,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_004, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -574,16 +495,13 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_004, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_005, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);   
 }
 
 /**.
@@ -593,16 +511,13 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_005, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_006, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -612,8 +527,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_006, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_007, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -622,7 +535,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_007, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -632,8 +544,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_007, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_008, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -650,8 +560,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_008, TestSize.Level1)
     SetSync1(format);
     SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -660,9 +569,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_008, TestSize.Level1)
 *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_009, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{ 
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -671,7 +578,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_009, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -681,8 +587,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_009, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_010, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -691,8 +595,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_010, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -702,8 +605,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_010, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_011, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -711,8 +612,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_011, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -722,8 +622,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_011, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_012, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -732,7 +630,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_012, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -742,8 +639,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_012, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_013, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -763,8 +658,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_013, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -774,8 +668,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_013, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_014, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -783,8 +675,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_014, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -794,8 +685,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_014, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_015, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -804,7 +693,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_015, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -813,9 +701,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_015, TestSize.Level1)
 *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb(|E_IsSetCb)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_016, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{  
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -824,7 +710,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_016, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -834,16 +719,13 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_016, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_017, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -853,8 +735,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_017, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_018, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -872,8 +752,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_018, TestSize.Level1)
     SetSync1(format);
     SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));    
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -883,8 +762,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_018, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_019, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -892,7 +769,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_019, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -901,9 +777,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_019, TestSize.Level1)
 *           flag:E_IsVideoEncoder
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_020, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{ 
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -913,7 +787,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_020, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -923,8 +796,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_020, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_021, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -932,7 +803,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_021, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -942,8 +812,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_021, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_022, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
@@ -963,7 +831,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_022, TestSize.Level1)
     SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -973,8 +840,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_022, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_023, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
@@ -982,7 +847,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_023, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -992,8 +856,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_023, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_024, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
@@ -1002,8 +864,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_024, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1013,16 +874,13 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_024, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_025, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -1032,8 +890,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_025, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_026, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1041,8 +897,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_026, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -1052,8 +907,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_026, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_027, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1073,7 +926,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_027, TestSize.Level1)
     SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1083,8 +935,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_027, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_028, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1093,7 +943,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_028, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1103,8 +952,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_028, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_029, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1114,7 +961,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_029, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1124,8 +970,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_029, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_030, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1133,8 +977,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_030, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1144,8 +987,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_030, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_031, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1153,8 +994,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_031, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1164,8 +1004,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_031, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_032, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -1174,8 +1012,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_032, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);   
 }
 
 /**.
@@ -1185,8 +1022,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_032, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_033, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -1207,7 +1042,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_033, TestSize.Level1)
     SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1217,8 +1051,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_033, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_034, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -1227,8 +1059,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_034, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -1238,8 +1069,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_034, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_035, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -1249,8 +1078,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_035, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -1260,8 +1088,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_035, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_036, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -1271,7 +1097,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_036, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1281,8 +1106,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_036, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_037, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -1292,7 +1115,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_037, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1302,8 +1124,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_037, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_038, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -1312,7 +1132,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_038, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1322,8 +1141,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_038, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_039, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -1342,8 +1159,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_039, TestSize.Level1)
     SetSync1(format);
     SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1353,8 +1169,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_039, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_040, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -1362,8 +1176,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_040, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -1373,8 +1186,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_040, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_041, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -1385,7 +1196,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_041, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1395,8 +1205,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_041, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_042, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -1405,7 +1213,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_042, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1415,8 +1222,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_042, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_043, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
@@ -1424,8 +1229,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_043, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1435,8 +1239,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_043, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_044, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
@@ -1456,7 +1258,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_044, TestSize.Level1)
     SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1466,8 +1267,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_044, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_045, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
@@ -1475,8 +1274,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_045, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1486,8 +1284,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_045, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_046, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
@@ -1497,8 +1293,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_046, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -1508,8 +1303,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_046, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_047, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
@@ -1518,7 +1311,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_047, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1528,8 +1320,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_047, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_001, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1539,7 +1329,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_001, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1549,8 +1338,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_001, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_002, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1558,7 +1345,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_002, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
     SetSync0(format);
     SetParamSync0(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
@@ -1573,8 +1359,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_002, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1584,8 +1369,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_002, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_003, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1594,8 +1377,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_003, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -1605,8 +1387,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_003, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_004, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1616,7 +1396,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_004, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1626,8 +1405,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_004, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_005, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1637,7 +1414,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_005, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1647,8 +1423,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_005, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_006, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -1673,7 +1447,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_006, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1683,8 +1456,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_006, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_007, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -1694,7 +1465,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_007, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1703,9 +1473,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_007, TestSize.Level1)
 *           flag:E_IsVideoEncoder|E_IsBufferMode
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_008, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{ 
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -1715,7 +1483,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_008, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1725,8 +1492,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_008, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_009, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1750,8 +1515,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_009, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1761,8 +1525,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_009, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_010, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1773,7 +1535,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_010, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1783,8 +1544,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_010, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_011, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1794,8 +1553,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_011, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -1805,8 +1563,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_011, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_012, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -1816,8 +1572,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_012, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1827,8 +1582,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_012, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_013, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -1853,8 +1606,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_013, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1864,8 +1616,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_013, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_014, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -1876,8 +1626,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_014, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1887,8 +1636,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_014, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_015, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -1900,7 +1647,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_015, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -1910,8 +1656,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_015, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_016, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -1922,8 +1666,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_016, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -1933,8 +1676,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_016, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_017, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -1960,7 +1701,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_017, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    
 }
 
 /**.
@@ -1970,8 +1711,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_017, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_018, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -1981,8 +1720,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_018, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -1992,8 +1730,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_018, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_019, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -2003,8 +1739,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_019, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2014,8 +1749,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_019, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_020, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
@@ -2040,8 +1773,45 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_020, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
+    OH_AVFormat_Destroy(format); 
+}
+
+/**.
+* @tc.name: VideoEncoder_Running_Verify_021
+* @tc.desc: Encoder state machine verify;
+*           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
+*/
+HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_020, TestSize.Level1)
+{
+    OH_AVFormat *format = OH_AVFormat_Create();
+    SetSync1(format);
+    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
+
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
+    OH_AVFormat_Destroy(format); 
+}
+
+/**.
+* @tc.name: VideoEncoder_Running_Verify_022
+* @tc.desc: Encoder state machine verify;
+*           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
+*/
+HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_020, TestSize.Level1)
+{
+    OH_AVFormat *format = OH_AVFormat_Create();
+    SetSync1(format);
+    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
+
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -2051,8 +1821,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_020, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_001, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -2063,7 +1831,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_001, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -2073,8 +1840,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_001, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_002, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -2097,8 +1862,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_002, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2107,9 +1871,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_002, TestSize.Level1)
 *           flag:E_IsVideoEncoder|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_003, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{ 
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -2120,7 +1882,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_003, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -2130,8 +1891,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_003, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_004, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -2141,8 +1900,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_004, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2152,8 +1910,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_004, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_005, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -2163,8 +1919,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_005, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2174,8 +1929,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_005, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_006, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -2185,8 +1938,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_006, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 } 
     
 /**.
@@ -2196,8 +1948,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_006, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_007, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -2221,8 +1971,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_007, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2232,8 +1981,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_007, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_008, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -2243,8 +1990,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_008, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2254,8 +2000,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_008, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_009, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -2265,8 +2009,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_009, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2275,9 +2018,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_009, TestSize.Level1)
 *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_010, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{ 
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -2288,8 +2029,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_010, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2299,8 +2039,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_010, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_011, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -2324,8 +2062,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_011, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2335,8 +2072,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_011, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_012, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -2347,8 +2082,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_012, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc)); 
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -2358,8 +2092,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_012, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_013, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -2370,8 +2102,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_013, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc)); 
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2381,8 +2112,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_013, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_014, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
     SetParamSync0(format);
@@ -2394,7 +2123,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_014, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -2403,9 +2131,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_014, TestSize.Level1)
 *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_015, TestSize.Level1)
-{
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
+{   
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -2417,8 +2143,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_015, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);  
 }
 
 /**.
@@ -2428,8 +2153,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_015, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_016, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -2455,7 +2178,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_016, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -2465,8 +2187,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_016, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_017, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -2479,8 +2199,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_017, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format);   
 }
 
 /**.
@@ -2490,8 +2209,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_017, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_018, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -2504,7 +2221,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_018, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -2514,8 +2230,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_018, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_019, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync0(format);
@@ -2528,7 +2242,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_019, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -2538,8 +2251,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_019, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_020, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -2550,8 +2261,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_020, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2561,8 +2271,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_020, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_021, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -2588,7 +2296,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_021, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -2598,8 +2305,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_021, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_022, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -2611,7 +2316,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_022, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -2621,8 +2325,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_022, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_023, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync0(format);
@@ -2633,8 +2335,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_023, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-    OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+    OH_AVFormat_Destroy(format); 
 }
 
 /**.
@@ -2644,8 +2345,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_023, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_024, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
@@ -2657,7 +2356,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_024, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 
 /**.
@@ -2667,8 +2365,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_024, TestSize.Level1)
 */
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_025, TestSize.Level1)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoEnc);
     OH_AVFormat *format = OH_AVFormat_Create();
     SetSync1(format);
     SetParamSync1(format);
@@ -2694,6 +2390,45 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_025, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
     OH_AVFormat_Destroy(format);
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+}
+
+/**.
+* @tc.name: VideoEncoder_Flushed_Verify_026
+* @tc.desc: Encoder state machine verify;
+*           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
+*/
+HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_026, TestSize.Level1)
+{
+    OH_AVFormat *format = OH_AVFormat_Create();
+    SetSync1(format);
+    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
+
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
+    OH_AVFormat_Destroy(format);
+}
+
+/**.
+* @tc.name: VideoEncoder_Flushed_Verify_027
+* @tc.desc: Encoder state machine verify;
+*           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
+*/
+HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_027, TestSize.Level1)
+{
+    OH_AVFormat *format = OH_AVFormat_Create();
+    SetSync1(format);
+    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
+
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
+    OH_AVFormat_Destroy(format);
 }
 }
