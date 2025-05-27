@@ -124,10 +124,10 @@ public:
         const bool svpFlag) override;
 #endif
 
-    void NotifyMemoryRecycle();
-    void NotifyMemoryWriteBack();
-    void NotifySuspend();
-    void NotifyResume();
+    int32_t NotifyMemoryRecycle();
+    int32_t NotifyMemoryWriteBack();
+    int32_t NotifySuspend();
+    int32_t NotifyResume();
 
 private:
     int32_t InitByName(Meta &callerInfo, API_VERSION apiVersion);

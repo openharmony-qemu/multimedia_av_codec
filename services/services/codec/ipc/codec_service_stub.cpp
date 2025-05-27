@@ -33,7 +33,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceStub"};
-constexpr int64_t MEMORY_RECYCLE_TIMEOUT_THRESHOLD_MILLISECONDS = 200;
 const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_LISTENER_OBJ),
      "CodecServiceStub SetListenerObject"},
@@ -227,16 +226,16 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
             ret = NotifyActive();
             break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_MEMORY_RECYCLE):
-            NotifyMemoryRecycle();
+            NotifyMemoryRecycle(data, reply);
             break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_MEMORY_WRITE_BACK):
-            NotifyMemoryWriteBack();
+            NotifyMemoryWriteBack(data, reply);
             break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_SUSPEND):
-            NotifySuspend();
+            NotifySuspend(data, reply);
             break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_RESUME):
-            NotifyResume();
+            NotifyResume(data, reply);
             break;
         default:
             AVCODEC_LOGW_WITH_TAG("No member func supporting, applying default process, code:%{public}u", code);
@@ -739,63 +738,62 @@ int32_t CodecServiceStub::InnerRelease()
     return ret;
 }
 
-void CodecServiceStub::NotifyMemoryRecycle()
-{
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    AVCODEC_SYNC_TRACE_WITH_TAG;
-    CHECK_AND_RETURN_LOG(codecServer_ != nullptr, "Codec server is nullptr");
-    isMemoryRecycleFlag_ = true;
-    std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
-    std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryRecycle();
-    std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
-    int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    EXPECT_AND_LOGW(duration > MEMORY_RECYCLE_TIMEOUT_THRESHOLD_MILLISECONDS,
-        "NotifyMemoryWriteBack duration: %{public}" PRId64 " ms", duration);
-}
-
-void CodecServiceStub::NotifyMemoryWriteBack()
-{
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    AVCODEC_SYNC_TRACE_WITH_TAG;
-    CHECK_AND_RETURN_LOG(codecServer_ != nullptr, "Codec server is nullptr");
-    isMemoryRecycleFlag_ = false;
-    std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
-    std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
-    std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
-    int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    EXPECT_AND_LOGW(duration > MEMORY_RECYCLE_TIMEOUT_THRESHOLD_MILLISECONDS,
-        "NotifyMemoryWriteBack duration: %{public}" PRId64 " ms", duration);
-}
-
-void CodecServiceStub::NotifySuspend()
+void CodecServiceStub::NotifyMemoryRecycle([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_SYNC_TRACE_WITH_TAG;
     CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
-    std::static_pointer_cast<CodecServer>(codecServer_)->NotifySuspend();
-    suspended_ = true;
+    auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryRecycle();
+    isMemoryRecycleFlag_ = ret == AVCS_ERR_OK ? true : false;
+    reply.WriteInt32(ret);
 }
 
-void CodecServiceStub::NotifyResume()
+void CodecServiceStub::NotifyMemoryWriteBack([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_SYNC_TRACE_WITH_TAG;
     CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
-    std::static_pointer_cast<CodecServer>(codecServer_)->NotifyResume();
-    suspended_ = false;
+    auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
+    isMemoryRecycleFlag_ = ret == AVCS_ERR_OK ? false : true;
+    reply.WriteInt32(ret);
+}
+
+void CodecServiceStub::NotifySuspend([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    AVCODEC_SYNC_TRACE_WITH_TAG;
+    CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
+    auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifySuspend();
+    suspended_ = ret == AVCS_ERR_OK ? true : false;
+    reply.WriteInt32(ret);
+}
+
+void CodecServiceStub::NotifyResume([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    AVCODEC_SYNC_TRACE_WITH_TAG;
+    CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
+    auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyResume();
+    suspended_ = ret == AVCS_ERR_OK ? false : true;
+    reply.WriteInt32(ret);
 }
 
 void CodecServiceStub::OnActive()
 {
+    CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
+    AVCODEC_SYNC_TRACE_WITH_TAG;
+    auto needClear = isMemoryRecycleFlag_ || suspended_;
     if (isMemoryRecycleFlag_) {
-        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
+        auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
+        isMemoryRecycleFlag_ = ret == AVCS_ERR_OK ? false : true;
+        needClear = ret == AVCS_ERR_OK ? needClear : false;
     }
     if (suspended_) {
-        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyResume();
+        auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyResume();
+        suspended_ = ret = AVCS_ERR_OK ? false : true;
+        needClear = ret == AVCS_ERR_OK ? needClear : false;
     }
-    if (isMemoryRecycleFlag_ || suspended_) {
-        isMemoryRecycleFlag_ = false;
-        suspended_ = false;
+    if (needClear) {
         BackGroundEventHandler::GetInstance().EraseInstance(instanceId_);
         AVCODEC_LOGI_WITH_TAG("Done");
     }

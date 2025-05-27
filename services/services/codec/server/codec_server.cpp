@@ -1666,40 +1666,36 @@ void CodecServer::CleanPostProcessingResource()
     decoderIsEOS_.store(false);
 }
 
-void CodecServer::NotifyMemoryRecycle()
+int32_t CodecServer::NotifyMemoryRecycle()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_LOG(status_ == RUNNING || status_ == FLUSHED || status_ == END_OF_STREAM,
-        "No need to recycle memory, status:%{public}s", GetStatusDescription(status_).data());
-    CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "Codecbase is nullptr");
-    int32_t ret = codecBase_->NotifyMemoryRecycle();
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Failed, ret:%{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == FLUSHED || status_ == END_OF_STREAM,
+        AVCS_ERR_INVALID_STATE, "No need to recycle memory, status:%{public}s", GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    return codecBase_->NotifyMemoryRecycle();
 }
 
-void CodecServer::NotifyMemoryWriteBack()
+int32_t CodecServer::NotifyMemoryWriteBack()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "Codecbase is nullptr");
-    int32_t ret = codecBase_->NotifyMemoryWriteBack();
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Failed, ret:%{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    return codecBase_->NotifyMemoryWriteBack();
 }
 
-void CodecServer::NotifySuspend()
+int32_t CodecServer::NotifySuspend()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_LOG(status_ == RUNNING || status_ == FLUSHED || status_ == END_OF_STREAM,
-        "No need to suspend, status:%{public}s", GetStatusDescription(status_).data());
-    CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "Codecbase is nullptr");
-    auto ret = codecBase_->NotifySuspend();
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Failed, ret:%{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == FLUSHED || status_ == END_OF_STREAM,
+        AVCS_ERR_INVALID_STATE, "No need to suspend, status:%{public}s", GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    return codecBase_->NotifySuspend();
 }
 
-void CodecServer::NotifyResume()
+int32_t CodecServer::NotifyResume()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "Codecbase is nullptr");
-    auto ret = codecBase_->NotifyResume();
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Failed, ret:%{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    return codecBase_->NotifyResume();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

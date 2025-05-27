@@ -71,8 +71,8 @@ int32_t AVCodecServiceStub::DestroyStubForPid(pid_t pid)
         }
     }
 
-    AVCodecServerManager::GetInstance().DestroyStubObjectForPid(pid);
     BackGroundEventHandler::GetInstance().ErasePid(pid);
+    AVCodecServerManager::GetInstance().DestroyStubObjectForPid(pid);
     return AVCS_ERR_OK;
 }
 

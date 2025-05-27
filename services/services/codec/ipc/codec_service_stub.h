@@ -94,10 +94,10 @@ private:
 #endif
     int32_t SetCustomBuffer(MessageParcel &data, MessageParcel &reply);
     int32_t InnerRelease();
-    void NotifyMemoryRecycle();
-    void NotifyMemoryWriteBack();
-    void NotifySuspend();
-    void NotifyResume();
+    void NotifyMemoryRecycle(MessageParcel &data, MessageParcel &reply);
+    void NotifyMemoryWriteBack(MessageParcel &data, MessageParcel &reply);
+    void NotifySuspend(MessageParcel &data, MessageParcel &reply);
+    void NotifyResume(MessageParcel &data, MessageParcel &reply);
     void OnActive();
 
     bool isServerReleased_ = false;

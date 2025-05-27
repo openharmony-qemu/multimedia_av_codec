@@ -16,12 +16,14 @@
 #include "background_event_handler.h"
 #include <unordered_set>
 #include "avcodec_log.h"
+#include "avcodec_errors.h"
 #include "avcodec_server_manager.h"
 #include "syspara/parameters.h"
 #include "av_codec_service_ipc_interface_code.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "BackGroundEventHandler"};
+constexpr auto CODEC_STUB_INTERFACE_DESCRIPTOR = u"IStandardCodecService";
 } // namespace
 
 namespace OHOS {
@@ -51,6 +53,16 @@ ObjectList::const_iterator GetObjectFromList(const ObjectList &list, pid_t pid, 
     return list.end();
 }
 
+int32_t SendRequest2CodecStub(sptr<IRemoteObject> &instance, CodecServiceInterfaceCode code)
+{
+    MessageParcel data;
+    data.WriteInterfaceToken(CODEC_STUB_INTERFACE_DESCRIPTOR);
+    MessageParcel reply;
+    MessageOption option;
+    instance->SendRequest(static_cast<uint32_t>(code), data, reply, option);
+    return reply.ReadInt32();
+}
+
 void MemoryRecycleHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance)
 {
     static bool supportMemoryRecycle = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
@@ -62,13 +74,10 @@ void MemoryRecycleHandler(ObjectList &list, pid_t actualPid, CodecInstance &code
     if (GetObjectFromList(list, actualPid, instanceInfo.instanceId) != list.end()) {
         return;
     }
+    auto ret = SendRequest2CodecStub(instance, CodecServiceInterfaceCode::NOTIFY_MEMORY_RECYCLE);
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Error, ret: %{public}d", ret);
     list.emplace(actualPid, instanceInfo.instanceId);
 
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-    instance->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_MEMORY_RECYCLE),
-        data, reply, option);
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
@@ -80,13 +89,10 @@ void MemoryWriteBackHandler(ObjectList &list, pid_t actualPid, CodecInstance &co
     if (recordedInfo == list.end()) {
         return;
     }
+    auto ret = SendRequest2CodecStub(instance, CodecServiceInterfaceCode::NOTIFY_MEMORY_WRITE_BACK);
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Error, ret: %{public}d", ret);
     list.erase(recordedInfo);
 
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-    instance->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_MEMORY_WRITE_BACK),
-        data, reply, option);
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
@@ -97,13 +103,10 @@ void SuspendHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInsta
     if (GetObjectFromList(list, actualPid, instanceInfo.instanceId) != list.end()) {
         return;
     }
+    auto ret = SendRequest2CodecStub(instance, CodecServiceInterfaceCode::NOTIFY_SUSPEND);
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Error, ret: %{public}d", ret);
     list.emplace(actualPid, instanceInfo.instanceId);
 
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-    instance->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_SUSPEND),
-        data, reply, option);
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
@@ -115,13 +118,10 @@ void ResumeHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstan
     if (recordedInfo == list.end()) {
         return;
     }
+    auto ret = SendRequest2CodecStub(instance, CodecServiceInterfaceCode::NOTIFY_RESUME);
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Error, ret: %{public}d", ret);
     list.erase(recordedInfo);
 
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-    instance->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_RESUME),
-        data, reply, option);
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
