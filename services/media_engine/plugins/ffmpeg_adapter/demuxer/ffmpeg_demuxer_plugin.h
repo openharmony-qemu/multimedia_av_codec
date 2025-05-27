@@ -130,9 +130,9 @@ private:
         bool isLimitType {false};
         int32_t sizeLimit {0};
         int32_t readSizeCnt {0};
-        std::atomic<bool> initErrorAgain {false}; // 初始化时是否发生Again错误
+        std::atomic<bool> initErrorAgain {false};
         std::mutex invorkTypeMutex;
-        std::atomic<InvokerType> invokerType {INVOKER_NONE}; // 当前调用类型
+        std::atomic<InvokerType> invokerType {INVOKER_NONE};
     };
     
     bool SelectedVideo();
@@ -298,18 +298,18 @@ private:
     bool ReadAndProcessFrame(AVPacket* pkt);
     void ReleaseFFmpegReadLoop();
     std::unique_ptr<std::thread> readThread_ {nullptr};
-    std::condition_variable readLoopCv_;              // 用于控制loop读取线程的条件变量
-    static std::condition_variable readCbCv_;       // 用于控制回调读取线程的条件变量
-    std::condition_variable readCacheCv_;          // 用于控制readSample和GetNextSampleSize读取线程的条件变量
-    static std::mutex readPacketMutex_;           // 用于AVReadPacket条件变量的互斥锁
-    std::mutex getNextSampleMutex_;               // 用于GetNextSampleSize条件变量的互斥锁
-    std::mutex readSampleMutex_;                  // 用于readSample条件变量的互斥锁
-    std::mutex fFmpegReadLoopMutex_;              // 用于FFmpegReadLoop条件变量的互斥锁
+    std::condition_variable readLoopCv_;
+    static std::condition_variable readCbCv_;
+    std::condition_variable readCacheCv_;
+    static std::mutex readPacketMutex_;
+    std::mutex getNextSampleMutex_;
+    std::mutex readSampleMutex_;
+    std::mutex fFmpegReadLoopMutex_;
     uint32_t trackId_;
     ThreadState threadState_ {ThreadState::NOT_STARTED};
-    Status readLoopStatus_ = {Status::OK};         //ffmpegReadLoop的循环结果状态
-    bool isPauseReadPacket_ = true;                //是否暂停readPacket,PauseFFmpegReadLoop()方法用,false是暂停
-    std::unordered_map<int, int> versionMap_;      //老版本的key是0，新版本的key是1
+    Status readLoopStatus_ = {Status::OK};
+    bool isPauseReadPacket_ = true;
+    std::unordered_map<int, int> versionMap_;
     std::mutex seekWaitMutex_;
     std::condition_variable seekWaitCv_;
 };

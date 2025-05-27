@@ -65,14 +65,14 @@ public:
     std::shared_ptr<SamplePacket> Pop(uint32_t trackIndex);
     std::shared_ptr<SamplePacket> Front(uint32_t trackIndex);
     std::shared_ptr<SamplePacket> Back(uint32_t trackIndex);
-    Status GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxPts); // 新增接口
+    Status GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxPts);
 
 private:
     struct InnerQueue {
         bool isValid {false};
         uint32_t dataSize {0};
         std::shared_ptr<BlockQueue<std::shared_ptr<SamplePacket>>> blockQue {nullptr};
-        int64_t maxPts {INT64_MIN}; // 新增字段，初始为最小值
+        int64_t maxPts {INT64_MIN};
     };
     static constexpr size_t SINGLE_QUEUE_SIZE = 100;
     std::string name_;

@@ -90,7 +90,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
                 return ret;
         }
         if (needBlockWait) {
-            readCbCv_.wait(readLock); // 等待被唤醒
+            readCbCv_.wait(readLock);
             needBlockWait = false;
             tryCount = 0;
         } else {
@@ -133,7 +133,7 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize,
     } else {
         MEDIA_LOG_I("Read again, retry count: " PUBLIC_LOG_D32, tryCount);
     }
-    return AV_READ_PACKET_READ_AGAIN; // 继续循环
+    return AV_READ_PACKET_READ_AGAIN;
 }
 
 int FFmpegDemuxerPlugin::HandleReadEOS(IOContext* ioContext)
@@ -216,10 +216,10 @@ Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t t
     std::unique_lock<std::mutex> readLock(readSampleMutex_);
     if (!cacheQueue_.HasCache(trackId)) {
         if (threadState_ == READING) {
-            readCbCv_.notify_one(); // 激活回调阻塞
+            readCbCv_.notify_one();
         }
         if (threadState_ == WAITING) {
-            readLoopCv_.notify_one(); // 唤醒读取线程
+            readLoopCv_.notify_one();
         }
         if (!readCacheCv_.wait_for(readLock, std::chrono::milliseconds(timeout),
             [this, trackId] { return cacheQueue_.HasCache(trackId); })) {
@@ -266,7 +266,7 @@ bool FFmpegDemuxerPlugin::NeedWaitForRead()
 void FFmpegDemuxerPlugin::HandleReadWait(std::unique_lock<std::mutex>& readLock)
 {
     threadState_ = WAITING;
-    seekWaitCv_.notify_one(); // 唤醒 SeekTo
+    seekWaitCv_.notify_one();
     readLoopCv_.wait(readLock, [&]() { return (ioContext_.invokerType == DESTORY) ||
                                               (!cacheQueue_.HasCache(trackId_) && isPauseReadPacket_); 
     });

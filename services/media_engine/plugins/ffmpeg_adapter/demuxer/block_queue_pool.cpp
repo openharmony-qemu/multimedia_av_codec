@@ -137,7 +137,7 @@ void BlockQueuePool::ResetQueue(uint32_t queueIndex)
     blockQue->Clear();
     quePool_[queueIndex].dataSize = 0;
     quePool_[queueIndex].isValid = true;
-    quePool_[queueIndex].maxPts = INT64_MIN; // 重置maxPts
+    quePool_[queueIndex].maxPts = INT64_MIN;
     return;
 }
 
@@ -179,7 +179,7 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
         quePool_[pushIndex].dataSize += static_cast<uint32_t>(pkt->size);
         if (pkt && pkt->pts != AV_NOPTS_VALUE) {
             if (pkt->pts > quePool_[pushIndex].maxPts) {
-                quePool_[pushIndex].maxPts = pkt->pts; // 更新maxPts
+                quePool_[pushIndex].maxPts = pkt->pts;
             }
         }
     }
@@ -220,7 +220,7 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         }
         if (quePool_[queIndex].blockQue->Empty()) {
             ResetQueue(queIndex);
-            quePool_[queIndex].maxPts = INT64_MIN; // 队列空时重置maxPts
+            quePool_[queIndex].maxPts = INT64_MIN;
             MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " queue " PUBLIC_LOG_D32 " is empty, will return to pool",
                 trackIndex, queIndex);
             queVector.erase(queVector.begin() + index);
@@ -333,7 +333,7 @@ Status BlockQueuePool::GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxPts)
             MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
             continue;
         }
-        maxPts = quePool_[queIndex].maxPts; // 获取最大PTS
+        maxPts = quePool_[queIndex].maxPts;
         return Status::OK;
     }
     MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
