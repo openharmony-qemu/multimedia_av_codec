@@ -1505,10 +1505,7 @@ int32_t FCodec::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, u
 void FCodec::RequestBufferFromConsumer()
 {
     auto index = renderAvailQue_->Front();
-    if (!RequestSurfaceBufferOnce(index)) {
-        AVCODEC_LOGE("get buffer failed.");
-        return;
-    }
+    RequestSurfaceBufferOnce(index);
     std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
     std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
     auto queSize = renderAvailQue_->Size();

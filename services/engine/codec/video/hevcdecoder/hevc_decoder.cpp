@@ -1316,10 +1316,7 @@ void HevcDecoder::FindAvailIndex(uint32_t index)
 void HevcDecoder::RequestBufferFromConsumer()
 {
     auto index = renderAvailQue_->Front();
-    if (!RequestSurfaceBufferOnce(index)) {
-        AVCODEC_LOGE("get buffer failed.");
-        return;
-    }
+    RequestSurfaceBufferOnce(index);
     std::shared_ptr<HBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
     std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
     auto queSize = renderAvailQue_->Size();
