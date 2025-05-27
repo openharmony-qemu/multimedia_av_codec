@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include "meta/meta_key.h"
+#include "avcodec_log.h"
 #include "avcodec_suspend.h"
 #include "unittest_utils.h"
 #include "codeclist_mock.h"
@@ -28,9 +29,6 @@
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
-#define TEST_SUIT VideoEncCapiTest
-#else
-#define TEST_SUIT VideoEncInnerTest
 #endif
 
 using namespace std;
@@ -145,6 +143,7 @@ public:
     bool ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer);
     bool GetWaterMarkCapability(int32_t param);
     bool GetTemporalScalabilityCapability(int32_t param);
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
@@ -197,6 +196,10 @@ void TEST_SUIT::SetUp(void)
 
     format_ = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, format_);
+
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string testCaseName = testInfo_->name();
+    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
 }
 
 void TEST_SUIT::TearDown(void)
@@ -431,7 +434,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Create_002, TestSize.Level1)
 {
     ASSERT_TRUE(CreateVideoCodecByMime((CodecMimeType::VIDEO_AVC).data()));
 }
-
+#ifdef VIDEOENC_ASYNC_UNIT_TEST
 /**
  * @tc.name: VideoEncoder_Setcallback_001
  * @tc.desc: video setcallback
@@ -465,9 +468,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Setcallback_003, TestSize.Level1)
 {
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
-#endif
 }
 
 /**
@@ -479,9 +480,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Setcallback_004, TestSize.Level1)
 {
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
-#endif
 }
 
 /**
@@ -517,9 +516,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Invalid_SetParameterCallback_002, TestSize.Leve
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
-#endif
 }
 
 /**
@@ -538,7 +535,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Invalid_SetParameterCallback_003, TestSize.Leve
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->Start());
 }
-
+#endif
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 /**
  * @tc.name: VideoEncoder_Setcallback_Invalid_001
@@ -692,6 +689,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Free_Buffer_Invalid_004, TestSize.Level1)
 }
 #else
 
+#ifdef VIDEOENC_ASYNC_UNIT_TEST
 /**
  * @tc.name: VideoEncoder_SetParameterWithAttrCallback_001
  * @tc.desc: SetParameterWithAttrCallback and check if meta has pts key-value
@@ -703,10 +701,6 @@ HWTEST_F(TEST_SUIT, VideoEncoder_SetParameterWithAttrCallback_001, TestSize.Leve
     CreateByNameWithParam(VCodecTestCode::HW_AVC);
     SetFormatWithParam(VCodecTestCode::HW_AVC);
     PrepareSource(VCodecTestCode::HW_AVC);
-#ifdef VIDEOENC_SYNC_UNIT_TEST
-    // sync mode enable input parameter
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE, 1);
-#endif
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamWithAttrCallback_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
@@ -776,6 +770,67 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Invalid_SetParameterWithAttrCallback_004, TestS
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamWithAttrCallback_));
     EXPECT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
 }
+#endif
+/**
+ * @tc.name: VideoEncoder_SetROIParameter_001
+ * @tc.desc: SetROIParameter and check if meta has roi key-value
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetROIParameter_001, TestSize.Level1)
+{
+    videoEnc_->roiRects_ = "100,100-100,100=-4";
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::CBR);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: VideoEncoder_SetROIParameter_002
+ * @tc.desc: SetROIParameter and check if meta has roi key-value
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetROIParameter_002, TestSize.Level1)
+{
+    videoEnc_->roiRects_ = "100,100-100,100=-4";
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::VBR);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: VideoEncoder_SetROIParameter_003
+ * @tc.desc: SetROIParameter and check if meta has roi key-value
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetROIParameter_003, TestSize.Level1)
+{
+    videoEnc_->isAVBufferMode_ = true;
+    videoEnc_->roiRects_ = "100,100-100,100=-4";
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::CBR);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: VideoEncoder_SetROIParameter_004
+ * @tc.desc: SetROIParameter and check if meta has roi key-value
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetROIParameter_004, TestSize.Level1)
+
 
 /**
  * @tc.name: VideoEncoder_SetCustomBuffer_001
@@ -1025,7 +1080,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_009, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
 #ifdef VIDEOENC_SYNC_UNIT_TEST
-    // sync mode enable input parameter
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE, 1);
 #endif
     PrepareSource(GetParam());
@@ -1068,7 +1122,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_0010, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
 #ifdef VIDEOENC_SYNC_UNIT_TEST
-    // sync mode enable input parameter
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE, 1);
 #endif
     PrepareSource(GetParam());

@@ -17,13 +17,9 @@
 #include <gtest/hwext/gtest-multithread.h>
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
-
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videodec_capi_mock.h"
-#define TEST_SUIT VideoDecCapiTest
-#else
-#define TEST_SUIT VideoDecInnerTest
 #endif
 #include "videodec_func_test_suit.h"
 
@@ -837,7 +833,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_RenderOutputBufferAtTime_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    videoDec_->renderAtTimeFlag_ = true;
+    videoDec_->renderAtTimeFlag_ = false;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());

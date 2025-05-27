@@ -138,6 +138,7 @@ int32_t VideoEncSyncSample::SetCallback(std::shared_ptr<MediaCodecParameterCallb
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
+    isSetParamCallback_ = true;
     return AV_ERR_OK;
 }
 
@@ -146,6 +147,7 @@ int32_t VideoEncSyncSample::SetCallback(std::shared_ptr<MediaCodecParameterWithA
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
+    isSetParamCallback_ = true;
     return AV_ERR_OK;
 }
 
@@ -466,7 +468,7 @@ void VideoEncSyncSample::InputParamLoopFunc()
 
         uint32_t index = DEFAULT_INDEX;
         auto ret = videoEnc_->QueryInputParameterWithAttr(index, 0);
-        if (ret == AV_ERR_VIDEO_TRY_AGAIN_LATER) {
+        if (ret == AV_ERR_COMMON_TRY_AGAIN_LATER) {
             continue;
         }
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: QueryInputParameterWithAttr fail");
@@ -492,6 +494,10 @@ void VideoEncSyncSample::InputParamLoopFunc()
             format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
         }
 
+        if (roiRects_ != ""){
+            format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+        }
+
         InputLtrParam(format, frameInputCount_, nullptr);
 
         UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
@@ -515,7 +521,7 @@ void VideoEncSyncSample::OutputLoopFuncExt()
         shared_lock<shared_mutex> lock(signal_->syncMutex_);
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFuncExt stop running");
         int32_t ret = OutputLoopInnerExt();
-        if (ret == AV_ERR_VIDEO_STREAM_CHANGED || ret == AV_ERR_VIDEO_TRY_AGAIN_LATER){
+        if (ret == AV_ERR_VIDEO_STREAM_CHANGED || ret == AV_ERR_COMMON_TRY_AGAIN_LATER){
             ret = AV_ERR_OK;
         }
         EXPECT_EQ(ret, AV_ERR_OK) << "frameOutputCount_: " << frameOutputCount_ << "\n";
@@ -581,7 +587,7 @@ int32_t VideoEncSyncSample::OutputLoopInnerExt()
     if (attr.flags == 0 || (attr.flags & AVCODEC_BUFFER_FLAGS_SYNC_FRAME)) {
         frameOutputCount_++;
     }
-    UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
+    UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_, needDump_);
 
 #ifdef HMOS_TEST
     CheckFormatKey(attr, buffer);
@@ -627,7 +633,7 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
 {
     uint32_t index = DEFAULT_INDEX;
     auto ret = videoEnc_->QueryInputBuffer(index, 0);
-    if (ret == AV_ERR_VIDEO_TRY_AGAIN_LATER) {
+    if (ret == AV_ERR_COMMON_TRY_AGAIN_LATER) {
         return AV_ERR_OK;
     }
 
@@ -641,6 +647,13 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
         format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
         buffer->SetParameter(format);
         UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
+        format->Destroy();
+    }
+
+    if (roiRects_ != "") {
+        std::shared_ptr<FormatMock> format = buffer->GetParameter();
+        format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+        buffer->SetParameter(format);
         format->Destroy();
     }
 

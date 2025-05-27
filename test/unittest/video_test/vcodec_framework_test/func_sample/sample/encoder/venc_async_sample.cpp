@@ -647,9 +647,9 @@ void VideoEncAsyncSample::InputParamLoopFunc()
             format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
         }
 
-        // if (roiRects_ != ""){
-        //     format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
-        // }
+        if (roiRects_ != ""){
+            format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+        }
 
         InputLtrParam(format, frameInputCount_, nullptr);
 
@@ -868,7 +868,7 @@ int32_t VideoEncAsyncSample::OutputLoopInnerExt()
     if (attr.flags == 0 || (attr.flags & AVCODEC_BUFFER_FLAGS_SYNC_FRAME)) {
         frameOutputCount_++;
     }
-    UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
+    UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_, needDump_);
 
 #ifdef HMOS_TEST
     CheckFormatKey(attr, buffer);
@@ -930,12 +930,12 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
         format->Destroy();
     }
 
-    // if (roiRects_ != "") {
-    //     std::shared_ptr<FormatMock> format = buffer->GetParameter();
-    //     format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
-    //     buffer->SetParameter(format);
-    //     format->Destroy();
-    // }
+    if (roiRects_ != "") {
+        std::shared_ptr<FormatMock> format = buffer->GetParameter();
+        format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+        buffer->SetParameter(format);
+        format->Destroy();
+    }
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (inFile_->eof()) {

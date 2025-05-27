@@ -23,6 +23,7 @@
 #include <shared_mutex>
 #include <string>
 #include <thread>
+#include "openssl/sha.h"
 #include "securec.h"
 #include "window.h"
 #include "vcodec_mock.h"
@@ -46,7 +47,8 @@ inline uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 inline std::atomic<uint32_t> g_shaBufferCount = 0;
 inline SHA512_CTX g_ctxTest;
 
-inline void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA)
+inline void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA,
+                      bool needDump)
 {
     if (needCheckSHA) {
         ++g_shaBufferCount;
@@ -54,9 +56,9 @@ inline void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr,
     if (needCheckSHA && g_shaBufferCount < BUFFER_COUNT) {
         SHA512_Update(&g_ctxTest, addr, size);
     }
-    if (VideoEncAsyncSample::needDump_) {
+    if (needDump) {
         if (!outFile->is_open()) {
-            cout << "output data fail" << endl;
+            std::cout << "output data fail" << std::endl;
         }
         (void)outFile->write(addr, size);
     }

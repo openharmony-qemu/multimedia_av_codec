@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
+#include "avcodec_log.h"
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
@@ -22,7 +23,6 @@
 #else
 #include "vdec_sync_sample.h"
 #endif
-#define TEST_SUIT VideoDecInnerTest
 
 using namespace std;
 using namespace OHOS;
@@ -47,6 +47,7 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
@@ -88,6 +89,10 @@ void TEST_SUIT::SetUp(void)
 
     format_ = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, format_);
+
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string testCaseName = testInfo_->name();
+    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
 }
 
 void TEST_SUIT::TearDown(void)

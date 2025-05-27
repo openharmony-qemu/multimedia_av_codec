@@ -508,7 +508,7 @@ void VideoDecSyncSample::OutputLoopFuncExt()
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFuncExt stop running");
 
         int32_t ret = OutputLoopInnerExt();
-        if (ret == AV_ERR_VIDEO_TRY_AGAIN_LATER || ret == AV_ERR_VIDEO_STREAM_CHANGED) {
+        if (ret == AV_ERR_COMMON_TRY_AGAIN_LATER || ret == AV_ERR_VIDEO_STREAM_CHANGED) {
             ret = AV_ERR_OK;
         } else if (ret == AV_ERR_OK) {
             frameOutputCount_++;
@@ -608,7 +608,7 @@ int32_t VideoDecSyncSample::InputLoopInnerExt()
 {
     uint32_t index = DEFAULT_INDEX;
     auto ret = videoDec_->QueryInputBuffer(index, 0);
-    if (ret == AV_ERR_VIDEO_TRY_AGAIN_LATER) {
+    if (ret == AV_ERR_COMMON_TRY_AGAIN_LATER) {
         return AV_ERR_OK;
     }
 

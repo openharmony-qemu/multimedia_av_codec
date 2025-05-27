@@ -803,7 +803,7 @@ int32_t VideoDecAsyncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_ || isSurfaceMode_, AV_ERR_INVALID_VAL,
                                     "can not dump output file");
-    uint32_t index = -1;
+    uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret;
     auto buffer = signal_->outBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,

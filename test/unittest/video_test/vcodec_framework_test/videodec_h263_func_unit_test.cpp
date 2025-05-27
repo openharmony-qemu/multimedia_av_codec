@@ -26,9 +26,7 @@
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videodec_capi_mock.h"
-#define TEST_SUIT VideoDecCapiTestH263
 #else
-#define TEST_SUIT VideoDecInnerTestH263
 #endif
 #include "videodec_func_test_suit.h"
 

@@ -112,6 +112,7 @@ ohos_unittest("videodec_capi_async_unit_test") {
   defines = [
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoDecCapiAsyncTest",
   ]
   defines += av_codec_defines
 
@@ -167,6 +168,7 @@ ohos_unittest("videodec_h263_capi_async_unit_test") {
   defines = [
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoH263DecCapiAsyncTest",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -222,6 +224,7 @@ ohos_unittest("videodec_inner_async_unit_test") {
   defines = [
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoDecInnerAsyncTest",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -271,6 +274,7 @@ ohos_unittest("videodec_h263_inner_async_unit_test") {
   defines = [
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoH263DecInnerAsyncTest",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -321,6 +325,7 @@ ohos_unittest("videodec_mpeg_func_async_unit_test") {
   defines = [
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_MPEG_FUNC_UNIT_TEST",
+    "TEST_SUIT=VideoMPEGDecInnerAsyncTest",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -370,6 +375,7 @@ ohos_unittest("videoenc_capi_async_unit_test") {
   defines = [
     "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoEncCapiAsyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -415,6 +421,7 @@ ohos_unittest("videoenc_inner_async_unit_test") {
   defines = [
     "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoEncInnerAsyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -461,6 +468,7 @@ ohos_unittest("videoenc_temporal_scalability_capi_async_unit_test") {
   defines = [
     "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoEncTemporalScalabilityCapiAsyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -505,6 +513,7 @@ ohos_unittest("videoenc_temporal_scalability_inner_async_unit_test") {
   defines = [
     "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoEncTemporalScalabilityInnerAsyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -555,6 +564,7 @@ ohos_unittest("videoenc_repeat_previous_frame_capi_async_unit_test") {
   defines = [
     "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoEncRepeatPreviousFrameCapiAsyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -599,6 +609,7 @@ ohos_unittest("videoenc_repeat_previous_frame_inner_async_unit_test") {
   defines = [
     "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoEncRepeatPreviousFrameInnerAsyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -723,6 +734,7 @@ ohos_unittest("videodec_hdrvivid2sdr_capi_async_unit_test") {
   defines = [
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_HDRVIVID2SDR_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoDecHDRVivid2SDRCapiAsyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -792,6 +804,7 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_async_unit_test") {
   defines = [
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_HDRVIVID2SDR_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoDecHDRVivid2SDRInnerAsyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -848,6 +861,7 @@ ohos_unittest("videodec_hdecoder_memrecycle_async_unit_test") {
   defines = [
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_HARDWARE_MEMRECYCLE_UNIT_TEST",
+    "TEST_SUIT=VideoHDecMemoryRecyleAsyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -982,6 +996,7 @@ ohos_unittest("videodec_capi_sync_unit_test") {
   defines = [
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoDecCapiSyncTest",
   ]
   defines += av_codec_defines
 
@@ -1037,6 +1052,7 @@ ohos_unittest("videodec_h263_capi_sync_unit_test") {
   defines = [
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoH263DecCapiSyncTest",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -1091,6 +1107,7 @@ ohos_unittest("videodec_inner_sync_unit_test") {
   defines = [
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoDecInnerSyncTest",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -1140,6 +1157,7 @@ ohos_unittest("videodec_h263_inner_sync_unit_test") {
   defines = [
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoH263DecInnerSyncTest",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -1189,6 +1207,7 @@ ohos_unittest("videodec_mpeg_func_sync_unit_test") {
   defines = [
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_MPEG_FUNC_UNIT_TEST",
+    "TEST_SUIT=VideoMPEGDecInnerSyncTest",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -1239,6 +1258,7 @@ ohos_unittest("videodec_hdrvivid2sdr_capi_sync_unit_test") {
   defines = [
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_HDRVIVID2SDR_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoDecHDRVivid2SDRCapiSyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1308,6 +1328,7 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_sync_unit_test") {
   defines = [
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_HDRVIVID2SDR_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoDecHDRVivid2SDRInnerSyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1364,6 +1385,7 @@ ohos_unittest("videodec_hdecoder_memrecycle_sync_unit_test") {
   defines = [
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_HARDWARE_MEMRECYCLE_UNIT_TEST",
+    "TEST_SUIT=VideoHDecMemoryRecyleSyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1418,6 +1440,7 @@ ohos_unittest("videoenc_capi_sync_unit_test") {
   defines = [
     "VIDEOENC_SYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoEncCapiSyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1463,6 +1486,7 @@ ohos_unittest("videoenc_inner_sync_unit_test") {
   defines = [
     "VIDEOENC_SYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoEncInnerSyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1509,6 +1533,7 @@ ohos_unittest("videoenc_repeat_previous_frame_capi_sync_unit_test") {
   defines = [
     "VIDEOENC_SYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoEncRepeatPreviousFrameCapiSyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1553,6 +1578,7 @@ ohos_unittest("videoenc_repeat_previous_frame_inner_sync_unit_test") {
   defines = [
     "VIDEOENC_SYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoEncRepeatPreviousFrameInnerSyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1599,6 +1625,7 @@ ohos_unittest("videoenc_temporal_scalability_capi_sync_unit_test") {
   defines = [
     "VIDEOENC_SYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
+    "TEST_SUIT=VideoEncTemporalScalabilityCapiSyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1643,6 +1670,7 @@ ohos_unittest("videoenc_temporal_scalability_inner_sync_unit_test") {
   defines = [
     "VIDEOENC_SYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
+    "TEST_SUIT=VideoEncTemporalScalabilityInnerSyncTest",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]

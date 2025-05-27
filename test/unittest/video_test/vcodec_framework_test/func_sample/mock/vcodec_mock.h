@@ -165,7 +165,7 @@ constexpr uint32_t DEFAULT_FRAME_RATE = 20;
 constexpr uint32_t DEFAULT_WIDTH_VENC = 1280;
 constexpr uint32_t DEFAULT_HEIGHT_VENC = 720;
 
-constexpr uint32_t SAMPLE_TIMEOUT = 100;
+constexpr uint32_t SAMPLE_TIMEOUT = 20;
 constexpr BufferRequestConfig DEFAULT_CONFIG = {
     .width = 100,
     .height = 100,

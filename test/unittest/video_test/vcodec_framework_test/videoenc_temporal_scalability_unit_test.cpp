@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include "avcodec_log.h"
 #include "codeclist_mock.h"
 #include "native_avmagic.h"
 #include "meta/meta_key.h"
@@ -27,9 +28,6 @@
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
-#define TEST_SUIT VideoEncTemporalScalabilityCapiTest
-#else
-#define TEST_SUIT VideoEncTemporalScalabilityInnerTest
 #endif
 
 using namespace std;
@@ -56,6 +54,7 @@ public:
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
     bool GetTemporalScalabilityCapability(int32_t param, bool isTemporalScalability);
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
@@ -104,6 +103,10 @@ void TEST_SUIT::SetUp(void)
 
     format_ = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, format_);
+
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string testCaseName = testInfo_->name();
+    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
 }
 
 void TEST_SUIT::TearDown(void)
