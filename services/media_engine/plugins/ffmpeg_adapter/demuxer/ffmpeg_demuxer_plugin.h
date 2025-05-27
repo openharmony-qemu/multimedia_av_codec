@@ -47,6 +47,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
+extern const std::vector<AVCodecID> g_streamContainedXPS;
 class FFmpegDemuxerPlugin : public DemuxerPlugin {
 public:
     explicit FFmpegDemuxerPlugin(std::string name);
@@ -300,6 +301,7 @@ private:
     std::mutex fFmpegReadLoopMutex_;              // 用于FFmpegReadLoop条件变量的互斥锁
     uint32_t trackId_;
     ThreadState threadState_ {ThreadState::NOT_STARTED};
+    // static InvokerType invokerType_;
     Status readLoopStatus_ = {Status::OK};         //ffmpegReadLoop的循环结果状态
     bool isPauseReadPacket_ = true;                //是否暂停readPacket,PauseFFmpegReadLoop()方法用,false是暂停
     std::unordered_map<int, int> versionMap_;      //老版本的key是0，新版本的key是1

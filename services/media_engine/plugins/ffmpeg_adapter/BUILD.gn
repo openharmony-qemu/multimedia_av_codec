@@ -111,6 +111,7 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "demuxer/block_queue_pool.cpp",
     "demuxer/demuxer_log_compressor.cpp",
     "demuxer/ffmpeg_demuxer_plugin.cpp",
+    "demuxer/ffmpeg_demuxer_thread.cpp",
     "demuxer/ffmpeg_format_helper.cpp",
     "demuxer/ffmpeg_reference_parser.cpp",
   ]
