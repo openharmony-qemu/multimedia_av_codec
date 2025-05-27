@@ -445,6 +445,7 @@ int32_t HEncoder::SetupPort(const Format &format, std::optional<double> &frameRa
         frameRate = 60.0; // default frame rate 60.0
     }
 
+    codecRate_ = frameRate.value();
     PortInfo inputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
                               OMX_VIDEO_CodingUnused, configuredFmt_, frameRate.value()};
     CalcInputBufSize(inputPortInfo, configuredFmt_.innerFmt);
