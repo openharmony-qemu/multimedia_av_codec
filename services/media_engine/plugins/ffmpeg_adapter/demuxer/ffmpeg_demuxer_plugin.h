@@ -91,7 +91,6 @@ public:
     Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) override;
 private:
-
     enum ThreadState : unsigned int {
         NOT_STARTED,
         WAITING,
@@ -290,8 +289,13 @@ private:
     bool IsMultiVideoTrack();
     int AVReadFrameLimit(AVPacket *pkt);
     Status SetAVReadFrameLimit();
+
     Status WaitForLoop(const uint32_t trackId, const uint32_t timeout);
     void FFmpegReadLoop();
+    bool NeedWaitForRead();
+    void HandleReadWait(std::unique_lock<std::mutex>& readLock);
+    bool EnsurePacketAllocated(AVPacket*& pkt);
+    bool ReadAndProcessFrame(AVPacket* pkt);
     void ReleaseFFmpegReadLoop();
     std::unique_ptr<std::thread> readThread_ {nullptr};
     std::condition_variable readLoopCv_;              // 用于控制loop读取线程的条件变量
@@ -303,7 +307,6 @@ private:
     std::mutex fFmpegReadLoopMutex_;              // 用于FFmpegReadLoop条件变量的互斥锁
     uint32_t trackId_;
     ThreadState threadState_ {ThreadState::NOT_STARTED};
-    // static InvokerType invokerType_;
     Status readLoopStatus_ = {Status::OK};         //ffmpegReadLoop的循环结果状态
     bool isPauseReadPacket_ = true;                //是否暂停readPacket,PauseFFmpegReadLoop()方法用,false是暂停
     std::unordered_map<int, int> versionMap_;      //老版本的key是0，新版本的key是1
