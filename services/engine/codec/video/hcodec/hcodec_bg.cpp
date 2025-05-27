@@ -236,7 +236,9 @@ void HDecoder::SubmitBuffersToNextOwner()
         uint32_t bufferId = inputBufIdQueueToOmx_.front();
         inputBufIdQueueToOmx_.pop();
         auto bufInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
-        OnQueueInputBuffer(RESUBMIT_BUFFER, bufInfo);
+        if (bufInfo != nullptr) {
+            OnQueueInputBuffer(RESUBMIT_BUFFER, bufInfo);
+        }
     }
     for (BufferInfo& info : inputBufferPool_) {
         if (info.nextStepOwner == BufferOwner::OWNED_BY_OMX) {

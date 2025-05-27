@@ -88,6 +88,8 @@ public:
     Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size) override;
     bool GetProbeSize(int32_t &offset, int32_t &size) override;
     void SetInterruptState(bool isInterruptNeeded) override;
+    Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
+        const int32_t probSize) override;
 private:
 
     enum ThreadState : unsigned int {

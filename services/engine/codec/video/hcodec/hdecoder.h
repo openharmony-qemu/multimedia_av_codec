@@ -155,7 +155,6 @@ private:
     uint32_t outBufferCnt_ = 0;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;
-    double codecRate_ = 0.0;
     OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion crop_{0};
 };
 } // namespace OHOS::MediaAVCodec

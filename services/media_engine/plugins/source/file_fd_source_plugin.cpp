@@ -450,7 +450,7 @@ bool FileFdSourcePlugin::HasCacheData(size_t bufferSize, uint64_t offset)
         return true;
     } else {
         MEDIA_LOG_I("ioctl has no cache with errno " PUBLIC_LOG_D32 " cachePosition_ " PUBLIC_LOG_U64
-            " offset " PUBLIC_LOG_U64 "bufferSize" PUBLIC_LOG_ZU, errno, cachePosition_.load(), offset, bufferSize);
+            " offset " PUBLIC_LOG_U64 " bufferSize " PUBLIC_LOG_ZU, errno, cachePosition_.load(), offset, bufferSize);
     }
     return false;
 }

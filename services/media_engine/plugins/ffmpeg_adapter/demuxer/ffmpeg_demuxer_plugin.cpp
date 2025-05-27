@@ -50,6 +50,7 @@ namespace Ffmpeg {
 const uint32_t DEFAULT_READ_SIZE = 4096;
 const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
+const int32_t DEF_PROBE_SCORE_LIMIT = 50;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
 const uint32_t NAL_START_CODE_SIZE = 4;
@@ -64,6 +65,8 @@ const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000;
 const int DEFAULT_CHANNEL_CNT = 3;
 const int FLV_READ_SIZE_LIMIT_FACTOR = 2;
 const int FLV_READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
+const char* PLUGIN_NAME_PREFIX = "avdemux_";
+const char* PLUGIN_NAME_MP3 = "mp3";
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -93,6 +96,7 @@ std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 std::mutex g_mtx;
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource);
+int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dataSource, int probSize);
 
 Status RegisterPlugins(const std::shared_ptr<Register>& reg);
 
@@ -279,7 +283,7 @@ bool IsSupportedTrack(const AVStream& avStream)
             MEDIA_LOG_E("Unsupport raw video track");
             return false;
         }
-        if (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0) {
+        if (FFmpegFormatHelper::IsImageTrack(avStream)) {
             MEDIA_LOG_E("Unsupport image track");
             return false;
         }
@@ -1032,7 +1036,7 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     }
 
     formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
-    if (std::string(pluginImpl_->name) == "mp3") {
+    if (std::string(pluginImpl_->name) == PLUGIN_NAME_MP3) {
         formatContext->flags =
             static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_FAST_SEEK);
     }
@@ -1072,7 +1076,8 @@ void FFmpegDemuxerPlugin::NotifyInitializationCompleted()
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
+        "AVFormatContext has been initialized");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
     if (ioContext_.invokerType != INIT) {
         std::lock_guard<std::mutex> initLock(ioContext_.invorkTypeMutex);
@@ -1122,6 +1127,37 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         ioContext_.initErrorAgain = false;
     }
     return Status::OK;
+}
+
+static bool CheckProbScore(const std::string& pluginName, const int32_t probScore)
+{
+    if (probScore >= DEF_PROBE_SCORE_LIMIT) {
+        return true;
+    }
+
+    std::string pluginType = pluginName.substr(std::string(PLUGIN_NAME_PREFIX).size());
+    if (StartWith(pluginType.c_str(), PLUGIN_NAME_MP3) && probScore > MP3_PROBE_SCORE_LIMIT) {
+        return true;
+    }
+
+    return false;
+}
+
+Status FFmpegDemuxerPlugin::SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
+    const int32_t probSize)
+{
+    std::unique_lock<std::shared_mutex> lock(sharedMutex_);
+    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
+        "AVFormatContext has been initialized");
+    FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
+    FALSE_RETURN_V_MSG_E(probSize >= 0, Status::ERROR_INVALID_PARAMETER, "probSize is invalid");
+    
+    int32_t probScore = SniffWithSize(pluginName_, source, probSize);
+    FALSE_RETURN_V_MSG_E(CheckProbScore(pluginName_, probScore), Status::ERROR_INVALID_PARAMETER,
+        "source and inputformat mismatch");
+    lock.unlock();
+
+    return SetDataSource(source);
 }
 
 bool FFmpegDemuxerPlugin::HasCodecParameters()
@@ -1732,7 +1768,7 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
-
+    FALSE_RETURN_V_MSG_E(index < UINT32_MAX, Status::ERROR_INVALID_DATA, "Index is out of range");
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "FileType is not MP4");
 
@@ -1995,9 +2031,8 @@ int GetID3TagLen(const uint8_t *buf)
 }
 
 int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& pluginName,
-    std::shared_ptr<DataSource> dataSource, size_t &getData)
+    std::shared_ptr<DataSource> dataSource, size_t &getData, size_t bufferSize)
 {
-    size_t bufferSize = DEFAULT_SNIFF_SIZE;
     uint64_t fileSize = 0;
     Status getFileSize = dataSource->GetSize(fileSize);
     if (getFileSize == Status::OK) {
@@ -2039,6 +2074,11 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& 
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 {
+    return SniffWithSize(pluginName, dataSource, DEFAULT_SNIFF_SIZE);
+}
+
+int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dataSource, int probSize)
+{
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "DataSource is nullptr");
     std::shared_ptr<AVInputFormat> plugin;
@@ -2049,11 +2089,11 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
         "Get plugin for " PUBLIC_LOG_S " failed", pluginName.c_str());
     size_t getData = 0;
-    int confidence = GetConfidence(plugin, pluginName, dataSource, getData);
+    int confidence = GetConfidence(plugin, pluginName, dataSource, getData, probSize);
     if (confidence < 0) {
         return 0;
     }
-    if (StartWith(plugin->name, "mp3") && confidence > 0 && confidence <= MP3_PROBE_SCORE_LIMIT) {
+    if (StartWith(plugin->name, PLUGIN_NAME_MP3) && confidence > 0 && confidence <= MP3_PROBE_SCORE_LIMIT) {
         MEDIA_LOG_W("Score " PUBLIC_LOG_D32 " is too low", confidence);
         confidence = 0;
     }

@@ -517,6 +517,20 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetCameraPostprocess
     EXPECT_EQ(ret, Status::OK);
 }
 
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_LoadCameraPostProcessorLib, TestSize.Level1)
+{
+    EXPECT_EQ(decoderSurfaceFilter->cameraPostProcessorLibHandle_, nullptr);
+    decoderSurfaceFilter->SetPostProcessorType(VideoPostProcessorType::CAMERA_INSERT_FRAME);
+    EXPECT_EQ(decoderSurfaceFilter->postProcessor_, nullptr);
+    decoderSurfaceFilter->CreatePostProcessor();
+    EXPECT_EQ(decoderSurfaceFilter->postProcessor_, nullptr);
+    decoderSurfaceFilter->LoadCameraPostProcessorLib();
+    decoderSurfaceFilter->CreatePostProcessor();
+    EXPECT_NE(decoderSurfaceFilter->cameraPostProcessorLibHandle_, nullptr);
+    EXPECT_NE(decoderSurfaceFilter->postProcessor_, nullptr);
+}
+#endif
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

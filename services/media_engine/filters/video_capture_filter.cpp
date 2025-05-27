@@ -327,6 +327,7 @@ void VideoCaptureFilter::OnBufferAvailable()
     int32_t bufferSize = 0;
     int32_t isKeyFrame = 0;
     OHOS::Rect damage;
+    FALSE_RETURN_MSG(inputSurface_ != nullptr, "inputSurface_ is nullptr");
     GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
     if (ret != GSERROR_OK || buffer == nullptr) {
         MEDIA_LOG_E("AcquireBuffer failed");

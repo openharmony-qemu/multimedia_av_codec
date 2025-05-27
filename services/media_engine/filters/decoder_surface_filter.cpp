@@ -34,6 +34,12 @@
 #endif
 
 namespace {
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+const std::string REFERENCE_LIB_PATH = std::string(CAMERA_POST_PROCESSOR_PATH);
+const std::string FILESEPARATOR = "/";
+const std::string REFERENCE_LIB_NAME = "libcamera_post_processor.z.so";
+const std::string REFENCE_LIB_ABSOLUTE_PATH = REFERENCE_LIB_PATH + FILESEPARATOR + REFERENCE_LIB_NAME;
+#endif
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DecoderSurfaceFilter" };
 }
 
@@ -60,6 +66,10 @@ static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("
 static const bool IS_FILTER_ASYNC = system::GetParameter("persist.media_service.async_filter", "1") == "1";
 
 static const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
+
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+void *DecoderSurfaceFilter::cameraPostProcessorLibHandle_ = nullptr;
+#endif
 
 class DecoderSurfaceFilterLinkCallback : public FilterLinkCallback {
 public:
@@ -746,12 +756,30 @@ void DecoderSurfaceFilter::InitPostProcessorType()
     FALSE_RETURN_NOLOG(
         enableCameraPostprocessing_.load() && enhanceflag == "1" && fdsanFd_ != nullptr && fdsanFd_->Get() >= 0);
     postProcessorType_ = VideoPostProcessorType::CAMERA_INSERT_FRAME;
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+    LoadCameraPostProcessorLib();
+#endif
     std::string videoId;
     meta_->GetData(VIDEO_ID, videoId);
     MEDIA_LOG_D("videoId: %{public}s", videoId.c_str());
     FALSE_RETURN_NOLOG(!videoId.empty());
     configFormat_.PutStringValue(VIDEO_ID, videoId);
 }
+
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+void DecoderSurfaceFilter::LoadCameraPostProcessorLib()
+{
+    std::lock_guard<std::mutex> loadLibLock(loadLibMutex_);
+    FALSE_RETURN_NOLOG(cameraPostProcessorLibHandle_ == nullptr);
+    char path[PATH_MAX] = {0};
+    const char *inputPath = REFENCE_LIB_ABSOLUTE_PATH.c_str();
+    if (strlen(inputPath) > PATH_MAX || realpath(inputPath, path) == nullptr) {
+        MEDIA_LOG_E("failed due to invalid path");
+        return;
+    }
+    cameraPostProcessorLibHandle_ = ::dlopen(path, RTLD_NOW | RTLD_LOCAL);
+}
+#endif
 
 Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)

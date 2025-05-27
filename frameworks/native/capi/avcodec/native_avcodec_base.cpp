@@ -95,6 +95,9 @@ const char *OH_MD_KEY_LANGUAGE = "language";
 const char *OH_MD_KEY_DESCRIPTION = "description";
 const char *OH_MD_KEY_LYRICS = "lyrics";
 const char *OH_MD_KEY_TRACK_COUNT = "track_count";
+const char *OH_MD_KEY_REFERENCE_TRACK_IDS = "reference_track_ids";
+const char *OH_MD_KEY_TRACK_REFERENCE_TYPE = "track_reference_type";
+const char *OH_MD_KEY_TRACK_DESCRIPTION = "track_description";
 
 const char *OH_MD_KEY_AUDIO_COMPRESSION_LEVEL = "audio_compression_level";
 const char *OH_MD_KEY_AUDIO_OBJECT_NUMBER = "audio_object_number_key";
