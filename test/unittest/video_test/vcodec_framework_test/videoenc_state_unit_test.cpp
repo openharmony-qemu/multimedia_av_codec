@@ -38,6 +38,8 @@ public:
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
+    OH_AVCodec *videoEnc = nullptr;
+    OH_AVFormat *format = nullptr;
 
 private:
 };
@@ -45,9 +47,9 @@ void VideoStateTest::SetUpTestCase(void) {}
 void VideoStateTest::TearDownTestCase(void) {}
 void VideoStateTest::SetUp(void)
 {
-    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    videoEnc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     ASSERT_NE(nullptr, videoEnc);
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
 }
 void VideoStateTest::TearDown(void)
 {
@@ -1627,7 +1629,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_020, TestSize.Level1)
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
  */
-HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_020, TestSize.Level1)
+HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_021, TestSize.Level1)
 {
     SetSync1(format);
     SetParamSync1(format);
@@ -1644,7 +1646,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_020, TestSize.Level1)
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
  */
-HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_020, TestSize.Level1)
+HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_022, TestSize.Level1)
 {
     SetSync1(format);
     SetParamSync1(format);

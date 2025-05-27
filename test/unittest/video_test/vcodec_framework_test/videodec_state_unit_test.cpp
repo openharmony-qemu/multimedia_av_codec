@@ -38,6 +38,8 @@ public:
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
+    OH_AVCodec *videoDec = nullptr;
+    OH_AVFormat *format = nullptr;
 
 private:
 };
@@ -45,9 +47,9 @@ void VideoStateTest::SetUpTestCase(void) {}
 void VideoStateTest::TearDownTestCase(void) {}
 void VideoStateTest::SetUp(void)
 {
-    OH_AVCodec *videoDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    videoDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     ASSERT_NE(nullptr, videoDec);
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
 }
 
 void VideoStateTest::TearDown(void)
