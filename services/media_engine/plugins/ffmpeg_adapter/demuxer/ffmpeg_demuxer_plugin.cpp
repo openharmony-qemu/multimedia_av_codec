@@ -297,7 +297,6 @@ bool IsSupportedTrack(const AVStream& avStream)
 std::atomic<int> FFmpegDemuxerPlugin::readatIndex_ = 0;
 std::condition_variable FFmpegDemuxerPlugin::readCbCv_;
 std::mutex FFmpegDemuxerPlugin::readPacketMutex_;
-FFmpegDemuxerPlugin::InvokerType FFmpegDemuxerPlugin::invokerType_;
 FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
     : DemuxerPlugin(std::move(name)),
       seekable_(Seekable::SEEKABLE),
@@ -988,9 +987,9 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize,
         UpdateInitDownloadData(ioContext, dataSize);
         return dataSize;
     }
-    if (invokerType_ != InvokerType::READ) {
+    if (ioContext->invokerType != READ) {
         ioContext->retry = true;
-        ioContext->initErrorAgain = (invokerType_ == InvokerType::INIT ? true : false);
+        ioContext->initErrorAgain = (ioContext->invokerType == INIT ? true : false);
         MEDIA_LOG_I("Read again, set retry, invokerType!=READ");
         return READ_AGAIN_NUM;
     }
@@ -1196,7 +1195,10 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
-    invokerType_ = InvokerType::INIT;
+    if (ioContext_.invokerType != INIT) {
+        std::lock_guard<std::mutex> initLock(ioContext_.invorkTypeMutex);
+        ioContext_.invokerType = INIT;
+    }
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
@@ -1617,8 +1619,10 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         "Seek time " PUBLIC_LOG_D64 " is not unsupported", seekTime);
     FALSE_RETURN_V_MSG_E(g_seekModeToFFmpegSeekFlags.count(mode) != 0, Status::ERROR_INVALID_PARAMETER,
         "Seek mode " PUBLIC_LOG_D32 " is not unsupported", static_cast<uint32_t>(mode));
-
-    invokerType_ = SEEK;
+    if (ioContext_.invokerType != SEEK) {
+        std::lock_guard<std::mutex> SeekLock(ioContext_.invorkTypeMutex);
+        ioContext_.invokerType = SEEK;
+    }
     if (readThread_ != nullptr && threadState_ == READING) {
         readCbCv_.notify_all();
         std::unique_lock<std::mutex> waitLock(seekWaitMutex_);
@@ -1757,12 +1761,14 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 
     versionMap_[1] = 1;
     isPauseReadPacket_ = true;
-    invokerType_ = READ;
+    if (ioContext_.invokerType != READ) {
+        std::lock_guard<std::mutex> readLock(ioContext_.invorkTypeMutex);
+        ioContext_.invokerType = READ;
+    }
     trackId_ = trackId;
     if (!readThread_) {
         readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
     }
-
     ret = WaitForLoop(trackId, timeout);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Asyn read ffmpeg thread abnoraml end");
     
@@ -1816,19 +1822,25 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
     AVPacket *pkt = nullptr;
     bool continueRead = true;
     while (continueRead) {
-        std::unique_lock<std::mutex> readLock(fFmpegReadLoopMutex_);
-        uint32_t readId = trackId_;
+        std::unique_lock<std::mutex> readLock(ioContext_.invorkTypeMutex);
         MEDIA_LOG_I("loop start trackId=" PUBLIC_LOG_D32 ", !isPauseReadPacket_=: " PUBLIC_LOG_D32,
-            readId, int(!isPauseReadPacket_));
-        if (cacheQueue_.HasCache(readId) || !isPauseReadPacket_) {
+            trackId_, int(!isPauseReadPacket_));
+        if ((cacheQueue_.HasCache(trackId_) || !isPauseReadPacket_) && ioContext_.invokerType != DESTORY) {
             threadState_ = WAITING;
             seekWaitCv_.notify_all(); // 唤醒 SeekTo
-            readLoopCv_.wait(readLock); // 等待被唤醒
+            readLoopCv_.wait(readLock, [&]() { 
+                MEDIA_LOG_I("readtrackId_Id = " PUBLIC_LOG_D32, trackId_);
+                MEDIA_LOG_I("ioContext_.invokerType = " PUBLIC_LOG_D32, int(ioContext_.invokerType));
+                MEDIA_LOG_I("cacheQueue_.HasCache(trackId_) = " PUBLIC_LOG_D32, int(cacheQueue_.HasCache(trackId_)));
+                MEDIA_LOG_I("isPauseReadPacket_ = " PUBLIC_LOG_D32, int(isPauseReadPacket_));
+                // 等待读取线程被唤醒
+                return (ioContext_.invokerType == DESTORY) ||
+                    (!cacheQueue_.HasCache(trackId_) && isPauseReadPacket_); });
             threadState_ = READING;
         }
         readCacheCv_.notify_all();
-        if (invokerType_ == DESTORY) {
-            MEDIA_LOG_I("DESTORY trackId=" PUBLIC_LOG_D32, readId);
+        if (ioContext_.invokerType == DESTORY) {
+            MEDIA_LOG_I("DESTORY trackId=" PUBLIC_LOG_D32, trackId_);
             break;
         }
         if (pkt == nullptr) {
@@ -1887,8 +1899,11 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
 
 void FFmpegDemuxerPlugin::ReleaseFFmpegReadLoop()
 {
-    invokerType_ = DESTORY;
-    readLoopCv_.notify_all();
+    if (ioContext_.invokerType != DESTORY) {
+        std::lock_guard<std::mutex> DestoryLock(ioContext_.invorkTypeMutex);
+        ioContext_.invokerType = DESTORY;
+        readLoopCv_.notify_all();
+    }
     readCbCv_.notify_all();
     if (readThread_ != nullptr && readThread_->joinable()) {
         readThread_->join();
@@ -1956,7 +1971,10 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
         "old version has been used");
 
     versionMap_[1] = 1;
-    invokerType_ = READ;
+    if (ioContext_.invokerType != READ) {
+        std::lock_guard<std::mutex> ReadLock(ioContext_.invorkTypeMutex);
+        ioContext_.invokerType = READ;
+    }
     trackId_ = trackId;
     if (!readThread_) {
         readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
@@ -2233,7 +2251,7 @@ void FFmpegDemuxerPlugin::PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode
 
 void FFmpegDemuxerPlugin::IndexToRelativePTSProcess(int64_t pts, uint32_t index)
 {
-    if (indexToRelativePTSMaxHeap_.size() < index + 1) {
+    if (index <indexToRelativePTSMaxHeap_.size() < index + 1) {
         indexToRelativePTSMaxHeap_.push(pts);
     } else {
         if (pts < indexToRelativePTSMaxHeap_.top()) {
