@@ -241,27 +241,19 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
         std::unique_lock<std::mutex> readLock(ioContext_.invorkTypeMutex);
         MEDIA_LOG_I("loop start trackId=" PUBLIC_LOG_D32 ", !isPauseReadPacket_=: " PUBLIC_LOG_D32,
             trackId_, int(!isPauseReadPacket_));
-        MEDIA_LOG_I("LOOP");
         MEDIA_LOG_I("trackId_ = " PUBLIC_LOG_D32 , trackId_);
         if ((cacheQueue_.HasCache(trackId_) || !isPauseReadPacket_) && ioContext_.invokerType != DESTORY) {
-            MEDIA_LOG_I("LOOP");
             threadState_ = WAITING;
-            MEDIA_LOG_I("LOOP");
             seekWaitCv_.notify_all(); // 唤醒 SeekTo
-            MEDIA_LOG_I("LOOP");
             readLoopCv_.wait(readLock, [&]() { 
                 MEDIA_LOG_I("readtrackId_Id = " PUBLIC_LOG_D32, trackId_);
                 MEDIA_LOG_I("ioContext_.invokerType = " PUBLIC_LOG_D32, int(ioContext_.invokerType));
                 MEDIA_LOG_I("cacheQueue_.HasCache(trackId_) = " PUBLIC_LOG_D32, int(cacheQueue_.HasCache(trackId_)));
                 MEDIA_LOG_I("isPauseReadPacket_ = " PUBLIC_LOG_D32, int(isPauseReadPacket_));
-                // 等待读取线程被唤醒
                 return (ioContext_.invokerType == DESTORY) ||
                     (!cacheQueue_.HasCache(trackId_) && isPauseReadPacket_); });
-            MEDIA_LOG_I("LOOP");
             threadState_ = READING;
-            MEDIA_LOG_I("LOOP");
         }
-        MEDIA_LOG_I("LOOP");
         readCacheCv_.notify_all();
         if (ioContext_.invokerType == DESTORY) {
             MEDIA_LOG_I("DESTORY trackId=" PUBLIC_LOG_D32, trackId_);
