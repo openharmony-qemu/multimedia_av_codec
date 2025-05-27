@@ -133,7 +133,7 @@ BackGroundEventHandler &BackGroundEventHandler::GetInstance()
     return instance;
 }
 
-void BackGroundEventHandler::NotifyFreezeByInstanceId(InstanceId instanceId)
+void BackGroundEventHandler::NotifyFreeze(InstanceId instanceId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     auto codecInstance = AVCodecServerManager::GetInstance().GetCodecInstanceByInstanceId(instanceId);
@@ -147,7 +147,7 @@ void BackGroundEventHandler::NotifyFreezeByInstanceId(InstanceId instanceId)
     SuspendHandler(suspendList_, actualPid, codecInstance.value());
 }
 
-void BackGroundEventHandler::NotifyFreezeByPidList(const std::vector<pid_t> &pidList)
+void BackGroundEventHandler::NotifyFreeze(const std::vector<pid_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto &codecInstance : GetDirectInvocationCodecInstanceListByPidList(pidList)) {
@@ -159,7 +159,7 @@ void BackGroundEventHandler::NotifyFreezeByPidList(const std::vector<pid_t> &pid
     }
 }
 
-void BackGroundEventHandler::NotifyActiveByInstanceId(InstanceId instanceId)
+void BackGroundEventHandler::NotifyActive(InstanceId instanceId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     auto codecInstance = AVCodecServerManager::GetInstance().GetCodecInstanceByInstanceId(instanceId);
@@ -173,7 +173,7 @@ void BackGroundEventHandler::NotifyActiveByInstanceId(InstanceId instanceId)
     ResumeHandler(suspendList_, actualPid, codecInstance.value());
 }
 
-void BackGroundEventHandler::NotifyActiveByPidList(const std::vector<pid_t> &pidList)
+void BackGroundEventHandler::NotifyActive(const std::vector<pid_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto &codecInstance : GetDirectInvocationCodecInstanceListByPidList(pidList)) {
@@ -199,7 +199,7 @@ void BackGroundEventHandler::NotifyActiveAll()
         pidSet.insert(pid);
     }
     std::vector<pid_t> pidList(pidSet.begin(), pidSet.end());
-    NotifyActiveByPidList(pidList);
+    NotifyActive(pidList);
     AVCODEC_LOGI("Done");
 }
 

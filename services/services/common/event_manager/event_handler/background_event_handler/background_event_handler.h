@@ -29,10 +29,10 @@ using ObjectList = std::unordered_multimap<pid_t, InstanceId>;
 class BackGroundEventHandler {
 public:
     static BackGroundEventHandler &GetInstance();
-    void NotifyFreezeByInstanceId(InstanceId instanceId);
-    void NotifyFreezeByPidList(const std::vector<pid_t> &pidList);
-    void NotifyActiveByInstanceId(InstanceId instanceId);
-    void NotifyActiveByPidList(const std::vector<pid_t> &pidList);
+    void NotifyFreeze(InstanceId instanceId);
+    void NotifyFreeze(const std::vector<pid_t> &pidList);
+    void NotifyActive(InstanceId instanceId);
+    void NotifyActive(const std::vector<pid_t> &pidList);
     void NotifyActiveAll();
     void ErasePid(pid_t pid);
     void EraseInstance(InstanceId instanceId);

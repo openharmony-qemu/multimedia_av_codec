@@ -305,7 +305,7 @@ int32_t CodecServiceStub::NotifyFreeze()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    BackGroundEventHandler::GetInstance().NotifyFreezeByInstanceId(instanceId_);
+    BackGroundEventHandler::GetInstance().NotifyFreeze(instanceId_);
     return AV_ERR_OK;
 }
 
@@ -313,7 +313,7 @@ int32_t CodecServiceStub::NotifyActive()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    BackGroundEventHandler::GetInstance().NotifyActiveByInstanceId(instanceId_);
+    BackGroundEventHandler::GetInstance().NotifyActive(instanceId_);
     return AV_ERR_OK;
 }
 
