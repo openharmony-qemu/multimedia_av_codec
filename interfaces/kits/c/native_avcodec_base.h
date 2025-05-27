@@ -458,12 +458,12 @@ extern const char *OH_MD_KEY_IDENTIFICATION_HEADER;
 extern const char *OH_MD_KEY_SETUP_HEADER;
 /**
  * @brief Key for video scale type, value type is int32_t, see @OH_ScalingMode.
- * It is recommended to directly call the @OH_NativeIndow_NativeIndowSettcalingModeV2 interface for setting.
+ * It is recommended to directly call the @OH_NativeWindow_NativeWindowSetScalingModeV2 interface for setting.
  * This key is optional and only used for video decoding in Surface mode.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  * @deprecated 14
- * @useinstead OH_NativeIndow_NativeIndowSettcalingModeV2
+ * @useinstead OH_NativeWindow_NativeWindowSetScalingModeV2
  */
 extern const char *OH_MD_KEY_SCALING_MODE;
 /* Key for max input buffer count, value type is int32_t. */
