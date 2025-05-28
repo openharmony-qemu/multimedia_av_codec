@@ -57,6 +57,16 @@ int64_t GetAudioLatencyFixDelay()
     return static_cast<int64_t>(fixDelay);
 }
 
+AudioSink::AudioSink()
+{
+    bool isRenderCallbackMode = system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
+    MEDIA_LOG_I("AudioSink ctor isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
+    isRenderCallbackMode_ = isRenderCallbackMode;
+    syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
+    fixDelay_ = GetAudioLatencyFixDelay();
+    plugin_ = CreatePlugin();
+}
+
 AudioSink::AudioSink(bool isRenderCallbackMode) : isRenderCallbackMode_(isRenderCallbackMode)
 {
     MEDIA_LOG_I("AudioSink ctor isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
