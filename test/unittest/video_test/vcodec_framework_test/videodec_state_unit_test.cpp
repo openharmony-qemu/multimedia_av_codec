@@ -169,7 +169,7 @@ OH_AVErrCode SetOutputSurface(OH_AVCodec *videoDec)
     return OH_VideoDecoder_SetSurface(videoDec, nativeWindow);
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Initialized_Verify_001
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder
@@ -184,7 +184,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Initialized_Verify_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Initialized_Verify_002
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder
@@ -195,7 +195,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Initialized_Verify_002, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Initialized_Verify_003
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder
@@ -205,7 +205,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Initialized_Verify_003, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Initialized_Verify_004
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder
@@ -215,7 +215,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Initialized_Verify_004, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Initialized_Verify_005
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync|E_IsSetCb
@@ -229,7 +229,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Initialized_Verify_005, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Initialized_Verify_006
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync|E_IsSetCb
@@ -242,7 +242,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Initialized_Verify_006, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Initialized_Verify_007
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync|E_IsSetCb
@@ -255,7 +255,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Initialized_Verify_007, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoDecoder_Configure(videoDec, format));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Initialized_Verify_008
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync|E_IsSetCb
@@ -267,7 +267,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Initialized_Verify_008, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Initialized_Verify_009
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync|E_IsSetCb
@@ -279,7 +279,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Initialized_Verify_009, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_001
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync
@@ -293,7 +293,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_002
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync
@@ -309,7 +309,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_002, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Flush(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_003
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync
@@ -322,7 +322,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_003, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_004
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync
@@ -335,7 +335,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_004, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_005
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync
@@ -348,7 +348,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_005, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_006
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync|E_IsSetCb
@@ -363,7 +363,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_006, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_007
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync|E_IsSetCb
@@ -380,7 +380,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_007, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Flush(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_008
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync|E_IsSetCb
@@ -394,7 +394,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_008, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_009
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync|E_IsSetCb
@@ -408,7 +408,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_009, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_010
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsAsync|E_IsSetCb
@@ -422,7 +422,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_010, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_011
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder
@@ -436,7 +436,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_011, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_012
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder
@@ -454,7 +454,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_012, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_013
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder
@@ -467,7 +467,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_013, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_014
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder
@@ -480,7 +480,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_014, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_015
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsASync|E_IsSurfaceMode(|E_IsSetCb)
@@ -495,7 +495,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_015, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_016
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsASync|E_IsSurfaceMode(|E_IsSetCb)
@@ -512,7 +512,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_016, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Flush(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_017
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsASync|E_IsSurfaceMode(|E_IsSetCb)
@@ -526,7 +526,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_017, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_018
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsASync|E_IsSurfaceMode(|E_IsSetCb)
@@ -540,7 +540,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_018, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_019
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsASync|E_IsSurfaceMode(|E_IsSetCb)
@@ -554,7 +554,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_019, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_020
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsSurfaceMode
@@ -569,7 +569,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_020, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_021
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsSurfaceMode
@@ -588,7 +588,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_021, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_022
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsSurfaceMode
@@ -602,7 +602,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_022, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Configured_Verify_023
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecoder|E_IsSurfaceMode
@@ -616,7 +616,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_023, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_001
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -635,7 +635,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_002
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -650,7 +650,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_002, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_003
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -665,7 +665,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_003, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_004
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -680,7 +680,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_004, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_005
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsBufferMode
@@ -701,7 +701,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_005, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_006
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsBufferMode
@@ -716,7 +716,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_006, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_007
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsBufferMode
@@ -731,7 +731,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_007, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_008
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -750,7 +750,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_008, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_009
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -766,7 +766,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_009, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_010
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -782,7 +782,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_010, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_011
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -798,7 +798,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_011, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_012
  * @tc.desc: Decoder state machine verify；
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -814,7 +814,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_012, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_013
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsSurfaceMode
@@ -835,7 +835,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_013, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_014
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsSurfaceMode
@@ -851,7 +851,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_014, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_015
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsSurfaceMode
@@ -867,7 +867,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_015, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Running_Verify_016
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsSurfaceMode
@@ -883,7 +883,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_016, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_001
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -899,7 +899,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_002
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -919,7 +919,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_002, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_003
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -935,7 +935,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_003, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_004
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -951,7 +951,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_004, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_005
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsBufferMode
@@ -967,7 +967,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_005, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_006
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsBufferMode
@@ -989,7 +989,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_006, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_007
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsBufferMode
@@ -1005,7 +1005,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_007, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_008
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1022,7 +1022,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_008, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_009
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1042,7 +1042,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_009, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_010
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1059,7 +1059,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_010, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_011
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1076,7 +1076,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_011, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_012
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1093,7 +1093,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_012, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetOutputSurface(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_013
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsSurfaceMode
@@ -1110,7 +1110,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_013, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_014
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsSurfaceMode
@@ -1132,7 +1132,7 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_014, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoDec));
 }
 
-/**.
+/**
  * @tc.name: VideoDecoder_Flushed_Verify_015
  * @tc.desc: Decoder state machine verify;
  *           flag:E_IsVideoDecode|E_IsSurfaceMode

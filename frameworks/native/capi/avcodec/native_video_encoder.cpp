@@ -859,22 +859,6 @@ OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec)
     return avFormat;
 }
 
-OH_AVErrCode OH_VideoEncoder_QueryInputParameter(struct OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs)
-{
-    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
-
-    struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
-    CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
-
-    int32_t ret = videoEncObj->videoEncoder_->QueryInputParameterWithAttr(*index, timeoutUs);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video encoder query input data failed!");
-
-    return AV_ERR_OK;
-}
-
 OH_AVErrCode OH_VideoEncoder_QueryInputBuffer(struct OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
@@ -905,19 +889,6 @@ OH_AVErrCode OH_VideoEncoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_
                              "Video encoder query output data failed!");
 
     return AV_ERR_OK;
-}
-
-OH_AVFormat *OH_VideoEncoder_GetInputParameter(struct OH_AVCodec *codec, uint32_t index)
-{
-    CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, nullptr, "Codec magic error!");
-
-    struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
-    CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, nullptr, "Video encoder is nullptr!");
-
-    std::shared_ptr<Format> format = videoEncObj->videoEncoder_->GetInputParameter(index);
-
-    return videoEncObj->GetTransData(index, format);
 }
 
 OH_AVBuffer *OH_VideoEncoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t index)

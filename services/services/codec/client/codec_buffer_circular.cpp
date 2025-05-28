@@ -490,11 +490,6 @@ void CodecBufferCircular::SyncOnOutputBufferAvailable(uint32_t index, std::share
     outCond_.notify_all();
 }
 
-int32_t CodecBufferCircular::QueryInputParameterWithAttr(uint32_t &index, int64_t timeoutUs)
-{
-    return QueryInputIndex(index, timeoutUs);
-}
-
 int32_t CodecBufferCircular::QueryInputBuffer(uint32_t &index, int64_t timeoutUs)
 {
     return QueryInputIndex(index, timeoutUs);
@@ -569,34 +564,6 @@ bool CodecBufferCircular::WaitForBuffer(std::unique_lock<std::mutex> &lock, std:
         return func();
     }
     return cond.wait_for(lock, timeout, func); // true: is not timeout
-}
-
-std::shared_ptr<Format> CodecBufferCircular::GetInputParameter(uint32_t index)
-{
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsSyncMode(), nullptr, "Need enable sync mode");
-    std::lock_guard<std::mutex> lock(inMutex_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, nullptr, "Not in running state");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_ERROR), nullptr, "%{public}s",
-                                      AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());
-    BufferCacheIter iter = inCache_.find(index);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter != inCache_.end(), nullptr, "Index is invalid %{publlic}u", index);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter->second.owner == OWNED_BY_USER, nullptr, "Invalid ownership:%{public}s",
-                                      OwnerToString(iter->second.owner).c_str());
-    return GetParameter(iter);
-}
-
-std::shared_ptr<Format> CodecBufferCircular::GetInputAttribute(uint32_t index)
-{
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsSyncMode(), nullptr, "Need enable sync mode");
-    std::lock_guard<std::mutex> lock(inMutex_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, nullptr, "Not in running state");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_ERROR), nullptr, "%{public}s",
-                                      AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());
-    BufferCacheIter iter = inCache_.find(index);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter != inCache_.end(), nullptr, "Index is invalid %{publlic}u", index);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter->second.owner == OWNED_BY_USER, nullptr, "Invalid ownership:%{public}s",
-                                      OwnerToString(iter->second.owner).c_str());
-    return GetAttribute(iter);
 }
 
 std::shared_ptr<AVBuffer> CodecBufferCircular::GetInputBuffer(uint32_t index)

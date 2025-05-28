@@ -53,11 +53,8 @@ public:
     int32_t GetOutputFormat(Format &format) override;
     int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
     int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs) override;
-    int32_t QueryInputParameterWithAttr(uint32_t &index, int64_t timeoutUs) override;
     int32_t QueryInputBuffer(uint32_t &index, int64_t timeoutUs) override;
     int32_t QueryOutputBuffer(uint32_t &index, int64_t timeoutUs) override;
-    std::shared_ptr<Format> GetInputParameter(uint32_t index) override;
-    std::shared_ptr<Format> GetInputAttribute(uint32_t index) override;
     std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index) override;
     std::shared_ptr<AVBuffer> GetOutputBuffer(uint32_t index) override;
     int32_t SetParameter(const Format &format) override;
@@ -91,16 +88,16 @@ private:
     } CallbackMode;
 
     typedef enum : uint8_t {
-        CODEC_BUFFER_MODE = 0,
+        CODEC_DEFAULT_MODE = 0,
         CODEC_SURFACE_INPUT = 1 << 0,
         CODEC_SURFACE_OUTPUT = 1 << 1,
         CODEC_ENABLE_PARAMETER = 1 << 2,
-        CODEC_SURFACE_MODE_WITH_SETPARAMETER = CODEC_SURFACE_INPUT | CODEC_ENABLE_PARAMETER,
+        CODEC_SURFACE_MODE_WITH_PARAMETER = CODEC_SURFACE_INPUT | CODEC_ENABLE_PARAMETER,
     } CodecMode;
 
     bool isConfigured_ = false;
     uint8_t callbackMode_ = INVALID_CALLBACK;
-    uint8_t codecMode_ = CODEC_BUFFER_MODE;
+    uint8_t codecMode_ = CODEC_DEFAULT_MODE;
     AVCodecType type_ = AVCODEC_TYPE_NONE;
     sptr<IStandardCodecService> codecProxy_ = nullptr;
     sptr<CodecListenerStub> listenerStub_ = nullptr;

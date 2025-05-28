@@ -47,11 +47,8 @@ public:
     void FlushCaches();
 
     // Sycn mode interface
-    int32_t QueryInputParameterWithAttr(uint32_t &index, int64_t timeoutUs);
     int32_t QueryInputBuffer(uint32_t &index, int64_t timeoutUs);
     int32_t QueryOutputBuffer(uint32_t &index, int64_t timeoutUs);
-    std::shared_ptr<Format> GetInputParameter(uint32_t index);
-    std::shared_ptr<Format> GetInputAttribute(uint32_t index);
     std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index);
     std::shared_ptr<AVBuffer> GetOutputBuffer(uint32_t index);
 
