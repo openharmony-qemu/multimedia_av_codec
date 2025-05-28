@@ -371,19 +371,19 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
         int kTestFrameCount = 2;
         for (int i = 0; i < kTestFrameCount; i++) {
         {
-            std::unique_lock<mutex> lock(signal_->inMutex_);
-            bool hasData = signal->inCond_.wait_for(lock, std::chrono::seconds(5),
-                [&]() { return !signal_->inIdexQueue.empty(); });
-            ASSERT_TRUE(hasData) << "Timeout waiting for input buffer"; 
+            std::unique_lock<std::mutex> lock(signal_->inMutex_);
+            bool hasData = signal_->inCond_.wait_for(lock, std::chrono::seconds(5),
+                [&]() { return !signal_->inIdxQueue_.empty(); });
+            ASSERT_TRUE(hasData);
 
             uint32_t bufferIndex = signal_->inIdxQueue_.front();
             signal_->inIdxQueue_.pop();
 
-            std::cout << "Processing buffer slot: " << bufferIndex << std::endl            
+            std::cout << "Processing buffer slot: " << bufferIndex << std::endl;
             ret = vdec_->QueueInputBuffer(bufferIndex);
             if (ret != AVCS_ERR_OK) {
                 signal_->inIdxQueue_.push(bufferIndex);
-                ASSERT_EQ(AVCS_ERR_OK, ret) << "QueueIndexBuffer failed with code: " << ret;
+                ASSERT_EQ(AVCS_ERR_OK, ret);
             }
         }
         }
