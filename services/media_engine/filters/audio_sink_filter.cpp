@@ -58,7 +58,7 @@ AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
     MEDIA_LOG_I("AudioSinkFilter ctor called, isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
     isRenderCallbackMode_ = isRenderCallbackMode;
     filterType_ = filterType;
-    audioSink_ = std::make_shared<AudioSink>();
+    audioSink_ = std::make_shared<AudioSink>(isRenderCallbackMode);
 }
 
 AudioSinkFilter::~AudioSinkFilter()
