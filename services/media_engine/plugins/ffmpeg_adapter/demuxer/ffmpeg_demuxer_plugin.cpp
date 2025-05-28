@@ -1517,7 +1517,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     FALSE_RETURN_V_MSG_E(g_seekModeToFFmpegSeekFlags.count(mode) != 0, Status::ERROR_INVALID_PARAMETER,
         "Seek mode " PUBLIC_LOG_D32 " is not unsupported", static_cast<uint32_t>(mode));
     if (ioContext_.invokerType != SEEK) {
-        std::lock_guard<std::mutex> seekLock(ioContext_.invorkTypeMutex);
+        std::lock_guard<std::mutex> SeekLock(ioContext_.invorkTypeMutex);
         ioContext_.invokerType = SEEK;
     }
     if (readThread_ != nullptr && threadState_ == READING) {
@@ -1602,9 +1602,8 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
         "AVBuffer or memory is nullptr");
-    FALSE_RETURN_V_MSG_E(versionMap_.find(1) == versionMap_.end(), Status::ERROR_INVALID_OPERATION, 
+    FALSE_RETURN_V_MSG_E(versionMap_.find(1) == versionMap_.end(), Status::ERROR_INVALID_OPERATION,
         "new version has been used");
-
     versionMap_[0] = 1;
     Status ret;
     if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
@@ -1651,7 +1650,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E(versionMap_.find(1) == versionMap_.end(), Status::ERROR_INVALID_OPERATION, 
+    FALSE_RETURN_V_MSG_E(versionMap_.find(1) == versionMap_.end(), Status::ERROR_INVALID_OPERATION,
         "new version has been used");
     versionMap_[0] = 1;
     Status ret;

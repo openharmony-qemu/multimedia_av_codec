@@ -80,7 +80,9 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
                 return ret;
             case Status::ERROR_AGAIN:
                 ret = HandleReadAgain(ioContext, dataSize, tryCount, needBlockWait);
-                if (ret != AV_READ_PACKET_READ_AGAIN) return ret;
+                if (ret != AV_READ_PACKET_READ_AGAIN) {
+                    return ret;
+                }
                 break;
             case Status::END_OF_STREAM:
                 ret = HandleReadEOS(ioContext);
@@ -89,18 +91,22 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
                 ret = HandleReadError(static_cast<int>(result));
                 return ret;
         }
-        if (needBlockWait) {
-            readCbCv_.wait(readLock);
-            needBlockWait = false;
-            tryCount = 0;
-        } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
-        }
+        HandleReadWaitOrSleep(needBlockWait, tryCount, readLock);
     } while (true);
-
     int dataSize = static_cast<int>(buffer->GetMemory()->GetSize());
     UpdateInitDownloadData(ioContext, dataSize);
     return ret;
+}
+
+void FFmpegDemuxerPlugin::HandleReadWaitOrSleep(bool& needBlockWait, int& tryCount, std::unique_lock<std::mutex>& readLock)
+{
+    if (needBlockWait) {
+        readCbCv_.wait(readLock); // Wait to be notified
+        needBlockWait = false;
+        tryCount = 0;
+    } else {
+        std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
+    }
 }
 
 int FFmpegDemuxerPlugin::HandleReadOK(IOContext* ioContext, int dataSize)
@@ -133,7 +139,7 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize,
     } else {
         MEDIA_LOG_I("Read again, retry count: " PUBLIC_LOG_D32, tryCount);
     }
-    return AV_READ_PACKET_READ_AGAIN;
+    return AV_READ_PACKET_READ_AGAIN; // 继续循环
 }
 
 int FFmpegDemuxerPlugin::HandleReadEOS(IOContext* ioContext)
@@ -171,7 +177,6 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
     FALSE_RETURN_V_MSG_E(versionMap_.find(0) == versionMap_.end(), Status::ERROR_INVALID_OPERATION,
         "old version has been used");
-
     versionMap_[1] = 1;
     isPauseReadPacket_ = true;
     if (ioContext_.invokerType != READ) {
@@ -182,7 +187,6 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     if (!readThread_) {
         readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
     }
-    MEDIA_LOG_I("trackid = " PUBLIC_LOG_D32 , trackId);
     ret = WaitForLoop(trackId, timeout);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Asyn read ffmpeg thread abnoraml end");
     
@@ -216,10 +220,10 @@ Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t t
     std::unique_lock<std::mutex> readLock(readSampleMutex_);
     if (!cacheQueue_.HasCache(trackId)) {
         if (threadState_ == READING) {
-            readCbCv_.notify_one();
+            readCbCv_.notify_one(); // 激活回调阻塞
         }
         if (threadState_ == WAITING) {
-            readLoopCv_.notify_one();
+            readLoopCv_.notify_one(); // 唤醒读取线程
         }
         if (!readCacheCv_.wait_for(readLock, std::chrono::milliseconds(timeout),
             [this, trackId] { return cacheQueue_.HasCache(trackId); })) {
@@ -266,9 +270,9 @@ bool FFmpegDemuxerPlugin::NeedWaitForRead()
 void FFmpegDemuxerPlugin::HandleReadWait(std::unique_lock<std::mutex>& readLock)
 {
     threadState_ = WAITING;
-    seekWaitCv_.notify_one();
+    seekWaitCv_.notify_one(); // 唤醒 SeekTo
     readLoopCv_.wait(readLock, [&]() { return (ioContext_.invokerType == DESTORY) ||
-                                              (!cacheQueue_.HasCache(trackId_) && isPauseReadPacket_); 
+                                              (!cacheQueue_.HasCache(trackId_) && isPauseReadPacket_);
     });
     threadState_ = READING;
 }
