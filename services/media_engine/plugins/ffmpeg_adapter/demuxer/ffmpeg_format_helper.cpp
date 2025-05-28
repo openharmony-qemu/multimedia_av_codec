@@ -109,6 +109,15 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
 #endif
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
     {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
+#ifdef SUPPORT_DEMUXER_LRC
+    {AV_CODEC_ID_TEXT, MimeType::TEXT_LRC},
+#endif
+#ifdef SUPPORT_DEMUXER_SAMI
+    {AV_CODEC_ID_SAMI, MimeType::TEXT_SAMI},
+#endif
+#ifdef SUPPORT_DEMUXER_ASS
+    {AV_CODEC_ID_ASS, MimeType::TEXT_ASS},
+#endif
     {AV_CODEC_ID_FFMETADATA, MimeType::TIMED_METADATA}
 };
 
@@ -131,6 +140,15 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
     {"webvtt", FileType::VTT},
+#ifdef SUPPORT_DEMUXER_LRC
+    {"lrc", FileType::LRC},
+#endif
+#ifdef SUPPORT_DEMUXER_SAMI
+    {"sami", FileType::SAMI},
+#endif
+#ifdef SUPPORT_DEMUXER_ASS 
+    {"ass", FileType::ASS},
+#endif
 };
 
 static std::map<std::string, TagType> g_formatToString = {

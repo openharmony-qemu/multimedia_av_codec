@@ -103,9 +103,9 @@ static const std::map<AVCodecID, std::string> g_bitstreamFilterMap = {
     { AV_CODEC_ID_H264, "h264_mp4toannexb" },
 };
 
-static const std::map<AVCodecID, StreamType> g_streamParserMap = {
-    { AV_CODEC_ID_HEVC, StreamType::HEVC },
-    { AV_CODEC_ID_VVC,  StreamType::VVC },
+static const std::map<AVCodecID, VideoStreamType> g_streamParserMap = {
+    { AV_CODEC_ID_HEVC, VideoStreamType::HEVC },
+    { AV_CODEC_ID_VVC,  VideoStreamType::VVC },
 };
 
 static const std::vector<AVMediaType> g_streamMediaTypeVec = {
@@ -1781,7 +1781,7 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
         static_cast<int64_t>(relativePresentationTimeUs), index);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Get pts failed");
 
-    GetPresentationTimeUsFromFfmpegMOV(INDEX_TO_RELATIVEPTS, trackIndex,
+    ret = GetPresentationTimeUsFromFfmpegMOV(INDEX_TO_RELATIVEPTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Get pts failed");
 

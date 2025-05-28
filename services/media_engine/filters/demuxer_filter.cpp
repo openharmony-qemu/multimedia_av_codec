@@ -29,6 +29,8 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerFilter" };
+const char* ENHANCE_FLAG = "com.openharmony.deferredVideoEnhanceFlag";
+const char* VIDEO_ID = "com.openharmony.videoId";
 }
 
 namespace OHOS {
@@ -655,6 +657,17 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     if (fileType == FileType::AVI) {
         MEDIA_LOG_I("File type is AVI " PUBLIC_LOG_D32, static_cast<int32_t>(FileType::AVI));
         meta->SetData(Tag::MEDIA_FILE_TYPE, FileType::AVI);
+    }
+    std::shared_ptr<Meta> userInfo = demuxer_->GetUserMeta();
+    std::string enhanceflag;
+    if (userInfo != nullptr && userInfo->GetData(ENHANCE_FLAG, enhanceflag)) {
+        MEDIA_LOG_I("Link enhanceflag: %{public}s", enhanceflag.c_str());
+        meta->SetData(ENHANCE_FLAG, enhanceflag);
+    }
+    std::string videoId;
+    if (userInfo != nullptr && userInfo->GetData(VIDEO_ID, videoId)) {
+        MEDIA_LOG_I("Link videoId: %{public}s", videoId.c_str());
+        meta->SetData(VIDEO_ID, videoId);
     }
     std::shared_ptr<FilterLinkCallback> filterLinkCallback
         = std::make_shared<DemuxerFilterLinkCallback>(shared_from_this());

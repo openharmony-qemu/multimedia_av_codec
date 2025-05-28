@@ -872,7 +872,7 @@ std::vector<uint32_t> DashMpdDownloader::GetBitRatesByHdr(bool isHdr) const
     return bitRates;
 }
 
-void DashMpdDownloader::SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg) const
+int64_t DashMpdDownloader::SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg) const
 {
     seg = nullptr;
     std::vector<std::shared_ptr<DashSegment>> mediaSegments;
@@ -886,8 +886,8 @@ void DashMpdDownloader::SeekToTs(int streamId, int64_t seekTime, std::shared_ptr
         }
     }
 
+    int64_t totalDuration = 0;
     if (!mediaSegments.empty()) {
-        int64_t totalDuration = 0;
         for (const auto &mediaSegment : mediaSegments) {
             if (mediaSegment == nullptr) {
                 continue;
@@ -899,10 +899,12 @@ void DashMpdDownloader::SeekToTs(int streamId, int64_t seekTime, std::shared_ptr
                 MEDIA_LOG_I("Dash SeekToTs segment totalDuration:" PUBLIC_LOG_D64 ", segNum:"
                     PUBLIC_LOG_D64 ", duration:" PUBLIC_LOG_U32,
                     totalDuration, mediaSegment->numberSeq_, mediaSegment->duration_);
-                return;
+                totalDuration -= static_cast<int64_t>(mediaSegment->duration_);
+                break;
             }
         }
     }
+    return totalDuration;
 }
 
 /**
