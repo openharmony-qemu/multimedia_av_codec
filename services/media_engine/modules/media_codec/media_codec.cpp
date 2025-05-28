@@ -771,10 +771,7 @@ void MediaCodec::HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingN
     {
         MediaAVCodec::AVCodecTrace traceAcquireBuffer("MediaCodec::HandleInputBufferInner-AcquireBuffer");
         ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
-        if (ret != Status::OK || !filledInputBuffer) {
-            MEDIA_LOG_E("HandleInputBufferInner AcquireBuffer fail");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(ret == Status::OK && filledInputBuffer, "HandleInputBufferInner AcquireBuffer fail");
     }
     if (state_ != CodecState::RUNNING) {
         MEDIA_LOG_D("HandleInputBufferInner not running, ReleaseBuffer name:MediaCodecInputBufferQueue");

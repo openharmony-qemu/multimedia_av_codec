@@ -136,7 +136,8 @@ sptr<Media::AVBufferQueueProducer> AVCodecAudioCodecInnerImpl::GetOutputBufferQu
     return codecService_->GetOutputBufferQueueProducer();
 }
 
-void AVCodecAudioCodecInnerImpl::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus)
+void AVCodecAudioCodecInnerImpl::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed,
+    uint32_t &bufferStatus)
 {
     AVCODEC_LOGD("AVCodecAudioCodecInnerImpl ProcessInputBufferInner");
     CHECK_AND_RETURN_LOG(codecService_ != nullptr, "ProcessInputBufferInner service died");

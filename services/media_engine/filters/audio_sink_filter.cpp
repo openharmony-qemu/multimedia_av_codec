@@ -54,9 +54,9 @@ void AudioSinkFilter::AVBufferAvailableListener::OnBufferAvailable()
 AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
     : Filter(name, FilterType::FILTERTYPE_ASINK, IS_FILTER_ASYNC)
 {
-    bool isAudioSinkRenderCallbackMode = system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
-    MEDIA_LOG_I("AudioSinkFilter ctor called, isRenderCallbackMode_:" PUBLIC_LOG_D32, isAudioSinkRenderCallbackMode);
-    isRenderCallbackMode_ = isAudioSinkRenderCallbackMode;
+    bool isRenderCallbackMode = system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
+    MEDIA_LOG_I("AudioSinkFilter ctor called, isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
+    isRenderCallbackMode_ = isRenderCallbackMode;
     filterType_ = filterType;
     audioSink_ = std::make_shared<AudioSink>();
 }
