@@ -570,7 +570,7 @@ Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 
     std::unique_lock<std::mutex> lock(bufferStatusMutex_, std::try_to_lock);
     if (lock.owns_lock()) {
-        if (bufferStatus_ != BUFFER_STATUS_INIT_PROCESS_ALWAYS) { // no state change, use return value to update
+        if (bufferStatus_ == lastBufferStatus) { // no state change, use return value to update
             MEDIA_LOG_D("bufferStatus:" PUBLIC_LOG_U32X ", lastBufferStatus:" PUBLIC_LOG_U32X
                 ", curBufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
                 bufferStatus, lastBufferStatus, bufferStatus_, isOutPort);
