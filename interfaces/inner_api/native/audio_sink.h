@@ -257,7 +257,7 @@ private:
     bool isPerfRecEnabled_ { false };
     bool isCalledBySystemApp_ { false };
     bool isLoop_ { false };
-    bool isCallbackMode_ {true};
+    bool isRenderCallbackMode_ {true};
     std::shared_ptr<AudioSinkDataCallback> audioSinkDataCallback_ {nullptr};
     std::mutex availBufferMutex_;
     std::atomic<size_t> availDataSize_ {0};
