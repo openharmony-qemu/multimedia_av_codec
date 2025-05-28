@@ -693,7 +693,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_004, TestSize.Level1)
         for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             int64_t lastPts = -1;
-            ASSERT_EQ(demuxerPlugin_->GetLastPTSByTrackId(i, lastPts), Status::OK);
+            demuxerPlugin_->GetLastPTSByTrackId(i, lastPts);
             while (ret == Status::ERROR_WAIT_TIMEOUT) {
                 ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             }

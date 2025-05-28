@@ -272,7 +272,7 @@ void FFmpegDemuxerPlugin::HandleReadWait(std::unique_lock<std::mutex>& readLock)
 {
     threadState_ = WAITING;
     seekWaitCv_.notify_one();
-    readLoopCv_.wait(readLock, [&]() {
+    readLoopCv_.wait(readLock, [this]() {
         return (ioContext_.invokerType == DESTORY) || (!cacheQueue_.HasCache(trackId_) && isPauseReadPacket_);
     });
     threadState_ = READING;
