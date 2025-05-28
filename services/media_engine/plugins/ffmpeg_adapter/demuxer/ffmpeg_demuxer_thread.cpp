@@ -98,7 +98,8 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     return ret;
 }
 
-void FFmpegDemuxerPlugin::HandleReadWaitOrSleep(bool& needBlockWait, int& tryCount, std::unique_lock<std::mutex>& readLock)
+void FFmpegDemuxerPlugin::HandleReadWaitOrSleep(bool& needBlockWait, int& tryCount,
+                                                std::unique_lock<std::mutex>& readLock)
 {
     if (needBlockWait) {
         readCbCv_.wait(readLock); // Wait to be notified
@@ -227,7 +228,7 @@ Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t t
         }
         if (!readCacheCv_.wait_for(readLock, std::chrono::milliseconds(timeout),
             [this, trackId] { return cacheQueue_.HasCache(trackId); })) {
-            FALSE_RETURN_V_MSG_E(readLoopStatus_ == Status::OK, readLoopStatus_, "Asyn read ffmpeg thread abnoraml end");
+            FALSE_RETURN_V_MSG_E(readLoopStatus_ == Status::OK, readLoopStatus_, "ffmpegReadLoop thread abnoraml end");
             return Status::ERROR_WAIT_TIMEOUT;
         }
     }
@@ -271,8 +272,8 @@ void FFmpegDemuxerPlugin::HandleReadWait(std::unique_lock<std::mutex>& readLock)
 {
     threadState_ = WAITING;
     seekWaitCv_.notify_one(); // 唤醒 SeekTo
-    readLoopCv_.wait(readLock, [&]() { return (ioContext_.invokerType == DESTORY) ||
-                                              (!cacheQueue_.HasCache(trackId_) && isPauseReadPacket_);
+    readLoopCv_.wait(readLock, [&]() {
+        return (ioContext_.invokerType == DESTORY) || (!cacheQueue_.HasCache(trackId_) && isPauseReadPacket_);
     });
     threadState_ = READING;
 }
