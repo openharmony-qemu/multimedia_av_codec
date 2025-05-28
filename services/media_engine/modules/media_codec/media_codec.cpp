@@ -302,24 +302,21 @@ void MediaCodec::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlush
         MEDIA_LOG_I("ProcessInputBufferInner ignore");
         return;
     }
- 
- 
+
     Status ret = Status::OK;
- 
     // The last process failed to RequestBuffer from outputBufferQueueProducer, perform HandleOutputBufferInner firstly.
     if (!isOutAvail || eosStatus != 0) {
         CHECK_AND_RETURN_LOGD(HandleOutputBufferInner(ret, bufferStatus, filledBufferSize, eosStatus),
             "HandleOutputBufferInner S1, ret:" PUBLIC_LOG_D32, static_cast<int32_t>(ret));
         inputBufferEosStatus_.store(0);
     }
- 
+
     bool isProcessingNeeded = false;
     eosStatus = 0;
     ret = Status::OK;
     HandleInputBufferInner(eosStatus, isProcessingNeeded, ret);
     filledBufferSize = inputBufferQueueConsumer_->GetFilledBufferSize();
     if (!isProcessingNeeded) {
-        filledBufferSize = inputBufferQueueConsumer_->GetFilledBufferSize();
         if (bufferStatus != static_cast<uint32_t>(InOutPortBufferStatus::INIT_IGNORE_RET)) {
             filledBufferSize > 0 ? (bufferStatus |= static_cast<uint32_t>(InOutPortBufferStatus::INPORT_AVAIL)) :
                 (bufferStatus &= ~static_cast<uint32_t>(InOutPortBufferStatus::INPORT_AVAIL));
@@ -332,13 +329,13 @@ void MediaCodec::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlush
             static_cast<int32_t>(ret), bufferStatus);
         return;
     }
- 
+
     inputBufferEosStatus_.store(eosStatus);
     CHECK_AND_RETURN_LOGD(HandleOutputBufferInner(ret, bufferStatus, filledBufferSize, eosStatus),
         "HandleOutputBufferInner S2, ret:" PUBLIC_LOG_D32, static_cast<int32_t>(ret));
     inputBufferEosStatus_.store(0);
 }
- 
+
 bool MediaCodec::HandleOutputBufferInner(Status &ret, uint32_t &bufferStatus, uint32_t filledBufferSize,
     uint32_t eosStatus)
 {
@@ -348,9 +345,9 @@ bool MediaCodec::HandleOutputBufferInner(Status &ret, uint32_t &bufferStatus, ui
         isBufferAvailable = false;
         ret = HandleOutputBufferOnce(isBufferAvailable, eosStatus, false);
     } while (ret == Status::ERROR_AGAIN);
- 
+
     isOutputBufferAvailable_.store(isBufferAvailable);
- 
+
     bool isGoingOn = isBufferAvailable;
     bufferStatus = (filledBufferSize > 0) ? static_cast<uint32_t>(InOutPortBufferStatus::INPORT_AVAIL) : 0;
     if (!isBufferAvailable) {
@@ -366,14 +363,14 @@ bool MediaCodec::HandleOutputBufferInner(Status &ret, uint32_t &bufferStatus, ui
             MEDIA_LOG_I("HandleOutputBufferInner OUT_EOS_DONE");
         }
     }
- 
+
     MEDIA_LOG_D("HandleOutputBufferInner ret:" PUBLIC_LOG_D32 ", isGoingOn:" PUBLIC_LOG_D32 ", isBufferAvailable:"
         PUBLIC_LOG_D32 ", eosStatus:" PUBLIC_LOG_U32 ", bufferStatus:" PUBLIC_LOG_U32,
         static_cast<int32_t>(ret), isGoingOn, isBufferAvailable, eosStatus, bufferStatus);
- 
+
     return isGoingOn;
 }
- 
+
 void MediaCodec::ResetBufferStatusInfo()
 {
     if (cachedOutputBuffer_ && outputBufferQueueProducer_) {

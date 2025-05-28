@@ -217,6 +217,7 @@ Status AudioDecoderFilter::DoStart()
 {
     MEDIA_LOG_I("AudioDecoderFilter::Start.");
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
+
     std::unique_lock<std::mutex> lock(bufferStatusMutex_);
     bufferStatus_ = BUFFER_STATUS_INIT_PROCESS_ALWAYS;
     auto ret = decoder_->Start();
@@ -250,6 +251,7 @@ Status AudioDecoderFilter::DoPauseAudioAlign()
 Status AudioDecoderFilter::DoResume()
 {
     MEDIA_LOG_I("AudioDecoderFilter::Resume.");
+
     std::unique_lock<std::mutex> lock(bufferStatusMutex_);
     bufferStatus_ = BUFFER_STATUS_INIT_PROCESS_ALWAYS;
     refreshTotalPauseTime_ = true;
@@ -276,6 +278,7 @@ Status AudioDecoderFilter::DoStop()
 Status AudioDecoderFilter::DoFlush()
 {
     MEDIA_LOG_I("AudioDecoderFilter::Flush.");
+
     std::unique_lock<std::mutex> lock(bufferStatusMutex_);
     bufferStatus_ = BUFFER_STATUS_INIT_PROCESS_ALWAYS;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
@@ -524,10 +527,10 @@ bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
 {
     MEDIA_LOG_D("AudioDecoderFilter::IsNeedProcessInput bufferStatus:" PUBLIC_LOG_U32 ", isOutPort:" PUBLIC_LOG_D32,
         bufferStatus_, isOutPort);
-    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_INIT), !isOutPort, "initial stage:" PUBLIC_LOG_D32, isOutPort);
-    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_IN_OUT), true, "IN and OUT avail, need process");
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_IN), isOutPort, "IN avail, need process outport");
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT), !isOutPort, "OUT avail, need process inport");
+    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_IN_OUT), true, "IN and OUT avail, need process");
+    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_INIT), !isOutPort, "initial stage:" PUBLIC_LOG_D32, isOutPort);
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_NONE),
         (isOutPort ? bufferStatus_ : (bufferStatus_ = static_cast<uint32_t>(InOutPortBufferStatus::INPORT_AVAIL)),
         isOutPort), "neither IN nor OUT avail, need process outport");
@@ -539,12 +542,12 @@ bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
     FALSE_RETURN_V_MSG_I((bufferStatus_ != BUFFER_STATUS_OUT_EOS_START_DONE), false,
         "EOS START and DONE, should not happen, no need process");
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_INIT_PROCESS_ALWAYS), true, "state change, need process");
- 
+
     MEDIA_LOG_I("AudioDecoderFilter::IsNeedProcessInput, should not happen, need process, bufferStatus:" PUBLIC_LOG_U32
         ", isOutPort:" PUBLIC_LOG_D32, bufferStatus_, isOutPort);
     return true;
 }
- 
+
 Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
     bool isOutPort = recvArg == static_cast<int>(BufferQueueBufferAVailable::BUFFER_AVAILABLE_OUT_PORT);
@@ -559,12 +562,12 @@ Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
             lastBufferStatus = bufferStatus_;
         }
     }
- 
+
     uint32_t bufferStatus = BUFFER_STATUS_INIT_IGNORE_RET;
     decoder_->ProcessInputBufferInner(isOutPort, dropFrame, bufferStatus);
     FALSE_RETURN_V_MSG_W((bufferStatus != BUFFER_STATUS_INIT_IGNORE_RET), Status::OK,
         "bufferStatus not updated, should not happen");
- 
+
     std::unique_lock<std::mutex> lock(bufferStatusMutex_, std::try_to_lock);
     if (lock.owns_lock()) {
         if (bufferStatus_ != BUFFER_STATUS_INIT_PROCESS_ALWAYS) { // no state change, use return value to update
