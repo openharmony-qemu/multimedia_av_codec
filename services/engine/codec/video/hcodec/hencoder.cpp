@@ -541,7 +541,7 @@ std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
 std::optional<uint32_t> HEncoder::GetSQRFactorFromUser(const Format &format)
 {
     int32_t sqrFactor;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor) && sqrFactor > 0) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor) && sqrFactor >= 0) {
         LOGI("user set SQR factor is  %d", sqrFactor);
         return static_cast<uint32_t>(sqrFactor);
     }
