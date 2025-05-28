@@ -102,7 +102,6 @@ private:
     {
         num += expectedLen;
         if (num > failOffset_ && failCount_ < maxFailCount_) {
-            printf("StreamDemuxerPullDataFailMock::CallbackReadAt failCount_ = %zu\n", failCount_);
             failCount_++;
             return Status::ERROR_AGAIN;
         }

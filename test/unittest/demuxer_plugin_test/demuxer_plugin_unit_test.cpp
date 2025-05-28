@@ -241,7 +241,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SelectTrack_0001, TestSize.Level1)
     ASSERT_NE(demuxerPlugin_->SelectTrack(2), Status::OK);
 }
 
-//无初始化
+/**
+ * @tc.name: Demuxer_ErrorSelectTrack_0001
+ * @tc.desc: Test SelectTrack without initialization
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSelectTrack_0001, TestSize.Level1)
 {
     string pluginName = "avdemux_flv";
@@ -252,7 +256,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSelectTrack_0001, TestSize.Level1)
     ASSERT_NE(demuxerPlugin_->SelectTrack(2), Status::OK);
 }
 
-//重复初始化
+/**
+ * @tc.name: Demuxer_ErrorSelectTrack_0002
+ * @tc.desc: Test SelectTrack after repeated initialization
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSelectTrack_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -264,7 +272,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSelectTrack_0002, TestSize.Level1)
     ASSERT_NE(demuxerPlugin_->SelectTrack(2), Status::OK);
 }
 
-//非法参数选轨
+/**
+ * @tc.name: Demuxer_ErrorSelectTrack_0003
+ * @tc.desc: Test SelectTrack with invalid parameter
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSelectTrack_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -273,8 +285,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSelectTrack_0003, TestSize.Level1)
     ASSERT_NE(demuxerPlugin_->SelectTrack(-1), Status::OK);
 }
 
-
-
+/**
+ * @tc.name: Demuxer_UnSelectTrack_0001
+ * @tc.desc: Test UnselectTrack
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_UnSelectTrack_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -290,7 +305,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_UnSelectTrack_0001, TestSize.Level1)
     ASSERT_EQ(demuxerPlugin_->UnselectTrack(-1), Status::OK);
 }
 
-
+/**
+ * @tc.name: Demuxer_ReadSample_0001
+ * @tc.desc: Test ReadSample with valid buffer
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -303,7 +322,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0001, TestSize.Level1)
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
 }
 
-//buffer 为null
+/**
+ * @tc.name: Demuxer_ErrorReadSample_0001
+ * @tc.desc: Test ReadSample with null buffer
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorReadSample_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -317,7 +340,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorReadSample_0001, TestSize.Level1)
     ASSERT_NE(demuxerPlugin_->ReadSample(0, mediaAVBuffer, 100), Status::OK);
 }
 
-//reset后再次选轨readsample
+/**
+ * @tc.name: Demuxer_ErrorReadSample_0002
+ * @tc.desc: Test ReadSample after reset and re-select
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorReadSample_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -336,8 +363,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorReadSample_0002, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_ReadSample_0001
- * @tc.desc: Test ReadSample
+ * @tc.name: Demuxer_ReadSample_0002
+ * @tc.desc: Test ReadSample with GetNextSampleSize
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0002, TestSize.Level1)
@@ -357,7 +384,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0002, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_ReadSample_0003
- * @tc.desc: copy current sample to buffer(flv)
+ * @tc.desc: Copy current sample to buffer (flv)
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0003, TestSize.Level1)
@@ -392,7 +419,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0003, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_ReadSample_0004
- * @tc.desc: copy current sample to buffer(flv)
+ * @tc.desc: Copy current sample to buffer (flv) without timeout
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0004, TestSize.Level1)
@@ -425,6 +452,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0004, TestSize.Level1)
     ASSERT_EQ(keyFrames_[1], 113);
 }
 
+/**
+ * @tc.name: Demuxer_ReadSample_0005
+ * @tc.desc: Test ReadSample with and without timeout
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0005, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -437,6 +469,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0005, TestSize.Level1)
     ASSERT_NE(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer), Status::OK);
 }
 
+/**
+ * @tc.name: Demuxer_ReadSample_0006
+ * @tc.desc: Test ReadSample with and without timeout (reverse order)
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0006, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -451,9 +488,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0006, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_SeekToTime_0001
- * @tc.desc: seek to the specified time(h265 flv local)
+ * @tc.desc: Seek to the specified time (h264 flv local)
  * @tc.type: FUNC
- * DemuxerPluginUnitTest.Demuxer_SeekToTime_0001
  */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToTime_0001, TestSize.Level1)
 {
@@ -490,7 +526,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToTime_0001, TestSize.Level1)
     ASSERT_NE(demuxerPlugin_->SeekTo(0, -1000, SeekMode::SEEK_NEXT_SYNC, seekTime_), Status::OK);
 }
 
-//seekto  超大正数或负数
+/**
+ * @tc.name: Demuxer_ErrorSeekToTime_0001
+ * @tc.desc: Seek to time with large positive or negative values
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSeekToTime_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -508,7 +548,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSeekToTime_0001, TestSize.Level1)
     ASSERT_NE(demuxerPlugin_->SeekTo(0, -1000, SeekMode::SEEK_NEXT_SYNC, seekTime_), Status::OK);
 }
 
-// DemuxerPluginUnitTest.Demuxer_WeakNetwork_001
+/**
+ * @tc.name: Demuxer_WeakNetwork_001
+ * @tc.desc: Test demuxer under normal network conditions
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -524,20 +568,15 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_001, TestSize.Level1)
     while (!isEOS(eosFlag_)) {
         for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
-            // printf("ret = %d\n", static_cast<int32_t>(ret));
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             if (ret == Status::OK) {
                 readCount++;
-                // printf("readCount = %d\n", readCount);
             }
             flag_ = buffer.mediaAVBuffer->flag_;
             if (i == 0) {
                 ASSERT_TRUE(CheckKeyFrameIndex(
                     keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
             }
-            // printf("readCount = %d", readCount);
-            // printf("flag_ = %d, pts_ = %" PRId64 ", dts_ = %" PRId64 ", duration_ = %" PRId64 "\n",
-            //     flag_, buffer.mediaAVBuffer->pts_, buffer.mediaAVBuffer->dts_, buffer.mediaAVBuffer->duration_);
             CountFrames(i);
         }
     }
@@ -549,7 +588,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_001, TestSize.Level1)
     ASSERT_EQ(keyFrames_[1], 113);
 }
 
-// DemuxerPluginUnitTest.Demuxer_WeakNetwork_002
+/**
+ * @tc.name: Demuxer_WeakNetwork_002
+ * @tc.desc: Test demuxer with weak network (init fail once)
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -565,22 +608,16 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_002, TestSize.Level1)
     int32_t readCount = 0;
     while (!isEOS(eosFlag_)) {
         for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
-            // auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer);
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
-            // printf("ret = %d\n", static_cast<int32_t>(ret));
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             if (ret == Status::OK) {
                 readCount++;
-                // printf("readCount = %d\n", readCount);
             }
             flag_ = buffer.mediaAVBuffer->flag_;
             if (i == 0) {
                 ASSERT_TRUE(CheckKeyFrameIndex(
                     keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
             }
-            // printf("readCount = %d", readCount);
-            // printf("flag_ = %d, pts_ = %" PRId64 ", dts_ = %" PRId64 ", duration_ = %" PRId64 "\n",
-            //     flag_, buffer.mediaAVBuffer->pts_, buffer.mediaAVBuffer->dts_, buffer.mediaAVBuffer->duration_);
             CountFrames(i);
         }
     }
@@ -592,7 +629,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_002, TestSize.Level1)
     ASSERT_EQ(keyFrames_[1], 113);
 }
 
-// DemuxerPluginUnitTest.Demuxer_WeakNetwork_003
+/**
+ * @tc.name: Demuxer_WeakNetwork_003
+ * @tc.desc: Test demuxer with weak network (read frame fail 3 times)
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -608,23 +649,18 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_003, TestSize.Level1)
     while (!isEOS(eosFlag_)) {
         for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
-            // printf("ret = %d\n", static_cast<int32_t>(ret));
             while (ret == Status::ERROR_WAIT_TIMEOUT) {
                 ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             }
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             if (ret == Status::OK) {
                 readCount++;
-                // printf("readCount = %d\n", readCount);
             }
             flag_ = buffer.mediaAVBuffer->flag_;
             if (i == 0) {
                 ASSERT_TRUE(CheckKeyFrameIndex(
                     keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
             }
-            // printf("readCount = %d", readCount);
-            // printf("flag_ = %d, pts_ = %" PRId64 ", dts_ = %" PRId64 ", duration_ = %" PRId64 "\n",
-            //     flag_, buffer.mediaAVBuffer->pts_, buffer.mediaAVBuffer->dts_, buffer.mediaAVBuffer->duration_);
             CountFrames(i);
         }
     }
@@ -636,7 +672,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_003, TestSize.Level1)
     ASSERT_EQ(keyFrames_[1], 113);
 }
 
-// DemuxerPluginUnitTest.Demuxer_WeakNetwork_004
+/**
+ * @tc.name: Demuxer_WeakNetwork_004
+ * @tc.desc: Test demuxer with weak network (read frame fail 3 times, check last pts)
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_004, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -653,26 +693,19 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_004, TestSize.Level1)
         for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             int64_t lastPts = -1;
-            if (demuxerPlugin_->GetLastPTSByTrackId(i, lastPts) == Status::OK) {
-                // printf("lastPts = %" PRId64 "\n", lastPts);
-            }
-            // printf("ret = %d\n", static_cast<int32_t>(ret));
+            ASSERT_EQ(demuxerPlugin_->GetLastPTSByTrackId(i, lastPts), Status::OK);
             while (ret == Status::ERROR_WAIT_TIMEOUT) {
                 ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             }
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             if (ret == Status::OK) {
                 readCount++;
-                // printf("readCount = %d\n", readCount);
             }
             flag_ = buffer.mediaAVBuffer->flag_;
             if (i == 0) {
                 ASSERT_TRUE(CheckKeyFrameIndex(
                     keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
             }
-            // printf("readCount = %d", readCount);
-            // printf("flag_ = %d, pts_ = %" PRId64 ", dts_ = %" PRId64 ", duration_ = %" PRId64 "\n",
-                // flag_, buffer.mediaAVBuffer->pts_, buffer.mediaAVBuffer->dts_, buffer.mediaAVBuffer->duration_);
             CountFrames(i);
         }
     }
@@ -684,7 +717,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_004, TestSize.Level1)
     ASSERT_EQ(keyFrames_[1], 113);
 }
 
-// DemuxerPluginUnitTest.Demuxer_WeakNetwork_005
+/**
+ * @tc.name: Demuxer_WeakNetwork_005
+ * @tc.desc: Test demuxer with weak network (read frame fail 20 times)
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_005, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
@@ -700,23 +737,18 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_005, TestSize.Level1)
     while (!isEOS(eosFlag_)) {
         for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
-            // printf("ret = %d\n", static_cast<int32_t>(ret));
             while (ret == Status::ERROR_WAIT_TIMEOUT) {
                 ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             }
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             if (ret == Status::OK) {
                 readCount++;
-                // printf("readCount = %d\n", readCount);
             }
             flag_ = buffer.mediaAVBuffer->flag_;
             if (i == 0) {
                 ASSERT_TRUE(CheckKeyFrameIndex(
                     keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
             }
-            // printf("readCount = %d", readCount);
-            // printf("flag_ = %d, pts_ = %" PRId64 ", dts_ = %" PRId64 ", duration_ = %" PRId64 "\n",
-                // flag_, buffer.mediaAVBuffer->pts_, buffer.mediaAVBuffer->dts_, buffer.mediaAVBuffer->duration_);
             CountFrames(i);
         }
     }
