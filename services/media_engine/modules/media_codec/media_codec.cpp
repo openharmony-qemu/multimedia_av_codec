@@ -325,7 +325,7 @@ void MediaCodec::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlush
             bufferStatus = static_cast<uint32_t>(InOutPortBufferStatus::OUTPORT_AVAIL) |
                 (filledBufferSize > 0 ? static_cast<uint32_t>(InOutPortBufferStatus::INPORT_AVAIL) : 0);
         }
-        MEDIA_LOG_I("HandleInputBufferInner failed, ret:" PUBLIC_LOG_D32 ", bufferStatus:" PUBLIC_LOG_U32,
+        MEDIA_LOG_I("HandleInputBufferInner failed, ret:" PUBLIC_LOG_D32 ", bufferStatus:" PUBLIC_LOG_U32X,
             static_cast<int32_t>(ret), bufferStatus);
         return;
     }
@@ -365,7 +365,7 @@ bool MediaCodec::HandleOutputBufferInner(Status &ret, uint32_t &bufferStatus, ui
     }
 
     MEDIA_LOG_D("HandleOutputBufferInner ret:" PUBLIC_LOG_D32 ", isGoingOn:" PUBLIC_LOG_D32 ", isBufferAvailable:"
-        PUBLIC_LOG_D32 ", eosStatus:" PUBLIC_LOG_U32 ", bufferStatus:" PUBLIC_LOG_U32,
+        PUBLIC_LOG_D32 ", eosStatus:" PUBLIC_LOG_U32 ", bufferStatus:" PUBLIC_LOG_U32X,
         static_cast<int32_t>(ret), isGoingOn, isBufferAvailable, eosStatus, bufferStatus);
 
     return isGoingOn;

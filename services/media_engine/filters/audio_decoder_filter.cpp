@@ -525,7 +525,7 @@ Status AudioDecoderFilter::HandleInputBuffer(bool isTriggeredByOutPort)
 
 bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
 {
-    MEDIA_LOG_D("AudioDecoderFilter::IsNeedProcessInput bufferStatus:" PUBLIC_LOG_U32 ", isOutPort:" PUBLIC_LOG_D32,
+    MEDIA_LOG_D("AudioDecoderFilter::IsNeedProcessInput bufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
         bufferStatus_, isOutPort);
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_IN), isOutPort, "IN avail, need process outport");
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT), !isOutPort, "OUT avail, need process inport");
@@ -543,7 +543,7 @@ bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
         "EOS START and DONE, should not happen, no need process");
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_INIT_PROCESS_ALWAYS), true, "state change, need process");
 
-    MEDIA_LOG_I("AudioDecoderFilter::IsNeedProcessInput, should not happen, need process, bufferStatus:" PUBLIC_LOG_U32
+    MEDIA_LOG_I("AudioDecoderFilter::IsNeedProcessInput, should not happen, bufferStatus:" PUBLIC_LOG_U32X
         ", isOutPort:" PUBLIC_LOG_D32, bufferStatus_, isOutPort);
     return true;
 }
@@ -571,18 +571,18 @@ Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
     std::unique_lock<std::mutex> lock(bufferStatusMutex_, std::try_to_lock);
     if (lock.owns_lock()) {
         if (bufferStatus_ != BUFFER_STATUS_INIT_PROCESS_ALWAYS) { // no state change, use return value to update
-            MEDIA_LOG_D("bufferStatus:" PUBLIC_LOG_U32 ", lastBufferStatus:" PUBLIC_LOG_U32
-                ", curBufferStatus:" PUBLIC_LOG_U32 ", isOutPort:" PUBLIC_LOG_D32,
+            MEDIA_LOG_D("bufferStatus:" PUBLIC_LOG_U32X ", lastBufferStatus:" PUBLIC_LOG_U32X
+                ", curBufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
                 bufferStatus, lastBufferStatus, bufferStatus_, isOutPort);
             bufferStatus_ = bufferStatus;
         } else {
-            MEDIA_LOG_W("bufferStatus_ change, ignore returned bufferStatus:" PUBLIC_LOG_U32
-                ", lastBufferStatus:" PUBLIC_LOG_U32 ", curBufferStatus:" PUBLIC_LOG_U32 ", isOutPort:" PUBLIC_LOG_D32,
+            MEDIA_LOG_W("bufferStatus_ change, ignore returned bufferStatus:" PUBLIC_LOG_U32X
+                ", lastBufferStatus:" PUBLIC_LOG_U32X ", curBufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
             bufferStatus, lastBufferStatus, bufferStatus_, isOutPort);
         }
     } else {
-        MEDIA_LOG_W("bufferStatus change, ignore returned bufferStatus:" PUBLIC_LOG_U32
-            ", lastBufferStatus:" PUBLIC_LOG_U32 ", isOutPort:" PUBLIC_LOG_D32,
+        MEDIA_LOG_W("bufferStatus_ change may occur, ignore returned bufferStatus:" PUBLIC_LOG_U32X
+            ", lastBufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
         bufferStatus, lastBufferStatus, isOutPort);
     }
     return Status::OK;
