@@ -143,6 +143,11 @@ private:
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
     int64_t GetStreamDuration(const AVStream& avStream);
 
+    int SelectSeekTrack() const;
+    Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
+    void SyncSeekThread();
+    Status DoSeekInternal(int trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime);
+
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int HandleReadOK(IOContext* ioContext, int dataSize);
     static int HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount, bool& needBlockWait);

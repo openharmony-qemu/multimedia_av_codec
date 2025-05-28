@@ -16,13 +16,13 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 module_output_path = "av_codec/av_codec/unittest"
 demuxer_plugin_test_sources = [
-  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_demuxer_plugin.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_demuxer_thread.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/demuxer/base_stream_demuxer.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/demuxer_plugin_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/demuxer/stream_demuxer.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/type_finder.cpp",
   "$av_codec_root_dir/services/media_engine/modules/source/source.cpp",
-  "$av_codec_root_dir/services/media_engine/modules/demuxer/base_stream_demuxer.cpp",
-  "$av_codec_root_dir/services/media_engine/modules/demuxer/stream_demuxer.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_demuxer_plugin.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_demuxer_thread.cpp",
 ]
 config("demuxer_plugin_test_unittest_cfg") {
   defines = [
@@ -75,8 +75,7 @@ ohos_unittest("demuxer_plugin_unit_test") {
     ":demuxer_plugin_test_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
-  sources = demuxer_plugin_test_sources +
-            [ "demuxer_plugin_unit_test.cpp" ]
+  sources = demuxer_plugin_test_sources + [ "demuxer_plugin_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",

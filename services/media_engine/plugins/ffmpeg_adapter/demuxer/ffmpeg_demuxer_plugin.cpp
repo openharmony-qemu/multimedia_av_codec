@@ -1504,18 +1504,31 @@ Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
+int FFmpegDemuxerPlugin::SelectSeekTrack() const
 {
-    (void) trackId;
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    MediaAVCodec::AVCodecTrace trace("SeekTo");
+    int trackIndex = static_cast<int>(selectedTrackIds_[0]);
+    for (size_t i = 1; i < selectedTrackIds_.size(); i++) {
+        int idx = static_cast<int>(selectedTrackIds_[i]);
+        if (formatContext_->streams[idx]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            return idx;
+        }
+    }
+    return trackIndex;
+}
+
+Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) const
+{
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
-
     FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
-        "Seek time " PUBLIC_LOG_D64 " is not unsupported", seekTime);
+        "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
     FALSE_RETURN_V_MSG_E(g_seekModeToFFmpegSeekFlags.count(mode) != 0, Status::ERROR_INVALID_PARAMETER,
-        "Seek mode " PUBLIC_LOG_D32 " is not unsupported", static_cast<uint32_t>(mode));
+        "Seek mode " PUBLIC_LOG_D32 " is not supported", static_cast<uint32_t>(mode));
+    return Status::OK;
+}
+
+void FFmpegDemuxerPlugin::SyncSeekThread()
+{
     if (ioContext_.invokerType != SEEK) {
         std::lock_guard<std::mutex> seekLock(ioContext_.invorkTypeMutex);
         ioContext_.invokerType = SEEK;
@@ -1525,15 +1538,10 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         std::unique_lock<std::mutex> waitLock(seekWaitMutex_);
         seekWaitCv_.wait(waitLock, [this] { return threadState_ == WAITING; });
     }
-    int trackIndex = static_cast<int>(selectedTrackIds_[0]);
-    for (size_t i = 1; i < selectedTrackIds_.size(); i++) {
-        int index = static_cast<int>(selectedTrackIds_[i]);
-        if (formatContext_->streams[index]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            trackIndex = index;
-            break;
-        }
-    }
-    MEDIA_LOG_D("Seek based on track " PUBLIC_LOG_D32, trackIndex);
+}
+
+Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
+{
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
     int64_t ffTime = ConvertTimeToFFmpeg(seekTime * MS_TO_NS, avStream->time_base);
@@ -1564,6 +1572,20 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     seekTime_ = seekTime;
     seekMode_ = flag == AVSEEK_FLAG_BACKWARD ? SeekMode::SEEK_PREVIOUS_SYNC : mode;
     return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
+{
+    (void) trackId;
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    MediaAVCodec::AVCodecTrace trace("SeekTo");
+
+    Status check = CheckSeekParams(seekTime, mode);
+    FALSE_RETURN_V_MSG_E(check == Status::OK, check, "CheckSeekParams failed");
+    SyncSeekThread();
+    int trackIndex = SelectSeekTrack();
+    MEDIA_LOG_D("Seek based on track " PUBLIC_LOG_D32, trackIndex);
+    return DoSeekInternal(trackIndex, seekTime, mode, realSeekTime);
 }
 
 Status FFmpegDemuxerPlugin::Flush()
