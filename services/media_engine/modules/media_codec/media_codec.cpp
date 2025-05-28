@@ -356,6 +356,7 @@ int32_t MediaCodec::Stop()
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Stop");
     MEDIA_LOG_I("Stop enter");
+    FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, (int32_t)Status::OK, "codecPlugin_ is nullptr");
     FALSE_RETURN_V(state_ != CodecState::PREPARED, (int32_t)Status::OK);
     if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::STOPPING || state_ == CodecState::RELEASING) {
         MEDIA_LOG_D("Stop, state_=%{public}s", StateToString(state_).data());
@@ -426,6 +427,7 @@ int32_t MediaCodec::Release()
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Release");
     MEDIA_LOG_I("Release enter");
+    FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, (int32_t)Status::OK, "codecPlugin_ is nullptr");
     if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
         MEDIA_LOG_W("codec Release, state isnot completely correct, state =%{public}s .", StateToString(state_).data());
         return (int32_t)Status::OK;
