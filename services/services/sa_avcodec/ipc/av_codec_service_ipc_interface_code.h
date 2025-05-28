@@ -50,7 +50,8 @@ enum class CodecServiceInterfaceCode {
     DESTROY_STUB,
     SET_DECRYPT_CONFIG,
     RENDER_OUTPUT_BUFFER_AT_TIME,
-    SET_CUSTOM_BUFFER
+    SET_CUSTOM_BUFFER,
+    NOTIFY_MEMORY_EXCHANGE
 };
 
 enum class AVCodecListServiceInterfaceCode {

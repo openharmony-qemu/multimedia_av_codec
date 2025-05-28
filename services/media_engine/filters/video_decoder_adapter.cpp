@@ -503,5 +503,11 @@ void VideoDecoderAdapter::OnDumpInfo(int32_t fd)
         return;
     }
 }
+
+void VideoDecoderAdapter::NotifyMemoryExchange(bool exchangeFlag)
+{
+    FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
+    mediaCodec_->NotifyMemoryExchange(exchangeFlag);
+}
 } // namespace Media
 } // namespace OHOS

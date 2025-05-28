@@ -121,6 +121,7 @@ public:
     Status SetPostProcessorFd(int32_t postProcessorFd);
     Status SetCameraPostprocessing(bool enable);
     void NotifyPause();
+    void NotifyMemoryExchange(bool exchangeFlag);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,

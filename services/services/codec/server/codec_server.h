@@ -113,6 +113,7 @@ public:
     void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed) override;
     void ProcessInputBuffer() override;
     bool CheckRunning() override;
+    int32_t NotifyMemoryExchange(const bool exchangeFlag) override;
 
     // post processing callback
     void PostProcessingOnError(int32_t errorCode);

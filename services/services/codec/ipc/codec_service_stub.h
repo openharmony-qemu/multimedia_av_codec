@@ -64,6 +64,7 @@ public:
 #endif
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args) override;
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
+    int32_t NotifyMemoryExchange(const bool exchangeFlag) override;
     // PurgeableMemory
     void NotifyMemoryRecycle();
     void NotifyMemoryWriteBack();
@@ -94,6 +95,7 @@ private:
     int32_t SetDecryptConfig(MessageParcel &data, MessageParcel &reply);
 #endif
     int32_t SetCustomBuffer(MessageParcel &data, MessageParcel &reply);
+    int32_t NotifyMemoryExchange(MessageParcel &data, MessageParcel &reply);
     int32_t InnerRelease();
     bool isServerReleased_ = false;
     std::shared_ptr<ICodecService> codecServer_ = nullptr;
