@@ -152,7 +152,7 @@ struct DemuxerPlugin : public PluginBase {
      *
      * @return Execution Status
      */
-    virtual Status PauseFFmpegReadLoop() = 0;
+    virtual Status Pause() = 0;
 
     /**
      * @brief Get the latest PTS by trackId.

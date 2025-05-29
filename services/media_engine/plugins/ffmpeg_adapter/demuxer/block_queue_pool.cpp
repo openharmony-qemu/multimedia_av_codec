@@ -322,6 +322,7 @@ bool BlockQueuePool::HasQueue(uint32_t trackIndex)
 Status BlockQueuePool::GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxPts)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
+    maxPts = INT64_MIN;
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
         MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
@@ -330,7 +331,7 @@ Status BlockQueuePool::GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxPts)
     auto queVector = queMap_[trackIndex];
     for (auto queIndex : queVector) {
         if (quePool_[queIndex].blockQue == nullptr) {
-            MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_U32 " is nullptr, will find next", queIndex);
             continue;
         }
         maxPts = quePool_[queIndex].maxPts;

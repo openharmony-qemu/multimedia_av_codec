@@ -1061,9 +1061,9 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
         "AVFormatContext has been initialized");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
-    if (ioContext_.invokerType != INIT) {
+    if (ioContext_.invokerType != invokerType::INIT) {
         std::lock_guard<std::mutex> initLock(ioContext_.invorkTypeMutex);
-        ioContext_.invokerType = INIT;
+        ioContext_.invokerType = invokerType::INIT;
     }
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
@@ -1105,6 +1105,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
     fileType_ = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
     if (ioContext_.initErrorAgain == true && formatContext_->pb->error == -1) {
+        MEDIA_LOG_E("Initialization error_again occurred");
         ResetContext();
         ioContext_.initErrorAgain = false;
     }
@@ -1523,17 +1524,18 @@ Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) con
     FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
         "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
     FALSE_RETURN_V_MSG_E(g_seekModeToFFmpegSeekFlags.count(mode) != 0, Status::ERROR_INVALID_PARAMETER,
-        "Seek mode " PUBLIC_LOG_D32 " is not supported", static_cast<uint32_t>(mode));
+        "Seek mode " PUBLIC_LOG_U32 " is not supported", static_cast<uint32_t>(mode));
     return Status::OK;
 }
 
 void FFmpegDemuxerPlugin::SyncSeekThread()
 {
-    if (ioContext_.invokerType != SEEK) {
+    if (ioContext_.invokerType != invokerType::SEEK) {
         std::lock_guard<std::mutex> seekLock(ioContext_.invorkTypeMutex);
-        ioContext_.invokerType = SEEK;
+        ioContext_.invokerType = invokerType::SEEK;
     }
     if (readThread_ != nullptr && threadState_ == READING) {
+        MEDIA_LOG_I("Seek notify read thread to stop");
         readCbCv_.notify_all();
         std::unique_lock<std::mutex> waitLock(seekWaitMutex_);
         seekWaitCv_.wait(waitLock, [this] { return threadState_ == WAITING; });
@@ -1582,7 +1584,9 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 
     Status check = CheckSeekParams(seekTime, mode);
     FALSE_RETURN_V_MSG_E(check == Status::OK, check, "CheckSeekParams failed");
-    SyncSeekThread();
+    if (readThread_ != nullptr) {
+        SyncSeekThread();
+    }
     int trackIndex = SelectSeekTrack();
     MEDIA_LOG_D("Seek based on track " PUBLIC_LOG_D32, trackIndex);
     return DoSeekInternal(trackIndex, seekTime, mode, realSeekTime);
@@ -1624,9 +1628,9 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
         "AVBuffer or memory is nullptr");
-    FALSE_RETURN_V_MSG_E(versionMap_.find(1) == versionMap_.end(), Status::ERROR_INVALID_OPERATION,
-        "new version has been used");
-    versionMap_[0] = 1;
+    FALSE_RETURN_V_MSG_E(readModeMap_.find(1) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
+        "Cannot use sync and async Read together");
+    readModeMap_[0] = 1;
     Status ret;
     if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
         ret = ReadPacketToCacheQueue(trackId);
@@ -1672,9 +1676,9 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E(versionMap_.find(1) == versionMap_.end(), Status::ERROR_INVALID_OPERATION,
-        "new version has been used");
-    versionMap_[0] = 1;
+    FALSE_RETURN_V_MSG_E(readModeMap_.find(1) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
+        "Cannot use sync and async Read together");
+    readModeMap_[0] = 1;
     Status ret;
     if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
         ret = ReadPacketToCacheQueue(trackId);

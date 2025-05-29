@@ -119,7 +119,7 @@ public:
     {
         return mapStatus_[name_];
     }
-    Status PauseFFmpegReadLoop() override
+    Status Pause() override
     {
         return mapStatus_[name_];
     }

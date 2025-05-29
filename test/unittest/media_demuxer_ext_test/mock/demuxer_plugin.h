@@ -44,7 +44,7 @@ public:
     MOCK_METHOD0(Stop, Status());
     MOCK_METHOD0(Flush, Status());
     MOCK_METHOD0(ResetEosStatus, void());
-    MOCK_METHOD0(PauseFFmpegReadLoop, void());
+    MOCK_METHOD0(Pause, void());
 
     MOCK_METHOD0(IsRefParserSupported, bool());
     MOCK_METHOD2(ParserRefUpdatePos, Status(int64_t, bool));

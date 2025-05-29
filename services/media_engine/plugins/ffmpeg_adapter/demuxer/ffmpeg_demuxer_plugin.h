@@ -66,7 +66,7 @@ public:
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) override;
-    Status PauseFFmpegReadLoop() override;
+    Status Pause() override;
     Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override;
@@ -131,7 +131,7 @@ private:
         int32_t sizeLimit {0};
         int32_t readSizeCnt {0};
         std::atomic<bool> initErrorAgain {false};
-        std::mutex invorkTypeMutex;
+        std::mutex invokerTypeMutex;
         std::atomic<InvokerType> invokerType {INVOKER_NONE};
     };
     
@@ -315,7 +315,7 @@ private:
     ThreadState threadState_ {ThreadState::NOT_STARTED};
     Status readLoopStatus_ = {Status::OK};
     bool isPauseReadPacket_ = true;
-    std::unordered_map<int, int> versionMap_;
+    std::unordered_map<int, int> readModeMap_; // 0 mean sync read, 1 mean async read
     std::mutex seekWaitMutex_;
     std::condition_variable seekWaitCv_;
 };
