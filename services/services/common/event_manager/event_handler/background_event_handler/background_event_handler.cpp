@@ -39,15 +39,14 @@ static std::vector<sptr<IRemoteObject>> GetFreezeInfoList(pid_t pid)
     return instanceList;
 }
 
-BackGroundEventHandler::BackGroundEventHandler()
-    : recycleMemory(OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false)) {}
-
+BackGroundEventHandler::BackGroundEventHandler() {}
 void BackGroundEventHandler::NotifyFrozen(const std::vector<int32_t> &pidList)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
+    bool recycleMemory = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
     if (!recycleMemory) {
         return;
     }
-    std::lock_guard<std::mutex> lock(mutex_);
     for (auto pid : pidList) {
         std::vector<sptr<IRemoteObject>> instanceList = GetFreezeInfoList(pid);
         if (!instanceList.empty()) {
@@ -93,18 +92,6 @@ void BackGroundEventHandler::NotifyActiveAll()
     frozenPidList_.clear();
     return;
 }
-
-// void BackGroundEventHandler::ClearPid(pid_t pid)
-// {
-//     std::lock_guard<std::mutex> lock(mutex_);
-//     auto it = frozenPidList_.find(pid);
-//     if (it != frozenPidList_.end()) {
-//         frozenPidList_.erase(it);
-//         AVCODEC_LOGI("Cleared pid: %{public}d from frozenPidList_, remain size: %{public}zu", pid, frozenPidList_.size());
-//     } else {
-//         AVCODEC_LOGI("Pid: %{public}d not found in frozenPidList_", pid);
-//     }
-// }
 
 BackGroundEventHandler &BackGroundEventHandler::GetInstance()
 {

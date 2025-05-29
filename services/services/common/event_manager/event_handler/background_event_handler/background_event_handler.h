@@ -28,7 +28,6 @@ public:
     void NotifyFrozen(const std::vector<int32_t> &pidList);
     void NotifyActive(const std::vector<int32_t> &pidList);
     void NotifyActiveAll();
-    // void ClearPid(pid_t pid);
 
 private:
     BackGroundEventHandler();
@@ -36,7 +35,6 @@ private:
 
     std::mutex mutex_;
     std::unordered_set<pid_t> frozenPidList_;
-    const bool recycleMemory;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
