@@ -261,8 +261,6 @@ private:
     void CreateConfiguration(const Format& format)
     {
         format_ = format;
-        constexpr int32_t colorSpaceTypeBt709Limited{0x410101}; // OH_COLORSPACE_BT709_LIMIT
-        constexpr int32_t colorSpaceTypeP3Full{0x230206}; // OH_COLORSPACE_P3_FULL
         constexpr int32_t pixelFormatNV12{24}; // NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP
         constexpr int32_t pixelFormatNV21{25}; // NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP
 
@@ -291,11 +289,11 @@ private:
         }
         switch (colorSpaceType) {
             case static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT):
-                config_.outputColorSpaceType = colorSpaceTypeBt709Limited;
+                config_.outputColorSpaceType = static_cast<int32_t>(ColorSpaceConfig::BT709_LIMITED);
                 AVCODEC_LOGI("Output color space type is BT709 Limited");
                 break;
             case static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL):
-                config_.outputColorSpaceType = colorSpaceTypeP3Full;
+                config_.outputColorSpaceType = static_cast<int32_t>(ColorSpaceConfig::P3_FULL);
                 AVCODEC_LOGI("Output color space type is P3 Full");
                 break;
             default:
@@ -314,7 +312,7 @@ private:
 
         config_.width = width;
         config_.height = height;
-        config_.outputMetadataType = 0; // see OH_COLORSPACE_NONE
+        config_.outputMetadataType = static_cast<int32_t>(ColorSpaceConfig::METADATA_NONE); // see OH_COLORSPACE_NONE
         config_.outputPixelFormat = pixelFormat;
         config_.rotation = rotation;
         config_.scalingMode = scalingMode;
