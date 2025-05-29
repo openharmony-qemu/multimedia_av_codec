@@ -40,6 +40,7 @@ static std::vector<sptr<IRemoteObject>> GetFreezeInfoList(pid_t pid)
 }
 
 BackGroundEventHandler::BackGroundEventHandler() {}
+
 void BackGroundEventHandler::NotifyFrozen(const std::vector<int32_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);

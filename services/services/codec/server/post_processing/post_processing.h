@@ -32,6 +32,7 @@
 #include "state_machine.h"
 #include "post_processing_utils.h"
 #include "post_processing_callback.h"
+#include "native_buffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -235,7 +236,8 @@ private:
 
         constexpr int32_t hdrVividVideoColorSpaceTypeList[]{
             0x440504, // BT2020 HLG Limit
-            0x440404 // BT2020 PQ Limit
+            0x440404, // BT2020 PQ Limit
+            0x240504  // BT2020 HLG Full
         };
         constexpr int32_t hdrVividVideoMetadataType{3}; // HDR Vivid Video
         constexpr int32_t hdrVividVideoPixelFormatList[]{35, 36};
@@ -260,6 +262,7 @@ private:
     {
         format_ = format;
         constexpr int32_t colorSpaceTypeBt709Limited{0x410101}; // OH_COLORSPACE_BT709_LIMIT
+        constexpr int32_t colorSpaceTypeP3Full{0x230206}; // OH_COLORSPACE_P3_FULL
         constexpr int32_t pixelFormatNV12{24}; // NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP
         constexpr int32_t pixelFormatNV21{25}; // NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP
 
@@ -268,7 +271,11 @@ private:
         (void)format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
         int32_t height;
         (void)format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
-
+        int32_t colorSpaceType;
+        if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpaceType)) {
+            colorSpaceType = OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT; // default to BT709 Limited
+            (void)format_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpaceType);
+        }
         int32_t pixelFormat;
         if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, pixelFormat)) {
             pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
@@ -281,6 +288,18 @@ private:
         int32_t scalingMode;
         if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, scalingMode)) {
             scalingMode = 0; // No scaling
+        }
+        switch (colorSpaceType) {
+            case static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT):
+                config_.outputColorSpaceType = colorSpaceTypeBt709Limited;
+                AVCODEC_LOGI("Output color space type is BT709 Limited");
+                break;
+            case static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL):
+                config_.outputColorSpaceType = colorSpaceTypeP3Full;
+                AVCODEC_LOGI("Output color space type is P3 Full");
+                break;
+            default:
+                AVCODEC_LOGE("Unsupported color space type %{public}d", colorSpaceType);
         }
         switch (pixelFormat) {
             case static_cast<int32_t>(VideoPixelFormat::NV12):
@@ -295,7 +314,6 @@ private:
 
         config_.width = width;
         config_.height = height;
-        config_.outputColorSpaceType = colorSpaceTypeBt709Limited;
         config_.outputMetadataType = 0; // see OH_COLORSPACE_NONE
         config_.outputPixelFormat = pixelFormat;
         config_.rotation = rotation;
@@ -364,17 +382,30 @@ private:
         constexpr std::string_view keyMetadataType{"hdr_metadata_type"};
         constexpr std::string_view keyRenderIntent{"render_intent"};
         constexpr std::string_view keyPixelFormat{"pixel_format"};
-        constexpr int32_t primaries{1};
-        constexpr int32_t transFunc{1};
-        constexpr int32_t matrix{1};
-        constexpr int32_t range{2};
+        constexpr int32_t primariesBt709Limited{1};
+        constexpr int32_t transFuncBt709Limited{1};
+        constexpr int32_t matrixBt709Limited{1};
+        constexpr int32_t rangeBt709Limited{2};
+        constexpr int32_t primariesP3Full{6};
+        constexpr int32_t transFuncP3Full{2};
+        constexpr int32_t matrixP3Full{3};
+        constexpr int32_t rangeP3Full{1};
         constexpr int32_t metadataType{0};
         constexpr int32_t renderIntent{2};
+        constexpr int32_t colorSpaceTypeBt709Limited{0x410101}; // OH_COLORSPACE_BT709_LIMIT
+        constexpr int32_t colorSpaceTypeP3Full{0x230206}; // OH_COLORSPACE_P3_FULL
         Format format(format_);
-        format.PutIntValue(keyPrimaries, primaries);
-        format.PutIntValue(keyTransFunc, transFunc);
-        format.PutIntValue(keyMatrix, matrix);
-        format.PutIntValue(keyRange, range);
+        if(config_.outputColorSpaceType == colorSpaceTypeBt709Limited) {
+            format.PutIntValue(keyPrimaries, primariesBt709Limited);
+            format.PutIntValue(keyTransFunc, transFuncBt709Limited);
+            format.PutIntValue(keyMatrix, matrixBt709Limited);
+            format.PutIntValue(keyRange, rangeBt709Limited);
+        } else if (config_.outputColorSpaceType == colorSpaceTypeP3Full) {
+            format.PutIntValue(keyPrimaries, primariesP3Full);
+            format.PutIntValue(keyTransFunc, transFuncP3Full);
+            format.PutIntValue(keyMatrix, matrixP3Full);
+            format.PutIntValue(keyRange, rangeP3Full);
+        }
         format.PutIntValue(keyMetadataType, metadataType);
         format.PutIntValue(keyRenderIntent, renderIntent);
         format.PutIntValue(keyPixelFormat, config_.outputPixelFormat);
