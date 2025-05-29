@@ -541,7 +541,7 @@ bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_INIT_PROCESS_ALWAYS), true, "state change, need process");
     if (bufferStatus_ == BUFFER_STATUS_AVAIL_NONE) {
         bufferStatus_ = isOutPort ? bufferStatus_ : static_cast<uint32_t>(InOutPortBufferStatus::INPORT_AVAIL);
-         MEDIA_LOG_D("neither IN nor OUT avail, need process outport");
+        MEDIA_LOG_D("neither IN nor OUT avail, need process outport");
         return isOutPort;
     }
 
