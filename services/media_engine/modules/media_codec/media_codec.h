@@ -115,6 +115,8 @@ public:
 
     sptr<AVBufferQueueProducer> GetOutputBufferQueueProducer();
 
+    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed);
+
     void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus);
 
     sptr<Surface> GetInputSurface();

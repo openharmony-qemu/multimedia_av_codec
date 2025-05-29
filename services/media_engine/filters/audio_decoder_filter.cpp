@@ -531,9 +531,6 @@ bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT), !isOutPort, "OUT avail, need process inport");
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_IN_OUT), true, "IN and OUT avail, need process");
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_INIT), !isOutPort, "initial stage:" PUBLIC_LOG_D32, isOutPort);
-    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_NONE),
-        (isOutPort ? bufferStatus_ : (bufferStatus_ = static_cast<uint32_t>(InOutPortBufferStatus::INPORT_AVAIL)),
-        isOutPort), "neither IN nor OUT avail, need process outport");
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_OUT_EOS_START), isOutPort, "EOS START, need process outport");
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT_OUT_EOS_START_DONE), false,
         "OUT avail, EOS START and DONE, no need process");
@@ -542,6 +539,11 @@ bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
     FALSE_RETURN_V_MSG_I((bufferStatus_ != BUFFER_STATUS_OUT_EOS_START_DONE), false,
         "EOS START and DONE, should not happen, no need process");
     FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_INIT_PROCESS_ALWAYS), true, "state change, need process");
+    if (bufferStatus_ == BUFFER_STATUS_AVAIL_NONE) {
+        bufferStatus_ = isOutPort ? bufferStatus_ : static_cast<uint32_t>(InOutPortBufferStatus::INPORT_AVAIL);
+        MEDIA_LOG_D("neither IN nor OUT avail, need process outport");
+        return isOutPort;
+    }
 
     MEDIA_LOG_I("AudioDecoderFilter::IsNeedProcessInput, should not happen, bufferStatus:" PUBLIC_LOG_U32X
         ", isOutPort:" PUBLIC_LOG_D32, bufferStatus_, isOutPort);
@@ -578,8 +580,8 @@ Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
             bufferStatus_ = bufferStatus;
         } else {
             MEDIA_LOG_W("bufferStatus_ change, ignore returned bufferStatus:" PUBLIC_LOG_U32X
-                ", lastBufferStatus:" PUBLIC_LOG_U32X ", curBufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
-            bufferStatus, lastBufferStatus, bufferStatus_, isOutPort);
+                ", lastBufferStatus:" PUBLIC_LOG_U32X ", curBufferStatus:" PUBLIC_LOG_U32X
+                ", isOutPort:" PUBLIC_LOG_D32, bufferStatus, lastBufferStatus, bufferStatus_, isOutPort);
         }
     } else {
         MEDIA_LOG_W("bufferStatus_ change may occur, ignore returned bufferStatus:" PUBLIC_LOG_U32X
