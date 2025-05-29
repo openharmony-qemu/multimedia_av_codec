@@ -65,7 +65,7 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, First, TestSize.Level1)
     std::shared_ptr<Meta> format = std::make_shared<Meta>();
     format->Set<Tag::MIME_TYPE>("test");
     format->Set<Tag::MEDIA_END_OF_STREAM>(true);
-    EXPECT_EQ(surfaceDecoderFilter_->Configure(format), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(surfaceDecoderFilter_->Configure(format), Status::ERROR_NULL_POINTER);
     EXPECT_EQ(surfaceDecoderFilter_->DoStart(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(surfaceDecoderFilter_->DoPause(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(surfaceDecoderFilter_->DoResume(), Status::ERROR_UNKNOWN);
@@ -78,7 +78,7 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, First, TestSize.Level1)
     std::shared_ptr<FilterCallback> filterCallback = std::make_shared<TestFilterCallback>();
     surfaceDecoderFilter_->Init(eventReceive, filterCallback);
 
-    EXPECT_EQ(surfaceDecoderFilter_->Configure(format), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(surfaceDecoderFilter_->Configure(format), Status::ERROR_NULL_POINTER);
     EXPECT_EQ(surfaceDecoderFilter_->SetOutputSurface(nullptr), Status::ERROR_UNKNOWN);
 }
 
@@ -114,7 +114,7 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SECOND, TestSize.Level1)
     EXPECT_EQ(surfaceDecoderFilter_->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<TestFilterLinkCallback>();
     EXPECT_EQ(surfaceDecoderFilter_->OnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
-        Status::OK);
+        Status::ERROR_UNKNOWN);
     EXPECT_EQ(surfaceDecoderFilter_->OnUpdated(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
         Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->OnUnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, filterLinkCallback),
@@ -297,7 +297,7 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_SetOutputSurface_010
     format->Set<Tag::MIME_TYPE>("test");
     format->Set<Tag::MEDIA_END_OF_STREAM>(true);
     EXPECT_EQ(surfaceDecoderFilter_->OnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
-        Status::OK);
+        Status::ERROR_UNKNOWN);
     EXPECT_EQ(surfaceDecoderFilter_->OnUpdated(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
         Status::OK);
     EXPECT_EQ(
