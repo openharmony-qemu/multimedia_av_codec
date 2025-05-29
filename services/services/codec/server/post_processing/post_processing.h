@@ -285,20 +285,20 @@ private:
         }
         switch (colorSpaceType) {
             case static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT):
-                config_.outputColorSpaceType = ColorSpaceConfig::BT709_LIMITED;
+                config_.outputColorSpaceType = ConfigurationParameters::colorSpaceBT709Limited;
                 break;
             case static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL):
-                config_.outputColorSpaceType = ColorSpaceConfig::P3_FULL;
+                config_.outputColorSpaceType = ConfigurationParameters::colorSpaceP3Full;
                 break;
             default:
                 AVCODEC_LOGE("Unsupported color space type %{public}d", colorSpaceType);
         }
         switch (pixelFormat) {
             case static_cast<int32_t>(VideoPixelFormat::NV12):
-                config_.outputPixelFormat = ColorSpaceConfig::pixelFormatNV12;
+                config_.outputPixelFormat = ConfigurationParameters::pixelFormatNV12;
                 break;
             case static_cast<int32_t>(VideoPixelFormat::NV21):
-                config_.outputPixelFormat = ColorSpaceConfig::pixelFormatNV21;
+                config_.outputPixelFormat = ConfigurationParameters::pixelFormatNV21;
                 break;
             default:
                 AVCODEC_LOGE("Unsupported pixel format %{public}d", pixelFormat);
@@ -363,30 +363,30 @@ private:
         }
     }
 
-    class ColorSpaceConfig {
+    class ConfigurationParameters {
     public:
         // PixelFormat
-        static constexpr int32_t pixelFormatNV12 = 24; // NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP
-        static constexpr int32_t pixelFormatNV21 = 25; // NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP
+        static constexpr int32_t pixelFormatNV12{24}; // NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP
+        static constexpr int32_t pixelFormatNV21{25}; // NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP
         // ColorSpaceType
-        static constexpr int32_t BT709_LIMITED = 0x410101; // OH_COLORSPACE_BT709_LIMIT
-        static constexpr int32_t P3_FULL = 0x230206;       // OH_COLORSPACE_P3_FULL
-        // ColorPrimaries
-        static constexpr int32_t PRIMARIES_BT709 = 1;
-        static constexpr int32_t PRIMARIES_P3 = 6;
+        static constexpr int32_t colorSpaceBT709Limited{0x410101}; // OH_COLORSPACE_BT709_LIMIT
+        static constexpr int32_t colorSpaceP3Full{0x230206};       // OH_COLORSPACE_P3_FULL
+        // Primaries
+        static constexpr int32_t primariesBT709Limited{1};
+        static constexpr int32_t primariesP3Full{6};
         // TransferFunction
-        static constexpr int32_t TRANS_FUNC_BT709 = 1;
-        static constexpr int32_t TRANS_FUNC_P3 = 2;
-        // MatrixCoefficients
-        static constexpr int32_t MATRIX_BT709 = 1;
-        static constexpr int32_t MATRIX_P3 = 3;
-        // ColorRange
-        static constexpr int32_t RANGE_LIMITED = 2;
-        static constexpr int32_t RANGE_FULL = 1;
+        static constexpr int32_t transFuncBT709Limited{1};
+        static constexpr int32_t transFuncP3Full{2};
+        // Matrix
+        static constexpr int32_t matrixBT709Limited{1};
+        static constexpr int32_t matrixP3Full{3};
+        // Range
+        static constexpr int32_t rangeBT709Limited{2};
+        static constexpr int32_t rangeP3Full{1};
         // MetadataType
-        static constexpr int32_t METADATA_NONE = 0;
+        static constexpr int32_t metadataType{0};
         // RenderIntent
-        static constexpr int32_t RENDER_INTENT = 2;
+        static constexpr int32_t renderIntent{2};
     };
 
     int32_t ConfigureController()
@@ -400,20 +400,19 @@ private:
         constexpr std::string_view keyPixelFormat{"pixel_format"};
 
         Format format(format_);
-        if (config_.outputColorSpaceType == ColorSpaceConfig::BT709_LIMITED) {
-            format.PutIntValue(keyPrimaries, ColorSpaceConfig::PRIMARIES_BT709);
-            format.PutIntValue(keyTransFunc, ColorSpaceConfig::TRANS_FUNC_BT709);
-            format.PutIntValue(keyMatrix, ColorSpaceConfig::MATRIX_BT709);
-            format.PutIntValue(keyRange, ColorSpaceConfig::RANGE_LIMITED);
-        } else if (config_.outputColorSpaceType == ColorSpaceConfig::P3_FULL) {
-            format.PutIntValue(keyPrimaries, ColorSpaceConfig::PRIMARIES_P3);
-            format.PutIntValue(keyTransFunc, ColorSpaceConfig::TRANS_FUNC_P3);
-            format.PutIntValue(keyMatrix, ColorSpaceConfig::MATRIX_P3);
-            format.PutIntValue(keyRange, ColorSpaceConfig::RANGE_FULL);
+        if (config_.outputColorSpaceType == ConfigurationParameters::colorSpaceBT709Limited) {
+            format.PutIntValue(keyPrimaries, ConfigurationParameters::primariesBT709Limited);
+            format.PutIntValue(keyTransFunc, ConfigurationParameters::transFuncBT709Limited);
+            format.PutIntValue(keyMatrix, ConfigurationParameters::matrixBT709Limited);
+            format.PutIntValue(keyRange, ConfigurationParameters::rangeBT709Limited);
+        } else if (config_.outputColorSpaceType == ConfigurationParameters::colorSpaceP3Full) {
+            format.PutIntValue(keyPrimaries, ConfigurationParameters::primariesP3Full);
+            format.PutIntValue(keyTransFunc, ConfigurationParameters::transFuncP3Full);
+            format.PutIntValue(keyMatrix, ConfigurationParameters::matrixP3Full);
+            format.PutIntValue(keyRange, ConfigurationParameters::rangeP3Full);
         }
-
-        format.PutIntValue(keyMetadataType, ColorSpaceConfig::METADATA_NONE);
-        format.PutIntValue(keyRenderIntent, ColorSpaceConfig::RENDER_INTENT);
+        format.PutIntValue(keyMetadataType, ConfigurationParameters::metadataType);
+        format.PutIntValue(keyRenderIntent, ConfigurationParameters::renderIntent);
         format.PutIntValue(keyPixelFormat, config_.outputPixelFormat);
 
         return controller_->Configure(format);
