@@ -290,6 +290,11 @@ int32_t CodecServer::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
     return codecBase_->SetCustomBuffer(buffer);
 }
 
+int32_t CodecServer::NotifyMemoryExchange(const bool /* exchangeFlag */)
+{
+    return AVCS_ERR_OK;
+}
+
 int32_t CodecServer::CodecScenarioInit(Format &config)
 {
     switch (scenario_) {

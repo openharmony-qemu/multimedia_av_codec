@@ -371,6 +371,7 @@ protected:
     bool gotFirstOutput_ = false;
     bool outPortHasChanged_ = false;
     int pid_ = -1;
+    double codecRate_ = 0.0;
 
     // VRR
 #ifdef USE_VIDEO_PROCESSING_ENGINE
@@ -571,6 +572,7 @@ private:
     static constexpr uint32_t THREE_SECONDS_IN_US = 3'000'000;
     static constexpr uint32_t ONE_SECONDS_IN_US = 1'000'000;
     static constexpr uint32_t FIVE_SECONDS_IN_MS = 5'000;
+    static constexpr double HIGH_FPS = 120.0;
 
     std::shared_ptr<UninitializedState> uninitializedState_;
     std::shared_ptr<InitializedState> initializedState_;

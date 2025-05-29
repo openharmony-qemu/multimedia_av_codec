@@ -86,6 +86,7 @@ private:
     int32_t SetConstantQualityMode(int32_t quality);
     int32_t SetSQRMode(const Format &format);
     int32_t EnableFrameQPMap(const Format &format);
+    int32_t ConfigBEncodeMode(const Format &format);
     int32_t SetCRFMode(int32_t targetQp);
 
     // start

@@ -34,6 +34,7 @@
 #include "osal/utils/dump_buffer.h"
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_buffer.h"
+#include "plugin/plugin_list.h"
 #include "source/source.h"
 #include "stream_demuxer.h"
 #include "media_core.h"
@@ -48,6 +49,8 @@ namespace {
 const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
+const std::string DEMUXER_PLUGIN_NAME_HEADER = "avdemux_";
+const char DEMUXER_PLUGIN_NAME_DELIMITER = ',';
 static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
 static constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 static constexpr int32_t SKIP_NEXT_OPEN_GOP_CNT = 2;
@@ -524,8 +527,13 @@ void MediaDemuxer::SetPlayerId(std::string playerId)
 
 void MediaDemuxer::SetDumpInfo(bool isDump, uint64_t instanceId)
 {
-    FALSE_RETURN_MSG(!isDump || instanceId != 0, "Can not dump with instanceId 0");
-    dumpPrefix_ = std::to_string(instanceId);
+    (void)instanceId;
+    auto tid = gettid();
+    if (isDump && tid <= 0) {
+        MEDIA_LOG_W("Cannot dump with tid <= 0.");
+        return;
+    }
+    dumpPrefix_ = std::to_string(tid);
     isDump_ = isDump;
 }
 
@@ -890,14 +898,55 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     streamDemuxer_->SetSource(source_);
     streamDemuxer_->Init(uri_);
 
+    std::string inferPluginName = InferDemuxerPluginNameByContentType();
     res = InnerPrepare();
+    std::string snifferPluginName;
+    bool isGotPlugin = demuxerPluginManager_->GetPluginName(snifferPluginName);
     source_->NotifyInitSuccess();
     ProcessDrmInfos();
     FALSE_RETURN_V_NOLOG(eventReceiver_ != nullptr, res);
     eventReceiver_->OnMemoryUsageEvent({"SOURCE",
         DfxEventType::DFX_INFO_MEMORY_USAGE, source_->GetMemorySize()});
+    if (!inferPluginName.empty() && isGotPlugin) {
+        eventReceiver_->OnDfxEvent({"DEMUX", DfxEventType::DFX_INFO_PLAYER_EOS_SEEK,
+            static_cast<int32_t>(snifferPluginName == inferPluginName)});
+    }
     MEDIA_LOG_I("Out");
     return res;
+}
+
+std::string MediaDemuxer::InferDemuxerPluginNameByContentType()
+{
+    FALSE_RETURN_V(source_ != nullptr, "");
+    std::string contentType = source_->GetContentType();
+    FALSE_RETURN_V_NOLOG(!contentType.empty(), "");
+    FALSE_RETURN_V(demuxerPluginManager_ != nullptr, "");
+    std::vector<Plugins::PluginDescription> matchedPluginsDescriptions =
+        Plugins::PluginList::GetInstance().GetPluginsByType(Plugins::PluginType::DEMUXER);
+    for (auto& iter : matchedPluginsDescriptions) {
+        if (IsHitPlugin(iter.pluginName, contentType)) {
+            MEDIA_LOG_I("ContentType: " PUBLIC_LOG_S ", pluginName: " PUBLIC_LOG_S,
+                contentType.c_str(), iter.pluginName.c_str());
+            return iter.pluginName;
+        }
+    }
+    return "";
+}
+
+bool MediaDemuxer::IsHitPlugin(std::string& pluginName, std::string& contentType)
+{
+    std::stringstream ss(pluginName);
+    std::string token;
+    while (std::getline(ss, token, DEMUXER_PLUGIN_NAME_DELIMITER)) {
+        size_t pos = 0;
+        if ((pos = token.find(DEMUXER_PLUGIN_NAME_HEADER, pos)) != std::string::npos) {
+            token.erase(pos, DEMUXER_PLUGIN_NAME_HEADER.size());
+        }
+        if (!token.empty() && contentType.find(token) != std::string::npos) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool MediaDemuxer::IsSubtitleMime(const std::string& mime)
@@ -997,12 +1046,11 @@ void MediaDemuxer::OnInterrupted(bool isInterruptNeeded)
 
 void MediaDemuxer::SetBundleName(const std::string& bundleName)
 {
-    if (source_ != nullptr) {
-        MEDIA_LOG_I("BundleName: " PUBLIC_LOG_S, bundleName.c_str());
-        bundleName_ = bundleName;
-        streamDemuxer_->SetBundleName(bundleName);
-        source_->SetBundleName(bundleName);
-    }
+    FALSE_RETURN(source_ != nullptr && streamDemuxer_ != nullptr);
+    MEDIA_LOG_I("BundleName: " PUBLIC_LOG_S, bundleName.c_str());
+    bundleName_ = bundleName;
+    streamDemuxer_->SetBundleName(bundleName);
+    source_->SetBundleName(bundleName);
 }
 
 Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer)
@@ -1494,6 +1542,7 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
             "sampleQueue is nullptr");
         return sqIt->second->ReadySwitchBitrate(bitRate);
     }
+    FALSE_RETURN_V(demuxerPluginManager_ != nullptr && streamDemuxer_ != nullptr, Status::ERROR_WRONG_STATE);
     if (demuxerPluginManager_->IsDash()) {
         if (streamDemuxer_->CanDoChangeStream() == false) {
             MEDIA_LOG_W("Wrong state: selecting");
@@ -2329,6 +2378,7 @@ Status MediaDemuxer::PushBufferToQueue(uint32_t trackId, std::shared_ptr<AVBuffe
 Status MediaDemuxer::HandleRead(uint32_t trackId)
 {
     Status ret = InnerReadSample(trackId, bufferMap_[trackId]);
+    bool isBufferSizeValid = bufferMap_[trackId] != nullptr ? bufferMap_[trackId]->GetConfig().size > 0 : true;
     if (IsRightMediaTrack(trackId, DemuxerTrackType::VIDEO)) {
         std::unique_lock<std::mutex> draggingLock(draggingMutex_);
         if (VideoStreamReadyCallback_ != nullptr) {
@@ -2341,7 +2391,7 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
             draggingLock.unlock();
             bool isDiscardable = videoStreamReadyCallback->IsVideoStreamDiscardable(bufferMap_[trackId]);
             UpdateSyncFrameInfo(bufferMap_[trackId], trackId, isDiscardable);
-            PushBufferToQueue(trackId, bufferMap_[trackId], !isDiscardable);
+            PushBufferToQueue(trackId, bufferMap_[trackId], !isDiscardable && isBufferSizeValid);
             return Status::OK;
         }
     }
@@ -2367,7 +2417,7 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
             SetOutputBufferPts(bufferMap_[trackId]);
         }
         TranscoderUpdateOutputBufferPts(trackId, bufferMap_[trackId]);
-        PushBufferToQueue(trackId, bufferMap_[trackId], !isDroppable);
+        PushBufferToQueue(trackId, bufferMap_[trackId], !isDroppable && isBufferSizeValid);
     } else {
         PushBufferToQueue(trackId, bufferMap_[trackId], false);
         MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_U32 ", ret:" PUBLIC_LOG_D32, trackId, (int32_t)(ret));
@@ -2657,7 +2707,7 @@ void MediaDemuxer::HandleEvent(const Plugins::PluginEvent &event)
     switch (event.type) {
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
-            MEDIA_LOG_E("HandleEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
+            MEDIA_LOG_E("HandleEvent CLIENT/SERVER_ERROR");
             FALSE_RETURN(demuxerPluginManager_ != nullptr);
             demuxerPluginManager_->NotifyInitialBufferingEnd(false);
             break;
@@ -2686,11 +2736,14 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
     switch (event.type) {
         case PluginEventType::SOURCE_DRM_INFO_UPDATE: {
             MEDIA_LOG_D("OnEvent source drmInfo update");
-            HandleSourceDrmInfoEvent(AnyCast<std::multimap<std::string, std::vector<uint8_t>>>(event.param));
+            if (Any::IsSameTypeWith<std::multimap<std::string, std::vector<uint8_t>>>(event.param)) {
+                HandleSourceDrmInfoEvent(AnyCast<std::multimap<std::string, std::vector<uint8_t>>>(event.param));
+            }
             break;
         }
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
+            FALSE_RETURN(Any::IsSameTypeWith<int32_t>(event.param));
             MEDIA_LOG_E("OnEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
             eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
             break;
@@ -2769,6 +2822,7 @@ void MediaDemuxer::OnDashSeekReadyEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("Onevent dash seek ready");
     std::unique_lock<std::mutex> lock(rebootPluginMutex_);
+    FALSE_RETURN(Any::IsSameTypeWith<Format>(event.param));
     Format param = AnyCast<Format>(event.param);
     int32_t currentStreamType = -1;
     param.GetIntValue("currentStreamType", currentStreamType);
@@ -2811,6 +2865,7 @@ void MediaDemuxer::OnHlsSeekReadyEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("Onevent hls seek ready");
     std::unique_lock<std::mutex> lock(rebootPluginMutex_);
+    FALSE_RETURN(Any::IsSameTypeWith<Format>(event.param));
     Format param = AnyCast<Format>(event.param);
     int32_t currentStreamType = -1;
     param.GetIntValue("currentStreamType", currentStreamType);
@@ -3545,6 +3600,32 @@ void MediaDemuxer::ReportMemoryUsage(uint32_t trackId, std::shared_ptr<Plugins::
     FALSE_RETURN_NOLOG(sampleIter != sampleQueueMap_.end());
     memoryUsage = sampleIter->second->GetMemoryUsage();
     eventReceiver_->OnMemoryUsageEvent({"SAMPLE_QUEUE", DfxEventType::DFX_INFO_MEMORY_USAGE, memoryUsage});
+}
+
+bool MediaDemuxer::IsSeekToTimeSupported()
+{
+    return source_ != nullptr && source_->IsSeekToTimeSupported();
+}
+
+Status MediaDemuxer::GetCurrentCacheSize(uint32_t trackId, uint32_t& size)
+{
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
+    if (IsNeedMapToInnerTrackID()) {
+        int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);
+        FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Plugin is nullptr");
+        int32_t innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
+        FALSE_RETURN_V_MSG_E(innerTrackID != INVALID_STREAM_OR_TRACK_ID,
+            Status::ERROR_INVALID_PARAMETER, "Plugin is nullptr");
+        trackId = static_cast<uint32_t>(innerTrackID);
+    } else {
+        int32_t streamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);
+        FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Plugin is nullptr");
+    }
+    return pluginTemp->GetCurrentCacheSize(trackId, size);
 }
 } // namespace Media
 } // namespace OHOS

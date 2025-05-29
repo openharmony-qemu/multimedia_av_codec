@@ -414,6 +414,7 @@ int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render, in
 {
     AVCodecTrace trace("VideoDecoderAdapter::ReleaseOutputBuffer pts " + std::to_string(pts) + " " +
                        std::to_string(render));
+    FALSE_RETURN_V(mediaCodec_ != nullptr, 0);
     FALSE_RETURN_V_NOLOG(!isPerfRecEnabled_, ReleaseOutputBufferWithPerfRecord(index, render));
     mediaCodec_->ReleaseOutputBuffer(index, render);
     return 0;
@@ -441,6 +442,7 @@ int32_t VideoDecoderAdapter::RenderOutputBufferAtTime(uint32_t index, int64_t re
     AVCodecTrace trace("RenderOutputBufferAtTime pts " + std::to_string(pts) + " time " +
                        std::to_string(renderTimestampNs));
     MEDIA_LOG_D_SHORT("VideoDecoderAdapter::RenderOutputBufferAtTime");
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     mediaCodec_->RenderOutputBufferAtTime(index, renderTimestampNs);
     return 0;
 }
@@ -500,6 +502,12 @@ void VideoDecoderAdapter::OnDumpInfo(int32_t fd)
         MEDIA_LOG_E_SHORT("VideoDecoderAdapter::OnDumpInfo write failed.");
         return;
     }
+}
+
+void VideoDecoderAdapter::NotifyMemoryExchange(bool exchangeFlag)
+{
+    FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
+    mediaCodec_->NotifyMemoryExchange(exchangeFlag);
 }
 } // namespace Media
 } // namespace OHOS

@@ -168,16 +168,19 @@ const std::map<std::string, std::string> CAPABILITY_DECODER_HARD_NAME_VVC = {
 const std::string DEFAULT_VIDEO_VVC_MIME = std::string(CodecMimeType::VIDEO_VVC);
 
 constexpr int32_t MAX_SURPPORT_VCODEC_VVC = 4;
-constexpr int32_t DEFAULT_WIDTH_VVC = 3840;
-constexpr int32_t DEFAULT_HEIGHT_VVC = 2160;
+constexpr int32_t DEFAULT_WIDTH_VVC = 4096;
+constexpr int32_t DEFAULT_HEIGHT_VVC = 4096;
+constexpr int32_t FRAME_RATE_WIDTH_VVC = 3840;
+constexpr int32_t FRAME_RATE_HEIGHT_VVC = 2160;
+
 constexpr int32_t DEFAULT_VIDEO_VVC_PROFILE = VVC_PROFILE_MAIN_10_STILL;
 constexpr int32_t DEFAULT_VIDEO_VVC_LEVEL = VVC_LEVEL_1;
 constexpr int32_t ERROR_VIDEO_VVC_PROFILE = -1;
 
-constexpr OH_AVRange DEFAULT_HEIGHT_RANGE_VVC = {128, 3840};
-constexpr OH_AVRange DEFAULT_WIDTH_RANGE_VVC = {128, 3840};
-constexpr OH_AVRange DEFAULT_HEIGHT_RANGE_OF_WIDTH_VVC = {128, 2176};
-constexpr OH_AVRange DEFAULT_WIDTH_RANGE_OF_HEIGHT_VVC = {128, 3840};
+constexpr OH_AVRange DEFAULT_HEIGHT_RANGE_VVC = {128, 4096};
+constexpr OH_AVRange DEFAULT_WIDTH_RANGE_VVC = {128, 4096};
+constexpr OH_AVRange DEFAULT_HEIGHT_RANGE_OF_WIDTH_VVC = {128, 4096};
+constexpr OH_AVRange DEFAULT_WIDTH_RANGE_OF_HEIGHT_VVC = {128, 4096};
 constexpr OH_AVRange DEFAULT_FRAMERATE_RANGE_VVC = {1, 240};
 
 const std::vector<int32_t> DEFAULT_VIDEO_VVC_PIXFORMATS = {

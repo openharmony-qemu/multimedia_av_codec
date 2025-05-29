@@ -22,6 +22,7 @@
 #include "sink/audio_sampleformat.h"
 #include "avcodec_info.h"
 #include "avcodec_sysevent.h"
+#include "avcodec_trace.h"
 #include "scoped_timer.h"
 #ifdef SUPPORT_DRM
 #include "imedia_key_session_service.h"
@@ -140,6 +141,7 @@ AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filte
 
 AudioDecoderFilter::~AudioDecoderFilter()
 {
+    Filter::StopFilterTask();
     {
         std::lock_guard<std::mutex> lock(releaseMutex_);
         if (isReleased_.load()) {
@@ -548,6 +550,25 @@ void AudioDecoderFilter::OnError(CodecErrorType errorType, int32_t errorCode)
     }
 }
 
+void AudioDecoderFilter::OnOutputFormatChanged(const Format& format)
+{
+    FALSE_RETURN_NOLOG(meta_ && nextFilter_);
+    int32_t sampleRate = 0;
+    int32_t channels = 0;
+    int32_t sampleFormat = 0;
+    FALSE_RETURN(format.GetIntValue(Tag::AUDIO_SAMPLE_RATE, sampleRate));
+    FALSE_RETURN(format.GetIntValue(Tag::AUDIO_CHANNEL_COUNT, channels));
+    FALSE_RETURN(format.GetIntValue(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat));
+    std::string formatChangeInfo = "AudioFormatChange sampleRate " + std::to_string(sampleRate) + " channels "
+                                    + std::to_string(channels) + " smpFmt " + std::to_string(sampleFormat);
+    MediaAVCodec::AVCodecTrace trace(formatChangeInfo);
+    MEDIA_LOG_I("%s", formatChangeInfo.c_str());
+    meta_->SetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+    meta_->SetData(Tag::AUDIO_OUTPUT_CHANNELS, channels);
+    meta_->SetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
+    nextFilter_->HandleFormatChange(meta_);
+}
+
 AudioDecoderCallback::AudioDecoderCallback(std::shared_ptr<AudioDecoderFilter> audioDecoderFilter)
     : audioDecoderFilter_(audioDecoderFilter)
 {
@@ -577,7 +598,9 @@ void AudioDecoderCallback::OnError(MediaAVCodec::AVCodecErrorType errorType, int
 
 void AudioDecoderCallback::OnOutputFormatChanged(const Format &format)
 {
-    (void)format;
+    auto codecFilter = audioDecoderFilter_.lock();
+    FALSE_RETURN_MSG(codecFilter != nullptr, "AudioDecoderFilter is nullptr");
+    codecFilter->OnOutputFormatChanged(format);
 }
 
 void AudioDecoderCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)

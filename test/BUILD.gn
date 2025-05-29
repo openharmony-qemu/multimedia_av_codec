@@ -249,6 +249,9 @@ group("av_codec_fuzz_test") {
       "fuzztest/hdrmuxer_fuzzer:HdrMuxerFuzzTest",
       "fuzztest/hevcswdecoderconfigure_fuzzer:HevcSwdecoderConfigureFuzzTest",
       "fuzztest/hevcswdecoderserver_fuzzer:HevcSwdecoderServerFuzzTest",
+      "fuzztest/hevcswdecoderservermemrecycle_fuzzer:HevcSwdecoderServerMemrecycleFuzzTest",
+      "fuzztest/hevcswdecoderservernormal_fuzzer:HevcSwdecoderServerNormalFuzzTest",
+      "fuzztest/hevcswdecoderserversurface_fuzzer:HevcSwdecoderServerSurfaceFuzzTest",
       "fuzztest/hevcswdecodersetparameter_fuzzer:HevcSwdecoderSetParameterFuzzTest",
       "fuzztest/hwdecoder_fuzzer:HwdecoderFuzzTest",
       "fuzztest/hwdecoderapi10h26510bit_fuzzer:HwdecoderAPI10H26510BitFuzzTest",
@@ -274,6 +277,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
       "fuzztest/swdecoderserver_fuzzer:SwdecoderServerFuzzTest",
       "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
+      "fuzztest/demuxersetdatasourcewithprobsize_fuzzer:DemuxerSetDataSourceWithProbSizeFuzzTest",
     ]
   }
 }

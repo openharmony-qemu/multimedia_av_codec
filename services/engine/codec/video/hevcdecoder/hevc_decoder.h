@@ -226,6 +226,7 @@ private:
     std::shared_ptr<MediaCodecCallback> callback_;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
+    std::atomic<bool> requestSucceed_ = false;
     std::atomic<bool> requestBufferFinished_ = true;
     std::atomic<bool> requestBufferThreadExit_ = false;
     std::thread mRequestSurfaceBufferThread_;

@@ -176,6 +176,7 @@ Status MetaDataFilter::DoPrepare()
 {
     MEDIA_LOG_I("Prepare");
     MediaAVCodec::AVCodecTrace trace("MetaDataFilter::Prepare");
+    FALSE_RETURN_V_MSG(filterCallback_ != nullptr, Status::ERROR_NULL_POINTER, "filterCallback_ is nullptr");
     filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
         StreamType::STREAMTYPE_ENCODED_VIDEO);
     return Status::OK;
@@ -327,6 +328,7 @@ void MetaDataFilter::OnBufferAvailable()
     int64_t timestamp;
     int32_t bufferSize = 0;
     OHOS::Rect damage;
+    FALSE_RETURN_MSG(inputSurface_ != nullptr, "inputSurface_ is nullptr");
     GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
     FALSE_RETURN(ret == GSERROR_OK && buffer != nullptr);
     constexpr uint32_t waitForEver = -1;

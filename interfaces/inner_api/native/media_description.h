@@ -295,6 +295,9 @@ public:
      * are configured in stable quality rate control mode.
      */
     static constexpr std::string_view MD_KEY_VIDEO_ENCODER_SQR_FACTOR = "sqr_factor";
+    static constexpr std::string_view MD_KEY_REFERENCE_TRACK_IDS = "reference_track_ids";
+    static constexpr std::string_view MD_KEY_TRACK_REFERENCE_TYPE = "track_reference_type";
+    static constexpr std::string_view MD_KEY_TRACK_DESCRIPTION = "track_description";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;

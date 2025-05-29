@@ -51,6 +51,12 @@ public:
     {
         MEDIA_LOG_E("AudioCapture OnInterrupt Hint: " PUBLIC_LOG_D32 ", EventType: " PUBLIC_LOG_D32 ", forceType: "
             PUBLIC_LOG_D32, interruptEvent.hintType, interruptEvent.eventType, interruptEvent.forceType);
+
+        if (interruptEvent.hintType == AudioStandard::InterruptHint::INTERRUPT_HINT_MUTE ||
+            interruptEvent.hintType == AudioStandard::InterruptHint::INTERRUPT_HINT_UNMUTE) {
+            MEDIA_LOG_I("AudioCapture OnInterrupt recv mute state change event, ignore...");
+            return;
+        }
         if (audioCaptureModuleCallback_ != nullptr) {
             MEDIA_LOG_I("audioCaptureModuleCallback_ send info to audioCaptureFilter");
             audioCaptureModuleCallback_->OnInterrupt("AudioCapture OnInterrupt");
@@ -369,7 +375,7 @@ Status AudioCaptureModule::Read(uint8_t *cacheAudioData, size_t expectedLen)
 void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime, bool isFirstFrame)
 {
     MEDIA_LOG_I("AudioCaptureModule GetAudioTime");
-    int32_t ret = true;
+    bool ret = true;
     {
         AutoLock lock(captureMutex_);
         FALSE_RETURN_MSG(audioCapturer_ != nullptr, "Audio capture is null");
@@ -377,7 +383,7 @@ void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime, bool isFirstFrame)
             "Audio capture Status error");
         AudioStandard::Timestamp timestamp{};
         ret = audioCapturer_->GetTimeStampInfo(timestamp, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
-        FALSE_RETURN_MSG(ret == true, "audioCapturer GetAudioTime fail");
+        FALSE_RETURN_MSG(ret, "audioCapturer GetAudioTime fail");
 
         audioDataTime = static_cast<int64_t>(timestamp.time.tv_sec) * AUDIO_NS_PER_SECOND
             + static_cast<int64_t>(timestamp.time.tv_nsec);
@@ -421,6 +427,19 @@ Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
     if (ret != (int32_t)Status::OK) {
         MEDIA_LOG_E("SetAudioCapturerInfoChangeCallback fail error code: %{public}d", ret);
         SetFaultEvent("SetAudioCapturerInfoChangeCallback error", ret);
+        return Status::ERROR_UNKNOWN;
+    }
+    return Status::OK;
+}
+
+Status AudioCaptureModule::SetWillMuteWhenInterrupted(bool muteWhenInterrupted)
+{
+    FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "audioCapturer is nullptr, cannot SetWillMuteWhenInterrupted");
+    int32_t ret = audioCapturer_->SetInterruptStrategy(muteWhenInterrupted ?
+            AudioStandard::InterruptStrategy::MUTE : AudioStandard::InterruptStrategy::DEFAULT);
+    if (ret != static_cast<int32_t>(Status::OK)) {
+        MEDIA_LOG_E("fail error code: %{public}d", ret);
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;

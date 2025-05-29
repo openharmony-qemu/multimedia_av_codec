@@ -66,7 +66,9 @@ struct M3U8Info {
 };
 
 struct M3U8 {
-    M3U8(std::string uri, std::string name);
+    M3U8(std::string uri, std::string name, StatusCallbackFunc statusCallback = [](DownloadStatus,
+         std::shared_ptr<Downloader>&,
+         std::shared_ptr<DownloadRequest>&) {});
     ~M3U8();
     void InitTagUpdaters();
     void InitTagUpdatersMap();
@@ -132,6 +134,9 @@ struct M3U8 {
     std::shared_ptr<DownloadRequest> downloadHeaderRequest_;
     uint32_t offset_ {0};
     uint32_t length_ {0};
+    StatusCallbackFunc monitorStatusCallback_;
+    ConditionVariable sleepCond_ {};
+    Mutex sleepMutex_ {};
 };
 
 struct M3U8Media {
@@ -163,7 +168,10 @@ struct M3U8VariantStream {
 
 struct M3U8MasterPlaylist {
     M3U8MasterPlaylist(const std::string& playList, const std::string& uri, uint32_t initResolution = 0,
-        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>());
+        const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>(),
+        StatusCallbackFunc statusCallback = [](DownloadStatus, std::shared_ptr<Downloader>&,
+        std::shared_ptr<DownloadRequest>&) {});
+    void StartParsing();
     void UpdateMediaPlaylist();
     void UpdateMasterPlaylist();
     void DownloadSessionKey(std::shared_ptr<Tag>& tag);
@@ -193,6 +201,7 @@ struct M3U8MasterPlaylist {
     std::atomic<bool> isFmp4_ {false};
     std::atomic<bool> isPureByteRange_ {false};
     uint32_t defaultStreamId_ {0};
+    StatusCallbackFunc monitorStatusCallback_;
 };
 }
 }

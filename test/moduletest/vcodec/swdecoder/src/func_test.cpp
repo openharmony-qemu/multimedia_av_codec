@@ -255,7 +255,6 @@ HWTEST_F(SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level0)
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 

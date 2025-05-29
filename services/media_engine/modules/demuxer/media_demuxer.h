@@ -171,8 +171,11 @@ public:
     bool IsFlvLive();
     bool HasVideo();
     bool HasAudio();
+    bool IsSeekToTimeSupported();
 
     void SetIsCreatedByFilter(bool isCreatedByFilter);
+
+    Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -300,6 +303,8 @@ private:
     bool IsRightMediaTrack(uint32_t trackId, DemuxerTrackType type) const;
     int64_t GetLastVideoBufferAbsPts(uint32_t trackId) const;
     void UpdateLastVideoBufferAbsPts(uint32_t trackId);
+    std::string InferDemuxerPluginNameByContentType();
+    bool IsHitPlugin(std::string& plugin, std::string& contentType);
     Status OnSelectBitrateOk(int64_t startPts, uint32_t bitRate) override;
     Status SelectBitrateForNonSQ(int64_t startPts, uint32_t bitRate);
     Status OnSampleQueueBufferAvailable(uint32_t queueId) override;

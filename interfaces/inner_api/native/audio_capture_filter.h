@@ -60,6 +60,7 @@ public:
     Status SetAudioCaptureChangeCallback(
         const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback);
     Status GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo);
+    Status SetWillMuteWhenInterrupted(bool muteWhenInterrupted);
     int32_t GetMaxAmplitude();
     void SetVideoFirstFramePts(int64_t firstFramePts);
     void SetWithVideo(bool withVideo);
@@ -95,7 +96,7 @@ private:
     int64_t currentTime_ {0};
     std::atomic<int64_t> firstAudioFramePts_{-1};
     std::atomic<int64_t> firstVideoFramePts_{-1};
-    std::deque<std::shared_ptr<uint8_t>> cachedAudioData_;
+    std::deque<std::shared_ptr<uint8_t>> cachedAudioDataDeque_;
 };
 } // namespace Pipeline
 } // namespace Media

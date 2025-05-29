@@ -357,6 +357,13 @@ extern const char *OH_MD_KEY_CODEC_MIME;
 extern const char *OH_MD_KEY_DURATION;
 /* Key for bitrate, value type is int64_t. */
 extern const char *OH_MD_KEY_BITRATE;
+/**
+ * @brief Key for maximum bitrate, value type is int64_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_MAX_BITRATE;
 /* Key for setting the max decode input size, value type is int32_t. */
 extern const char *OH_MD_KEY_MAX_INPUT_SIZE;
 /* Key for video width, value type is int32_t */
@@ -413,6 +420,15 @@ extern const char *OH_MD_KEY_REQUEST_I_FRAME;
  * can be obtained based on the capability query interface @OH_AVCapability_GetEncoderQualityRange, this key is only
  * supported for encoders that are configured in constant quality mode */
 extern const char *OH_MD_KEY_QUALITY;
+/**
+ * @brief Key for the desired encoding quality, value type is int32_t, this key is only
+ * supported for encoders that are configured in Stable Quality RateControl, the higher
+ * values generally result in more efficient(smaller-sized) encoding.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_SQR_FACTOR;
 /* Key of the codec specific data, value type is a uint8_t pointer.
  * In video, SPS/PPS is transferred. In audio, extraData is transferred. */
 extern const char *OH_MD_KEY_CODEC_CONFIG;
@@ -458,12 +474,12 @@ extern const char *OH_MD_KEY_IDENTIFICATION_HEADER;
 extern const char *OH_MD_KEY_SETUP_HEADER;
 /**
  * @brief Key for video scale type, value type is int32_t, see @OH_ScalingMode.
- * It is recommended to directly call the @OH_NativeIndow_NativeIndowSettcalingModeV2 interface for setting.
+ * It is recommended to directly call the @OH_NativeWindow_NativeWindowSetScalingModeV2 interface for setting.
  * This key is optional and only used for video decoding in Surface mode.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  * @deprecated 14
- * @useinstead OH_NativeIndow_NativeIndowSettcalingModeV2
+ * @useinstead OH_NativeWindow_NativeWindowSetScalingModeV2
  */
 extern const char *OH_MD_KEY_SCALING_MODE;
 /* Key for max input buffer count, value type is int32_t. */
@@ -773,7 +789,7 @@ extern const char *OH_MD_KEY_CREATION_TIME;
  * can be omitted, like "Top1,Left1-Bottom1,Right1;Top2,Left2-Bottom2,Right2=Offset2;", the encoder
  * will use the default quantization parameter to perform the ROI encoding on the first ROI and
  * use Offset2 on the second ROI.
- * 
+ *
  * This is an optional key that applies only to video encoder.
  * It is used in running process and is set with each frame.
  * In surface mode, it is used in {@link OH_VideoEncoder_OnNeedInputParameter}.
@@ -782,6 +798,10 @@ extern const char *OH_MD_KEY_CREATION_TIME;
  * @since 20
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS;
+
+extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
+extern const char *OH_MD_KEY_TRACK_DESCRIPTION;
+extern const char *OH_MD_KEY_REFERENCE_TRACK_IDS;
 
 /**
  * @brief Media type.
@@ -798,6 +818,7 @@ typedef enum OH_MediaType {
      * @since 12
      */
     MEDIA_TYPE_SUBTITLE = 2,
+    MEDIA_TYPE_AUXILIARY = 6,
 } OH_MediaType;
 
 /**
@@ -1332,7 +1353,9 @@ typedef enum OH_BitrateMode {
     /* Variable Bit rate mode. */
     BITRATE_MODE_VBR = 1,
     /* Constant Quality mode. */
-    BITRATE_MODE_CQ = 2
+    BITRATE_MODE_CQ = 2,
+    /* Stable Quality Rate Control Mode. */
+    BITRATE_MODE_SQR = 3
 } OH_BitrateMode;
 
 /**

@@ -34,6 +34,12 @@
 #endif
 
 namespace {
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+const std::string REFERENCE_LIB_PATH = std::string(CAMERA_POST_PROCESSOR_PATH);
+const std::string FILESEPARATOR = "/";
+const std::string REFERENCE_LIB_NAME = "libcamera_post_processor.z.so";
+const std::string REFENCE_LIB_ABSOLUTE_PATH = REFERENCE_LIB_PATH + FILESEPARATOR + REFERENCE_LIB_NAME;
+#endif
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DecoderSurfaceFilter" };
 }
 
@@ -60,6 +66,10 @@ static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("
 static const bool IS_FILTER_ASYNC = system::GetParameter("persist.media_service.async_filter", "1") == "1";
 
 static const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
+
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+void *DecoderSurfaceFilter::cameraPostProcessorLibHandle_ = nullptr;
+#endif
 
 class DecoderSurfaceFilterLinkCallback : public FilterLinkCallback {
 public:
@@ -90,6 +100,7 @@ private:
 const std::unordered_map<VideoScaleType, OHOS::ScalingMode> SCALEMODE_MAP = {
     { VideoScaleType::VIDEO_SCALE_TYPE_FIT, OHOS::SCALING_MODE_SCALE_TO_WINDOW },
     { VideoScaleType::VIDEO_SCALE_TYPE_FIT_CROP, OHOS::SCALING_MODE_SCALE_CROP},
+    { VideoScaleType::VIDEO_SCALE_TYPE_FIT_ASPECT, OHOS::SCALING_MODE_SCALE_FIT},
 };
 
 class FilterVideoPostProcessorCallback : public PostProcessorCallback {
@@ -241,6 +252,7 @@ DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType t
 DecoderSurfaceFilter::~DecoderSurfaceFilter()
 {
     MEDIA_LOG_I("~DecoderSurfaceFilter()");
+    Filter::StopFilterTask();
     ON_SCOPE_EXIT(0) {
         DoRelease();
         MEDIA_LOG_I("~DecoderSurfaceFilter() exit.");
@@ -620,9 +632,17 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     if (parameter->Find(Tag::VIDEO_SCALE_TYPE) != parameter->end()) {
         int32_t scaleType;
         parameter->Get<Tag::VIDEO_SCALE_TYPE>(scaleType);
-        int32_t codecScalingMode = static_cast<int32_t>(ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType)));
-        format.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
-        configFormat_.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
+        preScaleType_ = scaleType;
+        OHOS::ScalingMode scalingMode = ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType));
+        if(videoSurface_) {
+            GSError err = videoSurface_->SetScalingMode(scalingMode);
+            if (err != GSERROR_OK) {
+                MEDIA_LOG_W("set ScalingMode %{public}d to surface failed", static_cast<int>(scalingMode));
+                return;
+            }
+            MEDIA_LOG_D("set ScalingMode %{public}d to surface success", static_cast<int>(scalingMode));
+        }
+        parameter->Remove(Tag::VIDEO_SCALE_TYPE);
     }
     if (parameter->Find(Tag::VIDEO_FRAME_RATE) != parameter->end()) {
         double rate = 0.0;
@@ -736,12 +756,30 @@ void DecoderSurfaceFilter::InitPostProcessorType()
     FALSE_RETURN_NOLOG(
         enableCameraPostprocessing_.load() && enhanceflag == "1" && fdsanFd_ != nullptr && fdsanFd_->Get() >= 0);
     postProcessorType_ = VideoPostProcessorType::CAMERA_INSERT_FRAME;
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+    LoadCameraPostProcessorLib();
+#endif
     std::string videoId;
     meta_->GetData(VIDEO_ID, videoId);
     MEDIA_LOG_D("videoId: %{public}s", videoId.c_str());
     FALSE_RETURN_NOLOG(!videoId.empty());
     configFormat_.PutStringValue(VIDEO_ID, videoId);
 }
+
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+void DecoderSurfaceFilter::LoadCameraPostProcessorLib()
+{
+    std::lock_guard<std::mutex> loadLibLock(loadLibMutex_);
+    FALSE_RETURN_NOLOG(cameraPostProcessorLibHandle_ == nullptr);
+    char path[PATH_MAX] = {0};
+    const char *inputPath = REFENCE_LIB_ABSOLUTE_PATH.c_str();
+    if (strlen(inputPath) > PATH_MAX || realpath(inputPath, path) == nullptr) {
+        MEDIA_LOG_E("failed due to invalid path");
+        return;
+    }
+    cameraPostProcessorLibHandle_ = ::dlopen(path, RTLD_NOW | RTLD_LOCAL);
+}
+#endif
 
 Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
@@ -1070,6 +1108,12 @@ Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
         return Status::ERROR_INVALID_PARAMETER;
     }
     videoSurface_ = videoSurface;
+    OHOS::ScalingMode scalingMode = ConvertMediaScaleType(static_cast<VideoScaleType>(preScaleType_));
+    GSError err = videoSurface_->SetScalingMode(scalingMode);
+    if (err != GSERROR_OK) {
+        MEDIA_LOG_W("set ScalingMode %{public}d to surface failed", static_cast<int>(scalingMode));
+    }
+    MEDIA_LOG_D("set ScalingMode %{public}d to surface success", static_cast<int>(scalingMode));
     if (postProcessor_ != nullptr) {
         MEDIA_LOG_I("postProcessor_ SetOutputSurface in");
         Status res = postProcessor_->SetOutputSurface(videoSurface_);
@@ -1452,6 +1496,13 @@ void DecoderSurfaceFilter::NotifyPause()
     FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
     auto ret = postProcessor_->Pause();
     FALSE_RETURN_MSG(ret == Status::OK, "postProcessor pause error");
+}
+
+void DecoderSurfaceFilter::NotifyMemoryExchange(bool exchangeFlag)
+{
+    MEDIA_LOG_D("NotifyMemoryExchange enter.");
+    FALSE_RETURN_NOLOG(videoDecoder_ != nullptr);
+    videoDecoder_->NotifyMemoryExchange(exchangeFlag);
 }
 } // namespace Pipeline
 } // namespace MEDIA

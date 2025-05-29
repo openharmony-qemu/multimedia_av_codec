@@ -276,6 +276,8 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
     virtual Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufDesc) = 0;
 
     virtual bool IsOffloading() { return false; }
+
+    virtual bool IsFormatSupported(const std::shared_ptr<Meta> &meta) = 0;
 };
 
 /// Audio sink plugin api major number.

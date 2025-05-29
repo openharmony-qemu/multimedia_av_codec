@@ -140,6 +140,7 @@ public:
     void SetDefaultLang(const std::string &lang, MediaAVCodec::MediaType type);
     void SetInterruptState(bool isInterruptNeeded);
     std::string GetUrl() const;
+    std::string GetContentType();
 
 private:
     void ParseManifest();

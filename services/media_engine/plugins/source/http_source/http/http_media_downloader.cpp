@@ -102,24 +102,26 @@ void HttpMediaDownloader::InitCacheBuffer(uint32_t expectBufferDuration)
 {
     int totalBufferSize = CURRENT_BIT_RATE * static_cast<int32_t>(expectBufferDuration);
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
+    FALSE_RETURN_MSG(cacheMediaBuffer_ != nullptr, "HTTP CacheBuffer create failed.");
     if (totalBufferSize < RING_BUFFER_SIZE) {
         MEDIA_LOG_I("HTTP Failed setting cache buffer size: " PUBLIC_LOG_D32
                     ". already lower than the min buffer size: " PUBLIC_LOG_D32
                     ", setting buffer size: " PUBLIC_LOG_D32 ". ", totalBufferSize,
                     RING_BUFFER_SIZE, RING_BUFFER_SIZE);
-        cacheMediaBuffer_->Init(RING_BUFFER_SIZE, CHUNK_SIZE);
+        isCacheBufferInited_ = cacheMediaBuffer_->Init(RING_BUFFER_SIZE, CHUNK_SIZE);
         totalBufferSize_ = RING_BUFFER_SIZE;
     } else if (totalBufferSize > MAX_BUFFER_SIZE) {
         MEDIA_LOG_I("HTTP Failed setting cache buffer size: " PUBLIC_LOG_D32 ". already exceed the max buffer size: "
         PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
         totalBufferSize, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
-        cacheMediaBuffer_->Init(MAX_BUFFER_SIZE, CHUNK_SIZE);
+        isCacheBufferInited_ = cacheMediaBuffer_->Init(MAX_BUFFER_SIZE, CHUNK_SIZE);
         totalBufferSize_ = MAX_BUFFER_SIZE;
     } else {
-        cacheMediaBuffer_->Init(totalBufferSize, CHUNK_SIZE);
+        isCacheBufferInited_ = cacheMediaBuffer_->Init(totalBufferSize, CHUNK_SIZE);
         totalBufferSize_ = totalBufferSize;
         MEDIA_LOG_I("HTTP Success setted cache buffer size: " PUBLIC_LOG_D32, totalBufferSize);
     }
+    FALSE_RETURN_MSG(isCacheBufferInited_, "HTTP CacheBufferInit error");
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferDuration,
@@ -157,6 +159,13 @@ HttpMediaDownloader::~HttpMediaDownloader()
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HttpMediaDownloader dtor", FAKE_POINTER(this));
     Close(false);
+}
+
+std::string HttpMediaDownloader::GetContentType()
+{
+    FALSE_RETURN_V(downloader_ != nullptr, "");
+    MEDIA_LOG_I("In");
+    return downloader_->GetContentType();
 }
 
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
@@ -622,15 +631,18 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
         return HandleRingBuffer(buff, readDataInfo);
     } else {
-        if (cacheMediaBuffer_ == nullptr) {
-            WaitUntilInterrupt(TEN_MILLISECONDS, [this]() {
-                return isInterruptNeeded_.load() || !isCacheBufferInited_;
-            });
-            if (!isCacheBufferInited_) {
-                return Status::END_OF_STREAM;
+        if (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_) {
+            AutoLock lock(sleepMutex_);
+            if (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_) {
+                MEDIA_LOG_I("HTTP wait for CacheBufferInit begin " PUBLIC_LOG_D32, isCacheBufferInited_);
+                sleepCond_.WaitFor(lock, MAX_BUFFERING_TIME_OUT, [this]() {
+                    return isInterruptNeeded_.load() || isCacheBufferInited_;
+                });
+                MEDIA_LOG_I("HTTP wait for CacheBufferInit end " PUBLIC_LOG_D32, isCacheBufferInited_); 
             }
         }
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
+        FALSE_RETURN_V_MSG(isCacheBufferInited_, Status::END_OF_STREAM, "CacheBufferInit fail");
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
         return HandleCacheBuffer(buff, readDataInfo);
     }
@@ -647,7 +659,7 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         float readDuration = static_cast<float>(readRecordDuringTime_) / SECOND_TO_MILLISECONDS; // s
         if (readDuration > ZERO_THRESHOLD) {
             float readSpeed = static_cast<float>(readTotalBytes_ * BYTES_TO_BIT) / readDuration; // bps
-            currentBitrate_ = static_cast<uint64_t>(readSpeed);     // bps
+            readBitrate_ = static_cast<uint64_t>(readSpeed);     // bps
             currentBitRate_ = readSpeed > 0 ? static_cast<int32_t>(readSpeed) : currentBitRate_;     // bps
             size_t curBufferSize = GetCurrentBufferSize();
             MEDIA_LOG_D("HTTP Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
@@ -968,13 +980,18 @@ uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len, bo
 
 uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
-    if (!isRingBuffer_ && cacheMediaBuffer_ == nullptr && downloadRequest_ != nullptr) {
-        AutoLock lock(sleepMutex_);
-        cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
+    if (!isRingBuffer_ && (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_)) {
+        FALSE_RETURN_V_MSG(downloadRequest_ != nullptr, 0, "downloadRequest_ nullptr");
         if (cacheMediaBuffer_ == nullptr) {
-            isCacheBufferInited_ = false;
+            cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
+        }
+        if (cacheMediaBuffer_ == nullptr) {
+            {
+                AutoLock lock(sleepMutex_);
+                isCacheBufferInited_ = false;
+            }
             sleepCond_.NotifyAll();
-            MEDIA_LOG_I("HTTP create cachebuffer error");
+            MEDIA_LOG_I("HTTP CacheBuffer create failed.");
             return false;
         }
         size_t fileContenLen = downloadRequest_->GetFileContentLength();
@@ -984,13 +1001,14 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
         } else {
             totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
         }
-        isCacheBufferInited_ = cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
         MEDIA_LOG_I("HTTP setting buffer size: " PUBLIC_LOG_D32 " fileContenLen: " PUBLIC_LOG_ZU,
             totalBufferSize_, fileContenLen);
-        if (!isCacheBufferInited_) {
-            MEDIA_LOG_I("HTTP init cachebuffer error");
+        {
+            AutoLock lock(sleepMutex_);
+            isCacheBufferInited_ = cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
         }
         sleepCond_.NotifyAll();
+        FALSE_RETURN_V_MSG(isCacheBufferInited_, 0, "HTTP CacheBufferInit failed");
     }
 
     if (cacheMediaBuffer_ == nullptr && ringBuffer_ == nullptr) {
@@ -1168,8 +1186,8 @@ void HttpMediaDownloader::DownloadReport()
                 std::to_string(downloadRate) + " bit/s, bufferSize: " + std::to_string(remainingBuffer) + " Byte");
             // Remaining playable time: s
             uint64_t bufferDuration = 0;
-            if (currentBitrate_ > 0) {
-                bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / currentBitrate_;
+            if (readBitrate_ > 0) {
+                bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / readBitrate_;
             } else {
                 bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / CURRENT_BIT_RATE;
             }
@@ -1302,8 +1320,8 @@ void HttpMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
         playbackInfo.downloadRate = static_cast<int64_t>(recordData_->downloadRate);
         size_t remainingBuffer = GetCurrentBufferSize();
         uint64_t bufferDuration = 0;
-        if (currentBitrate_ > 0) {
-            bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / currentBitrate_;
+        if (readBitrate_ > 0) {
+            bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / readBitrate_;
         } else {
             bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / CURRENT_BIT_RATE;
         }
@@ -1362,6 +1380,7 @@ Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     } else {
         videoBitrate_ = std::max(currentBitRate_, bitRate);
     }
+    currentBitRate_ =  static_cast<int32_t>(videoBitrate_);
     return Status::OK;
 }
 

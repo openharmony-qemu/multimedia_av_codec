@@ -159,6 +159,8 @@ public:
         (void)isTriggeredByOutPort;
         (void)isFlushed;
     }
+
+    virtual int32_t NotifyMemoryExchange(const bool exchangeFlag) = 0;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
