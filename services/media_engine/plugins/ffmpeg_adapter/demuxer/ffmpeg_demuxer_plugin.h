@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,417 +13,325 @@
  * limitations under the License.
  */
 
-#define MEDIA_PLUGIN
-#include <unistd.h>
-#include <chrono>
-#include "avcodec_trace.h"
-#include "securec.h"
-#include "ffmpeg_format_helper.h"
-#include "ffmpeg_utils.h"
-#include "buffer/avbuffer.h"
-#include "plugin/plugin_buffer.h"
-#include "plugin/plugin_definition.h"
-#include "common/log.h"
-#include "meta/video_types.h"
-#include "demuxer_log_compressor.h"
-#include "ffmpeg_demuxer_plugin.h"
-#include "meta/format.h"
-#include "syspara/parameters.h"
+#ifndef FFMPEG_DEMUXER_PLUGIN_H
+#define FFMPEG_DEMUXER_PLUGIN_H
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerThread" };
+#include <atomic>
+#include <vector>
+#include <thread>
+#include <map>
+#include <queue>
+#include <shared_mutex>
+#include <list>
+#include "buffer/avbuffer.h"
+#include "plugin/demuxer_plugin.h"
+#include "block_queue_pool.h"
+#include "stream_parser_manager.h"
+#include "reference_parser_manager.h"
+#include "meta/meta.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "libavformat/avformat.h"
+#include "libavcodec/avcodec.h"
+#include "libavutil/dict.h"
+#include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
+#include "libavcodec/bsf.h"
+#ifdef __cplusplus
 }
+#endif
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-const int32_t AV_READ_PACKET_READ_ERROR = -1;
-const int32_t AV_READ_PACKET_READ_AGAIN = -2;
-const int32_t AV_READ_PACKET_RETRY_UPPER_LIMIT = 9;
-const int32_t AV_READ_PACKET_SLEEP_TIME = 50;
+extern const std::vector<AVCodecID> g_streamContainedXPS;
+class FFmpegDemuxerPlugin : public DemuxerPlugin {
+public:
+    explicit FFmpegDemuxerPlugin(std::string name);
+    ~FFmpegDemuxerPlugin() override;
+    Status Reset() override;
+    Status Start() override;
+    Status Stop() override;
+    Status Flush() override;
+    Status SetDataSource(const std::shared_ptr<DataSource>& source) override;
+    Status GetMediaInfo(MediaInfo& mediaInfo) override;
+    Status GetUserMeta(std::shared_ptr<Meta> meta) override;
+    Status SelectTrack(uint32_t trackId) override;
+    Status UnselectTrack(uint32_t trackId) override;
+    Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
+    Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
+    Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
+    Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
+    Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) override;
+    Status Pause() override;
+    Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) override;
+    Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
+    void ResetEosStatus() override;
+    bool IsRefParserSupported() override;
+    Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override;
+    Status ParserRefInfo() override;
+    Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
+    Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo) override;
+    Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
+    Status GetIFramePos(std::vector<uint32_t> &IFramePos) override;
+    Status Dts2FrameId(int64_t dts, uint32_t &frameId) override;
+    Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId) override;
+    Status FrameId2SeekMs(uint32_t frameId, int64_t &seekMs) override;
+    Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+        const uint64_t relativePresentationTimeUs, uint32_t &index) override;
+    Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+        const uint32_t index, uint64_t &relativePresentationTimeUs) override;
+    void SetCacheLimit(uint32_t limitSize) override;
+    Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size) override;
+    bool GetProbeSize(int32_t &offset, int32_t &size) override;
+    void SetInterruptState(bool isInterruptNeeded) override;
+    Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
+        const int32_t probSize) override;
+private:
+    enum ThreadState : unsigned int {
+        NOT_STARTED,
+        WAITING,
+        READING,
+    };
+   
+    enum InvokerType : unsigned int {
+        INVOKER_NONE = 0,
+        INIT,
+        READ,
+        SEEK,
+        DESTORY,
+    };
 
-std::condition_variable FFmpegDemuxerPlugin::readCbCv_;
-std::mutex FFmpegDemuxerPlugin::readPacketMutex_;
-
-// Write packet data into the buffer provided by ffmpeg
-int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
-{
-    int ret = CheckContextIsValid(opaque, bufSize);
-    FALSE_RETURN_V(ret == 0, ret);
-    ret = -1;
-    auto ioContext = static_cast<IOContext*>(opaque);
-    FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "IOContext is nullptr");
-    auto buffer = std::make_shared<Buffer>();
-    FALSE_RETURN_V_MSG_E(buffer != nullptr, ret, "Buffer is nullptr");
-    auto bufData = buffer->WrapMemory(buf, bufSize, 0);
-    FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, ret, "Memory is nullptr");
-    MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
+    enum DumpMode : unsigned long {
+        DUMP_NONE = 0,
+        DUMP_READAT_INPUT = 0b001,
+        DUMP_AVPACKET_OUTPUT = 0b010,
+        DUMP_AVBUFFER_OUTPUT = 0b100,
+    };
+    enum IndexAndPTSConvertMode : unsigned int {
+        GET_FIRST_PTS,
+        INDEX_TO_RELATIVEPTS,
+        RELATIVEPTS_TO_INDEX,
+        GET_ALL_FRAME_PTS,
+    };
+    struct IOContext {
+        std::shared_ptr<DataSource> dataSource {nullptr};
+        int64_t offset {0};
+        uint64_t fileSize {0};
+        bool eos {false};
+        std::atomic<bool> retry {false};
+        uint32_t initDownloadDataSize {0};
+        std::atomic<bool> initCompleted {false};
+        DumpMode dumpMode {DUMP_NONE};
+        bool isLimit {false};
+        bool isLimitType {false};
+        int32_t sizeLimit {0};
+        int32_t readSizeCnt {0};
+        std::atomic<bool> initErrorAgain {false};
+        std::mutex invokerTypeMutex;
+        std::atomic<InvokerType> invokerType {INVOKER_NONE};
+        bool readCbReady_ {false};
+    };
     
-    int tryCount = 0;
-    bool needBlockWait = false;
-    do {
-        auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
-        int dataSize = static_cast<int>(buffer->GetMemory()->GetSize());
-        UpdateInitDownloadData(ioContext, dataSize);
-        MEDIA_LOG_D("Want:" PUBLIC_LOG_D32 ", Get:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64 ", index:" PUBLIC_LOG_D32,
-            bufSize, dataSize, ioContext->offset, readatIndex_.load());
-    #ifdef BUILD_ENG_VERSION
-        DumpParam dumpParam {DumpMode(DUMP_READAT_INPUT & ioContext->dumpMode), buf, -1, ioContext->offset,
-            dataSize, readatIndex_++, -1, -1};
-        Dump(dumpParam);
-    #endif
-        switch (result) {
-            case Status::OK:
-                ret = HandleReadOK(ioContext, dataSize);
-                return ret;
-            case Status::ERROR_AGAIN:
-                ret = HandleReadAgain(ioContext, dataSize, tryCount, needBlockWait);
-                if (ret != AV_READ_PACKET_READ_AGAIN) {
-                    return ret;
-                }
-                if (needBlockWait) {
-                    std::unique_lock<std::mutex> readLock(readPacketMutex_);
-                    readCbCv_.wait(readLock, [ioContext]() {return ioContext->readCbReady_;}); // Wait to be notified
-                    needBlockWait = false;
-                    ioContext->readCbReady_ = false; // Reset the flag
-                    tryCount = 0;
-                } else {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
-                }
-                break;
-            case Status::END_OF_STREAM:
-                ret = HandleReadEOS(ioContext);
-                return ret;
-            default:
-                ret = HandleReadError(static_cast<int>(result));
-                return ret;
-        }
-    } while (true);
-    return ret;
-}
+    bool SelectedVideo();
+    bool NeedDropAfterSeek(uint32_t trackId, int64_t pts);
+    std::atomic<int64_t> seekTime_ = AV_NOPTS_VALUE;
+    std::atomic<SeekMode> seekMode_ = SeekMode::SEEK_NEXT_SYNC;
+    void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
+    int64_t GetFileDuration(const AVFormatContext& avFormatContext);
+    int64_t GetStreamDuration(const AVStream& avStream);
 
-int FFmpegDemuxerPlugin::HandleReadOK(IOContext* ioContext, int dataSize)
-{
-    if (dataSize > 0) {
-        ioContext->offset += dataSize;
-        return dataSize;
-    }
-    return AV_READ_PACKET_READ_ERROR;
-}
+    int SelectSeekTrack() const;
+    Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
+    void SyncSeekThread();
+    Status DoSeekInternal(int trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime);
 
-int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize,
-                                         int& tryCount, bool& needBlockWait)
-{
-    if (dataSize > 0) {
-        ioContext->offset += dataSize;
-        return dataSize;
-    }
-    if (ioContext->invokerType != InvokerType::READ) {
-        ioContext->retry = true;
-        ioContext->initErrorAgain = (ioContext->invokerType == InvokerType::INIT ? true : false);
-        MEDIA_LOG_I("Read again, set retry, invokerType!=READ");
-        return AV_READ_PACKET_READ_ERROR;
-    }
-    tryCount++;
-    if (tryCount >= AV_READ_PACKET_RETRY_UPPER_LIMIT) {
-        MEDIA_LOG_I("Read again " PUBLIC_LOG_D32 " times, block wait for wakeup", AV_READ_PACKET_RETRY_UPPER_LIMIT);
-        needBlockWait = true;
-    } else {
-        MEDIA_LOG_I("Read again, retry count: " PUBLIC_LOG_D32, tryCount);
-    }
-    return AV_READ_PACKET_READ_AGAIN;
-}
+    static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
+    static int HandleReadOK(IOContext* ioContext, int dataSize);
+    static int HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount, bool& needBlockWait);
+    static int HandleReadEOS(IOContext* ioContext);
+    static int HandleReadError(int result);
+    static void UpdateInitDownloadData(IOContext* ioContext, int dataSize);
+    static int AVWritePacket(void* opaque, uint8_t* buf, int bufSize);
+    static int64_t AVSeek(void* opaque, int64_t offset, int whence);
+    AVIOContext* AllocAVIOContext(int flags, IOContext *ioContext);
+    std::shared_ptr<AVFormatContext> InitAVFormatContext(IOContext *ioContext);
+    static int CheckContextIsValid(void* opaque, int &bufSize);
+    void NotifyInitializationCompleted();
 
-int FFmpegDemuxerPlugin::HandleReadEOS(IOContext* ioContext)
-{
-    MEDIA_LOG_I("Read end");
-    ioContext->eos = true;
-    return AVERROR_EOF;
-}
+    void InitParser();
+    void InitBitStreamContext(const AVStream& avStream);
+    Status ConvertAvcToAnnexb(AVPacket& pkt);
+    Status PushEOSToAllCache();
+    bool TrackIsSelected(const uint32_t trackId);
+    Status ReadPacketToCacheQueue(const uint32_t readId);
+    Status AddPacketToCacheQueue(AVPacket *pkt);
+    Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
+    void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
+    Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
+    Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
+        std::shared_ptr<SamplePacket> dstSamplePacket);
+    Status SetEosSample(std::shared_ptr<AVBuffer> sample);
+    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, int32_t writeSize);
+    void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
+        std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
+    bool GetNextFrame(const uint8_t *data, const uint32_t size);
+    bool NeedCombineFrame(uint32_t trackId);
+    AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
+    Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    Status GetSeiInfo();
+    bool HasCodecParameters();
+    Status GetMediaInfo();
+    void ResetParam();
 
-int FFmpegDemuxerPlugin::HandleReadError(int result)
-{
-    MEDIA_LOG_I("Read failed " PUBLIC_LOG_D32, static_cast<int>(result));
-    return AV_READ_PACKET_READ_ERROR;
-}
+    bool WebvttPktProcess(AVPacket *pkt);
+    bool IsWebvttMP4(const AVStream *avStream);
+    bool IsLessMaxReferenceParserFrames(uint32_t trackIndex);
+    void WebvttMP4EOSProcess(const AVPacket *pkt);
+    Status CheckCacheDataLimit(uint32_t trackId);
 
-void FFmpegDemuxerPlugin::UpdateInitDownloadData(IOContext* ioContext, int dataSize)
-{
-    if (!ioContext->initCompleted) {
-        if (ioContext->initDownloadDataSize <= UINT32_MAX - static_cast<uint32_t>(dataSize)) {
-            ioContext->initDownloadDataSize += static_cast<uint32_t>(dataSize);
-        } else {
-            MEDIA_LOG_W("DataSize " PUBLIC_LOG_U32 " is invalid", static_cast<uint32_t>(dataSize));
-        }
-    }
-}
+    Status GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode,
+        uint32_t trackIndex, int64_t absolutePTS, uint32_t index);
+    Status PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConvertMode mode,
+        const AVStream* avStream, int64_t absolutePTS, uint32_t index);
+    Status PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvertMode mode,
+        const AVStream* avStream, int64_t absolutePTS, uint32_t index);
+    void InitPTSandIndexConvert();
+    void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
+    void RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS);
+    void PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
+        int64_t pts, int64_t absolutePTS, uint32_t index, int64_t dts);
+    void ResetContext();
+    int64_t absolutePTSIndexZero_ = INT64_MAX;
+    std::priority_queue<int64_t> indexToRelativePTSMaxHeap_;
+    uint32_t indexToRelativePTSFrameCount_ = 0;
+    uint32_t relativePTSToIndexPosition_ = 0;
+    int64_t relativePTSToIndexPTSMin_ = INT64_MAX;
+    int64_t relativePTSToIndexPTSMax_ = INT64_MIN;
+    int64_t relativePTSToIndexRightDiff_ = INT64_MAX;
+    int64_t relativePTSToIndexLeftDiff_ = INT64_MAX;
+    int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
+    Status InitIoContext();
+    Status ParserRefInit();
+    Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
+    Status SelectProGopId();
+    void ParserBoxInfo();
+    AVStream *GetVideoStream();
 
-Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout)
-{
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
-    Status ret;
-    MediaAVCodec::AVCodecTrace trace("ReadSample_timeout");
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
-    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
-        "Cannot use sync and async Read together");
-    readModeMap_[1] = 1;
-    isPauseReadPacket_ = true;
-    if (ioContext_.invokerType != InvokerType::READ) {
-        std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = InvokerType::READ;
-    }
-    trackId_ = trackId;
-    if (!readThread_) {
-        readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
-    }
-    ret = WaitForLoop(trackId, timeout);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Frame reading thread error, ret = " PUBLIC_LOG_D32, ret);
+    std::mutex mutex_ {};
+    std::shared_mutex sharedMutex_;
+    std::unordered_map<uint32_t, std::shared_ptr<std::mutex>> trackMtx_;
+    Seekable seekable_;
+    IOContext ioContext_;
+    std::vector<uint32_t> selectedTrackIds_;
+    BlockQueuePool cacheQueue_;
+    MediaInfo mediaInfo_;
+    FileType fileType_ = FileType::UNKNOW;
+
+    std::shared_ptr<AVInputFormat> pluginImpl_ {nullptr};
+    std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
+    std::shared_ptr<AVBSFContext> avbsfContext_ {nullptr};
+    std::shared_ptr<StreamParserManager> streamParser_ {nullptr};
+    bool streamParserInited_ {false};
+
+    Status GetVideoFirstKeyFrame(uint32_t trackIndex);
+    void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
+    AVPacket *firstFrame_ = nullptr;
+
+    std::atomic<bool> parserState_ = true;
+    IOContext parserRefIoContext_;
+    std::shared_ptr<AVFormatContext> parserRefCtx_{nullptr};
+    int parserRefIdx_ = -1;
+    std::shared_ptr<ReferenceParserManager> referenceParser_{nullptr};
+    int32_t parserCurGopId_ = 0;
+    int64_t pendingSeekMsTime_ = -1;
+    int64_t parserRefStartTime_ = -1;
+    std::list<uint32_t> processingIFrame_;
+    std::vector<uint32_t> IFramePos_;
+    int64_t minPts_ = 0;
+    int64_t startPts_ = 0;
+    uint32_t ptsCnt_ = 0;
+    bool isSdtpExist_ = false;
+    std::mutex syncMutex_;
+    bool updatePosIsForward_ = true;
+    bool isInit_ = false;
+    uint32_t cachelimitSize_ = 0;
+    bool outOfLimit_ = false;
+    bool setLimitByUser = false;
+    std::atomic<bool> isInterruptNeeded_{false};
+
+    // dfx
+    struct TrackDfxInfo {
+        int frameIndex = 0; // for each track
+        int64_t lastPts;
+        int64_t lastPos;
+        int64_t lastDurantion;
+    };
+    struct DumpParam {
+        DumpMode mode;
+        uint8_t* buf;
+        int trackId;
+        int64_t offset;
+        int size;
+        int index;
+        int64_t pts;
+        int64_t pos;
+    };
+    std::unordered_map<int, TrackDfxInfo> trackDfxInfoMap_;
+    DumpMode dumpMode_ {DUMP_NONE};
+    static std::atomic<int> readatIndex_;
+    int avpacketIndex_ {0};
+
+    static void Dump(const DumpParam &dumpParam);
+
+    std::map<int64_t, int64_t> pts2DtsMap_;
+    std::unordered_map<int32_t, int64_t> iFramePtsMap_;
+    Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
+    Status ParserRefCheckVideoValid(const AVStream *videoStream);
+    bool IsMultiVideoTrack();
+    int AVReadFrameLimit(AVPacket *pkt);
+    Status SetAVReadFrameLimit();
+
+    Status WaitForLoop(const uint32_t trackId, const uint32_t timeout);
+    void FFmpegReadLoop();
+    bool NeedWaitForRead();
+    void HandleReadWait();
+    bool EnsurePacketAllocated(AVPacket*& pkt);
+    bool ReadAndProcessFrame(AVPacket* pkt);
+    void ReleaseFFmpegReadLoop();
+    std::unique_ptr<std::thread> readThread_ {nullptr};
+    std::condition_variable readLoopCv_;
+    static std::condition_variable readCbCv_;
+    std::condition_variable readCacheCv_;
+    static std::mutex readPacketMutex_;
+    std::mutex getNextSampleMutex_;
+    std::mutex readSampleMutex_;
+    std::mutex fFmpegReadLoopMutex_;
+    uint32_t trackId_;
+    ThreadState threadState_ {ThreadState::NOT_STARTED};
+    Status readLoopStatus_ = {Status::OK};
+    bool isPauseReadPacket_ = true;
+    std::unordered_map<int, int> readModeMap_; // 0 mean sync read, 1 mean async read
+    std::mutex seekWaitMutex_;
+    std::condition_variable seekWaitCv_;
+    std::atomic<bool> threadReady_ {false};
     
-    std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
-    auto samplePacket = cacheQueue_.Front(trackId);
-    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Cache packet is nullptr");
+};
 
-    if (samplePacket->isEOS) {
-        ret = SetEosSample(sample);
-        if (ret == Status::OK) {
-            MEDIA_LOG_I("Track:" PUBLIC_LOG_D32 " eos [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
-                trackId, trackDfxInfoMap_[trackId].lastPts,
-                trackDfxInfoMap_[trackId].lastDurantion, trackDfxInfoMap_[trackId].lastPos);
-            cacheQueue_.Pop(trackId);
-        }
-        return ret;
-    }
-
-    ret = ConvertAVPacketToSample(sample, samplePacket);
-    if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
-        return Status::OK;
-    } else if (ret == Status::OK) {
-        MEDIA_LOG_D("All partial sample has been copied");
-        cacheQueue_.Pop(trackId);
-    }
-    return ret;
-}
-
-Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t timeout)
-{
-    if (!cacheQueue_.HasCache(trackId)) {
-        if (threadState_ == READING) {
-            std::lock_guard<std::mutex> readLock(readPacketMutex_);
-            ioContext_.readCbReady_ = true;
-            readCbCv_.notify_one();
-        }
-        if (threadState_ == WAITING) {
-            std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
-            threadReady_ = true;
-            readLoopCv_.notify_one();
-        }
-        {
-        std::unique_lock<std::mutex> readLock(readSampleMutex_);
-        if (!readCacheCv_.wait_for(readLock, std::chrono::milliseconds(timeout),
-            [this, trackId] { return cacheQueue_.HasCache(trackId); })) {
-            FALSE_RETURN_V_MSG_E(readLoopStatus_ == Status::OK, readLoopStatus_, "read thread abnoraml end");
-            return Status::ERROR_WAIT_TIMEOUT;
-        }
-        }
-    }
-    return Status::OK;
-}
-
-void FFmpegDemuxerPlugin::FFmpegReadLoop()
-{
-    threadState_ = READING;
-    AVPacket *pkt = nullptr;
-    bool continueRead = true;
-    while (continueRead) {
-        if (NeedWaitForRead()) {
-            HandleReadWait();
-        }
-        readCacheCv_.notify_one();
-        if (ioContext_.invokerType == InvokerType::DESTORY) {
-            MEDIA_LOG_I("DESTORY trackId=" PUBLIC_LOG_D32, trackId_);
-            break;
-        }
-        if (!EnsurePacketAllocated(pkt)) {
-            break;
-        }
-        if (!ReadAndProcessFrame(pkt)) {
-            break;
-        }
-        pkt = nullptr;
-    }
-    threadState_ = NOT_STARTED;
-    readCacheCv_.notify_one();
-    MEDIA_LOG_I("Read loop end");
-}
-
-bool FFmpegDemuxerPlugin::NeedWaitForRead()
-{
-    return (cacheQueue_.HasCache(trackId_) || !isPauseReadPacket_) && ioContext_.invokerType != InvokerType::DESTORY;
-}
-
-void FFmpegDemuxerPlugin::HandleReadWait()
-{
-    std::unique_lock<std::mutex> readLock(ioContext_.invokerTypeMutex);
-    threadState_ = WAITING;
-    seekWaitCv_.notify_one();
-    readLoopCv_.wait(readLock, [this]() {
-        return (threadReady_) || (ioContext_.invokerType == InvokerType::DESTORY) ||
-               (!cacheQueue_.HasCache(trackId_) && isPauseReadPacket_);
-    });
-    threadState_ = READING;
-    threadReady_ = false;
-}
-
-bool FFmpegDemuxerPlugin::EnsurePacketAllocated(AVPacket*& pkt)
-{
-    if (pkt == nullptr) {
-        pkt = av_packet_alloc();
-        if (pkt == nullptr) {
-            MEDIA_LOG_E("Call av_packet_alloc failed");
-            readLoopStatus_ = Status::ERROR_NULL_POINTER;
-            return false;
-        }
-    }
-    return true;
-}
-
-bool FFmpegDemuxerPlugin::ReadAndProcessFrame(AVPacket* pkt)
-{
+typedef struct DtsFinder {
+    explicit DtsFinder(int64_t dts) : dts_(dts) { }
+    bool operator ()(const std::map<int64_t, int64_t>::value_type &item)
     {
-        std::unique_lock<std::mutex> sLock(syncMutex_);
-        readLoopStatus_ = Status::OK;
-        int ffmpegRet = AVReadFrameLimit(pkt);
-        if (ffmpegRet == AVERROR_EOF) { // eos
-            WebvttMP4EOSProcess(pkt);
-            av_packet_free(&pkt);
-            Status ret = PushEOSToAllCache();
-            if (ret != Status::OK) {
-                readLoopStatus_ = ret;
-                return false;
-            }
-            readLoopStatus_ = Status::END_OF_STREAM;
-            readCacheCv_.notify_one();
-            return true;
-        }
-        if (ffmpegRet < 0) { // failed
-            av_packet_free(&pkt);
-            MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
-                AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
-            readLoopStatus_ = Status::ERROR_UNKNOWN;
-            return false;
-        }
+        return dts_ == item.second || dts_ == item.second - 1;
     }
-    auto trackId = pkt->stream_index;
-    // if (trackId >= formatContext_->nb_streams) {
-    //     MEDIA_LOG_E("TrackId " PUBLIC_LOG_D32 " is out of range, nb_streams: " PUBLIC_LOG_D32,
-    //         trackId, formatContext_->nb_streams);
-    //     av_packet_unref(pkt);
-    //     readLoopStatus_ = Status::ERROR_INVALID_PARAMETER;
-    //     return false;
-    // }
-    if (!TrackIsSelected(trackId)) {
-        av_packet_unref(pkt);
-        return true;
-    }
-    AVStream *avStream = formatContext_->streams[trackId];
-    if (IsWebvttMP4(avStream) && WebvttPktProcess(pkt)) {
-        return true;
-    }
-    Status ret = AddPacketToCacheQueue(pkt);
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("Add cache failed");
-        readLoopStatus_ = ret;
-        return false;
-    }
-    readCacheCv_.notify_one();
-    return true;
-}
-
-void FFmpegDemuxerPlugin::ReleaseFFmpegReadLoop()
-{
-    if (ioContext_.invokerType != InvokerType::DESTORY) {
-        std::lock_guard<std::mutex> destoryLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = InvokerType::DESTORY;
-        readLoopCv_.notify_one();
-    }
-    readCbCv_.notify_one();
-    if (readThread_ != nullptr && readThread_->joinable()) {
-        readThread_->join();
-    }
-    readThread_ = nullptr;
-}
-
-Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout)
-{
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
-    MediaAVCodec::AVCodecTrace trace("GetNextSampleSize_timeout");
-    MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
-    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
-        "Cannot use sync and async Read together");
-    readModeMap_[1] = 1;
-    if (ioContext_.invokerType != InvokerType::READ) {
-        std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = InvokerType::READ;
-    }
-    trackId_ = trackId;
-    if (!readThread_) {
-        readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
-    }
-
-    Status ret = WaitForLoop(trackId, timeout);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Frame reading thread error, ret = " PUBLIC_LOG_D32, ret);
-
-    std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
-    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_UNKNOWN, "Cache sample is nullptr");
-    if (samplePacket->isEOS) {
-        MEDIA_LOG_I("Track " PUBLIC_LOG_D32 " eos", trackId);
-        return Status::END_OF_STREAM;
-    }
-    FALSE_RETURN_V_MSG_E(samplePacket->pkts.size() > 0, Status::ERROR_UNKNOWN, "Cache sample is empty");
-    int totalSize = 0;
-    for (auto pkt : samplePacket->pkts) {
-        FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet in sample is nullptr");
-        totalSize += pkt->size;
-    }
-
-    FALSE_RETURN_V_MSG_E(trackId < formatContext_->nb_streams, Status::ERROR_UNKNOWN, "Track is out of range");
-    AVStream* avStream = formatContext_->streams[trackId];
-    FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr,
-        Status::ERROR_UNKNOWN, "AVStream is nullptr");
-    if ((std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), avStream->codecpar->codec_id) > 0) &&
-        static_cast<uint32_t>(samplePacket->pkts[0]->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY)) {
-        totalSize += avStream->codecpar->extradata_size;
-    }
-    size = totalSize;
-    return Status::OK;
-}
-
-Status FFmpegDemuxerPlugin::Pause()
-{
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    isPauseReadPacket_ = false;
-    return Status::OK;
-}
-
-Status FFmpegDemuxerPlugin::GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS)
-{
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
-    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
-    lastPTS = INT64_MIN;
-    auto ret = cacheQueue_.GetLastPTSByTrackId(trackId, lastPTS);
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("Get last pts failed");
-    }
-    return ret;
-}
+    int64_t dts_;
+} DtsFinder;
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS
+#endif // FFMPEG_DEMUXER_PLUGIN_H
