@@ -407,19 +407,19 @@ private:
 
         Format format(format_);
         if (config_.outputColorSpaceType == static_cast<int32_t>(ColorSpaceConfig::BT709_LIMITED)) {
-            format.PutIntValue(keyPrimaries, static_cast<int32_t>(ColorPrimaries::BT709));
-            format.PutIntValue(keyTransFunc, static_cast<int32_t>(TransferFunction::BT709));
-            format.PutIntValue(keyMatrix, static_cast<int32_t>(MatrixCoefficients::BT709));
-            format.PutIntValue(keyRange, static_cast<int32_t>(ColorRange::LIMITED));
+            format.PutIntValue(keyPrimaries, static_cast<int32_t>(ColorSpaceConfig::PRIMARIES_BT709));
+            format.PutIntValue(keyTransFunc, static_cast<int32_t>(ColorSpaceConfig::TRANS_FUNC_BT709));
+            format.PutIntValue(keyMatrix, static_cast<int32_t>(ColorSpaceConfig::MATRIX_BT709));
+            format.PutIntValue(keyRange, static_cast<int32_t>(ColorSpaceConfig::RANGE_LIMITED));
         } else if (config_.outputColorSpaceType == static_cast<int32_t>(ColorSpaceConfig::P3_FULL)) {
-            format.PutIntValue(keyPrimaries, static_cast<int32_t>(ColorPrimaries::P3));
-            format.PutIntValue(keyTransFunc, static_cast<int32_t>(TransferFunction::P3));
-            format.PutIntValue(keyMatrix, static_cast<int32_t>(MatrixCoefficients::P3));
-            format.PutIntValue(keyRange, static_cast<int32_t>(ColorRange::FULL));
+            format.PutIntValue(keyPrimaries, static_cast<int32_t>(ColorSpaceConfig::PRIMARIES_P3));
+            format.PutIntValue(keyTransFunc, static_cast<int32_t>(ColorSpaceConfig::TRANS_FUNC_P3));
+            format.PutIntValue(keyMatrix, static_cast<int32_t>(ColorSpaceConfig::MATRIX_P3));
+            format.PutIntValue(keyRange, static_cast<int32_t>(ColorSpaceConfig::RANGE_FULL));
         }
 
-        format.PutIntValue(keyMetadataType, static_cast<int32_t>(MetadataType::NONE));
-        format.PutIntValue(keyRenderIntent, static_cast<int32_t>(RenderIntent::DEFAULT));
+        format.PutIntValue(keyMetadataType, static_cast<int32_t>(ColorSpaceConfig::METADATA_NONE));
+        format.PutIntValue(keyRenderIntent, static_cast<int32_t>(ColorSpaceConfig::RENDER_INTENT_DEFAULT));
         format.PutIntValue(keyPixelFormat, config_.outputPixelFormat);
 
         return controller_->Configure(format);
