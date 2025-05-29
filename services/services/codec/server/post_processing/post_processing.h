@@ -373,6 +373,28 @@ private:
         }
     }
 
+    enum class ColorSpaceConfig : int32_t {
+        // ColorSpaceType
+        BT709_LIMITED = 0x410101, // OH_COLORSPACE_BT709_LIMIT
+        P3_FULL = 0x230206,       // OH_COLORSPACE_P3_FULL
+        // ColorPrimaries
+        PRIMARIES_BT709 = 1,
+        PRIMARIES_P3 = 6,
+        // TransferFunction
+        TRANS_FUNC_BT709 = 1,
+        TRANS_FUNC_P3 = 2,
+        // MatrixCoefficients
+        MATRIX_BT709 = 1,
+        MATRIX_P3 = 3,
+        // ColorRange
+        RANGE_LIMITED = 2,
+        RANGE_FULL = 1,
+        // MetadataType
+        METADATA_NONE = 0,
+        // RenderIntent
+        RENDER_INTENT_DEFAULT = 2
+    };
+
     int32_t ConfigureController()
     {
         constexpr std::string_view keyPrimaries{"colorspace_primaries"};
@@ -382,33 +404,24 @@ private:
         constexpr std::string_view keyMetadataType{"hdr_metadata_type"};
         constexpr std::string_view keyRenderIntent{"render_intent"};
         constexpr std::string_view keyPixelFormat{"pixel_format"};
-        constexpr int32_t primariesBt709Limited{1};
-        constexpr int32_t transFuncBt709Limited{1};
-        constexpr int32_t matrixBt709Limited{1};
-        constexpr int32_t rangeBt709Limited{2};
-        constexpr int32_t primariesP3Full{6};
-        constexpr int32_t transFuncP3Full{2};
-        constexpr int32_t matrixP3Full{3};
-        constexpr int32_t rangeP3Full{1};
-        constexpr int32_t metadataType{0};
-        constexpr int32_t renderIntent{2};
-        constexpr int32_t colorSpaceTypeBt709Limited{0x410101}; // OH_COLORSPACE_BT709_LIMIT
-        constexpr int32_t colorSpaceTypeP3Full{0x230206}; // OH_COLORSPACE_P3_FULL
+
         Format format(format_);
-        if(config_.outputColorSpaceType == colorSpaceTypeBt709Limited) {
-            format.PutIntValue(keyPrimaries, primariesBt709Limited);
-            format.PutIntValue(keyTransFunc, transFuncBt709Limited);
-            format.PutIntValue(keyMatrix, matrixBt709Limited);
-            format.PutIntValue(keyRange, rangeBt709Limited);
-        } else if (config_.outputColorSpaceType == colorSpaceTypeP3Full) {
-            format.PutIntValue(keyPrimaries, primariesP3Full);
-            format.PutIntValue(keyTransFunc, transFuncP3Full);
-            format.PutIntValue(keyMatrix, matrixP3Full);
-            format.PutIntValue(keyRange, rangeP3Full);
+        if (config_.outputColorSpaceType == static_cast<int32_t>(ColorSpaceConfig::BT709_LIMITED)) {
+            format.PutIntValue(keyPrimaries, static_cast<int32_t>(ColorPrimaries::BT709));
+            format.PutIntValue(keyTransFunc, static_cast<int32_t>(TransferFunction::BT709));
+            format.PutIntValue(keyMatrix, static_cast<int32_t>(MatrixCoefficients::BT709));
+            format.PutIntValue(keyRange, static_cast<int32_t>(ColorRange::LIMITED));
+        } else if (config_.outputColorSpaceType == static_cast<int32_t>(ColorSpaceConfig::P3_FULL)) {
+            format.PutIntValue(keyPrimaries, static_cast<int32_t>(ColorPrimaries::P3));
+            format.PutIntValue(keyTransFunc, static_cast<int32_t>(TransferFunction::P3));
+            format.PutIntValue(keyMatrix, static_cast<int32_t>(MatrixCoefficients::P3));
+            format.PutIntValue(keyRange, static_cast<int32_t>(ColorRange::FULL));
         }
-        format.PutIntValue(keyMetadataType, metadataType);
-        format.PutIntValue(keyRenderIntent, renderIntent);
+
+        format.PutIntValue(keyMetadataType, static_cast<int32_t>(MetadataType::NONE));
+        format.PutIntValue(keyRenderIntent, static_cast<int32_t>(RenderIntent::DEFAULT));
         format.PutIntValue(keyPixelFormat, config_.outputPixelFormat);
+
         return controller_->Configure(format);
     }
 
