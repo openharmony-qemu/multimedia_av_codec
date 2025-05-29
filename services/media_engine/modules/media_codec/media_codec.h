@@ -182,6 +182,8 @@ private:
     void HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingNeeded, Status &ret);
 
     void ResetBufferStatusInfo();
+    Status CodePluginInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer);
+    Status CodePluginOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer);
 
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
@@ -210,6 +212,7 @@ private:
     std::vector<std::shared_ptr<AVBuffer>> inputBufferVector_;
     std::vector<std::shared_ptr<AVBuffer>> outputBufferVector_;
     Mutex stateMutex_;
+    Mutex codecPluginMutex_;
 };
 } // namespace Media
 } // namespace OHOS
