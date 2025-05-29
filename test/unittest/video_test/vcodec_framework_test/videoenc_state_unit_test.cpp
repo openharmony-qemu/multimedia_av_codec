@@ -135,25 +135,13 @@ void SetSync1(OH_AVFormat *format)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, 1);
 }
 
-void SetParamSync0(OH_AVFormat *format)
-{
-    (void)format;
-    // OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE, 0);
-}
-
-void SetParamSync1(OH_AVFormat *format)
-{
-    (void)format;
-    // OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE, 1);
-}
-
 int32_t GetInputSurface(OH_AVCodec *videoEnc)
 {
     OHNativeWindow *nativeWindow;
     return OH_VideoEncoder_GetSurface(videoEnc, &nativeWindow);
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Initialized_Verify_001
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder
@@ -165,7 +153,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Initialized_Verify_002
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder
@@ -173,1038 +161,596 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_001, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_002, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Initialized_Verify_003
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_003, TestSize.Level1)
 {
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
+    SetSync1(format);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Initialized_Verify_004
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_004, TestSize.Level1)
 {
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Initialized_Verify_005
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_005, TestSize.Level1)
 {
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Initialized_Verify_006
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_006, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Initialized_Verify_007
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb|E_IsSetParamCb
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_007, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Initialized_Verify_008
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_008, TestSize.Level1)
-{
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Initialized_Verify_009
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_009, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
+ * @tc.name: VideoEncoder_Initialized_Verify_008
+ * @tc.desc: Encoder state machine verify;
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb|E_IsSetParamCb
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_008, TestSize.Level1)
+{
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+
+    SetSync0(format);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+}
+
+/**.
+ * @tc.name: VideoEncoder_Initialized_Verify_09
+ * @tc.desc: Encoder state machine verify;
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb|E_IsSetParamCb
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_09, TestSize.Level1)
+{
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+
+    SetSync1(format);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+}
+
+/**.
  * @tc.name: VideoEncoder_Initialized_Verify_010
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb|E_IsSetParamCb
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_010, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
 
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Initialized_Verify_011
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb|E_IsSetParamCb
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_011, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
-}
-
-/**
- * @tc.name: VideoEncoder_Initialized_Verify_012
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_012, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Initialized_Verify_013
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_SetCb
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_013, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Initialized_Verify_014
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_014, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Initialized_Verify_015
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_015, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-}
-
-/**
- * @tc.name: VideoEncoder_Initialized_Verify_016
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_016, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
-}
-
-/**
- * @tc.name: VideoEncoder_Initialized_Verify_017
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_017, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Initialized_Verify_018
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_018, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Initialized_Verify_019
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_019, TestSize.Level1)
-{
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_001
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_001, TestSize.Level1)
 {
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_002
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_002, TestSize.Level1)
 {
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_003
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_003, TestSize.Level1)
 {
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_004
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_004, TestSize.Level1)
 {
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_005
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_005, TestSize.Level1)
 {
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_006
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_006, TestSize.Level1)
 {
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_007
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_007, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
+    SetSync1(format);
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_008
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_008, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_009
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_009, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_010
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_010, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_011
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
+ *           flag:E_IsVideoEncoder
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_011, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
+    SetSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_012
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetCb
+ *           flag:E_IsVideoEncoder
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_012, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
+    SetSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
+    SetSync0(format);
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
+    SetSync1(format);
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_013
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb(|E_IsSetCb)
+ *           flag:E_IsVideoEncoder
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_013, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
+    SetSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_014
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb(|E_IsSetCb)
+ *           flag:E_IsVideoEncoder
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_014, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
+    SetSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_015
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb(|E_IsSetCb)
+ *           flag:E_IsVideoEncoder
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_015, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
+    SetSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
 
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_016
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb(|E_IsSetCb)
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_016, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
+
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_017
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_017, TestSize.Level1)
 {
-    SetSync1(format);
-    SetParamSync0(format);
+    SetSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
+    SetSync0(format);
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
+    SetSync1(format);
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_018
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_018, TestSize.Level1)
 {
-    SetSync1(format);
-    SetParamSync0(format);
+    SetSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_019
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_019, TestSize.Level1)
 {
-    SetSync1(format);
-    SetParamSync0(format);
+    SetSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_020
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_020, TestSize.Level1)
 {
-    SetSync1(format);
-    SetParamSync0(format);
+    SetSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_021
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_021, TestSize.Level1)
 {
-    SetSync1(format);
-    SetParamSync0(format);
+    SetSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
+
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_022
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_022, TestSize.Level1)
 {
-    SetSync1(format);
-    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    SetSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_023
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_023, TestSize.Level1)
 {
-    SetSync1(format);
-    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    SetSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
+    SetSync0(format);
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
+    SetSync1(format);
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_024
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_024, TestSize.Level1)
 {
-    SetSync1(format);
-    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    SetSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_025
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_025, TestSize.Level1)
 {
-    SetSync1(format);
-    SetParamSync1(format);
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    SetSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
+
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_026
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_026, TestSize.Level1)
 {
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_027
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
+ *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_027, TestSize.Level1)
 {
+    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_028
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
+ *           flag:E_IsVideoEncoder|E_IsSurfaceMode
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_028, TestSize.Level1)
 {
-    SetSync0(format);
-    SetParamSync0(format);
+    SetSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_029
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
+ *           flag:E_IsVideoEncoder|E_IsSurfaceMode
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_029, TestSize.Level1)
 {
-    SetSync0(format);
-    SetParamSync0(format);
+    SetSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
+    SetSync0(format);
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
+    SetSync1(format);
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_030
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
+ *           flag:E_IsVideoEncoder|E_IsSurfaceMode
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_030, TestSize.Level1)
 {
-    SetSync0(format);
-    SetParamSync0(format);
+    SetSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_031
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
+ *           flag:E_IsVideoEncoder|E_IsSurfaceMode
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_031, TestSize.Level1)
 {
-    SetSync0(format);
-    SetParamSync0(format);
+    SetSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Configured_Verify_032
  * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
+ *           flag:E_IsVideoEncoder|E_IsSurfaceMode
  */
 HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_032, TestSize.Level1)
 {
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_033
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_033, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_034
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_034, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_035
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_035, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_036
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_036, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_037
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_037, TestSize.Level1)
-{
-    EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
 
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
- * @tc.name: VideoEncoder_Configured_Verify_038
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_038, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_039
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_039, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_040
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_040, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_041
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_041, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_042
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_042, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_043
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_043, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_044
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_044, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_045
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_045, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_046
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_046, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Flush(videoEnc));
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Configured_Verify_047
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_047, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-}
-
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_001
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -1212,7 +758,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Configured_Verify_047, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_001, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1220,7 +765,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_002
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -1228,28 +773,21 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_001, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_002, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 
     SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_003
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -1257,7 +795,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_002, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_003, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1265,7 +802,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_003, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_004
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -1273,7 +810,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_003, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_004, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1281,7 +817,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_004, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_005
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -1289,7 +825,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_004, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_005, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1297,7 +832,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_005, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_006
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsBufferMode
@@ -1305,30 +840,21 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_005, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_006, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_007
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsBufferMode
@@ -1336,7 +862,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_006, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_007, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1344,7 +869,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_007, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_008
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsBufferMode
@@ -1352,7 +877,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_007, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_008, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1360,7 +884,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_008, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_009
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1368,7 +892,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_008, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_009, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1376,22 +899,14 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_009, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_010
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1399,7 +914,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_009, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_010, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1408,7 +922,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_010, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_011
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1416,7 +930,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_010, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_011, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1425,7 +938,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_011, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_012
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1433,7 +946,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_011, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_012, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1442,7 +954,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_012, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_013
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
@@ -1451,7 +963,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_013, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1459,22 +970,14 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_013, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_014
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
@@ -1483,7 +986,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_014, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1492,7 +994,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_014, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_015
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
@@ -1501,7 +1003,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_015, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1510,7 +1011,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_015, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_016
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
@@ -1519,7 +1020,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_016, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1528,7 +1028,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_016, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_017
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsSurfaceMode
@@ -1536,7 +1036,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_016, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_017, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1544,23 +1043,15 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_017, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_018
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsSurfaceMode
@@ -1568,7 +1059,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_017, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_018, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1577,7 +1067,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_018, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Running_Verify_019
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsSurfaceMode
@@ -1585,7 +1075,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_018, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_019, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1594,73 +1083,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_019, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 }
 
-/**
- * @tc.name: VideoEncoder_Running_Verify_020
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_020, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Start(videoEnc));
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Running_Verify_021
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_021, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Running_Verify_022
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_022, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-}
-
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_001
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -1668,7 +1091,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Running_Verify_022, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_001, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1677,7 +1099,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_002
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -1685,29 +1107,20 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_001, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_002, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_003
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -1715,7 +1128,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_002, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_003, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1724,7 +1136,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_003, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_004
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -1732,7 +1144,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_003, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_004, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1741,7 +1152,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_004, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_005
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsBufferMode(|E_IsSetCb)
@@ -1749,7 +1160,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_004, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_005, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1758,7 +1168,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_005, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_006
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsBufferMode
@@ -1766,7 +1176,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_005, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_006, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1775,7 +1184,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_006, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_007
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsBufferMode
@@ -1783,30 +1192,21 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_006, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_007, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_008
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsBufferMode
@@ -1814,7 +1214,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_007, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_008, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1823,7 +1222,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_008, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_009
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsBufferMode
@@ -1831,7 +1230,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_008, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_009, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
@@ -1840,7 +1238,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_009, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_010
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1848,7 +1246,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_009, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_010, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1858,7 +1255,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_010, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_011
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1866,7 +1263,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_010, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_011, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1874,22 +1270,14 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_011, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_012
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1897,7 +1285,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_011, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_012, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1907,7 +1294,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_012, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_013
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1915,7 +1302,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_012, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_013, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1925,7 +1311,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_013, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_014
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSurfaceMode(|E_IsSetCb)
@@ -1933,7 +1319,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_013, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_014, TestSize.Level1)
 {
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1943,7 +1328,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_014, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_015
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
@@ -1952,16 +1337,16 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_015, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
+
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_016
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
@@ -1970,7 +1355,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_016, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -1978,22 +1362,14 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_016, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_017
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
@@ -2002,7 +1378,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_017, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -2013,7 +1388,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_017, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_018
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
@@ -2022,7 +1397,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_018, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -2032,7 +1406,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_018, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_019
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsAsync|E_IsSetParamCb|E_IsSurfaceMode(|E_IsSetCb)
@@ -2041,7 +1415,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_019, TestSize.Level1)
 {
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
     SetSync0(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -2051,7 +1424,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_019, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_020
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsSurfaceMode
@@ -2059,7 +1432,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_019, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_020, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -2069,7 +1441,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_020, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_021
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsSurfaceMode
@@ -2077,7 +1449,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_020, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_021, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -2085,23 +1456,15 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_021, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
     EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_022
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsSurfaceMode
@@ -2109,7 +1472,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_021, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_022, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
@@ -2119,7 +1481,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_022, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
 }
 
-/**
+/**.
  * @tc.name: VideoEncoder_Flushed_Verify_023
  * @tc.desc: Encoder state machine verify;
  *           flag:E_IsVideoEncoder|E_IsSurfaceMode
@@ -2127,93 +1489,6 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_022, TestSize.Level1)
 HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_023, TestSize.Level1)
 {
     SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Flushed_Verify_024
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_024, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Flushed_Verify_025
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_025, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-
-    SetSync0(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync0(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoEnc));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, SetParameterCallback(videoEnc));
-    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, GetInputSurface(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Flushed_Verify_026
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_026, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
-    EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(videoEnc));
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
-
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(videoEnc));
-}
-
-/**
- * @tc.name: VideoEncoder_Flushed_Verify_027
- * @tc.desc: Encoder state machine verify;
- *           flag:E_IsVideoEncoder|E_IsParamSync|E_IsSurfaceMode
- */
-HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_027, TestSize.Level1)
-{
-    SetSync1(format);
-    SetParamSync1(format);
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
     EXPECT_EQ(AV_ERR_OK, GetInputSurface(videoEnc));
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(videoEnc));
