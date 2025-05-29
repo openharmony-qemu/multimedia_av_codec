@@ -164,13 +164,13 @@ HttpMediaDownloader::~HttpMediaDownloader()
 std::string HttpMediaDownloader::GetContentType()
 {
     FALSE_RETURN_V(downloader_ != nullptr, "");
-    MEDIA_LOG_I("In");
+    MEDIA_LOG_I("Http GetContentType in");
     return downloader_->GetContentType();
 }
 
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
-    MEDIA_LOG_I("HTTP Open download");
+    MEDIA_LOG_I("HTTP Open download in");
     isDownloadFinish_ = false;
     openTime_ = steadyClock_.ElapsedMilliseconds();
     auto saveData = [this] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) {
@@ -1958,7 +1958,7 @@ bool HttpMediaDownloader::IsAutoSelectConditionOk()
 
 void HttpMediaDownloader::ClearBuffer()
 {
-    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr.");
+    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr, fail to ClearBuffer");
     FALSE_RETURN_MSG(ringBuffer_ != nullptr || cacheMediaBuffer_ != nullptr, "buffer is nullptr.");
     if (isRingBuffer_) {
         size_t sizeBefore = ringBuffer_->GetFreeSize();
