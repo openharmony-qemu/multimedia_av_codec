@@ -485,6 +485,7 @@ OH_AVErrCode OH_VideoDecoder_Reset(struct OH_AVCodec *codec)
         AVCODEC_LOGE("Video decoder reset failed!");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
+    videoDecObj->isOutputSurfaceMode_ = false;
     videoDecObj->ClearBufferList();
     return AV_ERR_OK;
 }

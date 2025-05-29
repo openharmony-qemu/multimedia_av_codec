@@ -96,20 +96,16 @@ void CodecBufferCircular::SetIsRunning(bool isRunning)
 void CodecBufferCircular::EnableSyncMode()
 {
     if (callback_) {
-        callback_ = nullptr;
-        AVCODEC_LOGW_WITH_TAG("Async->Sync. Disable the callback of AVSharedMemory");
+        AVCODEC_LOGW_WITH_TAG("Async->Sync. Ingnore the callback of AVSharedMemory");
     }
     if (mediaCb_) {
-        mediaCb_ = nullptr;
-        AVCODEC_LOGW_WITH_TAG("Async->Sync. Disable the callback of AVBuffer");
+        AVCODEC_LOGW_WITH_TAG("Async->Sync. Ingnore the callback of AVBuffer");
     }
     if (paramCb_) {
-        paramCb_ = nullptr;
-        AVCODEC_LOGW_WITH_TAG("Async->Sync. Disable the callback of Parameter");
+        AVCODEC_LOGW_WITH_TAG("Async->Sync. Ingnore the callback of Parameter");
     }
     if (attrCb_) {
-        attrCb_ = nullptr;
-        AVCODEC_LOGW_WITH_TAG("Async->Sync. Disable the callback of Attribute");
+        AVCODEC_LOGW_WITH_TAG("Async->Sync. Ingnore the callback of Attribute");
     }
     flag_ |= FLAG_IS_SYNC;
 }
