@@ -1493,3 +1493,77 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_TS_0060, TestSize.Level0)
     ASSERT_EQ(vKeyCount, 31);
     close(fd);
 }
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_COMMENT_1000
+ * @tc.name      : demux MP4 muxed by avmuxer,check track format,OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_1000, TestSize.Level0)
+{
+    char uri[] = "/data/test/media/Muxer_SetFormat_Comment_1000.mp4";
+    source = OH_AVSource_CreateWithURI(uri);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    ASSERT_NE(stringVal, nullptr);
+    ASSERT_EQ(0, strcmp(stringVal, "comment_test_str"));
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_COMMENT_1100
+ * @tc.name      : demux MP4 muxed by avmuxer,check track format,OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_1100, TestSize.Level0)
+{
+    char uri[] = "/data/test/media/Muxer_SetFormat_Comment_1100.mp4";
+    source = OH_AVSource_CreateWithURI(uri);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal = nullptr;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    ASSERT_EQ(stringVal, nullptr);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_COMMENT_1200
+ * @tc.name      : demux MP4 muxed by avmuxer,check track format,OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_1200, TestSize.Level0)
+{
+    char uri[] = "/data/test/media/Muxer_SetFormat_Comment_1200.mp4";
+    source = OH_AVSource_CreateWithURI(uri);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    ASSERT_NE(stringVal, nullptr);
+    ASSERT_EQ(0, strcmp(stringVal, "中文测试字符串"));
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_COMMENT_1300
+ * @tc.name      : demux MP4 muxed by avmuxer,check track format,OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_1300, TestSize.Level0)
+{
+    char uri[] = "/data/test/media/Muxer_SetFormat_Comment_1300.mp4";
+    source = OH_AVSource_CreateWithURI(uri);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    ASSERT_NE(stringVal, nullptr);
+    ASSERT_EQ(0, strcmp(stringVal, "comment_test_strcomment_test_strcomment_test_str"
+        "comment_test_strcomment_test_strcomment_test_strcomment_test_strcomment_test_str"
+        "comment_test_strcomment_test_strcomment_test_strcomment_test_strcomment_test_str"
+        "comment_test_strcomment_test_strcomment_test_str"));
+}
