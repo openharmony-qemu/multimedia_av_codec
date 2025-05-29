@@ -57,6 +57,16 @@ enum class CodecErrorType : int32_t {
     CODEC_ERROR_EXTEND_START = 0X10000,
 };
 
+enum class InOutPortBufferStatus : uint32_t {
+    INPORT_AVAIL = 0x00000001,
+    OUTPORT_AVAIL = 0x00000010,
+    OUT_EOS_START = 0x00000100,
+    OUT_EOS_DONE = 0x00001000,
+    INIT = 0x80000000,
+    INIT_PROCESS_ALWAYS = 0xE0000000,
+    INIT_IGNORE_RET = 0xF0000000,
+};
+
 class CodecCallback {
 public:
     virtual ~CodecCallback() = default;
@@ -105,7 +115,7 @@ public:
 
     sptr<AVBufferQueueProducer> GetOutputBufferQueueProducer();
 
-    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed);
+    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus);
 
     sptr<Surface> GetInputSurface();
 
@@ -165,15 +175,18 @@ private:
 
     uint32_t GetApiVersion();
 
-    bool HandleOutputBufferInner(Status &ret);
+    bool HandleOutputBufferInner(Status &ret, uint32_t &bufferStatus, uint32_t filledBufferSize, uint32_t eosStatus);
 
     Status HandleOutputBufferOnce(bool &isOutputBufferAvailable, uint32_t eosStatus, bool isSync);
 
     void HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingNeeded, Status &ret);
 
+    void ResetBufferStatusInfo();
+
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
+    std::shared_ptr<AVBuffer> cachedOutputBuffer_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;

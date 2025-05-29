@@ -48,21 +48,34 @@ void AudioSinkFilter::AVBufferAvailableListener::OnBufferAvailable()
 {
     auto sink = audioSinkFilter_.lock();
     FALSE_RETURN_MSG(sink != nullptr, "invalid audioSink");
-    sink->ProcessInputBuffer();
+    sink->OnBufferAvailable();
 }
 
 AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
     : Filter(name, FilterType::FILTERTYPE_ASINK, IS_FILTER_ASYNC)
 {
+    bool isRenderCallbackMode = system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
+    MEDIA_LOG_I("AudioSinkFilter ctor called, isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
+    isRenderCallbackMode_ = isRenderCallbackMode;
     filterType_ = filterType;
-    audioSink_ = std::make_shared<AudioSink>();
-    MEDIA_LOG_I("audio sink ctor called");
+    audioSink_ = std::make_shared<AudioSink>(isRenderCallbackMode);
 }
 
 AudioSinkFilter::~AudioSinkFilter()
 {
-    MEDIA_LOG_I("dtor called");
+    MEDIA_LOG_I("AudioSinkFilter dtor called");
     Filter::StopFilterTask();
+}
+
+void AudioSinkFilter::OnBufferAvailable()
+{
+    if (isRenderCallbackMode_) {
+        ProcessInputBuffer();
+    } else if (NeedImmediateRender()) {
+        DoProcessInputBuffer(0, 0);
+    } else {
+        ProcessInputBuffer();
+    }
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
