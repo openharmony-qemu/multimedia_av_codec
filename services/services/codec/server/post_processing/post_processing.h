@@ -261,10 +261,6 @@ private:
     void CreateConfiguration(const Format& format)
     {
         format_ = format;
-        constexpr int32_t pixelFormatNV12{24}; // NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP
-        constexpr int32_t pixelFormatNV21{25}; // NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP
-
-        // the field is checked before
         int32_t width;
         (void)format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
         int32_t height;
@@ -290,26 +286,23 @@ private:
         switch (colorSpaceType) {
             case static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT):
                 config_.outputColorSpaceType = static_cast<int32_t>(ColorSpaceConfig::BT709_LIMITED);
-                AVCODEC_LOGI("Output color space type is BT709 Limited");
                 break;
             case static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL):
                 config_.outputColorSpaceType = static_cast<int32_t>(ColorSpaceConfig::P3_FULL);
-                AVCODEC_LOGI("Output color space type is P3 Full");
                 break;
             default:
                 AVCODEC_LOGE("Unsupported color space type %{public}d", colorSpaceType);
         }
         switch (pixelFormat) {
             case static_cast<int32_t>(VideoPixelFormat::NV12):
-                pixelFormat = pixelFormatNV12;
+                pixelFormat = static_cast<int32_t>(ColorSpaceConfig::pixelFormatNV12);
                 break;
             case static_cast<int32_t>(VideoPixelFormat::NV21):
-                pixelFormat = pixelFormatNV21;
+                pixelFormat = static_cast<int32_t>(ColorSpaceConfig::pixelFormatNV21);
                 break;
             default:
                 AVCODEC_LOGE("Unsupported pixel format %{public}d", pixelFormat);
         }
-
         config_.width = width;
         config_.height = height;
         config_.outputMetadataType = static_cast<int32_t>(ColorSpaceConfig::METADATA_NONE); // see OH_COLORSPACE_NONE
@@ -372,6 +365,9 @@ private:
     }
 
     enum class ColorSpaceConfig : int32_t {
+        // PixelFormat
+        pixelFormatNV12 = 24; // NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP
+        pixelFormatNV21 = 25; // NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP
         // ColorSpaceType
         BT709_LIMITED = 0x410101, // OH_COLORSPACE_BT709_LIMIT
         P3_FULL = 0x230206,       // OH_COLORSPACE_P3_FULL
@@ -390,7 +386,7 @@ private:
         // MetadataType
         METADATA_NONE = 0,
         // RenderIntent
-        RENDER_INTENT_DEFAULT = 2
+        RENDER_INTENT = 2
     };
 
     int32_t ConfigureController()
@@ -417,7 +413,7 @@ private:
         }
 
         format.PutIntValue(keyMetadataType, static_cast<int32_t>(ColorSpaceConfig::METADATA_NONE));
-        format.PutIntValue(keyRenderIntent, static_cast<int32_t>(ColorSpaceConfig::RENDER_INTENT_DEFAULT));
+        format.PutIntValue(keyRenderIntent, static_cast<int32_t>(ColorSpaceConfig::RENDER_INTENT));
         format.PutIntValue(keyPixelFormat, config_.outputPixelFormat);
 
         return controller_->Configure(format);
