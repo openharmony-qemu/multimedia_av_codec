@@ -37,6 +37,7 @@ constexpr int MAX_CHANNEL_COUNT_MP3 = 2;
 constexpr int MAX_CHANNEL_COUNT_APE = 2;
 constexpr int MAX_CHANNEL_COUNT_OPUS = 2;
 constexpr int MAX_CHANNEL_COUNT_RAW = 16;
+constexpr int MAX_CHANNEL_COUNT_G711A = 6;
 
 constexpr int MIN_BIT_RATE_AAC = 8000;
 constexpr int MAX_BIT_RATE_AAC = 960000;
@@ -47,6 +48,9 @@ const std::vector<int32_t> AUDIO_AMRNB_SAMPLE_RATE = {8000};
 const std::vector<int32_t> AUDIO_AMRWB_SAMPLE_RATE = {16000};
 
 const std::vector<int32_t> AUDIO_G711MU_SAMPLE_RATE = {8000};
+
+const std::vector<int32_t> AUDIO_G711A_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
+                                                      44100, 48000};
 
 const std::vector<int32_t> AUDIO_FLAC_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
                                                      44100, 48000, 64000, 88200, 96000, 192000};
@@ -102,6 +106,7 @@ const std::vector<int32_t> AUDIO_AC3_SAMPLE_RATE = {32000, 44100, 48000};
 #endif
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
+constexpr int MAX_BIT_RATE_G711A_DECODER = 64000;
 
 const std::string VENDOR_AAC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libaac_enc.z.so";
 
@@ -470,6 +475,20 @@ CapabilityData AudioCodeclistInfo::GetG711muEncoderCapability()
     return audioG711muEncoderCapability;
 }
 
+CapabilityData AudioCodeclistInfo::GetG711aDecoderCapability()
+{
+    CapabilityData audioG711aDecoderCapability;
+    audioG711aDecoderCapability.codecName = AVCodecCodecName::AUDIO_DECODER_G711A_NAME;
+    audioG711aDecoderCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioG711aDecoderCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711A;
+    audioG711aDecoderCapability.isVendor = false;
+    audioG711aDecoderCapability.bitrate = Range(1, MAX_BIT_RATE_G711A_DECODER);
+    audioG711aDecoderCapability.channels = Range(1, MAX_CHANNEL_COUNT_G711A);
+    audioG711aDecoderCapability.sampleRate = AUDIO_G711A_SAMPLE_RATE;
+    audioG711aDecoderCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioG711aDecoderCapability;
+}
+
 #ifdef SUPPORT_CODEC_COOK
 CapabilityData  AudioCodeclistInfo::GetCookDecoderCapability()
 {
@@ -513,6 +532,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetAmrwbDecoderCapability(), GetG711muDecoderCapability(), GetRawDecoderCapability(),
                           GetAacEncoderCapability(), GetFlacEncoderCapability(),  GetOpusEncoderCapability(),
                           GetG711muEncoderCapability(), GetAPEDecoderCapability(),   GetMP3EncoderCapability(),
+                          GetG711aDecoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(),  GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
