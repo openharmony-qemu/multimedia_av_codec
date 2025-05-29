@@ -545,13 +545,13 @@ bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
 
     MEDIA_LOG_I("AudioDecoderFilter::IsNeedProcessInput, should not happen, bufferStatus:" PUBLIC_LOG_U32X
         ", isOutPort:" PUBLIC_LOG_D32, bufferStatus_, isOutPort);
-    return true;
+    return true; // DO ProcessInput by default
 }
 
 Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
     bool isOutPort = recvArg == static_cast<int>(BufferQueueBufferAVailable::BUFFER_AVAILABLE_OUT_PORT);
-    uint32_t lastBufferStatus = BUFFER_STATUS_INIT_PROCESS_ALWAYS; // try to ProcessInput by default.
+    uint32_t lastBufferStatus = BUFFER_STATUS_INIT_PROCESS_ALWAYS; // DO ProcessInput by default
     {
         std::unique_lock<std::mutex> lock(bufferStatusMutex_, std::try_to_lock);
         if (lock.owns_lock()) {
@@ -570,7 +570,8 @@ Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 
     std::unique_lock<std::mutex> lock(bufferStatusMutex_, std::try_to_lock);
     if (lock.owns_lock()) {
-        if (bufferStatus_ == lastBufferStatus) { // no state change, use return value to update
+        // If bufferStatus_ changed, the return bufferStatus is obsolete, should discard
+        if (bufferStatus_ == lastBufferStatus || bufferStatus_ != BUFFER_STATUS_INIT_PROCESS_ALWAYS) {
             MEDIA_LOG_D("bufferStatus:" PUBLIC_LOG_U32X ", lastBufferStatus:" PUBLIC_LOG_U32X
                 ", curBufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
                 bufferStatus, lastBufferStatus, bufferStatus_, isOutPort);
