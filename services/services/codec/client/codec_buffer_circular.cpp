@@ -153,6 +153,8 @@ void CodecBufferCircular::FlushCaches()
         for (auto &val : inCache_) {
             val.second.owner = OWNED_BY_SERVER;
         }
+        std::queue<uint32_t> emptyQueue;
+        std::swap(inQueue_, emptyQueue);
     }
     {
         std::lock_guard<std::mutex> lock(outMutex_);
@@ -160,36 +162,12 @@ void CodecBufferCircular::FlushCaches()
         for (auto &val : outCache_) {
             val.second.owner = OWNED_BY_SERVER;
         }
+        std::queue<uint32_t> emptyQueue;
+        std::swap(outQueue_, emptyQueue);
     }
 }
 
-void CodecBufferCircular::PrintCaches(bool isOutput)
-{
-    BufferCache &cache = isOutput ? outCache_ : inCache_;
-    std::array<std::vector<uint32_t>, 3> ownerArrays; // [SERVER, CLIENT, USER]
-    for (const auto &[key, item] : cache) {
-        ownerArrays[item.owner].emplace_back(key);
-    }
-    auto buildCacheStr = [](const std::vector<uint32_t> &keys, const char *ownerstr) {
-        std::ostringstream oss;
-        oss << ownerstr << "(";
-        if (!keys.empty()) {
-            auto it = keys.begin();
-            oss << *it;
-            for (++it; it != keys.end(); ++it) {
-                oss << "," << *it;
-            }
-        }
-        oss << ")";
-        return oss.str();
-    };
-    const std::string serverStr = buildCacheStr(ownerArrays[OWNED_BY_SERVER], "server");
-    const std::string clientStr = IsSyncMode() ? buildCacheStr(ownerArrays[OWNED_BY_CLIENT], ",client") : "";
-    const std::string userStr = buildCacheStr(ownerArrays[OWNED_BY_USER], ",user");
-    AVCODEC_LOGI_WITH_TAG("%{public}s caches:%{public}s%{public}s%{public}s", (isOutput ? "out" : "in"),
-                          serverStr.c_str(), clientStr.c_str(), userStr.c_str());
-}
-
+/******************************** Common ********************************/
 int32_t CodecBufferCircular::HandleInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     // Api9
@@ -276,6 +254,34 @@ std::shared_ptr<Format> CodecBufferCircular::GetAttribute(BufferCacheIter &iter)
     return iter->second.attribute;
 }
 
+/******************************** DFX ********************************/
+void CodecBufferCircular::PrintCaches(bool isOutput)
+{
+    BufferCache &cache = isOutput ? outCache_ : inCache_;
+    std::array<std::vector<uint32_t>, 3> ownerArrays; // [SERVER = 0, CLIENT = 1, USER = 2]
+    for (const auto &[key, item] : cache) {
+        ownerArrays[item.owner].emplace_back(key);
+    }
+    auto getCacheInfo = [](const std::vector<uint32_t> &keys, const char *ownerstr) {
+        std::ostringstream oss;
+        oss << ownerstr << "(";
+        if (!keys.empty()) {
+            auto it = keys.begin();
+            oss << *it;
+            for (++it; it != keys.end(); ++it) {
+                oss << "," << *it;
+            }
+        }
+        oss << ")";
+        return oss.str();
+    };
+    const std::string userInfo = getCacheInfo(ownerArrays[OWNED_BY_USER], "user");
+    const std::string clientInfo = IsSyncMode() ? getCacheInfo(ownerArrays[OWNED_BY_CLIENT], ",client") : "";
+    const std::string serverInfo = getCacheInfo(ownerArrays[OWNED_BY_SERVER], ",server");
+    AVCODEC_LOGI_WITH_TAG("%{public}s cache:%{public}s%{public}s%{public}s", (isOutput ? "out" : "in"),
+                          userInfo.c_str(), clientInfo.c_str(), serverInfo.c_str());
+}
+
 const std::string &CodecBufferCircular::OwnerToString(BufferOwner owner)
 {
     static std::unordered_map<BufferOwner, const std::string> ownerStringMap = {
@@ -315,10 +321,15 @@ void CodecBufferCircular::AsyncOnError(AVCodecErrorType errorType, int32_t error
     if (errorType == AVCODEC_ERROR_FRAMEAORK_FAILED) {
         return;
     }
+    // AVBuffer callback
     if (mediaCb_ != nullptr) {
         mediaCb_->OnError(errorType, errorCode);
-    } else if (callback_ != nullptr) {
+        return;
+    }
+    // Api9 callback
+    if (callback_ != nullptr) {
         callback_->OnError(errorType, errorCode);
+        return;
     }
 }
 
@@ -328,10 +339,15 @@ void CodecBufferCircular::AsyncOnOutputFormatChanged(const Format &format)
         std::lock_guard<std::mutex> lock(outMutex_);
         outCache_.clear();
     }
+    // AVBuffer callback
     if (mediaCb_ != nullptr) {
         mediaCb_->OnOutputFormatChanged(format);
-    } else if (callback_ != nullptr) {
+        return;
+    }
+    // Api9 callback
+    if (callback_ != nullptr) {
         callback_->OnOutputFormatChanged(format);
+        return;
     }
 }
 
@@ -347,7 +363,7 @@ void CodecBufferCircular::AsyncOnInputBufferAvailable(uint32_t index, std::share
     }
     BufferItem &item = iter->second;
     item.owner = OWNED_BY_USER;
-    // Encoder parameter callback
+    // Encoder parameter with attribute callback
     if (attrCb_ != nullptr) {
         auto attribute = GetAttribute(iter);
         auto parameter = GetParameter(iter);
@@ -355,6 +371,7 @@ void CodecBufferCircular::AsyncOnInputBufferAvailable(uint32_t index, std::share
         attrCb_->OnInputParameterWithAttrAvailable(index, attribute, parameter);
         return;
     }
+    // Encoder parameter callback
     if (paramCb_ != nullptr) {
         auto parameter = GetParameter(iter);
         lock.unlock();
@@ -420,6 +437,7 @@ void CodecBufferCircular::AsyncOnOutputBufferAvailable(uint32_t index, std::shar
 void CodecBufferCircular::ConvertToSharedMemory(const std::shared_ptr<AVBuffer> &buffer,
                                                 std::shared_ptr<AVSharedMemory> &memory)
 {
+    // Api9
     using Flags = AVSharedMemory::Flags;
     std::shared_ptr<AVMemory> &bufferMem = buffer->memory_;
     if (bufferMem == nullptr || memory != nullptr) {

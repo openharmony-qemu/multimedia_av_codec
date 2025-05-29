@@ -56,6 +56,7 @@ CodecClient::~CodecClient()
     if (codecProxy_ != nullptr) {
         (void)codecProxy_->DestroyStub();
         SetNeedListen(false);
+        circular_.SetIsRunning(false);
     }
     AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
@@ -234,7 +235,7 @@ int32_t CodecClient::Flush()
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
         circular_.SetIsRunning(false);
-        circular_.ClearCaches();
+        circular_.FlushCaches();
     }
     AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;

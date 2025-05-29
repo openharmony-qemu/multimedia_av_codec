@@ -183,7 +183,7 @@ public:
     /**
      * @brief Sets the parameters to the encoder.
      *
-     * This interface can only be called after the decoder is started.
+     * This interface can only be called after the encoder is started.
      * At the same time, incorrect parameter settings may cause decoding failure.
      *
      * @param format The parameters.
@@ -210,7 +210,7 @@ public:
      *
      * This function must be called before {@link Configure}
      *
-     * @param callback Indicates the decoder listener to register. For details, see {@link MediaCodecCallback}.
+     * @param callback Indicates the encoder listener to register. For details, see {@link MediaCodecCallback}.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 4.1
      */
@@ -221,7 +221,7 @@ public:
      *
      * This function must be called before {@link Configure}
      *
-     * @param callback Indicates the decoder listener to register. For details, see {@link MediaCodecParameterCallback}.
+     * @param callback Indicates the encoder listener to register. For details, see {@link MediaCodecParameterCallback}.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 5.0
      */
@@ -232,7 +232,7 @@ public:
      *
      * This function must be called before {@link Configure}
      *
-     * @param callback Indicates the decoder listener to register. For details, see {@link
+     * @param callback Indicates the encoder listener to register. For details, see {@link
      * MediaCodecParameterWithAttrCallback}.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 5.0
@@ -261,39 +261,72 @@ public:
      */
     virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) = 0;
 
-    virtual int32_t QueryInputParameterWithAttr(uint32_t &index, int64_t timeoutUs)
-    {
-        (void)index;
-        (void)timeoutUs;
-        return 0;
-    }
+    /**
+     * @brief Query available input buffer from encoder
+     *
+     * This function blocks until an input buffer becomes available or timeout occurs.
+     *
+     * @param index [out] Reference to store the index of available input buffer
+     * @param timeoutUs Timeout duration in microseconds (negative value means infinite wait)
+     * @return Returns {@link AVCS_ERR_OK} if buffer is available;
+     *         returns error code if timeout or other failures occur.
+     * @since 6.0
+     * @version 6.0
+     */
     virtual int32_t QueryInputBuffer(uint32_t &index, int64_t timeoutUs)
     {
         (void)index;
         (void)timeoutUs;
         return 0;
     }
+
+    /**
+     * @brief Query available output buffer from encoder
+     *
+     * This function blocks until an output buffer with decoded data becomes available or timeout occurs.
+     *
+     * @param index [out] Reference to store the index of available output buffer
+     * @param timeoutUs Timeout duration in microseconds (negative value means infinite wait)
+     * @return Returns {@link AVCS_ERR_OK} if buffer is available;
+     *         returns error code if timeout or other failures occur.
+     * @since 6.0
+     * @version 6.0
+     */
     virtual int32_t QueryOutputBuffer(uint32_t &index, int64_t timeoutUs)
     {
         (void)index;
         (void)timeoutUs;
         return 0;
     }
-    virtual std::shared_ptr<Format> GetInputParameter(uint32_t index)
-    {
-        (void)index;
-        return nullptr;
-    }
-    virtual std::shared_ptr<Format> GetInputAttribute(uint32_t index)
-    {
-        (void)index;
-        return nullptr;
-    }
+
+    /**
+     * @brief Get input buffer object by index
+     *
+     * Caller should use {@link QueryInputBuffer} to get valid index before calling this function.
+     *
+     * @param index Index of the input buffer obtained from {@link QueryInputBuffer}
+     * @return Shared pointer to {@link AVBuffer} if index is valid;
+     *         returns nullptr if index is invalid or buffer unavailable.
+     * @since 6.0
+     * @version 6.0
+     */
     virtual std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index)
     {
         (void)index;
         return nullptr;
     }
+
+    /**
+     * @brief Get output buffer object by index
+     *
+     * Caller should use {@link QueryOutputBuffer} to get valid index before calling this function.
+     *
+     * @param index Index of the output buffer obtained from {@link QueryOutputBuffer}
+     * @return Shared pointer to {@link AVBuffer} containing decoded data if index is valid;
+     *         returns nullptr if index is invalid or buffer unavailable.
+     * @since 6.0
+     * @version 6.0
+     */
     virtual std::shared_ptr<AVBuffer> GetOutputBuffer(uint32_t index)
     {
         (void)index;
@@ -353,11 +386,11 @@ public:
     static std::shared_ptr<AVCodecVideoEncoder> CreateByName(const std::string &name);
 
     /**
-     * @brief Instantiate the preferred decoder of the given mime type.
+     * @brief Instantiate the preferred encoder of the given mime type.
      *
      * @param mime The mime type.
      * @param format Caller info
-     * @param codec The designated decoder.
+     * @param codec The designated encoder.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 5.0
      * @version 5.0
@@ -365,11 +398,11 @@ public:
     static int32_t CreateByMime(const std::string &mime, Format &format, std::shared_ptr<AVCodecVideoEncoder> &encodec);
 
     /**
-     * @brief Instantiate the preferred decoder of the given mime type.
+     * @brief Instantiate the preferred encoder of the given mime type.
      *
      * @param mime The mime type.
      * @param format Caller info
-     * @param codec The designated decoder.
+     * @param codec The designated encoder.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 5.0
      * @version 5.0
