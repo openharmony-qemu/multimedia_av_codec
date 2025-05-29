@@ -27,17 +27,6 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 
-#ifndef FALSE_RETURN
-#define FALSE_RETURN(exec)                     \
-    do {                                       \
-        bool returnValue = (exec);             \
-        if (!returnValue) {                    \
-            printf("FALSE_RETURN:" #exec"\n"); \
-            return returnValue;                \
-        }                                      \
-    } while (0);
-#endif
-
 class DemuxerPluginInnerFuncTest : public testing::Test {
 public:
     // SetUpTestCase: Called before all test cases
@@ -127,7 +116,6 @@ void DemuxerPluginInnerFuncTest::TearDownTestCase(void) {}
 
 void DemuxerPluginInnerFuncTest::SetUp(void)
 {
-
 }
 
 void DemuxerPluginInnerFuncTest::TearDown(void)
@@ -157,28 +145,43 @@ bool DemuxerPluginInnerFuncTest::CreateDataSource(const std::string& filePath)
 bool DemuxerPluginInnerFuncTest::CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath,
     int probSize)
 {
-    FALSE_RETURN(CreateDataSource(filePath));
+    if(!CreateDataSource(filePath)) {
+        printf("false return: CreateDataSource is fail\n");
+        return false;
+    }
     pluginBase_ = Plugins::PluginManagerV2::Instance().CreatePluginByName(typeName);
-    FALSE_RETURN(pluginBase_ != nullptr);
-
+    if(!(pluginBase_ != nullptr)) {
+        printf("false return: pluginBase_ == nullptr\n");
+        return false;
+    }
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    FALSE_RETURN(demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, probSize) == Status::OK);
-
+    if(!(demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, probSize) == Status::OK)) {
+        printf("false return: demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, probSize) != Status::OK\n");
+        return false;
+    }
     realStreamDemuxer_->SetDemuxerState(streamId_, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
 
     return true;
 }
 
-bool DemuxerPluginInnerFuncTest::CreateDemuxerPluginByNotExistName(const std::string& typeName, const std::string& filePath,
-    int probSize)
+bool DemuxerPluginInnerFuncTest::CreateDemuxerPluginByNotExistName(const std::string& typeName,
+    const std::string& filePath, int probSize)
 {
-    FALSE_RETURN(CreateDataSource(filePath));
+    if(!CreateDataSource(filePath)) {
+        printf("false return: CreateDataSource is fail\n");
+        return false;
+    }
     pluginBase_ = Plugins::PluginManagerV2::Instance().CreatePluginByName(typeName);
-    FALSE_RETURN(pluginBase_ != nullptr);
-
+    if(!(pluginBase_ != nullptr)) {
+        printf("false return:" "pluginBase_ == nullptr\n");
+        return false;
+    }
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    FALSE_RETURN(demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_,
-        probSize) == Status::ERROR_INVALID_PARAMETER);
+    if(!(demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, probSize) == Status::ERROR_INVALID_PARAMETER)) {
+        printf("false return: demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, probSize) !="
+            "Status::ERROR_INVALID_PARAMETER\n");
+        return false;
+    }
     return true;
 }
 
@@ -186,8 +189,10 @@ bool DemuxerPluginInnerFuncTest::PluginSelectTracks()
 {
     MediaInfo mediaInfo;
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    FALSE_RETURN(demuxerPlugin->GetMediaInfo(mediaInfo) == Status::OK);
-
+    if(!(demuxerPlugin->GetMediaInfo(mediaInfo) == Status::OK)) {
+        printf("false return: demuxerPlugin->GetMediaInfo(mediaInfo) != Status::OK\n");
+        return false;
+    }
     for (auto i = 0; i < mediaInfo.tracks.size(); i++) {
         std::string mime;
         mediaInfo.tracks[i].GetData(Tag::MIME_TYPE, mime);
@@ -220,8 +225,10 @@ bool DemuxerPluginInnerFuncTest::PluginReadSample(uint32_t idx, uint32_t& flag)
     }
 
     auto avBuf = AVBuffer::CreateAVBuffer(buffer_.data(), bufSize, bufSize);
-    FALSE_RETURN(avBuf != nullptr);
-    
+    if(!(avBuf != nullptr)) {
+        printf("false return: avBuf == nullptr\n");
+        return false;
+    }  
     demuxerPlugin->ReadSample(idx, avBuf);
     flag = avBuf->flag_;
 
@@ -232,7 +239,10 @@ bool DemuxerPluginInnerFuncTest::PluginSeekTo(int64_t seekTime, SeekMode mode)
 {
     int64_t realSeekTime = 0;
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    FALSE_RETURN(demuxerPlugin->SeekTo(0, seekTime / THOUSAND, mode, realSeekTime) == Status::OK);
+    if(!(demuxerPlugin->SeekTo(0, seekTime / THOUSAND, mode, realSeekTime) == Status::OK)) {
+        printf("false return: demuxerPlugin->SeekTo(0, seekTime / THOUSAND, mode, realSeekTime) != Status::OK\n");
+        return false;        
+    }
     PluginReadAllSample();
     return true;
 }
@@ -284,25 +294,39 @@ void DemuxerPluginInnerFuncTest::RemoveValue()
     }
 }
 
-bool DemuxerPluginInnerFuncTest::ResultAssert(uint32_t frames0, uint32_t frames1, uint32_t keyFrames0, uint32_t keyFrames1)
+bool DemuxerPluginInnerFuncTest::ResultAssert(uint32_t frames0, uint32_t frames1, uint32_t keyFrames0,
+    uint32_t keyFrames1)
 {
     printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
     printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
-    FALSE_RETURN(frames_[0] == frames0);
-    FALSE_RETURN(frames_[1] == frames1);
-    FALSE_RETURN(keyFrames_[0] == keyFrames0);
-    FALSE_RETURN(keyFrames_[1] == keyFrames1);
-
+    if(!(frames_[0] == frames0)) {
+        printf("false return: frames_[0] != frames0\n");
+        return false;          
+    }
+    if(!(frames_[1] == frames1)) {
+        printf("false return: frames_[1] =!= frames1\n");
+        return false;         
+    }
+    if(!(keyFrames_[0] == keyFrames0)) {
+        printf("false return: keyFrames_[0] != keyFrames0\n");
+        return false; 
+    }
+    if(!(keyFrames_[1] == keyFrames1)) {
+        printf("false return: keyFrames_[1] != keyFrames1\n");
+        return false; 
+    }
     return true;
 }
 
 bool DemuxerPluginInnerFuncTest::PluginReadAllSample()
 {
-    while (!isEOS(eosFlag_))
-    {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             uint32_t flag = 0;
-            FALSE_RETURN(PluginReadSample(idx, flag));
+            if(!PluginReadSample(idx, flag)) {
+                printf("false return: PluginReadSample(idx, flag) is fail\n");
+                return false;                 
+            }
             CountFrames(idx, flag);
         }
     }
