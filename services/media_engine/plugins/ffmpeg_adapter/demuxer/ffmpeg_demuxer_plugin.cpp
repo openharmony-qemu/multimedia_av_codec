@@ -1061,9 +1061,9 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
         "AVFormatContext has been initialized");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
-    if (ioContext_.invokerType != invokerType::INIT) {
-        std::lock_guard<std::mutex> initLock(ioContext_.invorkTypeMutex);
-        ioContext_.invokerType = invokerType::INIT;
+    if (ioContext_.invokerType != InvokerType::INIT) {
+        std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
+        ioContext_.invokerType = InvokerType::INIT;
     }
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
@@ -1530,9 +1530,9 @@ Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) con
 
 void FFmpegDemuxerPlugin::SyncSeekThread()
 {
-    if (ioContext_.invokerType != invokerType::SEEK) {
-        std::lock_guard<std::mutex> seekLock(ioContext_.invorkTypeMutex);
-        ioContext_.invokerType = invokerType::SEEK;
+    if (ioContext_.invokerType != InvokerType::SEEK) {
+        std::lock_guard<std::mutex> seekLock(ioContext_.invokerTypeMutex);
+        ioContext_.invokerType = InvokerType::SEEK;
     }
     if (readThread_ != nullptr && threadState_ == READING) {
         MEDIA_LOG_I("Seek notify read thread to stop");

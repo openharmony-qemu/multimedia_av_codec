@@ -59,7 +59,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     auto bufData = buffer->WrapMemory(buf, bufSize, 0);
     FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, ret, "Memory is nullptr");
     MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
-    std::unique_lock<std::mutex> readLock(readPacketMutex_);
+    
     int tryCount = 0;
     bool needBlockWait = false;
     do {
@@ -82,7 +82,15 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
                 if (ret != AV_READ_PACKET_READ_AGAIN) {
                     return ret;
                 }
-                HandleReadWaitOrSleep(needBlockWait, tryCount, readLock);
+                if (needBlockWait) {
+                    std::unique_lock<std::mutex> readLock(readPacketMutex_);
+                    readCbCv_.wait(readLock, [ioContext]() {return ioContext->readCbReady_;}); // Wait to be notified
+                    needBlockWait = false;
+                    ioContext->readCbReady_ = false; // Reset the flag
+                    tryCount = 0;
+                } else {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
+                }
                 break;
             case Status::END_OF_STREAM:
                 ret = HandleReadEOS(ioContext);
@@ -93,18 +101,6 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         }
     } while (true);
     return ret;
-}
-
-void FFmpegDemuxerPlugin::HandleReadWaitOrSleep(bool& needBlockWait, int& tryCount,
-                                                std::unique_lock<std::mutex>& readLock)
-{
-    if (needBlockWait) {
-        readCbCv_.wait(readLock); // Wait to be notified
-        needBlockWait = false;
-        tryCount = 0;
-    } else {
-        std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
-    }
 }
 
 int FFmpegDemuxerPlugin::HandleReadOK(IOContext* ioContext, int dataSize)
@@ -123,9 +119,9 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize,
         ioContext->offset += dataSize;
         return dataSize;
     }
-    if (ioContext->invokerType != invokerType::READ) {
+    if (ioContext->invokerType != InvokerType::READ) {
         ioContext->retry = true;
-        ioContext->initErrorAgain = (ioContext->invokerType == invokerType::INIT ? true : false);
+        ioContext->initErrorAgain = (ioContext->invokerType == InvokerType::INIT ? true : false);
         MEDIA_LOG_I("Read again, set retry, invokerType!=READ");
         return AV_READ_PACKET_READ_ERROR;
     }
@@ -175,9 +171,9 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         "Cannot use sync and async Read together");
     readModeMap_[1] = 1;
     isPauseReadPacket_ = true;
-    if (ioContext_.invokerType != invokerType::READ) {
+    if (ioContext_.invokerType != InvokerType::READ) {
         std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = invokerType::READ;
+        ioContext_.invokerType = InvokerType::READ;
     }
     trackId_ = trackId;
     if (!readThread_) {
@@ -213,18 +209,24 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 
 Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t timeout)
 {
-    std::unique_lock<std::mutex> readLock(readSampleMutex_);
     if (!cacheQueue_.HasCache(trackId)) {
         if (threadState_ == READING) {
+            std::lock_guard<std::mutex> readLock(readPacketMutex_);
+            ioContext_.readCbReady_ = true;
             readCbCv_.notify_one();
         }
         if (threadState_ == WAITING) {
+            std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
+            threadReady_ = true;
             readLoopCv_.notify_one();
         }
+        {
+        std::unique_lock<std::mutex> readLock(readSampleMutex_);
         if (!readCacheCv_.wait_for(readLock, std::chrono::milliseconds(timeout),
             [this, trackId] { return cacheQueue_.HasCache(trackId); })) {
             FALSE_RETURN_V_MSG_E(readLoopStatus_ == Status::OK, readLoopStatus_, "read thread abnoraml end");
             return Status::ERROR_WAIT_TIMEOUT;
+        }
         }
     }
     return Status::OK;
@@ -236,12 +238,11 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
     AVPacket *pkt = nullptr;
     bool continueRead = true;
     while (continueRead) {
-        std::unique_lock<std::mutex> readLock(ioContext_.invokerTypeMutex);
         if (NeedWaitForRead()) {
-            HandleReadWait(readLock);
+            HandleReadWait();
         }
         readCacheCv_.notify_one();
-        if (ioContext_.invokerType == invokerType::DESTORY) {
+        if (ioContext_.invokerType == InvokerType::DESTORY) {
             MEDIA_LOG_I("DESTORY trackId=" PUBLIC_LOG_D32, trackId_);
             break;
         }
@@ -260,18 +261,20 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
 
 bool FFmpegDemuxerPlugin::NeedWaitForRead()
 {
-    return (cacheQueue_.HasCache(trackId_) || !isPauseReadPacket_) && ioContext_.invokerType != invokerType::DESTORY;
+    return (cacheQueue_.HasCache(trackId_) || !isPauseReadPacket_) && ioContext_.invokerType != InvokerType::DESTORY;
 }
 
-void FFmpegDemuxerPlugin::HandleReadWait(std::unique_lock<std::mutex>& readLock)
+void FFmpegDemuxerPlugin::HandleReadWait()
 {
+    std::unique_lock<std::mutex> readLock(ioContext_.invokerTypeMutex);
     threadState_ = WAITING;
     seekWaitCv_.notify_one();
     readLoopCv_.wait(readLock, [this]() {
-        return (ioContext_.invokerType == invokerType::DESTORY) ||
+        return (threadReady_) || (ioContext_.invokerType == InvokerType::DESTORY) ||
                (!cacheQueue_.HasCache(trackId_) && isPauseReadPacket_);
     });
     threadState_ = READING;
+    threadReady_ = false;
 }
 
 bool FFmpegDemuxerPlugin::EnsurePacketAllocated(AVPacket*& pkt)
@@ -314,13 +317,13 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(AVPacket* pkt)
         }
     }
     auto trackId = pkt->stream_index;
-    if (trackId >= formatContext_->nb_streams) {
-        MEDIA_LOG_E("TrackId " PUBLIC_LOG_D32 " is out of range, nb_streams: " PUBLIC_LOG_D32,
-            trackId, formatContext_->nb_streams);
-        av_packet_unref(pkt);
-        readLoopStatus_ = Status::ERROR_INVALID_PARAMETER;
-        return false;
-    }
+    // if (trackId >= formatContext_->nb_streams) {
+    //     MEDIA_LOG_E("TrackId " PUBLIC_LOG_D32 " is out of range, nb_streams: " PUBLIC_LOG_D32,
+    //         trackId, formatContext_->nb_streams);
+    //     av_packet_unref(pkt);
+    //     readLoopStatus_ = Status::ERROR_INVALID_PARAMETER;
+    //     return false;
+    // }
     if (!TrackIsSelected(trackId)) {
         av_packet_unref(pkt);
         return true;
@@ -363,9 +366,9 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
     FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
     readModeMap_[1] = 1;
-    if (ioContext_.invokerType != invokerType::READ) {
+    if (ioContext_.invokerType != InvokerType::READ) {
         std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = invokerType::READ;
+        ioContext_.invokerType = InvokerType::READ;
     }
     trackId_ = trackId;
     if (!readThread_) {
@@ -413,7 +416,7 @@ Status FFmpegDemuxerPlugin::GetLastPTSByTrackId(uint32_t trackId, int64_t &lastP
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
-    maxPts = INT64_MIN;
+    lastPTS = INT64_MIN;
     auto ret = cacheQueue_.GetLastPTSByTrackId(trackId, lastPTS);
     if (ret != Status::OK) {
         MEDIA_LOG_E("Get last pts failed");
