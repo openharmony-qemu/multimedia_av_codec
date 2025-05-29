@@ -21,7 +21,6 @@ hevcswdecoder_moduletest_native_include_dirs = [
   "./include",
   "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
-  "$MEDIA_ROOT_DIR/../../../third_party/json/include",
 ]
 
 hevcswdecoder_moduletest_cflags = [

@@ -19,7 +19,6 @@ module_output_path = "av_codec/av_codec/moduletest"
 
 hdrcodec_moduletest_native_include_dirs = [
   "./include",
-  "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
   "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
 ]
