@@ -1334,24 +1334,25 @@ void HttpMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 bool HttpMediaDownloader::HandleBreak()
 {
+    MEDIA_LOG_I("HTTP HandleBreak");
     if (downloadErrorState_) {
-        MEDIA_LOG_I("HTTP HandleBreak, downloadErrorState true.");
+        MEDIA_LOG_I("downloadErrorState true.");
         return true;
     }
     if (downloadRequest_ == nullptr) {
-        MEDIA_LOG_I("HTTP HandleBreak, downloadRequest is nullptr.");
+        MEDIA_LOG_I("downloadRequest is nullptr.");
         return true;
     }
     if (downloadRequest_->IsEos()) {
-        MEDIA_LOG_I("HTTP HandleBreak, isEos");
+        MEDIA_LOG_I("isEos true");
         return true;
     }
     if (downloadRequest_->IsClosed()) {
-        MEDIA_LOG_I("HTTP HandleBreak, IsClosed");
+        MEDIA_LOG_I("IsClosed true");
         return true;
     }
     if (downloadRequest_->IsChunkedVod()) {
-        MEDIA_LOG_I("HTTP HandleBreak, IsChunkedVod");
+        MEDIA_LOG_I("IsChunkedVod true");
         return true;
     }
     return false;
@@ -1645,6 +1646,7 @@ bool HttpMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
         return false;
     }
     if (downloadRequest_->IsChunkedVod()) {
+        MEDIA_LOG_I("ChunkedVod, fail to SetInitBufferSize.");
         return false;
     }
     MEDIA_LOG_I("HTTP SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32, size);
