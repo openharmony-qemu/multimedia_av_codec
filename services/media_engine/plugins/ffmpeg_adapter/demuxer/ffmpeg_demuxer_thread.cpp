@@ -241,7 +241,10 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
         if (NeedWaitForRead()) {
             HandleReadWait();
         }
-        readCacheCv_.notify_one();
+        {
+            std::lock_guard<std::mutex> readLock(readSampleMutex_);
+            readCacheCv_.notify_one();
+        }
         if (ioContext_.invokerType == InvokerType::DESTORY) {
             MEDIA_LOG_I("DESTORY trackId=" PUBLIC_LOG_D32, trackId_);
             break;
@@ -255,7 +258,10 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
         pkt = nullptr;
     }
     threadState_ = NOT_STARTED;
-    readCacheCv_.notify_one();
+    {
+        std::lock_guard<std::mutex> readLock(readSampleMutex_);
+        readCacheCv_.notify_one();
+    }
     MEDIA_LOG_I("Read loop end");
 }
 
@@ -305,7 +311,10 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(AVPacket* pkt)
                 return false;
             }
             readLoopStatus_ = Status::END_OF_STREAM;
-            readCacheCv_.notify_one();
+            {
+                std::lock_guard<std::mutex> readLock(readSampleMutex_);
+                readCacheCv_.notify_one();
+            }
             return true;
         }
         if (ffmpegRet < 0) { // failed
@@ -338,7 +347,10 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(AVPacket* pkt)
         readLoopStatus_ = ret;
         return false;
     }
-    readCacheCv_.notify_one();
+    {
+        std::lock_guard<std::mutex> readLock(readSampleMutex_);
+        readCacheCv_.notify_one();
+    }
     return true;
 }
 
