@@ -60,7 +60,6 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, ret, "Memory is nullptr");
     MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
     int tryCount = 0;
-    bool needBlockWait = false;
     do {
         auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
         int dataSize = static_cast<int>(buffer->GetMemory()->GetSize());
@@ -75,30 +74,18 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         switch (result) {
             case Status::OK:
                 ret = HandleReadOK(ioContext, dataSize);
-                return ret;
+                break;
             case Status::ERROR_AGAIN:
-                ret = HandleReadAgain(ioContext, dataSize, tryCount, needBlockWait);
-                if (ret != AV_READ_PACKET_READ_AGAIN) {
-                    return ret;
-                }
-                if (needBlockWait) {
-                    std::unique_lock<std::mutex> readLock(readPacketMutex_);
-                    readCbCv_.wait(readLock, [ioContext]() {return ioContext->readCbReady_;}); // Wait to be notified
-                    needBlockWait = false;
-                    ioContext->readCbReady_ = false; // Reset the flag
-                    tryCount = 0;
-                } else {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
-                }
+                ret = HandleReadAgain(ioContext, dataSize, tryCount);            
                 break;
             case Status::END_OF_STREAM:
                 ret = HandleReadEOS(ioContext);
-                return ret;
+                break;
             default:
                 ret = HandleReadError(static_cast<int>(result));
-                return ret;
+                break;
         }
-    } while (true);
+    } while (ret == AV_READ_PACKET_READ_AGAIN);
     return ret;
 }
 
@@ -111,25 +98,27 @@ int FFmpegDemuxerPlugin::HandleReadOK(IOContext* ioContext, int dataSize)
     return AV_READ_PACKET_READ_ERROR;
 }
 
-int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize,
-                                         int& tryCount, bool& needBlockWait)
+int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount)
 {
     if (dataSize > 0) {
         ioContext->offset += dataSize;
         return dataSize;
     }
-    if (ioContext->invokerType != InvokerType::READ) {
+    if (ioContext->invokerType != READ) {
         ioContext->retry = true;
-        ioContext->initErrorAgain = (ioContext->invokerType == InvokerType::INIT ? true : false);
+        ioContext->initErrorAgain = (ioContext->invokerType == INIT ? true : false);
         MEDIA_LOG_I("Read again, set retry, invokerType!=READ");
         return AV_READ_PACKET_READ_ERROR;
     }
     tryCount++;
     if (tryCount >= AV_READ_PACKET_RETRY_UPPER_LIMIT) {
-        MEDIA_LOG_I("Read again " PUBLIC_LOG_D32 " times, block wait for wakeup", AV_READ_PACKET_RETRY_UPPER_LIMIT);
-        needBlockWait = true;
+        std::unique_lock<std::mutex> readLock(readPacketMutex_);
+        readCbCv_.wait(readLock, [ioContext]() {return ioContext->readCbReady_;}); // Wait to be notified
+        ioContext->readCbReady_ = false; // Reset the flag
+        tryCount = 0;
     } else {
         MEDIA_LOG_I("Read again, retry count: " PUBLIC_LOG_D32, tryCount);
+        std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
     }
     return AV_READ_PACKET_READ_AGAIN;
 }
