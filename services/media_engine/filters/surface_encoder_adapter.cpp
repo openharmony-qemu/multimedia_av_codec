@@ -172,6 +172,8 @@ void SurfaceEncoderAdapter::ConfigureGeneralFormat(MediaAVCodec::Format &format,
     if (meta->Find(Tag::VIDEO_FRAME_RATE) != meta->end()) {
         double videoFrameRate;
         meta->Get<Tag::VIDEO_FRAME_RATE>(videoFrameRate);
+        videoFrameRate_ = static_cast<int32_t>(videoFrameRate);
+        MEDIA_LOG_I("videoFrameRate_: %{public}d", videoFrameRate_);
         format.PutDoubleValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
     }
     if (meta->Find(Tag::MIME_TYPE) != meta->end()) {

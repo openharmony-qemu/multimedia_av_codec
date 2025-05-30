@@ -157,6 +157,7 @@ private:
     bool isStopKeyFramePts_ = false;
     int64_t currentKeyFramePts_{-1};
     int64_t preKeyFramePts_{-1};
+    int32_t videoFrameRate_{-1};
     std::deque<std::pair<int64_t, StateCode>> pauseResumePts_;
 };
 } // namespace MediaAVCodec
