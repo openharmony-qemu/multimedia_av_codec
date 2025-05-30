@@ -16,7 +16,7 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 ohos_unittest("av_codec_param_checker_test") {
   sanitize = av_codec_test_sanitize
-  module_out_path = "av_codec/av_codec/unittest"
+  module_out_path = "av_codec/AVCodec_Video/unittest"
 
   include_dirs = [
     "./",
