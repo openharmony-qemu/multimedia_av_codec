@@ -145,7 +145,7 @@ Status SurfaceDecoderFilter::ConfigureMediaCodecByMimeType(std::string codecMime
 {
     FALSE_LOG_MSG_W(transcoderIsHdrVivid_ == isHdrVivid,
         "IsHdrVivid configured by AVTranscoder engine conflits with the parameter obtained from demuxer.");
-    MEDIA_LOG_I("CodecMimeType is %{public}s, isHdrVivid: %{public}d", codeMimeType.c_str(),
+    MEDIA_LOG_I("CodecMimeType is %{public}s, isHdrVivid: %{public}d", codecMimeType.c_str(),
         static_cast<int32_t>(isHdrVivid));
     mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER, "mediaCodec is nullptr");
@@ -171,7 +171,7 @@ Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     Format configFormat;
     configFormat.SetMeta(parameter);
     bool isHdrVivid = false;
-    FALSE_LOG_MEG_W(parameter->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdrVivid), "Get is_hdr_vivid failed");
+    FALSE_LOG_MSG_W(parameter->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdrVivid), "Get is_hdr_vivid failed");
     if (isHdrVivid) {
         MEDIA_LOG_I("Is hdrVivid,set colorspace format(%{public}d), pixel format(%{public}d)",
             static_cast<int32_t>(colorSpace_), static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
