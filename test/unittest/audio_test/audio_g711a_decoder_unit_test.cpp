@@ -32,12 +32,13 @@ constexpr int32_t G711A_SAMPLE_RATE = 16000;
 constexpr int64_t G711A_BIT_RATE = 6000;
 constexpr int32_t G711A_SIZE = 640;  // 40ms
 constexpr int32_t G711A_MAX_INPUT_SIZE = 8192;
+constexpr int32_t G711A_MAX_OUTPUT_SIZE = G711A_MAX_INPUT_SIZE * 2;
 static constexpr int32_t TEST_INPUT_SIZE = 8;
 static const uint8_t TEST_INPUT_ARR[TEST_INPUT_SIZE] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
 static const uint8_t TEST_OUTPUT_ARR[TEST_INPUT_SIZE * 2] = {0x80, 0xeb, 0x00, 0xa6, 0xf8, 0xfe, 0x60, 0xfb, 0x80, 0x1c,
-                                          0x00, 0x7a, 0x88, 0x01, 0xa0, 0x06};
+                                                             0x00, 0x7a, 0x88, 0x01, 0xa0, 0x06};
 
-class LbvcUnitTest : public testing::Test, public DataCallback {
+class G711aUnitTest : public testing::Test, public DataCallback {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -62,15 +63,15 @@ protected:
     shared_ptr<AVBuffer> avBuffer_ = nullptr;
 };
 
-void LbvcUnitTest::SetUpTestCase(void)
+void G711aUnitTest::SetUpTestCase(void)
 {
 }
 
-void LbvcUnitTest::TearDownTestCase(void)
+void G711aUnitTest::TearDownTestCase(void)
 {
 }
 
-void LbvcUnitTest::SetUp(void)
+void G711aUnitTest::SetUp(void)
 {
     auto tmp = PluginManagerV2::Instance().CreatePluginByName(CODEC_G711A_DEC_NAME);
     plugin_ = reinterpret_pointer_cast<CodecPlugin>(tmp);
@@ -84,7 +85,7 @@ void LbvcUnitTest::SetUp(void)
     avBuffer_->memory_->SetSize(G711A_SIZE);
 }
 
-void LbvcUnitTest::TearDown(void)
+void G711aUnitTest::TearDown(void)
 {
     if (plugin_) {
         plugin_->Release();
@@ -93,7 +94,7 @@ void LbvcUnitTest::TearDown(void)
     }
 }
 
-HWTEST_F(LbvcUnitTest, SetParamter_001, TestSize.Level1)
+HWTEST_F(G711aUnitTest, SetParamter_001, TestSize.Level1)
 {
     if (plugin_ == nullptr) {
         cout << "g711a plugin is nullptr!" << endl;
@@ -116,12 +117,38 @@ HWTEST_F(LbvcUnitTest, SetParamter_001, TestSize.Level1)
     plugin_->Start();
     EXPECT_EQ(plugin_->QueueInputBuffer(avBuffer_), Status::OK);
     EXPECT_EQ(plugin_->QueueOutputBuffer(avBuffer_), Status::OK);
+    avBuffer_->memory_->SetSize(0);
+    EXPECT_EQ(plugin_->QueueInputBuffer(avBuffer_), Status::OK);
+    EXPECT_EQ(plugin_->QueueOutputBuffer(avBuffer_), Status::ERROR_NOT_ENOUGH_DATA);
     plugin_->Flush();
     plugin_->Stop();
     EXPECT_EQ(plugin_->Reset(), Status::OK);
 }
 
-HWTEST_F(LbvcUnitTest, GetParamter_001, TestSize.Level1)
+HWTEST_F(G711aUnitTest, SetParamter_002, TestSize.Level1)
+{
+    if (plugin_ == nullptr) {
+        cout << "g711a plugin is nullptr!" << endl;
+        return;
+    }
+    plugin_->Init();
+    plugin_->SetDataCallback(this);
+    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(0);
+    EXPECT_NE(plugin_->SetParameter(meta_), Status::OK);
+    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(-1);
+    EXPECT_NE(plugin_->SetParameter(meta_), Status::OK);
+    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(1);
+
+    meta_->Set<Tag::AUDIO_SAMPLE_RATE>(0);
+    EXPECT_NE(plugin_->SetParameter(meta_), Status::OK);
+    meta_->Set<Tag::AUDIO_SAMPLE_RATE>(-1);
+    EXPECT_NE(plugin_->SetParameter(meta_), Status::OK);
+    plugin_->Flush();
+    plugin_->Stop();
+    EXPECT_EQ(plugin_->Reset(), Status::OK);
+}
+
+HWTEST_F(G711aUnitTest, GetParamter_001, TestSize.Level1)
 {
     if (plugin_ == nullptr) {
         cout << "g711a plugin is nullptr!" << endl;
@@ -133,19 +160,38 @@ HWTEST_F(LbvcUnitTest, GetParamter_001, TestSize.Level1)
     plugin_->Init();
     plugin_->Reset();
     plugin_->SetDataCallback(this);
-    meta_->Set<Tag::AUDIO_MAX_INPUT_SIZE>(G711A_MAX_INPUT_SIZE + 1);
+    int32_t testMaxInput = G711A_MAX_INPUT_SIZE + 1;
+    meta_->Set<Tag::AUDIO_MAX_INPUT_SIZE>(testMaxInput);
+    EXPECT_EQ(plugin_->SetParameter(meta_), Status::OK);
+    EXPECT_EQ(plugin_->GetParameter(tmpMeta), Status::OK);
+    tmpMeta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize);
+    EXPECT_EQ(maxInputSize, testMaxInput);
+    tmpMeta->Get<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize);
+    EXPECT_EQ(maxOutputSize, testMaxInput * sizeof(int16_t));
+
+    testMaxInput = -1;
+    meta_->Set<Tag::AUDIO_MAX_INPUT_SIZE>(testMaxInput);
     EXPECT_EQ(plugin_->SetParameter(meta_), Status::OK);
     EXPECT_EQ(plugin_->GetParameter(tmpMeta), Status::OK);
     tmpMeta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize);
     EXPECT_EQ(maxInputSize, G711A_MAX_INPUT_SIZE);
     tmpMeta->Get<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize);
-    EXPECT_EQ(maxOutputSize, G711A_MAX_INPUT_SIZE * 2);
+    EXPECT_EQ(maxOutputSize, G711A_MAX_OUTPUT_SIZE);
+
+    testMaxInput = 0xf7777777 / 2 + 1;
+    meta_->Set<Tag::AUDIO_MAX_INPUT_SIZE>(testMaxInput);
+    EXPECT_EQ(plugin_->SetParameter(meta_), Status::OK);
+    EXPECT_EQ(plugin_->GetParameter(tmpMeta), Status::OK);
+    tmpMeta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize);
+    EXPECT_EQ(maxInputSize, G711A_MAX_INPUT_SIZE);
+    tmpMeta->Get<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize);
+    EXPECT_EQ(maxOutputSize, G711A_MAX_OUTPUT_SIZE);
     plugin_->Flush();
     plugin_->Stop();
     EXPECT_EQ(plugin_->Reset(), Status::OK);
 }
 
-HWTEST_F(LbvcUnitTest, Decode_001, TestSize.Level1)
+HWTEST_F(G711aUnitTest, Decode_001, TestSize.Level1)
 {
     if (plugin_ == nullptr) {
         cout << "g711a plugin is nullptr!" << endl;
@@ -174,7 +220,7 @@ HWTEST_F(LbvcUnitTest, Decode_001, TestSize.Level1)
     EXPECT_EQ(plugin_->Reset(), Status::OK);
 }
 
-HWTEST_F(LbvcUnitTest, Decode_002, TestSize.Level1)
+HWTEST_F(G711aUnitTest, Decode_002, TestSize.Level1)
 {
     if (plugin_ == nullptr) {
         cout << "g711a plugin is nullptr!" << endl;
@@ -184,6 +230,65 @@ HWTEST_F(LbvcUnitTest, Decode_002, TestSize.Level1)
     plugin_->SetDataCallback(this);
     meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S32LE);
     EXPECT_EQ(plugin_->SetParameter(meta_), Status::OK);
+    plugin_->Start();
+    EXPECT_EQ(plugin_->QueueInputBuffer(avBuffer_), Status::OK);
+    EXPECT_EQ(plugin_->QueueOutputBuffer(avBuffer_), Status::OK);
+    EXPECT_NE(avBuffer_->duration_, 40000);  // 40000us -> 40ms
+    plugin_->Flush();
+    plugin_->Stop();
+    EXPECT_EQ(plugin_->Reset(), Status::OK);
+}
+
+HWTEST_F(G711aUnitTest, Decode_003, TestSize.Level1)
+{
+    if (plugin_ == nullptr) {
+        cout << "g711a plugin is nullptr!" << endl;
+        return;
+    }
+    plugin_->SetDataCallback(this);
+    meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S32LE);
+    EXPECT_EQ(plugin_->SetParameter(meta_), Status::OK);
+    plugin_->Init();
+    plugin_->Start();
+    auto avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(avAllocator, (G711A_MAX_OUTPUT_SIZE << 1));
+    avBuffer->memory_->SetSize(G711A_MAX_OUTPUT_SIZE);
+    EXPECT_EQ(plugin_->QueueInputBuffer(avBuffer), Status::OK);
+    EXPECT_EQ(plugin_->QueueOutputBuffer(avBuffer), Status::OK);
+    plugin_->Flush();
+    plugin_->Stop();
+    EXPECT_EQ(plugin_->Reset(), Status::OK);
+}
+
+HWTEST_F(G711aUnitTest, Decode_004, TestSize.Level1)
+{
+    if (plugin_ == nullptr) {
+        cout << "g711a plugin is nullptr!" << endl;
+        return;
+    }
+    plugin_->Init();
+    plugin_->SetDataCallback(this);
+    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(0);
+    EXPECT_NE(plugin_->SetParameter(meta_), Status::OK);
+    plugin_->Start();
+    EXPECT_EQ(plugin_->QueueInputBuffer(avBuffer_), Status::OK);
+    EXPECT_EQ(plugin_->QueueOutputBuffer(avBuffer_), Status::OK);
+    EXPECT_NE(avBuffer_->duration_, 40000);  // 40000us -> 40ms
+    plugin_->Flush();
+    plugin_->Stop();
+    EXPECT_EQ(plugin_->Reset(), Status::OK);
+}
+
+HWTEST_F(G711aUnitTest, Decode_005, TestSize.Level1)
+{
+    if (plugin_ == nullptr) {
+        cout << "g711a plugin is nullptr!" << endl;
+        return;
+    }
+    plugin_->Init();
+    plugin_->SetDataCallback(this);
+    meta_->Set<Tag::AUDIO_SAMPLE_RATE>(0);
+    EXPECT_NE(plugin_->SetParameter(meta_), Status::OK);
     plugin_->Start();
     EXPECT_EQ(plugin_->QueueInputBuffer(avBuffer_), Status::OK);
     EXPECT_EQ(plugin_->QueueOutputBuffer(avBuffer_), Status::OK);

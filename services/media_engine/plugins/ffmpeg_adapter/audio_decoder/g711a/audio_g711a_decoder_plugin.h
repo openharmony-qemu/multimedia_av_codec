@@ -74,7 +74,8 @@ private:
 
     int16_t G711aLawDecode(uint8_t aLawValue);
 
-    std::vector<int16_t> decodeResult_;
+    std::vector<uint8_t> decodeInput_;
+    int32_t decodeBytes_;
     int32_t channels_;
     int32_t sampleRate_;
     int64_t pts_;

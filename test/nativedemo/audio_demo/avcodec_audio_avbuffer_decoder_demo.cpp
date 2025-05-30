@@ -149,8 +149,8 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), DEFAULT_AAC_TYPE);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
-    } else if (audioType == AudioBufferFormatType::TYPE_AMRNB || audioType == AudioBufferFormatType::TYPE_G711MU
-               || audioType == AudioBufferFormatType::TYPE_G711A) {
+    } else if (audioType == AudioBufferFormatType::TYPE_AMRNB || audioType == AudioBufferFormatType::TYPE_G711MU ||
+        audioType == AudioBufferFormatType::TYPE_G711A) {
         channelCount = 1;
         sampleRate = AMRNB_SAMPLE_RATE;
     } else if (audioType == AudioBufferFormatType::TYPE_AMRWB || audioType == AudioBufferFormatType::TYPE_APE) {
@@ -408,7 +408,7 @@ void ADecBufferDemo::InputFunc()
         buffer->buffer_->memory_->SetSize(size);
         DEMO_CHECK_AND_BREAK_LOG(inputFile_.gcount() == size, "Fatal: read buffer fail");
 
-        cout << "SetSize" << size << endl;
+        cout << "SetSize: " << size << endl;
         int32_t ret;
         if (isFirstFrame_) {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
