@@ -114,7 +114,7 @@ public:
     int32_t SetCallback();
     int32_t SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallback> cb);
     int32_t GetInputFormat(Format &format);
-
+    int32_t StartEncoder();
     int32_t StartVideoEncoder();
     int32_t TestApi();
     int32_t PushData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index, int32_t &result);

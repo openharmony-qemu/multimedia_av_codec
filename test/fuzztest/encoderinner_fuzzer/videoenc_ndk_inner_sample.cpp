@@ -355,7 +355,8 @@ int32_t VEncNdkInnerFuzzSample::GetInputFormat(Format &format)
     return venc_->GetInputFormat(format);
 }
 
-int32_t VEncNdkInnerFuzzSample::StartVideoEncoder()
+
+int32_t VEncNdkInnerFuzzSample::StartEncoder()
 {
     isRunning_.store(true);
     int32_t ret = 0;
@@ -372,7 +373,6 @@ int32_t VEncNdkInnerFuzzSample::StartVideoEncoder()
         signal_->outCond_.notify_all();
         return ret;
     }
-
     inFile_ = make_unique<ifstream>();
     if (inFile_ == nullptr) {
         isRunning_.store(false);
@@ -384,6 +384,15 @@ int32_t VEncNdkInnerFuzzSample::StartVideoEncoder()
         isRunning_.store(false);
         venc_->Stop();
         return AVCS_ERR_UNKNOWN;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t VEncNdkInnerFuzzSample::StartVideoEncoder()
+{
+    int32_t ret = StartEncoder();
+    if (ret != AVCS_ERR_OK) {
+        return ret;
     }
     if (surfaceInput) {
         inputLoop_ = make_unique<thread>(&VEncNdkInnerFuzzSample::InputFuncSurface, this);
@@ -399,7 +408,6 @@ int32_t VEncNdkInnerFuzzSample::StartVideoEncoder()
         ReleaseInFile();
         return AVCS_ERR_UNKNOWN;
     }
-    
     outputLoop_ = make_unique<thread>(&VEncNdkInnerFuzzSample::OutputFunc, this);
     if (outputLoop_ == nullptr) {
         isRunning_.store(false);
