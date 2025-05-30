@@ -43,6 +43,18 @@ enum class StateCode {
     PAUSE,
     RESUME,
 };
+
+enum class ProcessStateCode {
+    IDLE,
+    // operate start, resume
+    RECORDING,
+    // operate pause
+    PAUSED,
+    // operate stop
+    STOPPED,
+    ERROR,
+};
+
 class EncoderAdapterCallback {
 public:
     virtual ~EncoderAdapterCallback() = default;
@@ -104,6 +116,7 @@ private:
     void AddStartPts(int64_t currentPts);
     void AddStopPts();
     bool AddPauseResumePts(int64_t currentPts);
+    void HandleWaitforStop();
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
@@ -122,9 +135,12 @@ private:
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
     int64_t stopTime_{-1};
+    int64_t pauseTime_{-1};
+    int64_t resumeTime_{-1};
     std::atomic<int64_t> eosPts_{UINT32_MAX};
     std::atomic<int64_t> currentPts_{-1};
     int64_t totalPauseTime_{0};
+    ProcessStateCode curState_{ProcessStateCode::IDLE};
 
     int64_t startBufferTime_{-1};
     int64_t lastBufferTime_{-1};

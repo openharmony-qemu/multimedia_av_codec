@@ -33,6 +33,9 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 constexpr uint32_t TIME_OUT_MS = 1000;
 constexpr uint32_t NS_PER_US = 1000;
 constexpr int64_t SEC_TO_NS = 1000000000;
+constexpr uint32_t STOP_TIME_OUT_MS = 2000;
+//Codec wait timeout with no video frame received
+constexpr uint32_t AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED = 50001 ;
 namespace OHOS {
 namespace Media {
 
@@ -325,9 +328,11 @@ Status SurfaceEncoderAdapter::Start()
     isStart_ = true;
     isStartKeyFramePts_ = true;
     if (ret == 0) {
+        curState_ = ProcessStateCode::RECORDING;
         return Status::OK;
     } else {
         SetFaultEvent("SurfaceEncoderAdapter::Start error", ret);
+        curState_ = ProcessStateCode::ERROR;
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -339,12 +344,24 @@ Status SurfaceEncoderAdapter::Stop()
     GetCurrentTime(stopTime_);
     isStopKeyFramePts_ = true;
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
-
-    if (isStart_ && !isTransCoderMode) {
-        std::unique_lock<std::mutex> lock(stopMutex_);
-        stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
+    // operate stop when it is paused state.
+    if (curState_ == ProcessStateCode::PAUSED && !isTransCoderMode) {
+        stopTime_ = pauseTime_;
+        // current frame is not the last frame before the pasue time, wait for stop
+        if (currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / videoFrameRate_)) {
+            MEDIA_LOG_D("paused state -> stop, wait for stop.");
+            HandleWaitforStop();
+        }
+        // else stop directly
         AddStopPts();
     }
+    // operate stop when it is recording state.
+    if (curState_ == ProcessStateCode::RECORDING && !isTransCoderMode) {
+        MEDIA_LOG_D("recording state -> stop, wait for stop.");
+        HandleWaitforStop();
+        AddStopPts();
+    }
+
     if (releaseBufferTask_) {
         {
             std::lock_guard<std::mutex> lock(releaseBufferMutex_);
@@ -361,9 +378,11 @@ Status SurfaceEncoderAdapter::Stop()
     MEDIA_LOG_I("codecServer_ Stop");
     isStart_ = false;
     if (ret == 0) {
+        curState_ = ProcessStateCode::STOPPED;
         return Status::OK;
     } else {
         SetFaultEvent("SurfaceEncoderAdapter::Stop error", ret);
+        curState_ = ProcessStateCode::ERROR;
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -378,6 +397,7 @@ Status SurfaceEncoderAdapter::Pause()
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
     int64_t pauseTime = 0;
     GetCurrentTime(pauseTime);
+    pauseTime_ = pauseTime;
     MEDIA_LOG_I("Pause time: " PUBLIC_LOG_D64, pauseTime);
     if (pauseResumeQueue_.empty() ||
         (pauseResumeQueue_.back().second == StateCode::RESUME && pauseResumeQueue_.back().first <= pauseTime)) {
@@ -386,6 +406,7 @@ Status SurfaceEncoderAdapter::Pause()
         pauseResumePts_.push_back({pauseTime, StateCode::PAUSE});
         pauseResumePts_.push_back({std::numeric_limits<int64_t>::max(), StateCode::RESUME});
     }
+    curState_ = ProcessStateCode::PAUSED;
     return Status::OK;
 }
 
@@ -400,6 +421,7 @@ Status SurfaceEncoderAdapter::Resume()
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
     int64_t resumeTime = 0;
     GetCurrentTime(resumeTime);
+    resumeTime_ = resumeTime;
     MEDIA_LOG_I("resume time: " PUBLIC_LOG_D64, resumeTime);
     if (pauseResumeQueue_.empty()) {
         MEDIA_LOG_I("Status Error, no pause before resume");
@@ -409,6 +431,7 @@ Status SurfaceEncoderAdapter::Resume()
         pauseResumeQueue_.back().first = std::min(resumeTime, pauseResumeQueue_.back().first);
         pauseResumePts_.back().first = std::min(resumeTime, pauseResumePts_.back().first);
     }
+    curState_ = ProcessStateCode::RECORDING;
     return Status::OK;
 }
 
@@ -424,6 +447,7 @@ Status SurfaceEncoderAdapter::Flush()
         return Status::OK;
     } else {
         SetFaultEvent("SurfaceEncoderAdapter::Flush error", ret);
+        curState_ = ProcessStateCode::ERROR;
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -438,6 +462,8 @@ Status SurfaceEncoderAdapter::Reset()
     int32_t ret = codecServer_->Reset();
     startBufferTime_ = -1;
     stopTime_ = -1;
+    pauseTime_ = -1;
+    resumeTime_ = -1;
     totalPauseTime_ = 0;
     isStart_ = false;
     isStartKeyFramePts_ = false;
@@ -445,9 +471,11 @@ Status SurfaceEncoderAdapter::Reset()
     pauseResumeQueue_.clear();
     pauseResumePts_.clear();
     if (ret == 0) {
+        curState_ = ProcessStateCode::IDLE;
         return Status::OK;
     } else {
         SetFaultEvent("SurfaceEncoderAdapter::Reset error", ret);
+        curState_ = ProcessStateCode::ERROR;
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -818,6 +846,19 @@ bool SurfaceEncoderAdapter::AddPauseResumePts(int64_t currentPts)
 bool SurfaceEncoderAdapter::GetIsTransCoderMode()
 {
     return isTransCoderMode;
+}
+
+void SurfaceEncoderAdapter::HandleWaitforStop()
+{
+    // Determine whether to end directly or wait STOP_TIME_OUT_MS
+    std::unique_lock<std::mutex> lock(stopMutex_);
+    std::cv_status waitStatus = stopCondition_.wait_for(lock, std::chrono::milliseconds(STOP_TIME_OUT_MS));
+    // Waiting timeout with no video frame received
+    if (waitStatus == std::cv_status::timeout && currentKeyFramePts_ == -1) {
+        MEDIA_LOG_E("Codec wait timeout with no video frame received");
+        encoderAdapterCallback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL,
+                                         AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED);
+    }
 }
 } // namespace MEDIA
 } // namespace OHOS
