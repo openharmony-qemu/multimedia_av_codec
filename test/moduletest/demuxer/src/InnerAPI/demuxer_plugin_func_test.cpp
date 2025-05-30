@@ -301,11 +301,11 @@ bool DemuxerPluginInnerFuncTest::ResultAssert(uint32_t frames0, uint32_t frames1
     printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
     if (!(frames_[0] == frames0)) {
         printf("false return: frames_[0] != frames0\n");
-        return false;          
+        return false;
     }
     if (!(frames_[1] == frames1)) {
         printf("false return: frames_[1] =!= frames1\n");
-        return false;         
+        return false;
     }
     if (!(keyFrames_[0] == keyFrames0)) {
         printf("false return: keyFrames_[0] != keyFrames0\n");
