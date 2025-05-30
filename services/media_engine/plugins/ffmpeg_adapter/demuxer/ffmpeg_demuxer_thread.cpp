@@ -59,7 +59,6 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     auto bufData = buffer->WrapMemory(buf, bufSize, 0);
     FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, ret, "Memory is nullptr");
     MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
-    
     int tryCount = 0;
     bool needBlockWait = false;
     do {

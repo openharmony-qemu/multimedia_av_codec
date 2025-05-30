@@ -97,52 +97,66 @@ struct DemuxerPlugin : public PluginBase {
     virtual Status UnselectTrack(uint32_t trackId) = 0;
 
     /**
-     * @brief Reads data frames.
+     * @brief Reads data frames (synchronous version).
      *
-     * The function is valid only after RUNNING state.
+     * This function uses a synchronous implementation mechanism. It is valid only after the RUNNING state.
+     * 
+     * @note This synchronous interface must be used together with the synchronous version of GetNextSampleSize.
+     *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
-     * @param trackId Identifies the media track. ignore the invalid value is passed.
-     * @param sample Buffer where store data frames.
-     * @return  Execution Status return
+     * @param trackId Identifies the media track. Invalid values are ignored.
+     * @param sample Buffer where data frames are stored.
+     * @return Execution Status
      *  @retval OK: Plugin ReadFrame succeeded.
      *  @retval ERROR_TIMED_OUT: Operation timeout.
      */
     virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) = 0;
 
-     /**
-     * @brief Reads data frames within @param timeout milliseconds.
+    /**
+     * @brief Reads data frames within @param timeout milliseconds (asynchronous version).
      *
-     * The function is valid only after RUNNING state.
+     * This function uses an asynchronous implementation mechanism. It is valid only after the RUNNING state.
+     * 
+     * @note This asynchronous interface must be used together with the asynchronous version of GetNextSampleSize.
+     *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
-     * @param trackId Identifies the media track. ignore the invalid value is passed.
-     * @param sample Buffer where store data frames.
-     * @param timeout no result after @param timeout milliseconds, return it.
-     * @return  Execution Status return
+     * @param trackId Identifies the media track. Invalid values are ignored.
+     * @param sample Buffer where data frames are stored.
+     * @param timeout If no result is available after @param timeout milliseconds, the function returns.
+     * @return Execution Status
      *  @retval OK: Plugin ReadFrame succeeded.
      *  @retval ERROR_WAIT_TIMEOUT: Operation timeout.
-     *  @retval END_OF_STREAM: read end. eos.
+     *  @retval END_OF_STREAM: Read end (EOS).
      *  @retval ERROR_UNKNOWN: Call av_read_frame failed.
      *  @retval ERROR_NULL_POINTER: Call av_packet_alloc failed.
      */
     virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) = 0;
 
     /**
-     * @brief Get next sample size.
+     * @brief Get next sample size (synchronous version).
      *
-     * The function is valid only after RUNNING state.
+     * This function uses a synchronous implementation mechanism. It is valid only after the RUNNING state.
+     * 
+     * @note This synchronous interface must be used together with the synchronous version of ReadSample.
+     *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
-     * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @param trackId Identifies the media track. Invalid values are ignored.
+     * @param size Output parameter for the next sample size.
      * @return Execution Status
      */
     virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size) = 0;
 
     /**
-     * @brief Get next sample size within @param timeout milliseconds.
+     * @brief Get next sample size within @param timeout milliseconds (asynchronous version).
      *
-     * The function is valid only after RUNNING state.
+     * This function uses an asynchronous implementation mechanism. It is valid only after the RUNNING state.
+     * 
+     * @note This asynchronous interface must be used together with the asynchronous version of ReadSample.
+     *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
-     * @param trackId Identifies the media track. ignore the invalid value is passed.
-     * @param timeout no result after @param timeout milliseconds, return it.
+     * @param trackId Identifies the media track. Invalid values are ignored.
+     * @param size Output parameter for the next sample size.
+     * @param timeout If no result is available after @param timeout milliseconds, the function returns.
      * @return Execution Status
      */
     virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) = 0;
