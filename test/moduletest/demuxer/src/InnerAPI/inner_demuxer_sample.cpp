@@ -52,6 +52,12 @@ InnerDemuxerSample::~InnerDemuxerSample()
     }
 }
 
+void InnerDemuxerSample::CreateBuffer()
+{
+    uint32_t buffersize = 1024 * 1024;
+    std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    avBuffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
+}
 int32_t InnerDemuxerSample::InitWithFile(const std::string &path, bool local)
 {
     if (local) {
@@ -89,10 +95,12 @@ int32_t InnerDemuxerSample::InitWithFile(const std::string &path, bool local)
         if (trackType == MEDIA_TYPE_VID) {
             videoTrackIdx = i;
         }
-        ret = this->demuxer_->SelectTrackByID(i);
-        if (ret != 0) {
-            printf("SelectTrackByID is failed\n");
-            return ret;
+        if (unSelectTrack != i) {
+            ret = this->demuxer_->SelectTrackByID(i);
+            if (ret != 0) {
+                printf("SelectTrackByID is failed\n");
+                return ret;
+            }
         }
     }
     return ret;
@@ -518,6 +526,18 @@ bool InnerDemuxerSample::CheckApeSourceData(const std::string &path, int32_t ver
     if (sizeMax != readSize) {
         printf("sizeMax = %d not as expected\n", sizeMax);
         return false;
+    }
+    return true;
+}
+
+bool InnerDemuxerSample::CheckCache(std::vector<std::vector<int32_t>> &cacheCheckSteps, int32_t times)
+{
+    uint32_t memoryUsage = 0;
+    for (auto step : cacheCheckSteps) {
+        demuxer_->GetCurrentCacheSize(step[0], memoryUsage);
+        if (memoryUsage != step[times]) {
+            return false;
+        }
     }
     return true;
 }
