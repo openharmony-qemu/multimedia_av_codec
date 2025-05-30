@@ -189,7 +189,7 @@ bool DemuxerPluginInnerFuncTest::PluginSelectTracks()
 {
     MediaInfo mediaInfo;
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    if(!(demuxerPlugin->GetMediaInfo(mediaInfo) == Status::OK)) {
+    if (!(demuxerPlugin->GetMediaInfo(mediaInfo) == Status::OK)) {
         printf("false return: demuxerPlugin->GetMediaInfo(mediaInfo) != Status::OK\n");
         return false;
     }
@@ -309,7 +309,7 @@ bool DemuxerPluginInnerFuncTest::ResultAssert(uint32_t frames0, uint32_t frames1
     }
     if (!(keyFrames_[0] == keyFrames0)) {
         printf("false return: keyFrames_[0] != keyFrames0\n");
-        return false; 
+        return false;
     }
     if (!(keyFrames_[1] == keyFrames1)) {
         printf("false return: keyFrames_[1] != keyFrames1\n");
