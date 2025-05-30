@@ -164,7 +164,7 @@ HttpMediaDownloader::~HttpMediaDownloader()
 std::string HttpMediaDownloader::GetContentType()
 {
     FALSE_RETURN_V(downloader_ != nullptr, "");
-    MEDIA_LOG_I("Http GetContentType in");
+    MEDIA_LOG_I("In");
     return downloader_->GetContentType();
 }
 
@@ -1334,7 +1334,7 @@ void HttpMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 bool HttpMediaDownloader::HandleBreak()
 {
-    MEDIA_LOG_I("HTTP HandleBreak");
+    MEDIA_LOG_D("HTTP HandleBreak");
     if (downloadErrorState_) {
         MEDIA_LOG_I("downloadErrorState true.");
         return true;
