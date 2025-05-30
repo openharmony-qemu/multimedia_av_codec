@@ -70,7 +70,7 @@ bool EncoderInnerFuzzTest(const uint8_t *data, size_t size)
     vEncSample->CreateByName(gCodecName);
     vEncSample->SetCallback();
     vEncSample->Configure();
-    vEncSample->SetCustomBuffer(bufferConfig, const_cast<uint8_t*>(data));
+    vEncSample->SetCustomBuffer(bufferConfig, const_cast<uint8_t*>(data), size);
     vEncSample->StartVideoEncoder();
     vEncSample->WaitForEOS();
     delete vEncSample;
