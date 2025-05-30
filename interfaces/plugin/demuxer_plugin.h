@@ -104,9 +104,9 @@ struct DemuxerPlugin : public PluginBase {
      * @note This synchronous interface must be used together with the synchronous version of GetNextSampleSize.
      *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
-     * @param trackId Identifies the media track. Invalid values are ignored.
-     * @param sample Buffer where data frames are stored.
-     * @return Execution Status
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @param sample Buffer where store data frames.
+     * @return  Execution Status return
      *  @retval OK: Plugin ReadFrame succeeded.
      *  @retval ERROR_TIMED_OUT: Operation timeout.
      */
@@ -120,10 +120,10 @@ struct DemuxerPlugin : public PluginBase {
      * @note This asynchronous interface must be used together with the asynchronous version of GetNextSampleSize.
      *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
-     * @param trackId Identifies the media track. Invalid values are ignored.
-     * @param sample Buffer where data frames are stored.
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @param sample Buffer where store data frames.
      * @param timeout If no result is available after @param timeout milliseconds, the function returns.
-     * @return Execution Status
+     * @return  Execution Status return
      *  @retval OK: Plugin ReadFrame succeeded.
      *  @retval ERROR_WAIT_TIMEOUT: Operation timeout.
      *  @retval END_OF_STREAM: Read end (EOS).
@@ -140,7 +140,7 @@ struct DemuxerPlugin : public PluginBase {
      * @note This synchronous interface must be used together with the synchronous version of ReadSample.
      *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
-     * @param trackId Identifies the media track. Invalid values are ignored.
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
      * @param size Output parameter for the next sample size.
      * @return Execution Status
      */
@@ -154,7 +154,7 @@ struct DemuxerPlugin : public PluginBase {
      * @note This asynchronous interface must be used together with the asynchronous version of ReadSample.
      *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
-     * @param trackId Identifies the media track. Invalid values are ignored.
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
      * @param size Output parameter for the next sample size.
      * @param timeout If no result is available after @param timeout milliseconds, the function returns.
      * @return Execution Status
