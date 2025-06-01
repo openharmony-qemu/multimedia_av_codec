@@ -153,6 +153,14 @@ namespace MediaAVCodec {
         }                                                                   \
     } else void (0)
 
+#define CHECK_AND_BREAK_LOG_LIMIT(cond, frequency, fmt, ...)                \
+    if (1) {                                                                \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGE_LIMIT(frequency, fmt, ##__VA_ARGS__);              \
+            break;                                                          \
+        }                                                                   \
+    } else void (0)
+
 #define CHECK_AND_CONTINUE_LOG(cond, fmt, ...)                              \
     if (1) {                                                                \
         if (!(cond)) {                                                      \
