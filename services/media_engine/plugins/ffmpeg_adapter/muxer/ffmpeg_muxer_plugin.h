@@ -64,7 +64,7 @@ private:
     Status SetCodecParameterColor(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
     Status SetCodecParameterColorByParser(AVStream* stream);
     Status SetCodecParameterCuva(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
-    Status SetCodecParameterCuvaByParser(AVStream *stream);.
+    Status SetCodecParameterCuvaByParser(AVStream *stream);
     Status SetCodecParameterVideoDelay(AVStream *stream);
     void SetSeiLogInfo();
     Status SetDisplayMatrix(AVStream* stream);
