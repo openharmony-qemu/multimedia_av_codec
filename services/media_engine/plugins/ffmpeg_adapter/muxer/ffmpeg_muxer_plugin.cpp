@@ -1174,7 +1174,7 @@ Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const std::share
                 FALSE_RETURN_V_MSG_E(SetCodecParameterCuvaByParser(st) == Status::NO_ERROR,
                     Status::ERROR_INVALID_DATA, "set cuva flag failed!");
                 FALSE_RETURN_V_MSG_E(SetCodecParameterVideoDelay(st) == Status::NO_ERROR,
-                    Status::ERROR_INVALID_DATA, "set cuva flag failed!");
+                    Status::ERROR_INVALID_DATA, "set Video Delay failed!");
                 SetSeiLogInfo();
             }
             if (!(sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) &&
