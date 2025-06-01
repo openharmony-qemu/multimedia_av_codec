@@ -622,6 +622,20 @@ Status FFmpegMuxerPlugin::SetCodecParameterCuvaByParser(AVStream *stream)
     return Status::NO_ERROR;
 }
 
+Status FFmpegMuxerPlugin::SetCodecParameterVideoDelay(AVStream* stream)
+{
+    uint32_t maxReorderPic = hevcParser_->GetMaxReorderPic();
+    if (maxReorderPic > 0) {
+        if (stream->avg_frame_rate.num == 0) {
+            MEDIA_LOG_E("avg_frame_rate not exist, please check");
+            return Status::ERROR_UNKNOWN;
+        }
+        MEDIA_LOG_I("cpdecpar->video_delay been set %{public}u", maxReorderPic);
+        stream->codecpar->video_delay = maxReorderPic;
+    }
+    return Status::NO_ERROR;
+}
+
 void FFmpegMuxerPlugin::SetSeiLogInfo()
 {
     uint8_t colorTransfer = hevcParser_->GetColorTransfer();
@@ -1159,6 +1173,8 @@ Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const std::share
                     Status::ERROR_INVALID_DATA, "set color failed!");
                 FALSE_RETURN_V_MSG_E(SetCodecParameterCuvaByParser(st) == Status::NO_ERROR,
                     Status::ERROR_INVALID_DATA, "set cuva flag failed!");
+                FALSE_RETURN_V_MSG_E(SetCodecParameterVideoDelay(st) == Status::NO_ERROR,
+                    Status::ERROR_INVALID_DATA, "set Video Delay failed!");
                 SetSeiLogInfo();
             }
             if (!(sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) &&
