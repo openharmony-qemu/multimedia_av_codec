@@ -552,8 +552,7 @@ bool InnerDemuxerSample::ReadVideo(std::vector<std::vector<int32_t>> &cacheCheck
     int32_t checkVector1 = 1;
     int32_t checkVector2 = 2;
     bool isEnd = true;
-    while (isEnd)
-    {
+    while (isEnd) {
         if (readCount >= readPos) {
             isEnd = false;
             if (!CheckCache(cacheCheckSteps, checkVector1)) {
@@ -588,8 +587,7 @@ bool InnerDemuxerSample::ReadAudio(std::vector<std::vector<int32_t>> &cacheCheck
     int32_t checkVector1 = 1;
     int32_t checkVector2 = 2;
     bool isEnd = true;
-    while (isEnd)
-    {
+    while (isEnd) {
         if (readCount >= readPos) {
             isEnd = false;
             if (!CheckCache(cacheCheckSteps, checkVector1)) {
