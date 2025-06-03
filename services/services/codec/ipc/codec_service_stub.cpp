@@ -307,7 +307,7 @@ int32_t CodecServiceStub::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
 
 int32_t CodecServiceStub::NotifyMemoryExchange(const bool exchangeFlag)
 {
-    return (exchangeFlag ? NotifyMemoryRecycle() : NotifyMemoryWriteBack()), AVCS_ERR_OK;
+    return (exchangeFlag ? NotifyFreeze() : NotifyActive()), AVCS_ERR_OK;
 }
 
 int32_t CodecServiceStub::NotifyFreeze()
